@@ -25,6 +25,8 @@ export class ActionCombat extends Action {
     if(!combatRound) return ActionStatus.COMPLETE;
 
     const scheduledActionList = combatRound.scheduledActionList;
+
+    if(combatRound.roundPaused) return ActionStatus.IN_PROGRESS;
     if(scheduledActionList.length){
       const combatAction = scheduledActionList.shift();
       if(combatAction){

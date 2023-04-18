@@ -213,6 +213,10 @@ export class TwoDAObject {
     }
   }
 
+  getCellByRowAndColumnIndex(rowIndex: number = 0, columnIndex: number = 0){
+    
+  }
+
   static cellParser(cell: any){
     if(cell === '****'){
       return null;
@@ -243,6 +247,48 @@ export class TwoDAObject {
     }
     console.warn('normalizeValue', 'unhandled datatype', value);
     return '';
+  }
+
+}
+
+export class TwoDARow {
+
+  __index: number = 0;
+  __rowlabel: string = '';
+  columnCount: number = 0;
+
+  columns: string[] = [];
+  cells: TwoDACell[] = [];
+
+  constructor(__index: number, __rowlabel: string){
+    this.__index = __index;
+    this.__rowlabel = __rowlabel;
+  }
+
+  setColumns(columns: string[] = []){
+    this.columns = columns;
+  }
+
+  addCell(column: any = '', value: any = '****'){
+    (this as any)[column] = value;
+    this.cells.push(
+      new TwoDACell(column, value)
+    );
+  }
+
+  getCellByIndex(index: number = 0): TwoDACell {
+    return this.cells[index];
+  }
+
+}
+
+export class TwoDACell {
+  columnName: string = '';
+  value: any = '';
+
+  constructor(columnName: string, value: any){
+    this.columnName = columnName;
+    this.value = value;
   }
 
 }

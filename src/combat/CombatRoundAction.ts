@@ -5,6 +5,8 @@ import { AttackResult } from "../enums/combat/AttackResult";
 import { ProjectilePath } from "../enums/combat/ProjectilePath";
 import { OdysseyModelAnimation } from "../odyssey";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { SpellCastInstance } from "./SpellCastInstance";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 
 export class CombatRoundAction {
   owner: ModuleObject;
@@ -37,6 +39,7 @@ export class CombatRoundAction {
 
   spellId: number = -1;
   spell: TalentSpell;
+  spellInstance: SpellCastInstance;
   spellClassIndex: number = -1;
   domainLevel: number = 0;
   projectilePath: ProjectilePath = ProjectilePath.DEFAULT;
@@ -75,6 +78,10 @@ export class CombatRoundAction {
     this.iconResRef = spell.iconresref;
   }
 
+  addSpellInstance(spellInstance: SpellCastInstance) {
+    this.spellInstance = spellInstance;
+  }
+
   calculateAttackAnimation(){
     if(!(this.owner instanceof ModuleCreature)) return;
     let attackKey = this.owner.getCombatAnimationAttackType();
@@ -92,38 +99,38 @@ export class CombatRoundAction {
       if(attackKey == 'm'){
         attackKey = 'f';
         switch(this.feat.id){
-          case 81:
-          case 19:
-          case 8:
+          case CombatFeatType.CRITICAL_STRIKE:
+          case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
+          case CombatFeatType.MASTER_CRITICAL_STRIKE:
             attackType = 1;
           break;
-          case 83:
-          case 17:
-          case 28:
-            attackType = 3;
-          break;
-          case 53:
-          case 91:
-          case 11:
+          case CombatFeatType.FLURRY:
+          case CombatFeatType.IMPROVED_FLURRY:
+          case CombatFeatType.MASTER_FLURRY:
             attackType = 2;
+          break;
+          case CombatFeatType.POWER_ATTACK:
+          case CombatFeatType.IMPROVED_POWER_ATTACK:
+          case CombatFeatType.MASTER_POWER_ATTACK:
+            attackType = 3;
           break;
         }
       }else if(attackKey == 'b'){
         switch(this.feat.id){
-          case 77:
-          case 20:
-          case 31:
+          case CombatFeatType.RAPID_SHOT:
+          case CombatFeatType.IMPROVED_RAPID_SHOT:
+          case CombatFeatType.MASTER_RAPID_SHOT:
+            attackType = 2;
+          break;
+          case CombatFeatType.SNIPER_SHOT:
+          case CombatFeatType.IMPROVED_SNIPER_SHOT:
+          case CombatFeatType.MASTER_SNIPER_SHOT:
             attackType = 3;
           break;
-          case 82:
-          case 18:
-          case 29:
+          case CombatFeatType.POWER_BLAST:
+          case CombatFeatType.IMPROVED_POWER_BLAST:
+          case CombatFeatType.MASTER_POWER_BLAST:
             attackType = 4;
-          break;
-          case 26:
-          case 92:
-          case 30:
-            attackType = 2;
           break;
         }
       }

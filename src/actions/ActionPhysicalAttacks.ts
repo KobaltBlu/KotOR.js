@@ -87,15 +87,25 @@ export class ActionPhysicalAttacks extends Action {
 
             if( !combatRound.engaged ){ //non dueling round
               combatRound.beginCombatRound();
-
-
+              combatRound.pauseRound(this.owner, combatRound.roundLength);
+              if(combatRound.action){
+                combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
+              }
 
             }else{ //dueling round
               combatRound.beginCombatRound();
+              if(combatRound.action){
+                combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
+              }
+              combatRound.pauseRound(this.owner, combatRound.roundLength);
 
               if(combatRound.master){
                 if(this.target instanceof ModuleCreature){
                   this.target.combatRound.beginCombatRound();
+                  this.target.combatRound.pauseRound(this.owner, combatRound.roundLength);
+                  if(this.target.combatRound.action){
+                    this.target.combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
+                  }
                 }
               }
 

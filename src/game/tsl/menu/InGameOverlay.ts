@@ -287,13 +287,12 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.BTN_CLEARALL.addEventListener('click', (e: any) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
         GameState.getCurrentPlayer().cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatAction();
+        //GameState.getCurrentPlayer().clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e: any) => {

@@ -25,6 +25,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
 import { Dice } from "../utility/Dice";
+import { ItemProperty } from "../engine/ItemProperty";
 
 /* @file
  * The ModuleItem class.
@@ -40,23 +41,23 @@ export class ModuleItem extends ModuleObject {
   textureVariation: number;
   palleteID: number;
   loaded: boolean;
-  properties: any[];
+  properties: ItemProperty[];
   upgradeItems: any = {};
-  possessor: any;
+  possessor: ModuleCreature;
   descIdentified: any;
-  stolen: any;
-  infinite: any;
+  stolen: boolean = false;
+  infinite: boolean = false;
   inventoryRes: any;
   stackSize: any;
   charges: any;
   deleting: any;
-  dropable: any;
-  identified: any;
-  maxCharges: any;
-  newItem: any;
-  nonEquippable: any;
-  pickpocketable: any;
-  upgrades: any;
+  dropable: boolean = false;
+  identified: boolean = false;
+  maxCharges: number = 0;
+  newItem: boolean = false;
+  nonEquippable: boolean = false;
+  pickpocketable: boolean = false;
+  upgrades: number;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -95,7 +96,7 @@ export class ModuleItem extends ModuleObject {
 
   }
 
-  update(delta = 0){
+  update(delta = 0): void {
     if(this.model instanceof OdysseyModel3D)
       this.model.update(delta);
   }
@@ -104,23 +105,27 @@ export class ModuleItem extends ModuleObject {
     return this.descIdentified;
   }
 
-  getBaseItemId(){
+  getBaseItemId(): number {
     return this.baseItem;
   }
 
-  getBodyVariation(){
+  getBaseItem(): BaseItem {
+    return this._baseItem;
+  }
+
+  getBodyVariation(): string {
     return this._baseItem.bodyVar;
   }
 
-  getModelVariation(){
+  getModelVariation(): number {
     return this.modelVariation || 1;
   }
 
-  getTextureVariation(){
+  getTextureVariation(): number {
     return this.textureVariation || 1;
   }
 
-  getIcon(){
+  getIcon(): string {
     return 'i'+this._baseItem.itemClass+'_'+("000" + this.getModelVariation()).slice(-3);
   }
 
@@ -132,23 +137,20 @@ export class ModuleItem extends ModuleObject {
     return this._baseItem.weaponType;
   }
 
-  isRangedWeapon(){
+  isRangedWeapon(): boolean {
     return this._baseItem.rangedWeapon;
   }
 
-  isStolen(){
+  isStolen(): boolean {
     return this.stolen;
   }
 
-  isInfinite(){
+  isInfinite(): boolean {
     return this.infinite;
   }
 
-  getPropertiesList(){
-    if(this.template.RootNode.HasField('PropertiesList')){
-      return this.template.RootNode.GetFieldByLabel('PropertiesList').GetChildStructs();
-    }
-    return null;
+  getPropertiesList(): ItemProperty[] {
+    return this.properties;
   }
 
   isDisguise(){
@@ -193,27 +195,27 @@ export class ModuleItem extends ModuleObject {
     return this.inventoryRes;
   }
 
-  getStackSize(){
+  getStackSize(): number {
     return this.stackSize;
   }
 
-  setStackSize(value: number){
+  setStackSize(value: number): number {
     return this.stackSize = value;
   }
 
-  getLocalizedName(){
+  getLocalizedName(): string {
     return this.localizedName.GetValue().replace(/\0[\s\S]*$/g,'');
   }
 
-  getPalleteID(){
+  getPalleteID(): number {
     return this.palleteID;
   }
 
-  getTag(){
+  getTag(): string {
     return this.tag;
   }
 
-  getACBonus(){
+  getACBonus(): number {
     let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
@@ -224,14 +226,14 @@ export class ModuleItem extends ModuleObject {
     return this._baseItem.baseAC + bonus;
   }
 
-  getDexBonus(){
+  getDexBonus(): number {
     if(this.baseItem){
       return this._baseItem.dexBonus || 0;
     }
     return 0;
   }
 
-  getAttackBonus(){
+  getAttackBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
@@ -248,7 +250,14 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getMonsterDamage(){
+  getBaseDamageType(): number {
+    if(this._baseItem){
+      return Math.log2(this._baseItem.damageFlags) & 0xFF;
+    }
+    return 0;
+  }
+
+  getMonsterDamage(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Monster_Damage)){
@@ -258,7 +267,17 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDamageBonus(){
+  hasDamageBonus(): boolean {
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getDamageBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
@@ -268,11 +287,29 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDamageType(){
+  getDamageBonusType(): number {
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
+        return property.getSubType();
+      }
+    }
+    return 0;
+  }
+
+  getDamageFlags(): number {
     return this._baseItem.damageFlags;
   }
 
-  getSTRBonus(){
+  getCriticalThreatRangeMin(){
+    return 20 - this._baseItem.criticalThreat;
+  }
+
+  getCriticalThreatRangeMax(){
+    return 20;
+  }
+
+  getSTRBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 0)){
@@ -282,7 +319,7 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDEXBonus(){
+  getDEXBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 1)){
@@ -292,7 +329,7 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getCONBonus(){
+  getCONBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 2)){
@@ -302,7 +339,7 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getINTBonus(){
+  getINTBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 3)){
@@ -312,7 +349,7 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getWISBonus(){
+  getWISBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 4)){
@@ -322,7 +359,7 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getCHABonus(){
+  getCHABonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Ability, 5)){
@@ -348,7 +385,7 @@ export class ModuleItem extends ModuleObject {
     }
   }
 
-  Load(){
+  Load(): void {
 
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
@@ -419,7 +456,7 @@ export class ModuleItem extends ModuleObject {
     });
   }
 
-  nthStringConverter(name = '', nth = 1){
+  nthStringConverter(name = '', nth = 1): string {
     let value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
@@ -435,35 +472,8 @@ export class ModuleItem extends ModuleObject {
     return undefined;
   }
 
-  /*getIcon(onLoad = null){
-
-    let baseClass = Global.kotor2DA.baseitems.rows[this.template.GetFieldByLabel('BaseItem').Value]['itemclass'].toLowerCase();
-    let texVariantNode = this.template.GetFieldByLabel('TextureVar');
-    let modelVariantNode = this.template.GetFieldByLabel('ModelVariation');
-
-    let variant = 1;
-
-    if(texVariantNode != null)
-      variant = texVariantNode.Value;
-    else if(modelVariantNode != null)
-      variant = modelVariantNode.Value;
-
-    let file = 'erf.swpc_tex_gui://i'+baseClass+'_'+Utility.PadInt(variant, 3)+'.tpc';
-
-    let loader = new FileLoader({
-      file: file,
-      onLoad: (buffer) => {
-
-        let icon = new TPCObject({file: buffer});
-        if(typeof onLoad == 'function')
-          onLoad(icon);
-        
-      }
-    })
-  }*/
-
-  getSpells(){
-    let spells = [];
+  getSpells(): TalentSpell[] {
+    const spells: TalentSpell[] = [];
 
     //propertyName, subType, costTable, costValue, param1, param1Value, chanceAppear, usesPerDay, useable, upgradeType
     for(let i = 0, len = this.properties.length; i < len; i++){
@@ -477,7 +487,7 @@ export class ModuleItem extends ModuleObject {
     return spells;
   }
 
-  InitProperties(){
+  InitProperties(): void {
 
     if(this.loaded){
       return;
@@ -519,16 +529,16 @@ export class ModuleItem extends ModuleObject {
       this.description = this.template.GetFieldByLabel('Description').GetValue();
 
     if(this.template.RootNode.HasField('Dropable'))
-      this.dropable = this.template.GetFieldByLabel('Dropable').GetValue();
+      this.dropable = this.template.GetFieldByLabel('Dropable').GetValue() ? true : false;
       
     if(this.template.RootNode.HasField('EquippedRes'))
       this.equippedRes = this.template.GetFieldByLabel('EquippedRes').GetValue();
 
     if(this.template.RootNode.HasField('Identified'))
-      this.identified = this.template.GetFieldByLabel('Identified').GetValue();
+      this.identified = !!this.template.GetFieldByLabel('Identified').GetValue();
 
     if(this.template.RootNode.HasField('Infinite'))
-      this.infinite = this.template.GetFieldByLabel('Infinite').GetValue();
+      this.infinite = !!this.template.GetFieldByLabel('Infinite').GetValue();
 
     if(this.template.RootNode.HasField('InventoryRes'))
       this.inventoryRes = this.template.GetFieldByLabel('InventoryRes').GetValue();
@@ -543,13 +553,13 @@ export class ModuleItem extends ModuleObject {
       this.modelVariation = this.template.RootNode.GetFieldByLabel('ModelVariation').GetValue();
     
     if(this.template.RootNode.HasField('NewItem'))
-      this.newItem = this.template.RootNode.GetFieldByLabel('NewItem').GetValue();
+      this.newItem = this.template.RootNode.GetFieldByLabel('NewItem').GetValue() ? true : false;
         
     if(this.template.RootNode.HasField('NonEquippable'))
-      this.nonEquippable = this.template.RootNode.GetFieldByLabel('NonEquippable').GetValue();
+      this.nonEquippable = this.template.RootNode.GetFieldByLabel('NonEquippable').GetValue() ? true : false;
   
     if(this.template.RootNode.HasField('Pickpocketable'))
-      this.pickpocketable = this.template.RootNode.GetFieldByLabel('Pickpocketable').GetValue();
+      this.pickpocketable = !!this.template.RootNode.GetFieldByLabel('Pickpocketable').GetValue();
       
     if(this.template.RootNode.HasField('Plot'))
       this.plot = this.template.GetFieldByLabel('Plot').GetValue();
@@ -558,11 +568,9 @@ export class ModuleItem extends ModuleObject {
       let propertiesList = this.template.GetFieldByLabel('PropertiesList').GetChildStructs();
       this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
-        this.properties.push( 
-          new ItemProperty( 
-            GFFObject.FromStruct( propertiesList[i] ), this 
-          ) 
-        );
+        const itemProp = ItemProperty.FromStruct(propertiesList[i]);
+        itemProp.setItem(this);
+        this.properties.push(itemProp);
       }
     }
 
@@ -570,7 +578,7 @@ export class ModuleItem extends ModuleObject {
       this.stackSize = this.template.GetFieldByLabel('StackSize').GetValue();
 
     if(this.template.RootNode.HasField('Stolen'))
-      this.stolen = this.template.GetFieldByLabel('Stolen').GetValue();
+      this.stolen = !!this.template.GetFieldByLabel('Stolen').GetValue();
 
     if(this.template.RootNode.HasField('Tag'))
       this.tag = this.template.GetFieldByLabel('Tag').GetValue().replace(/\0[\s\S]*$/g,'');
@@ -607,15 +615,15 @@ export class ModuleItem extends ModuleObject {
 
   }
 
-  setPossessor( oCreature: ModuleCreature){
+  setPossessor( oCreature: ModuleCreature): void {
     this.possessor = oCreature;
   }
 
-  getPossessor(){
+  getPossessor(): ModuleCreature {
     return this.possessor;
   }
 
-  onEquip(oCreature: ModuleCreature){
+  onEquip(oCreature: ModuleCreature): void {
     console.log('ModuleItem.onEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       if(this.isDisguise()){
@@ -635,7 +643,7 @@ export class ModuleItem extends ModuleObject {
     this.setPossessor(oCreature);
   }
 
-  onUnEquip(oCreature: ModuleCreature){
+  onUnEquip(oCreature: ModuleCreature): void {
     console.log('ModuleItem.onUnEquip', oCreature, this);
     if(oCreature instanceof ModuleCreature){
       oCreature.removeEffectsByCreator(this);
@@ -648,7 +656,7 @@ export class ModuleItem extends ModuleObject {
     this.setPossessor(undefined);
   }
 
-  save(){
+  save(): GFFStruct {
     let itemStruct = new GFFStruct(0);
 
     if(this.id >= 0)
@@ -656,21 +664,21 @@ export class ModuleItem extends ModuleObject {
     
     itemStruct.AddField( new GFFField(GFFDataType.INT, 'BaseItem') ).SetValue(this.getBaseItemId());
     itemStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Identified') ).SetValue(this.identified);
+    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Identified') ).SetValue(this.identified ? 1 : 0);
     itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue(this.template.GetFieldByLabel('Description')?.GetCExoLocString());
     itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).SetValue(this.template.GetFieldByLabel('DescIdentified')?.GetCExoLocString());
     itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).SetValue(this.template.GetFieldByLabel('LocalizedName')?.GetCExoLocString());
     itemStruct.AddField( new GFFField(GFFDataType.WORD, 'StackSize') ).SetValue(this.stackSize);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Stolen') ).SetValue(this.stolen);
+    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Stolen') ).SetValue(this.stolen ? 1 : 0);
     itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).SetValue(this.upgrades);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Dropable') ).SetValue(this.dropable);
+    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Dropable') ).SetValue(this.dropable ? 1 : 0);
     itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).SetValue(1);
     itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).SetValue(this.modelVariation);
     itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Charges') ).SetValue(this.charges);
     itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).SetValue(this.maxCharges);
     itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'Cost') ).SetValue(this.cost);
     itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'AddCost') ).SetValue(this.addCost);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Plot') ).SetValue(this.plot);
+    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Plot') ).SetValue(this.plot ? 1 : 0);
 
     let propertiesList = itemStruct.AddField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
     for(let i = 0; i < this.properties.length; i++){
@@ -688,242 +696,6 @@ export class ModuleItem extends ModuleObject {
     itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'DELETING') ).SetValue(0);
 
     return itemStruct;
-  }
-
-}
-
-export class ItemProperty {
-  template: any;
-  item: any;
-  propertyName: any;
-  subType: any;
-  costTable: any;
-  costValue: any;
-  upgradeType: number;
-  param1: any;
-  param1Value: any;
-  chanceAppear: any;
-  usesPerDay: any;
-  useable: any;
-
-  constructor(template: any, item: any){
-    this.template = template;
-    this.item = item;
-    this.InitProperties();
-  }
-
-  getProperty(){
-    const _2DA = TwoDAManager.datatables.get('itempropdef');
-    if(_2DA){
-      return _2DA.rows[this.propertyName];
-    }
-  }
-
-  getPropertyName(){
-    const property = this.getProperty();
-    if(property){
-      if(property.name != '****'){
-        return TLKManager.GetStringById(property.name).Value;
-      }else{
-        return TLKManager.GetStringById(0).Value;
-      }
-    }
-    return new Error(`Invalid Item Property`);
-  }
-
-  getSubType(){
-    const property = this.getProperty();
-    if(property && property.subtyperesref != '****'){
-      const _2DA = TwoDAManager.datatables.get(property.subtyperesref.toLowerCase());
-      if(_2DA){
-        return _2DA.rows[this.subType];
-      }
-    }
-  }
-
-  getSubtypeName(){
-    const subType = this.getSubType();
-    if(subType){
-      if(subType.name != '****'){
-        return TLKManager.GetStringById(subType.name).Value;
-      }else{
-        return TLKManager.GetStringById(0).Value;
-      }
-    }
-    return new Error(`Invalid Item Property Sub Type`);
-  }
-
-  getCostTable(){
-    const iprp_costtable2DA = TwoDAManager.datatables.get('iprp_costtable');
-    if(iprp_costtable2DA){
-      const costTableName = iprp_costtable2DA.rows[this.costTable].name.toLowerCase();
-      if(costTableName){
-        const costtable2DA = TwoDAManager.datatables.get(costTableName);
-        if(costtable2DA){
-          return costtable2DA;
-        }
-      }
-    }
-  }
-
-  getCostTableRow(){
-    const costTable = this.getCostTable();
-    if(costTable){
-      return costTable.rows[this.costValue];
-    }
-    return undefined;
-  }
-
-  //Determine if the property requires an upgrade to use, or if it is always useable
-  isUseable(){
-    const upgrade_flag = (1 << this.upgradeType);
-    //If no upgrade is required or the upgrade is present on the item
-    if(this.upgradeType == -1 || ((this.item.upgrades & upgrade_flag) == upgrade_flag)){
-      return true;
-    }
-    return false;
-  }
-
-  is(property: any, subType: any){
-    if(typeof property != 'undefined' && typeof subType != 'undefined'){
-      return this.propertyName == property && this.subType == subType;
-    }else{
-      return this.propertyName == property;
-    }
-  }
-
-  costTableRandomCheck(){
-    let costTable = this.getCostTable();
-    //Random Cost Check
-    if(this.costValue == 0){
-      let rowCount = costTable.rows.length - 1;
-      let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
-      return costTable.rows[randomCostValue];
-    }
-    return this.getCostTableRow();
-  }
-
-  getValue(){
-    let costTable = this.getCostTable();
-    let costTableRow = this.getCostTableRow();
-    if(costTableRow){
-      switch(this.costTable){
-        case ModuleItemCostTable.Base1:
-
-        break;
-        case ModuleItemCostTable.Bonus:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.Melee:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.SpellUse:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-        break;
-        case ModuleItemCostTable.Damage:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
-          }else{
-            return parseInt(costTableRow.label);
-          }
-        break;
-        case ModuleItemCostTable.Immune:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.DamageSoak:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.amount);
-        break;
-        case ModuleItemCostTable.DamageResist:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.amount);
-        break;
-        case ModuleItemCostTable.DancingScimitar:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-        break;
-        case ModuleItemCostTable.Slots:
-          
-        break;
-        case ModuleItemCostTable.Monster_Cost:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
-          }
-        break;
-
-      }
-    }
-
-    return 0;
-  }
-
-  InitProperties(){
-    if(this.template.RootNode.HasField('PropertyName'))
-      this.propertyName = this.template.RootNode.GetFieldByLabel('PropertyName').GetValue();
-    
-    if(this.template.RootNode.HasField('Subtype'))
-      this.subType = this.template.RootNode.GetFieldByLabel('Subtype').GetValue();
-
-    if(this.template.RootNode.HasField('CostTable'))
-      this.costTable = this.template.RootNode.GetFieldByLabel('CostTable').GetValue();
-
-    if(this.template.RootNode.HasField('CostValue'))
-      this.costValue = this.template.RootNode.GetFieldByLabel('CostValue').GetValue();
-
-    if(this.template.RootNode.HasField('Param1'))
-      this.param1 = this.template.RootNode.GetFieldByLabel('Param1').GetValue();
-
-    if(this.template.RootNode.HasField('Param1Value'))
-      this.param1Value = this.template.RootNode.GetFieldByLabel('Param1Value').GetValue();
-
-    if(this.template.RootNode.HasField('ChanceAppear'))
-      this.chanceAppear = this.template.RootNode.GetFieldByLabel('ChanceAppear').GetValue();
-
-    if(this.template.RootNode.HasField('UsesPerDay'))
-      this.usesPerDay = this.template.RootNode.GetFieldByLabel('UsesPerDay').GetValue();
-
-    if(this.template.RootNode.HasField('Useable'))
-      this.useable = this.template.RootNode.GetFieldByLabel('Useable').GetValue();
-
-    if(this.template.RootNode.HasField('UpgradeType'))
-      this.upgradeType = this.template.RootNode.GetFieldByLabel('UpgradeType').GetValue();
-  }
-
-  save(){
-    let propStruct = new GFFStruct(0);
-
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'PropertyName') ).SetValue( this.propertyName == -1 ? 255 : this.propertyName);
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'SubType') ).SetValue( this.subType == -1 ? 255 : this.subType);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'CostTable') ).SetValue( this.costTable == -1 ? 255 : this.costTable);
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'CostValue') ).SetValue( this.costValue == -1 ? 255 : this.costValue);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Param1') ).SetValue( this.param1 == -1 ? 255 : this.param1);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Param1Value') ).SetValue( this.param1Value == -1 ? 255 : this.param1Value);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') ).SetValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') ).SetValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Usable') ).SetValue( this.useable == -1 ? 255 : this.useable);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'UpgradeType') ).SetValue( this.upgradeType == -1 ? 255 : this.upgradeType);
-
-    return propStruct;
   }
 
 }

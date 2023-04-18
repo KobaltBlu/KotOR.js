@@ -6,7 +6,6 @@ import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpe
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../CollisionData";
 import { CombatData } from "../combat/CombatData";
-import { CombatEngine } from "../combat/CombatEngine";
 import { EffectLink, EffectRacialType } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
@@ -45,7 +44,7 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
-import { CombatRound } from "../combat";
+import { CombatRound, CombatRoundAction } from "../combat";
 import { Dice } from "../utility/Dice";
 import { DiceType } from "../enums/combat/DiceType";
 
@@ -569,12 +568,13 @@ export class ModuleObject {
     //this.clearTarget();
   }
 
-  clearCombatAction(combatAction: CombatAction = undefined){
-    return this.combatData.clearCombatAction(combatAction);
+  clearCombatAction(combatAction: CombatRoundAction = undefined){
+    return this.combatRound.clearAction(combatAction);
   }
 
   clearCombatActionAtIndex(index: number = 0): boolean {
-    return this.combatData.clearCombatActionAtIndex(index);
+    if(index <= 0) return;
+    return !!this.combatRound.scheduledActionList.splice(index, 1).length;
   }
 
   //Queue an animation to the actionQueue array
@@ -1421,7 +1421,7 @@ export class ModuleObject {
 
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatEngine.GetMod(this.getCON());
+    let bonus = CombatRound.GetMod(this.getCON());
     
     if((roll + this.getFortitudeSave() + bonus) > nDC){
       return 1
@@ -1436,7 +1436,7 @@ export class ModuleObject {
 
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatEngine.GetMod(this.getDEX());
+    let bonus = CombatRound.GetMod(this.getDEX());
     
     if((roll + this.getReflexSave() + bonus) > nDC){
       return 1
@@ -1455,7 +1455,7 @@ export class ModuleObject {
 
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
     let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatEngine.GetMod(this.getWIS());
+    let bonus = CombatRound.GetMod(this.getWIS());
 
     if((roll + this.getWillSave() + bonus) > nDC){
       return 1
@@ -1482,7 +1482,7 @@ export class ModuleObject {
     return 0;
   }
 
-  addEffect(effect: GameEffect, type = 0, duration = 0){
+  addEffect(effect: GameEffect, type = GameEffectDurationType.INSTANT, duration = 0){
     if(effect instanceof GameEffect){
       if(effect instanceof EffectLink){
         //EFFECT LEFT
@@ -1704,6 +1704,10 @@ export class ModuleObject {
   addFP(nAmount = 0, ignoreMaxForcePoints = false){}
 
   subtractFP(nAmount = 0){}
+
+  getAC(){
+    return 10;
+  }
 
   isPartyMember(){
     return PartyManager.party.indexOf(this as any) >= 0;

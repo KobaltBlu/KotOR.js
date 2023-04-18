@@ -38,30 +38,6 @@ export class CombatData {
     this.object = object;
   }
 
-  update(delta: number = 0){
-    this.pruneInvalidCombatActionsInQueue();
-    this.validateCurrentCombatAction();
-  }
-
-  validateCurrentCombatAction(){
-    if(this.combatAction){
-      if(this.combatAction.target && this.combatAction.target.isDead()){
-        this.clearCombatAction(this.combatAction);
-      }
-    }
-  }
-
-  pruneInvalidCombatActionsInQueue(){
-    let index = this.combatQueue.length;
-    while(index--){
-      const combatAction = this.combatQueue[index];
-      if(combatAction && combatAction.target && combatAction.target.isDead()){
-        this.object.actionQueue.clearAction(combatAction.action);
-        this.combatQueue.splice(index, 1);
-      }
-    }
-  }
-
   initialize(){
     this.lastAttackObject = undefined;
     this.lastAttackAction = ActionType.ActionInvalid;
@@ -71,70 +47,11 @@ export class CombatData {
 
   reset(){
     this.initialize();
-    this.clearCombatAction(this.combatAction);
-    let index = this.combatQueue.length;
-    while(index--){
-      const combatAction = this.combatQueue[index];
-      if(combatAction){
-        this.combatQueue.splice(index, 1);
-        this.clearCombatAction(combatAction);
-      }
-    }
   }
 
   clearTarget(target: ModuleObject){
     this.lastAttackTarget = undefined;
-    this.clearCombatActionsByTarget(target);
-  }
-
-  clearCombatActionsByTarget(target: ModuleObject){
-    if(this.combatAction && this.combatAction.target == target){
-      this.clearCombatAction(this.combatAction);
-    }
-
-    let index = this.combatQueue.length;
-    while(index--){
-      const combatAction = this.combatQueue[index];
-      if(combatAction.target == target){
-        this.combatQueue.splice(index, 1);
-        this.clearCombatAction(combatAction);
-      }
-    }
-  }
-
-  setCombatAction(combatAction: CombatAction){
-    if(this.combatAction != combatAction){
-      this.combatAction = combatAction;
-    }
-  }
-
-  clearCombatAction(combatAction: CombatAction = undefined, clearAll: boolean = false){
-    if(this.combatAction == combatAction) this.combatAction = undefined;
-    if(combatAction){
-      this.object.actionQueue.clearAction(combatAction.action);
-      if(clearAll){
-        let index = this.combatQueue.length;
-        while(index--){
-          const _combatAction = this.combatQueue[index];
-          if(_combatAction == combatAction){
-            this.object.actionQueue.clearAction(_combatAction.action);
-            this.combatQueue.splice(index, 1);
-          }
-        }
-      }
-      return true;
-    }
-    return false;
-  }
-
-  clearCombatActionAtIndex(index: number = 0): boolean {
-    const combatAction = this.combatQueue[index];
-    if(combatAction){
-      this.combatQueue.splice(index, 1);
-      this.clearCombatAction(combatAction);
-      return true;
-    }
-    return false;
+    this.object.combatRound.clearActionsByTarget(target);
   }
 
   getEquippedWeaponType(){

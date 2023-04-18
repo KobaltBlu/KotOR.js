@@ -217,6 +217,7 @@ export class GameState implements EngineContext {
     stunt: new THREE.Group,
     weather_effects: new THREE.Group,
     room_walkmeshes: new THREE.Group,
+    spell_instances: new THREE.Group,
   };
   static weather_effects: any[];
   static interactableObjects: any[];
@@ -428,6 +429,7 @@ export class GameState implements EngineContext {
       stunt: new THREE.Group(),
       weather_effects: new THREE.Group(),
       room_walkmeshes: new THREE.Group(),
+      spell_instances: new THREE.Group(),
     };
 
     GameState.weather_effects = [];
@@ -449,8 +451,9 @@ export class GameState implements EngineContext {
     // GameState.scene.add(GameState.group.path_helpers);
     // GameState.scene.add(GameState.group.emitters);
     // GameState.scene.add(GameState.group.effects);
+    GameState.scene.add(GameState.group.lights);
 
-    GameState.scene.add(GameState.group.party);
+    GameState.scene.add(GameState.group.spell_instances);
     // GameState.scene.add(GameState.group.room_walkmeshes);
 
     GameState.group.light_helpers.visible = false;

@@ -5,7 +5,6 @@ import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { Action, ActionCastSpell, ActionCombat, ActionFollowLeader, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { CombatEngine } from "../combat/CombatEngine";
 import { CreatureClass } from "../combat/CreatureClass";
 import { GameEffect } from "../effects";
 import { GameEffectType } from "../enums/effects/GameEffectType";
@@ -22,10 +21,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { SSFObject } from "../resource/SSFObject";
-import { TalentFeat } from "../talents/TalentFeat";
-import { TalentObject } from "../talents/TalentObject";
-import { TalentSkill } from "../talents/TalentSkill";
-import { TalentSpell } from "../talents/TalentSpell";
+import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "../talents";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { ModuleObject, ModuleItem, ModuleRoom, Module } from "./";
@@ -55,6 +51,7 @@ import { WeaponWield } from "../enums/combat/WeaponWield";
 import { CombatRoundAction } from "../combat";
 import { CombatActionType } from "../enums/combat/CombatActionType";
 import { WeaponType } from "../enums/combat/WeaponType";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 
 /* @file
  * The ModuleCreature class.
@@ -327,7 +324,6 @@ export class ModuleCreature extends ModuleObject {
 
     this.setAnimationState(ModuleCreatureAnimState.IDLE);
     this.combatData.combatActionTimer = 3; 
-    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.collisionData.blockingTimer = 0;
@@ -920,7 +916,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateCombat(delta = 0){
-    this.combatData.update(delta);
+    // this.combatData.update(delta);
+    this.combatRound.update(delta);
 
     if(this.combatData.lastAttackTarget instanceof ModuleObject && this.combatData.lastAttackTarget.isDead()){
       this.combatData.clearTarget(this.combatData.lastAttackTarget);
@@ -984,12 +981,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   clearTarget(){
-    //console.log('clearTarget');
-    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.lastAttackTarget = undefined;
     this.combatData.lastDamager = undefined;
-    //this.combatActionTimer = 0;
-    // CombatEngine.RemoveCombatant(this);
   }
 
   actionInRange(action: Action): boolean {
@@ -1070,11 +1063,12 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     if(this.animationState.animation){
+      if(!this.animationState?.animation?.name){
+        console.log(this.animationState);
+        console.log(this.animationState.animation);
+      }
       if(currentAnimation != this.animationState.animation.name.toLowerCase()){
         if(!this.animationState.started){
-          if(this.tag == 'end_jedi01'){
-            console.log(this.animationState.animation.name);
-          }
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name.toLowerCase(), aLooping);
@@ -1529,7 +1523,7 @@ export class ModuleCreature extends ModuleObject {
         let damageAnim = anims.getByID(damageAnimIndex);
         if(damageAnim && this.model.getAnimationByName(damageAnim.name)){
           //console.log('dodge/parry anim', this.getName(), damageAnim.name)
-          return damageAnim.name;
+          return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
         }
       }
       
@@ -1657,7 +1651,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(bothHands){
       switch((weapon.getWeaponWield())){
-        case WeaponWield.DAGGER: //Stun Baton
+        case WeaponWield.STUN_BATON: //Stun Baton
         case WeaponWield.ONE_HANDED_SWORD: //Single Blade Melee
           return 4;
         case WeaponWield.BLASTER_PISTOL: //Blaster
@@ -1665,7 +1659,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }else{
       switch((weapon.getWeaponWield())){
-        case WeaponWield.DAGGER: //Stun Baton
+        case WeaponWield.STUN_BATON: //Stun Baton
           return 1;
         case WeaponWield.ONE_HANDED_SWORD: //Single Blade Melee
           return 2;
@@ -1853,14 +1847,6 @@ export class ModuleCreature extends ModuleObject {
         }
       break;
       case 'Hit':
-        //console.log('Attack Hit Event');
-
-        if(this.combatData.combatAction && this.combatData.combatAction.hits && this.combatData.combatAction.damage){
-          this.combatData.combatAction.target.damage(this.combatData.combatAction.damage, this);
-        }else{
-          //console.error('playEvent Hit:', {hit: this.combatAction.hits, damage: this.combatAction.damage});
-        }
-
         if(this.equipment.RIGHTHAND){
           if(this.equipment.RIGHTHAND){
             this.audioEmitter.PlaySound(rhSounds['leather'+Math.round(Math.random()*1)]);
@@ -2168,13 +2154,6 @@ export class ModuleCreature extends ModuleObject {
   //---------------//
 
   onCombatRoundEnd(){
-    //Check to see if the current combatAction is running a TalentObject
-    if(this.combatData.combatAction && (this.combatData.combatAction.spell instanceof TalentObject)){
-      //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
-    }
-    
-    this.combatData.clearCombatAction(this.combatData.combatAction);
-
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
@@ -2914,6 +2893,22 @@ export class ModuleCreature extends ModuleObject {
       bab += strMod;
     }else if(dexMod > strMod){
       bab += dexMod;
+    }
+
+    if(!this.isSimpleCreature()){
+      if(
+        this.equipment.RIGHTHAND && 
+        this.equipment.RIGHTHAND._baseItem.weaponWield != WeaponWield.STUN_BATON && 
+        !this.equipment.LEFTHAND 
+      ){
+        if(this.getHasFeat(CombatFeatType.MASTER_DUELING)){
+          bab += 3;
+        }else if(this.getHasFeat(CombatFeatType.ADVANCED_DUELING)){
+          bab += 2;
+        }else if(this.getHasFeat(CombatFeatType.DUELING)){
+          bab += 1;
+        }
+      }
     }
 
     return bab;

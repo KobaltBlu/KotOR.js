@@ -1,6 +1,7 @@
 import { GameEffect } from ".";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
+import { ModuleCreature, ModuleObject } from "../module";
 
 export class EffectDamage extends GameEffect {
   constructor(){
@@ -30,6 +31,8 @@ export class EffectDamage extends GameEffect {
     //intList[17] : Damage Type
     //intList[18] : Damage Power
 
+    //intList[21] : Damage Broadcasted
+
   }
 
   onApply(){
@@ -39,9 +42,23 @@ export class EffectDamage extends GameEffect {
     super.onApply();
     
     if(this.object instanceof ModuleObject){
-      this.object.subtractHP(this.getDamageAmount());
-      this.object.combatData.lastDamager = this.creator;
-      this.object.combatData.lastAttacker = this.creator;
+      let damage = this.getDamageAmount();
+
+      if(this.object instanceof ModuleCreature){
+        if(
+          this.object.getHasFeat(CombatFeatType.IMPROVED_TOUGHNESS) || 
+          this.object.getHasFeat(CombatFeatType.MASTER_TOUGHNESS)
+        ){
+          damage -= 2;
+        }
+      }
+
+      if(damage < 0) damage = 0;
+      if(damage > 0){
+        this.object.subtractHP(damage);
+        this.object.combatData.lastDamager = this.creator;
+        this.object.combatData.lastAttacker = this.creator;
+      }
     }
   }
 

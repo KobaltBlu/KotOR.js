@@ -1,4 +1,5 @@
 import { Action, ActionMoveToPoint, ActionQueue } from ".";
+import { SpellCastInstance } from "../combat/SpellCastInstance";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -56,12 +57,33 @@ export class ActionCastSpell extends Action {
 
       }else{
         if(this.owner instanceof ModuleCreature){
-          this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
           this.owner.force = 0;
           this.owner.speed = 0;
         }
-        // this.spell.useTalentOnObject(this.target, this.owner);
-        return ActionStatus.COMPLETE;
+
+        if(this.owner.combatRound){
+          const combatRound = this.owner.combatRound;
+          if(!combatRound.roundPaused) {
+            
+            combatRound.beginCombatRound();
+            combatRound.pauseRound(this.owner, combatRound.roundLength);
+            if(combatRound.action){
+              combatRound.action.animation = ModuleCreatureAnimState.CASTOUT1;
+            }
+
+            if(combatRound.roundStarted){
+              const spellCastInstance = new SpellCastInstance(this.owner, combatRound.action.target, combatRound.action.spell);
+              this.owner.area.attachSpellInstance(spellCastInstance);
+              spellCastInstance.init();
+
+              return ActionStatus.COMPLETE;
+            }
+
+          }
+          return ActionStatus.IN_PROGRESS;
+        }else{
+          return ActionStatus.FAILED;
+        }
       }
     }
 

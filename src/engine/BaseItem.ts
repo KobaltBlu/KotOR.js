@@ -32,7 +32,7 @@ export class BaseItem {
   numDice: number = 0;
   dieToRoll: number = 0;
   die: DiceType = DiceType.d8;
-  criticalThreat: number = 0;
+  criticalThreat: number = 1;
   criticalHitMultiplier: number = 0;
   baseCost: number = 0;
   stacking: number = 1;
@@ -163,7 +163,7 @@ export class BaseItem {
     if(row.hasOwnProperty('dietoroll'))
       baseItem.dieToRoll = TwoDAObject.normalizeValue(row.dietoroll, 'number', 4) as number;
     if(row.hasOwnProperty('critthreat'))
-      baseItem.criticalThreat = TwoDAObject.normalizeValue(row.critthreat, 'number', 0) as number;
+      baseItem.criticalThreat = TwoDAObject.normalizeValue(row.critthreat, 'number', 1) as number;
     if(row.hasOwnProperty('crithitmult'))
       baseItem.criticalHitMultiplier = TwoDAObject.normalizeValue(row.crithitmult, 'number', 1) as number;
     if(row.hasOwnProperty('basecost'))

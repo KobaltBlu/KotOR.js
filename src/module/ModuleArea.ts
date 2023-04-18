@@ -32,6 +32,7 @@ import { VISObject } from "../resource/VISObject";
 import { MenuManager } from "../gui";
 import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
+import { SpellCastInstance } from "../combat/SpellCastInstance";
 
 /* @file
  * The ModuleArea class.
@@ -163,6 +164,8 @@ export class ModuleArea extends ModuleObject {
   walkmesh_rooms: any[];
   restrictMode: number;
 
+  spellInstances: SpellCastInstance[] = [];
+
   constructor(name = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
     this._name = name;
@@ -211,9 +214,20 @@ export class ModuleArea extends ModuleObject {
       this.triggers[0].destroy();
     }
 
+    //Clear party members
     while (PartyManager.party.length){
       const pm = PartyManager.party.shift();
       pm.destroy();
+    }
+
+    //Clear spell instances
+    let spellIndex = this.spellInstances.length;
+    while(spellIndex--){
+      const spellInstance = this.spellInstances[spellIndex];
+      if(spellInstance && spellInstance.completed){
+        spellInstance.dispose();
+        this.spellInstances.splice(spellIndex, 1);
+      }
     }
 
     //Clear sound geometries
@@ -298,6 +312,19 @@ export class ModuleArea extends ModuleObject {
       this.rooms[i].hide();
     }
 
+    for(let i = 0, spellCount = this.spellInstances.length; i < spellCount; i++){
+      this.spellInstances[i].update(delta);
+    }
+
+    let spellIndex = this.spellInstances.length;
+    while(spellIndex--){
+      const spellInstance = this.spellInstances[spellIndex];
+      if(spellInstance && spellInstance.completed){
+        spellInstance.dispose();
+        this.spellInstances.splice(spellIndex, 1);
+      }
+    }
+
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
 
@@ -360,6 +387,12 @@ export class ModuleArea extends ModuleObject {
 
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
+  }
+
+  attachSpellInstance(spellInstance: SpellCastInstance){
+    if(!spellInstance) return;
+    GameState.group.spell_instances.add(spellInstance.container);
+    this.spellInstances.push(spellInstance);
   }
 
   updateRoomVisibility(delta: number = 0){

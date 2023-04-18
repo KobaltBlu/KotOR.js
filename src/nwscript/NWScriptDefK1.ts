@@ -4646,7 +4646,7 @@ NWScriptDefK1.Actions = {
             let item = inventory[i];
             let baseItem = item._baseItem;
             if(
-              baseItem.weaponWield == WeaponWield.DAGGER || 
+              baseItem.weaponWield == WeaponWield.STUN_BATON || 
               baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
               baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
             ){
@@ -4705,7 +4705,7 @@ NWScriptDefK1.Actions = {
             let item = inventory[i];
             let baseItem = item._baseItem;
             if(
-              baseItem.weaponWield == WeaponWield.DAGGER || 
+              baseItem.weaponWield == WeaponWield.STUN_BATON || 
               baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
               baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
             ){

@@ -300,13 +300,12 @@ export class InGameOverlay extends GameMenu {
       this.BTN_CLEARALL.addEventListener('click', (e: any) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
         GameState.getCurrentPlayer().cancelCombat();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
+        //GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e: any) => {

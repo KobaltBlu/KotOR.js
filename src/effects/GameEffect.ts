@@ -1,4 +1,4 @@
-import { EffectDisguise, EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectDisease, EffectEntangle, EffectFeat, EffectForceFizzle, EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, EffectImmunity, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRacialType, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSlow, EffectSpellImmunity, EffectTemporaryHitPoints, EffectVisualEffect } from ".";
+import { EffectDisguise, EffectAbilityDecrease, EffectAbilityIncrease, EffectACDecrease, EffectACIncrease, EffectAttackDecrease, EffectAttackIncrease, EffectBeam, EffectBlasterDeflectionDecrease, EffectBlasterDeflectionIncrease, EffectDamage, EffectDamageDecrease, EffectDamageForcePoints, EffectDamageImmunityDecrease, EffectDamageImmunityIncrease, EffectDamageIncrease, EffectDamageReduction, EffectDamageResistance, EffectDeath, EffectDisease, EffectEntangle, EffectFeat, EffectForceFizzle, EffectForceResisted, EffectForceShield, EffectHaste, EffectHeal, EffectHealForcePoints, EffectIcon, EffectImmunity, EffectLink, EffectMovementSpeedDecrease, EffectMovementSpeedIncrease, EffectPoison, EffectRacialType, EffectRegenerate, EffectResurrection, EffectSavingThrowDecrease, EffectSavingThrowIncrease, EffectSetState, EffectSkillDecrease, EffectSkillIncrease, EffectSlow, EffectSpellImmunity, EffectTemporaryHitPoints, EffectVisualEffect, EffectAssuredHit } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
@@ -342,7 +342,7 @@ export class GameEffect {
           effect = new EffectImmunity();
         break;
         case GameEffectType.EffectEnemyAttackBonus: //EnemyAttackBonus
-
+          
         break;
         case GameEffectType.EffectSavingThrowIncrease: //SavingThrowIncrease
           effect = new EffectSavingThrowIncrease();
@@ -454,6 +454,9 @@ export class GameEffect {
         break;
         case GameEffectType.EffectSetState: //EffectSetState
           effect = new EffectSetState();
+        break;
+        case GameEffectType.EffectAssuredHit: //EffectAssuredHit
+          effect = new EffectAssuredHit();
         break;
       }
 
