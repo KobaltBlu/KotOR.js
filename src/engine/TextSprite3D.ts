@@ -22,6 +22,9 @@ export class TextSprite3D {
   force: THREE.Vector3 = new THREE.Vector3(0, 0, 1);
   speed: number = 1;
   scale: number = 0.001;
+  textScale: number = 1;
+  wordWrap: boolean = false;
+  maxLineWidth: number = Infinity;
 
   timer: number = 3000;
   currentTimer: number = 3000;
@@ -109,13 +112,6 @@ export class TextSprite3D {
     }
 
     if(!this.ready) return;
-
-    if(this.text.geometry.boundingBox){
-      const size = new THREE.Vector3(0, 0, 0);
-      this.text.geometry.boundingBox.getSize(size);
-      // this.text.mesh.position.x = -(size.y/2);
-      // this.text.mesh.position.x = -(size.x/2) * this.scale;
-    }
     
     if(this.currentTimer <= 0){
       this.currentTimer = 0;
@@ -201,7 +197,6 @@ export class TextSprite3D {
     if(!(this.text.texture instanceof THREE.Texture))
       return;
 
-    let scale = 1;
     let texture = this.text.texture;
 
     let texRatio = texture.image.width / texture.image.height;
@@ -222,49 +217,54 @@ export class TextSprite3D {
       count: textCharCount
     });
 
-    let maxLineWidth = Infinity;
+    let maxLineWidth = this.maxLineWidth;
+    if(!this.wordWrap) maxLineWidth = Infinity;
 
     let paragraphs = text.split('\n');
     let pCount = paragraphs.length;
     let x = 0, y = 0;
-    let space_code = 32;
     let words: string[] = [];
-    let word, wordLength, wordWidth, char, ul, lr, w, h;
-    let u0, v1, u1, v0;
-    
-    for(let p = 0; p < pCount; p++){
-      let paragraph = paragraphs[p];
-      x = 0;
+    let ul: {x: number; y: number; z: number};
+    let lr: {x: number; y: number; z: number};
+    let word, wordLength, wordWidth, char, w= 0, h= 0;
+    let u0 = 0, v1 = 0, u1 = 0, v0 = 0;
 
-      if(p > 0){
-        y -= txi_bsline;
+    let spaceWidth = this.calculateCharWidth(32);
+    let needsSpacePrepended = false;
+    
+    for(let pIndex = 0; pIndex < pCount; pIndex++){
+      let paragraph = paragraphs[pIndex];
+      let lineWidth = this.calculateLineWidth(paragraph);
+      x = -lineWidth/2;
+
+      if(pIndex > 0){
+        y = (txi_bsline * pIndex);
       }
 
       words = paragraph.split(' ');
-      for(let j = 0, len = words.length; j < len; j++){
-
-        word = words[j];
+      needsSpacePrepended = false;
+      for(let wordIndex = 0, len = words.length; wordIndex < len; wordIndex++){
+        word = words[wordIndex];
         wordLength = word.length;
-        wordWidth = 0;
 
         //Calculate the length of the word to be printed
-        for(let i = 0; i < wordLength; i++){
-          char = word.charCodeAt(i);
-          ul = texture.txi.upperleftcoords[char];
-          lr = texture.txi.lowerrightcoords[char];
-          wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
-        }
+        wordWidth = this.calculateWordWidth(word);
+        needsSpacePrepended = (!!wordIndex);
 
         //Wrap to new line if needed
-        if(j >= 1 && x + wordWidth > ( maxLineWidth - txi_height ) ){
-          y -= txi_bsline;
-          x = 0;
+        if(this.wordWrap){
+          if(wordIndex >= 1 && x + wordWidth + ( needsSpacePrepended ? spaceWidth : 0 ) > ( maxLineWidth - txi_height ) ){
+            y -= txi_bsline;
+            x = 0;
+            needsSpacePrepended = false;
+          }else if(!!wordIndex){
+            needsSpacePrepended = true;
+          }
         }
         
         //If this isn't the first word of the line prepend a space to it
-        if(x){
-          word = ' '+word;
-          wordLength++;
+        if(needsSpacePrepended){
+          x += spaceWidth;
         }
 
         for(let i = 0; i < wordLength; i++){
@@ -273,8 +273,8 @@ export class TextSprite3D {
           ul = texture.txi.upperleftcoords[char];
           lr = texture.txi.lowerrightcoords[char];
 
-          w = ((lr.x - ul.x) * texture.image.width) * scale;
-          h = ((lr.y - ul.y) * texture.image.height) * scale;
+          w = ((lr.x - ul.x) * texture.image.width) * this.textScale;
+          h = ((lr.y - ul.y) * texture.image.height) * this.textScale;
 
           // BL
           positions[posI++] = x
@@ -313,13 +313,7 @@ export class TextSprite3D {
         }
 
       }
-
-      // if(this.text.geometry.boundingBox){
-      //   const size = new THREE.Vector3(0, 0, 0);
-      //   this.text.geometry.boundingBox.getSize(size);
-      //   this.text.mesh.position.x = -size.x/2;
-      //   this.text.mesh.position.y = -size.y/2;
-      // }
+      
     }
     
     if(this.text.geometry){
@@ -358,6 +352,37 @@ export class TextSprite3D {
     this.bounds(positions)
     output.min.set(box.min[0], box.min[1], 0)
     output.max.set(box.max[0], box.max[1], 0)
+  }
+
+  calculateWordWidth(word: string = ''){
+    if(!this.text.texture) return 0;
+    let wordLength = word.length;
+    let wordWidth = 0;
+    const texture = this.text.texture;
+
+    //Calculate the length of the word to be printed
+    for(let i = 0; i < wordLength; i++){
+      const char = word.charCodeAt(i);
+      wordWidth += this.calculateCharWidth(char);
+    }
+    return wordWidth;
+  }
+
+  calculateCharWidth(char: number){
+    const ul = this.text.texture.txi.upperleftcoords[char];
+    const lr = this.text.texture.txi.lowerrightcoords[char];
+    return ((lr.x - ul.x) * this.text.texture.image.width) * this.textScale;
+  }
+
+  calculateLineWidth(line: string = ''){
+    let width = 0;
+    let spaceWidth = this.calculateWordWidth(' ');
+    let words = line.split(' ');
+    for(let i = 0; i < words.length; i++){
+      width += this.calculateWordWidth(words[i]);
+    }
+    width += spaceWidth * Math.max((words.length - 1), 0);
+    return width;
   }
 
   dispose(){
