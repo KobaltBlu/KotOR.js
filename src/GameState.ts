@@ -431,6 +431,26 @@ export class GameState implements EngineContext {
       spell_instances: new THREE.Group(),
     };
 
+    GameState.group.creatures.name = 'creatures';
+    GameState.group.doors.name = 'doors';
+    GameState.group.placeables.name = 'placeables';
+    GameState.group.rooms.name = 'rooms';
+    GameState.group.grass.name = 'grass';
+    GameState.group.sounds.name = 'sounds';
+    GameState.group.triggers.name = 'triggers';
+    GameState.group.waypoints.name = 'waypoints';
+    GameState.group.party.name = 'party';
+    GameState.group.lights.name = 'lights';
+    GameState.group.light_helpers.name = 'light_helpers';
+    GameState.group.shadow_lights.name = 'shadow_lights';
+    GameState.group.path_helpers.name = 'path_helpers';
+    GameState.group.emitters.name = 'emitters';
+    GameState.group.effects.name = 'effects';
+    GameState.group.stunt.name = 'stunt';
+    GameState.group.weather_effects.name = 'weather_effects';
+    GameState.group.room_walkmeshes.name = 'room_walkmeshes';
+    GameState.group.spell_instances.name = 'spell_instances';
+
     GameState.weather_effects = [];
 
     GameState.scene.add(GameState.group.rooms);
@@ -438,8 +458,9 @@ export class GameState implements EngineContext {
     GameState.scene.add(GameState.group.placeables);
     GameState.scene.add(GameState.group.doors);
     GameState.scene.add(GameState.group.creatures);
-    // //GameState.scene.add(GameState.group.waypoints);
-    // //GameState.scene.add(GameState.group.sounds);
+    GameState.scene.add(GameState.group.party);
+    // GameState.scene.add(GameState.group.waypoints);
+    // GameState.scene.add(GameState.group.sounds);
     // GameState.scene.add(GameState.group.triggers);
     // GameState.scene.add(GameState.group.stunt);
     // GameState.scene.add(GameState.group.weather_effects);
@@ -449,7 +470,7 @@ export class GameState implements EngineContext {
     // GameState.scene.add(GameState.group.shadow_lights);
     // GameState.scene.add(GameState.group.path_helpers);
     // GameState.scene.add(GameState.group.emitters);
-    // GameState.scene.add(GameState.group.effects);
+    GameState.scene.add(GameState.group.effects);
     GameState.scene.add(GameState.group.lights);
 
     GameState.scene.add(GameState.group.spell_instances);

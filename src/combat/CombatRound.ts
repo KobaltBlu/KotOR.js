@@ -14,6 +14,8 @@ import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponSize } from "../enums/combat/WeaponSize";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
+import { TextSprite3D } from "../engine/TextSprite3D";
+import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
 
 export class CombatRound {
   static ROUND_LENGTH: number = 3000;
@@ -269,7 +271,7 @@ export class CombatRound {
 
   clearActionsByTarget(target: ModuleObject){
     let index = this.scheduledActionList.length;
-    while(--index){
+    while(index--){
       const action = this.scheduledActionList[index];
       if(action && action.target == target){
         this.scheduledActionList.splice(index, 1);
@@ -519,6 +521,11 @@ export class CombatRound {
             attack.attackResult == AttackResult.AUTOMATIC_HIT 
           ){
             attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
+            const floatingText = TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE);
+            floatingText.container.position.z += 0.25 + (0.1 * i);
+          }else if(attack.attackResult == AttackResult.MISS){
+            const floatingText = TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL);
+            floatingText.container.position.z += 0.25 + (0.1 * i);
           }
         }
       }

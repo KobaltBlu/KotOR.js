@@ -144,6 +144,17 @@ export class CombatAttackData {
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);
   }
 
+  getTotalDamage(): number {
+    let amount = 0;
+    for(let i = 0; i < this.damageList.length; i++){
+      const damage = this.damageList[i];
+      if(damage.damageValue > 0){
+        amount += damage.damageValue;
+      }
+    }
+    return amount;
+  }
+
   reset(){
     this.attackWeapon = undefined;
     for(let i = 0; i < this.damageList.length; i++){

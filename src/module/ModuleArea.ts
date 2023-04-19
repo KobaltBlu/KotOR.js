@@ -33,6 +33,7 @@ import { MenuManager } from "../gui";
 import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
 import { SpellCastInstance } from "../combat/SpellCastInstance";
+import { TextSprite3D } from "../engine/TextSprite3D";
 
 /* @file
  * The ModuleArea class.
@@ -165,6 +166,7 @@ export class ModuleArea extends ModuleObject {
   restrictMode: number;
 
   spellInstances: SpellCastInstance[] = [];
+  textSprites: TextSprite3D[] = [];
 
   constructor(name = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
@@ -325,6 +327,19 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
+    for(let i = 0, textSpriteCount = this.textSprites.length; i < textSpriteCount; i++){
+      this.textSprites[i].update(delta);
+    }
+
+    let textSpriteIndex = this.textSprites.length;
+    while(textSpriteIndex--){
+      const textSprite = this.textSprites[textSpriteIndex];
+      if(textSprite && textSprite.expired){
+        textSprite.dispose();
+        this.textSprites.splice(textSpriteIndex, 1);
+      }
+    }
+
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
 
@@ -393,6 +408,12 @@ export class ModuleArea extends ModuleObject {
     if(!spellInstance) return;
     GameState.group.spell_instances.add(spellInstance.container);
     this.spellInstances.push(spellInstance);
+  }
+
+  attachTextSprite3D(sprite: TextSprite3D){
+    if(!sprite) return;
+    GameState.group.effects.add(sprite.container);
+    this.textSprites.push(sprite);
   }
 
   updateRoomVisibility(delta: number = 0){
