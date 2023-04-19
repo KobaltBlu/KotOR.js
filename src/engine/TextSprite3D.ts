@@ -93,6 +93,8 @@ export class TextSprite3D {
     TextureLoader.enQueue('fnt_console', this.text.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
       this.text.texture = texture;
       this.text.material.transparent = true;
+      this.text.material.uniforms.alphaTest.value = 0;
+      this.text.material.uniformsNeedUpdate = true;
       this.buildText();
       this.ready = true;
     });
@@ -112,11 +114,11 @@ export class TextSprite3D {
       const size = new THREE.Vector3(0, 0, 0);
       this.text.geometry.boundingBox.getSize(size);
       // this.text.mesh.position.x = -(size.y/2);
-      this.text.mesh.position.x = -(size.x/2) * this.scale;
+      // this.text.mesh.position.x = -(size.x/2) * this.scale;
     }
     
-    this.currentTimer -= (delta * 1000);
     if(this.currentTimer <= 0){
+      this.currentTimer = 0;
       this.expired = true;
       this.text.material.uniforms.opacity.value = 0;
     }else{
@@ -125,6 +127,7 @@ export class TextSprite3D {
       // this.container.position.y += this.force.y * speed;
       // this.container.position.z += this.force.z * speed;
       this.text.material.uniforms.opacity.value = (this.currentTimer/this.timer);
+      this.currentTimer -= (delta * 1000);
     }
   }
 
