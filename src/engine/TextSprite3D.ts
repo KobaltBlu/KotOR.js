@@ -14,8 +14,13 @@ const box = { min: [0, 0], max: [0, 0] }
 
 export class TextSprite3D {
 
+  static HEIGHT: number = 0.1;
+
   container: THREE.Object3D = new THREE.Object3D();
   area: ModuleArea;
+  owner: ModuleObject;
+  target: ModuleObject;
+
   text: GUIControlText;
   color: THREE.Color = new THREE.Color(1, 1, 1);
 
@@ -40,6 +45,9 @@ export class TextSprite3D {
       break;
       case TextSprite3DType.HOSTILE:
         this.color.setRGB(1, 0, 0);
+      break;
+      case TextSprite3DType.INFORMATION:
+        this.color.setRGB(0.5, 0, 0.5);
       break;
       default:
         this.color.setRGB(1, 1, 1);
@@ -103,6 +111,10 @@ export class TextSprite3D {
     });
     
     this.container.add(this.text.mesh);
+  }
+
+  setTimer(timer: number = 3000){
+    this.currentTimer = this.timer = timer;
   }
 
   update(delta: number = 0){
@@ -395,11 +407,13 @@ export class TextSprite3D {
     this.container.removeFromParent();
   }
 
-  static CreateOnObject(object: ModuleObject, text: string = '', type: TextSprite3DType = TextSprite3DType.NEUTRAL){
+  static CreateOnObject(object: ModuleObject, text: string = '', type: TextSprite3DType = TextSprite3DType.NEUTRAL, timer: number = 3000){
     if(!object) return;
 
     if(object.area){
       const textSprite = new TextSprite3D(text, type);
+      textSprite.setTimer(timer);
+      textSprite.owner = object;
       const reticleNode = object.getReticleNode();
       if(reticleNode){
         reticleNode.getWorldPosition(textSprite.container.position);

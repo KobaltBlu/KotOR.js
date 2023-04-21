@@ -325,16 +325,19 @@ export class CombatRound {
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
               if(hits){
                 combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
                 this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                 this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
                 this.currentAttack++;
               }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
                 this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                 this.currentAttack++;
               }
             }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
               this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
               this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
               this.currentAttack++;
@@ -353,16 +356,19 @@ export class CombatRound {
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
               if(hits){
                 combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
                 this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                 this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
                 this.currentAttack++;
               }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
                 this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                 this.currentAttack++;
               }
             }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
               this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
               this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
               this.currentAttack++;
@@ -383,16 +389,19 @@ export class CombatRound {
                   let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
                   if(hits){
                     combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                    this.attackList[this.currentAttack].reactObject = combatAction.target;
                     this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
                     this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                     this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
                     this.currentAttack++;
                   }else{
+                    this.attackList[this.currentAttack].reactObject = combatAction.target;
                     this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
                     this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                     this.currentAttack++;
                   }
                 }else{
+                  this.attackList[this.currentAttack].reactObject = combatAction.target;
                   this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
                   this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                   this.currentAttack++;
@@ -412,16 +421,19 @@ export class CombatRound {
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC()
               if(hits){
                 combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
                 this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                 this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
                 this.currentAttack++;
               }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
                 this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                 this.currentAttack++;
               }
             }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
               this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
               this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
               this.currentAttack++;
@@ -437,16 +449,19 @@ export class CombatRound {
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
               if(hits){
                 combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
                 this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                 this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
                 this.currentAttack++;
               }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
                 this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                 this.currentAttack++;
               }
             }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
               this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
               this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
               this.currentAttack++;
@@ -462,16 +477,19 @@ export class CombatRound {
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
               if(hits){
                 combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
                 this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
                 this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
                 this.currentAttack++;
               }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
                 this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
                 this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
                 this.currentAttack++;
               }
             }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
               this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
               this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
               this.currentAttack++;
@@ -521,10 +539,10 @@ export class CombatRound {
             attack.attackResult == AttackResult.AUTOMATIC_HIT 
           ){
             attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
-            const floatingText = TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE);
+            const floatingText = TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
             floatingText.container.position.z += 0.25 + (0.1 * i);
           }else if(attack.attackResult == AttackResult.MISS){
-            const floatingText = TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL);
+            const floatingText = TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
             floatingText.container.position.z += 0.25 + (0.1 * i);
           }
         }
@@ -542,7 +560,7 @@ export class CombatRound {
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
     if(attackKey == 'm'){
-      if(this.engaged){
+      if(this.engaged && !this.attacksIncludeKillingBlow()){
         attackKey = 'c';
         attackType = Math.round(Math.random()*4)+1;
       }
@@ -595,7 +613,7 @@ export class CombatRound {
             combatAction.target.animationState.index == ModuleCreatureAnimState.READY
           ){
             if(combatAction.target.combatData.lastAttackTarget == creature && combatAction.target instanceof ModuleCreature){
-              if(combatAction.target instanceof ModuleCreature){
+              if(!this.attacksIncludeKillingBlow() && combatAction.target instanceof ModuleCreature){
                 combatAction.target.playTwoDAAnimation( combatAction.target.getDamageAnimation( combatAction.animationName ) );
                 combatAction.target.animationState.index = ModuleCreatureAnimState.DAMAGE;
               }
@@ -616,7 +634,7 @@ export class CombatRound {
             combatAction.target.animationState.index == ModuleCreatureAnimState.READY
           ){
             if(combatAction.target.combatData.lastAttackTarget == creature){
-              if(combatAction.target instanceof ModuleCreature){
+              if(!this.attacksIncludeKillingBlow() && combatAction.target instanceof ModuleCreature){
                 combatAction.target.playTwoDAAnimation( combatAction.target.getDodgeAnimation( combatAction.animationName ) );
                 combatAction.target.animationState.index = ModuleCreatureAnimState.DODGE;
               }
@@ -630,6 +648,8 @@ export class CombatRound {
 
   calculateTwoWeaponPenalty(creature: ModuleCreature, weapon: ModuleItem, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
     let penalty = 0;
+    if(!creature) return penalty;
+    if(creature.isSimpleCreature()) return penalty;
     if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
       if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_FIGHTING)){
         penalty += 6;
@@ -661,6 +681,13 @@ export class CombatRound {
       }
     }
     return penalty;
+  }
+
+  attacksIncludeKillingBlow(){
+    for(let i = 0; i < 5; i++){
+      if(this.attackList[i].killingBlow) return true;
+    }
+    return false;
   }
 
   toStruct(structIdx: number = 0xCADA){

@@ -29,7 +29,7 @@ export class CombatAttackData {
   rangedTargetY: number = 0;
   rangedTargetZ: number = 0;
   damageList: CombatAttackDamage[] = new Array(15);
-  killingBlow: number = 0;
+  killingBlow: boolean = false;
   coupDeGrace: boolean = false;
   criticalThreat: number = 0;
   attackDeflected: number = 0;
@@ -60,7 +60,7 @@ export class CombatAttackData {
       if( 
         creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
         creature.getHasFeat(CombatFeatType.POWER_BLAST)
-       ){
+      ){
         this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
       }
 
@@ -94,6 +94,11 @@ export class CombatAttackData {
     if(this.attackWeapon.getWeaponType() == 1){
       this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
     }
+
+    if(this.getTotalDamage() >= this.reactObject.getHP()){
+      this.killingBlow = true;
+    }
+
   }
 
   calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
@@ -156,7 +161,10 @@ export class CombatAttackData {
   }
 
   reset(){
+    this.killingBlow = false;
+    this.reactObject = undefined;
     this.attackWeapon = undefined;
+    this.attackResult = AttackResult.MISS;
     for(let i = 0; i < this.damageList.length; i++){
       this.damageList[i].reset();
     }
