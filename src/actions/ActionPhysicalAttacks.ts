@@ -1,4 +1,5 @@
 import { Action, ActionMoveToPoint, ActionQueue } from ".";
+import { CombatRound } from "../combat";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -87,7 +88,7 @@ export class ActionPhysicalAttacks extends Action {
 
             if( !combatRound.engaged ){ //non dueling round
               combatRound.beginCombatRound();
-              combatRound.pauseRound(this.owner, combatRound.roundLength);
+              combatRound.pauseRound(this.owner, CombatRound.ROUND_LENGTH);
               if(combatRound.action){
                 combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
               }
@@ -97,12 +98,12 @@ export class ActionPhysicalAttacks extends Action {
               if(combatRound.action){
                 combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
               }
-              combatRound.pauseRound(this.owner, combatRound.roundLength);
+              combatRound.pauseRound(this.owner, CombatRound.ROUND_LENGTH);
 
               if(combatRound.master){
                 if(this.target instanceof ModuleCreature){
                   this.target.combatRound.beginCombatRound();
-                  this.target.combatRound.pauseRound(this.owner, combatRound.roundLength);
+                  this.target.combatRound.pauseRound(this.owner, CombatRound.ROUND_LENGTH/2);
                   if(this.target.combatRound.action){
                     this.target.combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
                   }
