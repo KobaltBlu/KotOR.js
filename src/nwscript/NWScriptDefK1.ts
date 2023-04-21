@@ -4650,7 +4650,9 @@ NWScriptDefK1.Actions = {
               baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
               baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
             ){
-              if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
+              if(!weapon){
+                weapon = item;
+              }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                 weapon = item;
               }
             }
@@ -4709,7 +4711,9 @@ NWScriptDefK1.Actions = {
               baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
               baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
             ){
-              if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
+              if(!weapon){
+                weapon = item;
+              }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon._baseItem.dieToRoll * weapon._baseItem.numDice)){
                 weapon = item;
               }
             }
