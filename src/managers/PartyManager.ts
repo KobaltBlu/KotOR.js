@@ -19,6 +19,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { GameEngineType } from "../KotOR";
 
 /* @file
  * The PartyManager class.
@@ -356,6 +357,27 @@ export class PartyManager {
 
   }
 
+  static GrantXPToActiveParty(amount: number = 0){
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const member = PartyManager.party[i];
+
+      if(!member.isPlayer){
+        let scale = 1;
+        const npcTable = TwoDAManager.datatables.get('npc');
+        if(npcTable){
+          const npcRow = npcTable.rows[member.partyID];
+          if(npcRow){
+            scale = TwoDAObject.normalizeValue(npcRow.percentxp, 'number', 100) as number / 100;
+          }
+        }
+        member.addXP(amount * scale);
+      }else{
+        member.addXP(amount);
+      }
+
+    }
+  }
+
   //Get the creatures reference in the CurrentMembers array
   // static GetCreatureMemberDetails( creature: ModuleObject ){
   //   if(creature instanceof ModulePlayer){
@@ -562,10 +584,6 @@ export class PartyManager {
     return GameState.module.area.getNearestWalkablePoint(targetPos);
   }
 
-  static GiveXP( amount = 0){
-
-  }
-
   static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){
     return new Promise<void>( async (resolve, reject) => {
       if(template instanceof GFFObject){
@@ -608,32 +626,29 @@ export class PartyManager {
   public static GetNPCResRefById(nId: number){
     switch(nId){
       case 0:
-        return 'p_bastilla'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_bastilla' : 'p_atton';
       case 1:
-        return 'p_cand'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_cand' : 'p_baodur';
       case 2:
-        return 'p_carth'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_carth' : 'p_cand';
       case 3:
-        return 'p_hk47'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_hk47' : 'p_g0t0';
       case 4:
-        return 'p_jolee'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_jolee' : 'p_handmaiden';
       case 5:
-        return 'p_juhani'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_juhani' : 'p_hk47';
       case 6:
-        return 'p_mission'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_mission' : 'p_kreia';
       case 7:
-        return 'p_t3m4'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_t3m4' : 'p_mira';
       case 8:
-        return 'p_zaalbar'
-      break;
+        return GameState.GameKey == GameEngineType.KOTOR ? 'p_zaalbar' : 'p_t3m4';
+      case 9:
+        return GameState.GameKey == GameEngineType.KOTOR ? '' : 'p_visas';
+      case 10:
+        return GameState.GameKey == GameEngineType.KOTOR ? '' : 'p_hanharr';
+      case 11:
+        return GameState.GameKey == GameEngineType.KOTOR ? '' : 'p_disciple';
     }
     return '';
   }

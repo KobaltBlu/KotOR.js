@@ -67,6 +67,7 @@ import { ResourceLoader } from "../resource/ResourceLoader";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { CombatRound } from "../combat";
+import { SWRuleSet } from "../engine/rules/SWRuleSet";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -1379,7 +1380,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       effect.setInt(5, args[2]);
       return effect.initialize();
     }
@@ -1411,7 +1412,7 @@ NWScriptDefK1.Actions = {
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
       effect.setInt(2, args[2]);
-      effect.setInt(3, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(3, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -1455,7 +1456,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -4175,7 +4176,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5165,7 +5166,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5194,7 +5195,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       effect.setInt(5, args[2]);
       return effect.initialize();
     }
@@ -5224,7 +5225,7 @@ NWScriptDefK1.Actions = {
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
       effect.setInt(2, args[2]);
-      effect.setInt(3, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(3, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5239,7 +5240,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5476,7 +5477,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
-      effect.setInt(1, TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(1, SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -7462,7 +7463,7 @@ NWScriptDefK1.Actions = {
       let count = TwoDAManager.datatables.get('plot').RowCount;
       for(let i = 0; i < count; i++){
         if(TwoDAManager.datatables.get('plot').rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
-          PartyManager.GiveXP( parseInt(TwoDAManager.datatables.get('plot').rows[i]) * (args[1] * 0.01) );
+          PartyManager.GrantXPToActiveParty( parseInt(TwoDAManager.datatables.get('plot').rows[i]) * (args[1] * 0.01) );
         }
       }
     }

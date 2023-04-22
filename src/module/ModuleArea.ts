@@ -327,8 +327,21 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
+    const textSpriteIndexer = new Map();
     for(let i = 0, textSpriteCount = this.textSprites.length; i < textSpriteCount; i++){
-      this.textSprites[i].update(delta);
+      const sprite = this.textSprites[i];
+      if(!sprite) continue;
+
+      if(!textSpriteIndexer.has(sprite.owner.id)){
+        textSpriteIndexer.set(sprite.owner.id, 0);
+      }
+      const index = textSpriteIndexer.get(sprite.owner.id);
+
+      sprite.container.position.copy(sprite.position);
+      sprite.container.position.z = sprite.position.z + (0.1 * index);
+
+      sprite.update(delta);
+      textSpriteIndexer.set(sprite.owner.id, index + 1);
     }
 
     let textSpriteIndex = this.textSprites.length;

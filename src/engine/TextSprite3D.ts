@@ -36,6 +36,7 @@ export class TextSprite3D {
   ready: boolean = false;
   expired: boolean = false;
   disposed: boolean = false;
+  position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
   constructor( text: string = '', type: TextSprite3DType = TextSprite3DType.NEUTRAL ){
 
@@ -418,10 +419,16 @@ export class TextSprite3D {
       if(reticleNode){
         reticleNode.getWorldPosition(textSprite.container.position);
       }
+      textSprite.container.position.z += 0.25;
+      textSprite.setInitialPosition(textSprite.container.position);
       textSprite.addToArea(object.area);
       return textSprite;
     }
 
+  }
+
+  setInitialPosition(position: THREE.Vector3) {
+    this.position.copy(position);
   }
 
 }

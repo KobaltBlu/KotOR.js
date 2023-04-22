@@ -214,7 +214,12 @@ export class TwoDAObject {
   }
 
   getCellByRowAndColumnIndex(rowIndex: number = 0, columnIndex: number = 0){
-    
+    const row = this.rows[rowIndex];
+    if(!row) return undefined;
+    if(columnIndex < 0 || columnIndex >= this.columns.length) return undefined;
+
+    const col_name = this.columns[columnIndex];
+    return row[col_name];
   }
 
   static cellParser(cell: any){

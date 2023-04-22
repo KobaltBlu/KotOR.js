@@ -52,6 +52,10 @@ import { CombatRoundAction } from "../combat";
 import { CombatActionType } from "../enums/combat/CombatActionType";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { CombatFeatType } from "../enums/combat/CombatFeatType";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import { GameEngineType } from "../enums/engine/GameEngineType";
+import { TextSprite3D } from "../KotOR";
+import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
 
 /* @file
  * The ModuleCreature class.
@@ -128,7 +132,7 @@ export class ModuleCreature extends ModuleObject {
   ssf: SSFObject;
   joiningXP: any;
   skillPoints: any;
-  partyID: number;
+  partyID: number = -1;
   // appearance: any;
 
   animationState: CreatureAnimationState;
@@ -2147,6 +2151,30 @@ export class ModuleCreature extends ModuleObject {
     
   }
 
+  getDeathXP( attacker: ModuleObject ){
+    if(!(attacker instanceof ModuleCreature)) return 0;
+
+    const xpTable = TwoDAManager.datatables.get('xptable');
+    if(xpTable){
+      const raw = xpTable.getCellByRowAndColumnIndex(attacker.getTotalClassLevel() - 1, this.getTotalClassLevel() + 1);
+      const xp = TwoDAObject.normalizeValue(raw, 'number', 0) as number;
+
+      let scale = 1;
+      const npcTable = TwoDAManager.datatables.get('npc');
+      if(npcTable){
+        const npcGeneralRowID = attacker.partyID >= 0 ? attacker.partyID : ( GameState.GameKey == GameEngineType.KOTOR ? 9 : 13 );
+        const npcRow = npcTable.rows[npcGeneralRowID];
+        if(npcRow){
+          scale = TwoDAObject.normalizeValue(npcRow.percentxp, 'number', 100) as number / 100;
+        }
+      }
+
+      return xp * scale;
+    }
+
+    return 0;
+  }
+
   //---------------//
   // SCRIPT EVENTS
   //---------------//
@@ -2169,6 +2197,12 @@ export class ModuleCreature extends ModuleObject {
     if(this.scripts.onDeath instanceof NWScriptInstance){
       let instance = this.scripts.onDeath.nwscript.newInstance();
       instance.run(this);
+    }
+
+    const deathXP = this.getDeathXP(this.combatData.lastDamager);
+    if(PartyManager.party.indexOf(this) == -1){
+      TextSprite3D.CreateOnObject(this, `${deathXP} XP`, TextSprite3DType.INFORMATION, 1500);
+      PartyManager.GrantXPToActiveParty(deathXP);
     }
   }
 

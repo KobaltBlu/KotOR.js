@@ -539,11 +539,9 @@ export class CombatRound {
             attack.attackResult == AttackResult.AUTOMATIC_HIT 
           ){
             attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
-            const floatingText = TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
-            floatingText.container.position.z += 0.25 + (0.1 * i);
+            TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
           }else if(attack.attackResult == AttackResult.MISS){
-            const floatingText = TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
-            floatingText.container.position.z += 0.25 + (0.1 * i);
+            TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
           }
         }
       }
