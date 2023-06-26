@@ -95,19 +95,7 @@ export class ModuleArea extends ModuleObject {
   LightingScheme = 0;
   LoadScreenID = 0;
 
-  Map = {
-    MapPt1X: 0.0,
-    MapPt1Y: 0.0,
-    MapPt2X: 0.0,
-    MapPt2Y: 0.0,
-    MapResX: 0,
-    MapZoom: 1,
-    NorthAxis: 3,
-    WorldPt1X: 0.0,
-    WorldPt1Y: 0.0,
-    WorldPt2X: 0.0,
-    WorldPt2Y: 0.0
-  }
+  areaMap: AreaMap;
 
   ModListenCheck = 0;
   ModSpotCheck = 0;
@@ -524,20 +512,9 @@ export class ModuleArea extends ModuleObject {
     this.LoadScreenID = this.are.GetFieldByLabel('LoadScreenID').GetValue();
 
     let map = this.are.GetFieldByLabel('Map').GetChildStructs()[0];
-
-    this.Map = {
-      MapPt1X: map.GetFieldByLabel('MapPt1X').GetValue(),
-      MapPt1Y: map.GetFieldByLabel('MapPt1Y').GetValue(),
-      MapPt2X: map.GetFieldByLabel('MapPt2X').GetValue(),
-      MapPt2Y: map.GetFieldByLabel('MapPt2Y').GetValue(),
-      MapResX: map.GetFieldByLabel('MapResX').GetValue(),
-      MapZoom: map.GetFieldByLabel('MapZoom').GetValue(),
-      NorthAxis: map.GetFieldByLabel('NorthAxis').GetValue(),
-      WorldPt1X: map.GetFieldByLabel('WorldPt1X').GetValue(),
-      WorldPt1Y: map.GetFieldByLabel('WorldPt1Y').GetValue(),
-      WorldPt2X: map.GetFieldByLabel('WorldPt2X').GetValue(),
-      WorldPt2Y: map.GetFieldByLabel('WorldPt2Y').GetValue()
-    };
+    if(map){
+      this.areaMap = AreaMap.FromStruct(map);
+    }
 
     if(this.are.RootNode.HasField('MiniGame')){
       this.miniGame = new ModuleMiniGame(
@@ -618,6 +595,7 @@ export class ModuleArea extends ModuleObject {
 
     //BEGIN GIT LOAD
 
+    let areaMap = this.git.GetFieldByLabel('AreaMap');
     let areaProps = this.git.GetFieldByLabel('AreaProperties');
     let areaEffects = this.git.GetFieldByLabel('AreaEffectList');
     let cameras = this.git.GetFieldByLabel('CameraList');
@@ -737,6 +715,14 @@ export class ModuleArea extends ModuleObject {
         }
         
         this.waypoints.push( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
+      }
+    }
+
+    //AreaMapData
+    if(areaMap){
+      const areaMapStruct = areaMap.GetChildStructs()[0];
+      if(areaMapStruct){
+        this.areaMap.loadDataStruct(areaMapStruct);
       }
     }
 
@@ -1731,21 +1717,8 @@ export class ModuleArea extends ModuleObject {
       new GFFField(GFFDataType.WORD, 'LoadScreenID', this.LoadScreenID)
     );
 
-    let mapStruct = new GFFStruct(14);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).SetValue(this.Map.MapPt1X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).SetValue(this.Map.MapPt1Y);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt2X') ).SetValue(this.Map.MapPt2X);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapPt2Y') ).SetValue(this.Map.MapPt2Y);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapResX') ).SetValue(this.Map.MapResX);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapZoom') ).SetValue(this.Map.MapZoom);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'NorthAxis') ).SetValue(this.Map.NorthAxis);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1X') ).SetValue(this.Map.WorldPt1X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1Y') ).SetValue(this.Map.WorldPt1Y);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2X') ).SetValue(this.Map.WorldPt2X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2Y') ).SetValue(this.Map.WorldPt2Y);
-
     let mapField = new GFFField(GFFDataType.STRUCT, 'Map');
-    mapField.AddChildStruct(mapStruct);
+    mapField.AddChildStruct(this.areaMap.export());
     are.RootNode.AddField(mapField);
 
 
@@ -1860,15 +1833,6 @@ export class ModuleArea extends ModuleObject {
 
   }
 
-  getAreaMapStruct(){
-    let struct = new GFFStruct();
-    struct.AddField( new GFFField(GFFDataType.VOID, 'AreaMapData') ).SetData(Buffer.alloc(20));
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'AreaMapDataSize') ).SetValue(20);
-    struct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResX') ).SetValue(15);
-    struct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResY') ).SetValue(8);
-    return struct;
-  }
-
   getAreaPropertiesStruct(){
     let struct = new GFFStruct();
     struct.AddField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).SetValue(this.audio.AmbientSndDay);
@@ -1913,7 +1877,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     let areaMapField = git.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
-    areaMapField.AddChildStruct( this.getAreaMapStruct() );
+    areaMapField.AddChildStruct( this.areaMap.exportData() );
 
     let areaPropertiesField = git.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'AreaProperties') );
     areaPropertiesField.AddChildStruct( this.getAreaPropertiesStruct() );

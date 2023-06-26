@@ -7,7 +7,7 @@ import { ActionType } from "../../../enums/actions/ActionType";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager } from "../../../gui";
+import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager, MiniMap } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CursorManager } from "../../../managers/CursorManager";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -136,6 +136,7 @@ export class InGameOverlay extends K1_InGameOverlay {
   declare BTN_ACTIONUP4: GUIButton;
   declare BTN_ACTIONDOWN4: GUIButton;
   declare LBL_ACTION4: GUIButton;
+  declare miniMap: MiniMap;
 
   constructor(){
     super();
@@ -174,6 +175,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       //this.LBL_MAPBORDER.hideBorder();
       this.LBL_MAP.hide();
       this.LBL_ARROW_MARGIN.hide();
+      this.miniMap = new MiniMap(this.LBL_MAPVIEW, this.LBL_ARROW);
 
       this.LBL_CMBTEFCTRED1.hide();
       this.LBL_CMBTEFCTINC1.hide();

@@ -1,3 +1,5 @@
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
 export class AreaMap {
@@ -64,6 +66,35 @@ export class AreaMap {
       this.mapResX = struct.GetFieldByLabel('AreaMapResX').GetValue();
       this.mapResY = struct.GetFieldByLabel('AreaMapResY').GetValue();
     }
+  }
+
+  export(): GFFStruct {
+    let mapStruct = new GFFStruct(14);
+
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).SetValue(this.mapPt1X);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).SetValue(this.mapPt1Y);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt2X') ).SetValue(this.mapPt2X);
+    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapPt2Y') ).SetValue(this.mapPt2Y);
+    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapResX') ).SetValue(this.mapResX);
+    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapZoom') ).SetValue(this.mapZoom);
+    mapStruct.AddField( new GFFField(GFFDataType.INT, 'NorthAxis') ).SetValue(this.northAxis);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1X') ).SetValue(this.worldPt1X);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1Y') ).SetValue(this.worldPt1Y);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2X') ).SetValue(this.worldPt2X);
+    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2Y') ).SetValue(this.worldPt2Y);
+
+    return mapStruct;
+  }
+
+  exportData(){
+    let dataStruct = new GFFStruct(14);
+
+    dataStruct.AddField( new GFFField(GFFDataType.VOID, 'AreaMapData') ).SetData(this.data);
+    dataStruct.AddField( new GFFField(GFFDataType.DWORD, 'AreaMapDataSize') ).SetValue(this.dataSize);
+    dataStruct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResX') ).SetValue(this.mapResX);
+    dataStruct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResY') ).SetValue(this.mapResY);
+    
+    return dataStruct;
   }
 
   static FromStruct( struct: GFFStruct ){

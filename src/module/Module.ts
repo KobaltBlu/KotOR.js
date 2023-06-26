@@ -408,6 +408,7 @@ export class Module {
       MenuManager.LoadScreen.setProgress(0);
 
       try{
+        MenuManager.InGameOverlay.miniMap.setAreaMap(this.area.areaMap);
         MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
         MenuManager.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
       }catch(e){
