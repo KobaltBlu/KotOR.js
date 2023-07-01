@@ -410,6 +410,7 @@ export class Module {
       try{
         MenuManager.InGameOverlay.miniMap.setAreaMap(this.area.areaMap);
         MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
+        MenuManager.MenuMap.miniMap.setAreaMap(this.area.areaMap);
         MenuManager.MenuMap.SetMapTexture('lbl_map'+this.Mod_Entry_Area);
       }catch(e){
         console.error(e);

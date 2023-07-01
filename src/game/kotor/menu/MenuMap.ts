@@ -4,11 +4,12 @@
 import * as THREE from "three";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_MapView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { MapMode } from "../../../enums/engine/MapMode";
 
 /* @file
 * The MenuMap menu class.
@@ -31,7 +32,7 @@ export class MenuMap extends GameMenu {
 
   onTransitScript: NWScriptInstance;
   transitScript: string;
-  texture: THREE.Texture;
+  miniMap: LBL_MapView;
 
   constructor(){
     super();
@@ -72,22 +73,38 @@ export class MenuMap extends GameMenu {
       this.onTransitScript = NWScript.Load('k_sup_gohawk');
       NWScript.SetGlobalScript('k_sup_guiopen', true);
       NWScript.SetGlobalScript('k_sup_gohawk', true);
+
+      this.miniMap = new LBL_MapView(this.LBL_Map);
+      this.miniMap.setControl(this.LBL_Map);
+      this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
+      this.miniMap.setMode(MapMode.FULLMAP);
+
       resolve();
     });
   }
 
-  SetMapTexture(sTexture = '') {
-    this.LBL_Map.setFillTextureName(sTexture).then( (texture: OdysseyTexture) => {
-      this.texture = texture;
-    });
+  Update(delta = 0) {
+    super.Update(delta);
+    if (!this.bVisible)
+      return;
+
+    if (!GameState.module.area.miniGame) {
+      const oPC = GameState.getCurrentPlayer();
+
+      //update minimap
+      this.miniMap.setPosition(oPC.position.x, oPC.position.y);
+      this.miniMap.setRotation(GameState.controls.camera.rotation.z);
+      this.miniMap.render(delta);
+    }
   }
 
-  Update(delta: number = 0): void {
-    super.Update(delta);
-    if(this.texture instanceof THREE.Texture){
-      this.texture.offset.set(0, 0);
-      this.texture.repeat.set(1, 1);
-      this.texture.updateMatrix();
+  SetMapTexture(sTexture = '') {
+    try {
+      TextureLoader.Load(sTexture, (texture: OdysseyTexture) => {
+        this.miniMap.setTexture(texture);
+      });
+    } catch (e: any) {
+      console.error(e);
     }
   }
 
@@ -96,12 +113,6 @@ export class MenuMap extends GameMenu {
     MenuManager.MenuTop.LBLH_MAP.onHoverIn();
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
-
-    if(this.texture instanceof THREE.Texture){
-      this.texture.offset.set(0, 0);
-      this.texture.repeat.set(1, 1);
-      this.texture.updateMatrix();
-    }
   }
 
   triggerControllerBumperLPress() {

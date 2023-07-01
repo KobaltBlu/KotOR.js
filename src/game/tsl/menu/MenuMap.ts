@@ -3,11 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GUILabel, GUIButton } from "../../../gui";
+import { MapMode } from "../../../enums/engine/MapMode";
+import { GUILabel, GUIButton, LBL_MapView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
-import * as THREE from "three";
 
 /* @file
 * The MenuMap menu class.
@@ -45,13 +45,13 @@ export class MenuMap extends K1_MenuMap {
         e.stopPropagation();
         this.Close();
       });
-      resolve();
-    });
-  }
 
-  SetMapTexture(sTexture = '') {
-    this.LBL_Map.setFillTextureName(sTexture).then( (texture: OdysseyTexture) => {
-      this.texture = texture;
+      this.miniMap = new LBL_MapView(this.LBL_Map);
+      this.miniMap.setControl(this.LBL_Map);
+      this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
+      this.miniMap.setMode(MapMode.FULLMAP);
+      
+      resolve();
     });
   }
   

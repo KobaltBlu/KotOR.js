@@ -4,7 +4,7 @@
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl, MiniMap } from "../../../gui";
+import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl, LBL_MapView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CursorManager } from "../../../managers/CursorManager";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -132,7 +132,7 @@ export class InGameOverlay extends GameMenu {
   BTN_TARGETUP2: GUIButton;
   BTN_TARGETDOWN2: GUIButton;
   LBL_TARGET2: GUIButton;
-  miniMap: MiniMap;
+  miniMap: LBL_MapView;
 
   constructor(){
     super();
@@ -164,7 +164,10 @@ export class InGameOverlay extends GameMenu {
       //this.LBL_MAPBORDER.hideBorder();
       this.LBL_MAP?.hide();
       this.LBL_ARROW_MARGIN?.hide();
-      this.miniMap = new MiniMap(this.LBL_MAPVIEW, this.LBL_ARROW);
+      this.LBL_ARROW?.hide();
+      this.miniMap = new LBL_MapView(this.LBL_MAPVIEW);
+      this.miniMap.setControl(this.LBL_MAPVIEW);
+      this.miniMap.setSize(120, 120);
 
       this.LBL_CMBTEFCTRED1?.hide();
       this.LBL_CMBTEFCTINC1?.hide();
@@ -471,9 +474,7 @@ export class InGameOverlay extends GameMenu {
 
   SetMapTexture(sTexture = '') {
     try {
-      (this.LBL_MAPVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
-      this.LBL_MAPVIEW.setFillTextureName(sTexture);
-      TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
+      TextureLoader.Load(sTexture, (texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
     } catch (e: any) {
@@ -691,7 +692,8 @@ export class InGameOverlay extends GameMenu {
 
       //update minimap
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
-      this.miniMap.setRotation(oPC.facing);
+      this.miniMap.setRotation(GameState.controls.camera.rotation.z);
+      this.miniMap.render(delta);
 
       this.TogglePartyMember(0, false);
       this.TogglePartyMember(1, false);
