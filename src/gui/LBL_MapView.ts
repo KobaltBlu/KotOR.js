@@ -7,6 +7,7 @@ import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { TextureLoader } from "../loaders/TextureLoader";
+import { ShaderManager } from "../managers/ShaderManager";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -35,12 +36,13 @@ export class LBL_MapView {
 
   mapGroup: THREE.Group = new THREE.Group();
   mapPlane: THREE.Mesh;
+  fogPlane: THREE.Mesh;
   arrowPlane: THREE.Mesh;
   fogGroup: THREE.Group = new THREE.Group();
-  fogTiles: { x: number; y: number; size: number; explored: boolean; mesh: THREE.Mesh; material: THREE.MeshBasicMaterial; }[] = [];
 
   mapTexture: OdysseyTexture;
   fogTexture: OdysseyTexture;
+
   arrowTexture: OdysseyTexture;
 
   areaMap: AreaMap;
@@ -94,6 +96,23 @@ export class LBL_MapView {
     this.mapPlane.position.set(0, 0, 0);
     this.mapGroup.add(this.mapPlane);
 
+    //FOG
+    const fogPlaneMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        ShaderManager.Shaders.get('odyssey-fow').getUniforms()
+      ]),
+      vertexShader: ShaderManager.Shaders.get('odyssey-fow').getVertex(),
+      fragmentShader: ShaderManager.Shaders.get('odyssey-fow').getFragment(),
+    });
+    fogPlaneMaterial.defines.USE_MAP = '';
+    fogPlaneMaterial.defines.USE_UV = '';
+    fogPlaneMaterial.defines.USE_ALPHAMAP = '';
+    fogPlaneMaterial.transparent = true;
+
+    this.fogPlane = new THREE.Mesh(mapPlaneGeometry, fogPlaneMaterial);
+    this.fogPlane.position.set(0, 0, 0);
+    this.scene.add(this.fogPlane);
+
     //ARROW
     const arrowPlaneMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF,
@@ -109,12 +128,11 @@ export class LBL_MapView {
     this.scene.add(this.fogGroup);
 
     TextureLoader.Load('blackdot', (texture: OdysseyTexture) => {
-      console.log('blackdot', texture);
+      fogPlaneMaterial.uniforms.map.value = texture;
       this.fogTexture = texture;
     });
 
     TextureLoader.Load('mm_barrow', (texture: OdysseyTexture) => {
-      console.log('mm_barrow', texture);
       this.arrowTexture = texture;
       (this.arrowPlane.material as THREE.MeshBasicMaterial).map = texture;
     });
@@ -172,138 +190,23 @@ export class LBL_MapView {
     const scaleSize = this.getMapTextureScaleSize();
     this.mapGroup.position.x = textureSize.width/2;
     this.mapGroup.position.y = textureSize.height/2;
+
+    this.fogPlane.scale.set(scaleSize.width, scaleSize.height, 1);
+    this.fogPlane.position.z = 5;
+    this.fogPlane.position.x = scaleSize.width/2;
+    this.fogPlane.position.y = scaleSize.height/2;
   }
 
   setAreaMap(areaMap: AreaMap){
     this.areaMap = areaMap;
     if(!this.areaMap) return;
 
-    const resX = this.areaMap.mapResX+1;
-    const resY = this.areaMap.mapResY+1;
-
-    const scaleSize = this.getMapTextureScaleSize();
-
-    const scaleX = scaleSize.width / this.areaMap.mapResX;
-    const scaleY = scaleSize.height / this.areaMap.mapResY;
-
-    while(this.fogTiles.length){
-      const tile = this.fogTiles[0];
-      tile.material.dispose();
-      tile.mesh.removeFromParent();
-      this.fogTiles.shift();
-    }
-
-    const stride = (areaMap.mapResX+1);
-    const totalBits = stride * (areaMap.mapResY+1);
-
-    let byteIndex = 0;
-    let y = 0;
-    let x = 0;
-    for(let i = 0; i < totalBits; i++){
-      let bitIndex = i % 8;
-      
-      const posX =       (x * (scaleX)),
-            posY = 256 - (y * (scaleY));
-      const explored = !!(areaMap.data[byteIndex] & 1 << bitIndex);
-  
-      const fogMaterial = new THREE.MeshBasicMaterial();
-      fogMaterial.map = this.fogTexture;
-      fogMaterial.color.setHex(0xFFFFFF);
-      fogMaterial.transparent = false;
-
-      const mesh = new THREE.Mesh(fogGeometry, fogMaterial);
-      mesh.position.set(posX, posY, 1);
-      mesh.scale.set(scaleX*2, scaleY*2, 1);
-
-      this.fogGroup.add(mesh);
-      mesh.visible = !explored;
-
-      this.fogTiles[i] = {
-        x: posX,
-        y: posY,
-        size: scaleX,
-        explored: !!explored,
-        material: fogMaterial,
-        mesh: mesh,
-      }
-      
-      x++;
-      if(!((i+1) % stride)){
-        y++;
-        x = 0;
-      }
-      
-      if(!((i+1) % 8)){
-        byteIndex++;
-      }
-    }
+    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
+    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
   }
 
   updateFog(){
     if(!this.areaMap) return;
-
-    const resX = this.areaMap.mapResX+1;
-    const resY = this.areaMap.mapResY+1;
-
-    const stride = resX;
-    const totalBits = stride * resY;
-
-    for(let i = 0, len = this.fogTiles.length; i < len; i++){
-      const tile = this.fogTiles[i];
-      if(tile){
-        tile.material.transparent = false;
-        tile.mesh.visible = true;
-      }
-    }
-
-    let byteIndex = 0;
-    let y = 0;
-    let x = 0;
-    for(let i = 0; i < totalBits; i++){
-      let bitIndex = i % 8;
-      const explored = !!(this.areaMap.data[byteIndex] & 1 << bitIndex);
-
-      const mTile = this.fogTiles[i];
-      if(mTile && explored){
-        const tlTile = this.fogTiles[(x-1) + ((y-1) * resX)];
-        if(tlTile) tlTile.material.transparent = explored;
-  
-        const tTile = this.fogTiles[x + ((y-1) * resX)];
-        if(tTile) tTile.material.transparent = explored;
-  
-        const trTile = this.fogTiles[(x+1) + ((y-1) * resX)];
-        if(trTile) trTile.material.transparent = explored;
-
-        const mlTile = this.fogTiles[(x-1) + (y * resX)];
-        if(mlTile) mlTile.material.transparent = explored;
-
-        mTile.material.transparent = explored;
-        mTile.mesh.visible = !explored;
-        
-        const mrTile = this.fogTiles[(x+1) + (y * resX)];
-        if(mrTile) mrTile.material.transparent = explored;
-  
-        const blTile = this.fogTiles[(x-1) + ((y+1) * resX)];
-        if(blTile) blTile.material.transparent = explored;
-  
-        const bTile = this.fogTiles[x + ((y+1) * resX)];
-        if(bTile) bTile.material.transparent = explored;
-  
-        const brTile = this.fogTiles[(x+1) + ((y+1) * resX)];
-        if(brTile) brTile.material.transparent = explored;
-      }
-      
-      x++;
-      if(!((i+1) % stride)){
-        y++;
-        x = 0;
-      }
-      
-      if(!((i+1) % 8)){
-        byteIndex++;
-      }
-    }
-
   }
 
   render(delta: number = 0){
@@ -321,7 +224,8 @@ export class LBL_MapView {
 
     const scaleSize = this.getMapTextureScaleSize();
     
-    const mapPos = this.toMapCoordinates(this.position.x, this.position.y);
+    this.areaMap.revealPosition(this.position.x, this.position.y);
+    const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
     this.currentCamera.position.x = (scaleSize.width * mapPos.x);
     this.currentCamera.position.y = (scaleSize.height * mapPos.y);
     const minX = this.width/2;
@@ -347,7 +251,6 @@ export class LBL_MapView {
     }
 
     if(this.arrowPlane){
-      const mapPos = this.toMapCoordinates(this.position.x, this.position.y);
       this.arrowPlane.position.set(
         (scaleSize.width * mapPos.x) + 4,
         (scaleSize.height * mapPos.y) + 4, 
@@ -382,7 +285,6 @@ export class LBL_MapView {
   }
 
   getMapTextureScaleSize(): { width: number, height: number } {
-
     let width = 440;
     let height = 256;
 
@@ -407,49 +309,6 @@ export class LBL_MapView {
     }
 
     return { width: texWidth, height: texHeight };
-  }
-
-  toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
-    let scaleX = 0, scaleY = 0;
-    switch(this.areaMap.northAxis){
-      case MapNorthAxis.NORTH: //end_m01aa
-        {
-          scaleY = (this.areaMap.mapPt1Y - this.areaMap.mapPt2Y) / (this.areaMap.worldPt1Y - this.areaMap.worldPt2Y);
-          scaleX = (this.areaMap.mapPt1X - this.areaMap.mapPt2X) / (this.areaMap.worldPt1X - this.areaMap.worldPt2X);
-
-          this._mapCoordinates.x = (( x - this.areaMap.worldPt1X) * scaleX) + this.areaMap.mapPt1X;
-          this._mapCoordinates.y = 1 - (((y - this.areaMap.worldPt1Y) * scaleY) + this.areaMap.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.SOUTH:
-        {
-          scaleY = (this.areaMap.mapPt1Y - this.areaMap.mapPt2Y) / (this.areaMap.worldPt1Y - this.areaMap.worldPt2Y);
-          scaleX = (this.areaMap.mapPt1X - this.areaMap.mapPt2X) / (this.areaMap.worldPt1X - this.areaMap.worldPt2X);
-
-          this._mapCoordinates.x = (((x - this.areaMap.worldPt1X) * scaleX) + this.areaMap.mapPt1X);
-          this._mapCoordinates.y = (((y - this.areaMap.worldPt1Y) * scaleY) + this.areaMap.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.EAST:
-        {
-          scaleX = (this.areaMap.mapPt1Y - this.areaMap.mapPt2Y) / (this.areaMap.worldPt1X - this.areaMap.worldPt2X);
-			    scaleY = (this.areaMap.mapPt1X - this.areaMap.mapPt2X) / (this.areaMap.worldPt1Y - this.areaMap.worldPt2Y);
-
-          this._mapCoordinates.x = (((y - this.areaMap.worldPt1Y) * scaleY) + this.areaMap.mapPt1X);
-          this._mapCoordinates.y = (((x - this.areaMap.worldPt1X) * scaleX) + this.areaMap.mapPt1Y);
-        }
-      break;
-      case MapNorthAxis.WEST: //end_m01ab
-        {
-          scaleX = (this.areaMap.mapPt1Y - this.areaMap.mapPt2Y) / (this.areaMap.worldPt1X - this.areaMap.worldPt2X);
-			    scaleY = (this.areaMap.mapPt1X - this.areaMap.mapPt2X) / (this.areaMap.worldPt1Y - this.areaMap.worldPt2Y);
-
-          this._mapCoordinates.x = (((y - this.areaMap.worldPt1Y) * scaleY) + this.areaMap.mapPt1X);
-          this._mapCoordinates.y = 1 - (((x - this.areaMap.worldPt1X) * scaleX) + this.areaMap.mapPt1Y);
-        }
-      break;
-    }
-    return this._mapCoordinates;
   }
 
   setPosition(x: number, y: number){

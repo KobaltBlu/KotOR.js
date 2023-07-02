@@ -10,6 +10,7 @@ import { ShaderOdysseyModel } from "../shaders/ShaderOdysseyModel";
 import { ShaderGrass } from "../shaders/ShaderGrass";
 import { ShaderGUIVoid } from "../shaders/ShaderGUIVoid";
 import { ShaderGUIBackground } from "../shaders/ShaderGUIBackground";
+import { ShaderFogOfWar } from "../shaders/ShaderFogOfWar";
 
 export class ShaderManager {
 
@@ -36,3 +37,4 @@ ShaderManager.AddShader(new ShaderOdysseyEmitter());
 ShaderManager.AddShader(new ShaderAuroraGUI());
 ShaderManager.AddShader(new ShaderGUIVoid());
 ShaderManager.AddShader(new ShaderGUIBackground());
+ShaderManager.AddShader(new ShaderFogOfWar());
