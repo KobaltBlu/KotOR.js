@@ -86,8 +86,8 @@ export class BaseItem {
       baseItem.name = TwoDAObject.normalizeValue(row.name, 'number', 0) as number;
     if(row.hasOwnProperty('label'))
       baseItem.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
-    if(row.hasOwnProperty('race'))
-      baseItem.equipableSlots = TwoDAObject.normalizeValue(row.race, 'number', 0) as number;
+    if(row.hasOwnProperty('equipableslots'))
+      baseItem.equipableSlots = TwoDAObject.normalizeValue(row.equipableslots, 'number', 0) as number;
     if(row.hasOwnProperty('walkdist'))
       baseItem.canRotateIcon = TwoDAObject.normalizeValue(row.walkdist, 'boolean', false) as boolean;
     if(row.hasOwnProperty('modeltype'))
