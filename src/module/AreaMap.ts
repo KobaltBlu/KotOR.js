@@ -292,6 +292,12 @@ export class AreaMap {
     this.fogAlphaTexture.needsUpdate = true;
   }
 
+  dispose(){
+    for(let i = 0; i < this.mapNotes.length; i++){
+      this.processEventListener('mapNoteRemoved', [this.mapNotes[i]]);
+    }
+  }
+
   export(): GFFStruct {
     let mapStruct = new GFFStruct(14);
 

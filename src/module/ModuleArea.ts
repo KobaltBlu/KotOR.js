@@ -164,6 +164,8 @@ export class ModuleArea extends ModuleObject {
 
   dispose(){
 
+    this.areaMap.dispose();
+
     //Clear room geometries
     while (this.rooms.length){
       this.rooms[0].destroy();
