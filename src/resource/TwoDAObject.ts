@@ -226,6 +226,11 @@ export class TwoDAObject {
       case 'number':
         if(typeof default_value === 'undefined') default_value = 0;
         if(value === '****') return default_value;
+
+        if(typeof value === 'string' && value.slice(0, 2) == '0x'){
+          return parseInt(value);
+        }
+        
         value = parseFloat(value);
         if(isNaN(value)) value = default_value;
         return value;
