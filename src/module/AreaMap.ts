@@ -3,6 +3,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
+import { ModuleWaypoint } from "./";
 
 export class AreaMap {
   data: Buffer;
@@ -25,8 +26,15 @@ export class AreaMap {
 
   _mapCoordinates: THREE.Vector2 = new THREE.Vector2(0, 0);
 
-  //MapWidth = 440;
-  //MapHeight = 256;
+  mapNotes: ModuleWaypoint[] = [];
+
+  eventListeners: {
+    mapNoteAdded: Function[],
+    mapNoteRemoved: Function[],
+  } = {
+    mapNoteAdded: [],
+    mapNoteRemoved: []
+  };
 
   constructor(){
     this.data = Buffer.alloc(4);
@@ -98,6 +106,24 @@ export class AreaMap {
     }
   }
 
+  addMapNote(note: ModuleWaypoint){
+    if(!note) return;
+    if(this.mapNotes.indexOf(note) >= 0) return;
+    if(!note.hasMapNote) return;
+
+    this.mapNotes.push(note);
+    this.processEventListener('mapNoteAdded', [note]);
+  }
+
+  removeMapNote(note: ModuleWaypoint){
+    if(!note) return;
+    const index = this.mapNotes.indexOf(note);
+    if(index >= 0){
+      this.mapNotes.splice(index, 1);
+      this.processEventListener('mapNoteRemoved', [note]);
+    }
+  }
+
   toMapCoordinates(x: number = 0, y: number = 0): THREE.Vector2 {
     let scaleX = 0, scaleY = 0;
     switch(this.northAxis){
@@ -139,6 +165,28 @@ export class AreaMap {
       break;
     }
     return this._mapCoordinates;
+  }
+
+  getRevealedMapNotes(){
+    return this.mapNotes.filter( (note) => {
+      return this.isMapPositionExplored(note.position.x, note.position.y);
+    })
+  }
+
+  isMapPositionExplored(x: number = 0, y: number = 0){
+    const resX = (this.mapResX+1);
+    const resY = (this.mapResY+1);
+
+    const mapPos = this.toMapCoordinates(x, y);
+    mapPos.x = THREE.MathUtils.clamp(mapPos.x, 0, 1);
+    mapPos.y = 1 - THREE.MathUtils.clamp(mapPos.y, 0, 1);
+
+    const gridX = Math.floor(resX * mapPos.x);
+    const gridY = Math.floor(resY * mapPos.y);
+    if(this.fogAlphaPixelData[(resX * gridY) + gridX] == 0){
+      return true;
+    }
+    return false;
   }
 
   revealPosition(x: number = 0, y: number = 0, radius: number = 0){
@@ -281,6 +329,37 @@ export class AreaMap {
     dataStruct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResY') ).SetValue(this.mapResY);
     
     return dataStruct;
+  }
+
+  addEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+    if(!(typeof callback === 'function')) return;
+
+    const list = this.eventListeners[name];
+    if(!Array.isArray(list)) return;
+
+    if(list.indexOf(callback) >= 0) return;
+    list.push(callback);
+  }
+
+  removeEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', callback: Function){
+    if(!(typeof callback === 'function')) return;
+
+    const list = this.eventListeners[name];
+    if(!Array.isArray(list)) return;
+
+    const index = list.indexOf(callback);
+    if(index == -1) return;
+
+    list.splice(index, 1);
+  }
+
+  processEventListener(name: 'mapNoteRemoved'|'mapNoteAdded', args: any[]){
+    const list = this.eventListeners[name];
+    if(!Array.isArray(list)) return;
+
+    for(let i = 0, len = list.length; i < len; i++){
+      list[i](...args);
+    }
   }
 
   static FromStruct( struct: GFFStruct ){

@@ -1,7 +1,7 @@
 import { GameState } from "../GameState";
-import { AreaMap } from "../module";
+import { AreaMap, ModuleWaypoint } from "../module";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
-import { GUIControl, GUILabel } from ".";
+import { GUIControl, GUILabel, MenuManager } from ".";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
@@ -12,7 +12,7 @@ import { ShaderManager } from "../managers/ShaderManager";
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
 
-const fogGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
+const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
 export class LBL_MapView {
   LBL_MAPVIEW: GUILabel;
@@ -38,10 +38,12 @@ export class LBL_MapView {
   mapPlane: THREE.Mesh;
   fogPlane: THREE.Mesh;
   arrowPlane: THREE.Mesh;
+  mapNotes: THREE.Mesh[] = [];
   fogGroup: THREE.Group = new THREE.Group();
 
   mapTexture: OdysseyTexture;
   fogTexture: OdysseyTexture;
+  noteTexture: OdysseyTexture;
 
   arrowTexture: OdysseyTexture;
 
@@ -51,7 +53,14 @@ export class LBL_MapView {
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   arrowAngle: number = 0;
 
+  mapNoteSize = 32;
+  mapNodeHoverScale = 0.75;
+  mapNoteDefaultScale = 0.5;
+  mapNoteSelected: ModuleWaypoint;
+  bounds: THREE.Box2 = new THREE.Box2();
+
   _mapCoordinates: THREE.Vector2 = new THREE.Vector2(0, 0);
+  mousePosition: THREE.Vector2 = new THREE.Vector2(0, 0);
   globalLight: THREE.AmbientLight;
 
   constructor(
@@ -87,12 +96,11 @@ export class LBL_MapView {
     this.scene.add(this.globalLight);
 
     //MAP
-    const mapPlaneGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     const mapPlaneMaterial = new THREE.MeshBasicMaterial({
       color: 0xFFFFFF
     });
 
-    this.mapPlane = new THREE.Mesh(mapPlaneGeometry, mapPlaneMaterial);
+    this.mapPlane = new THREE.Mesh(planeGeometry, mapPlaneMaterial);
     this.mapPlane.position.set(0, 0, 0);
     this.mapGroup.add(this.mapPlane);
 
@@ -109,7 +117,7 @@ export class LBL_MapView {
     fogPlaneMaterial.defines.USE_ALPHAMAP = '';
     fogPlaneMaterial.transparent = true;
 
-    this.fogPlane = new THREE.Mesh(mapPlaneGeometry, fogPlaneMaterial);
+    this.fogPlane = new THREE.Mesh(planeGeometry, fogPlaneMaterial);
     this.fogPlane.position.set(0, 0, 0);
     this.scene.add(this.fogPlane);
 
@@ -119,7 +127,7 @@ export class LBL_MapView {
       transparent: true,
     });
 
-    this.arrowPlane = new THREE.Mesh(mapPlaneGeometry, arrowPlaneMaterial);
+    this.arrowPlane = new THREE.Mesh(planeGeometry, arrowPlaneMaterial);
     this.arrowPlane.position.set(0, 0, 0);
     this.arrowPlane.scale.set(this.arrowSize, this.arrowSize, 0);
     this.scene.add(this.arrowPlane);
@@ -135,6 +143,10 @@ export class LBL_MapView {
     TextureLoader.Load('mm_barrow', (texture: OdysseyTexture) => {
       this.arrowTexture = texture;
       (this.arrowPlane.material as THREE.MeshBasicMaterial).map = texture;
+    });
+
+    TextureLoader.Load('whitetarget', (texture: OdysseyTexture) => {
+      this.noteTexture = texture;
     });
   }
 
@@ -203,6 +215,64 @@ export class LBL_MapView {
 
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
+
+    if(this.mode == MapMode.FULLMAP){
+      this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
+        const noteMaterial = new THREE.MeshBasicMaterial({
+          map: this.noteTexture,
+          transparent: true,
+          color: this.LBL_MAPVIEW.defaultColor
+        });
+
+        const noteMesh = new THREE.Mesh(planeGeometry, noteMaterial);
+        this.mapNotes.push(noteMesh);
+        this.scene.add(noteMesh);
+        noteMesh.userData.moduleObject = note;
+
+        const scaleSize = this.getMapTextureScaleSize();
+        const mapPos = this.areaMap.toMapCoordinates(note.position.x, note.position.y);
+        noteMesh.position.set(
+          (scaleSize.width * mapPos.x) + 4,
+          (scaleSize.height * mapPos.y) + 4, 
+          10
+        );
+        noteMesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
+        if(!this.mapNoteSelected) this.mapNoteSelected = note;
+      });
+
+      this.areaMap.addEventListener('mapNoteRemoved', (note: ModuleWaypoint) => {
+        let i = this.mapNotes.length;
+        while(i--){
+          const mesh = this.mapNotes[i];
+          if(!mesh) continue;
+
+          if(mesh.userData.moduleObject == note){
+            mesh.removeFromParent();
+            (mesh.material as THREE.MeshBasicMaterial).dispose();
+            this.mapNotes.splice(i, 1);
+          }
+        }
+      });
+    }
+  }
+
+  updateMousePosition(x: number = 0, y: number = 0){
+    this.mousePosition.set(x, y);
+  }
+
+  onClick(){
+    for(let i = 0, len = this.mapNotes.length; i < len; i++){
+      const mesh = this.mapNotes[i];
+      const note = mesh.userData.moduleObject;
+      if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
+        this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
+        this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
+        if(this.bounds.containsPoint(this.mousePosition)){
+          this.mapNoteSelected = note;
+          return note;
+        }
+      }
+    }
   }
 
   updateFog(){
@@ -257,6 +327,35 @@ export class LBL_MapView {
         10
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
+      if(this.mode == MapMode.FULLMAP){
+        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+      }
+    }
+
+    if(this.mode == MapMode.FULLMAP){
+      for(let i = 0, len = this.mapNotes.length; i < len; i++){
+        const mesh = this.mapNotes[i];
+        const material = mesh.material as THREE.MeshBasicMaterial;
+        const note = mesh.userData.moduleObject;
+        mesh.visible = note.mapNoteEnabled;
+        if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
+          this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
+          this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
+
+          if(this.mapNoteSelected == note){
+            material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
+            mesh.scale.set(this.mapNoteSize*this.mapNodeHoverScale, this.mapNoteSize*this.mapNodeHoverScale, 1);
+          }else if(this.bounds.containsPoint(this.mousePosition)){
+            material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
+            mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
+          }else{
+            material.color.copy(this.LBL_MAPVIEW.defaultColor);
+            mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
+          }
+        }else{
+          mesh.visible = false;
+        }
+      }
     }
 
     let oldClearColor = new THREE.Color();

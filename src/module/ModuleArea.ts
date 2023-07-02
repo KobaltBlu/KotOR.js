@@ -1303,6 +1303,7 @@ export class ModuleArea extends ModuleObject {
             }
           }
           wpObj.userData.area = _currentRoom;
+          this.areaMap.addMapNote(waypnt);
           asyncLoop.next();
         }
       });

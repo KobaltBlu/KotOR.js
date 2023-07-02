@@ -6,6 +6,8 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 import { MapMode } from "../../../enums/engine/MapMode";
 import { GUILabel, GUIButton, LBL_MapView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
+import { ModuleWaypoint } from "../../../module";
+import { CExoLocString } from "../../../resource/CExoLocString";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
 
@@ -40,6 +42,14 @@ export class MenuMap extends K1_MenuMap {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.LBL_MapNote.setText('');
+      this.LBL_Map.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        if(mapNote && mapNote.mapNote instanceof CExoLocString){
+          this.LBL_MapNote.setText(mapNote.mapNote.GetValue())
+        }
+      });
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {
         e.stopPropagation();
@@ -50,7 +60,7 @@ export class MenuMap extends K1_MenuMap {
       this.miniMap.setControl(this.LBL_Map);
       this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
       this.miniMap.setMode(MapMode.FULLMAP);
-      
+
       resolve();
     });
   }

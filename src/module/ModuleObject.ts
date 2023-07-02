@@ -179,9 +179,9 @@ export class ModuleObject {
   loadScreenID: any;
   locName: any;
   localizedName: any;
-  hasMapNote: any;
-  mapNote: any;
-  mapNoteEnabled: any;
+  hasMapNote: boolean;
+  mapNote: CExoLocString;
+  mapNoteEnabled: boolean;
   trapDetectable: any;
   trapDisarmable: any;
   trapOneShot: any;

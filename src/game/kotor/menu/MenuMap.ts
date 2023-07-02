@@ -10,6 +10,10 @@ import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MapMode } from "../../../enums/engine/MapMode";
+import { Mouse } from "../../../controls";
+import { ModuleWaypoint } from "../../../module";
+import { TLKManager } from "../../../KotOR";
+import { CExoLocString } from "../../../resource/CExoLocString";
 
 /* @file
 * The MenuMap menu class.
@@ -46,6 +50,15 @@ export class MenuMap extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
+      this.LBL_MapNote.setText('');
+      this.LBL_Map.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        if(mapNote && mapNote.mapNote instanceof CExoLocString){
+          this.LBL_MapNote.setText(mapNote.mapNote.GetValue())
+        }
+      });
+
       this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.MenuPartySelection.Open();
@@ -94,6 +107,10 @@ export class MenuMap extends GameMenu {
       //update minimap
       this.miniMap.setPosition(oPC.position.x, oPC.position.y);
       this.miniMap.setRotation(GameState.controls.camera.rotation.z);
+      this.miniMap.updateMousePosition(
+        Mouse.positionUI.x + (this.LBL_Map.extent.width/2)  + (this.LBL_Map.widget.position.x * -1),
+        Mouse.positionUI.y + (this.LBL_Map.extent.height/2) + (this.LBL_Map.widget.position.y * -1),
+      )
       this.miniMap.render(delta);
     }
   }
@@ -113,6 +130,12 @@ export class MenuMap extends GameMenu {
     MenuManager.MenuTop.LBLH_MAP.onHoverIn();
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
+
+    this.LBL_MapNote.setText('');
+    this.miniMap.mapNoteSelected = this.miniMap.areaMap.getRevealedMapNotes()[0];
+    if(this.miniMap.mapNoteSelected){
+      this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.GetValue());
+    }
   }
 
   triggerControllerBumperLPress() {
