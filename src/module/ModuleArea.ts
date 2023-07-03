@@ -380,6 +380,7 @@ export class ModuleArea extends ModuleObject {
       break;
       case EngineMode.INGAME:
       case EngineMode.FREELOOK:
+      default:
         let player = GameState.getCurrentPlayer();
         if(player && player.room){
           player.room.show(true);
