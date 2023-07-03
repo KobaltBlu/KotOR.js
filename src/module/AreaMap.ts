@@ -136,13 +136,13 @@ export class AreaMap {
           this._mapCoordinates.y = 1 - (((y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
         }
       break;
-      case MapNorthAxis.SOUTH:
+      case MapNorthAxis.SOUTH: //152HAR
         {
           scaleY = (this.mapPt1Y - this.mapPt2Y) / (this.worldPt1Y - this.worldPt2Y);
           scaleX = (this.mapPt1X - this.mapPt2X) / (this.worldPt1X - this.worldPt2X);
 
-          this._mapCoordinates.x = (((x - this.worldPt1X) * scaleX) + this.mapPt1X);
-          this._mapCoordinates.y = (((y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
+          this._mapCoordinates.y = ((( x - this.worldPt1X) * scaleX) + this.mapPt1X);
+          this._mapCoordinates.x = (((-y - this.worldPt1Y) * scaleY) + this.mapPt1Y);
         }
       break;
       case MapNorthAxis.EAST:
