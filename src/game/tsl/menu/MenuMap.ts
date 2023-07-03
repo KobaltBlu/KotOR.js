@@ -1,14 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { MapMode } from "../../../enums/engine/MapMode";
 import { GUILabel, GUIButton, LBL_MapView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
 import { ModuleWaypoint } from "../../../module";
 import { CExoLocString } from "../../../resource/CExoLocString";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
 
 /* @file
@@ -60,6 +56,7 @@ export class MenuMap extends K1_MenuMap {
       this.miniMap.setControl(this.LBL_Map);
       this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
       this.miniMap.setMode(MapMode.FULLMAP);
+      this.miniMap.scene.scale.setScalar(this.LBL_Map.extent.width/512);
 
       resolve();
     });
