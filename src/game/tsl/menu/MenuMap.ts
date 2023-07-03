@@ -51,6 +51,7 @@ export class MenuMap extends K1_MenuMap {
         e.stopPropagation();
         this.Close();
       });
+      this.BTN_RETURN.hide();
 
       this.miniMap = new LBL_MapView(this.LBL_Map);
       this.miniMap.setControl(this.LBL_Map);
