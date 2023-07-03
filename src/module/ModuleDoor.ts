@@ -83,7 +83,7 @@ export class ModuleDoor extends ModuleObject {
   useable: any;
   bodyBag: any;
 
-  
+  trans: THREE.Object3D;
   transitionLineMin: THREE.Vector3 = new THREE.Vector3(-2.5, 0, 0);
   transitionLineMax: THREE.Vector3 = new THREE.Vector3(2.5, 0, 0);
   transitionLine: THREE.Line3;
@@ -256,9 +256,24 @@ export class ModuleDoor extends ModuleObject {
     return (this.openState == ModuleDoorOpenState.OPEN1 || this.openState == ModuleDoorOpenState.OPEN2);
   }
 
+  updateCollisionState(): void {
+    switch(this.openState){
+      case ModuleDoorOpenState.DESTROYED:
+      case ModuleDoorOpenState.OPEN1:
+      case ModuleDoorOpenState.OPEN2:
+        GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
+      break;
+      default:
+        GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
+      break;
+    }
+  }
+
   setOpenState(openState: ModuleDoorOpenState = ModuleDoorOpenState.CLOSED){
     const currentOpenState = this.openState;
     this.openState = openState;
+
+    this.updateCollisionState();
 
     const wasClosed = (currentOpenState == ModuleDoorOpenState.CLOSED);
     const attemptingOpen = (openState == ModuleDoorOpenState.OPEN1 || openState == ModuleDoorOpenState.OPEN2);
@@ -464,7 +479,6 @@ export class ModuleDoor extends ModuleObject {
 
     if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
       this.collisionData.walkmesh.mesh.removeFromParent();
-      GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
     }
 
     this.setOpenState(ModuleDoorOpenState.CLOSED);
@@ -789,9 +803,12 @@ export class ModuleDoor extends ModuleObject {
           this.model.name = modelName;
           this.container.add(this.model);
 
-          let trans = this.model.getObjectByName('trans');
-          if(trans instanceof THREE.Object3D){
-            trans.visible = false;
+          this.trans = this.model.trans;
+          if(this.trans instanceof THREE.Object3D){
+            if(this.trans.children.length){
+              this.trans.children[0].userData.ignoreMousePicking = true;
+            }
+            this.trans.visible = false;
           }
 
           this.generateTransitionLine();
@@ -914,6 +931,8 @@ export class ModuleDoor extends ModuleObject {
         this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = ResRef;
         this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
+
+        this.updateCollisionState();
 
         if(typeof onLoad === 'function')
           onLoad(this.collisionData.walkmesh);
