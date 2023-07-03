@@ -56,21 +56,48 @@ export class AreaMap {
 
   init(){
     this.generateResY();
+    this.generateMapData();
   }
 
   setResX( mapResX = 0 ){
     this.mapResX = mapResX;
     this.generateResY();
+    this.generateMapData();
   }
 
   generateResY(){
-    this.mapResY = Math.floor((this.mapResX * 256) / 440);
+    this.mapResY = Math.max(1, Math.floor((this.mapResX * 256) / 440));
   }
 
   generateMapData(){
-    let dataSize = (this.mapResY + 1) * (this.mapResX + 1) / 33;
+    this.dataSize = (Math.ceil(((this.mapResX+1) * (this.mapResY+1)) / 32) * 32) / 8;
+    this.data = Buffer.alloc(this.dataSize);
+    this.generateAlphaTexture();
+  }
 
-    this.data = Buffer.alloc(dataSize);
+  generateAlphaTexture(){
+    const resX = this.mapResX+1;
+    const resY = this.mapResY+1;
+    this.fogAlphaPixelData = new Uint8Array(resX * resY);
+    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData, resX, resY, THREE.AlphaFormat);
+    this.fogAlphaTexture.minFilter = THREE.LinearFilter;
+    this.fogAlphaTexture.magFilter = THREE.LinearFilter;
+    this.fogAlphaTexture.flipY = true;
+    this.fogAlphaTexture.needsUpdate = true;
+
+    const stride = resX;
+    const totalBits = stride * resY;
+
+    let byteIndex = 0;
+    for(let i = 0; i < totalBits; i++){
+      const bitIndex = i % 8;
+      const explored = !!(this.data[byteIndex] & 1 << bitIndex);
+      this.fogAlphaPixelData[i * 1] = !explored ? 255 : 0;
+      
+      if(!((i+1) % 8)){
+        byteIndex++;
+      }
+    }
   }
 
   loadDataStruct( struct: GFFStruct ){
@@ -79,30 +106,7 @@ export class AreaMap {
       this.dataSize = struct.GetFieldByLabel('AreaMapDataSize').GetValue();
       this.mapResX = struct.GetFieldByLabel('AreaMapResX').GetValue();
       this.mapResY = struct.GetFieldByLabel('AreaMapResY').GetValue();
-
-      const resX = this.mapResX+1;
-      const resY = this.mapResY+1;
-
-      this.fogAlphaPixelData = new Uint8Array(resX * resY);
-      this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData, resX, resY, THREE.AlphaFormat);
-      this.fogAlphaTexture.minFilter = THREE.LinearFilter;
-      this.fogAlphaTexture.magFilter = THREE.LinearFilter;
-      this.fogAlphaTexture.flipY = true;
-      this.fogAlphaTexture.needsUpdate = true;
-
-      const stride = resX;
-      const totalBits = stride * resY;
-
-      let byteIndex = 0;
-      for(let i = 0; i < totalBits; i++){
-        const bitIndex = i % 8;
-        const explored = !!(this.data[byteIndex] & 1 << bitIndex);
-        this.fogAlphaPixelData[i * 1] = !explored ? 255 : 0;
-        
-        if(!((i+1) % 8)){
-          byteIndex++;
-        }
-      }
+      this.generateAlphaTexture();      
     }
   }
 
