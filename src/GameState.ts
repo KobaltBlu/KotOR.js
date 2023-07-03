@@ -409,25 +409,30 @@ export class GameState implements EngineContext {
 
     GameState.collisionList = [];
     GameState.walkmeshList = [];
+    const namedGroup = (name: string = 'na') => {
+      const group = new THREE.Group();
+      group.name = name;
+      return group;
+    }
     GameState.group = {
-      creatures: new THREE.Group(),
-      doors: new THREE.Group(),
-      placeables: new THREE.Group(),
-      rooms: new THREE.Group(),
-      grass: new THREE.Group(),
-      sounds: new THREE.Group(),
-      triggers: new THREE.Group(),
-      waypoints: new THREE.Group(),
-      party: new THREE.Group(),
-      lights: new THREE.Group(),
-      light_helpers: new THREE.Group(),
-      shadow_lights: new THREE.Group(),
-      path_helpers: new THREE.Group(),
-      emitters: new THREE.Group(),
-      effects: new THREE.Group(),
-      stunt: new THREE.Group(),
-      weather_effects: new THREE.Group(),
-      room_walkmeshes: new THREE.Group(),
+      creatures: namedGroup('creatures'),
+      doors: namedGroup('doors'),
+      placeables: namedGroup('placeables'),
+      rooms: namedGroup('rooms'),
+      grass: namedGroup('grass'),
+      sounds: namedGroup('sounds'),
+      triggers: namedGroup('triggers'),
+      waypoints: namedGroup('waypoints'),
+      party: namedGroup('party'),
+      lights: namedGroup('lights'),
+      light_helpers: namedGroup('light_helpers'),
+      shadow_lights: namedGroup('shadow_lights'),
+      path_helpers: namedGroup('path_helpers'),
+      emitters: namedGroup('emitters'),
+      effects: namedGroup('effects'),
+      stunt: namedGroup('stunt'),
+      weather_effects: namedGroup('weather_effects'),
+      room_walkmeshes: namedGroup('room_walkmeshes'),
     };
 
     GameState.weather_effects = [];
@@ -740,9 +745,25 @@ export class GameState implements EngineContext {
       return;
     }
 
+    let index = 0;
     if(intersects.length){
-      const intersection = intersects[0],
-          obj = intersection.object;
+
+      while(index < intersects.length){
+        const intersection = intersects[index],
+              obj = intersection.object;
+
+        if(obj.userData.ignoreMousePicking){
+          index++;
+          continue;
+        }
+
+        break;
+      }
+
+      const intersection = intersects[index],
+            obj = intersection?.object;
+
+      if(!intersection) return;
       
       let searching = true;
 
