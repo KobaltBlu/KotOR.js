@@ -53,6 +53,12 @@ export class MenuMap extends K1_MenuMap {
       });
       this.BTN_RETURN.hide();
 
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_EXIT;
+
       this.miniMap = new LBL_MapView(this.LBL_Map);
       this.miniMap.setControl(this.LBL_Map);
       this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
