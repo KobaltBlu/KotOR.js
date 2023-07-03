@@ -4768,7 +4768,12 @@ NWScriptDefK1.Actions = {
     comment: "403: Expose the entire map of oArea to oPlayer.\n",
     name: "ExploreAreaForPlayer",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(args[0] instanceof ModuleArea){
+        args[0].areaMap.revealEntireMap();
+      }
+    }
   },
   404:{
     comment: "404: The creature will equip the armour in its possession that has the highest\narmour class.\n",
@@ -5774,7 +5779,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [THREE.Vector3, number]){
-      //TODO
+      GameState.module.area.areaMap.revealPosition(args[0].x, args[0].y, args[1]);
     }
   },
   516:{

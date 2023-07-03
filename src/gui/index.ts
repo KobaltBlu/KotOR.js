@@ -13,3 +13,4 @@ export * from "./GUISlider";
 export * from "./LBL_3DView";
 export * from "./GameMenu";
 export * from "../managers/MenuManager";
+export * from "./LBL_MapView";

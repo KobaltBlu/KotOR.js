@@ -12,6 +12,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { CExoLocString } from "../resource/CExoLocString";
 import { ResourceLoader } from "../resource/ResourceLoader";
+import { GameState } from "../GameState";
 
 /* @file
  * The ModuleWaypoint class.
@@ -122,6 +123,16 @@ export class ModuleWaypoint extends ModuleObject {
 
     this.template = gff;
     return gff;
+  }
+
+  destroy(): void {
+    super.destroy();
+
+    if(this.hasMapNote){
+      if(GameState.module){
+        GameState.module.area.areaMap.removeMapNote(this);
+      }
+    }
   }
 
   toToolsetInstance(){

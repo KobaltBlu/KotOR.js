@@ -1,13 +1,11 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { MapMode } from "../../../enums/engine/MapMode";
+import { GUILabel, GUIButton, LBL_MapView } from "../../../gui";
+import { ModuleWaypoint } from "../../../module";
+import { CExoLocString } from "../../../resource/CExoLocString";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
-import * as THREE from "three";
 
 /* @file
 * The MenuMap menu class.
@@ -40,18 +38,34 @@ export class MenuMap extends K1_MenuMap {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.LBL_MapNote.setText('');
+      this.LBL_Map.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        const mapNote: ModuleWaypoint = this.miniMap.onClick();
+        if(mapNote && mapNote.mapNote instanceof CExoLocString){
+          this.LBL_MapNote.setText(mapNote.mapNote.GetValue())
+        }
+      });
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
       });
-      resolve();
-    });
-  }
+      this.BTN_RETURN.hide();
 
-  SetMapTexture(sTexture = '') {
-    this.LBL_Map.setFillTextureName(sTexture).then( (texture: OdysseyTexture) => {
-      this.texture = texture;
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.Close();
+      });
+      this._button_b = this.BTN_EXIT;
+
+      this.miniMap = new LBL_MapView(this.LBL_Map);
+      this.miniMap.setControl(this.LBL_Map);
+      this.miniMap.setSize(this.LBL_Map.extent.width, this.LBL_Map.extent.height);
+      this.miniMap.setMode(MapMode.FULLMAP);
+      this.miniMap.scene.scale.setScalar(this.LBL_Map.extent.width/512);
+
+      resolve();
     });
   }
   

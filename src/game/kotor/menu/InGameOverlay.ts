@@ -4,7 +4,7 @@
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl } from "../../../gui";
+import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl, LBL_MapView } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import { CursorManager } from "../../../managers/CursorManager";
 import { PartyManager } from "../../../managers/PartyManager";
@@ -132,6 +132,7 @@ export class InGameOverlay extends GameMenu {
   BTN_TARGETUP2: GUIButton;
   BTN_TARGETDOWN2: GUIButton;
   LBL_TARGET2: GUIButton;
+  miniMap: LBL_MapView;
 
   constructor(){
     super();
@@ -163,6 +164,10 @@ export class InGameOverlay extends GameMenu {
       //this.LBL_MAPBORDER.hideBorder();
       this.LBL_MAP?.hide();
       this.LBL_ARROW_MARGIN?.hide();
+      this.LBL_ARROW?.hide();
+      this.miniMap = new LBL_MapView(this.LBL_MAPVIEW);
+      this.miniMap.setControl(this.LBL_MAPVIEW);
+      this.miniMap.setSize(120, 120);
 
       this.LBL_CMBTEFCTRED1?.hide();
       this.LBL_CMBTEFCTINC1?.hide();
@@ -469,14 +474,11 @@ export class InGameOverlay extends GameMenu {
 
   SetMapTexture(sTexture = '') {
     try {
-      (this.LBL_MAPVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
-      this.LBL_MAPVIEW.setFillTextureName(sTexture);
-      TextureLoader.tpcLoader.fetch(sTexture, (texture: OdysseyTexture) => {
-        this.LBL_MAPVIEW.setFillTexture(texture);
-        texture.repeat.x = 0.25;
-        texture.repeat.y = 0.5;
+      TextureLoader.Load(sTexture, (texture: OdysseyTexture) => {
+        this.miniMap.setTexture(texture);
       });
     } catch (e: any) {
+      console.error(e);
     }
   }
 
@@ -679,24 +681,24 @@ export class InGameOverlay extends GameMenu {
     super.Update(delta);
     if (!this.bVisible)
       return;
+
     if (!GameState.module.area.miniGame) {
-      ActionMenuManager.SetPC(GameState.getCurrentPlayer());
+      const oPC = GameState.getCurrentPlayer();
+      ActionMenuManager.SetPC(oPC);
       ActionMenuManager.SetTarget(GameState.selectedObject);
       ActionMenuManager.UpdateMenuActions();
       this.UpdateTargetUIPanels();
       this.UpdateSelfUIPanels();
-      let mapTexture = this.LBL_MAPVIEW.getFillTexture();
-      if (mapTexture) {
-        let pointX = (GameState.getCurrentPlayer().position.x - GameState.module.area.Map.WorldPt1X) / (GameState.module.area.Map.WorldPt2X + GameState.module.area.Map.WorldPt1X);
-        let pointY = (GameState.getCurrentPlayer().position.y - GameState.module.area.Map.WorldPt1Y) / (GameState.module.area.Map.WorldPt2Y + GameState.module.area.Map.WorldPt1Y);
-        mapTexture.offset.x = pointX + 0.125;
-        mapTexture.offset.y = pointY + 0.35;
-        mapTexture.updateMatrix();
-      }
+
+      //update minimap
+      this.miniMap.setPosition(oPC.position.x, oPC.position.y);
+      this.miniMap.setRotation(GameState.controls.camera.rotation.z);
+      this.miniMap.render(delta);
+
       this.TogglePartyMember(0, false);
       this.TogglePartyMember(1, false);
       this.TogglePartyMember(2, false);
-      this.LBL_ARROW.widget.rotation.set(0, 0, PartyManager.party[0].facing - Math.PI / 2);
+      
       for (let i = 0; i < PartyManager.party.length; i++) {
         let partyMember = PartyManager.party[i];
         let portraitId = partyMember.getPortraitId();
@@ -726,12 +728,12 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
         }
       }
-      if (GameState.getCurrentPlayer().combatData.combatAction || GameState.getCurrentPlayer().combatData.combatQueue.length) {
+      if (oPC.combatData.combatAction || oPC.combatData.combatQueue.length) {
         this.showCombatUI();
-        let action0 = GameState.getCurrentPlayer().combatData.combatAction;
-        let action1 = GameState.getCurrentPlayer().combatData.combatQueue[0];
-        let action2 = GameState.getCurrentPlayer().combatData.combatQueue[1];
-        let action3 = GameState.getCurrentPlayer().combatData.combatQueue[2];
+        let action0 = oPC.combatData.combatAction;
+        let action1 = oPC.combatData.combatQueue[0];
+        let action2 = oPC.combatData.combatQueue[1];
+        let action3 = oPC.combatData.combatQueue[2];
         if (action0 != undefined) {
           if (this.LBL_QUEUE0.getFillTextureName() != action0.icon) {
             this.LBL_QUEUE0.setFillTextureName(action0.icon);
