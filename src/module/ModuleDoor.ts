@@ -222,15 +222,18 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getObjectSounds(){
-    let appearance = this.getDoorAppearance();
-    let soundIdx = appearance.soundapptype;
-    if(!isNaN(soundIdx)){
-      const placeableobjsnds2DA = TwoDAManager.datatables.get('placeableobjsnds');
-      if(placeableobjsnds2DA){
-        return placeableobjsnds2DA.rows[soundIdx];
+    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    const appearance = this.getDoorAppearance();
+    if(!appearance) return result;
+
+    const soundIdx = appearance.soundapptype;
+    if(!isNaN(soundIdx) && soundIdx >= 0){
+      const table = TwoDAManager.datatables.get('placeableobjsnds');
+      if(table && typeof table.rows[soundIdx] !== 'undefined'){
+        return table.rows[soundIdx];
       }
     }
-    return {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    return result;
   }
 
   /*getTemplateResRef(){

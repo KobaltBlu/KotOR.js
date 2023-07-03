@@ -386,15 +386,18 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   getObjectSounds(){
-    let plc = this.getAppearance();
-    let soundIdx = plc.soundapptype;
-    if(!isNaN(soundIdx)){
-      const plcSnd2DA = TwoDAManager.datatables.get('placeableobjsnds');
-      if(plcSnd2DA){
-        return plcSnd2DA.rows[soundIdx];
+    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    const apppearance = this.getAppearance();
+    if(!apppearance) return result;
+
+    const soundIdx = apppearance.soundapptype;
+    if(!isNaN(soundIdx) && soundIdx >= 0){
+      const table = TwoDAManager.datatables.get('placeableobjsnds');
+      if(table && typeof table.rows[soundIdx] !== 'undefined'){
+        result = table.rows[soundIdx];
       }
     }
-    return {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    return result;
   }
 
   retrieveInventory(){
