@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { ShaderManager } from "../managers/ShaderManager";
+import { PartyManager } from "../managers/PartyManager";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -40,10 +41,12 @@ export class LBL_MapView {
   arrowPlane: THREE.Mesh;
   mapNotes: THREE.Mesh[] = [];
   fogGroup: THREE.Group = new THREE.Group();
+  partyGroup: THREE.Group = new THREE.Group();
 
   mapTexture: OdysseyTexture;
   fogTexture: OdysseyTexture;
   noteTexture: OdysseyTexture;
+  pmTexture: OdysseyTexture;
 
   arrowTexture: OdysseyTexture;
 
@@ -132,6 +135,18 @@ export class LBL_MapView {
     this.arrowPlane.scale.set(this.arrowSize, this.arrowSize, 0);
     this.scene.add(this.arrowPlane);
 
+    const pmCircleMaterial = new THREE.MeshBasicMaterial({
+      color: 0xFF7F50,
+      transparent: true,
+    });
+
+    for(let i = 0; i < 2; i++){
+      const pmCircle = new THREE.Mesh(planeGeometry, pmCircleMaterial);
+      pmCircle.scale.set(16, 16, 1);
+      this.partyGroup.add(pmCircle);
+    }
+    this.scene.add(this.partyGroup);
+
     this.scene.add(this.mapGroup);
     this.scene.add(this.fogGroup);
 
@@ -147,6 +162,10 @@ export class LBL_MapView {
 
     TextureLoader.Load('whitetarget', (texture: OdysseyTexture) => {
       this.noteTexture = texture;
+    });
+
+    TextureLoader.Load('lbl_mapcircle', (texture: OdysseyTexture) => {
+      this.pmTexture = pmCircleMaterial.map = texture;
     });
   }
 
@@ -332,6 +351,27 @@ export class LBL_MapView {
       }
     }
 
+    for(let i = 0; i < 2; i++){
+      const pm = PartyManager.party[i+1];
+      const mesh = this.partyGroup.children[i];
+      if(this.mode == MapMode.MINIMAP){
+        mesh.visible = false;
+        continue;
+      }
+
+      if(pm){
+        mesh.visible = true;
+        const pos = this.areaMap.toMapCoordinates(pm.position.x, pm.position.y);
+        mesh.position.set(
+          (scaleSize.width * pos.x) + 4,
+          (scaleSize.height * pos.y) + 4, 
+          9
+        );
+      }else{
+        mesh.visible = false;
+      }
+    }
+
     if(this.mode == MapMode.FULLMAP){
       for(let i = 0, len = this.mapNotes.length; i < len; i++){
         const mesh = this.mapNotes[i];
@@ -424,7 +464,7 @@ export class LBL_MapView {
       break;
       case MapNorthAxis.SOUTH:
         {
-          this.arrowAngle = -angle;
+          this.arrowAngle = angle + (Math.PI / 2);
         }
       break;
       case MapNorthAxis.EAST:
