@@ -67,7 +67,7 @@ import { DialogMessageManager } from "../managers/DialogMessageManager";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
-import { AutoPauseManager } from "../KotOR";
+import { AutoPauseManager } from "../managers/AutoPauseManager";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
