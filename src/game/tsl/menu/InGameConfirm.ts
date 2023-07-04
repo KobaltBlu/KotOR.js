@@ -29,6 +29,10 @@ export class InGameConfirm extends K1_InGameConfirm {
     await super.MenuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.defaultExtent.width = this.tGuiPanel.extent.width;
+      this.defaultExtent.height = this.tGuiPanel.extent.height;
+      this.defaultExtent.top = this.tGuiPanel.extent.top;
+      this.defaultExtent.left = this.tGuiPanel.extent.left;
 
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
@@ -40,6 +44,8 @@ export class InGameConfirm extends K1_InGameConfirm {
         this.Close()
       });
 
+      this.tGuiPanel.extent.top = 0;
+      this.tGuiPanel.extent.left = 0;
       this.tGuiPanel.widget.position.z = 10;
       resolve();
     });

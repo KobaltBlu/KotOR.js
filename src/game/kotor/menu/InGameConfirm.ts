@@ -18,6 +18,13 @@ export class InGameConfirm extends GameMenu {
   BTN_OK: GUIButton;
   BTN_CANCEL: GUIButton;
 
+  defaultExtent = {
+    top: 0,
+    left: 0,
+    width: 0,
+    height: 0,
+  }
+
   constructor(){
     super();
     this.gui_resref = 'confirm';
@@ -30,6 +37,11 @@ export class InGameConfirm extends GameMenu {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.defaultExtent.width = this.tGuiPanel.extent.width;
+      this.defaultExtent.height = this.tGuiPanel.extent.height;
+      this.defaultExtent.top = this.tGuiPanel.extent.top;
+      this.defaultExtent.left = this.tGuiPanel.extent.left;
+
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.Close();
@@ -42,6 +54,8 @@ export class InGameConfirm extends GameMenu {
       });
       this._button_b = this.BTN_CANCEL;
 
+      this.tGuiPanel.extent.top = 0;
+      this.tGuiPanel.extent.left = 0;
       this.tGuiPanel.widget.position.z = 10;
       resolve();
     });
@@ -74,24 +88,25 @@ export class InGameConfirm extends GameMenu {
           this.LB_MESSAGE.clearItems();
           this.LB_MESSAGE.addItem(TLKManager.GetStringById(tlkId).Value);
           let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
-          this.LB_MESSAGE.extent.height = messageHeight;
+          console.log(messageHeight);
+          this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = messageHeight;
           this.LB_MESSAGE.resizeControl();
           
-          this.tGuiPanel.extent.height = 87 + messageHeight;
-          this.tGuiPanel.extent.left = 0;
-          this.tGuiPanel.extent.top = -this.tGuiPanel.extent.height/2;
+          this.tGuiPanel.extent.height = this.height = 44 + messageHeight;
+          // this.tGuiPanel.extent.left = 0;
+          // this.tGuiPanel.extent.top = -this.tGuiPanel.extent.height/2;
           this.tGuiPanel.recalculate();
 
-          this.LB_MESSAGE.extent.top = -((this.tGuiPanel.extent.height / 2) - (this.LB_MESSAGE.extent.height / 2));
+          this.LB_MESSAGE.extent.top = (-this.tGuiPanel.extent.height) + (this.LB_MESSAGE.extent.height) + 50;// + (this.LB_MESSAGE.extent.height/2) + 28;
           this.LB_MESSAGE.recalculate();
 
           this.BTN_CANCEL.hide();
-          this.BTN_OK.extent.top = this.tGuiPanel.extent.height / 2 + this.BTN_OK.extent.height / 2;
+          this.BTN_OK.extent.top = (this.tGuiPanel.extent.height) - (this.BTN_OK.extent.height + 10);// + ((this.LB_MESSAGE.extent.height/2) + 28 + (this.BTN_OK.extent.height/2));
           this.tGuiPanel.resizeControl();
           this.LB_MESSAGE.resizeControl();
           
           this.Open();
-          GameState.TutorialWindowTracker[id] = 0;
+          // GameState.TutorialWindowTracker[id] = 0;
         }
       }
     }
