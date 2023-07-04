@@ -13,7 +13,7 @@ import { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { AutoPauseManager } from "../KotOR";
+import { AutoPauseManager } from "../managers/AutoPauseManager";
 
 /* @file
  * The IngameControls class.

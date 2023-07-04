@@ -52,8 +52,8 @@ import { CreatureAnimationState } from "../interface/animation/CreatureAnimation
 import { OverlayAnimationState } from "../interface/animation/OverlayAnimationState";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
-import { AutoPauseManager } from "../KotOR";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
+import { AutoPauseManager } from "../managers/AutoPauseManager";
 
 /* @file
  * The ModuleCreature class.
