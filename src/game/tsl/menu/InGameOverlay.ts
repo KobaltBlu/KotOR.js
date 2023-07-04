@@ -18,6 +18,8 @@ import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { TalentObject } from "../../../talents";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { AutoPauseManager } from "../../../managers/AutoPauseManager";
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 
 /* @file
 * The InGameOverlay menu class.
@@ -260,11 +262,11 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-
+        
         if(GameState.State == EngineState.PAUSED){
-          GameState.State = EngineState.RUNNING
+          AutoPauseManager.Unpause();
         }else{
-          GameState.State = EngineState.PAUSED
+          AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
       });

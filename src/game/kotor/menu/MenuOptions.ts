@@ -59,6 +59,11 @@ export class MenuOptions extends GameMenu {
         MenuManager.MenuSaveLoad.Open();
       });
 
+      this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        MenuManager.MenuAutoPause.Open();
+      });
+
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.MenuGraphics.Open();

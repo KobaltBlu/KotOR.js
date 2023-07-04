@@ -47,6 +47,7 @@ export class MainOptions extends K1_MainOptions {
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        MenuManager.MenuAutoPause.Open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {

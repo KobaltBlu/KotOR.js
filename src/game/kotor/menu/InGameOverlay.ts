@@ -16,6 +16,8 @@ import { Anchor } from "../../../enums/gui/Anchor";
 import { SSFObjectType } from "../../../interface/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
+import { AutoPauseManager } from "../../../managers/AutoPauseManager";
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 
 /* @file
 * The InGameOverlay menu class.
@@ -248,9 +250,9 @@ export class InGameOverlay extends GameMenu {
         e.stopPropagation();
 
         if(GameState.State == EngineState.PAUSED){
-          GameState.State = EngineState.RUNNING;
+          AutoPauseManager.Unpause();
         }else{
-          GameState.State = EngineState.PAUSED
+          AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
       });

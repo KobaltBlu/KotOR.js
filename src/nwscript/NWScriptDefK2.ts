@@ -6,6 +6,7 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
 import { FadeOverlayManager } from "../managers/FadeOverlayManager";
 import { GlobalVariableManager } from "../managers/GlobalVariableManager";
+import { MenuManager } from "../managers/MenuManager";
 import { PartyManager } from "../managers/PartyManager";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptDef } from "./NWScriptDef";
@@ -3642,7 +3643,9 @@ NWScriptDefK2.Actions = {
     name: 'ShowTutorialWindow',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
+    }
   },
     518: {
     comment: '518: StartCreditSequence\nStarts the credits sequence.  If bTransparentBackground is TRUE, the credits will be displayed\nwith a transparent background, allowing whatever is currently onscreen to show through.  If it\nis set to FALSE, the credits will be displayed on a black background.',

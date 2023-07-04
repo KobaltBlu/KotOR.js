@@ -67,6 +67,7 @@ import { DialogMessageManager } from "../managers/DialogMessageManager";
 import { ResourceLoader } from "../resource/ResourceLoader";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
+import { AutoPauseManager } from "../KotOR";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -791,9 +792,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       if(args[0]){
-        GameState.State = EngineState.PAUSED;
+        AutoPauseManager.SignalAutoPauseEvent(0);
       }else{
-        GameState.State = EngineState.RUNNING;
+        AutoPauseManager.Unpause();
       }
     }
   },
@@ -5794,7 +5795,23 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
+      //KotOR unlike TSL hardcodes these values instead of using the tutorial.2da as a lookup table
+      //It might be worth overriding the scripts in the game to use 2da values to keep it inline with TSL
+      //making it more extendable.
+      switch(args[0]){
+        case 2: //Movement_Keys - end_m01aa - k_pend_pctut.ncs
+          MenuManager.InGameConfirm.ShowTutorialMessage(42);
+        break;
+        case 1:
+          // ???
+        break;
+        case 0: //Start_Swoop_Race - tar_m03mg - heartbeat.ncs
+          MenuManager.InGameConfirm.ShowTutorialMessage(9);
+        break;
+        default:
+          // ???
+        break;
+      }
     }
   },
   518:{

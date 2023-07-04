@@ -23,7 +23,7 @@ export class GUIListBox extends GUIControl {
   GUIProtoItemClass: typeof GUIProtoItem;
   onSelected: Function;
   hasProtoItem: boolean;
-  protoItem: GFFStruct;
+  protoItem: GUIControl;
   hasScrollBar: boolean;
   _scrollbar: GFFStruct;
   itemGroup: THREE.Group;
@@ -36,7 +36,7 @@ export class GUIListBox extends GUIControl {
   texture: THREE.WebGLRenderTarget;
   clearColor: THREE.Color;
   targetMaterial: THREE.MeshBasicMaterial;
-  targetGeometry: any;
+  targetGeometry: THREE.PlaneGeometry;
   targetMesh: THREE.Mesh<any, any>;
   selectedItem: GUIControl;
   minY: any;
@@ -57,7 +57,7 @@ export class GUIListBox extends GUIControl {
     this.hasProtoItem = control.HasField('PROTOITEM');
     if(this.hasProtoItem){
       //console.log(control.GetFieldByLabel('PROTOITEM'))
-      this.protoItem = control.GetFieldByLabel('PROTOITEM').GetChildStructs()[0];
+      this.protoItem = GUIControl.FromStruct(control.GetFieldByLabel('PROTOITEM').GetChildStructs()[0], this.menu, this, this.scale);
     }
 
     //ScrollBar
@@ -107,16 +107,34 @@ export class GUIListBox extends GUIControl {
     //this.targetMaterial.blendSrcAlpha = THREE.OneFactor;
     //this.targetMaterial.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
 
-    this.targetGeometry = new THREE.PlaneGeometry(this.width, this.height, 1, 1);
+    this.targetGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
     this.targetMaterial.map = this.texture.texture;
     this.targetMesh.position.z = 4;
     this.targetMesh.renderOrder = 5;
-    //this.targetMesh.scale.set(this.width, this.height, 1);
+    this.targetMesh.scale.set(this.width, this.height, 1);
     this.widget.add(this.targetMesh);
 
     this.scene.add(this.itemGroup);
 
+  }
+
+  resizeControl(): void {
+    super.resizeControl();
+    this.width = this.extent.width;
+    this.height = this.extent.height;
+    // this.targetGeometry.dispose();
+    // this.targetGeometry = new THREE.PlaneGeometry(this.width, this.height, 1, 1);
+    // this.targetMesh.geometry = this.targetGeometry;
+    this.texture.setSize(this.width, this.height);
+    this.targetMesh.scale.set(this.width, this.height, 1);
+    this.camera.left = this.width / -2;
+    this.camera.top = this.width / 2;
+    this.camera.top = this.height / 2;
+    this.camera.bottom = this.height / -2;
+    this.camera.updateProjectionMatrix();
+    this.updateList();
+    this.scrollbar.update();
   }
 
   update(delta: number = 0){
@@ -185,15 +203,15 @@ export class GUIListBox extends GUIControl {
   }
 
   getProtoItemType(){
-    return this.protoItem.GetFieldByLabel('CONTROLTYPE').GetValue();
+    return this.protoItem.type;
   }
 
   addItem(node: any, onClick?: Function, customBuilder?: Function){
     let control = this.protoItem;
-    let type = control.GetFieldByLabel('CONTROLTYPE').GetValue();
+    let type = control.type;
 
     if(typeof customBuilder == 'function'){
-      customBuilder(control, type);
+      customBuilder(control.control, type);
       this.cullOffscreen();
     }else{
 
@@ -205,7 +223,9 @@ export class GUIListBox extends GUIControl {
         switch(type){
           case GUIControlType.Label:
           case GUIControlType.ProtoItem:
-            ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+            ctrl = new GUIProtoItem(this.menu, control.control, this, this.scale);
+            ctrl.text.texture = this.protoItem.text.texture;
+            ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
             ctrl.text.text = node;
             ctrl.isProtoItem = false;
             ctrl.offset = this.offset;
@@ -215,6 +235,7 @@ export class GUIListBox extends GUIControl {
 
             widget = ctrl.createControl();
             ctrl.setText(node);
+            ctrl.buildText();
 
             this.itemGroup.add(widget);
 
@@ -230,7 +251,7 @@ export class GUIListBox extends GUIControl {
           break;
           case GUIControlType.Button:
             try{
-              ctrl = new GUIProtoItem(this.menu, control, this, this.scale);
+              ctrl = new GUIProtoItem(this.menu, control.control, this, this.scale);
               ctrl.isProtoItem = false;
               ctrl.offset = this.offset;
               ctrl.node = node;
@@ -261,7 +282,7 @@ export class GUIListBox extends GUIControl {
           break;
         }
       }else{
-        ctrl = new this.GUIProtoItemClass(this.menu, control, this, this.scale);
+        ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
         ctrl.isProtoItem = true;
         ctrl.offset = this.offset;
         ctrl.node = node;
@@ -411,13 +432,13 @@ export class GUIListBox extends GUIControl {
     //console.log(!node)
     if(!node){
 
-      if(this.protoItem.HasField('EXTENT')){
-        let extent = this.protoItem.GetFieldByLabel('EXTENT').GetChildStructs()[0];
+      if(this.protoItem.control.HasField('EXTENT')){
+        let extent = this.protoItem.control.GetFieldByLabel('EXTENT').GetChildStructs()[0];
         height += extent.GetFieldByLabel('HEIGHT').GetValue() || 0;
       }
 
-      if(this.protoItem.HasField('BORDER')){
-        let border = this.protoItem.GetFieldByLabel('BORDER').GetChildStructs()[0];
+      if(this.protoItem.control.HasField('BORDER')){
+        let border = this.protoItem.control.GetFieldByLabel('BORDER').GetChildStructs()[0];
         height += (border.GetFieldByLabel('DIMENSION').GetValue() || 0) / 2;
       }
 

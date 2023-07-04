@@ -36,6 +36,7 @@ export class MenuContainer extends GameMenu {
     this.gui_resref = 'container';
     this.background = '';
     this.voidFill = false;
+    this.isOverlayGUI = true;
   }
 
   async MenuControlInitializer(skipInit: boolean = false) {

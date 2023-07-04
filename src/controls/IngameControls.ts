@@ -13,6 +13,7 @@ import { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
+import { AutoPauseManager } from "../KotOR";
 
 /* @file
  * The IngameControls class.
@@ -633,7 +634,11 @@ export class IngameControls {
 
       const currentMenu = MenuManager.GetCurrentMenu();
       if(currentMenu == MenuManager.InGameOverlay){
-        GameState.State = ( GameState.State == EngineState.PAUSED ? EngineState.RUNNING : EngineState.PAUSED );
+        if(GameState.State == EngineState.RUNNING){
+          AutoPauseManager.SignalAutoPauseEvent(0);
+        }else{
+          AutoPauseManager.Unpause();
+        }
       }else if( currentMenu == MenuManager.InGameConfirm){
         MenuManager.InGameConfirm.Close();
       }
@@ -680,13 +685,27 @@ export class IngameControls {
 
   }
 
-  MenuGetActiveUIElements(){
+  MenuGetActiveUIElements(): GUIControl[] {
     let elements: GUIControl[] = [];
 
-    for(let i = 0; i < GameState.scene_gui.children.length; i++){
-      if(GameState.scene_gui.children[i].userData.control){
-        elements = elements.concat((GameState.scene_gui.children[i].userData.control.menu as GameMenu).GetActiveControls());
-      }
+    for(let i = 0, len = MenuManager.activeModals.length; i < len; i++){
+      const activeMenu = MenuManager.activeModals[i];
+      if(!activeMenu.IsVisible()) continue;
+      
+      elements = elements.concat(activeMenu.GetActiveControls());
+    }
+
+    if(MenuManager.activeModals.length) return elements;
+
+    for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
+      const activeMenu = MenuManager.activeMenus[i];
+      if(!activeMenu.IsVisible()) continue;
+
+      elements = elements.concat(activeMenu.GetActiveControls());
+    }
+
+    if(GameState.State == EngineState.PAUSED){
+      elements = elements.concat(MenuManager.InGamePause.GetActiveControls());
     }
 
     return elements.reverse();

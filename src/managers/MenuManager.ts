@@ -7,11 +7,13 @@ import { GameMenu } from "../gui";
 import { CharGenManager } from "./CharGenManager";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { EngineState } from "../KotOR";
 
 
 export class MenuManager {
   static pulseOpacity: number;
-  static activeMenus: any[];
+  static activeMenus: GameMenu[];
+  static activeModals: GameMenu[];
   static pulse: number;
 
   //References to the game menus
@@ -39,6 +41,7 @@ export class MenuManager {
   static MainMusic: TSL.MainMusic;
   static MainOptions: KOTOR.MainOptions;
   static MenuAbilities: KOTOR.MenuAbilities;
+  static MenuAutoPause: KOTOR.MenuAutoPause;
   static MenuCharacter: KOTOR.MenuCharacter;
   static MenuChemicals: TSL.MenuChemicals;
   static MenuContainer: KOTOR.MenuContainer;
@@ -65,39 +68,56 @@ export class MenuManager {
   static Init(){
 
     MenuManager.activeMenus = [];
+    MenuManager.activeModals = [];
     MenuManager.pulse = 0;
     MenuManager.pulseOpacity = 1;
 
   }
 
   static Add(menu: GameMenu){
+    if(!menu) return;
+    
     if(!menu.isOverlayGUI){
       //Hide the current top most menu in the list before adding the new Menu
       if(MenuManager.activeMenus.length)
         MenuManager.activeMenus[MenuManager.activeMenus.length-1].Hide();
+
+      if(menu instanceof GameMenu)
+        MenuManager.activeMenus.push(menu);
+  
+      MenuManager.Resize();
+    }else{
+      if(MenuManager.activeModals.indexOf(menu) == -1)
+        MenuManager.activeModals.push(menu);
     }
-
-    if(menu instanceof GameMenu)
-      MenuManager.activeMenus.push(menu);
-
-    MenuManager.Resize();
   }
 
   static Remove(menu: GameMenu){
-    let mIdx = MenuManager.activeMenus.indexOf(menu);
-    if(mIdx >= 0)
-      MenuManager.activeMenus.splice(mIdx, 1);
+    if(!menu) return;
 
-    //Reshow the new top most menu in the list
-    if(MenuManager.activeMenus.length)
-      MenuManager.GetCurrentMenu().Show();
+    if(!menu.isOverlayGUI){
+      const mIdx = MenuManager.activeMenus.indexOf(menu);
+      if(mIdx >= 0)
+        MenuManager.activeMenus.splice(mIdx, 1);
 
-    MenuManager.Resize();
+      //Reshow the new top most menu in the list
+      if(MenuManager.activeMenus.length)
+        MenuManager.GetCurrentMenu().Show();
+
+      MenuManager.Resize();
+    }else{
+      const mIdx = MenuManager.activeModals.indexOf(menu);
+      if(mIdx >= 0)
+        MenuManager.activeModals.splice(mIdx, 1);
+    }
   }
 
   static ClearMenus(){
     while(MenuManager.activeMenus.length){
       MenuManager.activeMenus[0].Close();
+    }
+    while(MenuManager.activeModals.length){
+      MenuManager.activeModals[0].Close();
     }
   }
 
@@ -135,9 +155,18 @@ export class MenuManager {
       MenuManager.InGameOverlay.Update(delta);
     }
 
+    if(GameState.State == EngineState.PAUSED){
+      MenuManager.InGamePause.Update(delta);
+    }
+
     let activeMenus = MenuManager.activeMenus;
     for(let i = 0, len = activeMenus.length; i < len; i++){
       activeMenus[i].Update(delta);
+    }
+
+    let activeModals = MenuManager.activeModals;
+    for(let i = 0, len = activeModals.length; i < len; i++){
+      activeModals[i].Update(delta);
     }
 
     if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
@@ -172,6 +201,7 @@ export class MenuManager {
         MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(KOTOR.CharGenSkills) as KOTOR.CharGenSkills;
 
         MenuManager.MenuAbilities = await MenuManager.GameMenuLoader(KOTOR.MenuAbilities) as KOTOR.MenuAbilities;
+        MenuManager.MenuAutoPause = await MenuManager.GameMenuLoader(KOTOR.MenuAutoPause) as KOTOR.MenuAutoPause;
         MenuManager.MenuCharacter = await MenuManager.GameMenuLoader(KOTOR.MenuCharacter) as KOTOR.MenuCharacter;
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(KOTOR.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(KOTOR.MenuEquipment) as KOTOR.MenuEquipment;
