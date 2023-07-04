@@ -955,39 +955,14 @@ export class GUIControl {
         let childParent = ( children[i].HasField('Obj_Parent') ? children[i].GetFieldByLabel('Obj_Parent')?.GetValue() : '' );
         if(childParent == this.name){
 
-          let type = ( children[i].HasField('CONTROLTYPE') ? children[i].GetFieldByLabel('CONTROLTYPE')?.GetValue() : -1 );
-          let gui: GUIControl;
+          const control: GUIControl = GUIControl.FromStruct(children[i], this.menu, this, this.scale);
 
-          switch(type){
-            case 4:
-              gui = new GUILabel(this.menu, children[i], this, this.scale);
-            break;
-            case 6:
-              gui = new GUIButton(this.menu, children[i], this, this.scale);
-            break;
-            case 7:
-              gui = new GUICheckBox(this.menu, children[i], this, this.scale);
-            break;
-            case 8:
-              gui = new GUISlider(this.menu, children[i], this, this.scale);
-            break;
-            case 10:
-              gui = new GUIProgressBar(this.menu, children[i], this, this.scale);
-            break;
-            case 11:
-              gui = new GUIListBox(this.menu, children[i], this, this.scale);
-            break;
-            default: 
-              gui = new GUIControl(this.menu, children[i], this, this.scale);
-            break;
-          }
+          control.zIndex = this.zIndex+1;
 
-          gui.zIndex = this.zIndex+1;
+          this.children.push(control);
 
-          this.children.push(gui);
-
-          let _cWidget = gui.createControl();
-          _cWidget.position.z = gui.zIndex;
+          let _cWidget = control.createControl();
+          _cWidget.position.z = control.zIndex;
           
           //this.widget.add(_cWidget);
           this.menu.tGuiPanel.widget.add(_cWidget);
@@ -2539,6 +2514,27 @@ export class GUIControl {
     let length = Math.sqrt(width * width + height * height)
     output.center.set(minX + width / 2, minY + height / 2, 0)
     output.radius = length / 2
+  }
+
+  static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {
+    const type = ( struct.HasField('CONTROLTYPE') ? struct.GetFieldByLabel('CONTROLTYPE')?.GetValue() : -1 );
+
+    switch(type){
+      case 4:
+        return new GUILabel(menu, struct, parent, scale);
+      case 6:
+        return new GUIButton(menu, struct, parent, scale);
+      case 7:
+        return new GUICheckBox(menu, struct, parent, scale);
+      case 8:
+        return new GUISlider(menu, struct, parent, scale);
+      case 10:
+        return new GUIProgressBar(menu, struct, parent, scale);
+      case 11:
+        return new GUIListBox(menu, struct, parent, scale);
+      default: 
+        return new GUIControl(menu, struct, parent, scale);
+    }
   }
 
 }
