@@ -3,7 +3,7 @@ import * as THREE from "three";
 import { AnimatedTexture } from "./AnimatedTexture";
 import { CombatEngine } from "./combat";
 import { GameMenu, GUIListBox } from "./gui";
-import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
+import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature } from "./module";
 import { IngameControls, Mouse } from "./controls";
 
 import { INIConfig } from "./INIConfig";
@@ -14,27 +14,29 @@ import { SaveGame } from "./SaveGame";
 import { VideoPlayer } from "./VideoPlayer";
 
 import { MDLLoader } from "./three/MDLLoader";
-import EngineLocation from "./engine/EngineLocation";
-import { OdysseyModel3D, OdysseyObject3D } from "./three/odyssey";
+import { OdysseyObject3D } from "./three/odyssey";
 import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine, AudioEmitter } from "./audio";
 import { TGAObject } from "./resource/TGAObject";
 
-import { EngineGlobals } from "./interface/engine/EngineGlobals";
 import { GameStateGroups } from "./interface/engine/GameStateGroups";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { CreatureType } from "./enums/nwscript/CreatureType";
-import { ReputationType } from "./enums/nwscript/ReputationType";
 import { EngineState } from "./enums/engine/EngineState";
 import { EngineMode } from "./enums/engine/EngineMode";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
 import { EngineContext } from "./enums/engine/EngineContext";
-import { ModuleObjectType } from "./enums/nwscript/ModuleObjectType";
 
-import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { ConfigClient } from "./utility/ConfigClient";
+import { FollowerCamera } from "./engine/FollowerCamera";
+import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
+import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
+import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ShaderManager, TwoDAManager } from "./managers";
+import { ResourceLoader, TextureLoader } from "./loaders";
+import { TextureType } from "./enums/loaders/TextureType";
+
+//THREE.js imports
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass";
 import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass";
@@ -44,13 +46,6 @@ import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { FollowerCamera } from "./engine/FollowerCamera";
-import { OdysseyTexture } from "./resource/OdysseyTexture";
-import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
-import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ShaderManager, TwoDAManager } from "./managers";
-import { ResourceLoader, TextureLoader } from "./loaders";
-import { TextureType } from "./enums/loaders/TextureType";
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
