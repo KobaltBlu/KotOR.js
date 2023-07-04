@@ -4,6 +4,7 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { AutoPauseManager } from "../../../managers/AutoPauseManager";
 
 /* @file
 * The InGamePause menu class.
@@ -21,12 +22,16 @@ export class InGamePause extends GameMenu {
     this.gui_resref = 'pause';
     this.background = '';
     this.voidFill = false;
+    this.isOverlayGUI = false;
   }
 
   async MenuControlInitializer(skipInit: boolean = false) {
     await super.MenuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
+        AutoPauseManager.Unpause();
+      });
       resolve();
     });
   }
@@ -40,8 +45,9 @@ export class InGamePause extends GameMenu {
 
   Update(delta: number = 0) {
     super.Update(delta);
-    this.tGuiPanel.widget.position.x = window.innerWidth / 2 - MenuManager.InGamePause.width / 2 - 20;
-    this.tGuiPanel.widget.position.y = window.innerHeight / 2 - MenuManager.InGamePause.height / 2 - 55;
+    this.tGuiPanel.extent.left = (window.innerWidth / 2) - (this.tGuiPanel.extent.width / 2) - 0;
+    this.tGuiPanel.extent.top = (-window.innerHeight / 2) + (this.tGuiPanel.extent.height / 2) + 36;
+    this.RecalculatePosition();
   }
   
 }

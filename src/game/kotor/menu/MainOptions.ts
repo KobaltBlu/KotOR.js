@@ -42,6 +42,7 @@ export class MainOptions extends GameMenu {
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        MenuManager.MenuAutoPause.Open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {

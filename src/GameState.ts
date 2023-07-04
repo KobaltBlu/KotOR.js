@@ -61,6 +61,7 @@ import { FollowerCamera } from "./engine/FollowerCamera";
 import { OdysseyTexture } from "./resource/OdysseyTexture";
 import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
+import { AutoPauseManager } from "./managers/AutoPauseManager";
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
@@ -273,11 +274,6 @@ export class GameState implements EngineContext {
 
   static Init(){
     GameState.processEventListener('init');
-    if(GameState.GameKey == 'TSL'){
-      GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
-    }else{
-      GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
-    }
     
     GameState.models = [];
 
@@ -529,13 +525,23 @@ export class GameState implements EngineContext {
     window.addEventListener('resize', () => {
       GameState.EventOnResize();
     });
-    console.log('Game: Start')
-    try{
-      ShaderManager.Init();
-      GameState.Start();
-    }catch(e){
-      console.error(e);
+
+    if(GameState.GameKey == 'TSL'){
+      GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
+    }else{
+      GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
     }
+
+    GameState.iniConfig.load().then( () => {
+      AutoPauseManager.Init();
+      console.log('Game: Start')
+      try{
+        ShaderManager.Init();
+        GameState.Start();
+      }catch(e){
+        console.error(e);
+      }
+    })
   }
 
   static Start(){
@@ -745,25 +751,9 @@ export class GameState implements EngineContext {
       return;
     }
 
-    let index = 0;
     if(intersects.length){
-
-      while(index < intersects.length){
-        const intersection = intersects[index],
-              obj = intersection.object;
-
-        if(obj.userData.ignoreMousePicking){
-          index++;
-          continue;
-        }
-
-        break;
-      }
-
-      const intersection = intersects[index],
-            obj = intersection?.object;
-
-      if(!intersection) return;
+      const intersection = intersects[0],
+          obj = intersection.object;
       
       let searching = true;
 
@@ -1212,13 +1202,14 @@ export class GameState implements EngineContext {
     } 
 
     GameState.scene_cursor_holder.visible = true;
+    MenuManager.InGamePause.Hide();
 
     if(
       GameState.Mode == EngineMode.MINIGAME || 
       GameState.Mode == EngineMode.DIALOG || 
       GameState.Mode == EngineMode.INGAME ||
       GameState.Mode == EngineMode.FREELOOK
-    ){// (!MenuManager.InGameConfirm.bVisible)){
+    ){
 
       //Update Mode Camera
       if(GameState.Mode == EngineMode.INGAME){
@@ -1238,6 +1229,7 @@ export class GameState implements EngineContext {
           }
         }
       }
+
       GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
       GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
       GameState.currentCameraPosition.set(0, 0, 0);
@@ -1247,7 +1239,8 @@ export class GameState implements EngineContext {
 
       //Handle Module Tick
       if(
-        GameState.State == EngineState.PAUSED
+        GameState.State == EngineState.PAUSED ||
+        MenuManager.activeModals.length
       ){
         GameState.module.tickPaused(delta);
       }else{
@@ -1280,7 +1273,7 @@ export class GameState implements EngineContext {
         }
         
         //Handle the visibility of the PAUSE overlay
-        if(GameState.State == EngineState.PAUSED){
+        if(GameState.State == EngineState.PAUSED && MenuManager.InGameOverlay.IsVisible()){
           if(!MenuManager.InGamePause.IsVisible())
             MenuManager.InGamePause.Show();
         }else{

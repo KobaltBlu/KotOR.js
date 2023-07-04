@@ -22,50 +22,58 @@ export class INIConfig {
     this.defaults = defaults;
     this.options = {};
     this.nodes = [];
+  }
+
+  load(): Promise<void> {
+    return new Promise( (resolve, reject) => {
     
-    try{
-      GameFileSystem.readFile(this.ini_path).then( (buffer) => {
-        let ini_text = buffer.toString('utf8');
-        let lines = ini_text.split(/\r?\n/);
-
-        this.current_section = null;
-
-        for(let i = 0, len = lines.length; i < len; i++){
-          let line = lines[i].trim();
-          if( !line.length ){
-
-          }else{
-            let section = line.match(/^\[(.*)\]$/);
-            let property = line.split('=');
-            if(section != null && section.length){
-              this.current_section = section[1];
-              this.options[section[1]] = {};
-            }else if(property.length){
-
-              let name = property.shift();
-              let value = property.join('=');
-
-              try{
-                value = JSON.parse(value.toString());
-              }catch(e){
-                value = value.toString();
-              }
-
-              if(this.current_section){
-                this.options[this.current_section][name] = value;
-              }else{
-                this.options[name] = value;
+      try{
+        GameFileSystem.readFile(this.ini_path).then( (buffer) => {
+          let ini_text = buffer.toString('utf8');
+          let lines = ini_text.split(/\r?\n/);
+  
+          this.current_section = null;
+  
+          for(let i = 0, len = lines.length; i < len; i++){
+            let line = lines[i].trim();
+            if( !line.length ){
+  
+            }else{
+              let section = line.match(/^\[(.*)\]$/);
+              let property = line.split('=');
+              if(section != null && section.length){
+                this.current_section = section[1];
+                this.options[section[1]] = {};
+              }else if(property.length){
+  
+                let name = property.shift();
+                let value = property.join('=');
+  
+                try{
+                  value = JSON.parse(value.toString());
+                }catch(e){
+                  value = value.toString();
+                }
+  
+                if(this.current_section){
+                  this.options[this.current_section][name] = value;
+                }else{
+                  this.options[name] = value;
+                }
               }
             }
           }
-        }
-      })
-    }catch(e){
-
-    }
-
-    this.options = DeepObject.Merge(this.defaults, this.options);
-
+          this.options = DeepObject.Merge(this.defaults, this.options);
+          resolve();
+          return;
+        })
+      }catch(e){
+        console.error(e);
+        this.options = DeepObject.Merge(this.defaults, this.options);
+        resolve();
+        return;
+      }
+    });
   }
 
   // Code copied from linked Stack Overflow question
