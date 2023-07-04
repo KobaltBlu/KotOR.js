@@ -57,6 +57,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
             MenuManager.ClearMenus();
             if(GameState.module instanceof Module){
               GameState.module.dispose();
+              GameState.module = undefined;
             }
             savegame.Load()
           }

@@ -1014,6 +1014,7 @@ export class GameState implements EngineContext {
 
                 FactionManager.Load().then( () => {
                   Module.BuildFromExisting(name, waypoint, (module: Module) => {
+                    GameState.module = module;
                     GameState.scene.visible = false;
 
                     MenuManager.LoadScreen.setProgress(0);

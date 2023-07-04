@@ -278,9 +278,9 @@ export class Module {
           this.removeEffect(this);
         },
         removeEffect: function(effect: GameEffect){
-          let index = GameState.module.effects.indexOf(effect);
+          let index = this.effects.indexOf(effect);
           if(index >= 0){
-            GameState.module.effects.splice(index, 1);
+            this.effects.splice(index, 1);
           }
         }
       };
@@ -447,7 +447,7 @@ export class Module {
           if(this.scripts[key] instanceof NWScriptInstance){
             //this.scripts[key].name = _script;
             this.scripts[key].enteringObject = GameState.player;
-            this.scripts[key].run(GameState.module.area, 0);
+            this.scripts[key].run(this.area, 0);
             asyncLoop.next();
           }else{
             console.error('Module failed to load script', _script, key);
@@ -492,10 +492,10 @@ export class Module {
     GameState.collisionList = [];
     
     //Remove all effects
-    if(GameState.module){
-      while(GameState.module.effects.length){
-        GameState.module.effects[0].dispose();
-        GameState.module.effects.shift();
+    if(this){
+      while(this.effects.length){
+        this.effects[0].dispose();
+        this.effects.shift();
       }
     }
 
@@ -517,20 +517,14 @@ export class Module {
       GameState.player = undefined;
     }
 
-    if(GameState.module instanceof Module){
-
-      //Clear emitters
-      while (GameState.group.emitters.children.length){
-        GameState.group.emitters.remove(GameState.group.emitters.children[0]);
-      }
-      
-      if(this.area){
-        this.area.dispose();
-      }
-
+    //Clear emitters
+    while (GameState.group.emitters.children.length){
+      GameState.group.emitters.remove(GameState.group.emitters.children[0]);
     }
-
-    GameState.module = undefined;
+    
+    if(this.area){
+      this.area.dispose();
+    }
 
   }
 
@@ -841,21 +835,17 @@ export class Module {
   //ex: end_m01aa end_m01aa_s
   static BuildFromExisting(modName: string, waypoint?: any, onComplete?: Function){
     console.log('BuildFromExisting', modName);
-    let module = new Module();
+    const module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
-    GameState.module = module;
     if(modName){
       try{
         Module.GetModuleArchives(modName).then( (archives) => {
-          // console.log('archives', archives);
           ResourceLoader.InitModuleCache(archives).then( () => {
             ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
-              
               new GFFObject(ifo_data, (ifo) => {
-
-                GameState.module.setFromIFO(ifo, GameState.isLoadingSave);
-                GameState.time = GameState.module.timeManager.pauseTime / 1000;
+                module.setFromIFO(ifo, GameState.isLoadingSave);
+                GameState.time = module.timeManager.pauseTime / 1000;
 
                 ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data: Buffer) => {
                   new GFFObject(data, (git) => {
@@ -880,13 +870,11 @@ export class Module {
               });
             }, (err: any) => {
               console.error('LoadModule', err);
-              GameState.module = undefined;
             });
           });
         });
       }catch(e){
         console.error('LoadModule', e);
-        GameState.module = undefined;
       }
     }
     return module;
@@ -895,17 +883,15 @@ export class Module {
   //This should only be used inside KotOR Forge
   static FromProject(directory?: string, onComplete?: Function){
     console.log('BuildFromExisting', directory);
-    let module = new Module();
+    const module = new Module();
     module.transWP = null;
-    GameState.module = module;
     if(directory != null){
-
       GameFileSystem.readFile(path.join(directory, 'module.ifo')).then( (ifo_data) => {
         new GFFObject(ifo_data, (ifo) => {
           //console.log('Module.FromProject', 'IFO', ifo);
           try{
-            GameState.module.setFromIFO(ifo);
-            GameState.time = GameState.module.timeManager.pauseTime / 1000;
+            module.setFromIFO(ifo);
+            GameState.time = module.timeManager.pauseTime / 1000;
             GameFileSystem.readFile(path.join(directory, module.Mod_Entry_Area+'.git')).then( (buffer) => {
               new GFFObject(buffer, (git) => {
                 //console.log('Module.FromProject', 'GIT', git);
@@ -921,21 +907,20 @@ export class Module {
                         onComplete(module);
                     });                        
                   });
-                }).catch( () => {
-          
+                }).catch( (e) => {
+                  console.error(e);
                 });
               });
-            }).catch( () => {
-      
+            }).catch( (e) => {
+              console.error(e);
             });
           }catch(e){
             console.error(e);
           }
         });
-      }).catch( () => {
-
+      }).catch( (e) => {
+        console.error(e);
       });
-      
     }
     return module;
   }

@@ -84,7 +84,7 @@ export class MenuOptions extends K1_MenuOptions {
               
         if(GameState.module instanceof Module){
           GameState.module.dispose();
-          GameState.module = undefined as any;
+          GameState.module = undefined;
         }
 
         //Remove all cached scripts and kill all running instances
