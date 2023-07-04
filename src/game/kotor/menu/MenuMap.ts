@@ -12,7 +12,6 @@ import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MapMode } from "../../../enums/engine/MapMode";
 import { Mouse } from "../../../controls";
 import { ModuleWaypoint } from "../../../module";
-import { TLKManager } from "../../../KotOR";
 import { CExoLocString } from "../../../resource/CExoLocString";
 
 /* @file

@@ -13,7 +13,6 @@ import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import * as THREE from "three";
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { ModuleItem } from "../../../module";
-import { GameEngineType } from "../../../KotOR";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 
 /* @file

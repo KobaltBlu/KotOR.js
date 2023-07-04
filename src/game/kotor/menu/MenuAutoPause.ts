@@ -6,7 +6,7 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseManager } from "../../../managers/AutoPauseManager";
 import { GameMenu, GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { TLKManager } from "../../../KotOR";
+import { TLKManager } from "../../../managers/TLKManager";
 
 /* @file
 * The MenuAutoPause menu class.

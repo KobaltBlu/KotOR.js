@@ -1,6 +1,7 @@
 import { GameState } from "../GameState";
-import { EngineMode, EngineState, MenuManager } from "../KotOR";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
+import { EngineState } from "../enums/engine/EngineState";
+import { MenuManager } from "./MenuManager";
 import { TLKManager } from "./TLKManager";
 
 export class AutoPauseManager {

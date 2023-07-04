@@ -2,11 +2,12 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameEngineType, TwoDAObject } from "../../../KotOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameEngineType } from "../../../enums/engine/GameEngineType";
 import { GameMenu, GUIListBox, GUIButton } from "../../../gui";
 import { TLKManager } from "../../../managers/TLKManager";
 import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { TwoDAObject } from "../../../resource/TwoDAObject";
 
 /* @file
 * The InGameConfirm menu class.

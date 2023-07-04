@@ -7,7 +7,7 @@ import { GameMenu } from "../gui";
 import { CharGenManager } from "./CharGenManager";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { EngineState } from "../KotOR";
+import { EngineState } from "../enums/engine/EngineState";
 
 
 export class MenuManager {
