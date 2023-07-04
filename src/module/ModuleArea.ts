@@ -29,6 +29,8 @@ import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueued
 import { FollowerCamera } from "../engine/FollowerCamera";
 import { MenuManager, TwoDAManager, PartyManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
+import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
+import { AudioEngine } from "../audio";
 
 /* @file
  * The ModuleArea class.
@@ -50,7 +52,7 @@ export class ModuleArea extends ModuleObject {
   areaOfEffects: ModuleAreaOfEffect[] = [];
   miniGame: ModuleMiniGame;
 
-  audio = {
+  audio: AreaAudioProperties = {
     AmbientSndDay: 0,
     AmbientSndDayVol: 0,
     AmbientSndNight: 0,
@@ -624,6 +626,7 @@ export class ModuleArea extends ModuleObject {
     this.audio.MusicDay = this.git.GetFieldByLabel('MusicDay', areaPropsField).GetValue();
     this.audio.MusicDelay = this.git.GetFieldByLabel('MusicDelay', areaPropsField).GetValue();
     this.audio.MusicNight = this.git.GetFieldByLabel('MusicNight', areaPropsField).GetValue();
+    AudioEngine.GetAudioEngine().SetAreaAudioProperties(this.audio);
 
     //Cameras
     if(cameras){
@@ -685,7 +688,7 @@ export class ModuleArea extends ModuleObject {
     if(sounds){
       for(let i = 0; i < sounds.ChildStructs.length; i++ ){
         let strt = sounds.ChildStructs[i];
-        this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), GameState.audioEngine) );
+        this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
 
@@ -744,7 +747,7 @@ export class ModuleArea extends ModuleObject {
 
     GameState.AlphaTest = this.Alphatest;
 
-    GameState.audioEngine.SetReverbProfile(this.audio.EnvAudio);
+    AudioEngine.GetAudioEngine().SetReverbProfile(this.audio.EnvAudio);
 
     FollowerCamera.setCameraStyle(this.getCameraStyle());
     if(this.miniGame){
@@ -1487,7 +1490,7 @@ export class ModuleArea extends ModuleObject {
 
         AudioLoader.LoadAmbientSound(ambientDay, (data: Buffer) => {
           //console.log('Loaded Ambient Sound', ambientDay);
-          GameState.audioEngine.SetAmbientSound(data);
+          AudioEngine.GetAudioEngine().SetAmbientSound(data);
           resolve();
         }, () => {
           console.error('Ambient Audio not found', ambientDay);
@@ -1507,7 +1510,7 @@ export class ModuleArea extends ModuleObject {
 
         AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
           //console.log('Loaded Background Music', bgMusic);
-          GameState.audioEngine.SetBackgroundMusic(data);
+          AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
           resolve();
         }, () => {
           console.error('Background Music not found', bgMusic);

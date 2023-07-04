@@ -221,7 +221,6 @@ export class GameState implements EngineContext {
   
   static module: Module;
   static TutorialWindowTracker: any[];
-  static audioEngine: AudioEngine;
   static audioEmitter: AudioEmitter;
   static guiAudioEmitter: any;
   static State: EngineState;
@@ -532,13 +531,13 @@ export class GameState implements EngineContext {
 
     GameState.TutorialWindowTracker = [];
 
-    GameState.audioEngine = new AudioEngine();
     GameState.initGUIAudio();
     GameState.lightManager.init(GameState);
     GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
+    const audioEngine = AudioEngine.GetAudioEngine();
 
     GameState.audioEmitter = new AudioEmitter({
-      engine: GameState.audioEngine,
+      engine: audioEngine,
       props: {
         XPosition: 0,
         YPosition: 0,
@@ -678,7 +677,7 @@ export class GameState implements EngineContext {
     try{
 
       GameState.guiAudioEmitter = new AudioEmitter({
-        engine: GameState.audioEngine,
+        engine: AudioEngine.GetAudioEngine(),
         props: {
           XPosition: 0,
           YPosition: 0,
@@ -701,8 +700,6 @@ export class GameState implements EngineContext {
         onError: () => {
         }
       });
-
-      GameState.audioEngine.AddEmitter(GameState.guiAudioEmitter);
     }catch(e){
 
     }
@@ -953,7 +950,7 @@ export class GameState implements EngineContext {
     MenuManager.InGameComputer.audioEmitter = 
     MenuManager.InGameDialog.audioEmitter = 
     this.audioEmitter = new AudioEmitter({
-      engine: GameState.audioEngine,
+      engine: AudioEngine.GetAudioEngine(),
       channel: AudioEngineChannel.VO,
       props: {
         XPosition: 0,
@@ -977,7 +974,6 @@ export class GameState implements EngineContext {
       onError: () => {
       }
     });
-    GameState.audioEngine.AddEmitter(this.audioEmitter);
   }
 
   static LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
@@ -1113,8 +1109,8 @@ export class GameState implements EngineContext {
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
-    GameState.audioEngine.stopBackgroundMusic();
-    GameState.audioEngine.Reset();
+    AudioEngine.GetAudioEngine().stopBackgroundMusic();
+    AudioEngine.GetAudioEngine().Reset();
     CombatEngine.Reset();
 
     GameState.lightManager.clearLights();
@@ -1310,7 +1306,7 @@ export class GameState implements EngineContext {
 
     }
 
-    GameState.audioEngine.Update(GameState.currentCamera.position, GameState.currentCamera.rotation);
+    AudioEngine.GetAudioEngine().Update(GameState.currentCamera.position, GameState.currentCamera.rotation);
     CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.updateCursorPosition();

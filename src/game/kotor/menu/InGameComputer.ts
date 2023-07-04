@@ -12,6 +12,7 @@ import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { MenuManager } from "../../../managers";
+import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
 * The InGameComputer menu class.
@@ -102,8 +103,8 @@ export class InGameComputer extends GameMenu {
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
       AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
-        GameState.audioEngine.stopBackgroundMusic();
-        GameState.audioEngine.SetDialogBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().stopBackgroundMusic();
+        AudioEngine.GetAudioEngine().SetDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
       }, () => {
         this.showEntry(this.startingEntry);

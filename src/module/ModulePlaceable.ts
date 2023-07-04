@@ -26,6 +26,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager } from "../managers";
+import { AudioEngine } from "../audio/AudioEngine";
 
 /* @file
  * The ModulePlaceable class.
@@ -141,7 +142,7 @@ export class ModulePlaceable extends ModuleObject {
 
     try{
       this.audioEmitter = new AudioEmitter({
-        engine: GameState.audioEngine,
+        engine: AudioEngine.GetAudioEngine(),
         props: this,
         template: {
           sounds: [],
@@ -160,8 +161,6 @@ export class ModulePlaceable extends ModuleObject {
         onError: () => {
         }
       });
-
-      GameState.audioEngine.AddEmitter(this.audioEmitter);
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
     }

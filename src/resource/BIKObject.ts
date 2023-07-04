@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as THREE from "three";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { GameState } from "../GameState";
+import { AudioEngine } from "../audio/AudioEngine";
 
 export class BIKObject {
   abs_path: any;
@@ -199,12 +200,12 @@ export class BIKObject {
 
     // let _path = this.abs_path ? this.file : path.join('Movies', this.file);
 
-    // this.audioCtx = GameState.audioEngine.audioCtx;
+    // this.audioCtx = AudioEngine.GetAudioEngine().audioCtx;
     // this.stop();
     // this.onComplete = onComplete;
-    // GameState.audioEngine.voGain.disconnect(this.audioCtx.destination);
-    // GameState.audioEngine.musicGain.disconnect(this.audioCtx.destination);
-    // GameState.audioEngine.sfxGain.disconnect(this.audioCtx.destination);
+    // AudioEngine.GetAudioEngine().voGain.disconnect(this.audioCtx.destination);
+    // AudioEngine.GetAudioEngine().musicGain.disconnect(this.audioCtx.destination);
+    // AudioEngine.GetAudioEngine().sfxGain.disconnect(this.audioCtx.destination);
     // this.frames = [];
     // this.decode_complete = false;
     // this.demuxer = await beamcoder.demuxer(_path); // Create a demuxer for a file
@@ -253,9 +254,9 @@ export class BIKObject {
       node = undefined;
     }
 
-    GameState.audioEngine.voGain.connect(this.audioCtx.destination);
-    GameState.audioEngine.musicGain.connect(this.audioCtx.destination);
-    GameState.audioEngine.sfxGain.connect(this.audioCtx.destination);
+    AudioEngine.GetAudioEngine().voGain.connect(this.audioCtx.destination);
+    AudioEngine.GetAudioEngine().musicGain.connect(this.audioCtx.destination);
+    AudioEngine.GetAudioEngine().sfxGain.connect(this.audioCtx.destination);
 
     if(typeof this.onComplete === 'function')
       this.onComplete();
@@ -337,7 +338,7 @@ export class BIKObject {
         // let sampleNode = this.audioCtx.createBufferSource();
         // sampleNode.buffer = buffer;
         // sampleNode.loop = false;
-        // sampleNode.connect( GameState.audioEngine.movieGain );
+        // sampleNode.connect( AudioEngine.GetAudioEngine().movieGain );
         // sampleNode.onended = function(){
         //   sampleNode.buffer = undefined;
         //   sampleNode.disconnect();
@@ -403,7 +404,7 @@ export class BIKObject {
       let bufferedNode = this.audioCtx.createBufferSource();
       bufferedNode.buffer = buffered;
       bufferedNode.loop = false;
-      bufferedNode.connect( GameState.audioEngine.movieGain );
+      bufferedNode.connect( AudioEngine.GetAudioEngine().movieGain );
       bufferedNode.onended = function(){
         bufferedNode.buffer = undefined;
         bufferedNode.disconnect();

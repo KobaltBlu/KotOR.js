@@ -28,6 +28,7 @@ import { FactionManager } from "../FactionManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
+import { AudioEngine } from "../audio/AudioEngine";
 
 /* @file
  * The Module class.
@@ -285,7 +286,7 @@ export class Module {
       };
 
       object.audioEmitter = new AudioEmitter({
-        engine: GameState.audioEngine,
+        engine: AudioEngine.GetAudioEngine(),
         props: object,
         template: {
           sounds: [],
@@ -304,7 +305,6 @@ export class Module {
         onError: () => {
         }
       });
-      GameState.audioEngine.AddEmitter(object.audioEmitter);
       object.audioEmitter.SetPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
 
       object.model.position.copy(lLocation.position);

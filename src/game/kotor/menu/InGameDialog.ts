@@ -22,6 +22,7 @@ import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAni
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { OdysseyModelAnimation } from "../../../odyssey";
 import { FadeOverlayManager, MenuManager, ModuleObjectManager } from "../../../managers";
+import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
 * The InGameDialog menu class.
@@ -205,8 +206,8 @@ export class InGameDialog extends GameMenu {
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
       AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
-        GameState.audioEngine.stopBackgroundMusic();
-        GameState.audioEngine.SetDialogBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().stopBackgroundMusic();
+        AudioEngine.GetAudioEngine().SetDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
       }, () => {
         this.showEntry(this.startingEntry);

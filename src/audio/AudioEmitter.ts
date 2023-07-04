@@ -159,7 +159,9 @@ export class AudioEmitter {
       break;
     }
 
-    
+    if(this.engine){
+      this.engine.AddEmitter(this);
+    }
 
   }
 

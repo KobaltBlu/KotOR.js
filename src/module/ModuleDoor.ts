@@ -29,6 +29,7 @@ import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { DoorAppearance } from "../engine/DoorAppearance";
+import { AudioEngine } from "../audio/AudioEngine";
 
 /* @file
  * The ModuleDoor class.
@@ -149,7 +150,7 @@ export class ModuleDoor extends ModuleObject {
     try{
 
       this.audioEmitter = new AudioEmitter({
-        engine: GameState.audioEngine,
+        engine: AudioEngine.GetAudioEngine(),
         props: this,
         template: {
           sounds: [],
@@ -168,8 +169,6 @@ export class ModuleDoor extends ModuleObject {
         onError: () => {
         }
       });
-
-      GameState.audioEngine.AddEmitter(this.audioEmitter);
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
     }

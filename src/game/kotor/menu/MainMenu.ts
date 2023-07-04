@@ -11,6 +11,7 @@ import { TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenManager, MenuManager } from "../../../managers";
+import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
 * The MainMenu menu class.
@@ -121,7 +122,7 @@ export class MainMenu extends GameMenu {
     return new Promise<void>( (resolve, reject) => {
       MenuManager.ClearMenus(); 
       AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
-        GameState.audioEngine.SetBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
         this.Open();
         resolve();
       }, () => {
@@ -143,7 +144,7 @@ export class MainMenu extends GameMenu {
 
   Show() {
     super.Show();
-    GameState.audioEngine.SetBackgroundMusic(this.bgMusicBuffer);
+    AudioEngine.GetAudioEngine().SetBackgroundMusic(this.bgMusicBuffer);
     GameState.AlphaTest = 0.5;
     CurrentGame.InitGameInProgressFolder(false).then( () => {
 

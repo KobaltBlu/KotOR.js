@@ -207,8 +207,6 @@ export class ModuleSound extends ModuleObject {
       }
     });
 
-    this.audioEngine.AddEmitter(this.emitter);
-
   }
 
   InitProperties(){

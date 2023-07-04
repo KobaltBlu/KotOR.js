@@ -13,6 +13,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
 import { MenuManager } from ".";
+import { AudioEngine } from "../audio/AudioEngine";
 
 export class CharGenManager {
 
@@ -73,7 +74,7 @@ export class CharGenManager {
     return new Promise<void>( (resolve, reject) => {
       let audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
       AudioLoader.LoadMusic(audioResRef, (data: any) => {
-        GameState.audioEngine.SetBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
         resolve();
       }, () => {
         resolve();

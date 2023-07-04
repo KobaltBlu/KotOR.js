@@ -1,17 +1,22 @@
-/* KotOR JS - A remake of the Odyssey GameState.Engine that powered KotOR I & II
+/* KotOR JS - A remake of the Odyssey Engine that powered KotOR I & II
  */
 
 import * as THREE from "three";
-import { Module } from "../module";
-import { GameState } from "../GameState";
 import { EAXPresets } from "./EAXPresets";
 import { AudioEmitter } from "./AudioEmitter";
+import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
+import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 
 /* @file
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
  */
 
 export class AudioEngine {
+  static _gainSfxVol: number;
+  static _gainMusicVol: number;
+  static _gainVoVol: number;
+  static Mode: AudioEngineMode = AudioEngineMode.Software;
+
   audioCtx: AudioContext;
   // reverbLF: any;
   // reverbHF: any;
@@ -27,9 +32,9 @@ export class AudioEngine {
   ambient: any;
   bgmBuffer: any;
   dialogMusicBuffer: any;
-  static _gainSfxVol: number;
-  static _gainMusicVol: number;
-  static _gainVoVol: number;
+
+  mode: AudioEngineMode = AudioEngine.Mode;
+  areaProperies: AreaAudioProperties;
 
   constructor () {
 
@@ -67,6 +72,18 @@ export class AudioEngine {
 
   }
 
+  static GetAudioEngine(){
+    if(!this.engines.length) this.engines.push(new AudioEngine());
+    return this.engines[0];
+  }
+
+  static SetEngineMode(mode: AudioEngineMode){
+    this.Mode = mode;
+    for(let i = 0; i < this.engines.length; i++){
+      this.engines[i].mode = this.Mode;
+    }
+  }
+
   SetReverbState(state = false){
     this.sfxGain.disconnect();
     //this.musicGain.disconnect();
@@ -95,10 +112,8 @@ export class AudioEngine {
     return;
     console.log('SetReverbProfile:', index);
 
-    let software_mode = false;
-
-    if(GameState.iniConfig.getProperty('Sound Options.Force Software') == 1){
-      software_mode = true;
+    const software_mode = (this.mode == AudioEngineMode.Software);
+    if(software_mode){
       console.warn('SetReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
     }
 
@@ -230,9 +245,13 @@ export class AudioEngine {
     }catch(e){}
   }
 
+  SetAreaAudioProperties(props: AreaAudioProperties){
+    this.areaProperies = props;
+  }
+
   GetBackgroundMusicLoopTime(){
-    if(GameState.module instanceof Module){
-      return GameState.module.area.audio.MusicDelay;
+    if(this.areaProperies){
+      return this.areaProperies.MusicDelay;
     }else{
       return 30000;
     }
