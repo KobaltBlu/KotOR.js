@@ -4,10 +4,7 @@
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
-import { FadeOverlayManager } from "../managers/FadeOverlayManager";
-import { GlobalVariableManager } from "../managers/GlobalVariableManager";
-import { MenuManager } from "../managers/MenuManager";
-import { PartyManager } from "../managers/PartyManager";
+import { MenuManager, FadeOverlayManager, GlobalVariableManager, PartyManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";

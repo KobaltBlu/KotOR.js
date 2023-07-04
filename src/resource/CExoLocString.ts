@@ -1,4 +1,4 @@
-import { TLKManager } from "../managers/TLKManager";
+import { TLKManager } from "../managers";
 import { CExoLocSubString } from "./CExoLocSubString";
 
 export class CExoLocString {

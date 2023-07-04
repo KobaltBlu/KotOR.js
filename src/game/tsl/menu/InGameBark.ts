@@ -2,11 +2,12 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, MenuManager } from "../../../gui";
+import { GUILabel } from "../../../gui";
 import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 import * as THREE from "three";
 import { LIPObject } from "../../../resource/LIPObject";
 import { ModuleCreature } from "../../../module";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The InGameBark menu class.

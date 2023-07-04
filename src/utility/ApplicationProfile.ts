@@ -1,13 +1,13 @@
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ApplicationMode } from "../enums/ApplicationMode";
 import { GameEngineType } from "../enums/engine/GameEngineType";
-import { GameFileSystem } from "./GameFileSystem";
 
 export class ApplicationProfile {
 
   static MODE: ApplicationMode = ApplicationMode.GAME;
   static ENV: ApplicationEnvironment = ApplicationEnvironment.BROWSER;
   static directory: string;
+  static directoryHandle: FileSystemDirectoryHandle;
   static key: string;
   static launch: any;
   static path_sep: string = '/';
@@ -37,9 +37,9 @@ export class ApplicationProfile {
 
     if(ApplicationProfile.profile){
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        ApplicationProfile.directory = GameFileSystem.rootDirectoryPath = ApplicationProfile.profile.directory;
+        ApplicationProfile.directory = ApplicationProfile.profile.directory;
       }else{
-        GameFileSystem.rootDirectoryHandle = ApplicationProfile.profile.directory_handle;
+        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
       }
     }
   }

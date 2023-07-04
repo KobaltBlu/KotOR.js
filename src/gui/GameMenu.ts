@@ -1,18 +1,17 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { GUIControl, GUIProtoItem, MenuManager } from ".";
+import { GUIControl, GUIProtoItem } from ".";
 import * as THREE from "three";
 import { GFFObject } from "../resource/GFFObject";
-import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
-import { ResourceLoader } from "../resource/ResourceLoader";
 import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { ShaderManager } from "../managers/ShaderManager";
+import { ShaderManager, MenuManager } from "../managers";
+import { ResourceLoader, TextureLoader } from "../loaders";
 
 /* @file
  * The base GameMenu class.

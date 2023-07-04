@@ -3,16 +3,15 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUISlider, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { PartyManager } from "../../../managers/PartyManager";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 import * as THREE from "three";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { PartyManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuCharacter menu class.

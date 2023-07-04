@@ -5,7 +5,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
+import { MenuManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { DLGObject } from "../resource/DLGObject";

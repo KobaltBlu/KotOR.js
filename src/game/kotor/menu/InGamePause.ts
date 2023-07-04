@@ -3,8 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
-import { AutoPauseManager } from "../../../managers/AutoPauseManager";
+import { GameMenu, GUILabel, GUIButton } from "../../../gui";
+import { AutoPauseManager } from "../../../managers";
 
 /* @file
 * The InGamePause menu class.

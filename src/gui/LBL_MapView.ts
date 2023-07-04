@@ -1,14 +1,13 @@
 import { GameState } from "../GameState";
 import { AreaMap, ModuleWaypoint } from "../module";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
-import { GUIControl, GUILabel, MenuManager } from ".";
+import { GUIControl, GUILabel } from ".";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
 import { GameEngineType } from "../enums/engine/GameEngineType";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { ShaderManager } from "../managers/ShaderManager";
-import { PartyManager } from "../managers/PartyManager";
+import { TextureLoader } from "../loaders";
+import { ShaderManager, MenuManager, PartyManager } from "../managers";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;

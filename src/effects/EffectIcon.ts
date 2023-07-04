@@ -1,8 +1,8 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TextureLoader } from "../loaders";
+import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 

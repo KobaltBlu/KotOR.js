@@ -5,12 +5,12 @@ import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
 import * as THREE from "three";
-import { TLKManager } from "../../../managers/TLKManager";
+import { TLKManager } from "../../../managers";
 
 /* @file
 * The MenuContainer menu class.

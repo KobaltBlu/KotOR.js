@@ -3,7 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, MenuManager } from "../../../gui";
+import { GameMenu, GUIListBox } from "../../../gui";
 
 /* @file
 * The MenuCredits menu class.

@@ -4,13 +4,13 @@
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager, GUIProtoItem, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { TLKManager } from "../../../managers/TLKManager";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
+import { MenuManager, TLKManager } from "../../../managers";
 
 /* @file
 * The MenuSaveLoad menu class.

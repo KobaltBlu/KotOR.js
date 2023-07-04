@@ -3,7 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox, MenuManager } from "../../../gui";
+import { GameMenu, GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuGraphics menu class.

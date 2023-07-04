@@ -5,8 +5,6 @@ import * as THREE from "three";
 import { EncounterCreatureEntry, ModuleObject, SpawnEntry, SpawnPointEntry } from ".";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
-import { TemplateLoader } from "../loaders/TemplateLoader";
-import { PartyManager } from "../managers/PartyManager";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
@@ -16,8 +14,9 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { ConfigClient } from "../utility/ConfigClient";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { FactionManager } from "../FactionManager";
+import { PartyManager } from "../managers";
 
 /* @file
  * The ModuleEncounter class.

@@ -2,7 +2,7 @@
  */
 
 import { GFFStruct } from "../resource/GFFStruct";
-import { GameMenu, GUIControl } from "./";
+import { GameMenu, GUIControl } from ".";
 
 /* @file
  * The GUILabel class.

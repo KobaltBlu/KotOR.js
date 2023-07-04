@@ -2,9 +2,8 @@
  */
 
 import { GameState } from "../GameState";
-import { BIFManager } from "../managers/BIFManager";
 import { GFFObject } from "../resource/GFFObject";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from ".";
 import { Utility } from "../utility/Utility";
 import * as path from "path";
 import { ResourceTypes } from "../resource/ResourceTypes";

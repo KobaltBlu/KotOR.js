@@ -3,9 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
-import { JournalEntry, JournalManager } from "../../../managers/JournalManager";
-import { TLKManager } from "../../../managers/TLKManager";
+import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { JournalEntry, MenuManager, TLKManager, JournalManager } from "../../../managers";
 
 /* @file
 * The MenuJournal menu class.

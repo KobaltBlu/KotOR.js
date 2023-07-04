@@ -3,7 +3,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
-import { ModuleWaypoint } from "./";
+import { ModuleWaypoint } from ".";
 
 export class AreaMap {
   data: Buffer;

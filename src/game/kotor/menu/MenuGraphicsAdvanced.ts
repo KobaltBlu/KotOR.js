@@ -4,9 +4,8 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { TLKManager } from "../../../managers/TLKManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { TextureLoader } from "../../../loaders";
+import { TLKManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuGraphicsAdvanced menu class.

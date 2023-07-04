@@ -9,7 +9,7 @@ import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { Endians } from "../enums/resource/Endians";
 import { GameState } from "../GameState";
 import { ModuleObject } from "../module";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { NWScriptInstance } from "./NWScriptInstance";

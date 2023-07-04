@@ -6,11 +6,11 @@ import { CurrentGame } from "../../../CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenManager } from "../../../managers/CharGenManager";
+import { CharGenManager, MenuManager } from "../../../managers";
 
 /* @file
 * The MainMenu menu class.

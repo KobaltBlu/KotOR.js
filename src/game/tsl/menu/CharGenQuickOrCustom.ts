@@ -2,9 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUIButton, GUIListBox, MenuManager } from "../../../gui";
-import { CharGenManager } from "../../../managers/CharGenManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GUIButton, GUIListBox } from "../../../gui";
+import { CharGenManager, MenuManager, TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";

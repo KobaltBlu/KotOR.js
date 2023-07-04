@@ -4,8 +4,8 @@
 import * as THREE from "three";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_MapView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
+import { GameMenu, GUILabel, GUIButton, LBL_MapView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
@@ -13,6 +13,7 @@ import { MapMode } from "../../../enums/engine/MapMode";
 import { Mouse } from "../../../controls";
 import { ModuleWaypoint } from "../../../module";
 import { CExoLocString } from "../../../resource/CExoLocString";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuMap menu class.

@@ -1,7 +1,7 @@
 import { GUIButton, GUIListBox, GUIProtoItem } from "..";
 import { GameState } from "../../GameState";
 import { TextureType } from "../../enums/loaders/TextureType";
-import { TextureLoader } from "../../loaders/TextureLoader";
+import { TextureLoader } from "../../loaders";
 import { GFFStruct } from "../../resource/GFFStruct";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
 import { GUIControl } from "../GUIControl";

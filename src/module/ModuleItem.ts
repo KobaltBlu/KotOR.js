@@ -12,19 +12,15 @@ import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
-import { TemplateLoader } from "../loaders/TemplateLoader";
-import { InventoryManager } from "../managers/InventoryManager";
-import { PartyManager } from "../managers/PartyManager";
-import { TLKManager } from "../managers/TLKManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
+import { TwoDAManager, PartyManager, InventoryManager, TLKManager } from "../managers";
 
 /* @file
  * The ModuleItem class.

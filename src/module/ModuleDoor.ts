@@ -5,7 +5,6 @@ import { ModuleCreature, ModuleItem, ModuleObject } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
-import { PartyManager } from "../managers/PartyManager";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
@@ -23,16 +22,12 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
 import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { InventoryManager } from "../managers/InventoryManager";
-import { KEYManager } from "../managers/KEYManager";
-import { MenuManager } from "../gui";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { AppearanceManager, InventoryManager, KEYManager, MenuManager, PartyManager, TwoDAManager } from "../managers";
+import { ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
-import { AppearanceManager } from "../managers/AppearanceManager";
 import { DoorAppearance } from "../engine/DoorAppearance";
 
 /* @file

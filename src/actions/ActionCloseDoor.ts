@@ -5,7 +5,7 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { GameState } from "../GameState";
 import { ModuleDoor, ModuleCreature } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action, ActionMoveToPoint } from "./";
+import { Action, ActionMoveToPoint } from ".";
 
 export class ActionCloseDoor extends Action {
 

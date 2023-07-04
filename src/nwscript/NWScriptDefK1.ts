@@ -31,15 +31,6 @@ import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { EventTimedEvent, GameEvent } from "../events";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
-import { TemplateLoader } from "../loaders/TemplateLoader";
-import { CameraShakeManager } from "../managers/CameraShakeManager";
-import { ConfigManager } from "../managers/ConfigManager";
-import { FadeOverlayManager } from "../managers/FadeOverlayManager";
-import { InventoryManager } from "../managers/InventoryManager";
-import { PartyManager } from "../managers/PartyManager";
-import { TLKManager } from "../managers/TLKManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
 import { OdysseyWalkMesh } from "../odyssey";
 import { Planetary } from "../Planetary";
@@ -57,17 +48,13 @@ import { NWScript } from "./NWScript";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
-import { GlobalVariableManager } from "../managers/GlobalVariableManager";
-import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import { JournalManager } from "../managers/JournalManager";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
-import { DialogMessageManager } from "../managers/DialogMessageManager";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
-import { AutoPauseManager } from "../managers/AutoPauseManager";
+import { ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I

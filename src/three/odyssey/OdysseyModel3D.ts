@@ -5,13 +5,10 @@ import * as THREE from "three";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly, OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin, OdysseyWalkMesh } from "../../odyssey";
 import { GameState } from "../../GameState";
 import { ModuleCreature, ModuleRoom } from "../../module";
-import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from "./";
+import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
-import { TwoDAManager } from "../../managers/TwoDAManager";
-import { LightManager } from "../../managers/LightManager";
-import { PartyManager } from "../../managers/PartyManager";
-import { TextureLoader } from "../../loaders/TextureLoader";
+import { TextureLoader } from "../../loaders";
 import { TextureType } from "../../enums/loaders/TextureType";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
@@ -22,6 +19,7 @@ import { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import { TwoDAAnimation } from "../../interface/twoDA/TwoDAAnimation";
+import { PartyManager, TwoDAManager } from "../../managers";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object

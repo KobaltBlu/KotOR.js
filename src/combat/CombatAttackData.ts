@@ -1,4 +1,4 @@
-import { CombatAttackDamage } from "./";
+import { CombatAttackDamage } from ".";
 import { ModuleObject } from "../module";
 import { CExoLocString } from "../resource/CExoLocString";
 

@@ -1,7 +1,6 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { AppearanceManager } from "../managers/AppearanceManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { AppearanceManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 
 export class EffectDisguise extends GameEffect {

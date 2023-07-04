@@ -6,9 +6,8 @@ import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArm
 import { GFFDataType } from "../../../enums/resource/GFFDataType";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIControl, LBL_3DView, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModulePlayer } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
 import { GFFField } from "../../../resource/GFFField";
@@ -16,9 +15,8 @@ import { GFFObject } from "../../../resource/GFFObject";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import * as THREE from "three";
-import { TLKManager } from "../../../managers/TLKManager";
 import { CharGenClasses } from "../../CharGenClasses";
-import { CharGenManager } from "../../../managers/CharGenManager";
+import { CharGenManager, MenuManager, TLKManager } from "../../../managers";
 
 /* @file
 * The CharGenClass menu class.

@@ -6,12 +6,12 @@ import { GUILabel, GUIButton, LBL_3DView } from "../../../gui";
 import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { Planetary } from "../../../Planetary";
-import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
+import { GlobalVariableManager } from "../../../managers";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { NWScript } from "../../../nwscript/NWScript";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { TextureLoader } from "../../../loaders/TextureLoader";
+import { TextureLoader } from "../../../loaders";
 
 /* @file
 * The MenuGalaxyMap menu class.

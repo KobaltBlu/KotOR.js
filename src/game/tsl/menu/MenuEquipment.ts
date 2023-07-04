@@ -4,14 +4,13 @@
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { InventoryManager } from "../../../managers/InventoryManager";
-import { PartyManager } from "../../../managers/PartyManager";
+import { TextureLoader } from "../../../loaders";
 import { ModuleItem } from "../../../module";
 import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
+import { PartyManager } from "../../../managers";
 
 /* @file
 * The MenuEquipment menu class.

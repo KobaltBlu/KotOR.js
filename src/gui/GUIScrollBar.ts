@@ -5,7 +5,7 @@ import { GameMenu, GUIControl, GUIListBox } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";

@@ -3,16 +3,15 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModuleItem, ModuleObject } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
 import * as THREE from "three";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel } from "../../../odyssey";
+import { MenuManager, TwoDAManager, PartyManager } from "../../../managers";
 
 /* @file
 * The MenuCharacter menu class.

@@ -32,9 +32,6 @@ const spleep = (time: number = 0) => {
 
 export class GameFileSystem {
 
-  static rootDirectoryPath: string;
-  static rootDirectoryHandle: FileSystemDirectoryHandle;
-
   private static normalizePath(filepath: string){
     filepath = filepath.trim();
     filepath.replace(/^\/+/, '').replace(/\/+$/, '');
@@ -46,7 +43,7 @@ export class GameFileSystem {
   static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<number>( (resolve, reject) => {
-        fs.open(path.join(this.rootDirectoryPath, filepath), (err, fd) => {
+        fs.open(path.join(ApplicationProfile.directory, filepath), (err, fd) => {
           if(err){
             console.error(err);
             reject(err);
@@ -120,7 +117,7 @@ export class GameFileSystem {
     // console.log('readFile', filepath);
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Buffer>( (resolve, reject) => {
-        fs.readFile(path.join(this.rootDirectoryPath, filepath), options, (err, buffer) => {
+        fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
           if(err) reject(undefined);
           resolve(Buffer.from(buffer));
         })
@@ -138,7 +135,7 @@ export class GameFileSystem {
   static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
     return new Promise<boolean>( async (resolve, reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.writeFile(path.join(this.rootDirectoryPath, filepath), data, (err) => {
+        fs.writeFile(path.join(ApplicationProfile.directory, filepath), data, (err) => {
           resolve(!err);
         })
       }else{
@@ -226,7 +223,7 @@ export class GameFileSystem {
 
   private static async isFSDirectory(resource_path: string = ''): Promise<boolean> {
     return new Promise<boolean>( (resolve, reject) => {
-      fs.stat(path.join(this.rootDirectoryPath, resource_path), (err, stats) => {
+      fs.stat(path.join(ApplicationProfile.directory, resource_path), (err, stats) => {
         if(err){
           console.error(err);
           reject();
@@ -248,7 +245,7 @@ export class GameFileSystem {
     }
     return new Promise<string[]>( async (resolve, reject) => {
       try{
-        let dir_path = path.join(this.rootDirectoryPath, resource_path);
+        let dir_path = path.join(ApplicationProfile.directory, resource_path);
         
         if(!(await this.isFSDirectory(resource_path))){
           if(!opts.list_dirs){
@@ -258,7 +255,7 @@ export class GameFileSystem {
           return;
         }else{
           if((depthState.depth < 1) || !!opts.recursive ){
-            // let dir_base = path.join(this.rootDirectoryPath, resource_path);
+            // let dir_base = path.join(ApplicationProfile.directory, resource_path);
             fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
               if(err){
                 console.error(err);
@@ -310,7 +307,7 @@ export class GameFileSystem {
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.mkdir(path.join(this.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, async (err) => {
+        fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, async (err) => {
           if(err){
             console.error(err);
             resolve(false)
@@ -324,7 +321,7 @@ export class GameFileSystem {
         if(dirPath.length){
           const dirs = dirPath.length ? dirPath.split(path.sep) : [];
           try{
-            let currentDirHandle = this.rootDirectoryHandle; 
+            let currentDirHandle = ApplicationProfile.directoryHandle; 
             for(let i = 0, len = dirs.length; i < len; i++){
               const isTargetDirectory = (i == dirs.length-1);
               const canCreate = (isTargetDirectory || !!opts.recursive);
@@ -355,9 +352,9 @@ export class GameFileSystem {
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        console.log(`fs.rmdir`, path.join(this.rootDirectoryPath, dirPath));
+        console.log(`fs.rmdir`, path.join(ApplicationProfile.directory, dirPath));
         fs.rmdir(
-          path.join(this.rootDirectoryPath, dirPath), 
+          path.join(ApplicationProfile.directory, dirPath), 
           {
             recursive: opts.recursive
           } as fs.RmDirOptions, 
@@ -375,7 +372,7 @@ export class GameFileSystem {
           const details = path.parse(dirPath);
           // let handle = await this.resolvePathDirectoryHandle(dirPath);
           let parentHandle = await this.resolvePathDirectoryHandle(details.dir);
-          if(parentHandle == this.rootDirectoryHandle) resolve(false);
+          if(parentHandle == ApplicationProfile.directoryHandle) resolve(false);
           if(parentHandle){
             for await (const entry of parentHandle.values()) {
               if(entry.kind == 'file') continue;
@@ -405,7 +402,7 @@ export class GameFileSystem {
   static exists(dirOrFilePath: string): Promise<boolean> {
     return new Promise<boolean>( async (resolve, reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.stat(path.join(this.rootDirectoryPath, dirOrFilePath), (err, stats) => {
+        fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
           if(err){
             console.log(dirOrFilePath);
             console.error(err);
@@ -523,10 +520,10 @@ export class GameFileSystem {
   }
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
-    if(this.rootDirectoryHandle){
+    if(ApplicationProfile.directoryHandle){
       const dirs = filepath.length ? filepath.split('/') : [];
-      let lastDirectoryHandle = this.rootDirectoryHandle;
-      let currentDirHandle = this.rootDirectoryHandle;
+      let lastDirectoryHandle = ApplicationProfile.directoryHandle;
+      let currentDirHandle = ApplicationProfile.directoryHandle;
       for(let i = 0, len = dirs.length; i < len; i++){
         lastDirectoryHandle = currentDirHandle;
         currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
@@ -537,10 +534,10 @@ export class GameFileSystem {
   }
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
-    if(this.rootDirectoryHandle){
+    if(ApplicationProfile.directoryHandle){
       const dirs = filepath.split('/');
       const filename = dirs.pop();
-      let currentDirHandle = this.rootDirectoryHandle;
+      let currentDirHandle = ApplicationProfile.directoryHandle;
       for(let i = 0, len = dirs.length; i < len; i++){
         currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
       }
@@ -551,9 +548,9 @@ export class GameFileSystem {
 
   static async initializeGameDirectory(){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      this.rootDirectoryPath = ApplicationProfile.directory;
+      ApplicationProfile.directory = ApplicationProfile.directory;
     }else{
-      this.rootDirectoryHandle = await window.showDirectoryPicker({
+      ApplicationProfile.directoryHandle = await window.showDirectoryPicker({
         mode: "readwrite"
       });
     }

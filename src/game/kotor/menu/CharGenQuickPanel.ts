@@ -4,10 +4,8 @@
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIControl, MenuManager } from "../../../gui";
-import { CharGenManager } from "../../../managers/CharGenManager";
-import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
-import { PartyManager } from "../../../managers/PartyManager";
+import { GameMenu, GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { CharGenManager, GlobalVariableManager, MenuManager, PartyManager } from "../../../managers";
 
 /* @file
 * The CharGenQuickPanel menu class.

@@ -5,9 +5,8 @@ import { GameState } from "../../../GameState";
 import { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
 import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { AutoPauseManager } from "../../../managers/AutoPauseManager";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { TLKManager } from "../../../managers/TLKManager";
+import { AutoPauseManager, TLKManager } from "../../../managers";
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;

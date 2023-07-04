@@ -5,20 +5,13 @@ import { ModuleCreature, ModuleItem, ModuleObject, ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { BinaryReader } from "../BinaryReader";
 import { GameEffect } from "../effects";
-import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
 import { SSFObjectType } from "../interface/resource/SSFType";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
-import { TemplateLoader } from "../loaders/TemplateLoader";
-import { AppearanceManager } from "../managers/AppearanceManager";
-import { InventoryManager } from "../managers/InventoryManager";
-import { KEYManager } from "../managers/KEYManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
@@ -27,11 +20,12 @@ import { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
+import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager } from "../managers";
 
 /* @file
  * The ModulePlaceable class.

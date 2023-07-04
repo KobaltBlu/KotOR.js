@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import { OdysseyController } from "../../odyssey/controllers/OdysseyController";
 import { GUIControl } from "../../gui/GUIControl";
-import { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from "./";
+import { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from ".";
 import { ModuleObject } from "../../module";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 export class OdysseyObject3D extends THREE.Object3D {

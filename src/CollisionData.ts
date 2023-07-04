@@ -1,5 +1,4 @@
 import { GameState } from "./GameState";
-import { PartyManager } from "./managers/PartyManager";
 import { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "./module";
 import { OdysseyWalkMesh } from "./odyssey";
 import * as THREE from "three";
@@ -7,6 +6,7 @@ import { Utility } from "./utility/Utility";
 import { ConfigClient } from "./utility/ConfigClient";
 import { OdysseyFace3 } from "./three/odyssey";
 import { ModuleDoorAnimState } from "./enums/module/ModuleDoorAnimState";
+import { PartyManager } from "./managers";
 
 interface AABBFaceData {
   object: ModuleObject,

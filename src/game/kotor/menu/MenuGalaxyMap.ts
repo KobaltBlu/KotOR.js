@@ -3,14 +3,14 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { GlobalVariableManager } from "../../../managers/GlobalVariableManager";
+import { GameMenu, GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
 import { Planet, Planetary } from "../../../Planetary";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { GlobalVariableManager, MenuManager } from "../../../managers";
 
 /* @file
 * The MenuGalaxyMap menu class.

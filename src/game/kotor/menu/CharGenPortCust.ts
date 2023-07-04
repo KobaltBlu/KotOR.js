@@ -3,10 +3,9 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { CharGenManager } from "../../../managers/CharGenManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { CharGenManager, MenuManager, TwoDAManager } from "../../../managers";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";

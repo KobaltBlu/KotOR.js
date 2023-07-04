@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameMenu, GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
-import { DialogMessageManager } from "../../../managers/DialogMessageManager";
-import { FeedbackMessageManager } from "../../../managers/FeedbackMessageManager";
-import { TLKManager } from "../../../managers/TLKManager";
+import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { DialogMessageManager, FeedbackMessageManager, MenuManager, TLKManager } from "../../../managers";
 
 /* @file
 * The MenuMessages menu class.

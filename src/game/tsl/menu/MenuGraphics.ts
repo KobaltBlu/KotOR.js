@@ -2,9 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox, MenuManager } from "../../../gui";
+import { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
 import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuGraphics menu class.

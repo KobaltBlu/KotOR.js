@@ -11,20 +11,19 @@ import { GUIControlExtent } from "../interface/gui/GUIControlExtent";
 import { GUIControlMoveTo } from "../interface/gui/GUIControlMoveTo";
 import { GUIControlText } from "../interface/gui/GUIControlText";
 import { GFFStruct } from "../resource/GFFStruct";
-import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox, GUIProgressBar, GUISlider, MenuManager } from "./";
+import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox, GUIProgressBar, GUISlider } from ".";
 
 
 import { createQuadElements as createIndicies } from "../utility/QuadIndices";
-import { TLKManager } from "../managers/TLKManager";
 import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
-import { ShaderManager } from "../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";
 import { GUIControlColors } from "../interface/gui/GUIControlColors";
+import { ShaderManager, MenuManager, TLKManager } from "../managers";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }

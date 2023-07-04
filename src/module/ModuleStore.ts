@@ -3,12 +3,11 @@
 
 import { ModuleItem, ModuleObject } from ".";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TemplateLoader } from "../loaders/TemplateLoader";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { AsyncLoop } from "../utility/AsyncLoop";
 

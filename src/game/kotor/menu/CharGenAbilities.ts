@@ -3,8 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIListBox, MenuManager } from "../../../gui";
-import { CharGenManager } from "../../../managers/CharGenManager";
+import { GameMenu, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { CharGenManager, MenuManager } from "../../../managers";
 import { ModuleCreature } from "../../../module";
 
 /* @file

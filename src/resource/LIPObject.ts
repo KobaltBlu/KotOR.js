@@ -5,7 +5,7 @@ import { LIPHeader } from "../interface/resource/LIPHeader";
 import { LIPKeyFrame } from "../interface/resource/LIPKeyFrame";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
-import { ResourceLoader } from "./ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "./ResourceTypes";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 import isBuffer from "is-buffer";

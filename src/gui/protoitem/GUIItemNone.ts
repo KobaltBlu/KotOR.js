@@ -1,4 +1,4 @@
-import { TLKManager } from "../../managers/TLKManager";
+import { TLKManager } from "../../managers";
 
 const STR_NONE = 363;
 

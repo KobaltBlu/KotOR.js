@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { LightManager } from "../managers/LightManager";
+import { LightManager } from "../managers";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GUIControl } from "./GUIControl";
 

@@ -3,11 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIProtoItem, MenuManager } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox, GUIProtoItem } from "../../../gui";
 
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject } from "../../../module";
-import { ResourceLoader } from "../../../resource/ResourceLoader";
+import { ResourceLoader } from "../../../loaders";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { LIPObject } from "../../../resource/LIPObject";
 import { DLGObject } from "../../../resource/DLGObject";
@@ -17,12 +17,11 @@ import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { GFFObject } from "../../../resource/GFFObject";
 import { AudioLoader } from "../../../audio/AudioLoader";
-import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
-import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 import { DLGNode } from "../../../resource/DLGNode";
 import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAnimState";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { OdysseyModelAnimation } from "../../../odyssey";
+import { FadeOverlayManager, MenuManager, ModuleObjectManager } from "../../../managers";
 
 /* @file
 * The InGameDialog menu class.

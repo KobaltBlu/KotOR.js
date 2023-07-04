@@ -5,7 +5,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { PartyManager } from "../managers/PartyManager";
+import { PartyManager } from "../managers";
 import { ModuleCreature } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";

@@ -1,7 +1,6 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { InventoryManager } from "../managers/InventoryManager";
-import { PartyManager } from "../managers/PartyManager";
+import { PartyManager, InventoryManager } from "../managers";
 import { ModuleCreature, ModuleItem, ModulePlaceable, ModuleStore } from "../module";
 import { Action } from "./Action";
 

@@ -2,8 +2,7 @@
  */
 
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TLKManager } from "../managers/TLKManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager, TLKManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentFeat, TalentSpell } from "../talents";

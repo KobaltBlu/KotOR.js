@@ -6,22 +6,16 @@ import * as path from "path";
 import { GameState } from "./GameState";
 import { LoadingScreen } from "./LoadingScreen";
 import { ERFObject } from "./resource/ERFObject";
-import { ERFManager } from "./managers/ERFManager";
-import { KEYManager } from "./managers/KEYManager";
-import { TLKManager } from "./managers/TLKManager";
-import { TwoDAManager } from "./managers/TwoDAManager";
-import { ResourceLoader } from "./resource/ResourceLoader";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { RIMObject } from "./resource/RIMObject";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { AsyncLoop } from "./utility/AsyncLoop";
-import { RIMManager } from "./managers/RIMManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
-import { JournalManager } from "./managers/JournalManager";
 import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
-import { AppearanceManager } from "./managers/AppearanceManager";
+import { KEYManager, JournalManager, TLKManager, RIMManager, ERFManager, TwoDAManager, AppearanceManager } from "./managers";
+import { ResourceLoader } from "./loaders";
 
 /* @file
 * The GameInitializer class. Handles the loading of game archives for use later during runtime

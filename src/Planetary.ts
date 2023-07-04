@@ -3,8 +3,7 @@
 
 import { GameState } from "./GameState";
 import { GFFDataType } from "./enums/resource/GFFDataType";
-import { TLKManager } from "./managers/TLKManager";
-import { TwoDAManager } from "./managers/TwoDAManager";
+import { TLKManager, TwoDAManager } from "./managers";
 import { OdysseyModel } from "./odyssey";
 import { GFFField } from "./resource/GFFField";
 import { GFFStruct } from "./resource/GFFStruct";

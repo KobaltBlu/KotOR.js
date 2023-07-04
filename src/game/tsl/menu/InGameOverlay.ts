@@ -7,19 +7,16 @@ import { ActionType } from "../../../enums/actions/ActionType";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, MenuManager, LBL_MapView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { CursorManager } from "../../../managers/CursorManager";
-import { PartyManager } from "../../../managers/PartyManager";
+import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, LBL_MapView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "../../../module";
 import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
 import * as THREE from "three";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { TalentObject } from "../../../talents";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { AutoPauseManager } from "../../../managers/AutoPauseManager";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { AutoPauseManager, MenuManager, PartyManager } from "../../../managers";
 
 /* @file
 * The InGameOverlay menu class.

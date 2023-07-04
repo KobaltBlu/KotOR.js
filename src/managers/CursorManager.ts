@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
 
 /* @file

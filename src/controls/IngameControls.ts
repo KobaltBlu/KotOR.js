@@ -1,19 +1,18 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { GamePad, Mouse, MouseState, Keyboard, KeyMapper, AnalogInput } from "./";
+import { GamePad, Mouse, MouseState, Keyboard, KeyMapper, AnalogInput } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { GameMenu, GUIControl, GUIListBox, GUIScrollBar, MenuManager } from "../gui";
+import { GameMenu, GUIControl, GUIListBox, GUIScrollBar } from "../gui";
 import { Utility } from "../utility/Utility";
-import { PartyManager } from "../managers/PartyManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
 import { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { AutoPauseManager } from "../managers/AutoPauseManager";
+import { AutoPauseManager, MenuManager, PartyManager } from "../managers";
 
 /* @file
  * The IngameControls class.

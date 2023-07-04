@@ -1,5 +1,5 @@
 import { TwoDAObject } from "../resource/TwoDAObject";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponSize } from "../enums/combat/WeaponSize";

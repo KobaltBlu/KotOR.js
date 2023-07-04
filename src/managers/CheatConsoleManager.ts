@@ -2,7 +2,7 @@ import { GameState } from "../GameState";
 import { InventoryManager } from "./InventoryManager";
 import { ModuleItem } from "../module";
 import { GFFObject } from "../resource/GFFObject";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { KEYManager } from "./KEYManager";
 

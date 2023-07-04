@@ -4,7 +4,7 @@
 import { GameMenu, GUIControl, GUIProtoItem, GUIScrollBar } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";

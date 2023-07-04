@@ -1,11 +1,11 @@
 
 import { EngineMode } from "../enums/engine/EngineMode";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { AnalogInput } from "./AnalogInput";
 import { GamePad } from "./GamePad";
 import { KeyInput } from "./KeyInput";
 import { Keyboard } from "./Keyboard";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
+import { TwoDAManager } from "../managers";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 

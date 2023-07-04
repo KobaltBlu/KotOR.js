@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { TemplateLoader } from "../loaders/TemplateLoader";
+import { TemplateLoader } from "../loaders";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import * as THREE from "three";

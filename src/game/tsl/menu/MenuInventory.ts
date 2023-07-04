@@ -4,10 +4,7 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { InventoryManager } from "../../../managers/InventoryManager";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { TextureLoader } from "../../../loaders";
 import { ModuleItem } from "../../../module";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";

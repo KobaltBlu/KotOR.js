@@ -2,10 +2,10 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
+import { GUILabel, GUIListBox } from "../../../gui";
+import { TwoDAManager } from "../../../managers";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
 
 /* @file
 * The InGameDialog menu class.

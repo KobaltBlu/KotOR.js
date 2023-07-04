@@ -5,8 +5,8 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIButton, GUIControl, GUILabel, GUIListBox, MenuManager } from "../../../gui";
-import { TLKManager } from "../../../managers/TLKManager";
+import { GameMenu, GUIButton, GUIControl, GUILabel, GUIListBox } from "../../../gui";
+import { MenuManager, TLKManager } from "../../../managers";
 import { Module } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 

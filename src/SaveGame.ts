@@ -3,26 +3,22 @@
 
 import * as path from "path";
 import { GFFObject } from "./resource/GFFObject";
-import { TextureLoader } from "./loaders/TextureLoader";
+import { TextureLoader } from "./loaders";
 import { OdysseyTexture } from "./resource/OdysseyTexture";
 import { CurrentGame } from "./CurrentGame";
 import { GFFField } from "./resource/GFFField";
-import { PartyTableManager } from "./managers/PartyTableManager";
 import { GameState } from "./GameState";
-import { PartyManager } from "./managers/PartyManager";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { GFFStruct } from "./resource/GFFStruct";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { ERFObject } from "./resource/ERFObject";
 import { BinaryReader } from "./BinaryReader";
-import { InventoryManager } from "./managers/InventoryManager";
 import { Utility } from "./utility/Utility";
 import { TGAObject } from "./resource/TGAObject";
 import { Module } from "./module";
 import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
-import { MenuManager } from "./gui";
-import { GlobalVariableManager } from "./managers/GlobalVariableManager";
+import { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
 
 /* @file
  * The SaveGame class.

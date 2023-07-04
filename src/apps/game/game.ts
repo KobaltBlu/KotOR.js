@@ -28,9 +28,9 @@ async function getProfile(){
 const initializeApp = function(){
   KotOR.ApplicationProfile.ENV = env;
   if(env == ApplicationEnvironment.ELECTRON){
-    KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = app_profile.directory;
+    KotOR.ApplicationProfile.directory = app_profile.directory;
   }else{
-    KotOR.GameFileSystem.rootDirectoryHandle = app_profile.directory_handle;
+    KotOR.ApplicationProfile.directoryHandle = app_profile.directory_handle;
   }
   console.log('loading game...')
   KotOR.LoadingScreen.main.SetLogo(app_profile.logo);
@@ -74,7 +74,7 @@ async function spawnRequestDirectory(){
     btnGrant?.addEventListener('click', async function(e: any) {
       let handle = await showRequestDirectoryDialog();
       if(handle){
-        KotOR.GameFileSystem.rootDirectoryHandle = handle;
+        KotOR.ApplicationProfile.directoryHandle = handle;
         KotOR.ConfigClient.set(`Profiles.${app_profile.key}.directory_handle`, handle);
         modal?.classList.remove('show');
         initializeApp();
@@ -138,8 +138,8 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
       });
     }
   }else{
-    if(KotOR.GameFileSystem.rootDirectoryHandle){
-      let validated = await validateDirectoryHandle(KotOR.GameFileSystem.rootDirectoryHandle);
+    if(KotOR.ApplicationProfile.directoryHandle){
+      let validated = await validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
       if(validated){
         initializeApp();
       }else{

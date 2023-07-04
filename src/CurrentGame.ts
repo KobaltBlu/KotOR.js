@@ -85,13 +85,13 @@ export class CurrentGame {
               }
             }
           }else if(create){
-            const directory_handle = await GameFileSystem.rootDirectoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
+            const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }
         }catch(e){
           console.error(e);
           if(create){
-            const directory_handle = await GameFileSystem.rootDirectoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
+            const directory_handle = await ApplicationProfile.directoryHandle.getDirectoryHandle(CurrentGame.gameinprogress_dir, { create: true });
             console.log('exists', directory_handle);
           }
         }

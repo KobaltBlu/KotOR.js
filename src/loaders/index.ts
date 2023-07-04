@@ -1,3 +1,4 @@
+export * from "./ResourceLoader";
 export * from "./TemplateLoader";
 export * from "./TextureLoader";
 export * from "./TGALoader";

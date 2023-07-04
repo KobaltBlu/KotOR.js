@@ -1,4 +1,4 @@
-import { TLKManager } from "../../managers/TLKManager";
+import { TLKManager } from "../../managers";
 import { ModuleItem } from "../../module";
 
 const STR_EQUIPPED = 32346;

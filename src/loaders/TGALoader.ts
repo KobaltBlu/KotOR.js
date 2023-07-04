@@ -6,7 +6,7 @@
 
 import * as path from "path";
 import * as THREE from "three";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from ".";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TXI } from "../resource/TXI";
 import { ApplicationProfile } from "../utility/ApplicationProfile";

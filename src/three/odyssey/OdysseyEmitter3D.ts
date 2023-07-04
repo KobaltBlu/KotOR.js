@@ -4,10 +4,10 @@
 import * as THREE from "three";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { TextureLoader } from "../../loaders/TextureLoader";
+import { TextureLoader } from "../../loaders";
 import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
 import { OdysseyController } from "../../odyssey/controllers";
-import { OdysseyObject3D } from "./";
+import { OdysseyObject3D } from ".";
 
 /* @file
  * The OdysseyEmitter3D class will handle emitter nodes.

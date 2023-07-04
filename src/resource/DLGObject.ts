@@ -1,5 +1,4 @@
 import { GameState } from "../GameState";
-import { TemplateLoader } from "../loaders/TemplateLoader";
 import { ModuleCreature, ModuleObject } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -7,12 +6,12 @@ import { DLGNode } from "./DLGNode";
 import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
-import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import { ModuleObjectManager } from "../managers";
 import { DLGStuntActor } from "../interface/dialog/DLGStuntActor";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
-import { ResourceLoader } from "./ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { GFFStruct } from "./GFFStruct";
 
 export interface DLGObjectScripts {

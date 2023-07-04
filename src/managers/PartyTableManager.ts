@@ -13,8 +13,7 @@ import * as path from "path";
 import { TwoDAManager } from "./TwoDAManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { JournalManager, JournalEntry } from "./JournalManager";
-import { DialogMessageManager, DialogMessageEntry } from "./DialogMessageManager";
-import { FeedbackMessageManager, FeedbackMessageEntry } from "./FeedbackMessageManager";
+import { DialogMessageManager, DialogMessageEntry, FeedbackMessageManager, FeedbackMessageEntry } from ".";
 
 export class PartyTableManager {
 

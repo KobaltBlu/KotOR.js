@@ -5,11 +5,10 @@ import { ModuleObject } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { AudioEngine } from "../audio/AudioEngine";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TemplateLoader } from "../loaders/TemplateLoader";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 
 /* @file

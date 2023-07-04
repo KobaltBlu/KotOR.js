@@ -3,8 +3,6 @@
 
 import { GameState } from "../../../GameState";
 import { GUIListBox, GUIButton } from "../../../gui";
-import { TLKManager } from "../../../managers/TLKManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
 import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
 
 /* @file

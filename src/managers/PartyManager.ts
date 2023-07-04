@@ -18,7 +18,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 
 /* @file
  * The PartyManager class.

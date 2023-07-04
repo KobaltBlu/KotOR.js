@@ -2,17 +2,9 @@ import * as THREE from "three";
 
 import { AnimatedTexture } from "./AnimatedTexture";
 import { CombatEngine } from "./combat";
-import { GameMenu, MenuManager, GUIListBox } from "./gui";
+import { GameMenu, GUIListBox } from "./gui";
 import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature, ModuleArea } from "./module";
 import { IngameControls, Mouse } from "./controls";
-
-import { PartyManager } from "./managers/PartyManager";
-import { CursorManager } from "./managers/CursorManager";
-import { FadeOverlayManager } from "./managers/FadeOverlayManager";
-import { ShaderManager } from "./managers/ShaderManager";
-import { LightManager } from "./managers/LightManager";
-import { TwoDAManager } from "./managers/TwoDAManager";
-import { CameraShakeManager } from "./managers/CameraShakeManager";
 
 import { INIConfig } from "./INIConfig";
 import { FactionManager } from "./FactionManager";
@@ -26,15 +18,12 @@ import EngineLocation from "./engine/EngineLocation";
 import { OdysseyModel3D, OdysseyObject3D } from "./three/odyssey";
 import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine, AudioEmitter } from "./audio";
-import { ResourceLoader } from "./resource/ResourceLoader";
 import { TGAObject } from "./resource/TGAObject";
-import { TextureLoader } from "./loaders/TextureLoader";
 
 import { EngineGlobals } from "./interface/engine/EngineGlobals";
 import { GameStateGroups } from "./interface/engine/GameStateGroups";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { TextureType } from "./enums/loaders/TextureType";
 import { CreatureType } from "./enums/nwscript/CreatureType";
 import { ReputationType } from "./enums/nwscript/ReputationType";
 import { EngineState } from "./enums/engine/EngineState";
@@ -54,14 +43,14 @@ import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
-import { ModuleObjectManager } from "./managers/ModuleObjectManager";
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { GlobalVariableManager } from "./managers/GlobalVariableManager";
 import { FollowerCamera } from "./engine/FollowerCamera";
 import { OdysseyTexture } from "./resource/OdysseyTexture";
 import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { AutoPauseManager } from "./managers/AutoPauseManager";
+import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ShaderManager, TwoDAManager } from "./managers";
+import { ResourceLoader, TextureLoader } from "./loaders";
+import { TextureType } from "./enums/loaders/TextureType";
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;

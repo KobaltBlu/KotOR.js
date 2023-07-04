@@ -2,7 +2,6 @@
  */
 
 import { GameState } from "../GameState";
-import { PartyManager } from "../managers/PartyManager";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AreaMap } from "./AreaMap";
@@ -10,7 +9,6 @@ import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
 import { Module, ModuleAreaOfEffect, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleMiniGame, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { TextureLoader } from "../loaders/TextureLoader";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -18,20 +16,19 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ResourceLoader } from "../resource/ResourceLoader";
 import { LYTObject } from "../resource/LYTObject";
 import { Utility } from "../utility/Utility";
 import EngineLocation from "../engine/EngineLocation";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { OdysseyWalkMesh } from "../odyssey";
 import { AudioLoader } from "../audio/AudioLoader";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
-import { MenuManager } from "../gui";
 import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
+import { MenuManager, TwoDAManager, PartyManager } from "../managers";
+import { ResourceLoader, TextureLoader } from "../loaders";
 
 /* @file
  * The ModuleArea class.

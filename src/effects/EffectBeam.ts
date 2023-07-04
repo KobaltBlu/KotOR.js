@@ -2,7 +2,7 @@ import { GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GameState } from "../GameState";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";

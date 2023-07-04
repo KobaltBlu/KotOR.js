@@ -9,7 +9,7 @@ import { ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionCastSpell } from "../actions";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";

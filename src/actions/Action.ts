@@ -4,7 +4,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameState } from "../GameState";
 import { CombatAction } from "../interface/combat/CombatAction";
-import { PartyManager } from "../managers/PartyManager";
+import { PartyManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";

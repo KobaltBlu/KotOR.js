@@ -6,30 +6,12 @@ import { BinaryReader } from "../BinaryReader";
 import { TXI } from './TXI';
 // @ts-ignore
 import * as dxtJs from "dxt-js";
+import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
+import { ENCODING } from '../enums/graphics/tpc/Encoding';
 
 /* @file
  * The TPCObject class.
  */
-
-export enum PixelFormat {
-  R8G8B8 = 1,
-  B8G8R8 = 2,
-  R8G8B8A8 = 3,
-  B8G8R8A8 = 4,
-  A1R5G5B5 = 5,
-  R5G6B5 = 6,
-  Depth16 = 7,
-  DXT1 = 8,
-  DXT3 = 9,
-  DXT5 = 10
-};
-
-export enum ENCODING {
-  GRAY = 1,
-  RGB = 2,
-  RGBA = 4,
-  BGRA = 12
-}
 
 export interface TPCHeader {
   dataSize: number;

@@ -2,10 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, LBL_3DView, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { CharGenManager } from "../../../managers/CharGenManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { CharGenManager, MenuManager, TwoDAManager } from "../../../managers";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";

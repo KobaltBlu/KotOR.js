@@ -87,9 +87,9 @@ export class ForgeState {
   static async InitializeApp(): Promise<void>{
     return new Promise( (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        KotOR.ApplicationProfile.directory = KotOR.GameFileSystem.rootDirectoryPath = KotOR.ApplicationProfile.profile.directory;
+        KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
-        KotOR.GameFileSystem.rootDirectoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
+        KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
       }
       console.log('loading game...')
       KotOR.LoadingScreen.main.SetLogo(KotOR.ApplicationProfile.profile.logo);
@@ -148,7 +148,7 @@ export class ForgeState {
 
   static async VerifyGameDirectory(onVerified: Function, onError: Function){
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.GameFileSystem.rootDirectoryPath);
+      // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.ApplicationProfile.rootDirectory);
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         onVerified();
       }else{
@@ -166,8 +166,8 @@ export class ForgeState {
         }
       }
     }else{
-      if(KotOR.GameFileSystem.rootDirectoryHandle){
-        let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.GameFileSystem.rootDirectoryHandle);
+      if(KotOR.ApplicationProfile.directoryHandle){
+        let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
         if(validated){
           onVerified();
         }else{

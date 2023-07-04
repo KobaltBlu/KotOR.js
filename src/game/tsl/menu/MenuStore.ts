@@ -3,13 +3,11 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { InventoryManager } from "../../../managers/InventoryManager";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TLKManager } from "../../../managers/TLKManager";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModuleItem, ModuleObject, ModuleStore } from "../../../module";
 import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { PartyManager, InventoryManager, TLKManager } from "../../../managers";
 
 /* @file
 * The MenuStore menu class.

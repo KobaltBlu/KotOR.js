@@ -7,16 +7,15 @@ import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { OdysseyModel, OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { KEYManager } from "../managers/KEYManager";
 import { BinaryReader } from "../BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
-import { ShaderManager } from "../managers/ShaderManager";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
+import { KEYManager, ShaderManager } from "../managers";
 
 /* @file
  * The ModuleRoom class.

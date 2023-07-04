@@ -4,19 +4,14 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, MenuManager } from "../../../gui";
+import { GameMenu, GUILabel, GUIListBox } from "../../../gui";
 import { ModuleCreature, ModuleObject } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { LIPObject } from "../../../resource/LIPObject";
 import * as THREE from "three";
-import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
 import { DLGObject } from "../../../resource/DLGObject";
 import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The InGameComputer menu class.

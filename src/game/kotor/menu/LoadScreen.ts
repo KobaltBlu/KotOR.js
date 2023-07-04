@@ -3,10 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIProgressBar, GUILabel, MenuManager } from "../../../gui";
-import { FadeOverlayManager } from "../../../managers/FadeOverlayManager";
-import { TLKManager } from "../../../managers/TLKManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUIProgressBar, GUILabel } from "../../../gui";
+import { TLKManager, TwoDAManager, FadeOverlayManager } from "../../../managers";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 /* @file

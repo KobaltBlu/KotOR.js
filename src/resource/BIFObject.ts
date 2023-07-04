@@ -5,7 +5,7 @@ import { BinaryReader } from "../BinaryReader";
 import * as fs from 'fs';
 import * as path from 'path';
 import { Utility } from "../utility/Utility";
-import { KEYManager } from "../managers/KEYManager";
+import { KEYManager } from "../managers";
 import { ResourceTypes } from "./ResourceTypes";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";

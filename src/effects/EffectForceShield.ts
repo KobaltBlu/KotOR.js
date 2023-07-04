@@ -1,6 +1,6 @@
 import { EffectDamageResistance, EffectVisualEffect, GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 
 export class EffectForceShield extends GameEffect {

@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, MenuManager } from "../../../gui";
+import { GUILabel } from "../../../gui";
 import { InGameComputerCam as K1_InGameComputerCam } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 

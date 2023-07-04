@@ -2,17 +2,14 @@
  */
 
 import { Module } from "../module";
-import { ResourceTypes } from "./ResourceTypes";
+import { ResourceTypes } from "../resource/ResourceTypes";
 import { Utility } from "../utility/Utility";
-import { ERFObject, ERFResource } from "./ERFObject";
-import { GameState } from "../GameState";
+import { ERFObject, ERFResource } from "../resource/ERFObject";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { RIMObject } from "./RIMObject";
-import { KEYManager } from "../managers/KEYManager";
-import { RIMManager } from "../managers/RIMManager";
+import { RIMObject } from "../resource/RIMObject";
 import { CacheScope } from "../enums/resource/CacheScope";
 import { ResourceCacheScopes } from "../interface/resource/ResourceCacheScopes";
-import { BIFManager } from "../managers/BIFManager";
+import { KEYManager, RIMManager } from "../managers";
 
 /* @file
  * The ResourceLaoder class.
@@ -27,6 +24,7 @@ export class ResourceLoader {
     global:   new Map(),
     module:   new Map(),
   };
+  static ModuleArchives: (RIMObject | ERFObject)[] = [];
 
   static InitCache(){
     const resourceTypes = Object.values(ResourceTypes).filter( t => typeof t === 'number' && t < 0xFFFF ) as number[];
@@ -74,6 +72,7 @@ export class ResourceLoader {
 
   static async InitModuleCache(archives: (RIMObject|ERFObject)[]){
     ResourceLoader.ClearCache(CacheScope.MODULE);
+    this.ModuleArchives = archives;
 
     let start = Date.now();
     console.log(`InitModuleCache: Start`);
@@ -125,23 +124,12 @@ export class ResourceLoader {
           if(typeof onLoad === 'function')
             onLoad(data);
         }, (e: any) => {
-          if(GameState.module instanceof Module){
-            this._searchKeyTable(resId, resRef, (data: Buffer) => {
-              ResourceLoader.setCache(resId, resRef, data);
-              if(typeof onLoad === 'function')
-                onLoad(data);
-            }, (e: any) => {
-              this._searchModuleArchives(resId, resRef, (data: Buffer) => {
-                ResourceLoader.setCache(resId, resRef, data);
-                if(typeof onLoad === 'function')
-                  onLoad(data);
-              }, (e: any) => {
-                if(typeof onError === 'function')
-                  onError(e);
-              });
-            });
-          }else{
-            this._searchKeyTable(resId, resRef, (data: Buffer) => {
+          this._searchKeyTable(resId, resRef, (data: Buffer) => {
+            ResourceLoader.setCache(resId, resRef, data);
+            if(typeof onLoad === 'function')
+              onLoad(data);
+          }, (e: any) => {
+            this._searchModuleArchives(resId, resRef, (data: Buffer) => {
               ResourceLoader.setCache(resId, resRef, data);
               if(typeof onLoad === 'function')
                 onLoad(data);
@@ -149,7 +137,7 @@ export class ResourceLoader {
               if(typeof onError === 'function')
                 onError(e);
             });
-          }
+          });
         });
       }else{
         if(typeof onLoad === 'function')
@@ -179,56 +167,50 @@ export class ResourceLoader {
   }
 
   static _searchLocal(resId: number, resRef = '', onLoad?: Function, onError?: Function){
-      this._searchOverride(resId, resRef, (data: Buffer) => {
-        if(typeof onLoad === 'function')
-          onLoad(data);
-      }, (e: any) => {
-        if(typeof onError === 'function')
-          onError();
-      });
+    this._searchOverride(resId, resRef, (data: Buffer) => {
+      if(typeof onLoad === 'function')
+        onLoad(data);
+    }, (e: any) => {
+      if(typeof onError === 'function')
+        onError();
+    });
   }
 
   static _searchModuleArchives(resId: number, resRef = '', onLoad?: Function, onError?: Function){
-    if(GameState.module instanceof Module){
-      let loop = new AsyncLoop({
-        array: GameState.module.archives,
-        onLoop: (archive: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
+    let loop = new AsyncLoop({
+      array: this.ModuleArchives,
+      onLoop: (archive: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
 
-          if(archive instanceof RIMObject){
-            let resKey = archive.getResourceByKey(resRef, resId);
-            if(resKey){
-              archive.getRawResource(resRef, resId, (data: Buffer) => {
-                if(typeof onLoad === 'function')
-                  onLoad(data);
-              });
-            }else{
-              asyncLoop.next();
-            }
-          }else if(archive instanceof ERFObject){
-            let resKey = archive.getResourceByKey(resRef, resId);
-            if(resKey){
-              archive.getRawResource(resRef, resId, (data: Buffer) => {
-                if(typeof onLoad === 'function')
-                  onLoad(data);
-              });
-            }else{
-              asyncLoop.next();
-            }
+        if(archive instanceof RIMObject){
+          let resKey = archive.getResourceByKey(resRef, resId);
+          if(resKey){
+            archive.getRawResource(resRef, resId, (data: Buffer) => {
+              if(typeof onLoad === 'function')
+                onLoad(data);
+            });
           }else{
             asyncLoop.next();
           }
-        
+        }else if(archive instanceof ERFObject){
+          let resKey = archive.getResourceByKey(resRef, resId);
+          if(resKey){
+            archive.getRawResource(resRef, resId, (data: Buffer) => {
+              if(typeof onLoad === 'function')
+                onLoad(data);
+            });
+          }else{
+            asyncLoop.next();
+          }
+        }else{
+          asyncLoop.next();
         }
-      });
-      loop.iterate(() => {
-        if(typeof onError === 'function')
-          onError();
-      });
-    }else{
+      
+      }
+    });
+    loop.iterate(() => {
       if(typeof onError === 'function')
-      onError();
-    }
-
+        onError();
+    });
   }
 
   static loadTexture(resId: number, resRef: string){
@@ -238,7 +220,6 @@ export class ResourceLoader {
   }
 
   static setResource(resId: number, resRef: string, opts = {}){
-
     resRef = resRef.toLowerCase();
 
     if(typeof ResourceLoader.Resources[resId] === 'undefined'){
@@ -248,7 +229,6 @@ export class ResourceLoader {
   }
 
   static getResource(resId: number, resRef: string){
-
     if(typeof ResourceLoader.Resources[resId] !== 'undefined'){
       if(typeof ResourceLoader.Resources[resId][resRef] !== 'undefined'){
         return ResourceLoader.Resources[resId][resRef];
@@ -262,18 +242,15 @@ export class ResourceLoader {
   }
 
   static setCache(resId: number, resRef: string, opts: any = {}){
-
     resRef = resRef.toLowerCase();
 
     if(typeof ResourceLoader.cache[resId] === 'undefined')
       ResourceLoader.cache[resId] = {};
 
     ResourceLoader.cache[resId][resRef] = opts;
-
   }
 
   static getCache(resId: number, resRef: string): Buffer {
-
     if(ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).has(resRef)){
       return ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).get(resRef);
     }

@@ -1,7 +1,6 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
 import { Action } from "./Action";
 
 export class ActionResumeDialog extends Action {

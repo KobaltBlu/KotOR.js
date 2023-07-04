@@ -19,12 +19,8 @@ import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
-import { MenuManager } from "../gui";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
 import { SSFObjectType } from "../interface/resource/SSFType";
-import { InventoryManager } from "../managers/InventoryManager";
-import { PartyManager } from "../managers/PartyManager";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { NWScriptEvent } from "../nwscript/events";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "../odyssey";
@@ -35,7 +31,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from "./";
+import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from ".";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
@@ -45,6 +41,7 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
+import { PartyManager, MenuManager, InventoryManager, TwoDAManager } from "../managers";
 
 /* @file
  * The ModuleObject class.

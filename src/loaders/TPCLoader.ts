@@ -5,11 +5,10 @@ import * as THREE from "three";
 import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
 import { TextureLoader } from "./TextureLoader";
-import { KEYManager } from "../managers/KEYManager";
-import { ERFManager } from "../managers/ERFManager";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { ERFManager, KEYManager } from "../managers";
 
 /* @file
  * The THREE.TPCLoader class is used to decode the TPC image format found in the game archives.

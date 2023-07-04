@@ -2,10 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUIControl, GUIButton, GUILabel, GUIProgressBar, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { MenuManager, PartyManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 

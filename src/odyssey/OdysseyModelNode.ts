@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModel, OdysseyModelAnimationNode } from "./";
+import { OdysseyModel, OdysseyModelAnimationNode } from ".";
 import { OdysseyController } from "./controllers";
 import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
 

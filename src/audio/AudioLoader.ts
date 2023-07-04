@@ -1,15 +1,15 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { AudioFile } from "./AudioFile";
 
 import * as path from "path";
 import * as fs from "fs";
-import { KEYManager } from "../managers/KEYManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { KEYManager } from "../managers";
 
 /* @file
  * The AudioLoader class is used for finding and loading audio files by name and filetype.

@@ -1,6 +1,6 @@
 import { ActionType } from "../enums/actions/ActionType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";

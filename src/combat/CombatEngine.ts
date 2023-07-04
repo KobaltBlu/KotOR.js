@@ -9,9 +9,9 @@ import { ModuleCreature, ModuleItem, ModuleObject } from "../module";
 import * as THREE from "three";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { OdysseyModelAnimation } from "../odyssey";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { AttackResult } from "../enums/combat/AttackResult";
+import { TwoDAManager } from "../managers";
 
 /* @file
  * The CombatEngine class.

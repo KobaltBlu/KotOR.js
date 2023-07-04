@@ -3,8 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, MenuManager } from "../../../gui";
-import { CharGenManager } from "../../../managers/CharGenManager";
+import { GameMenu, GUILabel, GUIButton } from "../../../gui";
+import { CharGenManager, MenuManager } from "../../../managers";
 
 /* @file
 * The CharGenName menu class.

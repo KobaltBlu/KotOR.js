@@ -1,5 +1,4 @@
 import { CurrentGame } from "./CurrentGame";
-import { PartyManager } from "./managers/PartyManager";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "./module";
 import { GFFObject } from "./resource/GFFObject";
 import { GFFStruct } from "./resource/GFFStruct";
@@ -8,11 +7,11 @@ import * as path from "path";
 import * as fs from "fs";
 import { GFFField } from "./resource/GFFField";
 import { GFFDataType } from "./enums/resource/GFFDataType";
-import { TwoDAManager } from "./managers/TwoDAManager";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { Faction } from "./engine/Faction";
 import { Reputation } from "./engine/Reputation";
 import { ReputationConstant } from "./enums/engine/ReputationConstant";
+import { PartyManager, TwoDAManager } from "./managers";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 

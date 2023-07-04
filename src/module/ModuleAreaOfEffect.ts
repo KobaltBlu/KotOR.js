@@ -4,7 +4,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
-import { ModuleObject } from "./";
+import { ModuleObject } from ".";
 import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
 
 /* @file

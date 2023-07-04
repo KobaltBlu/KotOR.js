@@ -4,10 +4,8 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { InventoryManager } from "../../../managers/InventoryManager";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TLKManager } from "../../../managers/TLKManager";
+import { TextureLoader } from "../../../loaders";
+import { InventoryManager, PartyManager, TLKManager } from "../../../managers";
 import { ModuleCreature, ModuleItem, ModuleStore } from "../../../module";
 
 /* @file

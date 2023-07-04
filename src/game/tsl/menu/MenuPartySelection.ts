@@ -2,9 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUICheckBox, GUIButton, MenuManager, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { PartyManager } from "../../../managers/PartyManager";
+import { GUILabel, GUICheckBox, GUIButton, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { ModuleCreature } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
@@ -13,6 +12,7 @@ import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { PartyManager } from "../../../managers";
 
 /* @file
 * The MenuPartySelection menu class.

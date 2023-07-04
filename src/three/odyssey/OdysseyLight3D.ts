@@ -1,5 +1,5 @@
 import { GameState } from "../../GameState";
-import { OdysseyObject3D } from "./";
+import { OdysseyObject3D } from ".";
 import * as THREE from "three";
 import { OdysseyModelNodeLight } from "../../odyssey";
 

@@ -3,17 +3,15 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { InventoryManager } from "../../../managers/InventoryManager";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import * as THREE from "three";
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { ModuleItem } from "../../../module";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
+import { MenuManager, InventoryManager, PartyManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuInventory menu class.

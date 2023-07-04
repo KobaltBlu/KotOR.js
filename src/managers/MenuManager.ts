@@ -1,13 +1,12 @@
-import { CursorManager } from "../managers/CursorManager";
 import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { GameMenu } from "../gui";
-import { CharGenManager } from "./CharGenManager";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
+import { CharGenManager, CursorManager } from ".";
 
 
 export class MenuManager {

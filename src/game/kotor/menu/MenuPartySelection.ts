@@ -4,9 +4,8 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TLKManager } from "../../../managers/TLKManager";
+import { TextureLoader } from "../../../loaders";
+import { PartyManager, TLKManager } from "../../../managers";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";

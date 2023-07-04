@@ -3,12 +3,13 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, MenuManager } from "../../../gui";
+import { GameMenu, GUILabel } from "../../../gui";
 import * as THREE from "three";
-import { ResourceLoader } from "../../../resource/ResourceLoader";
+import { ResourceLoader } from "../../../loaders";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { ModuleCreature } from "../../../module";
 import { LIPObject } from "../../../resource/LIPObject";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The InGameBark menu class.

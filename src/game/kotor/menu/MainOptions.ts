@@ -3,7 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUIButton, GUILabel, MenuManager } from "../../../gui";
+import { GameMenu, GUIListBox, GUIButton, GUILabel } from "../../../gui";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MainOptions menu class.

@@ -3,7 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIControl, GUIButton, MenuManager } from "../../../gui";
+import { GameMenu, GUIControl, GUIButton } from "../../../gui";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuTop menu class.

@@ -4,7 +4,7 @@
 import { GameMenu, GUIControl } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { GameState } from "../GameState";
 import { Mouse } from "../controls/Mouse";

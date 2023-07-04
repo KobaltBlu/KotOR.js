@@ -4,7 +4,7 @@ import { BIF, KEYObject } from "../resource/KEYObject";
 import * as fs from 'fs';
 import * as path from 'path';
 import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { BIFManager } from "./BIFManager";
+import { BIFManager } from ".";
 
 export class KEYManager {
 

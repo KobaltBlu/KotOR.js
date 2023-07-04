@@ -2,17 +2,14 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl, MenuManager } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
+import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "../../../module";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TLKManager } from "../../../managers/TLKManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
-import { InventoryManager } from "../../../managers/InventoryManager";
+import { MenuManager, PartyManager, InventoryManager, TLKManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuEquipment menu class.

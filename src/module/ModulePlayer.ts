@@ -2,7 +2,7 @@
  */
 
 import { ModuleCreature } from ".";
-import { PartyManager } from "../managers/PartyManager";
+import { PartyManager } from "../managers";
 import { GFFObject } from "../resource/GFFObject";
 
 /* @file

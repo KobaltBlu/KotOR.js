@@ -5,35 +5,30 @@ import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameEffect } from "../effects";
 import EngineLocation from "../engine/EngineLocation";
 import { GameState } from "../GameState";
-import { PartyManager } from "../managers/PartyManager";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
-import { ModuleArea, ModuleTimeManager } from "./";
+import { ModuleArea, ModuleTimeManager } from ".";
 import * as THREE from "three";
 import { CombatEngine } from "../combat";
-import { MenuManager } from "../gui";
-import { TLKManager } from "../managers/TLKManager";
 import { ModuleObject, ModulePlayer } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
-import { TwoDAManager } from "../managers/TwoDAManager";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ERFObject } from "../resource/ERFObject";
 import { CurrentGame } from "../CurrentGame";
-import { InventoryManager } from "../managers/InventoryManager";
 import * as path from "path";
 import * as fs from "fs";
-import { TextureLoader } from "../loaders/TextureLoader";
 import { RIMObject } from "../resource/RIMObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { ResourceLoader } from "../resource/ResourceLoader";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "../events";
 import { FactionManager } from "../FactionManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager } from "../managers";
+import { ResourceLoader, TextureLoader } from "../loaders";
 
 /* @file
  * The Module class.
@@ -854,8 +849,7 @@ export class Module {
       try{
         Module.GetModuleArchives(modName).then( (archives) => {
           // console.log('archives', archives);
-          GameState.module.archives = archives;
-          ResourceLoader.InitModuleCache(GameState.module.archives).then( () => {
+          ResourceLoader.InitModuleCache(archives).then( () => {
             ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
               
               new GFFObject(ifo_data, (ifo) => {

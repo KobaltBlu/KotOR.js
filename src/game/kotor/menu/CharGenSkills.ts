@@ -3,9 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIListBox, MenuManager } from "../../../gui";
-import { CharGenManager } from "../../../managers/CharGenManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { CharGenManager } from "../../../managers";
 
 /* @file
 * The CharGenSkills menu class.

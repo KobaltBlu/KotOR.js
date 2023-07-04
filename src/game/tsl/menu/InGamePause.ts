@@ -3,7 +3,7 @@
 
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIButton } from "../../../gui";
-import { AutoPauseManager } from "../../../managers/AutoPauseManager";
+import { AutoPauseManager } from "../../../managers";
 import { InGamePause as K1_InGamePause } from "../../kotor/KOTOR";
 
 /* @file

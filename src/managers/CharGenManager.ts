@@ -1,3 +1,4 @@
+import { TwoDAManager } from ".";
 import { AudioLoader } from "../audio/AudioLoader";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
@@ -11,8 +12,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
-import { MenuManager } from "./MenuManager";
-import { TwoDAManager } from "./TwoDAManager";
+import { MenuManager } from ".";
 
 export class CharGenManager {
 

@@ -4,8 +4,7 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, MenuManager } from "../../../gui";
-import { ModuleObjectManager } from "../../../managers/ModuleObjectManager";
+import { GUILabel, GUIListBox } from "../../../gui";
 import { ModuleCreature, ModuleObject } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";

@@ -1,7 +1,6 @@
 import { ModuleMGTrack, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleObject } from ".";
 import { GameState } from "../GameState";
 import { MiniGameType } from "../enums/engine/MiniGameType";
-import { PartyManager } from "../managers/PartyManager";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";

@@ -3,7 +3,7 @@
 
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModel } from "../odyssey";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 
 /* @file

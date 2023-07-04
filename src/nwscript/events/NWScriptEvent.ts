@@ -3,7 +3,7 @@ import { GFFDataType } from "../../enums/resource/GFFDataType";
 import { ModuleObject } from "../../module";
 import { GFFField } from "../../resource/GFFField";
 import { GFFStruct } from "../../resource/GFFStruct";
-import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from "./";
+import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from ".";
 
 export class NWScriptEvent {
   type: NWScriptEventType;

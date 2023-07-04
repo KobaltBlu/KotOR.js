@@ -4,12 +4,12 @@
 import { GameMenu, GUIControl } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders/TextureLoader";
+import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
-import { ShaderManager } from "../managers/ShaderManager";
+import { ShaderManager } from "../managers";
 
 /* @file
  * The GUICheckbox class.

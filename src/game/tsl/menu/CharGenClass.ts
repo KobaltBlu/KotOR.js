@@ -1,9 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GUILabel, GUIButton, GUIControl, MenuManager, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { CharGenManager } from "../../../managers/CharGenManager";
+import { GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { CharGenManager, MenuManager } from "../../../managers";
 import { ModulePlayer } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";

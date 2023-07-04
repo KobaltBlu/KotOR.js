@@ -3,7 +3,8 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GUIListBox, GUILabel, GUIButton, MenuManager } from "../../../gui";
+import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { MenuManager } from "../../../managers";
 import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
 
 /* @file

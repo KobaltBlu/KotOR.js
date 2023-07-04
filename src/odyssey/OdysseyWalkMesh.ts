@@ -6,7 +6,7 @@ import { WalkmeshEdge } from ".";
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
 import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode";
-import { TwoDAManager } from "../managers/TwoDAManager";
+import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";

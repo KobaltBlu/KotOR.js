@@ -4,11 +4,8 @@
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, MenuManager, GUIControl, LBL_MapView } from "../../../gui";
-import { TextureLoader } from "../../../loaders/TextureLoader";
-import { CursorManager } from "../../../managers/CursorManager";
-import { PartyManager } from "../../../managers/PartyManager";
-import { TwoDAManager } from "../../../managers/TwoDAManager";
+import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, GUIControl, LBL_MapView } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject, ModuleRoom } from "../../../module";
@@ -16,8 +13,8 @@ import { Anchor } from "../../../enums/gui/Anchor";
 import { SSFObjectType } from "../../../interface/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
-import { AutoPauseManager } from "../../../managers/AutoPauseManager";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager, MenuManager } from "../../../managers";
 
 /* @file
 * The InGameOverlay menu class.

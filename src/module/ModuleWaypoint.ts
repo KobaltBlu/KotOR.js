@@ -5,13 +5,12 @@ import { ModuleObject } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";
-import { TemplateLoader } from "../loaders/TemplateLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { CExoLocString } from "../resource/CExoLocString";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { GameState } from "../GameState";
 
 /* @file

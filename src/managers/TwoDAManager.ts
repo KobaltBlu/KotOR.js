@@ -1,10 +1,9 @@
 import { BIFResource } from "../resource/BIFObject";
-import { ResourceLoader } from "../resource/ResourceLoader";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { BIFManager } from "./BIFManager";
-import { KEYManager } from "./KEYManager";
+import { KEYManager } from ".";
 
 export class TwoDAManager {
 

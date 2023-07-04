@@ -1,5 +1,5 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
-import { NWScriptEvent } from "./";
+import { NWScriptEvent } from ".";
 
 export class EventSpellCastAt extends NWScriptEvent {
 
