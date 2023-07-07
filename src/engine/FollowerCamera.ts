@@ -2,8 +2,10 @@ import * as THREE from "three";
 import { GameState } from "../GameState";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { Utility } from "../utility/Utility";
-import { ModuleArea, ModuleMGPlayer } from "../module";
+import type { ModuleArea, ModuleMGPlayer } from "../module";
 import { MiniGameType } from "../enums/engine/MiniGameType";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 export class FollowerCamera {
 
@@ -127,19 +129,21 @@ export class FollowerCamera {
     FollowerCamera.raycaster.far = Infinity;
 
     if(GameState.Mode == EngineMode.MINIGAME){
-      if(followee instanceof ModuleMGPlayer){
-        followee.camera.camerahook.getWorldPosition(FollowerCamera.camera.position);
-        followee.camera.camerahook.getWorldQuaternion(FollowerCamera.camera.quaternion);
+      if(BitWise.InstanceOf(followee?.objectType, ModuleObjectType.ModuleMGPlayer)){
+        ( (followee: ModuleMGPlayer) => {
+          followee.camera.camerahook.getWorldPosition(FollowerCamera.camera.position);
+          followee.camera.camerahook.getWorldQuaternion(FollowerCamera.camera.quaternion);
 
-        switch(area.miniGame.type){
-          case MiniGameType.SWOOPRACE:
-            FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-          break;
-          case MiniGameType.TURRET:
-            FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-          break;
-        }
-        FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
+          switch(area.miniGame.type){
+            case MiniGameType.SWOOPRACE:
+              FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
+            break;
+            case MiniGameType.TURRET:
+              FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
+            break;
+          }
+          FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
+        })(followee as any);
       }
     }else{
       FollowerCamera.camera.position.copy(followee.position);
