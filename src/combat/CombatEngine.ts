@@ -4,7 +4,7 @@
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { SSFObjectType } from "../interface/resource/SSFType";
-import { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import type { ModuleCreature, ModuleObject } from "../module";
 
 import * as THREE from "three";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
@@ -12,6 +12,8 @@ import { OdysseyModelAnimation } from "../odyssey";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { TwoDAManager } from "../managers";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The CombatEngine class.
@@ -229,39 +231,41 @@ export class CombatEngine {
 
     combatAction.damageCalculated = true;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
+    const creatureInstance: ModuleCreature = BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature);
+    const targetCreatureInstance: ModuleCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature);
 
     if(!combatAction.isCutsceneAttack){
 
       combatAction.hits = false;
       combatAction.damage = 0;
-      if(creature instanceof ModuleCreature){
-        if(!creature.isSimpleCreature()){
+      if(creatureInstance){
+        if(!creatureInstance.isSimpleCreature()){
 
-          if(creature.equipment.RIGHTHAND instanceof ModuleItem){
+          if(creatureInstance.equipment.RIGHTHAND){
             //Roll to hit
-            let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.RIGHTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+            let hits = CombatEngine.DiceRoll(1, 'd20', creatureInstance.getBaseAttackBonus() + creatureInstance.equipment.RIGHTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
             if(hits || hasAssuredHit){
               combatAction.hits = true;
               //Roll damage
-              combatAction.damage += creature.equipment.RIGHTHAND.getBaseDamage() + creature.equipment.RIGHTHAND.getDamageBonus();
+              combatAction.damage += creatureInstance.equipment.RIGHTHAND.getBaseDamage() + creatureInstance.equipment.RIGHTHAND.getDamageBonus();
               //Add strength MOD to melee damage
-              if(creature.equipment.RIGHTHAND.getWeaponType() == 1){
-                combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+              if(creatureInstance.equipment.RIGHTHAND.getWeaponType() == 1){
+                combatAction.damage += Math.floor(( creatureInstance.getSTR() - 10) / 2);
               }
             }
             //TOOD: Log to combat menu
           }
 
-          if(creature.equipment.LEFTHAND instanceof ModuleItem){
+          if(creatureInstance.equipment.LEFTHAND){
             //Roll to hit
-            let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.LEFTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+            let hits = CombatEngine.DiceRoll(1, 'd20', creatureInstance.getBaseAttackBonus() + creatureInstance.equipment.LEFTHAND.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
             if(hits || hasAssuredHit){
               combatAction.hits = true;
               //Roll damage
-              combatAction.damage += creature.equipment.LEFTHAND.getBaseDamage() + creature.equipment.LEFTHAND.getDamageBonus();
+              combatAction.damage += creatureInstance.equipment.LEFTHAND.getBaseDamage() + creatureInstance.equipment.LEFTHAND.getDamageBonus();
               //Add strength MOD to melee damage
-              if(creature.equipment.LEFTHAND.getWeaponType() == 1){
-                combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+              if(creatureInstance.equipment.LEFTHAND.getWeaponType() == 1){
+                combatAction.damage += Math.floor(( creatureInstance.getSTR() - 10) / 2);
               }
             }
             //TOOD: Log to combat menu
@@ -271,46 +275,46 @@ export class CombatEngine {
 
         }else{
 
-          if(creature.equipment.CLAW1 instanceof ModuleItem){
+          if(creatureInstance.equipment.CLAW1){
             //Roll to hit
-            let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW1.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+            let hits = CombatEngine.DiceRoll(1, 'd20', creatureInstance.getBaseAttackBonus() + creatureInstance.equipment.CLAW1.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
             if(hits || hasAssuredHit){
               combatAction.hits = true;
               //Roll damage
-              combatAction.damage += creature.equipment.CLAW1.getMonsterDamage() + creature.equipment.CLAW1.getDamageBonus();
+              combatAction.damage += creatureInstance.equipment.CLAW1.getMonsterDamage() + creatureInstance.equipment.CLAW1.getDamageBonus();
               //Add strength MOD to melee damage
-              if(creature.equipment.CLAW1.getWeaponType() == 1){
-                combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+              if(creatureInstance.equipment.CLAW1.getWeaponType() == 1){
+                combatAction.damage += Math.floor(( creatureInstance.getSTR() - 10) / 2);
               }
             }
             //TOOD: Log to combat menu
           }
 
-          if(creature.equipment.CLAW2 instanceof ModuleItem){
+          if(creatureInstance.equipment.CLAW2){
             //Roll to hit
-            let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW2.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+            let hits = CombatEngine.DiceRoll(1, 'd20', creatureInstance.getBaseAttackBonus() + creatureInstance.equipment.CLAW2.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
             if(hits || hasAssuredHit){
               combatAction.hits = true;
               //Roll damage
-              combatAction.damage += creature.equipment.CLAW2.getMonsterDamage() + creature.equipment.CLAW2.getDamageBonus();
+              combatAction.damage += creatureInstance.equipment.CLAW2.getMonsterDamage() + creatureInstance.equipment.CLAW2.getDamageBonus();
               //Add strength MOD to melee damage
-              if(creature.equipment.CLAW2.getWeaponType() == 1){
-                combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+              if(creatureInstance.equipment.CLAW2.getWeaponType() == 1){
+                combatAction.damage += Math.floor(( creatureInstance.getSTR() - 10) / 2);
               }
             }
             //TOOD: Log to combat menu
           }
 
-          if(creature.equipment.CLAW3 instanceof ModuleItem){
+          if(creatureInstance.equipment.CLAW3){
             //Roll to hit
-            let hits = CombatEngine.DiceRoll(1, 'd20', creature.getBaseAttackBonus() + creature.equipment.CLAW3.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
+            let hits = CombatEngine.DiceRoll(1, 'd20', creatureInstance.getBaseAttackBonus() + creatureInstance.equipment.CLAW3.getAttackBonus()) > CombatEngine.GetArmorClass(combatAction.target);
             if(hits || hasAssuredHit){
               combatAction.hits = true;
               //Roll damage
-              combatAction.damage += creature.equipment.CLAW3.getMonsterDamage() + creature.equipment.CLAW3.getDamageBonus();
+              combatAction.damage += creatureInstance.equipment.CLAW3.getMonsterDamage() + creatureInstance.equipment.CLAW3.getDamageBonus();
               //Add strength MOD to melee damage
-              if(creature.equipment.CLAW3.getWeaponType() == 1){
-                combatAction.damage += Math.floor(( creature.getSTR() - 10) / 2);
+              if(creatureInstance.equipment.CLAW3.getWeaponType() == 1){
+                combatAction.damage += Math.floor(( creatureInstance.getSTR() - 10) / 2);
               }
             }
             //TOOD: Log to combat menu
@@ -351,30 +355,30 @@ export class CombatEngine {
         combatAction.attackResult = AttackResult.HIT_SUCCESSFUL;
       }
       
-      if(creature instanceof ModuleCreature){
-        creature.playTwoDAAnimation(combatAction.animation);
-        creature.animationState.index = ModuleCreatureAnimState.ATTACK;
-        console.log('attacker', creature.animationState.animation, creature.animationState);
+      if(creatureInstance){
+        creatureInstance.playTwoDAAnimation(combatAction.animation);
+        creatureInstance.animationState.index = ModuleCreatureAnimState.ATTACK;
+        console.log('attacker', creatureInstance.animationState.animation, creatureInstance.animationState);
       }
 
-      if(combatAction.target instanceof ModuleCreature){
+      if(targetCreatureInstance){
         switch(combatAction.attackResult){
           case AttackResult.HIT_SUCCESSFUL:
           case AttackResult.CRITICAL_HIT:
           case AttackResult.AUTOMATIC_HIT:
-            combatAction.target.playTwoDAAnimation( combatAction.target.getDamageAnimation( combatAction.animation.name ) );
-            combatAction.target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-            console.log('attackee', combatAction.target.animationState.animation, combatAction.target.animationState);
+            targetCreatureInstance.playTwoDAAnimation( targetCreatureInstance.getDamageAnimation( combatAction.animation.name ) );
+            targetCreatureInstance.animationState.index = ModuleCreatureAnimState.DAMAGE;
+            console.log('attackee', targetCreatureInstance.animationState.animation, targetCreatureInstance.animationState);
           break;
           case AttackResult.PARRIED:
-            combatAction.target.playTwoDAAnimation( combatAction.target.getParryAnimation( combatAction.animation.name ) );
-            combatAction.target.animationState.index = ModuleCreatureAnimState.PARRY;
-            console.log('attackee', combatAction.target.animationState.animation, combatAction.target.animationState);
+            targetCreatureInstance.playTwoDAAnimation( targetCreatureInstance.getParryAnimation( combatAction.animation.name ) );
+            targetCreatureInstance.animationState.index = ModuleCreatureAnimState.PARRY;
+            console.log('attackee', targetCreatureInstance.animationState.animation, targetCreatureInstance.animationState);
           break;
           default:
-            combatAction.target.playTwoDAAnimation( combatAction.target.getDamageAnimation( combatAction.animation.name ) );
-            combatAction.target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-            console.log('attackee', combatAction.target.animationState.animation, combatAction.target.animationState);
+            targetCreatureInstance.playTwoDAAnimation( targetCreatureInstance.getDamageAnimation( combatAction.animation.name ) );
+            targetCreatureInstance.animationState.index = ModuleCreatureAnimState.DAMAGE;
+            console.log('attackee', targetCreatureInstance.animationState.animation, targetCreatureInstance.animationState);
           break;
         }
       }
@@ -389,22 +393,22 @@ export class CombatEngine {
       if(combatAction.hits){
         creature.combatData.lastAttackResult = AttackResult.HIT_SUCCESSFUL;
 
-        if(creature instanceof ModuleCreature){
-          creature.playTwoDAAnimation( combatAction.animation );
-          creature.animationState.index = ModuleCreatureAnimState.ATTACK;
+        if(creatureInstance){
+          creatureInstance.playTwoDAAnimation( combatAction.animation );
+          creatureInstance.animationState.index = ModuleCreatureAnimState.ATTACK;
         }
 
-        if(combatAction.target instanceof ModuleCreature){
+        if(targetCreatureInstance){
           if(
-            combatAction.target.animationState.index == ModuleCreatureAnimState.IDLE || 
-            combatAction.target.animationState.index == ModuleCreatureAnimState.READY
+            targetCreatureInstance.animationState.index == ModuleCreatureAnimState.IDLE || 
+            targetCreatureInstance.animationState.index == ModuleCreatureAnimState.READY
           ){
-            // let targetAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
-            if(/*!targetAnimation ||*/ combatAction.target.combatData.lastAttackTarget == creature && combatAction.target instanceof ModuleCreature){
+            // let targetAnimation = OdysseyModelAnimation.GetAnimation2DA(targetCreatureInstance.overlayAnimation);
+            if(/*!targetAnimation ||*/ targetCreatureInstance.combatData.lastAttackTarget == creature){
               //if(!targetAnimation || (!targetAnimation.attack)){
-                if(combatAction.target instanceof ModuleCreature){
-                  combatAction.target.playTwoDAAnimation( combatAction.target.getDamageAnimation( combatAction.animation.name ) );
-                  combatAction.target.animationState.index = ModuleCreatureAnimState.DAMAGE;
+                if(targetCreatureInstance){
+                  targetCreatureInstance.playTwoDAAnimation( targetCreatureInstance.getDamageAnimation( combatAction.animation.name ) );
+                  targetCreatureInstance.animationState.index = ModuleCreatureAnimState.DAMAGE;
                 }
               //}
             }
@@ -417,22 +421,22 @@ export class CombatEngine {
         creature.combatData.lastAttackResult = AttackResult.MISS;
 
         combatAction.target.combatData.lastAttacker = creature;
-        if(creature instanceof ModuleCreature){
-          creature.playTwoDAAnimation( combatAction.animation );
-          creature.animationState.index = ModuleCreatureAnimState.ATTACK;
+        if(creatureInstance){
+          creatureInstance.playTwoDAAnimation( combatAction.animation );
+          creatureInstance.animationState.index = ModuleCreatureAnimState.ATTACK;
         }
 
-        if(combatAction.target instanceof ModuleCreature){
+        if(targetCreatureInstance){
           if(
-            combatAction.target.animationState.index == ModuleCreatureAnimState.IDLE || 
-            combatAction.target.animationState.index == ModuleCreatureAnimState.READY
+            targetCreatureInstance.animationState.index == ModuleCreatureAnimState.IDLE || 
+            targetCreatureInstance.animationState.index == ModuleCreatureAnimState.READY
           ){
-            // let targetAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.target.overlayAnimation);
-            if(/*!targetAnimation ||*/ combatAction.target.combatData.lastAttackTarget == creature){
+            // let targetAnimation = OdysseyModelAnimation.GetAnimation2DA(targetCreatureInstance.overlayAnimation);
+            if(/*!targetAnimation ||*/ targetCreatureInstance.combatData.lastAttackTarget == creature){
               //if(!targetAnimation || (!targetAnimation.attack)){
-                if(combatAction.target instanceof ModuleCreature){
-                  combatAction.target.playTwoDAAnimation( combatAction.target.getDodgeAnimation( combatAction.animation.name ) );
-                  combatAction.target.animationState.index = ModuleCreatureAnimState.DODGE;
+                if(targetCreatureInstance){
+                  targetCreatureInstance.playTwoDAAnimation( targetCreatureInstance.getDodgeAnimation( combatAction.animation.name ) );
+                  targetCreatureInstance.animationState.index = ModuleCreatureAnimState.DODGE;
                 }
               //}
             }
@@ -488,8 +492,9 @@ export class CombatEngine {
 
   static GetArmorClass(creature: ModuleObject){
     //console.log(creature);
-    if(creature instanceof ModuleCreature){
-      return creature.getAC();
+    const creatureInstance: ModuleCreature = BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature);
+    if(creatureInstance){
+      return creatureInstance.getAC();
       /*let dexMod = CombatEngine.GetMod(creature.getDEX());
       let baseAC = 10;
       let bonus = 0;
@@ -508,11 +513,11 @@ export class CombatEngine {
   }
 
   static GetCreatureAttackDice(creature: ModuleObject){
-    if(creature instanceof ModuleCreature){
-
+    const creatureInstance: ModuleCreature = BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature);
+    if(creatureInstance){
       if(!creature.isSimpleCreature()){
 
-        let rWeapon = creature.equipment.RIGHTHAND;
+        let rWeapon = creatureInstance.equipment.RIGHTHAND;
 
         if(rWeapon){
           return {
@@ -522,10 +527,9 @@ export class CombatEngine {
         }
 
       }else{
-        
-        let claw1 = creature.equipment.CLAW1;
-        let claw2 = creature.equipment.CLAW2;
-        let claw3 = creature.equipment.CLAW3;
+        let claw1 = creatureInstance.equipment.CLAW1;
+        let claw2 = creatureInstance.equipment.CLAW2;
+        let claw3 = creatureInstance.equipment.CLAW3;
 
         if(claw1 || claw2 || claw3){
 
@@ -565,10 +569,7 @@ export class CombatEngine {
             }
           }
         }
-
       }
-
-      
     }
 
     return {
