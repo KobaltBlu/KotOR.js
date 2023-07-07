@@ -1,6 +1,5 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
-import { ModuleObject } from "../../module";
 import { GFFField } from "../../resource/GFFField";
 import { GFFStruct } from "../../resource/GFFStruct";
 import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from ".";
@@ -69,7 +68,7 @@ export class NWScriptEvent {
   }
 
   setObject(nOffset = 0, nValue?: any){
-    if(nValue instanceof ModuleObject){
+    if(typeof nValue === 'object'){
       nValue = nValue.id;
     }else if(!nValue || (typeof nValue == 'undefined')){
       nValue = undefined;
@@ -79,7 +78,7 @@ export class NWScriptEvent {
   }
 
   getObject(nOffset = 0){
-    return (this.objectList[nOffset] instanceof ModuleObject) ? this.objectList[nOffset] : ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
+    return (typeof this.objectList[nOffset] === 'object') ? this.objectList[nOffset] : ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
   }
 
   static EventFromStruct( struct: GFFStruct ){
@@ -174,7 +173,7 @@ export class NWScriptEvent {
     let objectList = eventStruct.AddField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < this.objectList.length; i++){
       let objectStruct = new GFFStruct(0x69);
-      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Parameter").SetValue( this.getObject(i) instanceof ModuleObject ? this.getObject(i).id : 2130706432 ));
+      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Parameter").SetValue( typeof this.getObject(i) === 'object' ? this.getObject(i).id : 2130706432 ));
       objectList.AddChildStruct(objectStruct);
     }
 
