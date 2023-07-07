@@ -42,8 +42,9 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
-import { PartyManager, MenuManager, InventoryManager, TwoDAManager } from "../managers";
+import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 
 /* @file
  * The ModuleObject class.
@@ -217,11 +218,6 @@ export class ModuleObject {
   
   lipObject: LIPObject;
 
-  static List = new Map();
-  static COUNT: number = 1;
-  static PLAYER_ID: number = 0x7fffffff;
-  static OBJECT_INVALID: number = 0x7f000000;
-
   //last object effected
   lastTriggerEntered: ModuleObject;
   lastTriggerExited: ModuleObject;
@@ -239,33 +235,6 @@ export class ModuleObject {
   conversation: DLGObject;
   _conversation: DLGObject;
   cutsceneMode: boolean;
-
-  static ResetPlayerId(){
-    ModuleObject.PLAYER_ID = 0x7fffffff;
-  };
-
-  static GetNextPlayerId(){
-    console.log('GetNextPlayerId', ModuleObject.PLAYER_ID);
-    return ModuleObject.PLAYER_ID--;
-  }
-
-  static GetObjectById(id: ModuleObject|number = -1){
-
-    if(id == ModuleObject.OBJECT_INVALID)
-      return undefined;
-
-    if(id instanceof ModuleObject){
-      if(id.id >= 1){
-        return id;
-      }
-    }
-
-    if(ModuleObject.List.has(id)){
-      return ModuleObject.List.get(id);
-    }
-    return undefined;
-
-  }
 
   static DX_LIST: number[] = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
   static DY_LIST: number[] = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
@@ -570,7 +539,7 @@ export class ModuleObject {
     action.setParameter(2, ActionParameterType.INT, unk1);
     action.setParameter(3, ActionParameterType.INT, unk2);
     action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
-    action.setParameter(5, ActionParameterType.DWORD, ModuleObject.OBJECT_INVALID);
+    action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     action.clearable = clearable;
     this.actionQueue.add(action);
   }
@@ -1090,11 +1059,7 @@ export class ModuleObject {
         this.mesh = undefined;
       }
 
-      //Remove the object from the global list of objects
-      if(this.id >= 1 && ModuleObject.List.has(this.id)){
-        ModuleObject.List.delete(this.id);
-      }
-
+      ModuleObjectManager.RemoveObject(this);
     }catch(e){
       console.error('ModuleObject.destory', e);
     }
@@ -1640,7 +1605,7 @@ export class ModuleObject {
       let perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          perceptionObject.object = ModuleObject.GetObjectById(perceptionObject.objectId);
+          perceptionObject.object = ModuleObjectManager.GetObjectById(perceptionObject.objectId);
           if(!(perceptionObject.object instanceof ModuleObject)){
             this.perceptionList.splice(length, 1);
           }
@@ -1838,11 +1803,9 @@ export class ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
     
     if(this.template.RootNode.HasField('Animation'))

@@ -7,6 +7,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ModuleObject } from ".";
 import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 
 /* @file
  * The ModuleCreature class.
@@ -186,13 +187,13 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
     gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'AreaEffectId') ).SetValue(this.areaEffectId); // vfx_persist id
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LinkedToObject') ).SetValue( this.linkedToObject instanceof ModuleObject ? this.linkedToObject.id : ModuleObject.OBJECT_INVALID );
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LinkedToObject') ).SetValue( this.linkedToObject instanceof ModuleObject ? this.linkedToObject.id : ModuleObjectConstant.OBJECT_INVALID );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue( this.creator instanceof ModuleObject ? this.creator.id : ModuleObject.OBJECT_INVALID );
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue( this.creator instanceof ModuleObject ? this.creator.id : ModuleObjectConstant.OBJECT_INVALID );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LastEntered') ).SetValue( this.lastEntered instanceof ModuleObject ? this.lastEntered.id : ModuleObject.OBJECT_INVALID );
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LastEntered') ).SetValue( this.lastEntered instanceof ModuleObject ? this.lastEntered.id : ModuleObjectConstant.OBJECT_INVALID );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LastLeft') ).SetValue( this.lastLeft instanceof ModuleObject ? this.lastLeft.id : ModuleObject.OBJECT_INVALID );
+    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'LastLeft') ).SetValue( this.lastLeft instanceof ModuleObject ? this.lastLeft.id : ModuleObjectConstant.OBJECT_INVALID );
 
     
     gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Duration') ).SetValue(this.duration);

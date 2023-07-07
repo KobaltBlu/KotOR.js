@@ -22,7 +22,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
 import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-import { AppearanceManager, InventoryManager, KEYManager, MenuManager, PartyManager, TwoDAManager } from "../managers";
+import { AppearanceManager, InventoryManager, KEYManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager } from "../managers";
 import { ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
@@ -1025,11 +1025,9 @@ export class ModuleDoor extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.HasField('AnimationState'))

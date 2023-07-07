@@ -16,7 +16,7 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 import { FactionManager } from "../FactionManager";
-import { PartyManager } from "../managers";
+import { ModuleObjectManager, PartyManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
@@ -276,14 +276,9 @@ export class ModuleEncounter extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
-        while(ModuleObject.List.has(this.id)){
-          this.id = ModuleObject.COUNT++;
-        }
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
 
       if(this.template.RootNode.HasField('Geometry')){
         this.geometry = this.template.GetFieldByLabel('Geometry').GetChildStructs();

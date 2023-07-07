@@ -1,17 +1,82 @@
 import EngineLocation from "../engine/EngineLocation";
 import { CreatureType } from "../enums/nwscript/CreatureType";
-import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
+import { ModuleObjectType as NWModuleObjectType } from "../enums/nwscript/ModuleObjectType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { ReputationType } from "../enums/nwscript/ReputationType";
-import { Module, ModuleArea, ModuleCreature, ModuleObject } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { PartyManager } from "./PartyManager";
 import * as THREE from "three";
+import type { Module, ModuleCreature, ModuleObject } from "../module";
 
 export class ModuleObjectManager {
 
   static objSearchIndex: number;
   static module: Module;
 
-  public static GetObjectByTag(sTag = '', iNum = 0, oType = ModuleObjectType.ALL){
+  static ObjectList: Map<any, ModuleObject> = new Map();
+  static COUNT: number = 1;
+  static PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
+
+  static GetObjectById(id: ModuleObject|number = -1){
+
+    if(id == ModuleObjectConstant.OBJECT_INVALID)
+      return undefined;
+
+    if(typeof id === 'object'){
+      if(id.id >= 1){
+        return id;
+      }
+    }
+
+    if(this.ObjectList.has(id)){
+      return this.ObjectList.get(id);
+    }
+    return undefined;
+
+  }
+
+  static GetNextObjectId(){
+    return this.COUNT++;
+  }
+
+  static ResetPlayerId(){
+    this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
+  };
+
+  static GetNextPlayerId(){
+    console.log('GetNextPlayerId', this.PLAYER_ID);
+    return this.PLAYER_ID--;
+  }
+
+  static AddObjectById(object: ModuleObject){
+    if(!object.id) object.id = this.GetNextObjectId();
+    this.ObjectList.set(object.id, object);
+    while(this.ObjectList.has(object.id)){
+      object.id = this.GetNextObjectId();
+    }
+  }
+
+  static RemoveObject(object: ModuleObject){
+    if(!object) return;
+    this.RemoveObjectById(object?.id);
+  }
+
+  static RemoveObjectById(id: number){
+    if(!isNaN(id)) return;
+    //Remove the object from the global list of objects
+    if(id >= 1 && this.ObjectList.has(id)){
+      this.ObjectList.delete(id);
+    }
+  }
+
+  static Reset(){
+    this.COUNT = 1;
+    this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
+    this.ObjectList.clear();
+  }
+
+  public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){
 
     /*ModuleObjectType.CREATURE         = 1;
     ModuleObjectType.ITEM             = 2;
@@ -28,7 +93,7 @@ export class ModuleObjectManager {
     sTag = sTag.toLowerCase();
     let results: ModuleObject[] = [];
     let obj: any = undefined;
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       for(let i = 0, len = this.module.area.placeables.length; i < len; i++){
         obj = this.module.area.placeables[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -36,7 +101,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       for(let i = 0, len = this.module.area.creatures.length; i < len; i++){
         obj = this.module.area.creatures[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -44,7 +109,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       for(let i = 0, len = PartyManager.party.length; i < len; i++){
         obj = PartyManager.party[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -52,7 +117,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
       for(let i = 0, len = this.module.area.stores.length; i < len; i++){
         obj = this.module.area.stores[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -60,7 +125,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
       for(let i = 0, len = this.module.area.doors.length; i < len; i++){
         obj = this.module.area.doors[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -68,7 +133,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
       for(let i = 0, len = this.module.area.triggers.length; i < len; i++){
         obj = this.module.area.triggers[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -76,7 +141,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
       for(let i = 0, len = this.module.area.waypoints.length; i < len; i++){
         obj = this.module.area.waypoints[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -84,7 +149,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
       for(let i = 0, len = this.module.area.sounds.length; i < len; i++){
         obj = this.module.area.sounds[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -92,7 +157,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
       for(let i = 0, len = this.module.area.items.length; i < len; i++){
         obj = this.module.area.items[i];
         if(obj.getTag().toLowerCase() == sTag)
@@ -229,34 +294,34 @@ export class ModuleObjectManager {
   public static GetNearestObject(oType = 0, oObject: ModuleObject, iNum = 0){
     let results: ModuleObject[] = [];
 
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
     }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
       results = results.concat(this.module.area.items);
     }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
       results = results.concat(this.module.area.triggers);
     }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
       results = results.concat(this.module.area.doors);
     }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
+    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
       results = results.concat(this.module.area.waypoints);
     }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       results = results.concat(this.module.area.placeables);
     }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
       results = results.concat(this.module.area.stores);
     }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
       results = results.concat(this.module.area.encounters);
     }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
       results = results.concat(this.module.area.sounds);
     }
 
@@ -282,7 +347,7 @@ export class ModuleObjectManager {
 
   public static GetFirstObjectInArea(oArea = this.module.area, oType = 0){
 
-    if(!(oArea instanceof ModuleArea)){
+    if(!(BitWise.InstanceOf(oArea?.objectType, ModuleObjectType.ModuleArea))){
       console.error(oArea);
       oArea = this.module.area;
     }
@@ -291,37 +356,37 @@ export class ModuleObjectManager {
     ModuleObjectManager.objSearchIndex = 0;
 
     let results: ModuleObject[] = [];
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
     }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
       results = results.concat(this.module.area.items);
     }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
       results = results.concat(this.module.area.triggers);
     }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
       results = results.concat(this.module.area.doors);
     }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
+    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
     }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
       results = results.concat(this.module.area.waypoints);
     }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       results = results.concat(this.module.area.placeables);
     }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
       results = results.concat(this.module.area.stores);
     }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
       results = results.concat(this.module.area.encounters);
     }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
       results = results.concat(this.module.area.sounds);
     }
 
@@ -332,44 +397,44 @@ export class ModuleObjectManager {
   }
 
   public static GetNextObjectInArea(oArea = this.module.area, oType = 0){
-    if(!(oArea instanceof ModuleArea)){
+    if(!(BitWise.InstanceOf(oArea?.objectType, ModuleObjectType.ModuleArea))){
       console.error(oArea);
       oArea = this.module.area;
     }
     ++ModuleObjectManager.objSearchIndex;
 
     let results: ModuleObject[] = [];
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
     }
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
       results = results.concat(this.module.area.items);
     }
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
       results = results.concat(this.module.area.triggers);
     }
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
       results = results.concat(this.module.area.doors);
     }
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
+    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
       //results = results.concat([]);
     }
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
     }
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
       results = results.concat(this.module.area.waypoints);
     }
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       results = results.concat(this.module.area.placeables);
     }
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
       results = results.concat(this.module.area.stores);
     }
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
       results = results.concat(this.module.area.encounters);
     }
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
       results = results.concat(this.module.area.sounds);
     }
 
@@ -520,48 +585,48 @@ export class ModuleObjectManager {
 
     //console.log('GetObjectsInShape', objectFilter, shape);
 
-    if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){ //CREATURE
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
       object_pool = object_pool.concat(this.module.area.creatures);
     }
 
-    if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){ //ITEM
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){ //ITEM
       object_pool = object_pool.concat(this.module.area.items);
     }
 
-    if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){ //TRIGGER
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){ //TRIGGER
       object_pool = object_pool.concat(this.module.area.triggers); 
     }
 
-    if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){ //DOOR
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){ //DOOR
       object_pool = object_pool.concat(this.module.area.doors); 
     }
 
-    if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){ //AOE
+    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){ //AOE
               
     }
 
-    if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){ //WAYPOINTS
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(this.module.area.waypoints);
     }
     
-    if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){ //PLACEABLE
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(this.module.area.placeables);
     }
 
-    if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){ //STORE
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){ //STORE
           
     }
     
-    if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){ //ENCOUNTER
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){ //ENCOUNTER
           
     }
     
-    if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){ //SOUND
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(this.module.area.sounds);
     }
 
     for(let i = 0, len = object_pool.length; i < len; i++){
-      if(object_pool[i] instanceof ModuleObject){
+      if(BitWise.InstanceOf(object_pool[i]?.objectType, ModuleObjectType.ModuleObject)){
         if(object_pool[i].position.distanceTo(target.position) < size){
           results.push(object_pool[i]);
         }

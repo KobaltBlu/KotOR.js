@@ -11,6 +11,7 @@ import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObjectManager } from "../managers";
 
 /* @file
  * The ModuleStore class.
@@ -78,11 +79,9 @@ export class ModuleStore extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.HasField('BuySellFlag'))

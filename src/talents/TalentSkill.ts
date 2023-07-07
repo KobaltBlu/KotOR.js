@@ -1,5 +1,6 @@
 import { ActionUnlockObject } from "../actions";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
@@ -24,7 +25,7 @@ export class TalentSkill extends TalentObject {
     this.oTarget = oTarget;
     if(this.id == 6){ //Security
       const action = new ActionUnlockObject();
-      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObject.OBJECT_INVALID);
+      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
       this.oCaster.actionQueue.add(action);
     }
   }

@@ -7,6 +7,7 @@ import { TalentFeat, TalentSpell } from "../talents";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { GameInitializer } from "../GameInitializer";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 
 export class CombatData {
   object: ModuleObject;
@@ -135,7 +136,7 @@ export class CombatData {
           action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
           action.setParameter(3, ActionParameterType.INT, 0);
           action.setParameter(4, ActionParameterType.INT, 0);
-          action.setParameter(5, ActionParameterType.DWORD, combatAction.target.id || ModuleObject.OBJECT_INVALID); //Target Object
+          action.setParameter(5, ActionParameterType.DWORD, combatAction.target.id || ModuleObjectConstant.OBJECT_INVALID); //Target Object
           action.setParameter(6, ActionParameterType.FLOAT, combatAction.target.position.x); //Target X
           action.setParameter(7, ActionParameterType.FLOAT, combatAction.target.position.y); //Target Y
           action.setParameter(8, ActionParameterType.FLOAT, combatAction.target.position.z); //Target Z

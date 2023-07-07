@@ -27,7 +27,7 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
 import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { MenuManager, TwoDAManager, PartyManager } from "../managers";
+import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 import { AudioEngine } from "../audio";
@@ -1072,7 +1072,7 @@ export class ModuleArea extends ModuleObject {
         }else{
           let player = new ModulePlayer( this.getPlayerTemplate() );
           player.partyID = -1;
-          player.id = ModuleObject.GetNextPlayerId();
+          player.id = ModuleObjectManager.GetNextPlayerId();
           
           player.Load();
           GameState.player = player;

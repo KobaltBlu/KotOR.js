@@ -3,6 +3,7 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
 import { ModuleCreature, ModuleObject } from "../module";
 import { TalentSpell } from "../talents";
@@ -45,7 +46,7 @@ export class ActionCastSpell extends Action {
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target instanceof ModuleObject ? this.target.id : ModuleObject.OBJECT_INVALID);
+        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target instanceof ModuleObject ? this.target.id : ModuleObjectConstant.OBJECT_INVALID);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
         actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, this.spell.getCastRange() );
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);

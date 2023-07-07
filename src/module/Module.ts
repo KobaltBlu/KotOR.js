@@ -26,7 +26,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "../events";
 import { FactionManager } from "../FactionManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
-import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager } from "../managers";
+import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AudioEngine } from "../audio/AudioEngine";
 
@@ -367,7 +367,7 @@ export class Module {
     try{
       PartyManager.party = [];
       
-      ModuleObject.ResetPlayerId();
+      ModuleObjectManager.ResetPlayerId();
 
       if(this.area.SunFogOn && this.area.SunFogColor){
         GameState.globalLight.color.setHex(parseInt('0x'+this.area.SunFogColor.toString(16)));
@@ -839,6 +839,7 @@ export class Module {
     module.transWP = waypoint;
     if(modName){
       try{
+        ModuleObjectManager.Reset();
         Module.GetModuleArchives(modName).then( (archives) => {
           ResourceLoader.InitModuleCache(archives).then( () => {
             ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
@@ -857,8 +858,9 @@ export class Module {
                         module.area.Load( () => {
 
                           if(module.Mod_NextObjId0)
-                            ModuleObject.COUNT = module.Mod_NextObjId0;
+                            ModuleObjectManager.COUNT = module.Mod_NextObjId0;
 
+                          ModuleObjectManager.module = module;
                           if(typeof onComplete == 'function')
                             onComplete(module);
                         });                        
@@ -901,6 +903,8 @@ export class Module {
                     module.area.module = module;
                     module.Mod_Area_list = [module.area];
                     module.area.SetTransitionWaypoint(module.transWP);
+
+                    ModuleObjectManager.module = module;
                     module.area.Load( () => {
                       if(typeof onComplete == 'function')
                         onComplete(module);

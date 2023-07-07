@@ -4,6 +4,7 @@ import { ModuleObject } from "../../module";
 import { GFFField } from "../../resource/GFFField";
 import { GFFStruct } from "../../resource/GFFStruct";
 import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from ".";
+import { ModuleObjectManager } from "../../managers";
 
 export class NWScriptEvent {
   type: NWScriptEventType;
@@ -78,7 +79,7 @@ export class NWScriptEvent {
   }
 
   getObject(nOffset = 0){
-    return (this.objectList[nOffset] instanceof ModuleObject) ? this.objectList[nOffset] : ModuleObject.GetObjectById(this.objectList[nOffset]);
+    return (this.objectList[nOffset] instanceof ModuleObject) ? this.objectList[nOffset] : ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
   }
 
   static EventFromStruct( struct: GFFStruct ){

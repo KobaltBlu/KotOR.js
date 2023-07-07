@@ -3,8 +3,9 @@ import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType"
 import { GameEffectSubType } from "../enums/effects/GameEffectSubType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { ModuleObjectManager } from "../managers";
 import { Module } from "../module";
-import { ModuleObject } from "../module";
+import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
@@ -54,7 +55,7 @@ export class GameEffect {
       return this;
 
     if(!isNaN(this.creator)){
-      this.creator = ModuleObject.GetObjectById(this.creator);
+      this.creator = ModuleObjectManager.GetObjectById(this.creator);
     }
 
     this.initialized = true;
@@ -236,7 +237,7 @@ export class GameEffect {
   //When the effect duration has expired
   onDurationEnd(){
     this.durationEnded = true;
-    if(this.object instanceof ModuleObject){
+    if(this.object){
       this.object.removeEffect(this);
     }else{
       this.onRemove();
@@ -506,7 +507,7 @@ export class GameEffect {
     effectStruct.AddField( new GFFField(GFFDataType.BYTE, 'SkipOnLoad') ).SetValue(this.skipOnLoad ? 1 : 0);
     effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'ExpireDay') ).SetValue(this.getExpireDay());
     effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'ExpireTime') ).SetValue(this.getExpireTime());
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue( this.creator instanceof ModuleObject ? this.creator.id : 2130706432 );
+    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
     effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'SpellId') ).SetValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
     effectStruct.AddField( new GFFField(GFFDataType.INT, 'IsExposed') ).SetValue(1);
     effectStruct.AddField( new GFFField(GFFDataType.INT, 'NumIntegers') ).SetValue(8);
@@ -535,7 +536,7 @@ export class GameEffect {
     let objectList = effectStruct.AddField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < 6; i++){
       let objectStruct = new GFFStruct(5);
-      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Value").SetValue( this.getObject(i) instanceof ModuleObject ? this.getObject(i).id : 2130706432 ));
+      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Value").SetValue( this.getObject(i) ? this.getObject(i).id : 2130706432 ));
       objectList.AddChildStruct(objectStruct);
     }
 

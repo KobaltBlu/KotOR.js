@@ -18,6 +18,7 @@ import { NWScriptStack } from "./NWScriptStack";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
 import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
 import * as THREE from "three";
+import { ModuleObjectManager } from "../managers";
 
 /* @file
  * The NWScript class.
@@ -431,7 +432,7 @@ export class NWScript {
             case NWScriptDataType.OBJECT:
               args.push( this.stack.pop().value );
               //Test for and fix instances where an object id is pushed instead of an object reference
-              if(typeof args[i] == 'number') args[i] = ModuleObject.GetObjectById(args[i]);
+              if(typeof args[i] == 'number') args[i] = ModuleObjectManager.GetObjectById(args[i]);
             break;
             case NWScriptDataType.STRING:
             case NWScriptDataType.INTEGER:

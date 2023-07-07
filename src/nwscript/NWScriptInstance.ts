@@ -4,6 +4,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
+import { ModuleObjectManager } from "../managers";
 import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -154,7 +155,7 @@ export class NWScriptInstance {
   setCaller(obj: any){
     this.caller = obj;
     if(typeof this.caller == 'number'){
-      this.caller = ModuleObject.GetObjectById(this.caller);
+      this.caller = ModuleObjectManager.GetObjectById(this.caller);
     }
   }
 

@@ -1,7 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleCreature, ModuleObject } from ".";
+import { ModuleObject } from ".";
+import type { ModuleCreature } from ".";
 import { BaseItem } from "../engine/BaseItem";
 import { CombatEngine } from "../combat/CombatEngine";
 import { EffectDisguise } from "../effects/EffectDisguise";
@@ -16,11 +17,11 @@ import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
+import { ResourceLoader, TemplateLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
-import { TwoDAManager, PartyManager, InventoryManager, TLKManager } from "../managers";
+import { TwoDAManager, PartyManager, InventoryManager, TLKManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
@@ -486,11 +487,9 @@ export class ModuleItem extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.HasField('AddCost'))
@@ -615,15 +614,13 @@ export class ModuleItem extends ModuleObject {
 
   onEquip(oCreature: ModuleCreature){
     console.log('ModuleItem.onEquip', oCreature, this);
-    if(oCreature instanceof ModuleCreature){
-      if(this.isDisguise()){
-        oCreature.removeEffectsByType( GameEffectType.EffectDisguise ); //EFFECT_DISGUISE
-        let eDisguise = new EffectDisguise();
-        eDisguise.setInt(0, this.getDisguiseAppearanceId());
-        eDisguise.setCreator(this);
-        eDisguise.setAttachedObject(oCreature);
-        oCreature.addEffect( eDisguise );
-      }
+    if(this.isDisguise()){
+      oCreature.removeEffectsByType( GameEffectType.EffectDisguise ); //EFFECT_DISGUISE
+      let eDisguise = new EffectDisguise();
+      eDisguise.setInt(0, this.getDisguiseAppearanceId());
+      eDisguise.setCreator(this);
+      eDisguise.setAttachedObject(oCreature);
+      oCreature.addEffect( eDisguise );
     }
     if(PartyManager.party.indexOf(oCreature) >= 0){
       InventoryManager.removeItem(this);
@@ -635,9 +632,7 @@ export class ModuleItem extends ModuleObject {
 
   onUnEquip(oCreature: ModuleCreature){
     console.log('ModuleItem.onUnEquip', oCreature, this);
-    if(oCreature instanceof ModuleCreature){
-      oCreature.removeEffectsByCreator(this);
-    }
+    oCreature.removeEffectsByCreator(this);
     if(PartyManager.party.indexOf(oCreature) >= 0){
       InventoryManager.addItem(this);
     }else{

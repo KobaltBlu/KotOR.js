@@ -3,6 +3,7 @@ import EngineLocation from "../engine/EngineLocation";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
+import { ModuleObjectManager } from "../managers";
 import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -261,7 +262,7 @@ export class NWScriptStack {
           let value = stackElement.GetFieldByLabel('Value').GetValue();
           switch(type){
             case 4: //Object
-              let obj = ModuleObject.GetObjectById(value);
+              let obj = ModuleObjectManager.GetObjectById(value);
               
               //0x7f000000 is 2130706432
               if(value == 0x7f000000) //I can confirm that this is INVALID_OBJECT_ID or OBJECT_INVALID as stated in the Bioware_Aurora_Store_Format.pdf on the old nwn.bioware.com site
@@ -324,7 +325,7 @@ export class NWScriptStack {
       break;
     }
   
-    talent.setItem( ModuleObject.GetObjectById( struct.GetFieldByLabel('Item').GetValue() ) );
+    talent.setItem( ModuleObjectManager.GetObjectById( struct.GetFieldByLabel('Item').GetValue() ) );
     talent.setItemPropertyIndex( struct.GetFieldByLabel('ItemPropertyIndex').GetValue() );
     talent.setCasterLevel( struct.GetFieldByLabel('CasterLevel').GetValue() );
     talent.setMetaType( struct.GetFieldByLabel('MetaType').GetValue() );
@@ -375,7 +376,7 @@ export class NWScriptStack {
           let value = stackElement.GetFieldByLabel('Value').GetValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object
-              let obj = ModuleObject.GetObjectById(value);
+              let obj = ModuleObjectManager.GetObjectById(value);
   
               if(value == 2130706432) //this is either OBJECT_INVALID or OBJECT_SELF
                 obj = undefined;

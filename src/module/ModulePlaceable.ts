@@ -25,7 +25,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
-import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager } from "../managers";
+import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager, ModuleObjectManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
@@ -697,11 +697,9 @@ export class ModulePlaceable extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.HasField('LocName'))

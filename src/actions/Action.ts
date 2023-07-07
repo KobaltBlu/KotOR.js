@@ -2,9 +2,10 @@ import { ActionCombat, ActionCastSpell, ActionCloseDoor, ActionDialogObject, Act
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
 import { CombatAction } from "../interface/combat/CombatAction";
-import { PartyManager } from "../managers";
+import { ModuleObjectManager, PartyManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -155,7 +156,7 @@ export class Action {
     let param = this.parameters[index];
     switch(param.type){
       case ActionParameterType.DWORD:
-        return ModuleObject.GetObjectById(param.value);
+        return ModuleObjectManager.GetObjectById(param.value);
       default:
         return param.value;
     }
@@ -177,7 +178,7 @@ export class Action {
       break;
       case ActionParameterType.DWORD:
         if(value instanceof ModuleObject){
-          param.value = value.id ? value.id : ModuleObject.OBJECT_INVALID;
+          param.value = value.id ? value.id : ModuleObjectConstant.OBJECT_INVALID;
         }else{
           param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;
         }

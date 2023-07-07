@@ -1,5 +1,6 @@
 import { EventApplyEffect, EventAquireItem, EventAreaTransition, EventBroadcastAOO, EventBroadcastSafeProjectile, EventCloseObject, EventControllerRumble, EventDecrementStackSize, EventDestroyObject, EventEnteredTrigger, EventFeedbackMessage, EventForcedAction, EventItemOnHitSpellImpact, EventLeftTrigger, EventLockObject, EventOnMeleeAttacked, EventOpenObject, EventPlayAnimation, EventRemoveEffect, EventRemoveFromArea, EventSignalEvent, EventSpawnBodyBag, EventSpellImpact, EventSummonCreature, EventTimedEvent, EventUnlockObject } from ".";
 import { GameEventType } from "../enums/events/GameEventType";
+import { ModuleObjectManager } from "../managers";
 import { ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -37,7 +38,7 @@ export class GameEvent {
   }
 
   getCaller(){
-    return (this.caller instanceof ModuleObject) ? this.caller.id : this.setCaller(ModuleObject.GetObjectById(this.callerId));
+    return (this.caller instanceof ModuleObject) ? this.caller.id : this.setCaller(ModuleObjectManager.GetObjectById(this.callerId));
   }
 
   setObjectId(nObjectId: number){
@@ -51,7 +52,7 @@ export class GameEvent {
   }
 
   getObject(){
-    return (this.object instanceof ModuleObject) ? this.object.id : this.setCaller(ModuleObject.GetObjectById(this.objectId));
+    return (this.object instanceof ModuleObject) ? this.object.id : this.setCaller(ModuleObjectManager.GetObjectById(this.objectId));
   }
 
   eventDataFromStruct(struct: GFFStruct){

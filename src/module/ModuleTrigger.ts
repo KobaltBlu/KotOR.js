@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { PartyManager } from "../managers";
+import { ModuleObjectManager, PartyManager } from "../managers";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
@@ -403,11 +403,9 @@ export class ModuleTrigger extends ModuleObject {
         this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
       }else if(this.template.RootNode.HasField('ID')){
         this.id = this.template.GetFieldByLabel('ID').GetValue();
-      }else{
-        this.id = ModuleObject.COUNT++;
       }
       
-      ModuleObject.List.set(this.id, this);
+      ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.HasField('AutoRemoveKey'))
