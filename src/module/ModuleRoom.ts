@@ -507,6 +507,22 @@ export class ModuleRoom extends ModuleObject {
     return face;
   }
 
+  destroy(): void {
+    const pIdx = this.area.rooms.indexOf(this);
+    //console.log('ModuleObject.destory', 'placeable', pIdx)
+    if(pIdx > -1){
+      this.area.rooms.splice(pIdx, 1);
+      
+      if(this.collisionData.walkmesh)
+        this.collisionData.walkmesh.dispose();
+
+      try{
+        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+        GameState.walkmeshList.splice(wmIdx, 1);
+      }catch(e){}
+    }
+  }
+
   toToolsetInstance(){
 
     let instance = new GFFStruct();

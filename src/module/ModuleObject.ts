@@ -31,7 +31,8 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { ComputedPath, Module, ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from ".";
+import { ComputedPath, Module } from ".";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from ".";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
@@ -398,35 +399,12 @@ export class ModuleObject {
 	// }
 
   attachToRoom(room: ModuleRoom){
-    if(room instanceof ModuleRoom){
-      this.detachFromRoom(this.room);
-      this.room = room;
-      this.room.attachChildObject(this);
-    }
+    this.detachFromRoom(this.room);
+    this.room = room;
+    this.room.attachChildObject(this);
   }
 
-  detachFromRoom(room: ModuleRoom){
-    if(!room) room = this.room;
-    if(room instanceof ModuleRoom){
-      let index = -1;
-      if(this instanceof ModuleCreature){
-        index = room.creatures.indexOf(this);
-        if(index >= 0){
-          room.creatures.splice(index, 1);
-        }
-      }else if (this instanceof ModulePlaceable){
-        index = room.placeables.indexOf(this);
-        if(index >= 0){
-          room.placeables.splice(index, 1);
-        }
-      }else if(this instanceof ModuleDoor){
-        index = room.doors.indexOf(this);
-        if(index >= 0){
-          room.doors.splice(index, 1);
-        }
-      }
-    }
-  }
+  detachFromRoom(room: ModuleRoom){ }
 
   setContext(ctx = GameState){
     this.context = ctx;
@@ -438,11 +416,7 @@ export class ModuleObject {
   }
 
   //Reload the template
-  Invalidate(){
-
-
-
-  }
+  Invalidate(){ }
 
   getModel(){
     if(this.model instanceof THREE.Object3D)
@@ -577,9 +551,9 @@ export class ModuleObject {
     if(typeof anim === 'string')
       throw 'anim cannot be a string!';
 
-    let animConstant = this.getAnimationNameById(anim);
+    const animConstant = this.getAnimationNameById(anim);
     if(animConstant >= 10000){
-      let action = new ActionPlayAnimation();
+      const action = new ActionPlayAnimation();
       action.setParameter(0, ActionParameterType.INT, animConstant);
       action.setParameter(1, ActionParameterType.FLOAT, speed || 1);
       action.setParameter(2, ActionParameterType.FLOAT, time);
@@ -590,7 +564,7 @@ export class ModuleObject {
   }
 
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
-    let action = new ActionDialogObject();
+    const action = new ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
     action.setParameter(2, ActionParameterType.INT, unk1);
@@ -602,33 +576,27 @@ export class ModuleObject {
   }
 
   actionUseObject( object: ModuleObject ){
-    if(object instanceof ModuleObject){
-      let action = new ActionUseObject();
-      action.setParameter(0, ActionParameterType.DWORD, object.id);
-      this.actionQueue.add(action);
-    }
+    const action = new ActionUseObject();
+    action.setParameter(0, ActionParameterType.DWORD, object.id);
+    this.actionQueue.add(action);
   }
 
   actionOpenDoor( door: ModuleObject ){
-    if(door instanceof ModuleDoor){
-      let action = new ActionOpenDoor();
-      action.setParameter(0, ActionParameterType.DWORD, door.id);
-      action.setParameter(1, ActionParameterType.INT, 0);
-      this.actionQueue.add(action);
-    }
+    const action = new ActionOpenDoor();
+    action.setParameter(0, ActionParameterType.DWORD, door.id);
+    action.setParameter(1, ActionParameterType.INT, 0);
+    this.actionQueue.add(action);
   }
 
   actionCloseDoor( door: ModuleObject ){
-    if(door instanceof ModuleDoor){
-      let action = new ActionCloseDoor();
-      action.setParameter(0, ActionParameterType.DWORD, door.id);
-      action.setParameter(1, ActionParameterType.INT, 0);
-      this.actionQueue.add(action);
-    }
+    const action = new ActionCloseDoor();
+    action.setParameter(0, ActionParameterType.DWORD, door.id);
+    action.setParameter(1, ActionParameterType.INT, 0);
+    this.actionQueue.add(action);
   }
 
   actionWait( time = 0 ){
-    let action = new ActionWait();
+    const action = new ActionWait();
     action.setParameter(0, ActionParameterType.FLOAT, time);
     this.actionQueue.add(action);
   }
@@ -813,10 +781,6 @@ export class ModuleObject {
   }
 
   triggerUserDefinedEvent( event: NWScriptEvent ){
-    if(this instanceof ModuleArea || this instanceof Module){
-      //return;
-    }
-
     if(event instanceof NWScriptEvent){
       if(this.scripts.onUserDefined instanceof NWScriptInstance){
         //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, this);
@@ -827,10 +791,6 @@ export class ModuleObject {
   }
 
   triggerSpellCastAtEvent( event: NWScriptEvent ){
-    if(this instanceof ModuleArea || this instanceof Module){
-      //return;
-    }
-
     if(event instanceof NWScriptEvent){
       if(this.scripts.onSpellAt instanceof NWScriptInstance){
         let instance = this.scripts.onSpellAt.nwscript.newInstance();
@@ -899,25 +859,9 @@ export class ModuleObject {
     }
     
     this.spawned = true;
-
-    if(this instanceof ModuleCreature){
-      const eRacialType = new EffectRacialType();
-      eRacialType.setSubType(GameEffectDurationType.INNATE);
-      eRacialType.setSkipOnLoad(true);
-      eRacialType.setInt(0, this.getRace());
-      this.addEffect(eRacialType);
-      
-      this.initPerceptionList();
-      this.updateCollision();
-    }
     
     this.initEffects();
-
-    if(!(this instanceof ModuleDoor)){
-      if(this.model instanceof THREE.Object3D)
-        this.box.setFromObject(this.model);
-    }
-
+    this.computeBoundingBox();
   }
 
   getName(): any {
@@ -930,26 +874,15 @@ export class ModuleObject {
     return 0;
   }
 
-  addItem(template: GFFObject|ModuleItem){
-    let item: ModuleItem;
-    if(template instanceof GFFObject){
-      item = new ModuleItem(template);
-    }else if(template instanceof ModuleItem){
-      item = template;
-    }
-
-    if(item instanceof ModuleItem){
-      item.Load();
-      let hasItem = this.getItem(item.getTag());
-      if(hasItem){
-        hasItem.setStackSize(hasItem.getStackSize() + 1);
-        return hasItem;
-      }else{
-        this.inventory.push(item);
-        return item;
-      }
+  addItem(item: ModuleItem){
+    item.Load();
+    let hasItem = this.getItem(item.getTag());
+    if(hasItem){
+      hasItem.setStackSize(hasItem.getStackSize() + 1);
+      return hasItem;
     }else{
-      throw 'You can only add an item of type ModuleItem to an inventory';
+      this.inventory.push(item);
+      return item;
     }
   }
 
@@ -1059,65 +992,14 @@ export class ModuleObject {
   }
 
   getCurrentRoom(){
-    if(this instanceof ModuleDoor){
-      this.room = undefined;
-      let aabbFaces = [];
-      let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-      let box = this.box.clone();
-
-      this.rooms = [];
-      for(let i = 0; i < GameState.module.area.rooms.length; i++){
-        let room = GameState.module.area.rooms[i];
-        if(room.box.containsPoint(this.position)){
-          this.roomIds.push(i);
-        }
-      }
-
-      if(box){
-        for(let j = 0, jl = this.roomIds.length; j < jl; j++){
-          let room = GameState.module.area.rooms[this.roomIds[j]];
-          if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
-            aabbFaces.push({
-              object: room, 
-              faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
-            });
-          }
-        }
-      }
-      
-      let scratchVec3 = new THREE.Vector3(0, 0, 2);
-      let playerFeetRay = this.position.clone().add(scratchVec3);
-      GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
-      GameState.raycaster.ray.direction.set(0, 0,-1);
-      
-      for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-        let castableFaces = aabbFaces[j];
-        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
-        
-        if(intersects.length){
-          if((this as any) == GameState.player){
-            //console.log(intersects);
-          }
-          if(intersects[0].object.userData.moduleObject){
-            this.attachToRoom(intersects[0].object.userData.moduleObject);
-            return;
-          }
-        }
-      }
-      if(this.rooms.length){
-        this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
-        return;
-      }
-    }else{
-      this.collisionData.findWalkableFace();
-    }
+    this.collisionData.findWalkableFace();
   }
 
   // findWalkableFace(object?: ModuleObject){
   //   let face;
   //   let room;
-  //   for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
-  //     room = GameState.module.area.rooms[i];
+  //   for(let i = 0, il = this.area.rooms.length; i < il; i++){
+  //     room = this.area.rooms[i];
   //     if(room.walkmesh){
   //       for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
   //         face = room.walkmesh.walkableFaces[j];
@@ -1208,86 +1090,6 @@ export class ModuleObject {
         this.mesh = undefined;
       }
 
-      if(GameState.module){
-        if(this instanceof ModuleCreature){
-          if(this.head instanceof OdysseyModel3D){
-            if(this.head.parent instanceof THREE.Object3D){
-              this.head.parent.remove(this.model);
-            }
-            this.head.dispose();
-            this.head = undefined;
-          }
-          let cIdx = GameState.module.area.creatures.indexOf(this);
-          //console.log('ModuleObject.destory', 'creature', cIdx)
-          if(cIdx > -1){
-            GameState.module.area.creatures.splice(cIdx, 1);
-          }
-          FactionManager.RemoveCreatureFromFaction(this);
-        }else if(this instanceof ModulePlaceable){
-          let pIdx = GameState.module.area.placeables.indexOf(this);
-          //console.log('ModuleObject.destory', 'placeable', pIdx)
-          if(pIdx > -1){
-            GameState.module.area.placeables.splice(pIdx, 1);
-
-            try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-              GameState.walkmeshList.splice(wmIdx, 1);
-            }catch(e){}
-
-          }
-        }else if(this instanceof ModuleRoom){
-          let pIdx = GameState.module.area.rooms.indexOf(this);
-          //console.log('ModuleObject.destory', 'placeable', pIdx)
-          if(pIdx > -1){
-            let room = GameState.module.area.rooms.splice(pIdx, 1)[0];
-            
-            if(room.collisionData.walkmesh)
-              room.collisionData.walkmesh.dispose();
-
-            try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-              GameState.walkmeshList.splice(wmIdx, 1);
-            }catch(e){}
-
-          }
-        }else if(this instanceof ModuleDoor){
-          let pIdx = GameState.module.area.doors.indexOf(this);
-          //console.log('ModuleObject.destory', 'placeable', pIdx)
-          if(pIdx > -1){
-            GameState.module.area.doors.splice(pIdx, 1);
-
-            try{
-              let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-              GameState.walkmeshList.splice(wmIdx, 1);
-            }catch(e){}
-            
-          }
-        }else if(this instanceof ModuleTrigger){
-          let pIdx = GameState.module.area.triggers.indexOf(this);
-          //console.log('ModuleObject.destory', 'trigger', pIdx)
-          if(pIdx > -1){
-            GameState.module.area.triggers.splice(pIdx, 1);            
-          }
-        }else if(this instanceof ModuleEncounter){
-          let pIdx = GameState.module.area.encounters.indexOf(this);
-          //console.log('ModuleObject.destory', 'trigger', pIdx)
-          if(pIdx > -1){
-            GameState.module.area.encounters.splice(pIdx, 1);            
-          }
-        }else if(this instanceof ModuleItem){
-          if(this.placedInWorld){
-            let pIdx = GameState.module.area.items.indexOf(this);
-            if(pIdx > -1){
-              GameState.module.area.items.splice(pIdx, 1);            
-            }
-          }
-        }else{
-          console.log('ModuleObject.destory', 'not supported '+this.constructor.name)
-        }
-      }else{
-        console.log('ModuleObject.destory', 'No module')
-      }
-
       //Remove the object from the global list of objects
       if(this.id >= 1 && ModuleObject.List.has(this.id)){
         ModuleObject.List.delete(this.id);
@@ -1309,9 +1111,7 @@ export class ModuleObject {
     try{
       this.position.set(x, y, z);
       this.computeBoundingBox();
-
-      if(this instanceof ModuleCreature)
-        this.updateCollision();
+      this.updateCollision();
     }catch(e){
       console.error('ModuleObject.setPosition failed ');
     }
@@ -1468,13 +1268,7 @@ export class ModuleObject {
   }
 
   resistForce(oCaster: ModuleObject){
-    if(this instanceof ModuleCreature && oCaster instanceof ModuleCreature){
-      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
-      //1d20 + their level vs. a DC of your level plus 10
-      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
-      return (roll > 10 + oCaster.getTotalClassLevel());
-    }
-    return 0;
+    return false;
   }
 
   addEffect(effect: GameEffect, type = 0, duration = 0){
@@ -1562,16 +1356,13 @@ export class ModuleObject {
   }
 
   JumpToLocation(lLocation: EngineLocation){
-    if(typeof lLocation === 'object'){
+    if(lLocation){
       this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
       this.computeBoundingBox();
 
       this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
       this.collisionData.groundFace = undefined;
       this.collisionData.lastGroundFace = undefined;
-
-      if(this instanceof ModuleCreature)
-        this.updateCollision();
     }
   }
 
@@ -1734,39 +1525,21 @@ export class ModuleObject {
       this.model.updateMatrixWorld(true);
       this.model.updateMatrix();
     }
-
-    if(!(this instanceof ModuleDoor)){
+    
+    if(this.model instanceof THREE.Object3D)
       this.box.setFromObject(this.model);
-    }
   }
 
   isOnScreen(frustum = GameState.viewportFrustum){
-    if(!(this instanceof ModuleTrigger) && !(this instanceof ModuleDoor)){
-      // if(this.model && this.model.box != this.box){
-      //   this.box = this.model.box;
-      // }
-    }
-
-    if(GameState.scene.fog && !(this instanceof ModuleDoor)){
+    if(GameState.scene.fog){
       if(this.distanceToCamera >= GameState.scene.fog.far){
         return false;
       }
     }
 
-    // if(APP_MODE == 'FORGE'){
-    //   if(tabManager.currentTab instanceof ModuleEditorTab){
-    //     frustum = Forge.tabManager.currentTab.viewportFrustum;
-    //     this.box.getBoundingSphere(this.sphere);
-    //     return frustum.intersectsSphere(this.sphere);
-    //   }
-    //   return false;
-    // }else{
-      this.box.getBoundingSphere(this.sphere);
-      return frustum.intersectsSphere(this.sphere);
-    // }
+    this.box.getBoundingSphere(this.sphere);
+    return frustum.intersectsSphere(this.sphere);
   }
-
-
 
   getReticleNode(){
     if(this.model){
@@ -1877,76 +1650,70 @@ export class ModuleObject {
   }
 
   notifyPerceptionHeardObject(object: ModuleObject, heard = false){
-    if(object instanceof ModuleCreature){
-      let triggerOnNotice = false;
-      let perceptionObject;
-      let exists = this.perceptionList.filter( (o) => o.object == object );
-      if(exists.length){
-        let existingObject = exists[0];
-        triggerOnNotice = (existingObject.heard != heard);
-        existingObject.hasHeard = existingObject.hasHeard ? true : (existingObject.heard == heard ? true : false);
-        existingObject.heard = heard;
-        perceptionObject = existingObject;
-      }else{
-        if(heard){
-          let newObject = {
-            object: object,
-            heard: heard,
-            seen: false,
-            hasSeen: false,
-            hasHeard: false
-          };
-          this.perceptionList.push(newObject);
-          perceptionObject = newObject;
-          triggerOnNotice = true;
-        }
+    let triggerOnNotice = false;
+    let perceptionObject;
+    let exists = this.perceptionList.filter( (o) => o.object == object );
+    if(exists.length){
+      let existingObject = exists[0];
+      triggerOnNotice = (existingObject.heard != heard);
+      existingObject.hasHeard = existingObject.hasHeard ? true : (existingObject.heard == heard ? true : false);
+      existingObject.heard = heard;
+      perceptionObject = existingObject;
+    }else{
+      if(heard){
+        let newObject = {
+          object: object,
+          heard: heard,
+          seen: false,
+          hasSeen: false,
+          hasHeard: false
+        };
+        this.perceptionList.push(newObject);
+        perceptionObject = newObject;
+        triggerOnNotice = true;
       }
+    }
 
-      if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-        //console.log('notifyPerceptionHeardObject', heard, this, object);
-        let instance = this.scripts.onNotice.nwscript.newInstance();
-        instance.lastPerceived = perceptionObject;
-        instance.run(this);
-        return true;
-      }
-      
+    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+      //console.log('notifyPerceptionHeardObject', heard, this, object);
+      let instance = this.scripts.onNotice.nwscript.newInstance();
+      instance.lastPerceived = perceptionObject;
+      instance.run(this);
+      return true;
     }
   }
 
   notifyPerceptionSeenObject(object: ModuleObject, seen = false){
-    if(object instanceof ModuleCreature){
-      let triggerOnNotice = false;
-      let perceptionObject;
-      let exists = this.perceptionList.filter( (o) => o.object == object );
-      if(exists.length){
-        let existingObject = exists[0];
-        triggerOnNotice = (existingObject.seen != seen);
-        existingObject.hasSeen = existingObject.seen == seen;
-        existingObject.seen = seen;
-        perceptionObject = existingObject;
-      }else{
-        if(seen){
-          let newObject = {
-            object: object,
-            heard: false,
-            seen: seen,
-            hasSeen: false,
-            hasHeard: false
-          };
-          this.perceptionList.push(newObject);
-          perceptionObject = newObject;
-          triggerOnNotice = true;
-        }
+    let triggerOnNotice = false;
+    let perceptionObject;
+    let exists = this.perceptionList.filter( (o) => o.object == object );
+    if(exists.length){
+      let existingObject = exists[0];
+      triggerOnNotice = (existingObject.seen != seen);
+      existingObject.hasSeen = existingObject.seen == seen;
+      existingObject.seen = seen;
+      perceptionObject = existingObject;
+    }else{
+      if(seen){
+        let newObject = {
+          object: object,
+          heard: false,
+          seen: seen,
+          hasSeen: false,
+          hasHeard: false
+        };
+        this.perceptionList.push(newObject);
+        perceptionObject = newObject;
+        triggerOnNotice = true;
       }
+    }
 
-      if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-        //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
-        let instance = this.scripts.onNotice.nwscript.newInstance();
-        instance.lastPerceived = perceptionObject;
-        instance.run(this);
-        return true;
-      }
-
+    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+      //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
+      let instance = this.scripts.onNotice.nwscript.newInstance();
+      instance.lastPerceived = perceptionObject;
+      instance.run(this);
+      return true;
     }
   }
 
@@ -1981,8 +1748,8 @@ export class ModuleObject {
 
       let doors = [];
 
-      for(let j = 0, jl = GameState.module.area.rooms.length; j < jl; j++){
-        let room = GameState.module.area.rooms[j];
+      for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
+        let room = this.area.rooms[j];
         if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
@@ -1991,8 +1758,8 @@ export class ModuleObject {
         }
       }
 
-      for(let j = 0, jl = GameState.module.area.doors.length; j < jl; j++){
-        let door = GameState.module.area.doors[j];
+      for(let j = 0, jl = this.area.doors.length; j < jl; j++){
+        let door = this.area.doors[j];
         if(door && door != (this as any) && !door.isOpen()){
           let box3 = door.box;
           if(box3){
@@ -2063,34 +1830,7 @@ export class ModuleObject {
   PlaySoundSet(ssfType: SSFObjectType){
     console.warn("Method not implemented.", this.tag);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   
-
   InitProperties(){
 
     if(!this.initialized){

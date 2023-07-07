@@ -646,6 +646,16 @@ export class ModuleItem extends ModuleObject {
     this.setPossessor(undefined);
   }
 
+  destroy(): void {
+    super.destroy();
+    if(this.placedInWorld){
+      const pIdx = this.area.items.indexOf(this);
+      if(pIdx > -1){
+        this.area.items.splice(pIdx, 1);            
+      }
+    }
+  }
+
   save(){
     let itemStruct = new GFFStruct(0);
 

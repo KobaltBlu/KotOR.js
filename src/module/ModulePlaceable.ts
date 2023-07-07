@@ -180,6 +180,13 @@ export class ModulePlaceable extends ModuleObject {
     
   }
 
+  detachFromRoom(room: ModuleRoom): void {
+    const index = room.placeables.indexOf(this);
+    if(index >= 0){
+      room.placeables.splice(index, 1);
+    }
+  }
+
   update(delta = 0){
     
     super.update(delta);
@@ -863,6 +870,19 @@ export class ModulePlaceable extends ModuleObject {
     
     this.initialized = true;
 
+  }
+
+  destroy(): void {
+    super.destroy();
+    const pIdx = this.area.placeables.indexOf(this);
+    //console.log('ModuleObject.destory', 'placeable', pIdx)
+    if(pIdx > -1){
+      this.area.placeables.splice(pIdx, 1);
+      try{
+        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+        GameState.walkmeshList.splice(wmIdx, 1);
+      }catch(e){}
+    }
   }
 
   save(){

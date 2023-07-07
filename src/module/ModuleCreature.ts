@@ -7,7 +7,7 @@ import { Action, ActionCastSpell, ActionFollowLeader, ActionItemCastSpell, Actio
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CombatEngine } from "../combat/CombatEngine";
 import { CreatureClass } from "../combat/CreatureClass";
-import { GameEffect } from "../effects";
+import { EffectRacialType, GameEffect } from "../effects";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -50,6 +50,7 @@ import { WeaponWield } from "../enums/combat/WeaponWield";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 
 /* @file
  * The ModuleCreature class.
@@ -1120,6 +1121,21 @@ export class ModuleCreature extends ModuleObject {
     return 65535;
   }
 
+  resistForce(oCaster: ModuleCreature): boolean {
+    if(oCaster instanceof ModuleCreature){
+      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //1d20 + their level vs. a DC of your level plus 10
+      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
+      return (roll > 10 + oCaster.getTotalClassLevel());
+    }
+    return false;
+  }
+
+  JumpToLocation(lLocation: EngineLocation): void {
+    super.JumpToLocation(lLocation);
+    this.updateCollision();
+  }
+
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0){
 
     if(target instanceof ModuleObject){
@@ -1138,6 +1154,13 @@ export class ModuleCreature extends ModuleObject {
       this.actionQueue.add(action);
     }
 
+  }
+
+  detachFromRoom(room: ModuleRoom): void {
+    const index = room.creatures.indexOf(this);
+    if(index >= 0){
+      room.creatures.splice(index, 1);
+    }
   }
 
   randomWalk(){
@@ -3243,6 +3266,19 @@ export class ModuleCreature extends ModuleObject {
     return this.creatureAppearance.perspace;
   }
 
+  initEffects(): void {
+    const eRacialType = new EffectRacialType();
+    eRacialType.setSubType(GameEffectDurationType.INNATE);
+    eRacialType.setSkipOnLoad(true);
+    eRacialType.setInt(0, this.getRace());
+    this.addEffect(eRacialType);
+    
+    this.initPerceptionList();
+    this.updateCollision();
+    
+    super.initEffects();
+  }
+
   Load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
@@ -4415,6 +4451,22 @@ export class ModuleCreature extends ModuleObject {
 
   actionFollowLeader(){
     this.actionQueue.add( new ActionFollowLeader() );
+  }
+
+  destroy(): void {
+    super.destroy();
+    if(this.head instanceof OdysseyModel3D){
+      if(this.head.parent instanceof THREE.Object3D){
+        this.head.parent.remove(this.model);
+      }
+      this.head.dispose();
+      this.head = undefined;
+    }
+    const pIdx = this.area.creatures.indexOf(this);
+    if(pIdx > -1){
+      this.area.creatures.splice(pIdx, 1);
+    }
+    FactionManager.RemoveCreatureFromFaction(this);
   }
 
   save(){

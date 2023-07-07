@@ -452,6 +452,15 @@ export class ModuleEncounter extends ModuleObject {
 
   }
 
+  destroy(): void {
+    super.destroy();
+    const pIdx = this.area.encounters.indexOf(this);
+    //console.log('ModuleObject.destory', 'trigger', pIdx)
+    if(pIdx > -1){
+      this.area.encounters.splice(pIdx, 1);            
+    }
+  }
+
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTE ';

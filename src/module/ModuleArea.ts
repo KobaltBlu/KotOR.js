@@ -1033,7 +1033,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   detachObject(object: ModuleObject){
-    //todo
+    object.area = undefined;
   }
 
   async loadPlayer(): Promise<void> {

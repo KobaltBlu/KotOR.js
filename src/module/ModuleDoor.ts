@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleCreature, ModuleItem, ModuleObject } from ".";
+import { ModuleCreature, ModuleItem, ModuleObject, ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
@@ -175,6 +175,29 @@ export class ModuleDoor extends ModuleObject {
       console.error('AudioEmitter failed to create on object', e);
     }
 
+  }
+
+  computeBoundingBox(force?: boolean): void {
+    if(this.container){
+      this.container.updateMatrixWorld(true);
+      this.container.updateMatrix();
+      if(force){
+        this.container.traverse( n => {
+          n.updateMatrixWorld(true);
+          n.updateMatrix();
+        })
+      }
+    }
+
+    if(this.model){
+      this.model.updateMatrixWorld(true);
+      this.model.updateMatrix();
+    }
+  }
+
+  isOnScreen(frustum?: THREE.Frustum): boolean {
+    this.box.getBoundingSphere(this.sphere);
+    return frustum.intersectsSphere(this.sphere);
   }
 
   getX(){
@@ -689,9 +712,62 @@ export class ModuleDoor extends ModuleObject {
     if(this.model) this.model.stopAnimation();
   }
 
-  destroy(): void {
-    super.destroy();
-    MenuManager.InGameAreaTransition.unsetTransitionObject(this);
+  detachFromRoom(room: ModuleRoom): void {
+    let index = room.doors.indexOf(this);
+    if(index >= 0){
+      room.doors.splice(index, 1);
+    }
+  }
+
+  getCurrentRoom(): void {
+    this.room = undefined;
+    let aabbFaces = [];
+    let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
+    let box = this.box.clone();
+
+    this.rooms = [];
+    for(let i = 0; i < GameState.module.area.rooms.length; i++){
+      let room = GameState.module.area.rooms[i];
+      if(room.box.containsPoint(this.position)){
+        this.roomIds.push(i);
+      }
+    }
+
+    if(box){
+      for(let j = 0, jl = this.roomIds.length; j < jl; j++){
+        let room = GameState.module.area.rooms[this.roomIds[j]];
+        if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
+          aabbFaces.push({
+            object: room, 
+            faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
+          });
+        }
+      }
+    }
+    
+    let scratchVec3 = new THREE.Vector3(0, 0, 2);
+    let playerFeetRay = this.position.clone().add(scratchVec3);
+    GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
+    GameState.raycaster.ray.direction.set(0, 0,-1);
+    
+    for(let j = 0, jl = aabbFaces.length; j < jl; j++){
+      let castableFaces = aabbFaces[j];
+      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+      
+      if(intersects.length){
+        if((this as any) == GameState.player){
+          //console.log(intersects);
+        }
+        if(intersects[0].object.userData.moduleObject){
+          this.attachToRoom(intersects[0].object.userData.moduleObject);
+          return;
+        }
+      }
+    }
+    if(this.rooms.length){
+      this.attachToRoom(GameState.module.area.rooms[this.roomIds[0]]);
+      return;
+    }
   }
 
   generateTransitionLine(){
@@ -1122,6 +1198,20 @@ export class ModuleDoor extends ModuleObject {
 
     this.initialized = true
 
+  }
+
+  destroy(): void {
+    super.destroy();
+    MenuManager.InGameAreaTransition.unsetTransitionObject(this);
+    const pIdx = this.area.doors.indexOf(this);
+    //console.log('ModuleObject.destory', 'placeable', pIdx)
+    if(pIdx > -1){
+      this.area.doors.splice(pIdx, 1);
+      try{
+        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+        GameState.walkmeshList.splice(wmIdx, 1);
+      }catch(e){}
+    }
   }
 
   save(){
