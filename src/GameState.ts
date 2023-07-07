@@ -2,8 +2,9 @@ import * as THREE from "three";
 
 import { AnimatedTexture } from "./AnimatedTexture";
 import { CombatEngine } from "./combat";
-import { GameMenu, GUIListBox } from "./gui";
-import { Module, ModuleObject, ModuleDoor, ModulePlaceable, ModuleCreature } from "./module";
+import { GUIListBox } from "./gui";
+import { Module } from "./module";
+import type { ModuleObject, ModuleCreature } from "./module";
 import { IngameControls, Mouse } from "./controls";
 
 import { INIConfig } from "./INIConfig";
@@ -46,6 +47,8 @@ import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
+import { BitWise } from "./utility/BitWise";
+import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 
 // These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
 export const PERSISTENT_ZONE_ACTIVE = 0;
@@ -367,7 +370,7 @@ export class GameState implements EngineContext {
 
     GameState.scene.add(GameState.globalLight);
 
-    GameState.player = undefined;//new ModuleCreature();//AuroraObject3D();
+    GameState.player = undefined;
     GameState.playerFeetOffset = new THREE.Vector3(0,0,1);
 
     GameState.collisionList = [];
@@ -750,21 +753,21 @@ export class GameState implements EngineContext {
   }
 
   public static setReticleSelectedObject( object: ModuleObject ){
-    if(object instanceof ModuleObject){
+    if(object){
       CursorManager.selected = object.getReticleNode();
       if(CursorManager.selected){
         CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
         CursorManager.selectedObject = object;
       }
 
-      if(object instanceof ModuleDoor){      
+      if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleDoor)){      
         CursorManager.setReticle2('reticleF2');
-      }else if(object instanceof ModulePlaceable){
+      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }      
         CursorManager.setReticle2('reticleF2');
-      }else if(object instanceof ModuleCreature){
+      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleCreature)){
         if(object.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
         }else{
@@ -775,7 +778,7 @@ export class GameState implements EngineContext {
   }
 
   public static setReticleHoveredObject( object: ModuleObject ){
-    if(object instanceof ModuleObject){
+    if(object){
       let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
       let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (CursorManager.hoveredObject == CursorManager.selectedObject);
 
@@ -785,14 +788,14 @@ export class GameState implements EngineContext {
         CursorManager.hoveredObject = object;
       }
 
-      if(object instanceof ModuleDoor){
+      if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleDoor)){
         if(canChangeCursor)
           CursorManager.setCursor('door');
         else
           CursorManager.setCursor('select');
 
         CursorManager.setReticle('reticleF');
-      }else if(object instanceof ModulePlaceable){
+      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }
@@ -802,7 +805,7 @@ export class GameState implements EngineContext {
           CursorManager.setCursor('select');
 
         CursorManager.setReticle('reticleF');
-      }else if(object instanceof ModuleCreature){
+      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleCreature)){
 
         if(object.isHostile(GameState.getCurrentPlayer())){
           if(!object.isDead()){
@@ -875,7 +878,7 @@ export class GameState implements EngineContext {
     }
 
     CursorManager.arrow.visible = false;
-    if(CursorManager.selectedObject instanceof ModuleObject){
+    if(CursorManager.selectedObject){
       if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
         CursorManager.selectedObject = undefined;
       }
@@ -887,7 +890,7 @@ export class GameState implements EngineContext {
           //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
           GameState.onMouseHitInteractive( (moduleObject: ModuleObject) => {
-            if(moduleObject instanceof ModuleObject && moduleObject.isUseable()){
+            if(moduleObject && moduleObject.isUseable()){
               if(moduleObject != GameState.getCurrentPlayer()){
                 GameState.setReticleHoveredObject(moduleObject);
               }
@@ -915,14 +918,14 @@ export class GameState implements EngineContext {
     if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
       CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
       CursorManager.reticle2.visible = true;
-      if(CursorManager.selectedObject instanceof ModuleDoor){      
+      if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModuleDoor)){      
         CursorManager.setReticle2('reticleF2');
-      }else if(CursorManager.selectedObject instanceof ModulePlaceable){
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModulePlaceable)){
         if(!CursorManager.selectedObject.isUseable()){
           return;
         }      
         CursorManager.setReticle2('reticleF2');
-      }else if(CursorManager.selectedObject instanceof ModuleCreature){
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModuleCreature)){
         if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
         }else{
@@ -977,7 +980,7 @@ export class GameState implements EngineContext {
               VideoPlayer.Load(sMovie6).then( async () => {
                 GameState.Mode = EngineMode.LOADING;
                 
-                if(GameState.module instanceof Module){
+                if(GameState.module){
                   try{ await GameState.module.save(); }catch(e){
                     console.error(e);
                   }
@@ -1094,7 +1097,7 @@ export class GameState implements EngineContext {
 
     GameState.scene.visible = false;
     GameState.Mode = EngineMode.LOADING;
-    ModuleObject.COUNT = 1;
+    ModuleObjectManager.Reset();
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
