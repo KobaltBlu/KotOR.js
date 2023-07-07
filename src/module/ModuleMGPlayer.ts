@@ -63,7 +63,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   constructor(template: GFFObject){
     super();
-    this.objectType = ModuleObjectType.ModuleMGPlayer;
+    this.objectType |= ModuleObjectType.ModuleMGPlayer;
     console.log('ModuleMGPlayer', template, this);
     this.template = template;
 

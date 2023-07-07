@@ -166,7 +166,7 @@ export class ModuleCreature extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleCreature;
+    this.objectType |= ModuleObjectType.ModuleCreature;
     this.deferEventUpdate = true;
 
     this.template = gff;

@@ -30,7 +30,7 @@ export class ModuleMGGunBank extends ModuleObject {
 
   constructor( template: GFFObject, owner: ModuleObject, isPlayer: boolean = false ){
     super();
-    this.objectType = ModuleObjectType.ModuleMGGunBank;
+    this.objectType |= ModuleObjectType.ModuleMGGunBank;
     this.template = template;
     this.bullets = [];
     this.owner = owner;

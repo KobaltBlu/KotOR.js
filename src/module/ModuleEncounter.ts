@@ -59,7 +59,7 @@ export class ModuleEncounter extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleEncounter;
+    this.objectType |= ModuleObjectType.ModuleEncounter;
     this.template = gff;
     this.vertices = []; 
 

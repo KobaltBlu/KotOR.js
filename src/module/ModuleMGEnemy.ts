@@ -51,7 +51,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   constructor(template: GFFObject){
     super();
-    this.objectType = ModuleObjectType.ModuleMGEnemy;
+    this.objectType |= ModuleObjectType.ModuleMGEnemy;
     this.template = template;
 
     this.gunBanks = [];

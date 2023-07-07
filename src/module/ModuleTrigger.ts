@@ -35,7 +35,7 @@ export class ModuleTrigger extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleTrigger;
+    this.objectType |= ModuleObjectType.ModuleTrigger;
 
     this.template = gff;
     this.objectsInside = [];

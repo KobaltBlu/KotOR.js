@@ -27,7 +27,7 @@ export class ModuleStore extends ModuleObject {
 
   constructor( gff = new GFFObject() ){
     super(gff);
-    this.objectType = ModuleObjectType.ModuleStore;
+    this.objectType |= ModuleObjectType.ModuleStore;
     
     this.template = gff;
     this.buySellFlag = -1;

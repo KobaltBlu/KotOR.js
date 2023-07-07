@@ -22,7 +22,7 @@ export class ModuleWaypoint extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleWaypoint;
+    this.objectType |= ModuleObjectType.ModuleWaypoint;
 
     this.template = gff;
     this.InitProperties();

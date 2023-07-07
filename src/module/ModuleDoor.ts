@@ -100,7 +100,7 @@ export class ModuleDoor extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleDoor;
+    this.objectType |= ModuleObjectType.ModuleDoor;
     this.template = gff;
     this.lastObjectEntered = undefined;
     this.lastObjectExited = undefined;

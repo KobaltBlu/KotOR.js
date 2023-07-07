@@ -153,7 +153,7 @@ export class ModuleArea extends ModuleObject {
 
   constructor(name = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
-    this.objectType = ModuleObjectType.ModuleArea;
+    this.objectType |= ModuleObjectType.ModuleArea;
     this._name = name;
     this.are = are;
     this.git = git;

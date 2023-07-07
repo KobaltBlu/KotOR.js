@@ -87,7 +87,7 @@ export class ModulePlaceable extends ModuleObject {
 
   constructor ( gff = new GFFObject()) {
     super(gff);
-    this.objectType = ModuleObjectType.ModulePlaceable;
+    this.objectType |= ModuleObjectType.ModulePlaceable;
     this.template = gff;
 
     this.openState = false;

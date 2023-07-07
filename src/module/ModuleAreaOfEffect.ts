@@ -51,7 +51,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
-    this.objectType = ModuleObjectType.ModuleAreaOfEffect;
+    this.objectType |= ModuleObjectType.ModuleAreaOfEffect;
   }
 
   Load(){

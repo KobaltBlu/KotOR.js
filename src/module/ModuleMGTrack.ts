@@ -20,7 +20,7 @@ export class ModuleMGTrack extends ModuleObject {
 
   constructor(layout: LayoutTrack){
     super();
-    this.objectType = ModuleObjectType.ModuleMGTrack;
+    this.objectType |= ModuleObjectType.ModuleMGTrack;
 
     this.index = 0;
     this.track = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();

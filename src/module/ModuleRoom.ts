@@ -37,7 +37,7 @@ export class ModuleRoom extends ModuleObject {
 
   constructor( args: any = {} ){
     super();
-    this.objectType = ModuleObjectType.ModuleRoom;
+    this.objectType |= ModuleObjectType.ModuleRoom;
     args = Object.assign({
       ambientScale: 0,
       envAudio: 0,

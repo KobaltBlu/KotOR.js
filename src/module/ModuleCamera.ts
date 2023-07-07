@@ -24,7 +24,7 @@ export class ModuleCamera extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
-    this.objectType = ModuleObjectType.ModuleCamera;
+    this.objectType |= ModuleObjectType.ModuleCamera;
     this.id = -1;
     this.template = gff;
   }

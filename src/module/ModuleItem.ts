@@ -57,7 +57,7 @@ export class ModuleItem extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
-    this.objectType = ModuleObjectType.ModuleItem;
+    this.objectType |= ModuleObjectType.ModuleItem;
 
     if(typeof gff === 'string'){
       this.equippedRes = gff;

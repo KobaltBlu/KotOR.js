@@ -44,7 +44,7 @@ export class ModuleSound extends ModuleObject {
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
     super(gff);
-    this.objectType = ModuleObjectType.ModuleSound;
+    this.objectType |= ModuleObjectType.ModuleSound;
 
     this.template = gff;
     this.audioEngine = audioEngine;

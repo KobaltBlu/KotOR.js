@@ -59,7 +59,7 @@ export class ModuleObject {
   initialized: boolean;
   isPlayer: boolean = false;
   name: string;
-  objectType: ModuleObjectType = ModuleObjectType.ModuleObject;
+  objectType: number = ModuleObjectType.ModuleObject;
 
   effectIconList: EffectIconListItem[] = [];
 

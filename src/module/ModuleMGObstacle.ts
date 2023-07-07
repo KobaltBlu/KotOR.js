@@ -22,7 +22,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   constructor(template: GFFObject, layout: LayoutObstacle){
     super(template);
-    this.objectType = ModuleObjectType.ModuleMGObstacle;
+    this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';
     this.invince = 0;
     this.layout = layout;

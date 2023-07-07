@@ -30,7 +30,7 @@ export class ModuleMGGunBullet extends ModuleObject {
 
   constructor( template: GFFObject, owner: ModuleObject ){
     super();
-    this.objectType = ModuleObjectType.ModuleMGGunBullet;
+    this.objectType |= ModuleObjectType.ModuleMGGunBullet;
     this.template = template;
     this.owner = owner;
 
