@@ -1,10 +1,9 @@
 import { CurrentGame } from "./CurrentGame";
-import { ModuleCreature, ModuleObject, ModulePlayer } from "./module";
+import type { ModuleCreature, ModuleObject, ModulePlayer } from "./module";
 import { GFFObject } from "./resource/GFFObject";
 import { GFFStruct } from "./resource/GFFStruct";
 
 import * as path from "path";
-import * as fs from "fs";
 import { GFFField } from "./resource/GFFField";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { GameFileSystem } from "./utility/GameFileSystem";
@@ -12,6 +11,8 @@ import { Faction } from "./engine/Faction";
 import { Reputation } from "./engine/Reputation";
 import { ReputationConstant } from "./enums/engine/ReputationConstant";
 import { PartyManager, TwoDAManager } from "./managers";
+import { BitWise } from "./utility/BitWise";
+import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 
@@ -32,25 +33,25 @@ export class FactionManager {
   }
 
   static AddCreatureToFaction( creature: ModuleObject ){
-    if(creature instanceof ModuleCreature){
+    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       FactionManager.RemoveCreatureFromFaction(creature);
       if(creature.faction instanceof Faction){
-        creature.faction.addMember(creature);
+        creature.faction.addMember(creature as ModuleCreature);
       }
     }
   }
 
   static RemoveCreatureFromFaction( creature: ModuleObject){
-    if(creature instanceof ModuleCreature){
+    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       let faction = creature.faction;
       if(faction instanceof Faction){
-        faction.removeMember(creature);
+        faction.removeMember(creature as ModuleCreature);
       }
     }
   }
 
   static GetFactionLeader( creature: ModuleObject ){
-    if(creature instanceof ModuleCreature){
+    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       if(creature.faction.id == 0){
         return PartyManager.party[0];
       }else{
@@ -64,7 +65,7 @@ export class FactionManager {
   }
 
   static GetCreatureFaction(oSource: ModuleObject){
-    if(oSource instanceof ModuleCreature){
+    if(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleCreature)){
       return oSource.faction;
     }
 
@@ -85,7 +86,7 @@ export class FactionManager {
 
   static SetFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
 
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
+    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return false;
 
     if(oSource.faction == oTarget.faction)
@@ -101,7 +102,7 @@ export class FactionManager {
 
   static AdjustFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
 
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
+    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return false;
 
     if(oSource.faction == oTarget.faction)
@@ -134,7 +135,7 @@ export class FactionManager {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
-    if(!(oSource instanceof ModuleObject) || !(oTarget instanceof ModuleObject))
+    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
     if(oSource.faction instanceof Faction){
