@@ -12,6 +12,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { CExoLocString } from "../resource/CExoLocString";
 import { ResourceLoader } from "../loaders";
 import { GameState } from "../GameState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleWaypoint class.
@@ -21,6 +22,7 @@ export class ModuleWaypoint extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleWaypoint;
 
     this.template = gff;
     this.InitProperties();

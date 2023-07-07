@@ -91,9 +91,9 @@ export class TabLIPEditorState extends TabState {
     }
     
     //Audio
-    this.gainNode = KotOR.GameState.audioEngine.audioCtx.createGain();
+    this.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
-    this.source = KotOR.GameState.audioEngine.audioCtx.createBufferSource();
+    this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
     this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : '';
     
@@ -198,7 +198,7 @@ export class TabLIPEditorState extends TabState {
     return new Promise<void>( (resolve, reject) => {
       KotOR.AudioLoader.LoadStreamWave(sound, (data: any) => {
         this.audio_name = sound;
-        KotOR.GameState.audioEngine.audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
+        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
           this.audio_buffer = buffer;
           this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer]);
           resolve();
@@ -273,12 +273,12 @@ export class TabLIPEditorState extends TabState {
   play(duration: number|undefined = undefined){
 
     this.resetAudio();
-    this.source = KotOR.GameState.audioEngine.audioCtx.createBufferSource();
+    this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     
     try{
       this.source.buffer = this.audio_buffer;
       this.source.connect(this.gainNode);
-      this.gainNode.connect(KotOR.GameState.audioEngine.audioCtx.destination);
+      this.gainNode.connect(KotOR.AudioEngine.GetAudioEngine().audioCtx.destination);
       this.source.loop = false;
       this.source.playbackRate.value = this.playbackRate;
 

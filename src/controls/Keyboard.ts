@@ -2,6 +2,7 @@ import { KeyInput } from "./KeyInput";
 import { KeyboardAction } from "../enums/controls/KeyboardAction";
 import { GameState } from "../GameState";
 import { GUIControl } from "../gui";
+import { MenuManager } from "../managers";
 
 interface KeyboardKeyActions {
   Escape:          KeyInput; 
@@ -234,9 +235,9 @@ export class Keyboard {
         input.keyDown();
       }
 
-      if(GameState.activeGUIElement instanceof GUIControl){
-        if(typeof GameState.activeGUIElement.onKeyDown === 'function'){
-          GameState.activeGUIElement.onKeyDown(e);
+      if(MenuManager.activeGUIElement instanceof GUIControl){
+        if(typeof MenuManager.activeGUIElement.onKeyDown === 'function'){
+          MenuManager.activeGUIElement.onKeyDown(e);
         }
       }
     });
@@ -250,9 +251,9 @@ export class Keyboard {
         input.keyUp();
       }
 
-      if(GameState.activeGUIElement instanceof GUIControl){
-        if(typeof GameState.activeGUIElement.onKeyUp === 'function'){
-          GameState.activeGUIElement.onKeyUp(e);
+      if(MenuManager.activeGUIElement instanceof GUIControl){
+        if(typeof MenuManager.activeGUIElement.onKeyUp === 'function'){
+          MenuManager.activeGUIElement.onKeyUp(e);
         }
       }
     });

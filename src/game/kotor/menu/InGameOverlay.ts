@@ -482,13 +482,13 @@ export class InGameOverlay extends GameMenu {
   }
 
   _canShowTargetUI() {
-    if (GameState.selectedObject instanceof ModuleCreature && GameState.selectedObject.isDead())
+    if (CursorManager.selectedObject instanceof ModuleCreature && CursorManager.selectedObject.isDead())
       return false;
     return (
       !MenuManager.MenuContainer.bVisible && 
       CursorManager.reticle2.visible && 
-      GameState.selectedObject instanceof ModuleObject && 
-      !(GameState.selectedObject instanceof ModuleRoom)
+      CursorManager.selectedObject instanceof ModuleObject && 
+      !(CursorManager.selectedObject instanceof ModuleRoom)
     );
   }
 
@@ -540,13 +540,13 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIPanels() {
     if (this._canShowTargetUI()) {
-      if (GameState.selectedObject instanceof ModuleCreature) {
-        if (GameState.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+      if (CursorManager.selectedObject instanceof ModuleCreature) {
+        if (CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
           this.PB_HEALTH.setFillTextureName('enemy_bar');
           TextureLoader.Load('enemy_bar', (map: OdysseyTexture) => {
             this.PB_HEALTH.setFillTexture(map);
           });
-        } else if (!GameState.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
+        } else if (!CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
           this.PB_HEALTH.setFillTextureName('friend_bar');
           TextureLoader.Load('friend_bar', (map: OdysseyTexture) => {
             this.PB_HEALTH.setFillTexture(map);
@@ -560,10 +560,10 @@ export class InGameOverlay extends GameMenu {
           });
         }
       }
-      if (MenuManager.InGameOverlay.LBL_NAME.text.text != GameState.selectedObject.getName()) {
-        this.LBL_NAME.setText(GameState.selectedObject.getName(), 25);
+      if (MenuManager.InGameOverlay.LBL_NAME.text.text != CursorManager.selectedObject.getName()) {
+        this.LBL_NAME.setText(CursorManager.selectedObject.getName(), 25);
       }
-      let health = 100 * Math.min(Math.max(GameState.selectedObject.getHP() / GameState.selectedObject.getMaxHP(), 0), 1);
+      let health = 100 * Math.min(Math.max(CursorManager.selectedObject.getHP() / CursorManager.selectedObject.getMaxHP(), 0), 1);
       if (health > 100)
         health = 100;
       this.PB_HEALTH.setProgress(health);
@@ -571,8 +571,8 @@ export class InGameOverlay extends GameMenu {
       let maxBoundsX2 = window.innerWidth / 2 - 640 / 2 - 125;
       let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
       let pos = new THREE.Vector3();
-      if (GameState.selectedObject instanceof ModuleCreature) {
-        pos.copy(GameState.selectedObject.position);
+      if (CursorManager.selectedObject instanceof ModuleCreature) {
+        pos.copy(CursorManager.selectedObject.position);
         pos.z += 2;
       } else {
         pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
@@ -684,7 +684,7 @@ export class InGameOverlay extends GameMenu {
     if (!GameState.module.area.miniGame) {
       const oPC = GameState.getCurrentPlayer();
       ActionMenuManager.SetPC(oPC);
-      ActionMenuManager.SetTarget(GameState.selectedObject);
+      ActionMenuManager.SetTarget(CursorManager.selectedObject);
       ActionMenuManager.UpdateMenuActions();
       this.UpdateTargetUIPanels();
       this.UpdateSelfUIPanels();
@@ -800,16 +800,16 @@ export class InGameOverlay extends GameMenu {
   }
 
   triggerControllerAPress() {
-    if (GameState.selectedObject) {
-      if (typeof GameState.selectedObject.onClick === 'function') {
+    if (CursorManager.selectedObject) {
+      if (typeof CursorManager.selectedObject.onClick === 'function') {
         GameState.getCurrentPlayer().clearAllActions();
-        GameState.selectedObject.onClick(GameState.getCurrentPlayer());
+        CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.selectedObject.position);
+        let distance = GameState.getCurrentPlayer().position.distanceTo(CursorManager.selectedObject.position);
         if (distance > 1.5) {
           GameState.getCurrentPlayer().clearAllActions();
-          GameState.selectedObject.clearAllActions();
-          GameState.getCurrentPlayer().actionDialogObject(GameState.selectedObject);
+          CursorManager.selectedObject.clearAllActions();
+          GameState.getCurrentPlayer().actionDialogObject(CursorManager.selectedObject);
         }
       }
     }

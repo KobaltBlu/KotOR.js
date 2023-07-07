@@ -323,8 +323,8 @@ export class GameMenu {
   triggerControllerAPress(){
     if(this._button_a instanceof GUIControl){
       this._button_a.click();
-    }else if(GameState.activeGUIElement instanceof GUIControl){
-      GameState.activeGUIElement.click();
+    }else if(MenuManager.activeGUIElement instanceof GUIControl){
+      MenuManager.activeGUIElement.click();
     }
   }
 
@@ -347,38 +347,38 @@ export class GameMenu {
   }
 
   triggerControllerDUpPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 
   triggerControllerDDownPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 
   triggerControllerDLeftPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 
   triggerControllerDRightPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperLPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperRPress(){
-    if(GameState.activeGUIElement instanceof GUIControl){
-      //GameState.activeGUIElement.click();
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      //MenuManager.activeGUIElement.click();
     }
   }
 

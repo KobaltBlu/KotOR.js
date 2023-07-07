@@ -19,6 +19,7 @@ import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { FactionManager } from "../FactionManager";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleTrigger class.
@@ -34,6 +35,7 @@ export class ModuleTrigger extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleTrigger;
 
     this.template = gff;
     this.objectsInside = [];

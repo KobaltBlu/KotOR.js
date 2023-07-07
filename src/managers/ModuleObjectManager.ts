@@ -2,14 +2,14 @@ import EngineLocation from "../engine/EngineLocation";
 import { CreatureType } from "../enums/nwscript/CreatureType";
 import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { ReputationType } from "../enums/nwscript/ReputationType";
-import { GameState } from "../GameState";
-import { ModuleArea, ModuleCreature, ModuleObject } from "../module";
+import { Module, ModuleArea, ModuleCreature, ModuleObject } from "../module";
 import { PartyManager } from "./PartyManager";
 import * as THREE from "three";
 
 export class ModuleObjectManager {
 
   static objSearchIndex: number;
+  static module: Module;
 
   public static GetObjectByTag(sTag = '', iNum = 0, oType = ModuleObjectType.ALL){
 
@@ -29,16 +29,16 @@ export class ModuleObjectManager {
     let results: ModuleObject[] = [];
     let obj: any = undefined;
     if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      for(let i = 0, len = GameState.module.area.placeables.length; i < len; i++){
-        obj = GameState.module.area.placeables[i];
+      for(let i = 0, len = this.module.area.placeables.length; i < len; i++){
+        obj = this.module.area.placeables[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        obj = GameState.module.area.creatures[i];
+      for(let i = 0, len = this.module.area.creatures.length; i < len; i++){
+        obj = this.module.area.creatures[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
@@ -53,55 +53,55 @@ export class ModuleObjectManager {
     }
 
     if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      for(let i = 0, len = GameState.module.area.stores.length; i < len; i++){
-        obj = GameState.module.area.stores[i];
+      for(let i = 0, len = this.module.area.stores.length; i < len; i++){
+        obj = this.module.area.stores[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      for(let i = 0, len = GameState.module.area.doors.length; i < len; i++){
-        obj = GameState.module.area.doors[i];
+      for(let i = 0, len = this.module.area.doors.length; i < len; i++){
+        obj = this.module.area.doors[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      for(let i = 0, len = GameState.module.area.triggers.length; i < len; i++){
-        obj = GameState.module.area.triggers[i];
+      for(let i = 0, len = this.module.area.triggers.length; i < len; i++){
+        obj = this.module.area.triggers[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      for(let i = 0, len = GameState.module.area.waypoints.length; i < len; i++){
-        obj = GameState.module.area.waypoints[i];
+      for(let i = 0, len = this.module.area.waypoints.length; i < len; i++){
+        obj = this.module.area.waypoints[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      for(let i = 0, len = GameState.module.area.sounds.length; i < len; i++){
-        obj = GameState.module.area.sounds[i];
+      for(let i = 0, len = this.module.area.sounds.length; i < len; i++){
+        obj = this.module.area.sounds[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      for(let i = 0, len = GameState.module.area.items.length; i < len; i++){
-        obj = GameState.module.area.items[i];
+      for(let i = 0, len = this.module.area.items.length; i < len; i++){
+        obj = this.module.area.items[i];
         if(obj.getTag().toLowerCase() == sTag)
           results.push(obj);
       }
     }
 
     if(sTag == '' || sTag == 'player'){
-      return GameState.player;
+      return PartyManager.party[0];
     }else if(results.length){
       return results[iNum];
     }
@@ -113,11 +113,11 @@ export class ModuleObjectManager {
   public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
     let results: ModuleObject[] = [];
-    let len = GameState.module.area.placeables.length;
+    let len = this.module.area.placeables.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.placeables[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.placeables[i])
-          results.push(GameState.module.area.placeables[i]);
+      if(this.module.area.placeables[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.placeables[i])
+          results.push(this.module.area.placeables[i]);
     }
 
     len = PartyManager.party.length;
@@ -127,46 +127,46 @@ export class ModuleObjectManager {
           results.push(PartyManager.party[i]);
     }
 
-    len = GameState.module.area.creatures.length;
+    len = this.module.area.creatures.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.creatures[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.creatures[i])
-          results.push(GameState.module.area.creatures[i]);
+      if(this.module.area.creatures[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.creatures[i])
+          results.push(this.module.area.creatures[i]);
     }
 
-    len = GameState.module.area.items.length;
+    len = this.module.area.items.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.items[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.items[i])
-          results.push(GameState.module.area.items[i]);
+      if(this.module.area.items[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.items[i])
+          results.push(this.module.area.items[i]);
     }
 
-    len = GameState.module.area.doors.length;
+    len = this.module.area.doors.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.doors[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.doors[i])
-          results.push(GameState.module.area.doors[i]);
+      if(this.module.area.doors[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.doors[i])
+          results.push(this.module.area.doors[i]);
     }
 
-    len = GameState.module.area.triggers.length;
+    len = this.module.area.triggers.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.triggers[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.triggers[i])
-          results.push(GameState.module.area.triggers[i]);
+      if(this.module.area.triggers[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.triggers[i])
+          results.push(this.module.area.triggers[i]);
     }
 
-    len = GameState.module.area.waypoints.length;
+    len = this.module.area.waypoints.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.waypoints[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.waypoints[i])
-          results.push(GameState.module.area.waypoints[i]);
+      if(this.module.area.waypoints[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.waypoints[i])
+          results.push(this.module.area.waypoints[i]);
     }
 
-    len = GameState.module.area.sounds.length;
+    len = this.module.area.sounds.length;
     for(let i = 0; i < len; i++){
-      if(GameState.module.area.sounds[i].getTag().toLowerCase() == sTag)
-        if(oObject != GameState.module.area.sounds[i])
-          results.push(GameState.module.area.sounds[i]);
+      if(this.module.area.sounds[i].getTag().toLowerCase() == sTag)
+        if(oObject != this.module.area.sounds[i])
+          results.push(this.module.area.sounds[i]);
     }
 
     results.sort(
@@ -193,9 +193,9 @@ export class ModuleObjectManager {
     let results: ModuleObject[] = [];
 
     results = results.concat(PartyManager.party);
-    results = results.concat(GameState.module.area.creatures);
-    results = results.concat(GameState.module.area.doors);
-    results = results.concat(GameState.module.area.placeables);
+    results = results.concat(this.module.area.creatures);
+    results = results.concat(this.module.area.doors);
+    results = results.concat(this.module.area.placeables);
 
     results.sort(
       function(a,b) {
@@ -214,8 +214,8 @@ export class ModuleObjectManager {
 
     for(let i = 0; i < count; i++){
       result = results[i];
-      if( result != GameState.getCurrentPlayer() && result.isOnScreen() && result.isUseable() ){
-        if( result.hasLineOfSight( GameState.getCurrentPlayer() ) ){
+      if( result != PartyManager.party[0] && result.isOnScreen() && result.isUseable() ){
+        if( result.hasLineOfSight( PartyManager.party[0] ) ){
           break;
         }
       }
@@ -230,34 +230,34 @@ export class ModuleObjectManager {
     let results: ModuleObject[] = [];
 
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
+      results = results.concat(this.module.area.creatures);
     }
     if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
+      results = results.concat(this.module.area.items);
     }
     if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
+      results = results.concat(this.module.area.triggers);
     }
     if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
+      results = results.concat(this.module.area.doors);
     }
     if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
     if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
+      results = results.concat(this.module.area.waypoints);
     }
     if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
+      results = results.concat(this.module.area.placeables);
     }
     if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
+      results = results.concat(this.module.area.stores);
     }
     if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
+      results = results.concat(this.module.area.encounters);
     }
     if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
+      results = results.concat(this.module.area.sounds);
     }
 
     results.sort(
@@ -280,11 +280,11 @@ export class ModuleObjectManager {
 
   }
 
-  public static GetFirstObjectInArea(oArea = GameState.module.area, oType = 0){
+  public static GetFirstObjectInArea(oArea = this.module.area, oType = 0){
 
     if(!(oArea instanceof ModuleArea)){
       console.error(oArea);
-      oArea = GameState.module.area;
+      oArea = this.module.area;
     }
       
 
@@ -292,37 +292,37 @@ export class ModuleObjectManager {
 
     let results: ModuleObject[] = [];
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
+      results = results.concat(this.module.area.creatures);
     }
     if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
+      results = results.concat(this.module.area.items);
     }
     if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
+      results = results.concat(this.module.area.triggers);
     }
     if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
+      results = results.concat(this.module.area.doors);
     }
     if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
+      results = results.concat(this.module.area.creatures);
     }
     if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
+      results = results.concat(this.module.area.waypoints);
     }
     if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
+      results = results.concat(this.module.area.placeables);
     }
     if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
+      results = results.concat(this.module.area.stores);
     }
     if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
+      results = results.concat(this.module.area.encounters);
     }
     if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
+      results = results.concat(this.module.area.sounds);
     }
 
     if(results.length){
@@ -331,46 +331,46 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetNextObjectInArea(oArea = GameState.module.area, oType = 0){
+  public static GetNextObjectInArea(oArea = this.module.area, oType = 0){
     if(!(oArea instanceof ModuleArea)){
       console.error(oArea);
-      oArea = GameState.module.area;
+      oArea = this.module.area;
     }
     ++ModuleObjectManager.objSearchIndex;
 
     let results: ModuleObject[] = [];
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
+      results = results.concat(this.module.area.creatures);
     }
     if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){
-      results = results.concat(GameState.module.area.items);
+      results = results.concat(this.module.area.items);
     }
     if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){
-      results = results.concat(GameState.module.area.triggers);
+      results = results.concat(this.module.area.triggers);
     }
     if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){
-      results = results.concat(GameState.module.area.doors);
+      results = results.concat(this.module.area.doors);
     }
     if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){
       //results = results.concat([]);
     }
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){
-      results = results.concat(GameState.module.area.creatures);
+      results = results.concat(this.module.area.creatures);
     }
     if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){
-      results = results.concat(GameState.module.area.waypoints);
+      results = results.concat(this.module.area.waypoints);
     }
     if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){
-      results = results.concat(GameState.module.area.placeables);
+      results = results.concat(this.module.area.placeables);
     }
     if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){
-      results = results.concat(GameState.module.area.stores);
+      results = results.concat(this.module.area.stores);
     }
     if((oType & ModuleObjectType.ENCOUNTER) == ModuleObjectType.ENCOUNTER){
-      results = results.concat(GameState.module.area.encounters);
+      results = results.concat(this.module.area.encounters);
     }
     if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){
-      results = results.concat(GameState.module.area.sounds);
+      results = results.concat(this.module.area.sounds);
     }
 
     if(ModuleObjectManager.objSearchIndex < results.length-1){
@@ -382,7 +382,7 @@ export class ModuleObjectManager {
   public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list?: ModuleCreature[] ): ModuleCreature {
     
     if(!list){
-      list = GameState.module.area.creatures;
+      list = this.module.area.creatures;
       list = list.concat(PartyManager.party);
     }
 
@@ -521,19 +521,19 @@ export class ModuleObjectManager {
     //console.log('GetObjectsInShape', objectFilter, shape);
 
     if((oType & ModuleObjectType.CREATURE) == ModuleObjectType.CREATURE){ //CREATURE
-      object_pool = object_pool.concat(GameState.module.area.creatures);
+      object_pool = object_pool.concat(this.module.area.creatures);
     }
 
     if((oType & ModuleObjectType.ITEM) == ModuleObjectType.ITEM){ //ITEM
-      object_pool = object_pool.concat(GameState.module.area.items);
+      object_pool = object_pool.concat(this.module.area.items);
     }
 
     if((oType & ModuleObjectType.TRIGGER) == ModuleObjectType.TRIGGER){ //TRIGGER
-      object_pool = object_pool.concat(GameState.module.area.triggers); 
+      object_pool = object_pool.concat(this.module.area.triggers); 
     }
 
     if((oType & ModuleObjectType.DOOR) == ModuleObjectType.DOOR){ //DOOR
-      object_pool = object_pool.concat(GameState.module.area.doors); 
+      object_pool = object_pool.concat(this.module.area.doors); 
     }
 
     if((oType & ModuleObjectType.AOE) == ModuleObjectType.AOE){ //AOE
@@ -541,11 +541,11 @@ export class ModuleObjectManager {
     }
 
     if((oType & ModuleObjectType.WAYPOINT) == ModuleObjectType.WAYPOINT){ //WAYPOINTS
-      object_pool = object_pool.concat(GameState.module.area.waypoints);
+      object_pool = object_pool.concat(this.module.area.waypoints);
     }
     
     if((oType & ModuleObjectType.PLACEABLE) == ModuleObjectType.PLACEABLE){ //PLACEABLE
-      object_pool = object_pool.concat(GameState.module.area.placeables);
+      object_pool = object_pool.concat(this.module.area.placeables);
     }
 
     if((oType & ModuleObjectType.STORE) == ModuleObjectType.STORE){ //STORE
@@ -557,7 +557,7 @@ export class ModuleObjectManager {
     }
     
     if((oType & ModuleObjectType.SOUND) == ModuleObjectType.SOUND){ //SOUND
-      object_pool = object_pool.concat(GameState.module.area.sounds);
+      object_pool = object_pool.concat(this.module.area.sounds);
     }
 
     for(let i = 0, len = object_pool.length; i < len; i++){
@@ -580,7 +580,7 @@ export class ModuleObjectManager {
     let object_pool: ModuleObject[] = [];
     
     object_pool.concat(
-      GameState.module.area.creatures.filter( 
+      this.module.area.creatures.filter( 
         (
           creature => 
           {

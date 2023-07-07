@@ -2,6 +2,7 @@
  */
 
 import { ModuleObject } from ".";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -23,6 +24,7 @@ export class ModuleCamera extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
+    this.objectType = ModuleObjectType.ModuleCamera;
     this.id = -1;
     this.template = gff;
   }

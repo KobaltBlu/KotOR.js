@@ -2,6 +2,7 @@
  */
 
 import { ModuleCreature } from ".";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { PartyManager } from "../managers";
 import { GFFObject } from "../resource/GFFObject";
 
@@ -13,6 +14,7 @@ export class ModulePlayer extends ModuleCreature {
   isPlayer: boolean = true;
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModulePlayer;
   }
 
   update(delta: number = 0){
@@ -21,7 +23,7 @@ export class ModulePlayer extends ModuleCreature {
 
   save(){
     let gff = super.save();
-    PartyManager.Player = gff;
+    PartyManager.PlayerTemplate = gff;
     this.template = gff;
     return gff;
   }

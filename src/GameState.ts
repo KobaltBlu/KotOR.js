@@ -68,11 +68,6 @@ export class GameState implements EngineContext {
     "afterRender": [],
   };
 
-  static activeMenu: GameMenu;
-  static activeGUIElement: any;
-  static hoveredGUIElement: any;
-
-
   static Location: any;
 
   static GameKey: GameEngineType = GameEngineType.KOTOR;
@@ -152,10 +147,6 @@ export class GameState implements EngineContext {
 
   static visible: boolean;
 
-  //Cursor properties
-  static selected: any;
-  static hovered: any;
-
   static scene: any;
   static scene_gui: any;
 
@@ -226,8 +217,6 @@ export class GameState implements EngineContext {
   static State: EngineState;
   static inMenu: boolean;
   static OnReadyCalled: boolean;
-  static selectedObject: ModuleObject;
-  static hoveredObject: ModuleObject;
   
   static loadingTextures: boolean;
 
@@ -261,9 +250,6 @@ export class GameState implements EngineContext {
     GameState.models = [];
 
     GameState.videoEffect = -1;
-
-    GameState.activeGUIElement = undefined;
-    GameState.hoveredGUIElement = undefined;
     GameState.onScreenShot = undefined;
 
     GameState.time = 0;
@@ -311,8 +297,6 @@ export class GameState implements EngineContext {
     GameState.clock = new THREE.Clock();
     GameState.stats = Stats();
 
-    GameState.activeMenu = undefined;
-
     GameState.limiter = {
       fps : 30,
       fpsInterval: 1000/30,
@@ -330,8 +314,8 @@ export class GameState implements EngineContext {
 
     GameState.visible = true;
 
-    GameState.selected = undefined;
-    GameState.hovered = undefined;
+    CursorManager.selected = undefined;
+    CursorManager.hovered = undefined;
 
     GameState.scene = new THREE.Scene();
     GameState.scene_gui = new THREE.Scene();
@@ -577,7 +561,12 @@ export class GameState implements EngineContext {
         
         console.log('CursorManager: Init');
         CursorManager.init( () => {
+          GameState.scene_cursor_holder.add( CursorManager.cursor );
+          GameState.scene.add( CursorManager.reticle );
+          GameState.scene.add( CursorManager.reticle2 );
+          GameState.scene_gui.add( CursorManager.arrow );
           console.log('CursorManager: Complete');
+
           console.log('MenuLoader: Init');
           MenuManager.Init();
           MenuManager.LoadGameMenus().then( () => {
@@ -762,10 +751,10 @@ export class GameState implements EngineContext {
 
   public static setReticleSelectedObject( object: ModuleObject ){
     if(object instanceof ModuleObject){
-      GameState.selected = object.getReticleNode();
-      if(GameState.selected){
-        GameState.selected.getWorldPosition(CursorManager.reticle2.position);
-        GameState.selectedObject = object;
+      CursorManager.selected = object.getReticleNode();
+      if(CursorManager.selected){
+        CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
+        CursorManager.selectedObject = object;
       }
 
       if(object instanceof ModuleDoor){      
@@ -788,12 +777,12 @@ export class GameState implements EngineContext {
   public static setReticleHoveredObject( object: ModuleObject ){
     if(object instanceof ModuleObject){
       let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
-      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (GameState.hoveredObject == GameState.selectedObject);
+      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (CursorManager.hoveredObject == CursorManager.selectedObject);
 
-      GameState.hovered = object.getReticleNode();
-      if(GameState.hovered){
-        GameState.hovered.getWorldPosition(CursorManager.reticle.position);
-        GameState.hoveredObject = object;
+      CursorManager.hovered = object.getReticleNode();
+      if(CursorManager.hovered){
+        CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
+        CursorManager.hoveredObject = object;
       }
 
       if(object instanceof ModuleDoor){
@@ -854,7 +843,7 @@ export class GameState implements EngineContext {
     let cursorCaptured = false;
     let guiHoverCaptured = false;
 
-    GameState.hoveredGUIElement = undefined;
+    MenuManager.hoveredGUIElement = undefined;
 
     let uiControls = GameState.controls.MenuGetActiveUIElements();
     let controlCount = uiControls.length;
@@ -864,8 +853,8 @@ export class GameState implements EngineContext {
         continue;
 
       //if(control === GameState.mouse.clickItem){
-      if(control instanceof GUIListBox && GameState.hoveredGUIElement == undefined){
-        GameState.hoveredGUIElement = control;
+      if(control instanceof GUIListBox && MenuManager.hoveredGUIElement == undefined){
+        MenuManager.hoveredGUIElement = control;
       }
 
       if(!(control.widget.parent.type === 'Scene')){
@@ -886,9 +875,9 @@ export class GameState implements EngineContext {
     }
 
     CursorManager.arrow.visible = false;
-    if(GameState.selectedObject instanceof ModuleObject){
-      if(GameState.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
-        GameState.selectedObject = undefined;
+    if(CursorManager.selectedObject instanceof ModuleObject){
+      if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+        CursorManager.selectedObject = undefined;
       }
     }
 
@@ -903,11 +892,11 @@ export class GameState implements EngineContext {
                 GameState.setReticleHoveredObject(moduleObject);
               }
             }else{
-              GameState.hovered = GameState.hoveredObject = undefined;
+              CursorManager.hovered = CursorManager.hoveredObject = undefined;
             }
           });
         }else{
-          if(!GameState.selectedObject){
+          if(!CursorManager.selectedObject){
             let closest = ModuleObjectManager.GetNearestInteractableObject();
             GameState.setReticleSelectedObject(closest);
             GameState.setReticleHoveredObject(closest);
@@ -916,25 +905,25 @@ export class GameState implements EngineContext {
       }
     }
 
-    if(GameState.Mode == EngineMode.INGAME && GameState.hovered instanceof OdysseyObject3D){
-      GameState.hovered.getWorldPosition(CursorManager.reticle.position);
+    if(GameState.Mode == EngineMode.INGAME && CursorManager.hovered instanceof OdysseyObject3D){
+      CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
       CursorManager.reticle.visible = true;
     }else{
       CursorManager.reticle.visible = false;
     }
 
-    if(GameState.Mode == EngineMode.INGAME && GameState.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
-      GameState.selected.getWorldPosition(CursorManager.reticle2.position);
+    if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
+      CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
       CursorManager.reticle2.visible = true;
-      if(GameState.selectedObject instanceof ModuleDoor){      
+      if(CursorManager.selectedObject instanceof ModuleDoor){      
         CursorManager.setReticle2('reticleF2');
-      }else if(GameState.selectedObject instanceof ModulePlaceable){
-        if(!GameState.selectedObject.isUseable()){
+      }else if(CursorManager.selectedObject instanceof ModulePlaceable){
+        if(!CursorManager.selectedObject.isUseable()){
           return;
         }      
         CursorManager.setReticle2('reticleF2');
-      }else if(GameState.selectedObject instanceof ModuleCreature){
-        if(GameState.selectedObject.isHostile(GameState.getCurrentPlayer())){
+      }else if(CursorManager.selectedObject instanceof ModuleCreature){
+        if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
         }else{
           CursorManager.setReticle2('reticleF2');
@@ -1115,10 +1104,10 @@ export class GameState implements EngineContext {
 
     GameState.lightManager.clearLights();
 
-    GameState.selected = undefined;
-    GameState.selectedObject = undefined;
-    GameState.hovered = undefined;
-    GameState.hoveredObject = undefined;
+    CursorManager.selected = undefined;
+    CursorManager.selectedObject = undefined;
+    CursorManager.hovered = undefined;
+    CursorManager.hoveredObject = undefined;
 
     GameState.staticCameras = [];
     GameState.ConversationPaused = false;

@@ -49,6 +49,7 @@ import { DialogAnimationState } from "../interface/animation/DialogAnimationStat
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
 import { AudioEngine } from "../audio/AudioEngine";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleCreature class.
@@ -164,6 +165,7 @@ export class ModuleCreature extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleCreature;
     this.deferEventUpdate = true;
 
     this.template = gff;

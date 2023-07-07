@@ -7,6 +7,7 @@ import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { LayoutTrack } from "../interface/resource/LayoutTrack";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleMGTrack class.
@@ -19,6 +20,7 @@ export class ModuleMGTrack extends ModuleObject {
 
   constructor(layout: LayoutTrack){
     super();
+    this.objectType = ModuleObjectType.ModuleMGTrack;
 
     this.index = 0;
     this.track = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();

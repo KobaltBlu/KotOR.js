@@ -42,6 +42,7 @@ import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
 import { PartyManager, MenuManager, InventoryManager, TwoDAManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleObject class.
@@ -57,6 +58,7 @@ export class ModuleObject {
   initialized: boolean;
   isPlayer: boolean = false;
   name: string;
+  objectType: ModuleObjectType = ModuleObjectType.ModuleObject;
 
   effectIconList: EffectIconListItem[] = [];
 

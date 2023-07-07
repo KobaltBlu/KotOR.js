@@ -3,6 +3,7 @@
 
 import { ModuleMGGunBullet, ModuleObject } from ".";
 import { GameState } from "../GameState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { OdysseyModel } from "../odyssey";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -29,6 +30,7 @@ export class ModuleMGGunBank extends ModuleObject {
 
   constructor( template: GFFObject, owner: ModuleObject, isPlayer: boolean = false ){
     super();
+    this.objectType = ModuleObjectType.ModuleMGGunBank;
     this.template = template;
     this.bullets = [];
     this.owner = owner;

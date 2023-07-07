@@ -13,6 +13,7 @@ import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 import { MiniGameType } from "../enums/engine/MiniGameType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleMGPlayer class.
@@ -62,6 +63,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   constructor(template: GFFObject){
     super();
+    this.objectType = ModuleObjectType.ModuleMGPlayer;
     console.log('ModuleMGPlayer', template, this);
     this.template = template;
 

@@ -2,11 +2,13 @@ import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
-import { GameMenu } from "../gui";
+import { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
-import { CharGenManager, CursorManager } from ".";
+import { CharGenManager, CursorManager, ModuleObjectManager } from ".";
+import { Mouse } from "../controls/Mouse";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 
 export class MenuManager {
@@ -14,6 +16,9 @@ export class MenuManager {
   static activeMenus: GameMenu[];
   static activeModals: GameMenu[];
   static pulse: number;
+
+  static activeGUIElement: GUIControl;
+  static hoveredGUIElement: GUIControl;
 
   //References to the game menus
   static CharGenAbilities: KOTOR.CharGenAbilities;
@@ -174,6 +179,109 @@ export class MenuManager {
     }
 
   }
+  
+
+  // static updateCursorPosition(){
+  //   CursorManager.setCursor('default');
+  //   GameState.scene_cursor_holder.position.x = Mouse.positionClient.x - (window.innerWidth/2) + (32/2);
+  //   GameState.scene_cursor_holder.position.y = (Mouse.positionClient.y*-1) + (window.innerHeight/2) - (32/2);
+  // }
+
+  // static updateCursor(){
+  //   let cursorCaptured = false;
+  //   let guiHoverCaptured = false;
+
+  //   this.hoveredGUIElement = undefined;
+
+  //   let uiControls = GameState.controls.MenuGetActiveUIElements();
+  //   let controlCount = uiControls.length;
+  //   for(let i = 0; i < controlCount; i++){
+  //     let control = uiControls[i];
+  //     if(!control.isVisible())
+  //       continue;
+
+  //     //if(control === GameState.mouse.clickItem){
+  //     if(control instanceof GUIListBox && this.hoveredGUIElement == undefined){
+  //       this.hoveredGUIElement = control;
+  //     }
+
+  //     if(!(control.widget.parent.type === 'Scene')){
+  //       if(!guiHoverCaptured){
+  //         let cMenu = control.menu;
+  //         cMenu.SetWidgetHoverActive(control, true);
+  //         guiHoverCaptured = false;
+  //       }
+
+  //       if(typeof control.isClickable == 'function'){
+  //         if(control.isClickable()){
+  //           CursorManager.setCursor('select');
+  //           cursorCaptured = true;
+  //         }
+  //       }
+  //     }
+  //     //}
+  //   }
+
+  //   CursorManager.arrow.visible = false;
+  //   if(CursorManager.selectedObject?.type == ModuleObjectType){
+  //     if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+  //       CursorManager.selectedObject = undefined;
+  //     }
+  //   }
+
+  //   if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
+  //     if(MenuManager.GetCurrentMenu() == MenuManager.InGameOverlay){
+  //       if(GameState.scene_cursor_holder.visible){
+  //         //console.log(GameState.scene_cursor_holder.position);
+  //         let hoveredObject = false;
+  //         GameState.onMouseHitInteractive( (moduleObject: ModuleObject) => {
+  //           if(moduleObject instanceof ModuleObject && moduleObject.isUseable()){
+  //             if(moduleObject != GameState.getCurrentPlayer()){
+  //               GameState.setReticleHoveredObject(moduleObject);
+  //             }
+  //           }else{
+  //             CursorManager.hovered = CursorManager.hoveredObject = undefined;
+  //           }
+  //         });
+  //       }else{
+  //         if(!CursorManager.selectedObject){
+  //           let closest = ModuleObjectManager.GetNearestInteractableObject();
+  //           GameState.setReticleSelectedObject(closest);
+  //           GameState.setReticleHoveredObject(closest);
+  //         }
+  //       }
+  //     }
+  //   }
+
+  //   if(GameState.Mode == EngineMode.INGAME && CursorManager.hovered instanceof OdysseyObject3D){
+  //     CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
+  //     CursorManager.reticle.visible = true;
+  //   }else{
+  //     CursorManager.reticle.visible = false;
+  //   }
+
+  //   if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
+  //     CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
+  //     CursorManager.reticle2.visible = true;
+  //     if(CursorManager.selectedObject?.objectType == ModuleObjectType.ModuleDoor){      
+  //       CursorManager.setReticle2('reticleF2');
+  //     }else if(CursorManager.selectedObject?.objectType == ModuleObjectType.ModulePlaceable){
+  //       if(!CursorManager.selectedObject.isUseable()){
+  //         return;
+  //       }      
+  //       CursorManager.setReticle2('reticleF2');
+  //     }else if(CursorManager.selectedObject?.objectType == ModuleObjectType.ModuleCreature){
+  //       if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
+  //         CursorManager.setReticle2('reticleH2');
+  //       }else{
+  //         CursorManager.setReticle2('reticleF2');
+  //       }
+  //     }
+  //   }else{
+  //     CursorManager.reticle2.visible = false;
+  //   }
+
+  // }
 
   static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
     return new Promise( async (resolve: Function, reject: Function) => {

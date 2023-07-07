@@ -45,7 +45,8 @@ export class PartyManager {
 
   static party: ModuleCreature[] = [];
   static aiStyle = 0;
-  static Player: GFFObject;
+  static PlayerTemplate: GFFObject;
+  static Player: ModuleObject;
   static PortraitOrder: any[] = [];
   static MaxSize = 2;
   static NPCS: PartyNPCList = {
@@ -263,12 +264,13 @@ export class PartyManager {
 
   static SwitchPlayerToPartyMember(nIdx = 0){
     let template: GFFObject = (nIdx == -1) ?
-      PartyManager.Player : PartyManager.NPCS[nIdx].template;
+      PartyManager.PlayerTemplate : PartyManager.NPCS[nIdx].template;
     const partyMember = new ModuleCreature(template);
+    const player = this.party[0];
 
     try{
-      let spawn = GameState.player.position.clone();
-      let quaternion = GameState.player.quaternion.clone();
+      const spawn = player.position.clone();
+      const quaternion = player.quaternion.clone();
 
       partyMember.partyID = 0;
       partyMember.Load();
@@ -284,8 +286,8 @@ export class PartyManager {
         model.hasCollision = true;
         
         GameState.group.party.add( partyMember.container );
-        GameState.player.destroy();
-        GameState.player = partyMember;
+        player.destroy();
+        PartyManager.Player = partyMember;
         partyMember.onSpawn();
       });
       return partyMember;
@@ -730,9 +732,9 @@ export class PartyManager {
     pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'ZPosition') ).SetValue(spawnLoc.ZPosition);
     pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XOrientation') ).SetValue(spawnLoc.XOrientation);
     pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'YOrientation') ).SetValue(spawnLoc.YOrientation);*/
-    PartyManager.Player = pTPL;
-    PartyManager.Player.json = PartyManager.Player.ToJSON();
-    return PartyManager.Player;
+    PartyManager.PlayerTemplate = pTPL;
+    PartyManager.PlayerTemplate.json = PartyManager.PlayerTemplate.ToJSON();
+    return PartyManager.PlayerTemplate;
   }
 
 }

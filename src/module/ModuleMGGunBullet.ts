@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleMGGunBullet class.
@@ -29,6 +30,7 @@ export class ModuleMGGunBullet extends ModuleObject {
 
   constructor( template: GFFObject, owner: ModuleObject ){
     super();
+    this.objectType = ModuleObjectType.ModuleMGGunBullet;
     this.template = template;
     this.owner = owner;
 

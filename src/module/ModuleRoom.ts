@@ -16,6 +16,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { KEYManager, ShaderManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleRoom class.
@@ -36,6 +37,7 @@ export class ModuleRoom extends ModuleObject {
 
   constructor( args: any = {} ){
     super();
+    this.objectType = ModuleObjectType.ModuleRoom;
     args = Object.assign({
       ambientScale: 0,
       envAudio: 0,

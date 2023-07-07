@@ -12,7 +12,7 @@ import { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { AutoPauseManager, MenuManager, PartyManager } from "../managers";
+import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
 
 /* @file
  * The IngameControls class.
@@ -55,7 +55,7 @@ export class IngameControls {
     window.addEventListener('mousedown', (event: MouseEvent) => {
       Mouse.Update(event.clientX, event.clientY);
       if(event.target == this.element){
-        GameState.activeGUIElement = undefined;
+        MenuManager.activeGUIElement = undefined;
         if(GameState.debug.controls)
           console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
@@ -216,7 +216,7 @@ export class IngameControls {
                 try{
                   Mouse.clickItem = null;
                   //control.onClick(customEvent);
-                  GameState.activeGUIElement = control;
+                  MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.PlaySound('gui_click');
                   if(GameState.debug.controls)
@@ -245,7 +245,7 @@ export class IngameControls {
                   let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                   let distanceThreshold = 20;
 
-                  if(GameState.selectedObject == moduleObject && distance <= distanceThreshold){
+                  if(CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                     if(typeof moduleObject.onClick === 'function'){
                       GameState.getCurrentPlayer().clearAllActions();
                       moduleObject.onClick(GameState.getCurrentPlayer());
@@ -269,7 +269,7 @@ export class IngameControls {
               }
             });
             if(!selectedObject){
-              GameState.hovered = GameState.hoveredObject = GameState.selected = GameState.selectedObject = undefined;
+              CursorManager.hovered = CursorManager.hoveredObject = CursorManager.selected = CursorManager.selectedObject = undefined;
             }
           }
         }
@@ -281,16 +281,16 @@ export class IngameControls {
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
       if(e.deltaY < 0){
-        if(GameState.hoveredGUIElement instanceof GUIListBox){
-          GameState.hoveredGUIElement.scrollUp();
-        }else if(GameState.hoveredGUIElement instanceof GUIScrollBar){
-          GameState.hoveredGUIElement.list.scrollUp();
+        if(MenuManager.hoveredGUIElement instanceof GUIListBox){
+          MenuManager.hoveredGUIElement.scrollUp();
+        }else if(MenuManager.hoveredGUIElement instanceof GUIScrollBar){
+          MenuManager.hoveredGUIElement.list.scrollUp();
         }
       }else{
-        if(GameState.hoveredGUIElement instanceof GUIListBox){
-          GameState.hoveredGUIElement.scrollDown();
-        }else if(GameState.hoveredGUIElement instanceof GUIScrollBar){
-          GameState.hoveredGUIElement.list.scrollDown();
+        if(MenuManager.hoveredGUIElement instanceof GUIListBox){
+          MenuManager.hoveredGUIElement.scrollDown();
+        }else if(MenuManager.hoveredGUIElement instanceof GUIScrollBar){
+          MenuManager.hoveredGUIElement.list.scrollDown();
         }
       }
     });

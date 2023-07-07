@@ -1,9 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUIButton, GUILabel } from "../../../gui";
+import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuSaveName menu class.
@@ -53,7 +52,7 @@ export class MenuSaveName extends GameMenu {
     this.tGuiPanel.widget.position.z = 10;
     this.EDITBOX.setText('');
     super.Show();
-    GameState.activeGUIElement = this.EDITBOX;
+    MenuManager.activeGUIElement = this.EDITBOX;
   }
   
 }

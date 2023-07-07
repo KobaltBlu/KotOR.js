@@ -27,6 +27,7 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModulePlaceable class.
@@ -86,6 +87,7 @@ export class ModulePlaceable extends ModuleObject {
 
   constructor ( gff = new GFFObject()) {
     super(gff);
+    this.objectType = ModuleObjectType.ModulePlaceable;
     this.template = gff;
 
     this.openState = false;

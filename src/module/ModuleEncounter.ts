@@ -17,6 +17,7 @@ import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 import { FactionManager } from "../FactionManager";
 import { PartyManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleEncounter class.
@@ -58,6 +59,7 @@ export class ModuleEncounter extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleEncounter;
     this.template = gff;
     this.vertices = []; 
 

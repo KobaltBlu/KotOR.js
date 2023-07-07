@@ -18,9 +18,9 @@ export interface TabManagerEventListeners {
 
 export class AudioPlayerState {
   
-  // this.gainNode = GameState.audioEngine.audioCtx.createGain();
+  // this.gainNode = AudioEngine.GetAudioEngine().audioCtx.createGain();
   // this.gainNode.gain.value = 0.25;
-  // this.source = GameState.audioEngine.audioCtx.createBufferSource();
+  // this.source = AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
   static file: EditorFile;
   static audioFile: KotOR.AudioFile;
   static buffer: any;
@@ -121,7 +121,7 @@ export class AudioPlayerState {
     if(AudioPlayerState.buffer == null){
       AudioPlayerState.audioFile.GetPlayableByteStream((data: ArrayBuffer) => {
         try{
-          KotOR.GameState.audioEngine.audioCtx.decodeAudioData(data, (buffer: any) => {
+          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: any) => {
             AudioPlayerState.buffer = buffer;
             if(typeof onBuffered === 'function')
               onBuffered(AudioPlayerState.buffer);
@@ -156,18 +156,18 @@ export class AudioPlayerState {
     AudioPlayerState.loop = false;
 
     if(!AudioPlayerState.gainNode){
-      AudioPlayerState.gainNode = KotOR.GameState.audioEngine.audioCtx.createGain();
+      AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
       AudioPlayerState.gainNode.gain.value = 0.25;
     }
 
     if(!AudioPlayerState.source){
-      AudioPlayerState.source = KotOR.GameState.audioEngine.audioCtx.createBufferSource();
+      AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     }
 
   }
 
   static Play(){
-    AudioPlayerState.source = KotOR.GameState.audioEngine.audioCtx.createBufferSource();
+    AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     if(!AudioPlayerState.loading){
       AudioPlayerState.GetAudioBuffer((data: any) => {
         if(AudioPlayerState.source){
@@ -175,11 +175,11 @@ export class AudioPlayerState {
           let offset = AudioPlayerState.pausedAt;
           AudioPlayerState.source.buffer = AudioPlayerState.buffer;
           AudioPlayerState.source.connect(AudioPlayerState.gainNode);
-          AudioPlayerState.gainNode.connect(KotOR.GameState.audioEngine.audioCtx.destination);
+          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.GetAudioEngine().audioCtx.destination);
           AudioPlayerState.source.loop = false;
           AudioPlayerState.source.start(0, offset);
 
-          AudioPlayerState.startedAt = KotOR.GameState.audioEngine.audioCtx.currentTime - offset;
+          AudioPlayerState.startedAt = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - offset;
           AudioPlayerState.pausedAt = 0;
           AudioPlayerState.playing = true;
 
@@ -209,7 +209,7 @@ export class AudioPlayerState {
   }
 
   static Pause(){
-    let elapsed = KotOR.GameState.audioEngine.audioCtx.currentTime - AudioPlayerState.startedAt;
+    let elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
     AudioPlayerState.pausedAt = elapsed;
     AudioPlayerState.ProcessEventListener('onPause');
     AudioPlayerState.Stop();
@@ -291,7 +291,7 @@ export class AudioPlayerState {
         return AudioPlayerState.pausedAt;
       }
       if(AudioPlayerState.startedAt) {
-        return KotOR.GameState.audioEngine.audioCtx.currentTime - AudioPlayerState.startedAt;
+        return KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
       }
     }catch(e){ }
     return 0;

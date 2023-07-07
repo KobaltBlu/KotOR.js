@@ -217,7 +217,7 @@ export class Module {
       if(ifo.RootNode.HasField('Mod_PlayerList') && isLoadingSave){
         let playerList = ifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
         if(playerList.length){
-          PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+          PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
         }
       }
 

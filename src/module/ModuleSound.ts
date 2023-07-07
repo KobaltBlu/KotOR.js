@@ -10,6 +10,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleSound class.
@@ -43,6 +44,7 @@ export class ModuleSound extends ModuleObject {
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
     super(gff);
+    this.objectType = ModuleObjectType.ModuleSound;
 
     this.template = gff;
     this.audioEngine = audioEngine;

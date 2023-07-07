@@ -21,6 +21,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
 import { TwoDAManager, PartyManager, InventoryManager, TLKManager } from "../managers";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleItem class.
@@ -56,6 +57,7 @@ export class ModuleItem extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super();
+    this.objectType = ModuleObjectType.ModuleItem;
 
     if(typeof gff === 'string'){
       this.equippedRes = gff;

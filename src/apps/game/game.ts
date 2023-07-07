@@ -45,7 +45,7 @@ const initializeApp = function(){
       KotOR.GUIListBox.InitTextures();
       KotOR.OdysseyWalkMesh.Init();
       KotOR.GameState.Init();
-      KotOR.GameState.audioEngine.musicGain.gain.value = 0;
+      KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
       document.body.append(KotOR.GameState.stats.domElement)
     }
   });

@@ -91,7 +91,7 @@ export class SaveGame {
               if(pifo.RootNode.HasField('Mod_PlayerList')){
                 let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
                 if(playerList.length){
-                  PartyManager.Player = GFFObject.FromStruct(playerList[0]);
+                  PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
                 }
               }
               resolve();

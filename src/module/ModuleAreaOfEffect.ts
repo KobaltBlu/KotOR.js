@@ -6,6 +6,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { ModuleObject } from ".";
 import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleCreature class.
@@ -50,6 +51,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleAreaOfEffect;
   }
 
   Load(){

@@ -11,6 +11,7 @@ import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScript } from "../nwscript/NWScript";
 import { ModelListItem } from "../interface/module/minigame/ModelListItem";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModulMGEnemy class.
@@ -50,6 +51,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   constructor(template: GFFObject){
     super();
+    this.objectType = ModuleObjectType.ModuleMGEnemy;
     this.template = template;
 
     this.gunBanks = [];

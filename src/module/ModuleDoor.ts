@@ -30,6 +30,7 @@ import { FactionManager } from "../FactionManager";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleDoor class.
@@ -99,6 +100,7 @@ export class ModuleDoor extends ModuleObject {
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
+    this.objectType = ModuleObjectType.ModuleDoor;
     this.template = gff;
     this.lastObjectEntered = undefined;
     this.lastObjectExited = undefined;
@@ -408,9 +410,9 @@ export class ModuleDoor extends ModuleObject {
       this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
     }
 
-    if(GameState.selectedObject == this){
-      GameState.selectedObject = GameState.selected = undefined;
-    }
+    // if(GameState.selectedObject == this){
+    //   GameState.selectedObject = GameState.selected = undefined;
+    // }
     
     //TODO: detect the correct side that the creature interacted from
     switch(this.objectInteractSide){

@@ -2,9 +2,10 @@
  */
 
 import * as THREE from "three";
-import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
+import { ModuleObject } from "../module";
+import { ApplicationProfile } from "../KotOR";
 
 /* @file
  * The CursorManager class.
@@ -39,6 +40,11 @@ export class CursorManager {
   static reticle2: THREE.Sprite;
   static arrow: THREE.Sprite;
 
+  static selected: THREE.Object3D;
+  static selectedObject: ModuleObject;
+  static hovered: THREE.Object3D;
+  static hoveredObject: ModuleObject;
+
   static init( onLoad: Function ){
 
     CursorManager.default = new THREE.SpriteMaterial();
@@ -71,7 +77,6 @@ export class CursorManager {
     CursorManager.cursor = new THREE.Sprite( CursorManager.default );
     CursorManager.cursor.scale.set( 32, 32, 1.0 );
     CursorManager.cursor.position.z = 1;
-    GameState.scene_cursor_holder.add( CursorManager.cursor );
 
     TextureLoader.enQueue('gui_mp_defaultU', CursorManager.default);
     TextureLoader.enQueue('gui_mp_defaultD', CursorManager.defaultD);
@@ -81,7 +86,7 @@ export class CursorManager {
     TextureLoader.enQueue('gui_mp_talkD', CursorManager.talkD);
     TextureLoader.enQueue('gui_mp_useU', CursorManager.use);
     TextureLoader.enQueue('gui_mp_useD', CursorManager.useD);
-    if(GameState.GameKey == 'TSL'){
+    if(ApplicationProfile.GameKey == 'TSL'){
       TextureLoader.enQueue('gui_mp_killU', CursorManager.attack);
       TextureLoader.enQueue('gui_mp_killD', CursorManager.attackD);
     }else{
@@ -112,9 +117,6 @@ export class CursorManager {
 
     TextureLoader.enQueue('friendlyarrow', CursorManager.arrowF);
     TextureLoader.enQueue('hostilearrow', CursorManager.arrowH);
-    GameState.scene.add( CursorManager.reticle );
-    GameState.scene.add( CursorManager.reticle2 );
-    GameState.scene_gui.add( CursorManager.arrow );
 
     TextureLoader.LoadQueue(() => {
       CursorManager.reticleF.depthTest = false;

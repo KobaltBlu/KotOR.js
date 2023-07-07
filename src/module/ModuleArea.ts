@@ -31,6 +31,7 @@ import { MenuManager, TwoDAManager, PartyManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 import { AudioEngine } from "../audio";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleArea class.
@@ -152,6 +153,7 @@ export class ModuleArea extends ModuleObject {
 
   constructor(name = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
+    this.objectType = ModuleObjectType.ModuleArea;
     this._name = name;
     this.are = are;
     this.git = git;
@@ -987,11 +989,11 @@ export class ModuleArea extends ModuleObject {
 
     if(GameState.isLoadingSave){
       return new EngineLocation(
-        PartyManager.Player.RootNode.GetFieldByLabel('XPosition').GetValue(),
-        PartyManager.Player.RootNode.GetFieldByLabel('YPosition').GetValue(),
-        PartyManager.Player.RootNode.GetFieldByLabel('ZPosition').GetValue(),
-        PartyManager.Player.RootNode.GetFieldByLabel('XOrientation').GetValue(),
-        PartyManager.Player.RootNode.GetFieldByLabel('YOrientation').GetValue(),
+        PartyManager.PlayerTemplate.RootNode.GetFieldByLabel('XPosition').GetValue(),
+        PartyManager.PlayerTemplate.RootNode.GetFieldByLabel('YPosition').GetValue(),
+        PartyManager.PlayerTemplate.RootNode.GetFieldByLabel('ZPosition').GetValue(),
+        PartyManager.PlayerTemplate.RootNode.GetFieldByLabel('XOrientation').GetValue(),
+        PartyManager.PlayerTemplate.RootNode.GetFieldByLabel('YOrientation').GetValue(),
         0
       );
     }else if(this.transWP instanceof GFFObject){
@@ -1019,14 +1021,20 @@ export class ModuleArea extends ModuleObject {
   }
 
   getPlayerTemplate(): GFFObject {
-    if(PartyManager.Player){
-      return PartyManager.Player;
+    if(PartyManager.PlayerTemplate){
+      return PartyManager.PlayerTemplate;
     }else{
       return PartyManager.ResetPlayerTemplate();
     }
   }
 
-  
+  attachObject(object: ModuleObject){
+    object.area = this;
+  }
+
+  detachObject(object: ModuleObject){
+    //todo
+  }
 
   async loadPlayer(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {

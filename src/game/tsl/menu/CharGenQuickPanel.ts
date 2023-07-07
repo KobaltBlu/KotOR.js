@@ -52,7 +52,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
         CharGenManager.selectedCreature.equipment.ARMOR = undefined;
         CharGenManager.selectedCreature.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
         GlobalVariableManager.Init();
-        PartyManager.Player = CharGenManager.selectedCreature.save();
+        PartyManager.PlayerTemplate = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder(true).then( () => {
           GameState.LoadModule('001EBO');

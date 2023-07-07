@@ -10,6 +10,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /* @file
  * The ModuleStore class.
@@ -26,6 +27,7 @@ export class ModuleStore extends ModuleObject {
 
   constructor( gff = new GFFObject() ){
     super(gff);
+    this.objectType = ModuleObjectType.ModuleStore;
     
     this.template = gff;
     this.buySellFlag = -1;

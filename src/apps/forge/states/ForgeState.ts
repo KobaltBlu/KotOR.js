@@ -103,7 +103,7 @@ export class ForgeState {
           KotOR.OdysseyWalkMesh.Init();
           //ConfigClient.get('Game.debug.light_helpers') ? true : false
           // KotOR.LightManager.toggleLightHelpers();
-          KotOR.GameState.audioEngine = new KotOR.AudioEngine();
+          // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
 
           ForgeState.recentFiles = ForgeState.getRecentFiles();
           this.processEventListener('onRecentProjectsUpdated', []);
