@@ -4,7 +4,6 @@
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly, OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin, OdysseyWalkMesh } from "../../odyssey";
 import { GameState } from "../../GameState";
-import { ModuleCreature, ModuleRoom } from "../../module";
 import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
@@ -20,6 +19,8 @@ import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import { TwoDAAnimation } from "../../interface/twoDA/TwoDAAnimation";
 import { PartyManager, TwoDAManager } from "../../managers";
+import { BitWise } from "../../utility/BitWise";
+import { ModuleObjectType } from "../../enums/module/ModuleObjectType";
 
 /* @file
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
@@ -302,7 +303,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     //BEGIN: Animation Optimization
     this.animateFrame = true;
-    if(this.userData.moduleObject instanceof ModuleCreature){
+    if(BitWise.InstanceOf(this.userData?.moduleObject?.objectId, ModuleObjectType.ModuleCreature)){
       //If the object is further than 50 meters, animate every other frame
       if(this.userData.moduleObject.distanceToCamera > 50){
         this.animateFrame = this.oddFrame;
@@ -322,7 +323,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     }
 
-    if(!(this.userData.moduleObject instanceof ModuleRoom)){
+    if(!BitWise.InstanceOf(this.userData?.moduleObject?.objectId, ModuleObjectType.ModuleRoom)){
       if(!this.visible){
         this.animateFrame = false;
       }
