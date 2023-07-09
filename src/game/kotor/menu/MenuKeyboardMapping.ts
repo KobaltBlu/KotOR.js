@@ -1,9 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUIButton, GUILabel } from "../../../gui";
+
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuKeyboardMapping menu class.

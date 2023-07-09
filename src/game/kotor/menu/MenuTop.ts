@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIControl, GUIButton } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuTop menu class.
@@ -43,49 +41,49 @@ export class MenuTop extends GameMenu {
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuMessages.open();
+        this.manager.MenuMessages.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuJournal.open();
+        this.manager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuMap.open();
+        this.manager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuOptions.open();
+        this.manager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuCharacter.open();
+        this.manager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuAbilities.open();
+        this.manager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuInventory.open();
+        this.manager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuEquipment.open();
+        this.manager.MenuEquipment.open();
       });
 
       this.tGuiPanel.offset.y = 198;
@@ -107,8 +105,8 @@ export class MenuTop extends GameMenu {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = MenuManager.GetCurrentMenu();
-    if (currentMenu == MenuManager.MenuAbilities || currentMenu == MenuManager.MenuInventory || currentMenu == MenuManager.MenuJournal || currentMenu == MenuManager.MenuMap || currentMenu == MenuManager.MenuMessages || currentMenu == MenuManager.MenuOptions || currentMenu == MenuManager.MenuCharacter || currentMenu == MenuManager.MenuEquipment) {
+    let currentMenu = this.manager.GetCurrentMenu();
+    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }
   }

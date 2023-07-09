@@ -4,14 +4,13 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox } from "../../../gui";
-import { ModuleCreature, ModuleObject } from "../../../module";
-import * as THREE from "three";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel } from "../../../gui";
+import { ModuleObject } from "../../../module";
 import { DLGObject } from "../../../resource/DLGObject";
 import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
-import { MenuManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
@@ -128,7 +127,7 @@ export class InGameComputer extends GameMenu {
         case DLGConversationType.CONVERSATION:
         default:
           this.close();
-          MenuManager.InGameDialog.StartConversation(dialog, this.owner, this.listener);
+          this.manager.InGameDialog.StartConversation(dialog, this.owner, this.listener);
           return false;
         break;
       }
@@ -143,15 +142,15 @@ export class InGameComputer extends GameMenu {
 
     if(GameState.ConversationPaused) return;
 
-    MenuManager.InGameComputerCam.hide();
-    MenuManager.InGameComputer.show();
+    this.manager.InGameComputerCam.hide();
+    this.manager.InGameComputer.show();
     GameState.currentCamera = GameState.camera_dialog;
 
     if(this.currentEntry){
       if(this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
-        MenuManager.InGameComputer.hide();
-        MenuManager.InGameComputerCam.show();
-        MenuManager.InGameComputerCam.update(delta);
+        this.manager.InGameComputer.hide();
+        this.manager.InGameComputerCam.show();
+        this.manager.InGameComputerCam.update(delta);
         GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
       }
       if(this.currentEntry.update(delta)){
@@ -237,8 +236,8 @@ export class InGameComputer extends GameMenu {
     entry.updateJournal();
 
     if(entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
-      MenuManager.InGameComputer.hide();
-      MenuManager.InGameComputerCam.show();
+      this.manager.InGameComputer.hide();
+      this.manager.InGameComputerCam.show();
       GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
     }
 

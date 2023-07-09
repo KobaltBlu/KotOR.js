@@ -1,11 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIProgressBar, GUILabel } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUILabel, GUIProgressBar } from "../../../gui";
 import { TLKManager, TwoDAManager, FadeOverlayManager } from "../../../managers";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 
 /* @file
 * The LoadScreen menu class.

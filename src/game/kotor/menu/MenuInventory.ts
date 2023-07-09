@@ -1,17 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, GUIProtoItem } from "../../../gui";
+
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
-import * as THREE from "three";
-import { TextureType } from "../../../enums/loaders/TextureType";
 import { ModuleItem } from "../../../module";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { MenuManager, InventoryManager, PartyManager, TwoDAManager } from "../../../managers";
+import { InventoryManager, PartyManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuInventory menu class.
@@ -42,7 +38,7 @@ export class MenuInventory extends GameMenu {
     this.gui_resref = 'inventory';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -75,7 +71,7 @@ export class MenuInventory extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_INV.onHoverIn();
+    this.manager.MenuTop.LBLH_INV.onHoverIn();
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     let inv = InventoryManager.getNonQuestInventory();
@@ -114,11 +110,11 @@ export class MenuInventory extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_EQU.click();
+    this.manager.MenuTop.BTN_EQU.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_CHAR.click();
+    this.manager.MenuTop.BTN_CHAR.click();
   }
   
 }

@@ -1,19 +1,17 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import * as THREE from "three";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, LBL_MapView } from "../../../gui";
+import { GameMenu, LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MapMode } from "../../../enums/engine/MapMode";
 import { Mouse } from "../../../controls";
-import { ModuleWaypoint } from "../../../module";
+import type { ModuleWaypoint } from "../../../module";
 import { CExoLocString } from "../../../resource/CExoLocString";
-import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuMap menu class.
@@ -43,7 +41,7 @@ export class MenuMap extends GameMenu {
     this.gui_resref = 'map';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -61,7 +59,7 @@ export class MenuMap extends GameMenu {
 
       this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuPartySelection.open();
+        this.manager.MenuPartySelection.open();
       });
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {
@@ -127,7 +125,7 @@ export class MenuMap extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_MAP.onHoverIn();
+    this.manager.MenuTop.LBLH_MAP.onHoverIn();
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();
 
@@ -139,11 +137,11 @@ export class MenuMap extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_JOU.click();
+    this.manager.MenuTop.BTN_JOU.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_OPT.click();
+    this.manager.MenuTop.BTN_OPT.click();
   }
   
 }

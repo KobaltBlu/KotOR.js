@@ -2,10 +2,8 @@
 */
 
 import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "../../../gui";
 
 /* @file
 * The MenuSound menu class.
@@ -48,7 +46,7 @@ export class MenuSound extends GameMenu {
       this.BTN_ADVANCED.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuSoundAdvanced.open();
+        this.manager.MenuSoundAdvanced.open();
       });
 
       //this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);

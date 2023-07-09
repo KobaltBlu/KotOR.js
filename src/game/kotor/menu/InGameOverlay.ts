@@ -4,7 +4,8 @@
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIProgressBar, GUIControl, LBL_MapView } from "../../../gui";
+import { GameMenu, LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import * as THREE from "three";
@@ -14,7 +15,7 @@ import { SSFObjectType } from "../../../interface/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager, MenuManager } from "../../../managers";
+import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The InGameOverlay menu class.
@@ -205,42 +206,42 @@ export class InGameOverlay extends GameMenu {
 
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMessages.open();
+        this.manager.MenuMessages.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuJournal.open();
+        this.manager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMap.open();
+        this.manager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuOptions.open();
+        this.manager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.open();
+        this.manager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAbilities.open();
+        this.manager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuInventory.open();
+        this.manager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuEquipment.open();
+        this.manager.MenuEquipment.open();
       });
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
@@ -265,9 +266,9 @@ export class InGameOverlay extends GameMenu {
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
         if(PartyManager.party[0].canLevelUp()){
-          MenuManager.MenuCharacter.open();
+          this.manager.MenuCharacter.open();
         }else{
-          MenuManager.MenuEquipment.open();
+          this.manager.MenuEquipment.open();
         }
       });
 
@@ -485,7 +486,7 @@ export class InGameOverlay extends GameMenu {
     if (CursorManager.selectedObject instanceof ModuleCreature && CursorManager.selectedObject.isDead())
       return false;
     return (
-      !MenuManager.MenuContainer.bVisible && 
+      !this.manager.MenuContainer.bVisible && 
       CursorManager.reticle2.visible && 
       CursorManager.selectedObject instanceof ModuleObject && 
       !(CursorManager.selectedObject instanceof ModuleRoom)
@@ -560,7 +561,7 @@ export class InGameOverlay extends GameMenu {
           });
         }
       }
-      if (MenuManager.InGameOverlay.LBL_NAME.text.text != CursorManager.selectedObject.getName()) {
+      if (this.manager.InGameOverlay.LBL_NAME.text.text != CursorManager.selectedObject.getName()) {
         this.LBL_NAME.setText(CursorManager.selectedObject.getName(), 25);
       }
       let health = 100 * Math.min(Math.max(CursorManager.selectedObject.getHP() / CursorManager.selectedObject.getMaxHP(), 0), 1);

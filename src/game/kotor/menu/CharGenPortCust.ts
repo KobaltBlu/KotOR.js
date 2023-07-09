@@ -1,16 +1,13 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, MenuManager, TwoDAManager } from "../../../managers";
-import { OdysseyModel } from "../../../odyssey";
+import { CharGenManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
-import { CharGenClass } from "./CharGenClass";
 import * as THREE from "three";
 
 /* @file
@@ -146,7 +143,7 @@ export class CharGenPortCust extends GameMenu {
         //Save appearance choice
         CharGenManager.selectedCreature.template.getFieldByLabel('Appearance_Type').setValue(CharGenManager.selectedCreature.appearance);
         CharGenManager.selectedCreature.template.getFieldByLabel('PortraitId').setValue(CharGenManager.selectedCreature.portraidId);
-        MenuManager.CharGenQuickPanel.step1 = true;
+        this.manager.CharGenQuickPanel.step1 = true;
 
         this.close();
       });

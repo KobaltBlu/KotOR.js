@@ -2,15 +2,15 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
 import { Planet, Planetary } from "../../../Planetary";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { GlobalVariableManager, MenuManager } from "../../../managers";
+import { GlobalVariableManager } from "../../../managers";
 
 /* @file
 * The MenuGalaxyMap menu class.
@@ -175,7 +175,7 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   UpdateScale() {
-    let controls = MenuManager.MenuGalaxyMap.tGuiPanel.children;
+    let controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
     for (let i = 0; i < controls.length; i++) {
       let control = controls[i];
       let plnt = Planetary.GetPlanetByGUITag(control.name);

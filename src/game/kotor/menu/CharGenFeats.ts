@@ -1,10 +1,11 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
+import { GameMenu, GUIProtoItem, GUIControl, GUIButton } from "../../../gui";
+import type { GUIListBox, GUILabel } from "../../../gui";
+import type { ModuleCreature } from "../../../module";
 import { TextureType } from "../../../enums/loaders/TextureType";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { TwoDAManager } from "../../../managers";
 import { GFFStruct } from "../../../resource/GFFStruct";
@@ -31,6 +32,8 @@ export class CharGenFeats extends GameMenu {
   BTN_ACCEPT: GUIButton;
   BTN_BACK: GUIButton;
 
+  creature: ModuleCreature;
+
   constructor(){
     super();
     this.gui_resref = 'ftchrgen';
@@ -55,22 +58,27 @@ export class CharGenFeats extends GameMenu {
     TextureLoader.LoadQueue();
   }
 
+  setCreature(creature: ModuleCreature){
+    this.creature = creature;
+  }
+
   addGrantedFeats() {
     let feats = TwoDAManager.datatables.get('feat').rows;
     let featCount = TwoDAManager.datatables.get('feat').RowCount;
     let granted = [];
     for (let i = 0; i < featCount; i++) {
       let feat = feats[i];
-      let character = GameState.getCurrentPlayer();
-      let mainClass = character.getMainClass();
-      if (feat.constant != '****') {
-        if (mainClass.isFeatAvailable(feat)) {
-          let status = mainClass.getFeatStatus(feat);
-          if (status == 3 && character.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
-            if (!character.getHasFeat(feat.__index)) {
-              console.log('Feat Granted', feat);
-              character.addFeat(TalentFeat.From2DA(feat));
-              granted.push(feat);
+      if(this.creature){
+        let mainClass = this.creature.getMainClass();
+        if (feat.constant != '****') {
+          if (mainClass.isFeatAvailable(feat)) {
+            let status = mainClass.getFeatStatus(feat);
+            if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
+              if (!this.creature.getHasFeat(feat.__index)) {
+                console.log('Feat Granted', feat);
+                this.creature.addFeat(TalentFeat.From2DA(feat));
+                granted.push(feat);
+              }
             }
           }
         }
@@ -82,15 +90,16 @@ export class CharGenFeats extends GameMenu {
     let feats = TwoDAManager.datatables.get('feat').rows;
     let featCount = TwoDAManager.datatables.get('feat').RowCount;
     let list = [];
-    let character = GameState.getCurrentPlayer();
-    let mainClass = character.getMainClass();
-    for (let i = 0; i < featCount; i++) {
-      let feat = feats[i];
-      if (feat.constant != '****') {
-        if (mainClass.isFeatAvailable(feat)) {
-          let status = mainClass.getFeatStatus(feat);
-          if (character.getHasFeat(feat.__index) || status == 0 || status == 1) {
-            list.push(feat);
+    if(this.creature){
+      let mainClass = this.creature.getMainClass();
+      for (let i = 0; i < featCount; i++) {
+        let feat = feats[i];
+        if (feat.constant != '****') {
+          if (mainClass.isFeatAvailable(feat)) {
+            let status = mainClass.getFeatStatus(feat);
+            if (this.creature.getHasFeat(feat.__index) || status == 0 || status == 1) {
+              list.push(feat);
+            }
           }
         }
       }

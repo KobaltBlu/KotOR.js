@@ -1,10 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton } from "../../../gui";
-import { CharGenManager, MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
+import { CharGenManager } from "../../../managers";
 
 /* @file
 * The CharGenName menu class.
@@ -40,7 +39,7 @@ export class CharGenName extends GameMenu {
       this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
-        MenuManager.CharGenQuickPanel.step2 = true;
+        this.manager.CharGenQuickPanel.step2 = true;
         this.close();
       });
       resolve();

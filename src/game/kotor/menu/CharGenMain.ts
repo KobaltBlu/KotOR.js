@@ -1,12 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, LBL_3DView } from "../../../gui";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { CharGenManager, TwoDAManager } from "../../../managers";
-import { OdysseyModel } from "../../../odyssey";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
@@ -90,7 +88,6 @@ export class CharGenMain extends GameMenu {
   }
 
   Init3D() {
-    let control = this.MODEL_LBL;
     OdysseyModel3D.FromMDL(CharGenManager.cgbody_light, {
       onComplete: (model: OdysseyModel3D) => {
         this._3dViewModel = model;

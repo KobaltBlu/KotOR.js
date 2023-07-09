@@ -3,9 +3,9 @@
 
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { CharGenManager, GlobalVariableManager, MenuManager, PartyManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
+import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
 /* @file
 * The CharGenQuickPanel menu class.
@@ -44,12 +44,12 @@ export class CharGenQuickPanel extends GameMenu {
 
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.open();
+        this.manager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.open();
+        this.manager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
@@ -66,9 +66,9 @@ export class CharGenQuickPanel extends GameMenu {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.close();
-        MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.open();
+        this.manager.CharGenMain.close();
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
       });
 
       this.BTN_BACK.reattach(this.tGuiPanel);

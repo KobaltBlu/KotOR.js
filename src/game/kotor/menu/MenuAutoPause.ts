@@ -2,8 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";;
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { AutoPauseManager, TLKManager } from "../../../managers";
 

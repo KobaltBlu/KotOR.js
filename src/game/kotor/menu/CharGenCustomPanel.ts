@@ -3,9 +3,9 @@
 
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIControl, GUIButton } from "../../../gui";
-import { CharGenManager, GlobalVariableManager, MenuManager, PartyManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
+import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
 /* @file
 * The CharGenCustomPanel menu class.
@@ -48,35 +48,35 @@ export class CharGenCustomPanel extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.close();
-        MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.open();
+        this.manager.CharGenMain.close();
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
       });
 
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.open();
+        this.manager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
-        MenuManager.CharGenAbilities.open();
+        this.manager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
+        this.manager.CharGenAbilities.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenSkills.open();
+        this.manager.CharGenSkills.open();
       });
 
       this.BTN_STEPNAME4.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenFeats.open();
+        this.manager.CharGenFeats.open();
       });
 
       this.BTN_STEPNAME5.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.open();
+        this.manager.CharGenName.open();
       });
 
       this.BTN_STEPNAME6.addEventListener('click', (e: any) => {

@@ -1,10 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { JournalEntry, MenuManager, TLKManager, JournalManager } from "../../../managers";
+
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { JournalEntry, TLKManager, JournalManager } from "../../../managers";
 
 /* @file
 * The MenuJournal menu class.
@@ -51,7 +51,7 @@ export class MenuJournal extends GameMenu {
     this.gui_resref = 'journal';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -156,7 +156,7 @@ export class MenuJournal extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_JOU.onHoverIn();
+    this.manager.MenuTop.LBLH_JOU.onHoverIn();
 
     this.LB_ITEMS.clearItems();
     this.LBL_ITEM_DESCRIPTION.clearItems();
@@ -169,11 +169,11 @@ export class MenuJournal extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_MSG.click();
+    this.manager.MenuTop.BTN_MSG.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_MAP.click();
+    this.manager.MenuTop.BTN_MAP.click();
   }
   
 }

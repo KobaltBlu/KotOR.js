@@ -1,7 +1,8 @@
 /* KotOR JS - A remake of the Odyssey GameState.Engine that powered KotOR I & II
 */
 
-import { GameMenu, GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { ModulePlayer } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";

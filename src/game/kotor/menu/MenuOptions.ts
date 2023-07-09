@@ -1,12 +1,12 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIButton, GUIControl, GUILabel, GUIListBox } from "../../../gui";
-import { MenuManager, TLKManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { TLKManager } from "../../../managers";
 import { Module } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 
@@ -33,7 +33,7 @@ export class MenuOptions extends GameMenu {
     this.gui_resref = 'optionsingame';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -49,29 +49,29 @@ export class MenuOptions extends GameMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.open();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
-        MenuManager.MenuSaveLoad.open();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.open();
+        this.manager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuGraphics.open();
+        this.manager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSound.open();
+        this.manager.MenuSound.open();
       });
 
       this.BTN_LOADGAME.addEventListener( 'hover', () => {
@@ -128,7 +128,7 @@ export class MenuOptions extends GameMenu {
 
         //Resets all keys to their default state
         GameState.controls.initKeys();
-        MenuManager.MainMenu.Start();
+        this.manager.MainMenu.Start();
       });
 
       this.selectedControl = this.BTN_LOADGAME;
@@ -138,7 +138,7 @@ export class MenuOptions extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_OPT.onHoverIn();
+    this.manager.MenuTop.LBLH_OPT.onHoverIn();
   }
 
   triggerControllerDUpPress() {
@@ -204,7 +204,7 @@ export class MenuOptions extends GameMenu {
   }
 
   triggerControllerAPress() {
-    if (this.selectedControl instanceof GUIControl) {
+    if (this.selectedControl) {
       this.selectedControl.click();
     }
   }
@@ -218,11 +218,11 @@ export class MenuOptions extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_MAP.click();
+    this.manager.MenuTop.BTN_MAP.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_EQU.click();
+    this.manager.MenuTop.BTN_EQU.click();
   }
   
 }

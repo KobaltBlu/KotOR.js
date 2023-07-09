@@ -2,9 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameEngineType } from "../../../enums/engine/GameEngineType";
-import { GameMenu, GUIListBox, GUIButton } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUIButton } from "../../../gui";
 import { TLKManager, TwoDAManager } from "../../../managers";
 import { TwoDAObject } from "../../../resource/TwoDAObject";
 

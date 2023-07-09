@@ -1,10 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { CharGenManager, MenuManager, TwoDAManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { CharGenManager, TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
 
 /* @file
@@ -59,11 +58,11 @@ export class CharGenQuickOrCustom extends GameMenu {
               CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
-          MenuManager.CharGenMain.close();
-          MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickPanel;
-          MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
-          MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
-          MenuManager.CharGenMain.open();
+          this.manager.CharGenMain.close();
+          this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
+          this.manager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
+          this.manager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
+          this.manager.CharGenMain.open();
         }catch(e){
           console.log(e);
         }
@@ -73,17 +72,17 @@ export class CharGenQuickOrCustom extends GameMenu {
         e.stopPropagation();
         //Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
         //Game.CharGenCustomPanel.Show();
-        MenuManager.CharGenMain.close();
-        MenuManager.CharGenMain.childMenu = MenuManager.CharGenCustomPanel;
-        MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
-        MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
-        MenuManager.CharGenMain.open();
+        this.manager.CharGenMain.close();
+        this.manager.CharGenMain.childMenu = this.manager.CharGenCustomPanel;
+        this.manager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
+        this.manager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
+        this.manager.CharGenMain.open();
 
         //Reset the Attributes window
-        MenuManager.CharGenAbilities.reset();
+        this.manager.CharGenAbilities.reset();
 
         //Reset the Skills window
-        MenuManager.CharGenSkills.reset();
+        this.manager.CharGenSkills.reset();
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
@@ -94,9 +93,9 @@ export class CharGenQuickOrCustom extends GameMenu {
           CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
         }catch(e){}
 
-        // MenuManager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
+        // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
         //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
-        MenuManager.CharGenMain.close();
+        this.manager.CharGenMain.close();
       });
 
       //Hide because this submenu is very incomplete.

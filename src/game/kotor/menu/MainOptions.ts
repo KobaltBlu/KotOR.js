@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUIButton, GUILabel } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MainOptions menu class.
@@ -43,19 +41,19 @@ export class MainOptions extends GameMenu {
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.open();
+        this.manager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuGraphics.open();
+        this.manager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuSound.open();
+        this.manager.MenuSound.open();
       });
 
       this.BTN_FEEDBACK.addEventListener('click', (e: any) => {

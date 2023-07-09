@@ -2,16 +2,15 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUISlider, LBL_3DView, GUICheckBox, GUIControl } from "../../../gui";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { ModuleCreature, ModuleItem, ModuleObject } from "../../../module";
+import { ModuleCreature, ModuleItem } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
 import * as THREE from "three";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel } from "../../../odyssey";
-import { MenuManager, TwoDAManager, PartyManager } from "../../../managers";
+import { TwoDAManager, PartyManager } from "../../../managers";
 
 /* @file
 * The MenuCharacter menu class.
@@ -94,7 +93,7 @@ export class MenuCharacter extends GameMenu {
     this.gui_resref = 'character';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -231,7 +230,7 @@ export class MenuCharacter extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_CHA.onHoverIn();
+    this.manager.MenuTop.LBLH_CHA.onHoverIn();
     this.recalculatePosition();
     this.updateCharacterPortrait(PartyManager.party[0]);
     this.updateCharacterStats(PartyManager.party[0]);
@@ -362,11 +361,11 @@ export class MenuCharacter extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_INV.click();
+    this.manager.MenuTop.BTN_INV.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_ABI.click();
+    this.manager.MenuTop.BTN_ABI.click();
   }
   
 }

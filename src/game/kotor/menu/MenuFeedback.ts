@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuFeedback menu class.
@@ -23,7 +21,7 @@ export class MenuFeedback extends GameMenu {
     this.gui_resref = 'optfeedback';
     this.background = 'blackfill';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -42,7 +40,7 @@ export class MenuFeedback extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_MSG.onHoverIn();
+    this.manager.MenuTop.LBLH_MSG.onHoverIn();
   }
   
 }

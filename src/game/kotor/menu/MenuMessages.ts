@@ -1,8 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameMenu, GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { DialogMessageManager, FeedbackMessageManager, MenuManager, TLKManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { DialogMessageManager, FeedbackMessageManager, TLKManager } from "../../../managers";
 
 /* @file
 * The MenuMessages menu class.
@@ -23,7 +24,7 @@ export class MenuMessages extends GameMenu {
     this.gui_resref = 'messages';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -49,7 +50,7 @@ export class MenuMessages extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_MSG.onHoverIn();
+    this.manager.MenuTop.LBLH_MSG.onHoverIn();
     this.LB_MESSAGES.clearItems();
     this.LB_DIALOG.clearItems();
 
@@ -82,11 +83,11 @@ export class MenuMessages extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_ABI.click();
+    this.manager.MenuTop.BTN_ABI.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_JOU.click();
+    this.manager.MenuTop.BTN_JOU.click();
   }
   
 }

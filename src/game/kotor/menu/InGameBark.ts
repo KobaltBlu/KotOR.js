@@ -1,15 +1,14 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUILabel } from "../../../gui";
 import * as THREE from "three";
 import { ResourceLoader } from "../../../loaders";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { ModuleCreature } from "../../../module";
 import { LIPObject } from "../../../resource/LIPObject";
-import { MenuManager } from "../../../managers";
 
 /* @file
 * The InGameBark menu class.
@@ -52,7 +51,7 @@ export class InGameBark extends GameMenu {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         });
-        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
+        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           if (!error) {
             this.close();
           } else {
@@ -68,7 +67,7 @@ export class InGameBark extends GameMenu {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         });
-        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
+        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           if (!error) {
             this.close();
           } else {

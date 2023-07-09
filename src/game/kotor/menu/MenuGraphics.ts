@@ -2,9 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "../../../gui";
 
 /* @file
 * The MenuGraphics menu class.
@@ -39,16 +38,16 @@ export class MenuGraphics extends GameMenu {
         e.stopPropagation();
         /*this.Hide();
         if(Game.Mode == Game.MODES.INGAME){
-          MenuManager.MenuOptions.Show();
+          this.manager.MenuOptions.Show();
         }else{
-          MenuManager.MainOptions.Show();
+          this.manager.MainOptions.Show();
         }*/
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ADVANCED.addEventListener('click', (e: any) => {
-        MenuManager.MenuGraphicsAdvanced.open();
+        this.manager.MenuGraphicsAdvanced.open();
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
@@ -59,7 +58,7 @@ export class MenuGraphics extends GameMenu {
       };
 
       this.BTN_RESOLUTION.addEventListener('click', (e: any) => {
-        MenuManager.MenuResolutions.open();
+        this.manager.MenuResolutions.open();
       });
 
       this.BTN_RESOLUTION.hide();

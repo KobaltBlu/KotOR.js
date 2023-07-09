@@ -2,7 +2,8 @@
 */
 
 import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
-import { GameMenu, GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { CharGenManager } from "../../../managers";
 import type { ModuleCreature } from "../../../module";
 

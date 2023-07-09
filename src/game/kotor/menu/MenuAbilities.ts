@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuAbilities menu class.
@@ -53,15 +51,15 @@ export class MenuAbilities extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_ABI.onHoverIn();
+    this.manager.MenuTop.LBLH_ABI.onHoverIn();
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_CHAR.click();
+    this.manager.MenuTop.BTN_CHAR.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_MSG.click();
+    this.manager.MenuTop.BTN_MSG.click();
   }
   
 }

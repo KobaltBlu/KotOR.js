@@ -5,12 +5,12 @@ import { AudioLoader } from "../../../audio/AudioLoader";
 import { CurrentGame } from "../../../CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { GameMenu, LBL_3DView } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenManager, MenuManager } from "../../../managers";
+import { CharGenManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
@@ -64,21 +64,21 @@ export class MainMenu extends GameMenu {
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.open()
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
+        this.manager.MenuSaveLoad.open()
       });
 
       this.BTN_MOVIES.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MainMovies.open();
+        this.manager.MainMovies.open();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MainOptions.open();
+        this.manager.MainOptions.open();
       });
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
@@ -120,7 +120,7 @@ export class MainMenu extends GameMenu {
 
   Start(){
     return new Promise<void>( (resolve, reject) => {
-      MenuManager.ClearMenus(); 
+      this.manager.ClearMenus(); 
       AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
         AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
         this.open();
@@ -198,7 +198,7 @@ export class MainMenu extends GameMenu {
   }
 
   triggerControllerAPress() {
-    if (this.selectedControl instanceof GUIControl) {
+    if (this.selectedControl) {
       this.selectedControl.click();
     }
   }

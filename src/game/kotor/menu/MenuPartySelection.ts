@@ -2,8 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUICheckBox, GUIButton, GUIControl } from "../../../gui";
+import { GameMenu, GUIControl } from "../../../gui";
+import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { PartyManager, TLKManager } from "../../../managers";
 import { NWScript } from "../../../nwscript/NWScript";

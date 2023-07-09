@@ -2,14 +2,15 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameMenu, GUILabel, GUIListBox, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "../../../module";
-import { MenuManager, PartyManager, InventoryManager, TLKManager, TwoDAManager } from "../../../managers";
+import { PartyManager, InventoryManager, TLKManager, TwoDAManager } from "../../../managers";
 
 /* @file
 * The MenuEquipment menu class.
@@ -69,7 +70,7 @@ export class MenuEquipment extends GameMenu {
     this.gui_resref = 'equip';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = MenuManager.MenuTop;
+    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -401,7 +402,7 @@ export class MenuEquipment extends GameMenu {
 
   show() {
     super.show();
-    MenuManager.MenuTop.LBLH_EQU.onHoverIn();
+    this.manager.MenuTop.LBLH_EQU.onHoverIn();
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;
     this.UpdateList();
@@ -436,7 +437,7 @@ export class MenuEquipment extends GameMenu {
 
   triggerControllerAPress() {
     if (this.equipmentSelectionActive) {
-      if (this.selectedControl instanceof GUIControl) {
+      if (this.selectedControl) {
         this.selectedControl.click();
       }
     } else {
@@ -445,11 +446,11 @@ export class MenuEquipment extends GameMenu {
   }
 
   triggerControllerBumperLPress() {
-    MenuManager.MenuTop.BTN_OPT.click();
+    this.manager.MenuTop.BTN_OPT.click();
   }
 
   triggerControllerBumperRPress() {
-    MenuManager.MenuTop.BTN_INV.click();
+    this.manager.MenuTop.BTN_INV.click();
   }
 
   triggerControllerDUpPress() {
@@ -481,7 +482,7 @@ export class MenuEquipment extends GameMenu {
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
         this.selectedControl = this.BTN_INV_ARM_R;
       }
-      if (this.selectedControl instanceof GUIControl) {
+      if (this.selectedControl) {
         this.selectedControl.onHoverIn();
       }
     }
@@ -516,7 +517,7 @@ export class MenuEquipment extends GameMenu {
       } else if (this.selectedControl == this.BTN_INV_BELT) {
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
       }
-      if (this.selectedControl instanceof GUIControl) {
+      if (this.selectedControl) {
         this.selectedControl.onHoverIn();
       }
     }
@@ -550,7 +551,7 @@ export class MenuEquipment extends GameMenu {
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
         this.selectedControl = this.BTN_INV_BELT;
       }
-      if (this.selectedControl instanceof GUIControl) {
+      if (this.selectedControl) {
         this.selectedControl.onHoverIn();
       }
     }
@@ -584,7 +585,7 @@ export class MenuEquipment extends GameMenu {
         this.selectedControl = this.BTN_INV_WEAP_R;
       } else if (this.selectedControl == this.BTN_INV_WEAP_R) {
       }
-      if (this.selectedControl instanceof GUIControl) {
+      if (this.selectedControl) {
         this.selectedControl.onHoverIn();
       }
     }

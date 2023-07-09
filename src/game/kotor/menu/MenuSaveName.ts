@@ -1,8 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameMenu, GUIButton, GUILabel } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import { GameMenu } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuSaveName menu class.
@@ -52,7 +52,7 @@ export class MenuSaveName extends GameMenu {
     this.tGuiPanel.widget.position.z = 10;
     this.EDITBOX.setText('');
     super.show();
-    MenuManager.activeGUIElement = this.EDITBOX;
+    this.manager.activeGUIElement = this.EDITBOX;
   }
   
 }

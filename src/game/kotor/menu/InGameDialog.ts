@@ -3,25 +3,20 @@
 
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIProtoItem } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "../../../gui";
 
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject } from "../../../module";
-import { ResourceLoader } from "../../../loaders";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { LIPObject } from "../../../resource/LIPObject";
 import { DLGObject } from "../../../resource/DLGObject";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { GFFObject } from "../../../resource/GFFObject";
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { DLGNode } from "../../../resource/DLGNode";
 import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAnimState";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { OdysseyModelAnimation } from "../../../odyssey";
-import { FadeOverlayManager, MenuManager, ModuleObjectManager } from "../../../managers";
+import { FadeOverlayManager, ModuleObjectManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
@@ -147,7 +142,7 @@ export class InGameDialog extends GameMenu {
         let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
         if (isBarkDialog) {
           this.endConversation();
-          MenuManager.InGameBark.bark(entry);
+          this.manager.InGameBark.bark(entry);
           entry.runScripts();
           let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
           if (reply) {
@@ -193,7 +188,7 @@ export class InGameDialog extends GameMenu {
       switch (this.dialog.getConversationType()) {
         case DLGConversationType.COMPUTER:
           this.close();
-          MenuManager.InGameComputer.StartConversation(this.dialog, this.owner, this.listener);
+          this.manager.InGameComputer.StartConversation(this.dialog, this.owner, this.listener);
           return false;
         default:
           return true;
@@ -813,7 +808,7 @@ export class InGameDialog extends GameMenu {
   }
 
   triggerControllerAPress() {
-    if (this.LB_REPLIES.selectedItem instanceof GUIProtoItem) {
+    if (this.LB_REPLIES.selectedItem) {
       this.LB_REPLIES.selectedItem.click();
     }
   }

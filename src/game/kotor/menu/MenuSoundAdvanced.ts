@@ -3,8 +3,8 @@
 
 import { AudioEngine } from "../../../audio/AudioEngine";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
 
 /* @file
 * The MenuSoundAdvanced menu class.

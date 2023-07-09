@@ -3,14 +3,14 @@
 
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUIListBox, GUILabel, GUIButton, GUIProtoItem, GUIControl } from "../../../gui";
+import { GameMenu, GUIProtoItem } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
-import { MenuManager, TLKManager } from "../../../managers";
+import { TLKManager } from "../../../managers";
 
 /* @file
 * The MenuSaveLoad menu class.
@@ -54,7 +54,7 @@ export class MenuSaveLoad extends GameMenu {
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
           if(savegame instanceof SaveGame){
-            MenuManager.ClearMenus();
+            this.manager.ClearMenus();
             if(GameState.module instanceof Module){
               GameState.module.dispose();
               GameState.module = undefined;
@@ -63,8 +63,8 @@ export class MenuSaveLoad extends GameMenu {
           }
         }else{
           if(savegame instanceof NewSaveItem){
-            MenuManager.MenuSaveName.show();
-            MenuManager.MenuSaveName.onSave = ( name = '' ) => {
+            this.manager.MenuSaveName.show();
+            this.manager.MenuSaveName.onSave = ( name = '' ) => {
               console.log('SaveGame', name);
             };
           }else{
