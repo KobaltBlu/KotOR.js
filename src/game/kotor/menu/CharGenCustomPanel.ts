@@ -60,6 +60,7 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        MenuManager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
         MenuManager.CharGenAbilities.Open();
       });
 
