@@ -159,6 +159,14 @@ export class ModuleStore extends ModuleObject {
   destroy(): void {
     super.destroy();
     if(this.area) this.area.detachObject(this);
+
+    while(this.inventory.length){
+      const item = this.inventory[0];
+      if(item){
+        item.destroy();
+      }
+      this.inventory.splice(0, 1);
+    }
   }
 
   save(){
