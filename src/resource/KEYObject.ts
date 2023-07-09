@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
 import { BIFObject, BIFResource } from './BIFObject';
-import { BIFManager } from '../managers';
+import { BIFManager } from '../managers/BIFManager';
 import { GameFileSystem } from '../utility/GameFileSystem';
 
 /* @file
