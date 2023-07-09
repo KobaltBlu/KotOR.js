@@ -386,4 +386,9 @@ export class ModuleSound extends ModuleObject {
     return instance;
   }
 
+  destroy(): void {
+    super.destroy();
+    if(this.area) this.area.detachObject(this);
+  }
+
 }

@@ -634,8 +634,9 @@ export class ModuleArea extends ModuleObject {
     //Cameras
     if(cameras){
       for(let i = 0; i < cameras.ChildStructs.length; i++){
-        let strt = cameras.ChildStructs[i];
-        this.attachObject( new ModuleCamera(GFFObject.FromStruct(strt) ) );
+        const strt = cameras.ChildStructs[i];
+        const camera = new ModuleCamera(GFFObject.FromStruct(strt) );
+        this.cameras.push(camera);
       }
     }
 

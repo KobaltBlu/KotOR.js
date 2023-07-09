@@ -873,15 +873,10 @@ export class ModulePlaceable extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    const pIdx = this.area.placeables.indexOf(this);
-    //console.log('ModuleObject.destory', 'placeable', pIdx)
-    if(pIdx > -1){
-      this.area.placeables.splice(pIdx, 1);
-      try{
-        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-        GameState.walkmeshList.splice(wmIdx, 1);
-      }catch(e){}
-    }
+    try{
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
+    }catch(e){}
   }
 
   save(){

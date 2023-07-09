@@ -644,10 +644,7 @@ export class ModuleItem extends ModuleObject {
   destroy(): void {
     super.destroy();
     if(this.placedInWorld){
-      const pIdx = this.area.items.indexOf(this);
-      if(pIdx > -1){
-        this.area.items.splice(pIdx, 1);            
-      }
+      if(this.area) this.area.detachObject(this);
     }
   }
 

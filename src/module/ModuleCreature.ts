@@ -4441,10 +4441,7 @@ export class ModuleCreature extends ModuleObject {
       this.head.dispose();
       this.head = undefined;
     }
-    const pIdx = this.area.creatures.indexOf(this);
-    if(pIdx > -1){
-      this.area.creatures.splice(pIdx, 1);
-    }
+    if(this.area) this.area.detachObject(this);
     FactionManager.RemoveCreatureFromFaction(this);
   }
 

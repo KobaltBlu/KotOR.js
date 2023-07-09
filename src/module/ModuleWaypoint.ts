@@ -128,6 +128,7 @@ export class ModuleWaypoint extends ModuleObject {
 
   destroy(): void {
     super.destroy();
+    if(this.area) this.area.detachObject(this);
 
     if(this.hasMapNote){
       if(GameState.module){

@@ -13,19 +13,19 @@ import * as THREE from "three";
  * The ModuleCamera class.
  */
 
-export class ModuleCamera extends ModuleObject {
-  cameraID: any;
-  fov: any;
-  height: any;
-  micRange: any;
+export class ModuleCamera {
+  cameraID: number;
+  fov: number;
+  height: number;
+  micRange: number;
   orientation: THREE.Quaternion = new THREE.Quaternion;
-  pitch: any;
+  pitch: number;
   perspectiveCamera: THREE.PerspectiveCamera;
+  position: THREE.Vector3 = new THREE.Vector3();
+  template: GFFObject;
+  initialized: boolean = false;
 
   constructor ( gff = new GFFObject() ) {
-    super();
-    this.objectType |= ModuleObjectType.ModuleCamera;
-    this.id = -1;
     this.template = gff;
   }
 
@@ -76,7 +76,6 @@ export class ModuleCamera extends ModuleObject {
 
     if(this.template.RootNode.HasField('Position')){
       this.position.copy(this.template.GetFieldByLabel('Position').GetVector());
-      this.container.position.copy(this.position);
     }
 
     this.initialized = true;

@@ -1202,15 +1202,11 @@ export class ModuleDoor extends ModuleObject {
   destroy(): void {
     super.destroy();
     MenuManager.InGameAreaTransition.unsetTransitionObject(this);
-    const pIdx = this.area.doors.indexOf(this);
-    //console.log('ModuleObject.destory', 'placeable', pIdx)
-    if(pIdx > -1){
-      this.area.doors.splice(pIdx, 1);
-      try{
-        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-        GameState.walkmeshList.splice(wmIdx, 1);
-      }catch(e){}
-    }
+    if(this.area) this.area.detachObject(this);
+    try{
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
+    }catch(e){}
   }
 
   save(){

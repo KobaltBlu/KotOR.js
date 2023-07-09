@@ -449,11 +449,7 @@ export class ModuleEncounter extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    const pIdx = this.area.encounters.indexOf(this);
-    //console.log('ModuleObject.destory', 'trigger', pIdx)
-    if(pIdx > -1){
-      this.area.encounters.splice(pIdx, 1);            
-    }
+    if(this.area) this.area.detachObject(this);
   }
 
   save(){

@@ -156,6 +156,11 @@ export class ModuleStore extends ModuleObject {
 
   }
 
+  destroy(): void {
+    super.destroy();
+    if(this.area) this.area.detachObject(this);
+  }
+
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTM ';
