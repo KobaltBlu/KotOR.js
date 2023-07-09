@@ -837,18 +837,18 @@ export class ModuleDoor extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         //console.log(this.template, gff, this)
-        this.InitProperties();
+        this.initProperties();
         this.LoadScripts();
       }else{
         console.error(`Failed to load ${ModuleDoor.name} template`);
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
           this.LoadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       this.LoadScripts();
     }
   }
@@ -1019,7 +1019,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

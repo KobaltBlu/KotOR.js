@@ -682,7 +682,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   Load(){
-    this.InitProperties();
+    this.initProperties();
     GameState.scene.add(this.sphere_geom);
   }
 
@@ -910,7 +910,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template.RootNode.HasField('Accel_Secs'))
       this.accel_secs = this.template.GetFieldByLabel('Accel_Secs').GetValue();
 

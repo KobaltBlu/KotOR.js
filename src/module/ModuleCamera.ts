@@ -30,7 +30,7 @@ export class ModuleCamera {
   }
 
   Load(){
-    this.InitProperties();
+    this.initProperties();
     this.buildCamera();
   }
 
@@ -54,7 +54,7 @@ export class ModuleCamera {
     this.perspectiveCamera.userData.ingameID = this.cameraID;
   }
 
-  InitProperties(){
+  initProperties(){
 
     if(this.template.RootNode.HasField('CameraID'))
       this.cameraID = this.template.GetFieldByLabel('CameraID').GetValue();

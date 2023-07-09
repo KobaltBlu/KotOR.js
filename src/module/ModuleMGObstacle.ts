@@ -30,7 +30,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   setTemplate(template: GFFObject){
     this.template = template;
-    this.InitProperties();
+    this.initProperties();
   }
 
   update(delta: number = 0){
@@ -120,7 +120,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template.RootNode.HasField('Name'))
       this.name = this.template.GetFieldByLabel('Name').GetValue().toLowerCase();
 

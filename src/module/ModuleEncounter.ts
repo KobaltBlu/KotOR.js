@@ -187,21 +187,21 @@ export class ModuleEncounter extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
         this.LoadScripts();
         try{ this.buildGeometry(); }catch(e){console.error(e)}
         //this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
           this.LoadScripts();
           try{ this.buildGeometry(); }catch(e){console.error(e)}
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       this.LoadScripts();
       try{ this.buildGeometry(); }catch(e){console.error(e)}
     }
@@ -268,7 +268,7 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  InitProperties(){
+  initProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

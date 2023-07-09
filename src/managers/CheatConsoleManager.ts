@@ -68,7 +68,7 @@ export class CheatConsoleManager {
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], resref);
     if(buffer){
       const item = new ModuleItem(new GFFObject(buffer));
-      item.InitProperties();
+      item.initProperties();
       item.setStackSize(amount);
       InventoryManager.addItem(item);
       return item;

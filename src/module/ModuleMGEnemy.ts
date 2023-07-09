@@ -248,7 +248,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   Load( onLoad?: Function ){
-    this.InitProperties();
+    this.initProperties();
     GameState.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
@@ -434,7 +434,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template.RootNode.HasField('Accel_Secs'))
       this.accel_secs = this.template.GetFieldByLabel('Accel_Secs').GetValue();
 

@@ -57,10 +57,10 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
   Load(){
     //We already have the template (From SAVEGAME)
-    this.InitProperties();
+    this.initProperties();
   }
 
-  InitProperties(): void {
+  initProperties(): void {
     if(this.template.RootNode.HasField('AreaEffectId'))
       this.areaEffectId = this.template.GetFieldByLabel('AreaEffectId').GetValue();
 

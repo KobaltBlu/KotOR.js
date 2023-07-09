@@ -97,7 +97,7 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   Load(){
-    this.InitProperties();
+    this.initProperties();
     return new Promise<void>( (resolve, reject) => {
       this.LoadModel().then( () => {
         resolve();
@@ -123,7 +123,7 @@ export class ModuleMGGunBank extends ModuleObject {
     });
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template.RootNode.HasField('BankID'))
       this.bankID = this.template.GetFieldByLabel('BankID').GetValue()
 
@@ -147,7 +147,7 @@ export class ModuleMGGunBank extends ModuleObject {
       
     this.bulletTemplate = GFFObject.FromStruct(this.template.RootNode.GetFieldByLabel('Bullet').GetChildStructs()[0]);
     this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
-    this.proto_bullet.InitProperties();
+    this.proto_bullet.initProperties();
 
   }
 

@@ -153,7 +153,7 @@ export class ModulePath {
 
         this.template = gff;
         //console.log(this.template, gff, this)
-        this.InitProperties();
+        this.initProperties();
         if(typeof onLoad === 'function')
           onLoad(this);
 
@@ -166,7 +166,7 @@ export class ModulePath {
     });
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template instanceof GFFObject){
       let _points = this.template.json.fields.Path_Points.structs;
       for(let i = 0; i < _points.length; i++){

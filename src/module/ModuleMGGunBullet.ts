@@ -91,7 +91,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   Load(){
-    this.InitProperties();
+    this.initProperties();
     return new Promise<void>( (resolve, reject) => {
       this.LoadModel().then( () => {
         resolve();
@@ -116,7 +116,7 @@ export class ModuleMGGunBullet extends ModuleObject {
     });
   }
 
-  InitProperties(){
+  initProperties(){
     this.model_name = this.template.RootNode.GetFieldByLabel('Bullet_Model').GetValue();
     this.collision_sound = this.template.RootNode.GetFieldByLabel('Collision_Sound').GetValue();
     this.damage_amt = this.template.RootNode.GetFieldByLabel('Damage').GetValue();

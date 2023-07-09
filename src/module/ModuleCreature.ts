@@ -3281,19 +3281,19 @@ export class ModuleCreature extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
         this.LoadScripts();
         FactionManager.AddCreatureToFaction(this);
       }else{
         console.error('Failed to load character template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
           this.LoadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       this.LoadScripts();
       FactionManager.AddCreatureToFaction(this);
     }
@@ -3909,7 +3909,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     try{
       this.classes = [];
       this.feats = [];
@@ -4252,7 +4252,7 @@ export class ModuleCreature extends ModuleObject {
                 this.equipment.CLAW3 = equipped_item;
               break;
               default:
-                console.warn('ModuleCreature.InitProperties', 'Unhandled Equipment Slot', equipped_item);
+                console.warn('ModuleCreature.initProperties', 'Unhandled Equipment Slot', equipped_item);
               break;
             }
           }
@@ -4399,7 +4399,7 @@ export class ModuleCreature extends ModuleObject {
   LoadItem( template: GFFObject ){
 
     let item = new ModuleItem(template);
-    item.InitProperties();
+    item.initProperties();
     item.Load();
     let hasItem = this.getItem(item.getTag());
     if(hasItem){

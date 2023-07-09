@@ -417,7 +417,7 @@ NWScriptDefK1.Actions = {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], args[0]);
       if(buffer){
         const item = new ModuleItem(new GFFObject(buffer));
-        item.InitProperties();
+        item.initProperties();
         item.setStackSize(args[2]);
         if(PartyManager.party.indexOf(args[1] as any) > -1){
           InventoryManager.addItem(item);

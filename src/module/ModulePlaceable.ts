@@ -502,20 +502,20 @@ export class ModulePlaceable extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
         this.LoadInventory();
         this.LoadScripts();
       }else{
         console.error('Failed to load ModulePlaceable template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
           this.LoadInventory();
           this.LoadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       this.LoadInventory();
       this.LoadScripts();
     }
@@ -649,7 +649,7 @@ export class ModulePlaceable extends ModuleObject {
 
   LoadItem( template: GFFObject){
     let item = new ModuleItem(template);
-    item.InitProperties();
+    item.initProperties();
     item.Load();
     let hasItem = this.getItem(item.getTag());
     if(hasItem){
@@ -688,7 +688,7 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

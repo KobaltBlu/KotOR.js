@@ -49,7 +49,7 @@ export class ModuleTrigger extends ModuleObject {
     this.box = new THREE.Box3();
 
     this.triggered = false;
-    this.InitProperties();
+    this.initProperties();
 
   }
 
@@ -131,14 +131,14 @@ export class ModuleTrigger extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
         this.LoadScripts()
         this.buildGeometry();
         this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
           this.LoadScripts();
           this.buildGeometry();
           this.initObjectsInside();
@@ -147,7 +147,7 @@ export class ModuleTrigger extends ModuleObject {
 
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       this.LoadScripts()
       this.buildGeometry();
       this.initObjectsInside();
@@ -395,7 +395,7 @@ export class ModuleTrigger extends ModuleObject {
 
   }
 
-  InitProperties(){
+  initProperties(){
     
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

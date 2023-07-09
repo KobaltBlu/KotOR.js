@@ -1796,7 +1796,7 @@ export class ModuleObject {
     console.warn("Method not implemented.", this.tag);
   }
   
-  InitProperties(){
+  initProperties(){
 
     if(!this.initialized){
       if(this.template.RootNode.HasField('ObjectId')){

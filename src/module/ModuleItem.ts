@@ -90,7 +90,7 @@ export class ModuleItem extends ModuleObject {
     this.placedInWorld = false;
     this.possessor = undefined;
 
-    this.InitProperties();
+    this.initProperties();
 
   }
 
@@ -355,12 +355,12 @@ export class ModuleItem extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
         //
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
         }
       }
     }else if(!this.loaded && this.getInventoryRes()){
@@ -369,16 +369,16 @@ export class ModuleItem extends ModuleObject {
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
-        this.InitProperties();
+        this.initProperties();
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
-          this.InitProperties();
+          this.initProperties();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
-      this.InitProperties();
+      this.initProperties();
       // this.LoadScripts();
     }
   }
@@ -428,7 +428,7 @@ export class ModuleItem extends ModuleObject {
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], resRef);
     if(buffer){
       const item = new ModuleItem(new GFFObject(buffer));
-      item.InitProperties();
+      item.initProperties();
       return item;
     }
     return undefined;
@@ -476,7 +476,7 @@ export class ModuleItem extends ModuleObject {
     return spells;
   }
 
-  InitProperties(){
+  initProperties(){
 
     if(this.loaded){
       return;
@@ -709,7 +709,7 @@ export class ItemProperty {
   constructor(template: any, item: any){
     this.template = template;
     this.item = item;
-    this.InitProperties();
+    this.initProperties();
   }
 
   getProperty(){
@@ -876,7 +876,7 @@ export class ItemProperty {
     return 0;
   }
 
-  InitProperties(){
+  initProperties(){
     if(this.template.RootNode.HasField('PropertyName'))
       this.propertyName = this.template.RootNode.GetFieldByLabel('PropertyName').GetValue();
     
