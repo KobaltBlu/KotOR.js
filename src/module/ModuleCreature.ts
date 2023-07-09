@@ -1070,9 +1070,6 @@ export class ModuleCreature extends ModuleObject {
     if(this.animationState.animation){
       if(currentAnimation != this.animationState.animation.name.toLowerCase()){
         if(!this.animationState.started){
-          if(this.tag == 'end_jedi01'){
-            console.log(this.animationState.animation.name);
-          }
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name.toLowerCase(), aLooping);
@@ -4441,6 +4438,90 @@ export class ModuleCreature extends ModuleObject {
       this.head.dispose();
       this.head = undefined;
     }
+
+    if(this.equipment.ARMOR){
+      this.equipment.ARMOR.destroy();
+      this.equipment.ARMOR = undefined;
+    }
+
+    if(this.equipment.ARMS){
+      this.equipment.ARMS.destroy();
+      this.equipment.ARMS = undefined;
+    }
+
+    if(this.equipment.BELT){
+      this.equipment.BELT.destroy();
+      this.equipment.BELT = undefined;
+    }
+
+    if(this.equipment.CLAW1){
+      this.equipment.CLAW1.destroy();
+      this.equipment.CLAW1 = undefined;
+    }
+
+    if(this.equipment.CLAW2){
+      this.equipment.CLAW2.destroy();
+      this.equipment.CLAW2 = undefined;
+    }
+
+    if(this.equipment.CLAW3){
+      this.equipment.CLAW3.destroy();
+      this.equipment.CLAW3 = undefined;
+    }
+
+    if(this.equipment.HEAD){
+      this.equipment.HEAD.destroy();
+      this.equipment.HEAD = undefined;
+    }
+
+    if(this.equipment.HIDE){
+      this.equipment.HIDE.destroy();
+      this.equipment.HIDE = undefined;
+    }
+
+    if(this.equipment.IMPLANT){
+      this.equipment.IMPLANT.destroy();
+      this.equipment.IMPLANT = undefined;
+    }
+
+    if(this.equipment.LEFTARMBAND){
+      this.equipment.LEFTARMBAND.destroy();
+      this.equipment.LEFTARMBAND = undefined;
+    }
+
+    if(this.equipment.LEFTHAND){
+      this.equipment.LEFTHAND.destroy();
+      this.equipment.LEFTHAND = undefined;
+    }
+
+    if(this.equipment.LEFTHAND2){
+      this.equipment.LEFTHAND2.destroy();
+      this.equipment.LEFTHAND2 = undefined;
+    }
+
+    if(this.equipment.RIGHTARMBAND){
+      this.equipment.RIGHTARMBAND.destroy();
+      this.equipment.RIGHTARMBAND = undefined;
+    }
+
+    if(this.equipment.RIGHTHAND){
+      this.equipment.RIGHTHAND.destroy();
+      this.equipment.RIGHTHAND = undefined;
+    }
+
+    if(this.equipment.RIGHTHAND2){
+      this.equipment.RIGHTHAND2.destroy();
+      this.equipment.RIGHTHAND2 = undefined;
+    }
+
+    while(this.inventory.length){
+      const item = this.inventory[0];
+      if(item){
+        item.destroy();
+      }
+      this.inventory.splice(0, 1);
+    }
+
     if(this.area) this.area.detachObject(this);
     FactionManager.RemoveCreatureFromFaction(this);
   }

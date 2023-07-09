@@ -1038,7 +1038,7 @@ export class ModuleObject {
   }
 
   destroy(){
-    try{ console.log('destroy', this.getTag());}catch(e: any){}
+    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
     try{
       this.container.removeFromParent();
 

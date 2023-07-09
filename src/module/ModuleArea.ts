@@ -173,8 +173,8 @@ export class ModuleArea extends ModuleObject {
       this.rooms[0].destroy();
     }
 
-    //Clear room geometries
-    while (this.rooms.length){
+    //Clear areaOfEffect geometries
+    while (this.areaOfEffects.length){
       this.areaOfEffects[0].destroy();
     }
 
@@ -201,6 +201,16 @@ export class ModuleArea extends ModuleObject {
     //Clear trigger geometries
     while (this.triggers.length){
       this.triggers[0].destroy();
+    }
+
+    //Clear waypoint geometries
+    while (this.waypoints.length){
+      this.waypoints[0].destroy();
+    }
+
+    //Clear sound geometries
+    while (this.sounds.length){
+      this.sounds[0].destroy();
     }
 
     while (PartyManager.party.length){
@@ -560,14 +570,13 @@ export class ModuleArea extends ModuleObject {
     //Rooms
     for(let i = 0; i < rooms.ChildStructs.length; i++ ){
       let strt = rooms.ChildStructs[i];
-      
-      this.rooms.push(
-        new ModuleRoom({
-          ambientScale: this.are.GetFieldByLabel('AmbientScale', strt.GetFields()).GetValue(),
-          envAudio: this.are.GetFieldByLabel('EnvAudio', strt.GetFields()).GetValue(),
-          roomName: this.are.GetFieldByLabel('RoomName', strt.GetFields()).GetValue().toLowerCase()
-        })
-      );
+      const room = new ModuleRoom({
+        ambientScale: this.are.GetFieldByLabel('AmbientScale', strt.GetFields()).GetValue(),
+        envAudio: this.are.GetFieldByLabel('EnvAudio', strt.GetFields()).GetValue(),
+        roomName: this.are.GetFieldByLabel('RoomName', strt.GetFields()).GetValue().toLowerCase()
+      });
+      room.area = this;
+      this.rooms.push(room);
     }
 
     this.ShadowOpacity = this.are.GetFieldByLabel('ShadowOpacity').GetValue();
@@ -1080,64 +1089,55 @@ export class ModuleArea extends ModuleObject {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       const idx = this.creatures.indexOf(object as ModuleCreature);
       if(idx >= 0){
-        this.creatures.slice(idx, 1);
+        this.creatures.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
       const idx = this.placeables.indexOf(object as ModulePlaceable);
       if(idx >= 0){
-        this.placeables.slice(idx, 1);
+        this.placeables.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
       const idx = this.doors.indexOf(object as ModuleDoor);
       if(idx >= 0){
-        this.doors.slice(idx, 1);
+        this.doors.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
       const idx = this.triggers.indexOf(object as ModuleTrigger);
       if(idx >= 0){
-        this.triggers.slice(idx, 1);
+        this.triggers.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
       const idx = this.encounters.indexOf(object as ModuleEncounter);
       if(idx >= 0){
-        this.encounters.slice(idx, 1);
+        this.encounters.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleStore)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleStore)){
       const idx = this.stores.indexOf(object as ModuleStore);
       if(idx >= 0){
-        this.stores.slice(idx, 1);
+        this.stores.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleWaypoint)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleWaypoint)){
       const idx = this.waypoints.indexOf(object as ModuleWaypoint);
       if(idx >= 0){
-        this.waypoints.slice(idx, 1);
+        this.waypoints.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
       const idx = this.sounds.indexOf(object as ModuleSound);
       if(idx >= 0){
-        this.sounds.slice(idx, 1);
+        this.sounds.splice(idx, 1);
       }
-    }
-
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleAreaOfEffect)){
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleAreaOfEffect)){
       const idx = this.areaOfEffects.indexOf(object as ModuleAreaOfEffect);
       if(idx >= 0){
-        this.areaOfEffects.slice(idx, 1);
+        this.areaOfEffects.splice(idx, 1);
       }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleItem)){
+      const idx = this.items.indexOf(object as ModuleItem);
+      if(idx >= 0){
+        this.items.splice(idx, 1);
+      }
+    }else{
+      console.warn(`destroyObject: unhandled objectType, ${object.objectType}`);
     }
   }
 

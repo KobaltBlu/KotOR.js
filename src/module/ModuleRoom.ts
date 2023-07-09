@@ -508,19 +508,22 @@ export class ModuleRoom extends ModuleObject {
   }
 
   destroy(): void {
-    const pIdx = this.area.rooms.indexOf(this);
-    //console.log('ModuleObject.destory', 'placeable', pIdx)
-    if(pIdx > -1){
-      this.area.rooms.splice(pIdx, 1);
-      
-      if(this.collisionData.walkmesh)
-        this.collisionData.walkmesh.dispose();
-
-      try{
-        let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
-        GameState.walkmeshList.splice(wmIdx, 1);
-      }catch(e){}
+    super.destroy();
+    if(this.area){
+      const pIdx = this.area.rooms.indexOf(this);
+      //console.log('ModuleObject.destory', 'placeable', pIdx)
+      if(pIdx > -1){
+        this.area.rooms.splice(pIdx, 1);
+      }
     }
+      
+    if(this.collisionData.walkmesh)
+      this.collisionData.walkmesh.dispose();
+
+    try{
+      let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      GameState.walkmeshList.splice(wmIdx, 1);
+    }catch(e){}
   }
 
   toToolsetInstance(){

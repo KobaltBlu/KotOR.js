@@ -64,12 +64,13 @@ export class ModuleObjectManager {
     this.RemoveObjectById(object?.id);
   }
 
-  static RemoveObjectById(id: number){
-    if(!isNaN(id)) return;
+  static RemoveObjectById(id: number): boolean {
+    if(isNaN(id)) return false;
     //Remove the object from the global list of objects
     if(id >= 1 && this.ObjectList.has(id)){
-      this.ObjectList.delete(id);
+      return this.ObjectList.delete(id);
     }
+    return false;
   }
 
   static Reset(){

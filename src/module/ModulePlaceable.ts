@@ -873,6 +873,7 @@ export class ModulePlaceable extends ModuleObject {
 
   destroy(): void {
     super.destroy();
+    if(this.area) this.area.detachObject(this);
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
