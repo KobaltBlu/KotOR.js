@@ -3,11 +3,9 @@
 
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { AudioFile } from "./AudioFile";
 
 import * as path from "path";
-import * as fs from "fs";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { KEYManager } from "../managers";
 
