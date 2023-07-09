@@ -2,8 +2,7 @@
  */
 
 import { BinaryWriter } from "../BinaryWriter";
-import { GameState } from "../GameState";
-import { ModuleRoom } from "../module";
+import { ModuleArea, ModuleRoom } from "../module";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /* @file
@@ -15,10 +14,12 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 
 export class VISObject {
   rooms: any[] = [];
+  area: ModuleArea;
 
-  constructor ( data?: Buffer ) {
+  constructor ( data?: Buffer, area?: ModuleArea ) {
 
     this.rooms = [];
+    this.area = area;
 
     if(data){
       let text = (new TextDecoder('utf8')).decode(data).toLowerCase()
@@ -76,9 +77,9 @@ export class VISObject {
       currentRoom = this.resetRoom();
 
       for(let i = 0; i < this.rooms.length; i++){
-        let visRoom = this.rooms[i];
-        for(let j = 0; j < GameState.module.area.rooms.length; j++){
-          let room = GameState.module.area.rooms[j];
+        const visRoom = this.rooms[i];
+        for(let j = 0; j < this.area.rooms.length; j++){
+          const room = this.area.rooms[j];
           if( room instanceof ModuleRoom && (room.roomName.toLowerCase() == visRoom.name.toLowerCase()) ){
             room.hasVISObject = true;
           }
