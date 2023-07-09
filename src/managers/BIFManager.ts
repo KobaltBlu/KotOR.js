@@ -1,6 +1,5 @@
 import { BIFObject, BIFResource } from "../resource/BIFObject";
 import { KEYObject } from "../resource/KEYObject";
-import { KEYManager } from "./KEYManager";
 
 export class BIFManager {
 

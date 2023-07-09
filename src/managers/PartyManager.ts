@@ -11,14 +11,14 @@ import { CurrentGame } from "../CurrentGame";
 import { TwoDAManager } from "./TwoDAManager";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
+import { ModuleCreature, ModuleObject } from "../module";
 import { OdysseyModel3D } from "../three/odyssey";
-import { PartyTableManager } from "./PartyTableManager";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../loaders";
+import { ModuleObjectManager } from "./ModuleObjectManager";
 
 /* @file
  * The PartyManager class.
@@ -137,7 +137,7 @@ export class PartyManager {
               //console.log('RemoveNPCById leaveInWorld', creature);
               GameState.group.party.remove(creature.model);
               GameState.group.creatures.add(creature.model);
-              GameState.module.area.creatures.push(creature);
+              GameState.module.area.attachObject(creature);
             }
 
             break;
@@ -382,7 +382,7 @@ export class PartyManager {
     if(nIdx == 0 || nIdx == 1){
       try{
         if(!(currentSlot instanceof ModuleCreature)){
-          partyMember.id = ModuleObject.GetNextPlayerId();
+          partyMember.id = ModuleObjectManager.GetNextPlayerId();
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.Load();
             //PartyManager.party[nIdx+1] = partyMember;

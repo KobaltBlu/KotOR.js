@@ -1,10 +1,8 @@
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { BIFObject } from "../resource/BIFObject";
 import { BIF, KEYObject } from "../resource/KEYObject";
-import * as fs from 'fs';
 import * as path from 'path';
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { BIFManager } from ".";
+import { BIFManager } from "./BIFManager";
 
 export class KEYManager {
 

@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
-import { ModuleObject } from "../module";
+import type { ModuleObject } from "../module";
 import { ApplicationProfile } from "../KotOR";
 
 /* @file

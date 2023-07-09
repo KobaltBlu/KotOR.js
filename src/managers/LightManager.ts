@@ -2,11 +2,8 @@
  */
 
 import * as THREE from "three";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { ApplicationMode } from "../enums/ApplicationMode";
 import { OdysseyLight3D } from "../three/odyssey";
-import { ModuleObject } from "../module";
+import type { ModuleObject } from "../module";
 
 /* @file
  * The LightManager class is currently used for dynamic lighting on objects like doors, placeables, creatures, and more. 

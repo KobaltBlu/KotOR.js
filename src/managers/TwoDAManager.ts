@@ -3,7 +3,7 @@ import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { KEYManager } from ".";
+import { KEYManager } from "./KEYManager";
 
 export class TwoDAManager {
 

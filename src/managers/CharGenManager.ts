@@ -6,7 +6,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CharGenClasses } from "../game/CharGenClasses";
 import { GameState } from "../GameState";
 import { LBL_3DView } from "../gui";
-import { ModuleCreature, ModulePlayer } from "../module";
+import { ModulePlayer } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";

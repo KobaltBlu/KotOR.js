@@ -6,7 +6,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
 import { CurrentGame } from "../CurrentGame";
-import { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import { ModuleCreature, ModuleItem } from "../module";
 import { PartyManager } from "./PartyManager";
 
 /* @file

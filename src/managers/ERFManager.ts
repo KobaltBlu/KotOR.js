@@ -1,6 +1,5 @@
 import { AsyncLoop } from "../utility/AsyncLoop";
 import * as path from 'path';
-import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ERFObject } from "../resource/ERFObject";
 
 export class ERFManager {

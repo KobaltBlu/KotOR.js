@@ -1,6 +1,6 @@
 import { MenuManager, TLKManager } from ".";
+import { GameState } from "../GameState";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
-import { EngineState } from "../enums/engine/EngineState";
 
 export class AutoPauseManager {
 
@@ -18,14 +18,14 @@ export class AutoPauseManager {
   static AutoPauseMessages: Map<AutoPauseState, string> = new Map();
 
   static Init(){
-    // console.log('AutoPauseManager.Init', GameState.iniConfig.getProperty('Autopause Options.End Of Combat Round'))
-    // this.AutoPauseEnabled.Generic = true;
-    // this.AutoPauseEnabled.CombatRoundEnd = GameState.iniConfig.getProperty('Autopause Options.End Of Combat Round') == 1
-    // this.AutoPauseEnabled.EnemySighted = GameState.iniConfig.getProperty('Autopause Options.Enemy Sighted') == 1
-    // this.AutoPauseEnabled.MineSighted = GameState.iniConfig.getProperty('Autopause Options.Mine Sighted') == 1
-    // this.AutoPauseEnabled.PartyMemberKilled = GameState.iniConfig.getProperty('Autopause Options.Party Killed') == 1
-    // this.AutoPauseEnabled.ActionMenuUsed = GameState.iniConfig.getProperty('Autopause Options.Action Menu') == 1
-    // this.AutoPauseEnabled.NewTargetSelected = GameState.iniConfig.getProperty('Autopause Options.New Target Selected') == 1
+    console.log('AutoPauseManager.Init', GameState.iniConfig.getProperty('Autopause Options.End Of Combat Round'))
+    this.AutoPauseEnabled.Generic = true;
+    this.AutoPauseEnabled.CombatRoundEnd = GameState.iniConfig.getProperty('Autopause Options.End Of Combat Round') == 1
+    this.AutoPauseEnabled.EnemySighted = GameState.iniConfig.getProperty('Autopause Options.Enemy Sighted') == 1
+    this.AutoPauseEnabled.MineSighted = GameState.iniConfig.getProperty('Autopause Options.Mine Sighted') == 1
+    this.AutoPauseEnabled.PartyMemberKilled = GameState.iniConfig.getProperty('Autopause Options.Party Killed') == 1
+    this.AutoPauseEnabled.ActionMenuUsed = GameState.iniConfig.getProperty('Autopause Options.Action Menu') == 1
+    this.AutoPauseEnabled.NewTargetSelected = GameState.iniConfig.getProperty('Autopause Options.New Target Selected') == 1
 
     this.AutoPauseReason.set(AutoPauseState.Generic, TLKManager.GetStringById(1508)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.Generic, TLKManager.GetStringById(48384)?.Value);
