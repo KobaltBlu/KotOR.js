@@ -286,6 +286,7 @@ export class MenuManager {
   static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
     return new Promise( async (resolve: Function, reject: Function) => {
       const menu: GameMenu = new menuConstructor();
+      menu.manager = MenuManager;
       await menu.Load();
       resolve(menu);
     });

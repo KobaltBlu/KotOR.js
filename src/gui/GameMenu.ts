@@ -22,6 +22,7 @@ export class GameMenu {
 
   gui_resref: string;
   menuGFF: GFFObject;
+  manager: typeof MenuManager;
 
   //This is for MenuTop
   childMenu: GameMenu = undefined;
