@@ -50,11 +50,13 @@ export class ModuleObjectManager {
   }
 
   static AddObjectById(object: ModuleObject){
-    if(!object.id) object.id = this.GetNextObjectId();
-    this.ObjectList.set(object.id, object);
-    while(this.ObjectList.has(object.id)){
+    if(!object.id){
       object.id = this.GetNextObjectId();
+      while(this.ObjectList.has(object.id)){
+        object.id = this.GetNextObjectId();
+      }
     }
+    this.ObjectList.set(object.id, object);
   }
 
   static RemoveObject(object: ModuleObject){

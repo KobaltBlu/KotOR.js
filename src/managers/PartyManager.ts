@@ -374,7 +374,8 @@ export class PartyManager {
   //Load the PartyMember by it's index in the CurrentMembers array.
   static LoadPartyMember(nIdx = 0, onLoad?: Function){
     let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
-    let template = npc.template;
+    const template = npc.template;
+    template.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( ModuleObjectManager.GetNextPlayerId() );
     let partyMember = new ModuleCreature(template);
 
     let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
@@ -382,7 +383,6 @@ export class PartyManager {
     if(nIdx == 0 || nIdx == 1){
       try{
         if(!(currentSlot instanceof ModuleCreature)){
-          partyMember.id = ModuleObjectManager.GetNextPlayerId();
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.Load();
             //PartyManager.party[nIdx+1] = partyMember;
@@ -643,6 +643,7 @@ export class PartyManager {
   public static ResetPlayerTemplate(): GFFObject {
     let pTPL = new GFFObject();
 
+    pTPL.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( ModuleObjectManager.GetNextPlayerId() );
     pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(GameState.GameKey == 'TSL' ? 134 : 177);
     pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Luke Skywalker');
     pTPL.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);

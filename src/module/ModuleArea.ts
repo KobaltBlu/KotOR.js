@@ -1024,6 +1024,7 @@ export class ModuleArea extends ModuleObject {
 
   getPlayerTemplate(): GFFObject {
     if(PartyManager.PlayerTemplate){
+      PartyManager.PlayerTemplate.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( ModuleObjectManager.GetNextPlayerId() );
       return PartyManager.PlayerTemplate;
     }else{
       return PartyManager.ResetPlayerTemplate();
@@ -1176,7 +1177,6 @@ export class ModuleArea extends ModuleObject {
         }else{
           let player = new ModulePlayer( this.getPlayerTemplate() );
           player.partyID = -1;
-          player.id = ModuleObjectManager.GetNextPlayerId();
           
           player.Load();
           GameState.player = player;
