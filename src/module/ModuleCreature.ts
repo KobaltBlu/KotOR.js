@@ -2267,7 +2267,7 @@ export class ModuleCreature extends ModuleObject {
     return this.position;
   }
 
-  GetFacing(){
+  getFacing(){
     return this.rotation.z;
   }
 
@@ -2573,7 +2573,7 @@ export class ModuleCreature extends ModuleObject {
     return this.zOrientation;
   }
 
-  GetRotation(){
+  getRotation(){
     if(this.model){
       return Math.floor(this.rotation.z * 180) + 180
     }

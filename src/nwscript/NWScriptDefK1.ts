@@ -2561,7 +2561,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       //console.log('NWScript: '+this.name, 'GetLocation', args);
       if(args[0] instanceof ModuleObject){
-        return args[0].GetLocation();
+        return args[0].getLocation();
       }
       return new EngineLocation();
     }
@@ -2740,7 +2740,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(this.talent instanceof TalentObject && this.talent.oTarget instanceof ModuleObject){
-        this.talent.oTarget.GetLocation();
+        this.talent.oTarget.getLocation();
       }
       return new EngineLocation();
     }

@@ -962,7 +962,7 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(100);
 
-      FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.GetFacing() - Math.PI/2);
+      FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.getFacing() - Math.PI/2);
 
       try { await this.weather.load(); } catch(e){ console.error(e); }
 

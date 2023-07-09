@@ -384,9 +384,6 @@ export class ModuleObject {
     }
   }
 
-  //Reload the template
-  Invalidate(){ }
-
   getModel(){
     if(this.model instanceof THREE.Object3D)
       return this.model;
@@ -1091,7 +1088,7 @@ export class ModuleObject {
     }
   }
 
-  GetOrientation(){
+  getOrientation(){
     try{
       return this.rotation.clone();
     }catch(e){
@@ -1099,7 +1096,7 @@ export class ModuleObject {
     }
   }
 
-  GetFacing(){
+  getFacing(){
     try{
       return this.rotation.z;
     }catch(e){
@@ -1111,12 +1108,12 @@ export class ModuleObject {
 
   }
 
-  GetRotation(){
-    return Math.floor(this.GetFacing() * 180) + 180;
+  getRotation(){
+    return Math.floor(this.getFacing() * 180) + 180;
   }
 
-  GetLocation(){
-    let rotation = this.GetRotationFromBearing();
+  getLocation(){
+    let rotation = this.getRotationFromBearing();
 
     let location = new EngineLocation(
       this.position.x, this.position.y, this.position.z,
@@ -1127,7 +1124,7 @@ export class ModuleObject {
     return location;
   }
 
-  GetRotationFromBearing( bearing: number = undefined ){
+  getRotationFromBearing( bearing: number = undefined ){
     let theta = this.rotation.z;
 
     if(typeof bearing == 'number')
@@ -1153,22 +1150,8 @@ export class ModuleObject {
     return false;
   }
 
-  HasTemplate(){
-    return (typeof this.template !== 'undefined');
-  }
-
   getConversation(): DLGObject {
     return this.conversation;
-  }
-
-  GetObjectTag(){
-    if(this.HasTemplate()){
-      if(typeof this.template.json.fields.Tag !== 'undefined')
-        return this.template.json.fields.Tag.value;
-
-    }
-
-    return '';
   }
 
   getFortitudeSave(){
