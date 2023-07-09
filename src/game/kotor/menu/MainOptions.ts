@@ -28,13 +28,13 @@ export class MainOptions extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
@@ -43,19 +43,19 @@ export class MainOptions extends GameMenu {
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.Open();
+        MenuManager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuGraphics.Open();
+        MenuManager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuSound.Open();
+        MenuManager.MenuSound.open();
       });
 
       this.BTN_FEEDBACK.addEventListener('click', (e: any) => {

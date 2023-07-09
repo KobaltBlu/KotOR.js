@@ -47,20 +47,20 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
         Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
 
         if(this.script instanceof NWScriptInstance){
           this.script.run(GameState.player);

@@ -24,13 +24,13 @@ export class InGameBark extends K1_InGameBark {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_BARKTEXT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       resolve();
     });
@@ -38,7 +38,7 @@ export class InGameBark extends K1_InGameBark {
 
   bark(entry: any) {
     if (entry) {
-      this.Show();
+      this.show();
       this.LBL_BARKTEXT.setText(entry.text);
       let size = new THREE.Vector3();
       this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
@@ -56,10 +56,10 @@ export class InGameBark extends K1_InGameBark {
         });
         MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
           if (!error) {
-            this.Close();
+            this.close();
           } else {
             setTimeout(() => {
-              this.Close();
+              this.close();
             }, 3000);
           }
         });
@@ -72,17 +72,17 @@ export class InGameBark extends K1_InGameBark {
         });
         MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
           if (!error) {
-            this.Close();
+            this.close();
           } else {
             setTimeout(() => {
-              this.Close();
+              this.close();
             }, 3000);
           }
         });
       } else {
         console.error('VO ERROR', entry);
         setTimeout(() => {
-          this.Close();
+          this.close();
         }, 3000);
       }
     }

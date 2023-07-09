@@ -35,8 +35,8 @@ export class CharGenQuickPanel extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.step1 = false;
@@ -44,12 +44,12 @@ export class CharGenQuickPanel extends GameMenu {
 
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.Open();
+        MenuManager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.Open();
+        MenuManager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
@@ -66,22 +66,22 @@ export class CharGenQuickPanel extends GameMenu {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.Open();
+        MenuManager.CharGenMain.open();
       });
 
       this.BTN_BACK.reattach(this.tGuiPanel);
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 85;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.BTN_STEPNAME2.hide();
     this.LBL_2.hide();
     this.LBL_NUM2.hide();

@@ -144,8 +144,8 @@ export class InGameOverlay extends K1_InGameOverlay {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -219,42 +219,42 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuPartySelection.Open();
+        MenuManager.MenuPartySelection.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuJournal.Open();
+        MenuManager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMap.Open();
+        MenuManager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuOptions.Open();
+        MenuManager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.Open();
+        MenuManager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.Open();
+        MenuManager.MenuCharacter.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuInventory.Open();
+        MenuManager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuEquipment.Open();
+        MenuManager.MenuEquipment.open();
       });
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
@@ -277,7 +277,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
-        MenuManager.MenuEquipment.Open()
+        MenuManager.MenuEquipment.open()
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
@@ -358,7 +358,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       //BTN_ACTION buttons alignment fix
       this.BTN_ACTIONUP5.anchor = Anchor.BottomLeft;
       this.BTN_ACTIONDOWN5.anchor = Anchor.BottomLeft;
-      this.RecalculatePosition();
+      this.recalculatePosition();
 
       //this.lbl_combatbg2.visible = false;
 
@@ -367,8 +367,8 @@ export class InGameOverlay extends K1_InGameOverlay {
   }
 
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     GameState.Mode = EngineMode.INGAME;
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
@@ -378,8 +378,8 @@ export class InGameOverlay extends K1_InGameOverlay {
     this.BTN_ACTIONDOWN5.flipY();
   }
 
-  Resize() {
-    this.RecalculatePosition();
+  resize() {
+    this.recalculatePosition();
   }
   
 }

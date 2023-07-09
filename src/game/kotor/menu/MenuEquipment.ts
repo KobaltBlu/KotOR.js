@@ -72,8 +72,8 @@ export class MenuEquipment extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
@@ -91,7 +91,7 @@ export class MenuEquipment extends GameMenu {
           this.equipmentSelectionActive = false;
           this.UpdateList();
         }else{
-          this.Close();
+          this.close();
         }
       });
       this._button_b = this.BTN_BACK;
@@ -399,8 +399,8 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     MenuManager.MenuTop.LBLH_EQU.onHoverIn();
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;

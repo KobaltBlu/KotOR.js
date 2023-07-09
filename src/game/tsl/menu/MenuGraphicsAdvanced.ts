@@ -43,8 +43,8 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -60,7 +60,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_BACK;
 
@@ -88,8 +88,8 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.updateTextureQualityLabel();
     this.BTN_ANTIALIAS.hide();
     this.BTN_ANTIALIASLEFT.hide();
@@ -102,8 +102,8 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     this.CB_SOFTSHADOWS.hide();
   }
 
-  Close() {
-    super.Close();
+  close() {
+    super.close();
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     if (quality != TextureLoader.TextureQuality) {
       TextureLoader.TextureQuality = quality;

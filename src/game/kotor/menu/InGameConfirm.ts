@@ -33,8 +33,8 @@ export class InGameConfirm extends GameMenu {
     this.isOverlayGUI = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.defaultExtent.width = this.tGuiPanel.extent.width;
@@ -44,13 +44,13 @@ export class InGameConfirm extends GameMenu {
 
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_a = this.BTN_OK;
 
       this.BTN_CANCEL.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_CANCEL;
 
@@ -61,14 +61,14 @@ export class InGameConfirm extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
-    this.RecalculatePosition();
+  show() {
+    super.show();
+    this.recalculatePosition();
     this.LB_MESSAGE.updateList();
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
+  update(delta: number = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     
@@ -105,7 +105,7 @@ export class InGameConfirm extends GameMenu {
           this.tGuiPanel.resizeControl();
           this.LB_MESSAGE.resizeControl();
           
-          this.Open();
+          this.open();
           // GameState.TutorialWindowTracker[id] = 0;
         }
       }

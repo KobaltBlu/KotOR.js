@@ -26,8 +26,8 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
@@ -58,9 +58,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
               CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
-          MenuManager.CharGenMain.Close();
+          MenuManager.CharGenMain.close();
           MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickPanel;
-          MenuManager.CharGenMain.Open();
+          MenuManager.CharGenMain.open();
         }catch(e){
           console.log(e);
         }
@@ -70,9 +70,9 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         e.stopPropagation();
         //GameState.CharGenMain.state = CharGenMain.STATES.CUSTOM;
         //GameState.CharGenCustomPanel.Show();
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenCustomPanel;
-        MenuManager.CharGenMain.Open();
+        MenuManager.CharGenMain.open();
 
         //Reset the Attributes window
         MenuManager.CharGenAbilities.reset();
@@ -91,7 +91,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
 
         // MenuManager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
         //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
       });
 
       //Hide because this submenu is very incomplete.
@@ -100,7 +100,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
 
       // this.tGuiPanel.offset.x = -180;
       // this.tGuiPanel.offset.y = 100;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }

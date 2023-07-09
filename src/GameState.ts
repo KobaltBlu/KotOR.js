@@ -863,7 +863,7 @@ export class GameState implements EngineContext {
       if(!(control.widget.parent.type === 'Scene')){
         if(!guiHoverCaptured){
           let cMenu = control.menu;
-          cMenu.SetWidgetHoverActive(control, true);
+          cMenu.setWidgetHoverActive(control, true);
           guiHoverCaptured = false;
         }
 
@@ -1003,7 +1003,7 @@ export class GameState implements EngineContext {
                     MenuManager.LoadScreen.setProgress(0);
                     MenuManager.LoadScreen.setLoadBackground('load_'+name).then( () => {
                       MenuManager.LoadScreen.showRandomHint();
-                      MenuManager.LoadScreen.Open();
+                      MenuManager.LoadScreen.open();
                       FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
                       console.log('Module.loadScene');
@@ -1012,7 +1012,7 @@ export class GameState implements EngineContext {
                           module.initEventQueue();
                           console.log('Module.initScripts');
                           module.initScripts( () => {
-                            MenuManager.LoadScreen.Close();
+                            MenuManager.LoadScreen.close();
                             window.setTimeout( ()=> {
                               //GameState.scene_gui.background = null;
                               GameState.scene.visible = true;
@@ -1024,8 +1024,8 @@ export class GameState implements EngineContext {
 
                               GameState.ResetModuleAudio();
 
-                              MenuManager.InGameOverlay.RecalculatePosition();
-                              MenuManager.InGameOverlay.Open();
+                              MenuManager.InGameOverlay.recalculatePosition();
+                              MenuManager.InGameOverlay.open();
 
                               GameState.renderer.compile(GameState.scene, GameState.currentCamera);
                               GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.SunFogColor) );
@@ -1165,7 +1165,7 @@ export class GameState implements EngineContext {
     GameState.controls.Update(delta);
     GameState.UpdateVideoEffect();
     MenuManager.Update(delta);
-    MenuManager.InGameAreaTransition.Hide();
+    MenuManager.InGameAreaTransition.hide();
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
@@ -1175,7 +1175,7 @@ export class GameState implements EngineContext {
     } 
 
     GameState.scene_cursor_holder.visible = true;
-    MenuManager.InGamePause.Hide();
+    MenuManager.InGamePause.hide();
 
     if(
       GameState.Mode == EngineMode.MINIGAME || 
@@ -1223,7 +1223,7 @@ export class GameState implements EngineContext {
       //TODO: Move Cursor Logic Into Global Cursor Manager
       if(GameState.Mode == EngineMode.DIALOG){
         if(
-          MenuManager.InGameDialog.IsVisible() && 
+          MenuManager.InGameDialog.isVisible() && 
           !MenuManager.InGameDialog.LB_REPLIES.isVisible() && 
           GameState.scene_cursor_holder.visible
         ){
@@ -1246,12 +1246,12 @@ export class GameState implements EngineContext {
         }
         
         //Handle the visibility of the PAUSE overlay
-        if(GameState.State == EngineState.PAUSED && MenuManager.InGameOverlay.IsVisible()){
-          if(!MenuManager.InGamePause.IsVisible())
-            MenuManager.InGamePause.Show();
+        if(GameState.State == EngineState.PAUSED && MenuManager.InGameOverlay.isVisible()){
+          if(!MenuManager.InGamePause.isVisible())
+            MenuManager.InGamePause.show();
         }else{
-          if(MenuManager.InGamePause.IsVisible())
-            MenuManager.InGamePause.Hide();
+          if(MenuManager.InGamePause.isVisible())
+            MenuManager.InGamePause.hide();
         }
       }else if(GameState.Mode == EngineMode.MINIGAME){
         FadeOverlayManager.Update(delta);
@@ -1260,7 +1260,7 @@ export class GameState implements EngineContext {
 
       if(GameState.Mode == EngineMode.INGAME){
         if(MenuManager.InGameAreaTransition.transitionObject){
-          MenuManager.InGameAreaTransition.Show();
+          MenuManager.InGameAreaTransition.show();
         }
       }
 

@@ -48,19 +48,19 @@ export class MenuStore extends K1_MenuStore {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_Cancel.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_Examine.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.sellMode = !this.sellMode;
-        this.Show();
+        this.show();
       });
 
       this.BTN_Accept.addEventListener('click', (e: any) => {
@@ -109,16 +109,16 @@ export class MenuStore extends K1_MenuStore {
     return item.cost + item.cost * this.storeObject.getMarkDown();
   }
 
-  Open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
+  open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
     // this.storeObject = storeObject;
     // this.creature = creature;
     // this.bonusMarkUp = bonusMarkUp;
     // this.bonusMarkDown = bonusMarkDown;
-    super.Open();
+    super.open();
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     if (this.storeObject instanceof ModuleStore) {
       this.LB_DESCRIPTION.clearItems();
       this.LB_DESCRIPTION.hide();
@@ -164,7 +164,7 @@ export class MenuStore extends K1_MenuStore {
       this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
       TextureLoader.LoadQueue();
     } else {
-      this.Close();
+      this.close();
     }
   }
   

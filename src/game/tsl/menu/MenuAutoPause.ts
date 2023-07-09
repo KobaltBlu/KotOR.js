@@ -43,8 +43,8 @@ export class MenuAutoPause extends K1_MenuAutoPause {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -145,7 +145,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       
       resolve();

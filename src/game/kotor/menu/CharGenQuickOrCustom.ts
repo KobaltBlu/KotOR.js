@@ -27,8 +27,8 @@ export class CharGenQuickOrCustom extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
@@ -59,11 +59,11 @@ export class CharGenQuickOrCustom extends GameMenu {
               CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
-          MenuManager.CharGenMain.Close();
+          MenuManager.CharGenMain.close();
           MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickPanel;
           MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;
           MenuManager.CharGenQuickPanel.tGuiPanel.widget.position.y = 0;
-          MenuManager.CharGenMain.Open();
+          MenuManager.CharGenMain.open();
         }catch(e){
           console.log(e);
         }
@@ -73,11 +73,11 @@ export class CharGenQuickOrCustom extends GameMenu {
         e.stopPropagation();
         //Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
         //Game.CharGenCustomPanel.Show();
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenCustomPanel;
         MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.x = 142.5;
         MenuManager.CharGenCustomPanel.tGuiPanel.widget.position.y = 0;
-        MenuManager.CharGenMain.Open();
+        MenuManager.CharGenMain.open();
 
         //Reset the Attributes window
         MenuManager.CharGenAbilities.reset();
@@ -96,7 +96,7 @@ export class CharGenQuickOrCustom extends GameMenu {
 
         // MenuManager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
         //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
       });
 
       //Hide because this submenu is very incomplete.
@@ -105,7 +105,7 @@ export class CharGenQuickOrCustom extends GameMenu {
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 100;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }

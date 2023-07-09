@@ -39,8 +39,8 @@ export class MenuContainer extends GameMenu {
     this.isOverlayGUI = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -50,7 +50,7 @@ export class MenuContainer extends GameMenu {
         if(this.container instanceof ModulePlaceable){
           this.container.close(GameState.player);
         }
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_CANCEL;
 
@@ -65,7 +65,7 @@ export class MenuContainer extends GameMenu {
             this.container.retrieveInventory();
             //this.container.close(Game.player);
           }
-          this.Close();
+          this.close();
         }else{
 
         }
@@ -98,8 +98,8 @@ export class MenuContainer extends GameMenu {
     });
   }
 
-  Hide(onClosed = false) {
-    super.Hide();
+  hide(onClosed = false) {
+    super.hide();
     if (onClosed && this.container instanceof ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
@@ -113,12 +113,12 @@ export class MenuContainer extends GameMenu {
     this.container = object;
   }
 
-  Open() {
-    super.Open();
+  open() {
+    super.open();
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.setMode(MenuContainerMode.TAKE_ITEMS);
   }
 

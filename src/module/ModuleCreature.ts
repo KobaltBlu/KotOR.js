@@ -2389,7 +2389,7 @@ export class ModuleCreature extends ModuleObject {
   use(object: ModuleObject){
     if(this.hasInventory()){
       MenuManager.MenuContainer.AttachContainer(this);
-      MenuManager.MenuContainer.Open();
+      MenuManager.MenuContainer.open();
     }
   }
 

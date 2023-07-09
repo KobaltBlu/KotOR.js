@@ -25,8 +25,8 @@ export class InGamePause extends GameMenu {
     this.isOverlayGUI = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
@@ -36,18 +36,18 @@ export class InGamePause extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.tGuiPanel.pulsing = true;
     this.LBL_PAUSEREASON.pulsing = true;
     this.LBL_PRESS.pulsing = true;
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
+  update(delta: number = 0) {
+    super.update(delta);
     this.tGuiPanel.extent.left = (window.innerWidth / 2) - (this.tGuiPanel.extent.width / 2) - 0;
     this.tGuiPanel.extent.top = (-window.innerHeight / 2) + (this.tGuiPanel.extent.height / 2) + 36;
-    this.RecalculatePosition();
+    this.recalculatePosition();
   }
   
 }

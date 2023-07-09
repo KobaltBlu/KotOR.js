@@ -29,20 +29,20 @@ export class MenuPazaakWager extends K1_MenuPazaakWager {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
 
-  Show(): void {
-    super.Show();
+  show(): void {
+    super.show();
   }
 
-  Hide(): void {
-    super.Hide();
+  hide(): void {
+    super.hide();
   }
   
 }

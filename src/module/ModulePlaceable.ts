@@ -448,7 +448,7 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.hasInventory){
       MenuManager.MenuContainer.AttachContainer(this);
-      MenuManager.MenuContainer.Open();
+      MenuManager.MenuContainer.open();
     }else if(this.getConversation() && this.getConversation().resref){
       MenuManager.InGameDialog.StartConversation(this.getConversation(), object);
     }

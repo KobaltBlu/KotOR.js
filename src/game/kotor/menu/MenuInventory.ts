@@ -45,13 +45,13 @@ export class MenuInventory extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
 
@@ -73,8 +73,8 @@ export class MenuInventory extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     MenuManager.MenuTop.LBLH_INV.onHoverIn();
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();

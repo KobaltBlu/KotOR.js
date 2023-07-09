@@ -66,20 +66,20 @@ export class MenuGalaxyMap extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
         Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
 
         if(this.script instanceof NWScriptInstance){
           this.script.run(GameState.player);
@@ -123,8 +123,8 @@ export class MenuGalaxyMap extends GameMenu {
     });
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     this.UpdateScale();
     this.updatePlanetView(delta);
   }
@@ -221,8 +221,8 @@ export class MenuGalaxyMap extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
     this.changePlanet(Planetary.selected);
     this.UpdateScale();

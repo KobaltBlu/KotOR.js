@@ -64,14 +64,14 @@ export class CharGenSkills extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
@@ -85,7 +85,7 @@ export class CharGenSkills extends GameMenu {
         CharGenManager.selectedCreature.skills[5].rank = CharGenManager.repair;
         CharGenManager.selectedCreature.skills[6].rank = CharGenManager.security;
         CharGenManager.selectedCreature.skills[7].rank = CharGenManager.treatInjury;
-        this.Close();
+        this.close();
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
@@ -141,8 +141,8 @@ export class CharGenSkills extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.updateButtonStates();
   }
 

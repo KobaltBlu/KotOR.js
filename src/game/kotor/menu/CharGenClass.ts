@@ -42,8 +42,8 @@ export class CharGenClass extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
@@ -63,7 +63,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -80,7 +80,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -97,7 +97,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -114,7 +114,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -131,7 +131,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -148,7 +148,7 @@ export class CharGenClass extends GameMenu {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.Open();
+            this.manager.CharGenMain.open();
           });
         });
       });
@@ -217,8 +217,8 @@ export class CharGenClass extends GameMenu {
     });
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     try {
@@ -270,8 +270,8 @@ export class CharGenClass extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
   }
 
   async Init() {

@@ -523,7 +523,7 @@ export class GUIListBox extends GUIControl {
           controls.push(control);
           controls = controls.concat( control.getActiveControls() );
         }else{
-          this.menu.SetWidgetHoverActive(control, false);
+          this.menu.setWidgetHoverActive(control, false);
         }
       }
     }

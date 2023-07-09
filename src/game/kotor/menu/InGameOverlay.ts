@@ -141,8 +141,8 @@ export class InGameOverlay extends GameMenu {
     this.enablePositionScaling = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.widget.userData.fill.visible = false;
@@ -205,42 +205,42 @@ export class InGameOverlay extends GameMenu {
 
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMessages.Open();
+        MenuManager.MenuMessages.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuJournal.Open();
+        MenuManager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMap.Open();
+        MenuManager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuOptions.Open();
+        MenuManager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.Open();
+        MenuManager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAbilities.Open();
+        MenuManager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuInventory.Open();
+        MenuManager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuEquipment.Open();
+        MenuManager.MenuEquipment.open();
       });
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
@@ -265,9 +265,9 @@ export class InGameOverlay extends GameMenu {
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
         if(PartyManager.party[0].canLevelUp()){
-          MenuManager.MenuCharacter.Open();
+          MenuManager.MenuCharacter.open();
         }else{
-          MenuManager.MenuEquipment.Open();
+          MenuManager.MenuEquipment.open();
         }
       });
 
@@ -676,8 +676,8 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
 
@@ -787,16 +787,16 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.BTN_ACTIONDOWN0.flipY();
     this.BTN_ACTIONDOWN1.flipY();
     this.BTN_ACTIONDOWN2.flipY();
     this.BTN_ACTIONDOWN3.flipY();
   }
 
-  Resize() {
-    this.RecalculatePosition();
+  resize() {
+    this.recalculatePosition();
   }
 
   triggerControllerAPress() {

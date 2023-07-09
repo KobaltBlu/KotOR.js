@@ -36,8 +36,8 @@ export class MenuJournal extends K1_MenuJournal {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -45,15 +45,15 @@ export class MenuJournal extends K1_MenuJournal {
 
       this.BTN_MESSAGES.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close()
-        MenuManager.MenuMessages.Open();
+        this.close()
+        MenuManager.MenuMessages.open();
       });
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
   }
   
 }

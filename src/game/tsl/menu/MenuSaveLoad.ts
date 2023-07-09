@@ -44,8 +44,8 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
@@ -63,7 +63,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
           }
         }else{
           if(savegame instanceof NewSaveItem){
-            MenuManager.MenuSaveName.Show();
+            MenuManager.MenuSaveName.show();
             MenuManager.MenuSaveName.onSave = ( name = '' ) => {
               console.log('SaveGame', name);
             };
@@ -76,7 +76,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_BACK;
 

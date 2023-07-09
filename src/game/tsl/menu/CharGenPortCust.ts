@@ -46,8 +46,8 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_ARRL.addEventListener('click', (e: any) => {
@@ -139,7 +139,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           CharGenManager.selectedCreature.portraidId = this.portraidId;
           CharGenManager.selectedCreature.loadModel().then( (model: any) => {
             this.exiting = false;
-            this.Close();
+            this.close();
           });
         }
       });
@@ -151,7 +151,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         CharGenManager.selectedCreature.template.getFieldByLabel('Appearance_Type').setValue(CharGenManager.selectedCreature.appearance);
         CharGenManager.selectedCreature.template.getFieldByLabel('PortraitId').setValue(CharGenManager.selectedCreature.portraidId);
         MenuManager.CharGenQuickPanel.step1 = true;
-        this.Close();
+        this.close();
       });
 
       this.tGuiPanel.widget.userData.fill.position.z = -0.5

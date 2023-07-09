@@ -27,8 +27,8 @@ export class InGameBark extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
@@ -37,7 +37,7 @@ export class InGameBark extends GameMenu {
 
   bark(entry: any = null) {
     if (entry != null) {
-      this.Show();
+      this.show();
       this.LBL_BARKTEXT.setText(entry.text);
       let size = new THREE.Vector3();
       this.LBL_BARKTEXT.text.geometry.boundingBox.getSize(size);
@@ -54,10 +54,10 @@ export class InGameBark extends GameMenu {
         });
         MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           if (!error) {
-            this.Close();
+            this.close();
           } else {
             setTimeout(() => {
-              this.Close();
+              this.close();
             }, 3000);
           }
         });
@@ -70,17 +70,17 @@ export class InGameBark extends GameMenu {
         });
         MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           if (!error) {
-            this.Close();
+            this.close();
           } else {
             setTimeout(() => {
-              this.Close();
+              this.close();
             }, 3000);
           }
         });
       } else {
         console.error('VO ERROR', entry);
         setTimeout(() => {
-          this.Close();
+          this.close();
         }, 3000);
       }
     }

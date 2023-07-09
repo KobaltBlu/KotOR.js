@@ -619,11 +619,11 @@ export class IngameControls {
       switch(GameState.Mode){
         case EngineMode.GUI:
           if(currentMenu != MenuManager.InGameOverlay){
-            currentMenu.Close();
+            currentMenu.close();
           }
         break;
         default:
-          MenuManager.MenuOptions.Open();
+          MenuManager.MenuOptions.open();
         break;
       }
     });
@@ -639,7 +639,7 @@ export class IngameControls {
           AutoPauseManager.Unpause();
         }
       }else if( currentMenu == MenuManager.InGameConfirm){
-        MenuManager.InGameConfirm.Close();
+        MenuManager.InGameConfirm.close();
       }
     });
 
@@ -689,22 +689,22 @@ export class IngameControls {
 
     for(let i = 0, len = MenuManager.activeModals.length; i < len; i++){
       const activeMenu = MenuManager.activeModals[i];
-      if(!activeMenu.IsVisible()) continue;
+      if(!activeMenu.isVisible()) continue;
       
-      elements = elements.concat(activeMenu.GetActiveControls());
+      elements = elements.concat(activeMenu.getActiveControls());
     }
 
     if(MenuManager.activeModals.length) return elements;
 
     for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
       const activeMenu = MenuManager.activeMenus[i];
-      if(!activeMenu.IsVisible()) continue;
+      if(!activeMenu.isVisible()) continue;
 
-      elements = elements.concat(activeMenu.GetActiveControls());
+      elements = elements.concat(activeMenu.getActiveControls());
     }
 
     if(GameState.State == EngineState.PAUSED){
-      elements = elements.concat(MenuManager.InGamePause.GetActiveControls());
+      elements = elements.concat(MenuManager.InGamePause.getActiveControls());
     }
 
     return elements.reverse();

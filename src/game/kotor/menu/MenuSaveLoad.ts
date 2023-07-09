@@ -41,8 +41,8 @@ export class MenuSaveLoad extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -63,7 +63,7 @@ export class MenuSaveLoad extends GameMenu {
           }
         }else{
           if(savegame instanceof NewSaveItem){
-            MenuManager.MenuSaveName.Show();
+            MenuManager.MenuSaveName.show();
             MenuManager.MenuSaveName.onSave = ( name = '' ) => {
               console.log('SaveGame', name);
             };
@@ -77,7 +77,7 @@ export class MenuSaveLoad extends GameMenu {
       this.BTN_BACK = this.getControlByName('BTN_BACK');
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_BACK;
 
@@ -91,8 +91,8 @@ export class MenuSaveLoad extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.selectedControl = this.LB_GAMES;
     this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
     this.LB_GAMES.clearItems();

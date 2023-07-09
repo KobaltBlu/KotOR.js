@@ -59,15 +59,15 @@ export class CharGenAbilities extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       //this.lbl_hint = this.getControlByName('LBL_HINT');
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
@@ -84,7 +84,7 @@ export class CharGenAbilities extends GameMenu {
 
         this.manager.CharGenMain.updateAttributes();
 
-        this.Close();
+        this.close();
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
@@ -228,8 +228,8 @@ export class CharGenAbilities extends GameMenu {
     });
   }
 
-  Show(){
-    super.Show();
+  show(){
+    super.show();
     this.updateButtonStates();
   }
 

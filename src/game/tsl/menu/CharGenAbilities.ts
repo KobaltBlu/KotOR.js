@@ -62,14 +62,14 @@ export class CharGenAbilities extends K1_CharGenAbilities {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
@@ -86,7 +86,7 @@ export class CharGenAbilities extends K1_CharGenAbilities {
 
         this.manager.CharGenMain.updateAttributes();
 
-        this.Close();
+        this.close();
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {

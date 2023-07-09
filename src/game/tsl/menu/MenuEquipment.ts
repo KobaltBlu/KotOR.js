@@ -75,8 +75,8 @@ export class MenuEquipment extends K1_MenuEquipment {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
@@ -93,7 +93,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           this.equipmentSelectionActive = false;
           this.UpdateList();
         }else{
-          this.Close();
+          this.close();
         }
       });
       this._button_b = this.BTN_BACK;
@@ -321,8 +321,8 @@ export class MenuEquipment extends K1_MenuEquipment {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.LBL_BACK1.widget.position.z = 0;
     this.UpdateSlotIcons();
   }

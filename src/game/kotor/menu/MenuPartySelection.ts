@@ -83,8 +83,8 @@ export class MenuPartySelection extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_NPC0.addEventListener('click', (e: any) => {
@@ -157,18 +157,18 @@ export class MenuPartySelection extends GameMenu {
           return;
 
         if(this.onCloseScript instanceof NWScriptInstance){
-          this.Close();
+          this.close();
           this.onCloseScript.run(undefined, 0);
           this.onCloseScript = undefined;
         }else{
-          this.Close();
+          this.close();
         }
         
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
@@ -276,20 +276,20 @@ export class MenuPartySelection extends GameMenu {
     this.LBL_COUNT.setText((PartyManager.MaxSize - PartyManager.CurrentMembers.length).toString());
   }
 
-  Hide() {
-    super.Hide();
+  hide() {
+    super.hide();
     this.ignoreUnescapable = false;
   }
 
-  Open(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
+  open(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
     this.scriptName = scriptName;
     this.forceNPC1 = forceNPC1;
     this.forceNPC2 = forceNPC2;
-    super.Open();
+    super.open();
   }
 
-  async Show() {
-    super.Show();
+  async show() {
+    super.show();
     if (this.forceNPC1 > -1)
       this.addToParty(this.forceNPC1);
     if (this.forceNPC2 > -1)

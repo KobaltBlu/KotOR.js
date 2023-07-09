@@ -61,13 +61,13 @@ export class CharGenManager {
 
   static async Start(){
     await MenuManager.LoadScreen.setLoadBackground('load_chargen');
-    MenuManager.LoadScreen.Open();
+    MenuManager.LoadScreen.open();
     MenuManager.LoadScreen.setHintMessage('');
     await CharGenManager.StartBackgroundMusic();
     await CharGenManager.Init();
     await MenuManager.CharGenClass.Init();
-    MenuManager.LoadScreen.Close();
-    MenuManager.CharGenClass.Open();
+    MenuManager.LoadScreen.close();
+    MenuManager.CharGenClass.open();
   }
 
   static StartBackgroundMusic(){

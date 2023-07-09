@@ -36,66 +36,66 @@ export class MenuTop extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuMessages.Open();
+        MenuManager.MenuMessages.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuJournal.Open();
+        MenuManager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuMap.Open();
+        MenuManager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuOptions.Open();
+        MenuManager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuCharacter.Open();
+        MenuManager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuAbilities.Open();
+        MenuManager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuInventory.Open();
+        MenuManager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuEquipment.Open();
+        MenuManager.MenuEquipment.open();
       });
 
       this.tGuiPanel.offset.y = 198;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.LBLH_OPT.onHoverOut();
     this.LBLH_MAP.onHoverOut();
     this.LBLH_JOU.onHoverOut();
@@ -109,7 +109,7 @@ export class MenuTop extends GameMenu {
   CloseAllOtherMenus() {
     let currentMenu = MenuManager.GetCurrentMenu();
     if (currentMenu == MenuManager.MenuAbilities || currentMenu == MenuManager.MenuInventory || currentMenu == MenuManager.MenuJournal || currentMenu == MenuManager.MenuMap || currentMenu == MenuManager.MenuMessages || currentMenu == MenuManager.MenuOptions || currentMenu == MenuManager.MenuCharacter || currentMenu == MenuManager.MenuEquipment) {
-      currentMenu.Close();
+      currentMenu.close();
     }
   }
   

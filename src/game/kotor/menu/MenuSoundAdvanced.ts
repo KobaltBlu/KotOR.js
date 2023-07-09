@@ -29,8 +29,8 @@ export class MenuSoundAdvanced extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
   return new Promise<void>((resolve, reject) => {
     this.CB_FORCESOFTWARE.attachINIProperty('Sound Options.Force Software');
@@ -51,15 +51,15 @@ export class MenuSoundAdvanced extends GameMenu {
       }else{
         GameState.MenuSound.Show();
       }*/
-      this.Close();
+      this.close();
     });
     this._button_b = this.BTN_BACK;
     resolve();
   });
 }
 
-Show() {
-  super.Show();
+show() {
+  super.show();
 }
   
 }

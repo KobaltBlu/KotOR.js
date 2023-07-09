@@ -62,8 +62,8 @@ export class InGameComputer extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
@@ -73,7 +73,7 @@ export class InGameComputer extends GameMenu {
   StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
     this.LB_MESSAGE.clearItems();
     this.LB_REPLIES.clearItems();
-    this.Open();
+    this.open();
     this.owner = owner;
     this.listener = listener;
     this.ended = false;
@@ -127,7 +127,7 @@ export class InGameComputer extends GameMenu {
         break;
         case DLGConversationType.CONVERSATION:
         default:
-          this.Close();
+          this.close();
           MenuManager.InGameDialog.StartConversation(dialog, this.owner, this.listener);
           return false;
         break;
@@ -136,22 +136,22 @@ export class InGameComputer extends GameMenu {
     return false;
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
+  update(delta: number = 0) {
+    super.update(delta);
     if (!this.dialog)
       return;
 
     if(GameState.ConversationPaused) return;
 
-    MenuManager.InGameComputerCam.Hide();
-    MenuManager.InGameComputer.Show();
+    MenuManager.InGameComputerCam.hide();
+    MenuManager.InGameComputer.show();
     GameState.currentCamera = GameState.camera_dialog;
 
     if(this.currentEntry){
       if(this.currentEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
-        MenuManager.InGameComputer.Hide();
-        MenuManager.InGameComputerCam.Show();
-        MenuManager.InGameComputerCam.Update(delta);
+        MenuManager.InGameComputer.hide();
+        MenuManager.InGameComputerCam.show();
+        MenuManager.InGameComputerCam.update(delta);
         GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
       }
       if(this.currentEntry.update(delta)){
@@ -237,8 +237,8 @@ export class InGameComputer extends GameMenu {
     entry.updateJournal();
 
     if(entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
-      MenuManager.InGameComputer.Hide();
-      MenuManager.InGameComputerCam.Show();
+      MenuManager.InGameComputer.hide();
+      MenuManager.InGameComputerCam.show();
       GameState.currentCamera = GameState.getCameraById(this.currentEntry.cameraID);
     }
 
@@ -325,7 +325,7 @@ export class InGameComputer extends GameMenu {
       this.ended = true;
     }
     this.audioEmitter.Stop();
-    this.Close();
+    this.close();
     this.state = -1;
     if(this.dialog){
       if (!aborted) {

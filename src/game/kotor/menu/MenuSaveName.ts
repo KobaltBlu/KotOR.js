@@ -24,8 +24,8 @@ export class MenuSaveName extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.EDITBOX.setEditable(true);
@@ -34,24 +34,24 @@ export class MenuSaveName extends GameMenu {
         // if(typeof this.onSave == 'function')
         //   this.onSave(this.EDITBOX.getValue())
 
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_OK;
 
       this.BTN_CANCEL.addEventListener('click', () => {
 
 
-        this.Close();
+        this.close();
       });
       this._button_a = this.BTN_CANCEL;
       resolve();
     });
   }
 
-  Show() {
+  show() {
     this.tGuiPanel.widget.position.z = 10;
     this.EDITBOX.setText('');
-    super.Show();
+    super.show();
     MenuManager.activeGUIElement = this.EDITBOX;
   }
   

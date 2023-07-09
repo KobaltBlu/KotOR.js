@@ -38,16 +38,16 @@ export class CharGenFeats extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.addGrantedFeats();
     this.LB_FEATS.GUIProtoItemClass = GUIFeatItem;
     this.LB_FEATS.clearItems();

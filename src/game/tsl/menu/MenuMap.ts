@@ -34,8 +34,8 @@ export class MenuMap extends K1_MenuMap {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_MapNote.setText('');
@@ -49,13 +49,13 @@ export class MenuMap extends K1_MenuMap {
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this.BTN_RETURN.hide();
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
 

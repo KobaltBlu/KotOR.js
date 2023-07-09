@@ -33,18 +33,18 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.Open();
+        MenuManager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.Open();
+        MenuManager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
@@ -61,16 +61,16 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.Open();
+        MenuManager.CharGenMain.open();
       });
 
       this.BTN_BACK.reattach(this.tGuiPanel);
 
       // this.tGuiPanel.widget.position.x = -180;
       // this.tGuiPanel.widget.position.y = 85;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }

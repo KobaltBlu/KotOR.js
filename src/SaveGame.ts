@@ -556,7 +556,7 @@ export class SaveGame {
 
       if(GameState.module instanceof Module){
 
-        MenuManager.LoadScreen.Open();
+        MenuManager.LoadScreen.open();
         MenuManager.LoadScreen.showSavingMessage();
 
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
@@ -587,7 +587,7 @@ export class SaveGame {
         GameState.onScreenShot = (tga: TGAObject) => {
           tga.export( path.join( save_dir, 'Screen.tga')).then( (d) => {
             MenuManager.LoadScreen.setProgress(100);
-            MenuManager.LoadScreen.Close();
+            MenuManager.LoadScreen.close();
             resolve();
           });
         };

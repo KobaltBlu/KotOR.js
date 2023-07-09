@@ -1397,7 +1397,7 @@ export class GUIControl {
       if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
         controls.push(control);
       }else{
-        this.menu.SetWidgetHoverActive(control, false);
+        this.menu.setWidgetHoverActive(control, false);
       }
       if(control.box && control.box.containsPoint(Mouse.positionUI)){
         controls = controls.concat( control.getActiveControls() );

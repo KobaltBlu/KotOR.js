@@ -35,8 +35,8 @@ export class MenuGraphics extends K1_MenuGraphics {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
@@ -48,12 +48,12 @@ export class MenuGraphics extends K1_MenuGraphics {
         }else{
           MenuManager.MainOptions.Show();
         }*/
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ADVANCED.addEventListener('click', (e: any) => {
-        MenuManager.MenuGraphicsAdvanced.Open();
+        MenuManager.MenuGraphicsAdvanced.open();
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
@@ -64,7 +64,7 @@ export class MenuGraphics extends K1_MenuGraphics {
       };
 
       this.BTN_RESOLUTION.addEventListener('click', (e: any) => {
-        MenuManager.MenuResolutions.Open();
+        MenuManager.MenuResolutions.open();
       });
 
       this.BTN_RESOLUTION.hide();

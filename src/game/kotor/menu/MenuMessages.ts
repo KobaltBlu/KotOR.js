@@ -26,13 +26,13 @@ export class MenuMessages extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
       this.BTN_SHOW.addEventListener('click', (e: any) => {
@@ -47,8 +47,8 @@ export class MenuMessages extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     MenuManager.MenuTop.LBLH_MSG.onHoverIn();
     this.LB_MESSAGES.clearItems();
     this.LB_DIALOG.clearItems();

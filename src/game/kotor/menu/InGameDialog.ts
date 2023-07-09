@@ -65,8 +65,8 @@ export class InGameDialog extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_MESSAGE.setText('');
@@ -110,7 +110,7 @@ export class InGameDialog extends GameMenu {
     this.currentCameraAnimation = undefined;
     this.LBL_MESSAGE.setText(' ');
     this.LB_REPLIES.clearItems();
-    this.Open();
+    this.open();
     this.owner = owner;
     this.listener = listener;
     GameState.ConversationPaused = false;
@@ -192,7 +192,7 @@ export class InGameDialog extends GameMenu {
       this.dialog.listener = this.listener;
       switch (this.dialog.getConversationType()) {
         case DLGConversationType.COMPUTER:
-          this.Close();
+          this.close();
           MenuManager.InGameComputer.StartConversation(this.dialog, this.owner, this.listener);
           return false;
         default:
@@ -438,7 +438,7 @@ export class InGameDialog extends GameMenu {
       this.ended = true;
     }
     this.audioEmitter.Stop();
-    this.Close();
+    this.close();
     GameState.currentCamera = GameState.camera;
     this.state = -1;
     if(this.dialog){
@@ -692,8 +692,8 @@ export class InGameDialog extends GameMenu {
     return pointA.clone().add(dir);
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
+  update(delta: number = 0) {
+    super.update(delta);
     if (!this.dialog)
       return;
 
@@ -762,13 +762,13 @@ export class InGameDialog extends GameMenu {
     }
   }
 
-  Resize() {
+  resize() {
     this.resetLetterBox();
-    this.RecalculatePosition();
+    this.recalculatePosition();
     this.updateTextPosition();
   }
 
-  RecalculatePosition() {
+  recalculatePosition() {
     this.LB_REPLIES.extent.left = -(window.innerWidth / 2) + this.LB_REPLIES.extent.width / 2 + 16;
     this.LB_REPLIES.extent.top = window.innerHeight / 2 - this.LB_REPLIES.extent.height / 2;
     this.LB_REPLIES.calculatePosition();

@@ -46,8 +46,8 @@ export class MenuMap extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
       this.LBL_MapNote.setText('');
@@ -61,12 +61,12 @@ export class MenuMap extends GameMenu {
 
       this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuPartySelection.Open();
+        MenuManager.MenuPartySelection.open();
       });
 
       this.BTN_RETURN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
         if(!GameState.module.area.Unescapable){
           if(this.onTransitScript instanceof NWScriptInstance)
             this.onTransitScript.run();
@@ -75,7 +75,7 @@ export class MenuMap extends GameMenu {
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
 
@@ -96,8 +96,8 @@ export class MenuMap extends GameMenu {
     });
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
 
@@ -125,8 +125,8 @@ export class MenuMap extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     MenuManager.MenuTop.LBLH_MAP.onHoverIn();
     if (this.onOpenScript instanceof NWScriptInstance)
       this.onOpenScript.run();

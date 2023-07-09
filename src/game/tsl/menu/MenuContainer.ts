@@ -29,8 +29,8 @@ export class MenuContainer extends K1_MenuContainer {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_CANCEL.addEventListener('click', (e: any) => {
@@ -39,7 +39,7 @@ export class MenuContainer extends K1_MenuContainer {
         if(this.container instanceof ModulePlaceable){
           this.container.close(GameState.player);
         }
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_CANCEL;
 
@@ -53,15 +53,15 @@ export class MenuContainer extends K1_MenuContainer {
           this.container.retrieveInventory();
           //this.container.close(Game.player);
         }
-        this.Close();
+        this.close();
       });
       this._button_a = this.BTN_OK;
       resolve();
     });
   }
 
-  Close(onClosed = false) {
-    super.Close();
+  close(onClosed = false) {
+    super.close();
     if (onClosed && this.container instanceof ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer() as any);
@@ -71,13 +71,13 @@ export class MenuContainer extends K1_MenuContainer {
     this.container = undefined as any;
   }
 
-  Open() {
+  open() {
     // this.container = object;
-    super.Open();
+    super.open();
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
   }
   
 }

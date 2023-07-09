@@ -41,41 +41,41 @@ export class MenuOptions extends K1_MenuOptions {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.Open();
+        MenuManager.MenuSaveLoad.open();
       });
 
       this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
-        MenuManager.MenuSaveLoad.Open();
+        MenuManager.MenuSaveLoad.open();
       });
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.Open();
+        MenuManager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuGraphics.Open();
+        MenuManager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSound.Open();
+        MenuManager.MenuSound.open();
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
@@ -98,8 +98,8 @@ export class MenuOptions extends K1_MenuOptions {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
   }
   
 }

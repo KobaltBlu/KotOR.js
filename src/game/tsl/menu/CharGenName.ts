@@ -27,29 +27,29 @@ export class CharGenName extends K1_CharGenName {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
         MenuManager.CharGenQuickPanel.step2 = true;
-        this.Close();
+        this.close();
       });
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
   }
   

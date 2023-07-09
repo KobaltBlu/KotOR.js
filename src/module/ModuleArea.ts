@@ -401,7 +401,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   reloadTextures(){
-    MenuManager.LoadScreen.Open();
+    MenuManager.LoadScreen.open();
     MenuManager.LoadScreen.LBL_HINT.setText('');
     GameState.loadingTextures = true;
     //Cleanup texture cache
@@ -457,7 +457,7 @@ export class ModuleArea extends ModuleObject {
               }
             }).iterate(() => {
               TextureLoader.LoadQueue(() => {
-                MenuManager.LoadScreen.Close();
+                MenuManager.LoadScreen.close();
                 GameState.loadingTextures = false;
               }, (ref: TextureLoaderQueuedRef, index: number, count: number) => {
                 MenuManager.LoadScreen.setProgress((index/count + 1) * 100);

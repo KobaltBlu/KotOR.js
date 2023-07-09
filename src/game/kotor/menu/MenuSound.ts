@@ -34,21 +34,21 @@ export class MenuSound extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ADVANCED.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MenuSoundAdvanced.Open();
+        MenuManager.MenuSoundAdvanced.open();
       });
 
       //this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);
@@ -128,8 +128,8 @@ export class MenuSound extends GameMenu {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC);
     this.SLI_VO.setValue(AudioEngine.GAIN_VO);
     this.SLI_FX.setValue(AudioEngine.GAIN_SFX);

@@ -42,41 +42,41 @@ export class CharGenCustomPanel extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.Close();
+        MenuManager.CharGenMain.close();
         MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.Open();
+        MenuManager.CharGenMain.open();
       });
 
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.Open();
+        MenuManager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
-        MenuManager.CharGenAbilities.Open();
+        MenuManager.CharGenAbilities.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenSkills.Open();
+        MenuManager.CharGenSkills.open();
       });
 
       this.BTN_STEPNAME4.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenFeats.Open();
+        MenuManager.CharGenFeats.open();
       });
 
       this.BTN_STEPNAME5.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.Open();
+        MenuManager.CharGenName.open();
       });
 
       this.BTN_STEPNAME6.addEventListener('click', (e: any) => {
@@ -93,7 +93,7 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 85;
-      this.RecalculatePosition();
+      this.recalculatePosition();
       resolve();
     });
   }

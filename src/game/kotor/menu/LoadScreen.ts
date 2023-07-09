@@ -27,8 +27,8 @@ export class LoadScreen extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_HINT.visible = false;
@@ -44,13 +44,13 @@ export class LoadScreen extends GameMenu {
   setLoadBackground(resref: string): Promise<boolean> {
     return new Promise<boolean>( async (resolve, reject) => {
       if (resref) {
-        const texture = await this.LoadTexture(resref);
+        const texture = await this.loadTexture(resref);
         if (texture) {
           (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = texture;
           resolve(true);
           return;
         } else {
-          const default_texture = await this.LoadTexture('load_default');
+          const default_texture = await this.loadTexture('load_default');
           if(default_texture){
             (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
             resolve(true);
@@ -88,14 +88,14 @@ export class LoadScreen extends GameMenu {
     this.LBL_HINT.setText(message);
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.setProgress(0);
     FadeOverlayManager.plane.visible = false;
   }
 
-  Hide() {
-    super.Hide();
+  hide() {
+    super.hide();
     FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }

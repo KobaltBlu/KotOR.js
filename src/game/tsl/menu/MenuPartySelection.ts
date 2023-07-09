@@ -102,8 +102,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.default0 = this.LBL_NA0.getFillTextureName();
@@ -221,18 +221,18 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           return;
 
         if(this.onCloseScript instanceof NWScriptInstance){
-          this.Close();
+          this.close();
           this.onCloseScript.run(undefined, 0);
           this.onCloseScript = undefined;
         }else{
-          this.Close();
+          this.close();
         }
         
       });
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
@@ -355,13 +355,13 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     this.lbl_count.setText((PartyManager.MaxSize - PartyManager.CurrentMembers.length).toString());
   }
 
-  Hide() {
-    super.Hide();
+  hide() {
+    super.hide();
     this.ignoreUnescapable = false;
   }
 
-  async Show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
-    super.Show();
+  async show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
+    super.show();
     this.forceNPC1 = forceNPC1;
     this.forceNPC2 = forceNPC2;
     if (this.forceNPC1 > -1)
@@ -405,8 +405,8 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     }
   }
 
-  Update(delta: number) {
-    super.Update(delta);
+  update(delta: number) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     if (this.char instanceof ModuleCreature)

@@ -44,8 +44,8 @@ export class MainMenu extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.selectedControl = this.BTN_NEWGAME;
@@ -65,20 +65,20 @@ export class MainMenu extends GameMenu {
         e.stopPropagation();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.Open()
+        MenuManager.MenuSaveLoad.open()
       });
 
       this.BTN_MOVIES.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MainMovies.Open();
+        MenuManager.MainMovies.open();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e: any) => {
         e.stopPropagation();
         //this.Hide();
-        MenuManager.MainOptions.Open();
+        MenuManager.MainOptions.open();
       });
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
@@ -123,18 +123,18 @@ export class MainMenu extends GameMenu {
       MenuManager.ClearMenus(); 
       AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
         AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
-        this.Open();
+        this.open();
         resolve();
       }, () => {
-        this.Open();
+        this.open();
         console.error('Background Music not found', this.bgMusicResRef);
         resolve();
       });
     });
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     try {
       this._3dView.render(delta);
     } catch (e: any) {
@@ -142,8 +142,8 @@ export class MainMenu extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     AudioEngine.GetAudioEngine().SetBackgroundMusic(this.bgMusicBuffer);
     GameState.AlphaTest = 0.5;
     CurrentGame.InitGameInProgressFolder(false).then( () => {

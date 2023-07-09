@@ -23,8 +23,8 @@ export class InGameConfirm extends K1_InGameConfirm {
     this.isOverlayGUI = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.defaultExtent.width = this.tGuiPanel.extent.width;
@@ -34,12 +34,12 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close()
+        this.close()
       });
 
       this.BTN_CANCEL.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close()
+        this.close()
       });
 
       this.tGuiPanel.extent.top = 0;
@@ -49,8 +49,8 @@ export class InGameConfirm extends K1_InGameConfirm {
     });
   }
 
-  Update(delta: number) {
-    super.Update(delta);
+  update(delta: number) {
+    super.update(delta);
   }
   
 }

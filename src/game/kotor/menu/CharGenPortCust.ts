@@ -47,8 +47,8 @@ export class CharGenPortCust extends GameMenu {
     this._3dView = new LBL_3DView();
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_ARRL.addEventListener('click', (e: any) => {
@@ -135,7 +135,7 @@ export class CharGenPortCust extends GameMenu {
           CharGenManager.selectedCreature.loadModel().then( (model: OdysseyModel3D) => {
             model.rotation.z = -Math.PI/2;
             this.exiting = false;
-            this.Close();
+            this.close();
           });
         }
       });
@@ -148,7 +148,7 @@ export class CharGenPortCust extends GameMenu {
         CharGenManager.selectedCreature.template.getFieldByLabel('PortraitId').setValue(CharGenManager.selectedCreature.portraidId);
         MenuManager.CharGenQuickPanel.step1 = true;
 
-        this.Close();
+        this.close();
       });
 
       this.tGuiPanel.widget.userData.fill.position.z = -0.5
@@ -194,8 +194,8 @@ export class CharGenPortCust extends GameMenu {
     (control.getFill().material as THREE.ShaderMaterial).blending = 1;
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     try {
@@ -220,8 +220,8 @@ export class CharGenPortCust extends GameMenu {
     }
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.appearance = CharGenManager.selectedCreature.appearance;
     this.portraidId = CharGenManager.selectedCreature.portraidId;
     try {

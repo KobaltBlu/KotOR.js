@@ -26,22 +26,22 @@ export class MenuFeedback extends GameMenu {
     this.childMenu = MenuManager.MenuTop;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this._button_b = this.BTN_BACK;
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       resolve();
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     MenuManager.MenuTop.LBLH_MSG.onHoverIn();
   }
   

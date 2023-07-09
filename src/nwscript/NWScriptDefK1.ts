@@ -7443,7 +7443,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [string, number, number]){
       //Setting ignoreUnescapable = TRUE allows the exithawk script to manage the party ingoring the unescapable flag
       //set in the area properties. This is my current understanding of how I think it should work...
-      MenuManager.MenuPartySelection.Open( args[0], args[1], args[2] );
+      MenuManager.MenuPartySelection.open( args[0], args[1], args[2] );
       MenuManager.MenuPartySelection.ignoreUnescapable = true;
     }
   },
@@ -7757,7 +7757,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      MenuManager.MenuGalaxyMap.Open();
+      MenuManager.MenuGalaxyMap.open();
       Planetary.SetSelectedPlanet(args[0]);
     }
   },

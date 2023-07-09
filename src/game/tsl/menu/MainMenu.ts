@@ -43,8 +43,8 @@ export class MainMenu extends K1_MainMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MODULES.hide();
@@ -59,7 +59,7 @@ export class MainMenu extends K1_MainMenu {
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
         MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.Open();
+        MenuManager.MenuSaveLoad.open();
       });
 
       this.BTN_MOVIES.addEventListener('click', (e: any) => {
@@ -68,7 +68,7 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_OPTIONS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MainOptions.Open();
+        MenuManager.MainOptions.open();
       });
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {
@@ -107,12 +107,12 @@ export class MainMenu extends K1_MainMenu {
     });
   }
 
-  Update(delta = 0) {
+  update(delta = 0) {
     this._3dView.render(delta);
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     GameState.AlphaTest = 0.5;
   }
     

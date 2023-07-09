@@ -44,13 +44,13 @@ export class MenuInventory extends K1_MenuInventory {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
 
@@ -65,8 +65,8 @@ export class MenuInventory extends K1_MenuInventory {
     });
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
   }
   
 }

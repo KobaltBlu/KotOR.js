@@ -84,7 +84,7 @@ export class MenuManager {
     if(!menu.isOverlayGUI){
       //Hide the current top most menu in the list before adding the new Menu
       if(MenuManager.activeMenus.length)
-        MenuManager.activeMenus[MenuManager.activeMenus.length-1].Hide();
+        MenuManager.activeMenus[MenuManager.activeMenus.length-1].hide();
 
       if(menu instanceof GameMenu)
         MenuManager.activeMenus.push(menu);
@@ -106,7 +106,7 @@ export class MenuManager {
 
       //Reshow the new top most menu in the list
       if(MenuManager.activeMenus.length)
-        MenuManager.GetCurrentMenu().Show();
+        MenuManager.GetCurrentMenu().show();
 
       MenuManager.Resize();
     }else{
@@ -118,10 +118,10 @@ export class MenuManager {
 
   static ClearMenus(){
     while(MenuManager.activeMenus.length){
-      MenuManager.activeMenus[0].Close();
+      MenuManager.activeMenus[0].close();
     }
     while(MenuManager.activeModals.length){
-      MenuManager.activeModals[0].Close();
+      MenuManager.activeModals[0].close();
     }
   }
 
@@ -131,7 +131,7 @@ export class MenuManager {
 
   static Resize(){
     for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
-      MenuManager.activeMenus[i].Resize();
+      MenuManager.activeMenus[i].resize();
     }
   }
 
@@ -156,21 +156,21 @@ export class MenuManager {
     }
 
     if(MenuManager.InGameOverlay.bVisible){
-      MenuManager.InGameOverlay.Update(delta);
+      MenuManager.InGameOverlay.update(delta);
     }
 
     if(GameState.State == EngineState.PAUSED){
-      MenuManager.InGamePause.Update(delta);
+      MenuManager.InGamePause.update(delta);
     }
 
     let activeMenus = MenuManager.activeMenus;
     for(let i = 0, len = activeMenus.length; i < len; i++){
-      activeMenus[i].Update(delta);
+      activeMenus[i].update(delta);
     }
 
     let activeModals = MenuManager.activeModals;
     for(let i = 0, len = activeModals.length; i < len; i++){
-      activeModals[i].Update(delta);
+      activeModals[i].update(delta);
     }
 
     if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
@@ -287,7 +287,7 @@ export class MenuManager {
     return new Promise( async (resolve: Function, reject: Function) => {
       const menu: GameMenu = new menuConstructor();
       menu.manager = MenuManager;
-      await menu.Load();
+      await menu.load();
       resolve(menu);
     });
   }

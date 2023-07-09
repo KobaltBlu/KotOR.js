@@ -24,8 +24,8 @@ export class InGamePause extends K1_InGamePause {
     this.isOverlayGUI = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
@@ -35,11 +35,11 @@ export class InGamePause extends K1_InGamePause {
     });
   }
 
-  Update(delta: number = 0) {
-    super.Update(delta);
+  update(delta: number = 0) {
+    super.update(delta);
     this.tGuiPanel.extent.left = (window.innerWidth / 2) - (this.tGuiPanel.extent.width / 2) - 5;
     this.tGuiPanel.extent.top = (-window.innerHeight / 2) + (this.tGuiPanel.extent.height / 2) + 45;
-    this.RecalculatePosition();
+    this.recalculatePosition();
   }
   
 }

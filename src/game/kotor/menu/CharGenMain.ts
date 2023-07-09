@@ -70,8 +70,8 @@ export class CharGenMain extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.getFill().position.z = -0.5;
@@ -104,8 +104,8 @@ export class CharGenMain extends GameMenu {
     });
   }
 
-  Update(delta = 0) {
-    super.Update(delta);
+  update(delta = 0) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     try {
@@ -118,12 +118,12 @@ export class CharGenMain extends GameMenu {
     }
   }
 
-  Hide() {
-    super.Hide();
+  hide() {
+    super.hide();
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     this.LBL_LEVEL?.hide();
     this.LBL_LEVEL_VAL?.hide();
     this.OLD_LBL?.hide();

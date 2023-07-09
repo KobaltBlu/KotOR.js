@@ -82,13 +82,13 @@ export class MenuCharacter extends K1_MenuCharacter {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.Close();
+        this.close();
       });
       this._button_b = this.BTN_EXIT;
 
@@ -140,7 +140,7 @@ export class MenuCharacter extends K1_MenuCharacter {
     });
   }
 
-  Update(delta: number) {
+  update(delta: number) {
     if (!this.bVisible)
       return;
     if (this.char)
@@ -152,9 +152,9 @@ export class MenuCharacter extends K1_MenuCharacter {
     }
   }
 
-  Show() {
-    super.Show();
-    this.RecalculatePosition();
+  show() {
+    super.show();
+    this.recalculatePosition();
     this.updateCharacterPortrait(PartyManager.party[0]);
     this.updateCharacterStats(PartyManager.party[0]);
     

@@ -40,8 +40,8 @@ export class MenuStore extends GameMenu {
     this.voidFill = true;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer();
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
@@ -72,8 +72,8 @@ export class MenuStore extends GameMenu {
     this.bonusMarkDown = bonusMarkDown;
   }
 
-  Show() {
-    super.Show();
+  show() {
+    super.show();
     if (this.storeObject instanceof ModuleStore) {
       this.LB_DESCRIPTION.clearItems();
       this.LB_DESCRIPTION.hide();
@@ -119,7 +119,7 @@ export class MenuStore extends GameMenu {
       this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
       TextureLoader.LoadQueue();
     } else {
-      this.Close();
+      this.close();
     }
   }
   

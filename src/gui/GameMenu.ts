@@ -10,7 +10,8 @@ import { GameState } from "../GameState";
 import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { ShaderManager, MenuManager } from "../managers";
+import { ShaderManager } from "../managers";
+import type { MenuManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 
 /* @file
@@ -66,17 +67,17 @@ export class GameMenu {
     this._button_y = undefined;
   }
 
-  async Load(): Promise<GameMenu> {
-    await this.LoadMenu();
+  async load(): Promise<GameMenu> {
+    await this.loadMenu();
     return this;
   }
 
-  LoadMenu(): Promise<GameMenu> {
+  loadMenu(): Promise<GameMenu> {
     return new Promise( (resolve: Function, reject: Function) => {
       this.tGuiPanel = null;
   
       //mainmenu16x12
-      this.LoadBackground( () => {
+      this.loadBackground( () => {
         
         ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref, async (buffer: Buffer) => {
           
@@ -105,9 +106,9 @@ export class GameMenu {
           //This auto assigns references for the controls to the menu object.
           //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
           //You can just use this.CONTROL_NAME 
-          this.AssignChildControlsToMenu(this.tGuiPanel);
+          this.assignChildControlsToMenu(this.tGuiPanel);
 
-          await this.MenuControlInitializer();
+          await this.menuControlInitializer();
   
           TextureLoader.LoadQueue(() => {
             resolve(this);
@@ -119,22 +120,22 @@ export class GameMenu {
     });
   }
 
-  async MenuControlInitializer(skipInit: boolean = false): Promise<any> {
+  async menuControlInitializer(skipInit: boolean = false): Promise<any> {
     return;
   };
 
-  AssignChildControlsToMenu(object: GUIControl){
+  assignChildControlsToMenu(object: GUIControl){
     if(object instanceof GUIControl){
       for(let i = 0, len = object.children.length; i < len; i++){
         let ctrl = object.children[i];
         if(!isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
         (this as any)[ctrl.name] = ctrl;
-        this.AssignChildControlsToMenu(ctrl);
+        this.assignChildControlsToMenu(ctrl);
       }
     }
   }
 
-  LoadBackground( onLoad?: Function ){
+  loadBackground( onLoad?: Function ){
     if(this.voidFill){
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
@@ -182,7 +183,7 @@ export class GameMenu {
 
   }
 
-  LoadTexture( resRef: string ): Promise<OdysseyTexture> {
+  loadTexture( resRef: string ): Promise<OdysseyTexture> {
     return new Promise<OdysseyTexture>( (resolve, reject) => {
       TextureLoader.Load(resRef, (texture: OdysseyTexture) => {
         resolve(texture);
@@ -199,16 +200,16 @@ export class GameMenu {
     return;
   }
 
-  Hide(){
+  hide(){
     this.bVisible = false;
     GameState.scene_gui.remove(this.tGuiPanel.getControl());
 
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
-      this.childMenu.Hide();
+      this.childMenu.hide();
   }
 
-  Show(){
+  show(){
     // this.Hide();
     if(!this.isOverlayGUI)
       GameState.Mode = this.engineMode;
@@ -218,31 +219,31 @@ export class GameMenu {
 
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
-      this.childMenu.Show();
+      this.childMenu.show();
   }
 
-  Close(){
-    this.Hide();
-    MenuManager.Remove(this);
+  close(){
+    this.hide();
+    this.manager.Remove(this);
     if(!this.isOverlayGUI){
       GameState.RestoreEnginePlayMode();
     }
   }
 
-  Open(){
-    MenuManager.Add(this);
-    this.Show();
+  open(){
+    this.manager.Add(this);
+    this.show();
   }
 
-  Remove(){
+  remove(){
     //TODO
   }
 
-  IsVisible(){
+  isVisible(){
     return this.bVisible;
   }
 
-  Update(delta: number = 0){
+  update(delta: number = 0){
     //Only update if the Menu is visible
     if(!this.bVisible)
       return;
@@ -266,13 +267,13 @@ export class GameMenu {
     }
   }
 
-  RecalculatePosition(){
+  recalculatePosition(){
     try{
       this.tGuiPanel.recalculate();
     }catch(e){ console.error(e); }
   }
 
-  SetWidgetHoverActive(widget: GUIControl, bActive: boolean = false){
+  setWidgetHoverActive(widget: GUIControl, bActive: boolean = false){
 
     if(!(widget instanceof GUIControl) || (widget instanceof GUIProtoItem))
       return false;
@@ -297,18 +298,18 @@ export class GameMenu {
 
   }
 
-  GetActiveControls(){
+  getActiveControls(){
     let controls: GUIControl[] = [];
     if(this.tGuiPanel){
       controls = this.tGuiPanel.getActiveControls();
     }
     if(this.childMenu){
-      controls = controls.concat(controls, this.childMenu.GetActiveControls());
+      controls = controls.concat(controls, this.childMenu.getActiveControls());
     }
     return controls;
   }
 
-  Scale(scale = 1.0){
+  setScale(scale = 1.0){
 
     this.scale = scale;
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
@@ -320,15 +321,15 @@ export class GameMenu {
 
   }
 
-  Resize(){
+  resize(){
     //STUB
   }
 
   triggerControllerAPress(){
     if(this._button_a instanceof GUIControl){
       this._button_a.click();
-    }else if(MenuManager.activeGUIElement instanceof GUIControl){
-      MenuManager.activeGUIElement.click();
+    }else if(this.manager.activeGUIElement instanceof GUIControl){
+      this.manager.activeGUIElement.click();
     }
   }
 
@@ -351,38 +352,38 @@ export class GameMenu {
   }
 
   triggerControllerDUpPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDDownPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDLeftPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDRightPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperLPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperRPress(){
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      //MenuManager.activeGUIElement.click();
+    if(this.manager.activeGUIElement instanceof GUIControl){
+      //this.manager.activeGUIElement.click();
     }
   }
 
