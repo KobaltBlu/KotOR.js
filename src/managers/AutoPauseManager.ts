@@ -1,6 +1,7 @@
 import { MenuManager, TLKManager } from ".";
 import { GameState } from "../GameState";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
+import { EngineState } from "../enums/engine/EngineState";
 
 export class AutoPauseManager {
 
@@ -52,7 +53,7 @@ export class AutoPauseManager {
   static SignalAutoPauseEvent(type: AutoPauseState){
     if(!this.GetAutoPauseTypeEnabled(type)) return false;
 
-    // GameState.State = EngineState.PAUSED;
+    GameState.State = EngineState.PAUSED;
     MenuManager.InGamePause.LBL_PAUSEREASON.setText(this.AutoPauseReason.get(type));
     // MenuManager.InGamePause.LBL_PRESS.setText(this.AutoPauseMessages.get(type));
 
@@ -60,7 +61,7 @@ export class AutoPauseManager {
   }
 
   static Unpause(){
-    // GameState.State = EngineState.RUNNING;
+    GameState.State = EngineState.RUNNING;
   }
 
   static GetAutoPauseTypeEnabled(type: AutoPauseState){
