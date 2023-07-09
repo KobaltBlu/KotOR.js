@@ -303,7 +303,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     //BEGIN: Animation Optimization
     this.animateFrame = true;
-    if(BitWise.InstanceOf(this.userData?.moduleObject?.objectId, ModuleObjectType.ModuleCreature)){
+    if(BitWise.InstanceOf(this.userData?.moduleObject?.objectType, ModuleObjectType.ModuleCreature)){
       //If the object is further than 50 meters, animate every other frame
       if(this.userData.moduleObject.distanceToCamera > 50){
         this.animateFrame = this.oddFrame;
@@ -323,7 +323,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     }
 
-    if(!BitWise.InstanceOf(this.userData?.moduleObject?.objectId, ModuleObjectType.ModuleRoom)){
+    if(!BitWise.InstanceOf(this.userData?.moduleObject?.objectType, ModuleObjectType.ModuleRoom)){
       if(!this.visible){
         this.animateFrame = false;
       }

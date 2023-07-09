@@ -760,14 +760,14 @@ export class GameState implements EngineContext {
         CursorManager.selectedObject = object;
       }
 
-      if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleDoor)){      
+      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){      
         CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModulePlaceable)){
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }      
         CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleCreature)){
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
         if(object.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
         }else{
@@ -788,14 +788,14 @@ export class GameState implements EngineContext {
         CursorManager.hoveredObject = object;
       }
 
-      if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleDoor)){
+      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
         if(canChangeCursor)
           CursorManager.setCursor('door');
         else
           CursorManager.setCursor('select');
 
         CursorManager.setReticle('reticleF');
-      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModulePlaceable)){
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }
@@ -805,7 +805,7 @@ export class GameState implements EngineContext {
           CursorManager.setCursor('select');
 
         CursorManager.setReticle('reticleF');
-      }else if(BitWise.InstanceOf(object.objectType, ModuleObjectType.ModuleCreature)){
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 
         if(object.isHostile(GameState.getCurrentPlayer())){
           if(!object.isDead()){
@@ -918,14 +918,14 @@ export class GameState implements EngineContext {
     if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
       CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
       CursorManager.reticle2.visible = true;
-      if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModuleDoor)){      
+      if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleDoor)){      
         CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModulePlaceable)){
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModulePlaceable)){
         if(!CursorManager.selectedObject.isUseable()){
           return;
         }      
         CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(CursorManager.selectedObject.objectType, ModuleObjectType.ModuleCreature)){
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleCreature)){
         if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
         }else{
