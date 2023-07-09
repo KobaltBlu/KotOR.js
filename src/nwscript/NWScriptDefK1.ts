@@ -2947,7 +2947,7 @@ NWScriptDefK1.Actions = {
             creature.Load();
             creature.position.copy(args[2].position);
             creature.setFacing(args[2].getFacing(), true);
-            GameState.module.area.creatures.push(creature);
+            args[2].area.attachObject(creature);
             
             creature.LoadModel().then( (model: OdysseyModel3D) => {
               model.userData.moduleObject = creature;
@@ -2978,7 +2978,7 @@ NWScriptDefK1.Actions = {
                 model.hasCollision = true;
                 model.name = plc.getTag();
                 GameState.group.placeables.add( model );
-                GameState.module.area.placeables.push(plc);
+                args[2].area.attachObject(plc);
 
                 try{
                   if(pwk.mesh instanceof THREE.Object3D)
@@ -7295,7 +7295,7 @@ NWScriptDefK1.Actions = {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], PartyManager.GetNPCResRefById(args[0]));
       if(buffer){
         let partyMember = new ModuleCreature(new GFFObject(buffer));
-        GameState.module.area.creatures.push(partyMember);
+        args[1].area.attachObject(partyMember);
         partyMember.Load();
         partyMember.LoadModel().then( (model: OdysseyModel3D) => {
           partyMember.model.userData.moduleObject = partyMember;
