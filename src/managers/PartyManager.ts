@@ -155,9 +155,9 @@ export class PartyManager {
 
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
       let pm = PartyManager.NPCS[nID].template;
-      if(pm.RootNode.HasField('PortraitId')){
+      if(pm.RootNode.hasField('PortraitId')){
         const portrait2DA = TwoDAManager.datatables.get('portraits');
-        const portraitId = pm.RootNode.GetFieldByLabel('PortraitId').GetValue();
+        const portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
         if(portrait2DA.rows[portraitId]){
           return TwoDAManager.datatables.get('portraits').rows[portraitId].baseresref;
         }
@@ -375,7 +375,7 @@ export class PartyManager {
   static LoadPartyMember(nIdx = 0, onLoad?: Function){
     let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     const template = npc.template;
-    template.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( ModuleObjectManager.GetNextPlayerId() );
+    template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
     let partyMember = new ModuleCreature(template);
 
     let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
@@ -571,8 +571,8 @@ export class PartyManager {
   static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){
     return new Promise<void>( async (resolve, reject) => {
       if(template instanceof GFFObject){
-        template.RemoveFieldByLabel('TemplateResRef');
-        template.Export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc') , () => {
+        template.removeFieldByLabel('TemplateResRef');
+        template.export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc') , () => {
           resolve();
         }, () => {
           resolve();
@@ -643,98 +643,98 @@ export class PartyManager {
   public static ResetPlayerTemplate(): GFFObject {
     let pTPL = new GFFObject();
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( ModuleObjectManager.GetNextPlayerId() );
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(GameState.GameKey == 'TSL' ? 134 : 177);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Luke Skywalker');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraitId') ).SetValue(GameState.GameKey == 'TSL' ? 10 : 26);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'HitPoints') ).SetValue(100);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'MaxHitPoints') ).SetValue(100);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'CurrentHitPoints') ).SetValue(70);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'ForcePoints') ).SetValue(15);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'MaxForcePoints') ).SetValue(15);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Commandable') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'CurrentForce') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'DeadSelectable') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'DetectMode') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Disarmable') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'IsDestroyable') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'IsPC') ).SetValue(1);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'IsRaiseable') ).SetValue(1);
-    let equipment = pTPL.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).SetValue('k_hen_attacked01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).SetValue('k_def_damage01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).SetValue('');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).SetValue('k_hen_dialogue01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).SetValue('');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).SetValue('');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).SetValue('k_hen_combend01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).SetValue('k_hen_heartbt01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).SetValue('k_def_blocked01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).SetValue('k_hen_percept01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).SetValue('');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).SetValue('k_hen_spawn01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).SetValue('k_def_spellat01');
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).SetValue('k_def_userdef01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(GameState.GameKey == 'TSL' ? 134 : 177);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Luke Skywalker');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(GameState.GameKey == 'TSL' ? 10 : 26);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'HitPoints') ).setValue(100);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'MaxHitPoints') ).setValue(100);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'CurrentHitPoints') ).setValue(70);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'ForcePoints') ).setValue(15);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'MaxForcePoints') ).setValue(15);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Commandable') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'CurrentForce') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'DeadSelectable') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'DetectMode') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Disarmable') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsDestroyable') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsPC') ).setValue(1);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'IsRaiseable') ).setValue(1);
+    let equipment = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue('k_hen_attacked01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue('k_def_damage01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue('');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).setValue('k_hen_dialogue01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).setValue('');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).setValue('');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).setValue('k_hen_combend01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue('k_hen_heartbt01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).setValue('k_def_blocked01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).setValue('k_hen_percept01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).setValue('');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).setValue('k_hen_spawn01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).setValue('k_def_spellat01');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue('k_def_userdef01');
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).SetValue(50);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).setValue(50);
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).SetValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(0);
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Con') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Dex') ).SetValue(14);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Str') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Wis') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Cha') ).SetValue(10);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Int') ).SetValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(14);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') ).setValue(10);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(10);
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'fortbonus') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'refbonus') ).SetValue(0);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'willbonus') ).SetValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'fortbonus') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'refbonus') ).setValue(0);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'willbonus') ).setValue(0);
 
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).SetValue(12);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(12);
 
-    let classList = pTPL.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ClassList') );
+    let classList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
     for(let i = 0; i < 1; i++){
       let _class = new GFFStruct();
-      _class.AddField( new GFFField(GFFDataType.INT, 'Class') ).SetValue(0);
-      _class.AddField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).SetValue(1);
-      _class.AddField( new GFFField(GFFDataType.LIST, 'KnownList0') );
-      classList.AddChildStruct(_class);
+      _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(0);
+      _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(1);
+      _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      classList.addChildStruct(_class);
     }
 
-    let skillList = pTPL.RootNode.AddField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    let skillList = pTPL.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
 
     for(let i = 0; i < 8; i++){
       let _skill = new GFFStruct();
-      _skill.AddField( new GFFField(GFFDataType.RESREF, 'Rank') ).SetValue(0);
-      skillList.AddChildStruct(_skill);
+      _skill.addField( new GFFField(GFFDataType.RESREF, 'Rank') ).setValue(0);
+      skillList.addChildStruct(_skill);
     }
 
     let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
-    armorStruct.AddField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).SetValue('g_a_jedirobe01');
+    armorStruct.addField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).setValue('g_a_jedirobe01');
     let rhStruct = new GFFStruct(ModuleCreatureArmorSlot.RIGHTHAND);
-    rhStruct.AddField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).SetValue('g_w_lghtsbr01');
+    rhStruct.addField( new GFFField(GFFDataType.RESREF, 'EquippedRes') ).setValue('g_w_lghtsbr01');
 
-    equipment.AddChildStruct( armorStruct );
-    equipment.AddChildStruct( rhStruct );
+    equipment.addChildStruct( armorStruct );
+    equipment.addChildStruct( rhStruct );
 
     // SoundSetFile
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).SetValue(85);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Race') ).SetValue(6);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(85);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Race') ).setValue(6);
 
     /*let spawnLoc = this.getSpawnLocation();
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XPosition') ).SetValue(spawnLoc.XPosition);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'YPosition') ).SetValue(spawnLoc.YPosition);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'ZPosition') ).SetValue(spawnLoc.ZPosition);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'XOrientation') ).SetValue(spawnLoc.XOrientation);
-    pTPL.RootNode.AddField( new GFFField(GFFDataType.WORD, 'YOrientation') ).SetValue(spawnLoc.YOrientation);*/
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'XPosition') ).setValue(spawnLoc.XPosition);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'YPosition') ).setValue(spawnLoc.YPosition);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'ZPosition') ).setValue(spawnLoc.ZPosition);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'XOrientation') ).setValue(spawnLoc.XOrientation);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'YOrientation') ).setValue(spawnLoc.YOrientation);*/
     PartyManager.PlayerTemplate = pTPL;
-    PartyManager.PlayerTemplate.json = PartyManager.PlayerTemplate.ToJSON();
+    PartyManager.PlayerTemplate.json = PartyManager.PlayerTemplate.toJSON();
     return PartyManager.PlayerTemplate;
   }
 

@@ -544,15 +544,15 @@ export class ModuleRoom extends ModuleObject {
 
     let instance = new GFFStruct();
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'AmbientScale', this.ambientScale)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.INT, 'EnvAudio', this.envAudio)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.CEXOSTRING, 'RoomName', this.roomName)
     );
 

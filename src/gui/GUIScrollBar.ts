@@ -48,10 +48,10 @@ export class GUIScrollBar extends GUIControl{
 
     this.arrowTex = undefined;
 
-    if(this.control.HasField('DIR')){
-      this._dir = this.control.GetFieldByLabel('DIR')?.GetChildStructs()[0];
-      if(this._dir?.HasField('IMAGE')){
-        TextureLoader.tpcLoader.fetch(this._dir.GetFieldByLabel('IMAGE')?.GetValue(), (texture: OdysseyTexture) => {
+    if(this.control.hasField('DIR')){
+      this._dir = this.control.getFieldByLabel('DIR')?.getChildStructs()[0];
+      if(this._dir?.hasField('IMAGE')){
+        TextureLoader.tpcLoader.fetch(this._dir.getFieldByLabel('IMAGE')?.getValue(), (texture: OdysseyTexture) => {
           this.arrowTex = texture;
           
           //Up Arrow
@@ -136,8 +136,8 @@ export class GUIScrollBar extends GUIControl{
       }
     }
 
-    if(this.control.HasField('THUMB')){
-      this._thumb = this.control.GetFieldByLabel('THUMB').GetChildStructs()[0];
+    if(this.control.hasField('THUMB')){
+      this._thumb = this.control.getFieldByLabel('THUMB').getChildStructs()[0];
       /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
       this.thumbMaterial.transparent = true;
       this.thumb = new THREE.Sprite( this.thumbMaterial );*/
@@ -193,8 +193,8 @@ export class GUIScrollBar extends GUIControl{
       //   console.log('scroll thumb')
       // };
 
-      if(this._thumb.HasField('IMAGE')){
-        TextureLoader.enQueue(this._thumb.GetFieldByLabel('IMAGE').GetValue(), this.thumbMaterial, TextureType.TEXTURE);
+      if(this._thumb.hasField('IMAGE')){
+        TextureLoader.enQueue(this._thumb.getFieldByLabel('IMAGE').getValue(), this.thumbMaterial, TextureType.TEXTURE);
         TextureLoader.LoadQueue();
       }
     }

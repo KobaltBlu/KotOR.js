@@ -191,12 +191,12 @@ export class GUICheckBox extends GUIControl{
     if(this.control instanceof GFFStruct){
       
       //Selected
-      this.hasSelected = control.HasField('SELECTED');
+      this.hasSelected = control.hasField('SELECTED');
       if(this.hasSelected){
-        let selected = control.GetFieldByLabel('SELECTED').GetChildStructs()[0];
+        let selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
 
-        if(selected.HasField('COLOR')){
-          let color = selected.GetFieldByLabel('COLOR').GetVector();
+        if(selected.hasField('COLOR')){
+          let color = selected.getFieldByLabel('COLOR').getVector();
           this.borderSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -204,26 +204,26 @@ export class GUICheckBox extends GUIControl{
           this.borderSelected.color = new THREE.Color(1, 1, 1); //this.defaultColor;
         }
 
-        this.borderSelected.dimension = selected.GetFieldByLabel('DIMENSION').GetValue() || 0;
-        this.borderSelected.corner = selected.GetFieldByLabel('CORNER').GetValue();
-        this.borderSelected.edge = selected.GetFieldByLabel('EDGE').GetValue();
-        this.borderSelected.fill.texture = selected.GetFieldByLabel('FILL').GetValue();
-        this.borderSelected.fillstyle = selected.GetFieldByLabel('FILLSTYLE').GetValue() || 0;
-        this.borderSelected.inneroffset = this.borderSelected.inneroffsety = selected.GetFieldByLabel('INNEROFFSET').GetValue() || 0;
+        this.borderSelected.dimension = selected.getFieldByLabel('DIMENSION').getValue() || 0;
+        this.borderSelected.corner = selected.getFieldByLabel('CORNER').getValue();
+        this.borderSelected.edge = selected.getFieldByLabel('EDGE').getValue();
+        this.borderSelected.fill.texture = selected.getFieldByLabel('FILL').getValue();
+        this.borderSelected.fillstyle = selected.getFieldByLabel('FILLSTYLE').getValue() || 0;
+        this.borderSelected.inneroffset = this.borderSelected.inneroffsety = selected.getFieldByLabel('INNEROFFSET').getValue() || 0;
 
-        if(selected.HasField('INNEROFFSETY'))
-          this.borderSelected.inneroffsety = selected.GetFieldByLabel('INNEROFFSETY').GetValue();
+        if(selected.hasField('INNEROFFSETY'))
+          this.borderSelected.inneroffsety = selected.getFieldByLabel('INNEROFFSETY').getValue();
 
-        this.borderSelected.pulsing = selected.GetFieldByLabel('PULSING').GetValue() || 0;
+        this.borderSelected.pulsing = selected.getFieldByLabel('PULSING').getValue() || 0;
       }
       
       //Highlight Selected
-      this.hashighlightSelected = control.HasField('HILIGHTSELECTED');
+      this.hashighlightSelected = control.hasField('HILIGHTSELECTED');
       if(this.hashighlightSelected){
-        let highlightSelected = control.GetFieldByLabel('HILIGHTSELECTED').GetChildStructs()[0];
+        let highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
 
-        if(highlightSelected.HasField('COLOR')){
-          let color = highlightSelected.GetFieldByLabel('COLOR').GetVector();
+        if(highlightSelected.hasField('COLOR')){
+          let color = highlightSelected.getFieldByLabel('COLOR').getVector();
           this.highlightSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -231,17 +231,17 @@ export class GUICheckBox extends GUIControl{
           this.highlightSelected.color = new THREE.Color(1, 1, 1); //this.defaultColor;
         }
 
-        this.highlightSelected.dimension = highlightSelected.GetFieldByLabel('DIMENSION').GetValue() || 0;
-        this.highlightSelected.corner = highlightSelected.GetFieldByLabel('CORNER').GetValue();
-        this.highlightSelected.edge = highlightSelected.GetFieldByLabel('EDGE').GetValue();
-        this.highlightSelected.fill.texture = highlightSelected.GetFieldByLabel('FILL').GetValue();
-        this.highlightSelected.fillstyle = highlightSelected.GetFieldByLabel('FILLSTYLE').GetValue() || 0;
-        this.highlightSelected.inneroffset = this.highlightSelected.inneroffsety = highlightSelected.GetFieldByLabel('INNEROFFSET').GetValue() || 0;
+        this.highlightSelected.dimension = highlightSelected.getFieldByLabel('DIMENSION').getValue() || 0;
+        this.highlightSelected.corner = highlightSelected.getFieldByLabel('CORNER').getValue();
+        this.highlightSelected.edge = highlightSelected.getFieldByLabel('EDGE').getValue();
+        this.highlightSelected.fill.texture = highlightSelected.getFieldByLabel('FILL').getValue();
+        this.highlightSelected.fillstyle = highlightSelected.getFieldByLabel('FILLSTYLE').getValue() || 0;
+        this.highlightSelected.inneroffset = this.highlightSelected.inneroffsety = highlightSelected.getFieldByLabel('INNEROFFSET').getValue() || 0;
 
-        if(highlightSelected.HasField('INNEROFFSETY'))
-          this.highlightSelected.inneroffsety = highlightSelected.GetFieldByLabel('INNEROFFSETY').GetValue();
+        if(highlightSelected.hasField('INNEROFFSETY'))
+          this.highlightSelected.inneroffsety = highlightSelected.getFieldByLabel('INNEROFFSETY').getValue();
 
-        this.highlightSelected.pulsing = highlightSelected.GetFieldByLabel('PULSING').GetValue() || 0;
+        this.highlightSelected.pulsing = highlightSelected.getFieldByLabel('PULSING').getValue() || 0;
       }
 
     }

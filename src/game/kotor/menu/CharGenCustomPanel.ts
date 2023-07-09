@@ -81,7 +81,7 @@ export class CharGenCustomPanel extends GameMenu {
       this.BTN_STEPNAME6.addEventListener('click', (e: any) => {
         e.stopPropagation();
         CharGenManager.selectedCreature.equipment.ARMOR = undefined;
-        CharGenManager.selectedCreature.template.GetFieldByLabel('Equip_ItemList').ChildStructs = [];
+        CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
         GlobalVariableManager.Init();
         PartyManager.PlayerTemplate = CharGenManager.selectedCreature.save();
         PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());

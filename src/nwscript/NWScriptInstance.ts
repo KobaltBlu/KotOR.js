@@ -380,15 +380,15 @@ export class NWScriptInstance {
     //STORE_STATE
     let scriptSituation = new GFFStruct(0x7777);
 
-    scriptSituation.AddField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).SetValue(0);
-    scriptSituation.AddField( new GFFField(GFFDataType.VOID, 'Code' ) ).SetData( this.nwscript.code );
-    scriptSituation.AddField( new GFFField(GFFDataType.INT, 'CodeSize' ) ).SetValue( this.nwscript.progSize );
-    scriptSituation.AddField( new GFFField(GFFDataType.INT, 'InstructionPtr' ) ).SetValue(this.address);
-    scriptSituation.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).SetValue( this.name );
-    scriptSituation.AddField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).SetValue(0);
+    scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
+    scriptSituation.addField( new GFFField(GFFDataType.VOID, 'Code' ) ).setData( this.nwscript.code );
+    scriptSituation.addField( new GFFField(GFFDataType.INT, 'CodeSize' ) ).setValue( this.nwscript.progSize );
+    scriptSituation.addField( new GFFField(GFFDataType.INT, 'InstructionPtr' ) ).setValue(this.address);
+    scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
+    scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
 
-    let stack = scriptSituation.AddField( new GFFField(GFFDataType.STRUCT, 'Stack') );
-    stack.AddChildStruct( this.stack.saveForEventSituation() );
+    let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
+    stack.addChildStruct( this.stack.saveForEventSituation() );
 
     return scriptSituation;
   }

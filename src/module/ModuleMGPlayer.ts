@@ -855,47 +855,47 @@ export class ModuleMGPlayer extends ModuleObject {
       onTrackLoop: undefined
     };
 
-    let scriptsNode = this.template.GetFieldByLabel('Scripts').GetChildStructs()[0];
+    let scriptsNode = this.template.getFieldByLabel('Scripts').getChildStructs()[0];
     if(scriptsNode){
 
-      if(scriptsNode.HasField('OnAccelerate'))
-        this.scripts.onAccelerate = scriptsNode.GetFieldByLabel('OnAccelerate').GetValue();
+      if(scriptsNode.hasField('OnAccelerate'))
+        this.scripts.onAccelerate = scriptsNode.getFieldByLabel('OnAccelerate').getValue();
       
-      if(scriptsNode.HasField('OnAnimEvent'))
-        this.scripts.onAnimEvent = scriptsNode.GetFieldByLabel('OnAnimEvent').GetValue();
+      if(scriptsNode.hasField('OnAnimEvent'))
+        this.scripts.onAnimEvent = scriptsNode.getFieldByLabel('OnAnimEvent').getValue();
 
-      if(scriptsNode.HasField('OnBrake'))
-        this.scripts.onBrake = scriptsNode.GetFieldByLabel('OnBrake').GetValue();
+      if(scriptsNode.hasField('OnBrake'))
+        this.scripts.onBrake = scriptsNode.getFieldByLabel('OnBrake').getValue();
 
-      if(scriptsNode.HasField('OnCreate'))
-        this.scripts.onCreate = scriptsNode.GetFieldByLabel('OnCreate').GetValue();
+      if(scriptsNode.hasField('OnCreate'))
+        this.scripts.onCreate = scriptsNode.getFieldByLabel('OnCreate').getValue();
 
-      if(scriptsNode.HasField('OnDamage'))
-        this.scripts.onDamage = scriptsNode.GetFieldByLabel('OnDamage').GetValue();
+      if(scriptsNode.hasField('OnDamage'))
+        this.scripts.onDamage = scriptsNode.getFieldByLabel('OnDamage').getValue();
 
-      if(scriptsNode.HasField('OnDeath'))
-        this.scripts.onDeath = scriptsNode.GetFieldByLabel('OnDeath').GetValue();
+      if(scriptsNode.hasField('OnDeath'))
+        this.scripts.onDeath = scriptsNode.getFieldByLabel('OnDeath').getValue();
 
-      if(scriptsNode.HasField('OnFire'))
-        this.scripts.onFire = scriptsNode.GetFieldByLabel('OnFire').GetValue();
+      if(scriptsNode.hasField('OnFire'))
+        this.scripts.onFire = scriptsNode.getFieldByLabel('OnFire').getValue();
 
-      if(scriptsNode.HasField('OnHeartbeat'))
-        this.scripts.onHeartbeat = scriptsNode.GetFieldByLabel('OnHeartbeat').GetValue();
+      if(scriptsNode.hasField('OnHeartbeat'))
+        this.scripts.onHeartbeat = scriptsNode.getFieldByLabel('OnHeartbeat').getValue();
       
-      if(scriptsNode.HasField('OnHitBullet'))
-        this.scripts.onHitBullet = scriptsNode.GetFieldByLabel('OnHitBullet').GetValue();
+      if(scriptsNode.hasField('OnHitBullet'))
+        this.scripts.onHitBullet = scriptsNode.getFieldByLabel('OnHitBullet').getValue();
 
-      if(scriptsNode.HasField('OnHitFollower'))
-        this.scripts.onHitFollower = scriptsNode.GetFieldByLabel('OnHitFollower').GetValue();
+      if(scriptsNode.hasField('OnHitFollower'))
+        this.scripts.onHitFollower = scriptsNode.getFieldByLabel('OnHitFollower').getValue();
 
-      if(scriptsNode.HasField('OnHitObstacle'))
-        this.scripts.onHitObstacle = scriptsNode.GetFieldByLabel('OnHitObstacle').GetValue();
+      if(scriptsNode.hasField('OnHitObstacle'))
+        this.scripts.onHitObstacle = scriptsNode.getFieldByLabel('OnHitObstacle').getValue();
 
-      if(scriptsNode.HasField('OnHitWorld'))
-        this.scripts.onHitWorld = scriptsNode.GetFieldByLabel('OnHitWorld').GetValue();
+      if(scriptsNode.hasField('OnHitWorld'))
+        this.scripts.onHitWorld = scriptsNode.getFieldByLabel('OnHitWorld').getValue();
 
-      if(scriptsNode.HasField('OnTrackLoop'))
-        this.scripts.onTrackLoop = scriptsNode.GetFieldByLabel('OnTrackLoop').GetValue();
+      if(scriptsNode.hasField('OnTrackLoop'))
+        this.scripts.onTrackLoop = scriptsNode.getFieldByLabel('OnTrackLoop').getValue();
 
     }
 
@@ -911,73 +911,73 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   initProperties(){
-    if(this.template.RootNode.HasField('Accel_Secs'))
-      this.accel_secs = this.template.GetFieldByLabel('Accel_Secs').GetValue();
+    if(this.template.RootNode.hasField('Accel_Secs'))
+      this.accel_secs = this.template.getFieldByLabel('Accel_Secs').getValue();
 
-    if(this.template.RootNode.HasField('Bump_Damage'))
-      this.bump_damage = this.template.GetFieldByLabel('Bump_Damage').GetValue();
+    if(this.template.RootNode.hasField('Bump_Damage'))
+      this.bump_damage = this.template.getFieldByLabel('Bump_Damage').getValue();
 
-    if(this.template.RootNode.HasField('Camera'))
-      this.cameraName = this.template.GetFieldByLabel('Camera').GetValue();
+    if(this.template.RootNode.hasField('Camera'))
+      this.cameraName = this.template.getFieldByLabel('Camera').getValue();
 
-    if(this.template.RootNode.HasField('CameraRotate'))
-      this.cameraRotate = this.template.GetFieldByLabel('CameraRotate').GetValue();
+    if(this.template.RootNode.hasField('CameraRotate'))
+      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
 
-    if(this.template.RootNode.HasField('Hit_Points'))
-      this.hit_points = this.template.GetFieldByLabel('Hit_Points').GetValue();
+    if(this.template.RootNode.hasField('Hit_Points'))
+      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
 
-    if(this.template.RootNode.HasField('Invince_Period'))
-      this.invince_period = this.template.GetFieldByLabel('Invince_Period').GetValue();
+    if(this.template.RootNode.hasField('Invince_Period'))
+      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
 
-    if(this.template.RootNode.HasField('Max_HPs'))
-      this.max_hps = this.template.GetFieldByLabel('Max_HPs').GetValue();
+    if(this.template.RootNode.hasField('Max_HPs'))
+      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
 
-    if(this.template.RootNode.HasField('Maximum_Speed'))
-      this.speed_max = this.template.GetFieldByLabel('Maximum_Speed').GetValue();
+    if(this.template.RootNode.hasField('Maximum_Speed'))
+      this.speed_max = this.template.getFieldByLabel('Maximum_Speed').getValue();
 
-    if(this.template.RootNode.HasField('Minimum_Speed'))
-      this.speed_min = this.template.GetFieldByLabel('Minimum_Speed').GetValue();
+    if(this.template.RootNode.hasField('Minimum_Speed'))
+      this.speed_min = this.template.getFieldByLabel('Minimum_Speed').getValue();
 
-    if(this.template.RootNode.HasField('Num_Loops'))
-      this.num_loops = this.template.GetFieldByLabel('Num_Loops').GetValue();
+    if(this.template.RootNode.hasField('Num_Loops'))
+      this.num_loops = this.template.getFieldByLabel('Num_Loops').getValue();
 
-    if(this.template.RootNode.HasField('Sphere_Radius'))
-      this.sphere_radius = this.template.GetFieldByLabel('Sphere_Radius').GetValue();
+    if(this.template.RootNode.hasField('Sphere_Radius'))
+      this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
 
-    if(this.template.RootNode.HasField('Track'))
-      this.trackName = this.template.GetFieldByLabel('Track').GetValue();
+    if(this.template.RootNode.hasField('Track'))
+      this.trackName = this.template.getFieldByLabel('Track').getValue();
 
-    if(this.template.RootNode.HasField('TunnelXNeg'))
-      this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelXNeg').GetValue());
+    if(this.template.RootNode.hasField('TunnelXNeg'))
+      this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXNeg').getValue());
 
-    if(this.template.RootNode.HasField('TunnelXPos'))
-      this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelXPos').GetValue());
+    if(this.template.RootNode.hasField('TunnelXPos'))
+      this.tunnel.pos.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXPos').getValue());
     
-    if(this.template.RootNode.HasField('TunnelYNeg'))
-      this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelYNeg').GetValue());
+    if(this.template.RootNode.hasField('TunnelYNeg'))
+      this.tunnel.neg.y = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelYNeg').getValue());
 
-    if(this.template.RootNode.HasField('TunnelYPos'))
-      this.tunnel.pos.y = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelYPos').GetValue());
+    if(this.template.RootNode.hasField('TunnelYPos'))
+      this.tunnel.pos.y = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelYPos').getValue());
 
-    if(this.template.RootNode.HasField('TunnelZNeg'))
-      this.tunnel.neg.z = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelZNeg').GetValue());
+    if(this.template.RootNode.hasField('TunnelZNeg'))
+      this.tunnel.neg.z = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelZNeg').getValue());
 
-    if(this.template.RootNode.HasField('TunnelZPos'))
-      this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.GetFieldByLabel('TunnelZPos').GetValue());
+    if(this.template.RootNode.hasField('TunnelZPos'))
+      this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelZPos').getValue());
 
-    if(this.template.RootNode.HasField('Models')){
-      let models = this.template.GetFieldByLabel('Models').GetChildStructs();
+    if(this.template.RootNode.hasField('Models')){
+      let models = this.template.getFieldByLabel('Models').getChildStructs();
       for(let i = 0; i < models.length; i++){
         let modelStruct = models[i];
         this.modelProps.push({
-          model: modelStruct.GetFieldByLabel('Model').GetValue(),
-          rotating: !!modelStruct.GetFieldByLabel('RotatingModel').GetValue()
+          model: modelStruct.getFieldByLabel('Model').getValue(),
+          rotating: !!modelStruct.getFieldByLabel('RotatingModel').getValue()
         });
       }
     }
 
-    if(this.template.RootNode.HasField('Gun_Banks')){
-      const gun_banks = this.template.GetFieldByLabel('Gun_Banks').GetChildStructs();
+    if(this.template.RootNode.hasField('Gun_Banks')){
+      const gun_banks = this.template.getFieldByLabel('Gun_Banks').getChildStructs();
       for(let i = 0; i < gun_banks.length; i++){
         this.gunBanks.push(
           new ModuleMGGunBank(
@@ -992,20 +992,20 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
 
-    /*if(this.template.RootNode.HasField('CameraRotate'))
-      this.cameraRotate = this.template.GetFieldByLabel('CameraRotate').GetValue();
+    /*if(this.template.RootNode.hasField('CameraRotate'))
+      this.cameraRotate = this.template.getFieldByLabel('CameraRotate').getValue();
 
-    if(this.template.RootNode.HasField('Hit_Points'))
-      this.hit_points = this.template.GetFieldByLabel('Hit_Points').GetValue();
+    if(this.template.RootNode.hasField('Hit_Points'))
+      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
 
-    if(this.template.RootNode.HasField('Invince_Period'))
-      this.invince_period = this.template.GetFieldByLabel('Invince_Period').GetValue();
+    if(this.template.RootNode.hasField('Invince_Period'))
+      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
 
-    if(this.template.RootNode.HasField('Max_HPs'))
-      this.max_hps = this.template.GetFieldByLabel('Max_HPs').GetValue();
+    if(this.template.RootNode.hasField('Max_HPs'))
+      this.max_hps = this.template.getFieldByLabel('Max_HPs').getValue();
 
-    if(this.template.RootNode.HasField('Maximum_Speed'))
-      this.maximum_speed = this.template.GetFieldByLabel('Maximum_Speed').GetValue();*/
+    if(this.template.RootNode.hasField('Maximum_Speed'))
+      this.maximum_speed = this.template.getFieldByLabel('Maximum_Speed').getValue();*/
 
 
 

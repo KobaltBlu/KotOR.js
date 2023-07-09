@@ -88,8 +88,8 @@ export class SaveGame {
         GameFileSystem.exists(path.join(this.directory, 'pifo.ifo')).then( (exists) => {
           if(exists){
             this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo: GFFObject) => {
-              if(pifo.RootNode.HasField('Mod_PlayerList')){
-                let playerList = pifo.GetFieldByLabel('Mod_PlayerList').GetChildStructs();
+              if(pifo.RootNode.hasField('Mod_PlayerList')){
+                let playerList = pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
                 if(playerList.length){
                   PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
                 }
@@ -111,72 +111,72 @@ export class SaveGame {
   InitSaveNFO(){
     this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo: GFFObject) => {
 
-      if(savenfo.RootNode.HasField('AREANAME')){
-        this.AREANAME = savenfo.GetFieldByLabel('AREANAME').GetValue()
+      if(savenfo.RootNode.hasField('AREANAME')){
+        this.AREANAME = savenfo.getFieldByLabel('AREANAME').getValue()
       }
 
-      if(savenfo.RootNode.HasField('CHEATUSED')){
-        this.CHEATUSED = savenfo.GetFieldByLabel('CHEATUSED').GetValue()
+      if(savenfo.RootNode.hasField('CHEATUSED')){
+        this.CHEATUSED = savenfo.getFieldByLabel('CHEATUSED').getValue()
       }
 
-      if(savenfo.RootNode.HasField('GAMEPLAYHINT')){
-        this.GAMEPLAYHINT = savenfo.GetFieldByLabel('GAMEPLAYHINT').GetValue()
+      if(savenfo.RootNode.hasField('GAMEPLAYHINT')){
+        this.GAMEPLAYHINT = savenfo.getFieldByLabel('GAMEPLAYHINT').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LASTMODULE')){
-        this.LASTMODULE = savenfo.GetFieldByLabel('LASTMODULE').GetValue()
+      if(savenfo.RootNode.hasField('LASTMODULE')){
+        this.LASTMODULE = savenfo.getFieldByLabel('LASTMODULE').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE1')){
-        this.LIVE1 = savenfo.GetFieldByLabel('LIVE1').GetValue()
+      if(savenfo.RootNode.hasField('LIVE1')){
+        this.LIVE1 = savenfo.getFieldByLabel('LIVE1').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE2')){
-        this.LIVE2 = savenfo.GetFieldByLabel('LIVE2').GetValue()
+      if(savenfo.RootNode.hasField('LIVE2')){
+        this.LIVE2 = savenfo.getFieldByLabel('LIVE2').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE3')){
-        this.LIVE3 = savenfo.GetFieldByLabel('LIVE3').GetValue()
+      if(savenfo.RootNode.hasField('LIVE3')){
+        this.LIVE3 = savenfo.getFieldByLabel('LIVE3').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE4')){
-        this.LIVE4 = savenfo.GetFieldByLabel('LIVE4').GetValue()
+      if(savenfo.RootNode.hasField('LIVE4')){
+        this.LIVE4 = savenfo.getFieldByLabel('LIVE4').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE5')){
-        this.LIVE5 = savenfo.GetFieldByLabel('LIVE5').GetValue()
+      if(savenfo.RootNode.hasField('LIVE5')){
+        this.LIVE5 = savenfo.getFieldByLabel('LIVE5').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVE6')){
-        this.LIVE6 = savenfo.GetFieldByLabel('LIVE6').GetValue()
+      if(savenfo.RootNode.hasField('LIVE6')){
+        this.LIVE6 = savenfo.getFieldByLabel('LIVE6').getValue()
       }
 
-      if(savenfo.RootNode.HasField('LIVECONTENT')){
-        this.LIVECONTENT = savenfo.GetFieldByLabel('LIVECONTENT').GetValue()
+      if(savenfo.RootNode.hasField('LIVECONTENT')){
+        this.LIVECONTENT = savenfo.getFieldByLabel('LIVECONTENT').getValue()
       }
 
-      if(savenfo.RootNode.HasField('PORTRAIT0')){
-        this.PORTRAIT0 = savenfo.GetFieldByLabel('PORTRAIT0').GetValue()
+      if(savenfo.RootNode.hasField('PORTRAIT0')){
+        this.PORTRAIT0 = savenfo.getFieldByLabel('PORTRAIT0').getValue()
       }
 
-      if(savenfo.RootNode.HasField('PORTRAIT1')){
-        this.PORTRAIT1 = savenfo.GetFieldByLabel('PORTRAIT1').GetValue()
+      if(savenfo.RootNode.hasField('PORTRAIT1')){
+        this.PORTRAIT1 = savenfo.getFieldByLabel('PORTRAIT1').getValue()
       }
 
-      if(savenfo.RootNode.HasField('PORTRAIT2')){
-        this.PORTRAIT2 = savenfo.GetFieldByLabel('PORTRAIT2').GetValue()
+      if(savenfo.RootNode.hasField('PORTRAIT2')){
+        this.PORTRAIT2 = savenfo.getFieldByLabel('PORTRAIT2').getValue()
       }
 
-      if(savenfo.RootNode.HasField('SAVEGAMENAME')){
-        this.SAVEGAMENAME = savenfo.GetFieldByLabel('SAVEGAMENAME').GetValue()
+      if(savenfo.RootNode.hasField('SAVEGAMENAME')){
+        this.SAVEGAMENAME = savenfo.getFieldByLabel('SAVEGAMENAME').getValue()
       }
 
-      if(savenfo.RootNode.HasField('STORYHINT')){
-        this.STORYHINT = savenfo.GetFieldByLabel('STORYHINT').GetValue()
+      if(savenfo.RootNode.hasField('STORYHINT')){
+        this.STORYHINT = savenfo.getFieldByLabel('STORYHINT').getValue()
       }
 
-      if(savenfo.RootNode.HasField('TIMEPLAYED')){
-        this.TIMEPLAYED = savenfo.GetFieldByLabel('TIMEPLAYED').GetValue()
+      if(savenfo.RootNode.hasField('TIMEPLAYED')){
+        this.TIMEPLAYED = savenfo.getFieldByLabel('TIMEPLAYED').getValue()
       }
 
     });
@@ -345,11 +345,11 @@ export class SaveGame {
     console.log('SaveGame', 'Loading GlobalVARS...');
     this.globalVars = new GFFObject(path.join(this.directory, 'GLOBALVARS.res'), (globalVars) => {
 
-      let numBytes = new BinaryReader(globalVars.RootNode.GetFieldByLabel('ValNumber').GetVoid());
-      let catNumbers = globalVars.GetFieldByLabel('CatNumber').GetChildStructs();
+      let numBytes = new BinaryReader(globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
+      let catNumbers = globalVars.getFieldByLabel('CatNumber').getChildStructs();
       for(let i = 0; i < catNumbers.length; i++){
         let numCat = catNumbers[i];
-        let numLabel = numCat.GetFieldByLabel('Name').GetValue();
+        let numLabel = numCat.getFieldByLabel('Name').getValue();
         let value = numBytes.readByte();
         if(GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
           GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
@@ -359,11 +359,11 @@ export class SaveGame {
         }
       }
 
-      let locBytes = new BinaryReader(globalVars.RootNode.GetFieldByLabel('ValLocation').GetVoid());
-      let catLocations = globalVars.GetFieldByLabel('CatLocation').GetChildStructs();
+      let locBytes = new BinaryReader(globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
+      let catLocations = globalVars.getFieldByLabel('CatLocation').getChildStructs();
       for(let i = 0; i < catLocations.length; i++){
         let locCat = catLocations[i];
-        let locLabel = locCat.GetFieldByLabel('Name').GetValue();
+        let locLabel = locCat.getFieldByLabel('Name').getValue();
 
         GlobalVariableManager.Globals.Location.set(
           locLabel.toLowerCase(), { 
@@ -380,8 +380,8 @@ export class SaveGame {
         );
       }
 
-      let boolBytes = globalVars.RootNode.GetFieldByLabel('ValBoolean').GetVoid();
-      let catBooleans = globalVars.GetFieldByLabel('CatBoolean').GetChildStructs();
+      let boolBytes = globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
+      let catBooleans = globalVars.getFieldByLabel('CatBoolean').getChildStructs();
       let maxBits = boolBytes.length * 8;
       for(let i = 0; i < maxBits; i++){
         for(let j = 0; j < 8; j++){
@@ -390,7 +390,7 @@ export class SaveGame {
 
           let boolCat = catBooleans[index];
           if(boolCat){
-            let boolLabel = boolCat.GetFieldByLabel('Name').GetValue();
+            let boolLabel = boolCat.getFieldByLabel('Name').getValue();
             let value = !!bit;
             if(GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
               GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
@@ -402,13 +402,13 @@ export class SaveGame {
         }
       }
 
-      let stringValues = globalVars.RootNode.GetFieldByLabel('ValString').GetChildStructs();
-      let catStrings = globalVars.GetFieldByLabel('CatString').GetChildStructs();
+      let stringValues = globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
+      let catStrings = globalVars.getFieldByLabel('CatString').getChildStructs();
       for(let i = 0; i < catStrings.length; i++){
         let strCat = catStrings[i];
         if(strCat){
-          let strLabel = strCat.GetFieldByLabel('Name').GetValue();
-          let strValue = stringValues[i].GetFieldByLabel('String').GetValue();
+          let strLabel = strCat.getFieldByLabel('Name').getValue();
+          let strValue = stringValues[i].getFieldByLabel('String').getValue();
           if(GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
             GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
           }else{
@@ -443,7 +443,7 @@ export class SaveGame {
 
     GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res')).then( (buffer: Buffer) => {
       this.inventory = new GFFObject(buffer);
-      let invArr = this.inventory.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+      let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
       for(let i = 0; i < invArr.length; i++){
         InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
@@ -469,70 +469,70 @@ export class SaveGame {
       GameFileSystem.mkdir(this.directory, { recursive: false }).then( () => {
         this.savenfo = new GFFObject();
 
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.AreaName.GetValue();
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).Value = 0;
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).Value = 0;
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).Value = GameState.module.Area_Name;
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE4')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE5')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE6')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).Value = 0;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.AreaName.getValue();
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = 0;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = 0;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = GameState.module.Area_Name;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE4')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE5')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE6')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).value = 0;
 
         //Save the portraits of the current party
         for(let i = 0; i < PartyManager.party.length; i++){
-          this.savenfo.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).Value = PartyManager.party[i].getPortraitResRef();
+          this.savenfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = PartyManager.party[i].getPortraitResRef();
         }
 
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).Value = '';
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).Value = 0;
-        this.savenfo.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).Value = (GameState.time) | 0;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = '';
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
+        this.savenfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = (GameState.time) | 0;
 
         this.savenfo.FileType = 'NFO ';
-        this.savenfo.Export(path.join(this.directory, 'savenfo.res'), () => {
+        this.savenfo.export(path.join(this.directory, 'savenfo.res'), () => {
 
           //Export PARTYTABLE.res
           let partytable = new GFFObject();
-          partytable.RootNode.AddField(new GFFField(GFFDataType.STRUCT, 'GlxyMap'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'JNL_SortOrder'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_AISTATE'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_FB_MSG_LIST'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'PT_GOLD'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_LAST_GUI_PNL'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN'));
-          partytable.RootNode.AddField(new GFFField(GFFDataType.INT, 'PT_XP_POOL'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'GlxyMap'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_FB_MSG_LIST'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_LAST_GUI_PNL'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN'));
+          partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_XP_POOL'));
 
           partytable.FileType = 'PT  ';
-          partytable.Export(path.join(this.directory, 'PARTYTABLE.res'), () => {
+          partytable.export(path.join(this.directory, 'PARTYTABLE.res'), () => {
 
             //Export GLOBALVARS.res
             this.globalVars = new GFFObject();
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatLocation'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatNumber'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatString'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValBoolean'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValLocation'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValNumber'));
-            this.globalVars.RootNode.AddField(new GFFField(GFFDataType.LIST, 'ValString'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValBoolean'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValLocation'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber'));
+            this.globalVars.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
 
             this.globalVars.FileType = 'GVT ';
-            this.globalVars.Export(path.join(this.directory, 'GLOBALVARS.res'), () => {
+            this.globalVars.export(path.join(this.directory, 'GLOBALVARS.res'), () => {
 
               //Save screenshot
               //let base64 = GameState.canvas.toDataURL('image/png');
@@ -605,28 +605,28 @@ export class SaveGame {
       let nfo = new GFFObject();
       nfo.FileType = 'NFO ';
 
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).Value = GameState.module.area.AreaName.GetValue();
-      nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).Value = 0;
-      nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).Value = 0;
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).Value = GameState.module.filename.toUpperCase();
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE4')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE5')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE6')).Value = '';
-      nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).Value = 0;
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.AreaName.getValue();
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = 0;
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = 0;
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = GameState.module.filename.toUpperCase();
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE4')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE5')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE6')).value = '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).value = 0;
 
       //Save the portraits of the current party
       for(let i = 0; i < PartyManager.party.length; i++){
-        nfo.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).Value = PartyManager.party[i].getPortraitResRef();
+        nfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = PartyManager.party[i].getPortraitResRef();
       }
 
-      nfo.RootNode.AddField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).Value = savename;
-      nfo.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).Value = 0;
-      nfo.RootNode.AddField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).Value = GameState.time | 0;
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
+      nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
 
-      await nfo.Export(path.join(directory, 'savenfo.res'));
+      await nfo.export(path.join(directory, 'savenfo.res'));
 
       resolve();
     });
@@ -639,7 +639,7 @@ export class SaveGame {
       gvt.FileType = 'GVT ';
 
       //Global Booleans
-      let catBooleanList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
+      let catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
       let boolBuffer = Buffer.alloc( ( GlobalVariableManager.Globals.Boolean.size / 8 ) );
       let i = 0;
       GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
@@ -652,13 +652,13 @@ export class SaveGame {
         }
 
         let boolStruct = new GFFStruct();
-        boolStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).SetValue(boolean.name);
-        catBooleanList.AddChildStruct(boolStruct);
+        boolStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(boolean.name);
+        catBooleanList.addChildStruct(boolStruct);
         i++;
       });
 
       //Global Locations
-      let catLocationList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatLocation'));
+      let catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
       let locationBuffer = Buffer.alloc(24 * 100);
 
       i = 0;
@@ -671,13 +671,13 @@ export class SaveGame {
         locationBuffer.writeFloatLE( location.value.rotation.z, (24 * i) + 20 );
 
         let locStruct = new GFFStruct();
-        locStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).SetValue(location.name);
-        catLocationList.AddChildStruct(locStruct);
+        locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location.name);
+        catLocationList.addChildStruct(locStruct);
         i++;
       });
 
       //Global Numbers
-      let catNumberList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatNumber'));
+      let catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
       let numberBuffer = Buffer.alloc(GlobalVariableManager.Globals.Number.size);
 
       i = 0;
@@ -685,33 +685,33 @@ export class SaveGame {
         numberBuffer[i] = (numberObj.value & 0xFF);
 
         let numberStruct = new GFFStruct();
-        numberStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).SetValue(numberObj.name);
-        catNumberList.AddChildStruct(numberStruct);
+        numberStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(numberObj.name);
+        catNumberList.addChildStruct(numberStruct);
         i++;
       });
 
       
-      let catStringList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'CatString'));
+      let catStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
 
-      gvt.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValBoolean')).SetData( boolBuffer );
-      gvt.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValLocation')).SetData( locationBuffer );
-      gvt.RootNode.AddField(new GFFField(GFFDataType.VOID, 'ValNumber')).SetData( numberBuffer );
+      gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValBoolean')).setData( boolBuffer );
+      gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValLocation')).setData( locationBuffer );
+      gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber')).setData( numberBuffer );
 
-      let valStringList  = gvt.RootNode.AddField(new GFFField(GFFDataType.LIST, 'ValString'));
+      let valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
       i = 0;
       GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
         let stringCatStruct = new GFFStruct();
-        stringCatStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).SetValue(stringObj.name);
-        catStringList.AddChildStruct(stringCatStruct);
+        stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj.name);
+        catStringList.addChildStruct(stringCatStruct);
 
 
         let stringValStruct = new GFFStruct();
-        stringValStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).SetValue(stringObj.value);
-        valStringList.AddChildStruct(stringValStruct);
+        stringValStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).setValue(stringObj.value);
+        valStringList.addChildStruct(stringValStruct);
         i++;
       });
 
-      await gvt.Export(path.join(directory, 'GLOBALVARS.res'));
+      await gvt.export(path.join(directory, 'GLOBALVARS.res'));
 
       resolve();
     });

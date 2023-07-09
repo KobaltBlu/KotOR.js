@@ -43,7 +43,7 @@ export class MenuMap extends K1_MenuMap {
         e.stopPropagation();
         const mapNote: ModuleWaypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
-          this.LBL_MapNote.setText(mapNote.mapNote.GetValue())
+          this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }
       });
 

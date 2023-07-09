@@ -89,10 +89,10 @@ export class Project {
         const ifo_response = await this.module_ifo.readFile();
         if(ifo_response.buffer){
           const ifo = new KotOR.GFFObject(ifo_response.buffer);
-          if(ifo.RootNode.HasField('Mod_Area_list')){
-            const area_struct = ifo.RootNode.GetFieldByLabel('Mod_Area_list')?.GetChildStructs()[0];
+          if(ifo.RootNode.hasField('Mod_Area_list')){
+            const area_struct = ifo.RootNode.getFieldByLabel('Mod_Area_list')?.getChildStructs()[0];
             if(area_struct){
-              const area_name = area_struct.GetFieldByLabel('Area_Name')?.GetValue();
+              const area_name = area_struct.getFieldByLabel('Area_Name')?.getValue();
               if(area_name){
                 this.module_are = await ProjectFileSystem.openEditorFile(`${area_name}.are`);
                 const are_response = await this.module_are.readFile();

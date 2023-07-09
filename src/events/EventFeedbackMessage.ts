@@ -37,38 +37,38 @@ export class EventFeedbackMessage extends GameEvent {
 
   saveMessageData(){
     let struct = new GFFStruct(0xCCCC);
-    struct.AddField( new GFFField(GFFDataType.BYTE, 'Type') ).SetValue(this.messageType);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'Type') ).setValue(this.messageType);
 
     //Export message ints
-    let intList = struct.AddField( new GFFField(GFFDataType.LIST, 'IntList') );
+    let intList = struct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
     for(let i = 0; i < this.intList.length; i++){
       let intStruct = new GFFStruct(0xBAAD);
-      intStruct.AddField( new GFFField(GFFDataType.INT, 'IntegerValue') ).SetValue(this.intList[i]);
-      intList.AddChildStruct( intStruct );
+      intStruct.addField( new GFFField(GFFDataType.INT, 'IntegerValue') ).setValue(this.intList[i]);
+      intList.addChildStruct( intStruct );
     }
 
     //Export message floats
-    let floatList = struct.AddField( new GFFField(GFFDataType.LIST, 'FloatList') );
+    let floatList = struct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
     for(let i = 0; i < this.floatList.length; i++){
       let floatStruct = new GFFStruct(0xBAAD);
-      floatStruct.AddField( new GFFField(GFFDataType.FLOAT, 'FloatValue') ).SetValue(this.floatList[i]);
-      floatList.AddChildStruct( floatStruct );
+      floatStruct.addField( new GFFField(GFFDataType.FLOAT, 'FloatValue') ).setValue(this.floatList[i]);
+      floatList.addChildStruct( floatStruct );
     }
 
     //Export message objects
-    let objectList = struct.AddField( new GFFField(GFFDataType.LIST, 'ObjectList') );
+    let objectList = struct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < this.objectList.length; i++){
       let objectStruct = new GFFStruct(0xBAAD);
-      objectStruct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectValue') ).SetValue(this.objectList[i]);
-      objectList.AddChildStruct( objectStruct );
+      objectStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectValue') ).setValue(this.objectList[i]);
+      objectList.addChildStruct( objectStruct );
     }
 
     //Export message strings
-    let stringList = struct.AddField( new GFFField(GFFDataType.LIST, 'StringList') );
+    let stringList = struct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
     for(let i = 0; i < this.stringList.length; i++){
       let stringStruct = new GFFStruct(0xBAAD);
-      stringStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'StringValue') ).SetValue(this.stringList[i]);
-      stringList.AddChildStruct( stringStruct );
+      stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'StringValue') ).setValue(this.stringList[i]);
+      stringList.addChildStruct( stringStruct );
     }
     return struct;
   }
@@ -76,13 +76,13 @@ export class EventFeedbackMessage extends GameEvent {
   export(){
     let struct = new GFFStruct( 0xABCD );
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'CallerId') ).SetValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Day') ).SetValue(this.day);
-    let eventData = struct.AddField( new GFFField(GFFDataType.STRUCT, 'EventData') );
-      // eventData.AddChildStruct( this.script.saveMessageData() );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'EventId') ).SetValue(this.id);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Time') ).SetValue(this.time);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
+    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+      // eventData.addChildStruct( this.script.saveMessageData() );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
 
     return struct;
   }

@@ -1321,22 +1321,22 @@ export class ModuleObject {
   }
 
   getXOrientation(){
-    if(this.template.RootNode.HasField('XOrientation')){
-      return this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+    if(this.template.RootNode.hasField('XOrientation')){
+      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
     }
     return 0;
   }
 
   getYOrientation(){
-    if(this.template.RootNode.HasField('XOrientation')){
-      return this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+    if(this.template.RootNode.hasField('XOrientation')){
+      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
     }
     return 0;
   }
 
   getZOrientation(){
-    if(this.template.RootNode.HasField('ZOrientation')){
-      return this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+    if(this.template.RootNode.hasField('ZOrientation')){
+      return this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
     }
     return 0;
   }
@@ -1355,21 +1355,21 @@ export class ModuleObject {
 
   getTransitionDestin(){
     if(this.transitionDestin instanceof CExoLocString){
-      return this.transitionDestin.GetValue();
+      return this.transitionDestin.getValue();
     }
     return '';
   }
 
   getPortraitId(){
-    if(this.template.RootNode.HasField('PortraitId')){
-      return this.template.RootNode.GetFieldByLabel('PortraitId').GetValue();
+    if(this.template.RootNode.hasField('PortraitId')){
+      return this.template.RootNode.getFieldByLabel('PortraitId').getValue();
     }
     return 0;
   }
 
   getKeyName(){
-    if(this.template.RootNode.HasField('KeyName')){
-      return this.template.RootNode.GetFieldByLabel('KeyName').GetValue();
+    if(this.template.RootNode.hasField('KeyName')){
+      return this.template.RootNode.getFieldByLabel('KeyName').getValue();
     }
     return null;
   }
@@ -1378,31 +1378,31 @@ export class ModuleObject {
 
     if(this.tag){
       return this.tag
-    }else if(this.template.RootNode.HasField('Tag')){
-      return this.template.RootNode.GetFieldByLabel('Tag').GetValue()
+    }else if(this.template.RootNode.hasField('Tag')){
+      return this.template.RootNode.getFieldByLabel('Tag').getValue()
     }
     return '';
   }
 
   getTemplateResRef(){
-    if(this.template.RootNode.HasField('TemplateResRef')){
-      return this.template.RootNode.GetFieldByLabel('TemplateResRef').GetValue()
+    if(this.template.RootNode.hasField('TemplateResRef')){
+      return this.template.RootNode.getFieldByLabel('TemplateResRef').getValue()
     }
     return null;
   }
 
   getResRef(){
-    if(this.template.RootNode.HasField('ResRef')){
-      return this.template.RootNode.GetFieldByLabel('ResRef').GetValue()
+    if(this.template.RootNode.hasField('ResRef')){
+      return this.template.RootNode.getFieldByLabel('ResRef').getValue()
     }
     return null;
   }
 
   setTemplateResRef(sRef=''){
-    if(this.template.RootNode.HasField('TemplateResRef')){
-      this.template.RootNode.GetFieldByLabel('TemplateResRef').SetValue(sRef)
+    if(this.template.RootNode.hasField('TemplateResRef')){
+      this.template.RootNode.getFieldByLabel('TemplateResRef').setValue(sRef)
     }else{
-      this.template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).SetValue(sRef)
+      this.template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(sRef)
     }
     
   }
@@ -1782,166 +1782,166 @@ export class ModuleObject {
   initProperties(){
 
     if(!this.initialized){
-      if(this.template.RootNode.HasField('ObjectId')){
-        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-      }else if(this.template.RootNode.HasField('ID')){
-        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       ModuleObjectManager.AddObjectById(this);
     }
     
-    if(this.template.RootNode.HasField('Animation'))
-      this.animState = this.template.GetFieldByLabel('Animation').GetValue();
+    if(this.template.RootNode.hasField('Animation'))
+      this.animState = this.template.getFieldByLabel('Animation').getValue();
     
-    if(this.template.RootNode.HasField('Appearance')){
-      this.appearance = this.template.GetFieldByLabel('Appearance').GetValue();
+    if(this.template.RootNode.hasField('Appearance')){
+      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
     }
     
-    if(this.template.RootNode.HasField('Description'))
-      this.description = this.template.GetFieldByLabel('Description').GetCExoLocString();
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
     
-    if(this.template.RootNode.HasField('ObjectId'))
-      this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
+    if(this.template.RootNode.hasField('ObjectId'))
+      this.id = this.template.getFieldByLabel('ObjectId').getValue();
 
-    if(this.template.RootNode.HasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.GetFieldByLabel('AutoRemoveKey').GetValue();
+    if(this.template.RootNode.hasField('AutoRemoveKey'))
+      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
 
-    if(this.template.RootNode.HasField('Commandable'))
-      this.commandable = this.template.GetFieldByLabel('Commandable').GetValue();
+    if(this.template.RootNode.hasField('Commandable'))
+      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
 
-    if(this.template.RootNode.HasField('Cursor'))
-      this.cursor = this.template.GetFieldByLabel('Cursor').GetValue();
+    if(this.template.RootNode.hasField('Cursor'))
+      this.cursor = this.template.getFieldByLabel('Cursor').getValue();
 
-    if(this.template.RootNode.HasField('Faction')){
-      this.factionId = this.template.GetFieldByLabel('Faction').GetValue();
+    if(this.template.RootNode.hasField('Faction')){
+      this.factionId = this.template.getFieldByLabel('Faction').getValue();
       if((this.factionId & 0xFFFFFFFF) == -1){
         this.factionId = 0;
       }
       this.faction = FactionManager.factions.get(this.factionId);
     }
 
-    if(this.template.RootNode.HasField('Geometry')){
-      this.geometry = this.template.GetFieldByLabel('Geometry').GetChildStructs();
+    if(this.template.RootNode.hasField('Geometry')){
+      this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
 
       //Push verticies
       for(let i = 0; i < this.geometry.length; i++){
         let tgv = this.geometry[i];
         this.vertices[i] = new THREE.Vector3( 
-          tgv.GetFieldByLabel('PointX').GetValue(),
-          tgv.GetFieldByLabel('PointY').GetValue(),
-          tgv.GetFieldByLabel('PointZ').GetValue()
+          tgv.getFieldByLabel('PointX').getValue(),
+          tgv.getFieldByLabel('PointY').getValue(),
+          tgv.getFieldByLabel('PointZ').getValue()
         );
       }
     }
 
-    if(this.template.RootNode.HasField('HasMapNote'))
-      this.hasMapNote = this.template.GetFieldByLabel('HasMapNote').GetValue();
+    if(this.template.RootNode.hasField('HasMapNote'))
+      this.hasMapNote = this.template.getFieldByLabel('HasMapNote').getValue();
 
-    if(this.template.RootNode.HasField('HighlightHeight'))
-      this.highlightHeight = this.template.GetFieldByLabel('HighlightHeight').GetValue();
+    if(this.template.RootNode.hasField('HighlightHeight'))
+      this.highlightHeight = this.template.getFieldByLabel('HighlightHeight').getValue();
 
-    if(this.template.RootNode.HasField('KeyName'))
-      this.keyName = this.template.GetFieldByLabel('KeyName').GetValue();
+    if(this.template.RootNode.hasField('KeyName'))
+      this.keyName = this.template.getFieldByLabel('KeyName').getValue();
 
-    if(this.template.RootNode.HasField('LinkedTo'))
-      this.linkedTo = this.template.GetFieldByLabel('LinkedTo').GetValue();
+    if(this.template.RootNode.hasField('LinkedTo'))
+      this.linkedTo = this.template.getFieldByLabel('LinkedTo').getValue();
 
-    if(this.template.RootNode.HasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.GetFieldByLabel('LinkedToFlags').GetValue();
+    if(this.template.RootNode.hasField('LinkedToFlags'))
+      this.linkedToFlags = this.template.getFieldByLabel('LinkedToFlags').getValue();
   
-    if(this.template.RootNode.HasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.GetFieldByLabel('LinkedToModule').GetValue();
+    if(this.template.RootNode.hasField('LinkedToModule'))
+      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
         
-    if(this.template.RootNode.HasField('LoadScreenID'))
-      this.loadScreenID = this.template.GetFieldByLabel('LoadScreenID').GetValue();
+    if(this.template.RootNode.hasField('LoadScreenID'))
+      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
 
-    if(this.template.RootNode.HasField('LocName'))
-      this.locName = this.template.GetFieldByLabel('LocName').GetCExoLocString();
+    if(this.template.RootNode.hasField('LocName'))
+      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
-    if(this.template.RootNode.HasField('LocalizedName'))
-      this.localizedName = this.template.GetFieldByLabel('LocalizedName').GetCExoLocString();
+    if(this.template.RootNode.hasField('LocalizedName'))
+      this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
 
-    if(this.template.RootNode.HasField('MapNote'))
-      this.mapNote = this.template.GetFieldByLabel('MapNote').GetCExoLocString();
+    if(this.template.RootNode.hasField('MapNote'))
+      this.mapNote = this.template.getFieldByLabel('MapNote').getCExoLocString();
 
-    if(this.template.RootNode.HasField('MapNoteEnabled'))
-      this.mapNoteEnabled = this.template.GetFieldByLabel('MapNoteEnabled').GetValue();
+    if(this.template.RootNode.hasField('MapNoteEnabled'))
+      this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
 
-    if(this.template.RootNode.HasField('PortraidId'))
-      this.portraidId = this.template.GetFieldByLabel('PortraidId').GetValue();
+    if(this.template.RootNode.hasField('PortraidId'))
+      this.portraidId = this.template.getFieldByLabel('PortraidId').getValue();
 
-    if(this.template.RootNode.HasField('SetByPlayerParty'))
-      this.setByPlayerParty = this.template.GetFieldByLabel('SetByPlayerParty').GetValue();
+    if(this.template.RootNode.hasField('SetByPlayerParty'))
+      this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
 
-    if(this.template.RootNode.HasField('Tag'))
-      this.tag = this.template.GetFieldByLabel('Tag').GetValue();
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
 
-    if(this.template.RootNode.HasField('TemplateResRef'))
-      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-    if(this.template.RootNode.HasField('TransitionDestin'))
-      this.transitionDestin = this.template.GetFieldByLabel('TransitionDestin').GetCExoLocString();
+    if(this.template.RootNode.hasField('TransitionDestin'))
+      this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
 
-    if(this.template.RootNode.HasField('TrapDetectable'))
-      this.trapDetectable = this.template.RootNode.GetFieldByLabel('TrapDetectable').GetValue();
+    if(this.template.RootNode.hasField('TrapDetectable'))
+      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
 
-    if(this.template.RootNode.HasField('TrapDisarmable'))
-      this.trapDisarmable = this.template.RootNode.GetFieldByLabel('TrapDisarmable').GetValue();
+    if(this.template.RootNode.hasField('TrapDisarmable'))
+      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
 
-    if(this.template.RootNode.HasField('TrapOneShot'))
-      this.trapOneShot = this.template.GetFieldByLabel('TrapOneShot').GetValue();
+    if(this.template.RootNode.hasField('TrapOneShot'))
+      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
 
-    if(this.template.RootNode.HasField('TrapType'))
-      this.trapType = this.template.GetFieldByLabel('TrapType').GetValue();
+    if(this.template.RootNode.hasField('TrapType'))
+      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
 
-    if(this.template.RootNode.HasField('Type'))
-      this.type = this.template.GetFieldByLabel('Type').GetValue();
+    if(this.template.RootNode.hasField('Type'))
+      this.type = this.template.getFieldByLabel('Type').getValue();
 
-    if(this.template.RootNode.HasField('XPosition'))
-      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+    if(this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
-    if(this.template.RootNode.HasField('YPosition'))
-      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+    if(this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
-    if(this.template.RootNode.HasField('ZPosition'))
-      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+    if(this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
-    if(this.template.RootNode.HasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+    if(this.template.RootNode.hasField('XOrientation'))
+      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
-    if(this.template.RootNode.HasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
+    if(this.template.RootNode.hasField('YOrientation'))
+      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
 
-    if(this.template.RootNode.HasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+    if(this.template.RootNode.hasField('ZOrientation'))
+      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
       
-    if(this.template.RootNode.HasField('FortSaveThrow'))
-      this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
+    if(this.template.RootNode.hasField('FortSaveThrow'))
+      this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
 
-    if(this.template.RootNode.HasField('RefSaveThrow'))
-      this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
+    if(this.template.RootNode.hasField('RefSaveThrow'))
+      this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
 
-    if(this.template.RootNode.HasField('WillSaveThrow'))
-      this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
+    if(this.template.RootNode.hasField('WillSaveThrow'))
+      this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
 
-    if(this.template.RootNode.HasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0];
+    if(this.template.RootNode.hasField('SWVarTable')){
+      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
-        if(swVarTableStruct.HasField('BitArray')){
-          let localBools = swVarTableStruct.GetFieldByLabel('BitArray').GetChildStructs();
+        if(swVarTableStruct.hasField('BitArray')){
+          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
           }
         }
 
-        if(swVarTableStruct.HasField('ByteArray')){
-          let localNumbers = swVarTableStruct.GetFieldByLabel('ByteArray').GetChildStructs();
+        if(swVarTableStruct.hasField('ByteArray')){
+          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
@@ -1964,7 +1964,7 @@ export class ModuleObject {
   getSWVarTableSaveStruct(){
     let swVarTableStruct = new GFFStruct();
 
-    let swVarTableBitArray = swVarTableStruct.AddField( new GFFField(GFFDataType.LIST, 'BitArray') );
+    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
 
     for(let i = 0; i < 3; i++){
       let varStruct = new GFFStruct();
@@ -1976,16 +1976,16 @@ export class ModuleObject {
         }
       }
       value = value >>> 0;
-      varStruct.AddField( new GFFField(GFFDataType.DWORD, 'Variable') ).SetValue( value );
-      swVarTableBitArray.AddChildStruct(varStruct);
+      varStruct.addField( new GFFField(GFFDataType.DWORD, 'Variable') ).setValue( value );
+      swVarTableBitArray.addChildStruct(varStruct);
     }
 
-    let swVarTableByteArray = swVarTableStruct.AddField( new GFFField(GFFDataType.LIST, 'ByteArray') );
+    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
 
     for(let i = 0; i < 8; i++){
       let varStruct = new GFFStruct();
-      varStruct.AddField( new GFFField(GFFDataType.BYTE, 'Variable') ).SetValue( Number(this.getLocalNumber(i)) );
-      swVarTableByteArray.AddChildStruct(varStruct);
+      varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
+      swVarTableByteArray.addChildStruct(varStruct);
     }
     return swVarTableStruct;
   }
@@ -1997,11 +1997,11 @@ export class ModuleObject {
       if(field instanceof Array){
         //TODO
       }else if(typeof field === 'string'){
-        gff.RootNode.AddField(
+        gff.RootNode.addField(
           new GFFField(GFFDataType.RESREF, key, field)
         )
       }else if(typeof field === 'number'){
-        gff.RootNode.AddField(
+        gff.RootNode.addField(
           new GFFField(GFFDataType.INT, key, field)
         )
       }
@@ -2014,27 +2014,27 @@ export class ModuleObject {
 
     let instance = new GFFStruct();
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
     );
 

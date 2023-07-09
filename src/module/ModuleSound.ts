@@ -80,7 +80,7 @@ export class ModuleSound extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uts'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
       }else{
         console.error('Failed to load ModuleSound template');
@@ -177,7 +177,7 @@ export class ModuleSound extends ModuleObject {
   loadSound(onLoad?: Function){
 
     let template: any = {
-      sounds: [],//this.gff.GetFieldByLabel('Sounds').GetChildStructs(),
+      sounds: [],//this.gff.getFieldByLabel('Sounds').getChildStructs(),
       isActive: this.getActive(),
       isLooping: this.getLooping(),
       isRandom: this.getRandom(),
@@ -191,7 +191,7 @@ export class ModuleSound extends ModuleObject {
 
     let snds = this.getSounds();
     for(let i = 0; i < snds.length; i++){
-      template.sounds.push(snds[i].GetFieldByLabel('Sound').GetValue());
+      template.sounds.push(snds[i].getFieldByLabel('Sound').getValue());
     }
 
     //console.log('UTSObject', template);
@@ -215,94 +215,94 @@ export class ModuleSound extends ModuleObject {
   initProperties(){
     
     if(!this.initialized){
-      if(this.template.RootNode.HasField('ObjectId')){
-        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-      }else if(this.template.RootNode.HasField('ID')){
-        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       ModuleObjectManager.AddObjectById(this);
     }
 
-    if(this.template.RootNode.HasField('Active'))
-      this.active = this.template.GetFieldByLabel('Active').GetValue()
+    if(this.template.RootNode.hasField('Active'))
+      this.active = this.template.getFieldByLabel('Active').getValue()
 
-    if(this.template.RootNode.HasField('Commandable'))
-      this.commandable = this.template.GetFieldByLabel('Commandable').GetValue()
+    if(this.template.RootNode.hasField('Commandable'))
+      this.commandable = this.template.getFieldByLabel('Commandable').getValue()
 
-    if(this.template.RootNode.HasField('FixedVariance'))
-      this.fixedVariance = this.template.GetFieldByLabel('FixedVariance').GetValue()
+    if(this.template.RootNode.hasField('FixedVariance'))
+      this.fixedVariance = this.template.getFieldByLabel('FixedVariance').getValue()
 
-    if(this.template.RootNode.HasField('GeneratedType'))
-      this.generatedType = this.template.GetFieldByLabel('GeneratedType').GetValue()
+    if(this.template.RootNode.hasField('GeneratedType'))
+      this.generatedType = this.template.getFieldByLabel('GeneratedType').getValue()
 
-    if(this.template.RootNode.HasField('Hours'))
-      this.hours = this.template.GetFieldByLabel('Hours').GetValue()
+    if(this.template.RootNode.hasField('Hours'))
+      this.hours = this.template.getFieldByLabel('Hours').getValue()
 
-    if(this.template.RootNode.HasField('Interval'))
-      this.interval = this.template.GetFieldByLabel('Interval').GetValue();
+    if(this.template.RootNode.hasField('Interval'))
+      this.interval = this.template.getFieldByLabel('Interval').getValue();
 
-    if(this.template.RootNode.HasField('InternalVrtn'))
-      this.intervalVariation = this.template.GetFieldByLabel('InternalVrtn').GetValue();
+    if(this.template.RootNode.hasField('InternalVrtn'))
+      this.intervalVariation = this.template.getFieldByLabel('InternalVrtn').getValue();
 
-    if(this.template.RootNode.HasField('Looping'))
-      this.looping = this.template.GetFieldByLabel('Looping').GetValue();
+    if(this.template.RootNode.hasField('Looping'))
+      this.looping = this.template.getFieldByLabel('Looping').getValue();
 
-    if(this.template.RootNode.HasField('MaxDistance'))
-      this.maxDistance = this.template.GetFieldByLabel('MaxDistance').GetValue();
+    if(this.template.RootNode.hasField('MaxDistance'))
+      this.maxDistance = this.template.getFieldByLabel('MaxDistance').getValue();
       
-    if(this.template.RootNode.HasField('MinDistance'))
-      this.minDistance = this.template.GetFieldByLabel('MinDistance').GetValue();
+    if(this.template.RootNode.hasField('MinDistance'))
+      this.minDistance = this.template.getFieldByLabel('MinDistance').getValue();
 
-    if(this.template.RootNode.HasField('PitchVariation'))
-      this.pitchVariation = this.template.GetFieldByLabel('PitchVariation').GetValue();
+    if(this.template.RootNode.hasField('PitchVariation'))
+      this.pitchVariation = this.template.getFieldByLabel('PitchVariation').getValue();
 
-    if(this.template.RootNode.HasField('Positional'))
-      this.positional = this.template.GetFieldByLabel('Positional').GetValue();
+    if(this.template.RootNode.hasField('Positional'))
+      this.positional = this.template.getFieldByLabel('Positional').getValue();
 
-    if(this.template.RootNode.HasField('Random'))
-      this.random = this.template.GetFieldByLabel('Random').GetValue();
+    if(this.template.RootNode.hasField('Random'))
+      this.random = this.template.getFieldByLabel('Random').getValue();
 
-    if(this.template.RootNode.HasField('RandomPosition'))
-      this.randomPosition = this.template.GetFieldByLabel('RandomPosition').GetValue();
+    if(this.template.RootNode.hasField('RandomPosition'))
+      this.randomPosition = this.template.getFieldByLabel('RandomPosition').getValue();
 
-    if(this.template.RootNode.HasField('RandomRangeX'))
-      this.randomRangeX = this.template.GetFieldByLabel('RandomRangeX').GetValue();
+    if(this.template.RootNode.hasField('RandomRangeX'))
+      this.randomRangeX = this.template.getFieldByLabel('RandomRangeX').getValue();
 
-    if(this.template.RootNode.HasField('RandomRangeY'))
-      this.randomRangeY = this.template.GetFieldByLabel('RandomRangeY').GetValue();
+    if(this.template.RootNode.hasField('RandomRangeY'))
+      this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
 
-    if(this.template.RootNode.HasField('Sounds'))
-      this.sounds = this.template.GetFieldByLabel('Sounds').GetChildStructs();
+    if(this.template.RootNode.hasField('Sounds'))
+      this.sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
 
-    if(this.template.RootNode.HasField('Tag'))
-      this.tag = this.template.GetFieldByLabel('Tag').GetValue();
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
 
-    if(this.template.RootNode.HasField('TemplateResRef'))
-      this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-    if(this.template.RootNode.HasField('Times'))
-      this.times = this.template.GetFieldByLabel('Times').GetValue();
+    if(this.template.RootNode.hasField('Times'))
+      this.times = this.template.getFieldByLabel('Times').getValue();
 
-    if(this.template.RootNode.HasField('Volume'))
-      this.volume = this.template.GetFieldByLabel('Volume').GetValue();
+    if(this.template.RootNode.hasField('Volume'))
+      this.volume = this.template.getFieldByLabel('Volume').getValue();
 
-    if(this.template.RootNode.HasField('VolumeVrtn'))
-      this.volumeVariation = this.template.GetFieldByLabel('VolumeVrtn').GetValue();
+    if(this.template.RootNode.hasField('VolumeVrtn'))
+      this.volumeVariation = this.template.getFieldByLabel('VolumeVrtn').getValue();
 
-    if(this.template.RootNode.HasField('XPosition'))
-      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+    if(this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
-    if(this.template.RootNode.HasField('YPosition'))
-      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+    if(this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
-    if(this.template.RootNode.HasField('ZPosition'))
-      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+    if(this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
-    if(this.template.RootNode.HasField('SWVarTable')){
-      let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
+    if(this.template.RootNode.hasField('SWVarTable')){
+      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+        let data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -316,46 +316,46 @@ export class ModuleSound extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTS ';
-    gff.RootNode.Type = 6;
+    gff.RootNode.type = 6;
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Active') ).SetValue(this.active);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Continuous') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).SetValue(this.fixedVariance);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).SetValue(this.generatedType);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Hours') ).SetValue(this.hours);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Interval') ).SetValue(this.interval);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).SetValue(this.intervalVariation);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Looping') ).SetValue(this.looping);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).SetValue(this.maxDistance);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).SetValue(this.minDistance);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).SetValue(this.pitchVariation);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Positional') ).SetValue(this.positional);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Random') ).SetValue(this.random);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).SetValue(this.randomPosition);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).SetValue(this.randomRangeX);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).SetValue(this.randomRangeY);
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).setValue(this.fixedVariance);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).setValue(this.generatedType);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Hours') ).setValue(this.hours);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Interval') ).setValue(this.interval);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).setValue(this.intervalVariation);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).setValue(this.minDistance);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).setValue(this.pitchVariation);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Random') ).setValue(this.random);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).setValue(this.randomRangeX);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Sounds
-    let sounds = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Sounds') );
+    let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
     for(let i = 0; i < this.sounds.length; i++){
-      sounds.AddChildStruct(this.sounds[i]);
+      sounds.addChildStruct(this.sounds[i]);
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'Times') ).SetValue(this.times);
-    gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'Volume') ).SetValue(this.volume);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).SetValue(this.volumeVariation);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.position.y);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.position.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(this.volume);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(this.volumeVariation);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;
     return gff;
@@ -364,23 +364,23 @@ export class ModuleSound extends ModuleObject {
   toToolsetInstance(){
     let instance = new GFFStruct(6);
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.DWORD, 'GeneratedType', 0)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
     );
     return instance;

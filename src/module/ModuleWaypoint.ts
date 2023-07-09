@@ -69,7 +69,7 @@ export class ModuleWaypoint extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
       }else{
         console.error('Failed to load ModuleWaypoint template');
@@ -86,41 +86,41 @@ export class ModuleWaypoint extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTW ';
-    gff.RootNode.Type = 5;
+    gff.RootNode.type = 5;
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.LIST,  'ActionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE,  'Commandable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'LocalizedName') ).SetValue(this.locName);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'ActionList') );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'LocalizedName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    gff.RootNode.AddField( new GFFField(GFFDataType.LIST,  'VarTable') );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'VarTable') );
     
-    if(this.template.RootNode.HasField('XOrientation')){
-      gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('XOrientation').GetValue());
+    if(this.template.RootNode.hasField('XOrientation')){
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
     }else{
-      gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue(0);
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(0);
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     
-    if(this.template.RootNode.HasField('YOrientation')){
-      gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('YOrientation').GetValue());
+    if(this.template.RootNode.hasField('YOrientation')){
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
     }else{
-      gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue(0);
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(0);
     }
     
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.position.y);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     
-    if(this.template.RootNode.HasField('ZOrientation'))
-      gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).SetValue(this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue());
+    if(this.template.RootNode.hasField('ZOrientation'))
+      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
     
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.position.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;
     return gff;
@@ -141,63 +141,63 @@ export class ModuleWaypoint extends ModuleObject {
 
     let instance = new GFFStruct(8);
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.BYTE, 'Appearance', this.appearance)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.CEXOLOCSTRING, 'Description')
-    ).CExoLocString = new CExoLocString();
+    ).cexoLocString = new CExoLocString();
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.BYTE, 'HasMapNote', this.hasMapNote)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo', this.linkedTo)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.BYTE, 'LinkedToFlags', this.linkedToFlags)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'LinkedToModule', this.linkedToModule)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.CEXOLOCSTRING, 'MapNote')
-    ).CExoLocString = this.mapNote;
+    ).cexoLocString = this.mapNote;
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.BYTE, 'MapNoteEnabled', this.mapNoteEnabled)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'Tag', this.tag)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XOrientation', this.xOrientation)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YOrientation', this.yOrientation)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
     );
 

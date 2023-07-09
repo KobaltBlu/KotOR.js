@@ -85,31 +85,31 @@ export class NWScriptEvent {
     if(struct instanceof GFFStruct){
       let event = undefined;
 
-      let eType = struct.GetFieldByLabel('EventType').GetValue();
+      let eType = struct.getFieldByLabel('EventType').getValue();
 
       let intList = [];
       let floatList = [];
       let stringList = [];
       let objectList = [];
 
-      let tmpList = struct.GetFieldByLabel('IntList').GetChildStructs();
+      let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        intList[i] = tmpList[i].GetFieldByLabel('Parameter').GetValue();
+        intList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('FloatList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        floatList[i] = tmpList[i].GetFieldByLabel('Parameter').GetValue();
+        floatList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('StringList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('StringList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        stringList[i] = tmpList[i].GetFieldByLabel('Parameter').GetValue();
+        stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('ObjectList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        objectList[i] = tmpList[i].GetFieldByLabel('Parameter').GetValue();
+        objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
       //Initialize the event object based on the type
@@ -147,34 +147,34 @@ export class NWScriptEvent {
   save(){
 
     let eventStruct = new GFFStruct(2);
-    eventStruct.AddField( new GFFField(GFFDataType.WORD, 'EventType') ).SetValue(this.type);
+    eventStruct.addField( new GFFField(GFFDataType.WORD, 'EventType') ).setValue(this.type);
 
-    let intList = eventStruct.AddField( new GFFField(GFFDataType.LIST, 'IntList') );
+    let intList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
     for(let i = 0; i < this.intList.length; i++){
       let intStruct = new GFFStruct(0x69);
-      intStruct.AddField( new GFFField(GFFDataType.INT, "Parameter").SetValue(this.getInt(i) || 0));
-      intList.AddChildStruct(intStruct);
+      intStruct.addField( new GFFField(GFFDataType.INT, "Parameter").setValue(this.getInt(i) || 0));
+      intList.addChildStruct(intStruct);
     }
 
-    let floatList = eventStruct.AddField( new GFFField(GFFDataType.LIST, 'FloatList') );
+    let floatList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
     for(let i = 0; i < this.floatList.length; i++){
       let floatStruct = new GFFStruct(0x69);
-      floatStruct.AddField( new GFFField(GFFDataType.FLOAT, "Parameter").SetValue(this.getFloat(i) || 0.0));
-      floatList.AddChildStruct(floatStruct);
+      floatStruct.addField( new GFFField(GFFDataType.FLOAT, "Parameter").setValue(this.getFloat(i) || 0.0));
+      floatList.addChildStruct(floatStruct);
     }
 
-    let stringList = eventStruct.AddField( new GFFField(GFFDataType.LIST, 'StringList') );
+    let stringList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
     for(let i = 0; i < this.stringList.length; i++){
       let stringStruct = new GFFStruct(0x69);
-      stringStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, "Parameter").SetValue(this.getString(i) || ''));
-      stringList.AddChildStruct(stringStruct);
+      stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, "Parameter").setValue(this.getString(i) || ''));
+      stringList.addChildStruct(stringStruct);
     }
 
-    let objectList = eventStruct.AddField( new GFFField(GFFDataType.LIST, 'ObjectList') );
+    let objectList = eventStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < this.objectList.length; i++){
       let objectStruct = new GFFStruct(0x69);
-      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Parameter").SetValue( typeof this.getObject(i) === 'object' ? this.getObject(i).id : 2130706432 ));
-      objectList.AddChildStruct(objectStruct);
+      objectStruct.addField( new GFFField(GFFDataType.DWORD, "Parameter").setValue( typeof this.getObject(i) === 'object' ? this.getObject(i).id : 2130706432 ));
+      objectList.addChildStruct(objectStruct);
     }
 
     return eventStruct;

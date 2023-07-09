@@ -17,9 +17,9 @@ export class Reputation {
   toStruct(structIdx: number, id1 = -1, id2 = -1){
     let struct = new GFFStruct(structIdx);
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'FactionID1') )?.SetValue(id1);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'FactionID2') )?.SetValue(id2);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'FactionRep') )?.SetValue(this.reputation);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'FactionID1') )?.setValue(id1);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'FactionID2') )?.setValue(id2);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'FactionRep') )?.setValue(this.reputation);
 
     return struct;
   }
@@ -27,14 +27,14 @@ export class Reputation {
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let reputation = new Reputation();
-      if(struct.HasField('FactionID1'))
-        reputation.id1 = struct.GetFieldByLabel('FactionID1')?.GetValue();
+      if(struct.hasField('FactionID1'))
+        reputation.id1 = struct.getFieldByLabel('FactionID1')?.getValue();
 
-      if(struct.HasField('FactionID2'))
-        reputation.id2 = struct.GetFieldByLabel('FactionID2')?.GetValue();
+      if(struct.hasField('FactionID2'))
+        reputation.id2 = struct.getFieldByLabel('FactionID2')?.getValue();
 
-      if(struct.HasField('FactionRep'))
-        reputation.reputation = struct.GetFieldByLabel('FactionRep')?.GetValue();
+      if(struct.hasField('FactionRep'))
+        reputation.reputation = struct.getFieldByLabel('FactionRep')?.getValue();
 
       return reputation;
     }

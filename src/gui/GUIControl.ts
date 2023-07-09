@@ -520,34 +520,34 @@ export class GUIControl {
     if(this.control instanceof GFFStruct){
       let control = this.control;
 
-      this.type = ( control.HasField('CONTROLTYPE') ? control.GetFieldByLabel('CONTROLTYPE')?.GetValue() : -1 );
-      this.widget.name = this.name = ( control.HasField('TAG') ? control.GetFieldByLabel('TAG')?.GetValue() : -1 );
-      this.id = ( control.HasField('ID') ? control.GetFieldByLabel('ID')?.GetValue() : -1 );
-      this.objectLocked = ( control.HasField('Obj_Locked') ? control.GetFieldByLabel('Obj_Locked')?.GetValue() : -1 );
-      this.objectParent = ( control.HasField('Obj_Parent') ? control.GetFieldByLabel('Obj_Parent')?.GetValue() : -1 );
-      this.objectParentId = ( control.HasField('Obj_ParentID') ? control.GetFieldByLabel('Obj_ParentID')?.GetValue() : -1 );
+      this.type = ( control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
+      this.widget.name = this.name = ( control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1 );
+      this.id = ( control.hasField('ID') ? control.getFieldByLabel('ID')?.getValue() : -1 );
+      this.objectLocked = ( control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1 );
+      this.objectParent = ( control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1 );
+      this.objectParentId = ( control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1 );
   
-      this.padding = ( control.HasField('PADDING') ? control.GetFieldByLabel('PADDING')?.GetValue() : 0 );
+      this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
   
       //Extent
-      this.hasExtent = control.HasField('EXTENT');
+      this.hasExtent = control.hasField('EXTENT');
       if(this.hasExtent){
-        let extent = control.GetFieldByLabel('EXTENT')?.GetChildStructs()[0];
+        let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
         if(extent){
-          this.extent.top = extent.GetFieldByLabel('TOP')?.GetValue();
-          this.extent.left = extent.GetFieldByLabel('LEFT')?.GetValue();
-          this.extent.width = extent.GetFieldByLabel('WIDTH')?.GetValue();
-          this.extent.height = extent.GetFieldByLabel('HEIGHT')?.GetValue();
+          this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
+          this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
+          this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
+          this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
         }
       }
   
       //Border
-      this.hasBorder = control.HasField('BORDER');
+      this.hasBorder = control.hasField('BORDER');
       if(this.hasBorder){
-        let border = control.GetFieldByLabel('BORDER')?.GetChildStructs()[0];
+        let border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
         if(border){
-          if(border.HasField('COLOR')){
-            let color = border.GetFieldByLabel('COLOR')?.GetVector();
+          if(border.hasField('COLOR')){
+            let color = border.getFieldByLabel('COLOR')?.getVector();
             if(color && (color.x * color.y * color.z) < 1 ){
               if(this.border.color && this.border.fill.material){
                 this.border.color.setRGB(color.x, color.y, color.z);
@@ -560,38 +560,38 @@ export class GUIControl {
             this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
     
-          this.border.dimension = border.GetFieldByLabel('DIMENSION')?.GetValue() || 0;
-          this.border.corner = border.GetFieldByLabel('CORNER')?.GetValue();
-          this.border.edge = border.GetFieldByLabel('EDGE')?.GetValue();
-          this.border.fill.texture = border.GetFieldByLabel('FILL')?.GetValue();
-          this.border.fillstyle = border.GetFieldByLabel('FILLSTYLE')?.GetValue() || 0;
-          this.border.inneroffset = this.border.inneroffsety = border.GetFieldByLabel('INNEROFFSET')?.GetValue() || 0;
+          this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
+          this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
+          this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
+          this.border.fill.texture = border.getFieldByLabel('FILL')?.getValue();
+          this.border.fillstyle = border.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+          this.border.inneroffset = this.border.inneroffsety = border.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
 
-          if(border.HasField('INNEROFFSETY'))
-            this.border.inneroffsety = border.GetFieldByLabel('INNEROFFSETY')?.GetValue();
+          if(border.hasField('INNEROFFSETY'))
+            this.border.inneroffsety = border.getFieldByLabel('INNEROFFSETY')?.getValue();
 
-          this.border.pulsing = border.GetFieldByLabel('PULSING')?.GetValue() || 0;
+          this.border.pulsing = border.getFieldByLabel('PULSING')?.getValue() || 0;
         }
 
       }
   
       //Text
-      this.hasText = control.HasField('TEXT');
+      this.hasText = control.hasField('TEXT');
       if(this.hasText){
-        let text = control.GetFieldByLabel('TEXT')?.GetChildStructs()[0];
+        let text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
         if(text){
-          this.text.font = text.GetFieldByLabel('FONT')?.GetValue();
-          this.text.strref = text.GetFieldByLabel('STRREF')?.GetValue();
-          this.text.text = ( text.HasField('TEXT') ? text.GetFieldByLabel('TEXT')?.GetValue().replace(/\{.*\}/gi, '') : '' );
-          this.text.alignment = text.GetFieldByLabel('ALIGNMENT')?.GetValue();
-          this.text.pulsing = text.GetFieldByLabel('PULSING')?.GetValue();
+          this.text.font = text.getFieldByLabel('FONT')?.getValue();
+          this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
+          this.text.text = ( text.hasField('TEXT') ? text.getFieldByLabel('TEXT')?.getValue().replace(/\{.*\}/gi, '') : '' );
+          this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
+          this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
 
           if(this.text.font == 'fnt_d16x16'){
             this.text.font = 'fnt_d16x16b';
           }
 
-          if(text.HasField('COLOR')){
-            let color = text.GetFieldByLabel('COLOR')?.GetVector();
+          if(text.hasField('COLOR')){
+            let color = text.getFieldByLabel('COLOR')?.getVector();
             if(color) this.text.color.setRGB(color.x, color.y, color.z)
           }
 
@@ -602,12 +602,12 @@ export class GUIControl {
       }
   
       //Highlight
-      this.hasHighlight = control.HasField('HILIGHT');
+      this.hasHighlight = control.hasField('HILIGHT');
       if(this.hasHighlight){
-        let highlight = control.GetFieldByLabel('HILIGHT')?.GetChildStructs()[0];
+        let highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
         if(highlight){
-          if(highlight.HasField('COLOR')){
-            let color = highlight.GetFieldByLabel('COLOR')?.GetVector();
+          if(highlight.hasField('COLOR')){
+            let color = highlight.getFieldByLabel('COLOR')?.getVector();
             if(color && (color.x * color.y * color.z) < 1 ){
               if(this.highlight.color && this.highlight.fill.material){
                 this.highlight.color.setRGB(color.x, color.y, color.z);
@@ -620,29 +620,29 @@ export class GUIControl {
             this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          this.highlight.dimension = highlight.GetFieldByLabel('DIMENSION')?.GetValue() || 0;
-          this.highlight.corner = highlight.GetFieldByLabel('CORNER')?.GetValue() || '';
-          this.highlight.edge = highlight.GetFieldByLabel('EDGE')?.GetValue() || '';
-          this.highlight.fill.texture = highlight.GetFieldByLabel('FILL')?.GetValue() || '';
-          this.highlight.fillstyle = highlight.GetFieldByLabel('FILLSTYLE')?.GetValue() || 0;
-          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.GetFieldByLabel('INNEROFFSET')?.GetValue() || 0;
+          this.highlight.dimension = highlight.getFieldByLabel('DIMENSION')?.getValue() || 0;
+          this.highlight.corner = highlight.getFieldByLabel('CORNER')?.getValue() || '';
+          this.highlight.edge = highlight.getFieldByLabel('EDGE')?.getValue() || '';
+          this.highlight.fill.texture = highlight.getFieldByLabel('FILL')?.getValue() || '';
+          this.highlight.fillstyle = highlight.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
 
-          if(highlight.HasField('INNEROFFSETY'))
-            this.highlight.inneroffsety = highlight.GetFieldByLabel('INNEROFFSETY')?.GetValue();
+          if(highlight.hasField('INNEROFFSETY'))
+            this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
 
-          this.highlight.pulsing = highlight.GetFieldByLabel('PULSING')?.GetValue() || 0;
+          this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
         }
       }
   
       //Moveto
-      this.hasMoveTo = control.HasField('MOVETO');
+      this.hasMoveTo = control.hasField('MOVETO');
       if(this.hasMoveTo){
-        let moveTo = control.GetFieldByLabel('MOVETO')?.GetChildStructs()[0];
+        let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
         if(moveTo){
-          this.moveTo.down = moveTo.GetFieldByLabel('DOWN')?.GetValue();
-          this.moveTo.left = moveTo.GetFieldByLabel('LEFT')?.GetValue();
-          this.moveTo.right = moveTo.GetFieldByLabel('RIGHT')?.GetValue();
-          this.moveTo.up = moveTo.GetFieldByLabel('UP')?.GetValue();
+          this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
+          this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
+          this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
+          this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
         }
       }
     }else if(typeof this.control !== 'undefined'){
@@ -947,11 +947,11 @@ export class GUIControl {
     if(!(this.menu.tGuiPanel.control instanceof GFFStruct))
       return false;
 
-    if(this.menu.tGuiPanel.control.HasField('CONTROLS')){
-      let children = this.menu.tGuiPanel.control.GetFieldByLabel('CONTROLS')?.GetChildStructs() || [];
+    if(this.menu.tGuiPanel.control.hasField('CONTROLS')){
+      let children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
       
       for(let i = 0; i < children.length; i++){
-        let childParent = ( children[i].HasField('Obj_Parent') ? children[i].GetFieldByLabel('Obj_Parent')?.GetValue() : '' );
+        let childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
         if(childParent == this.name){
 
           const control: GUIControl = GUIControl.FromStruct(children[i], this.menu, this, this.scale);
@@ -2516,7 +2516,7 @@ export class GUIControl {
   }
 
   static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {
-    const type = ( struct.HasField('CONTROLTYPE') ? struct.GetFieldByLabel('CONTROLTYPE')?.GetValue() : -1 );
+    const type = ( struct.hasField('CONTROLTYPE') ? struct.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
 
     switch(type){
       case 4:

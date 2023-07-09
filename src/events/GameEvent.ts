@@ -73,16 +73,16 @@ export class GameEvent {
     if(struct instanceof GFFStruct){
       let event = undefined;
 
-      let eType = struct.GetFieldByLabel('EventId').GetValue();
-      let eObjectId = struct.GetFieldByLabel('ObjectId').GetValue();
-      let eCallerId = struct.GetFieldByLabel('CallerId').GetValue();
-      let eDay = struct.GetFieldByLabel('Day').GetValue();
-      let eTime = struct.GetFieldByLabel('Time').GetValue();
+      let eType = struct.getFieldByLabel('EventId').getValue();
+      let eObjectId = struct.getFieldByLabel('ObjectId').getValue();
+      let eCallerId = struct.getFieldByLabel('CallerId').getValue();
+      let eDay = struct.getFieldByLabel('Day').getValue();
+      let eTime = struct.getFieldByLabel('Time').getValue();
 
-      let eventDataField = struct.GetFieldByLabel('EventData');
+      let eventDataField = struct.getFieldByLabel('EventData');
       let eventData: GFFStruct;
       if(eventDataField){
-        eventData = eventDataField.GetChildStructs()[0];
+        eventData = eventDataField.getChildStructs()[0];
       }
 
       //Initialize the event object based on the type

@@ -39,8 +39,8 @@ export class TabUTPEditorState extends TabState {
           this.processEventListener('onEditorFileLoad', [this]);
           this.modulePlaceable = new KotOR.ModulePlaceable(this.blueprint);
           this.modulePlaceable.setContext(this.ui3DRenderer as any);
-          this.modulePlaceable.Load();
-          this.modulePlaceable.LoadModel().then( () => {
+          this.modulePlaceable.load();
+          this.modulePlaceable.loadModel().then( () => {
             this.modulePlaceable.box.setFromObject(this.modulePlaceable.container);
             this.ui3DRenderer.scene.add(this.modulePlaceable.container);
             this.updateCameraFocus();

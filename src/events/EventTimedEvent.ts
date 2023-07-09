@@ -38,18 +38,18 @@ export class EventTimedEvent extends GameEvent {
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       let nwscript = new NWScript();
-      nwscript.name = struct.GetFieldByLabel('Name').GetValue();
+      nwscript.name = struct.getFieldByLabel('Name').getValue();
       nwscript.init(
-        struct.GetFieldByLabel('Code').GetVoid(),
-        struct.GetFieldByLabel('CodeSize').GetValue()
+        struct.getFieldByLabel('Code').getVoid(),
+        struct.getFieldByLabel('CodeSize').getValue()
       );
 
       this.script = nwscript.newInstance();
       this.script.isStoreState = true;
 
-      let stackStruct = struct.GetFieldByLabel('Stack').GetChildStructs()[0];
+      let stackStruct = struct.getFieldByLabel('Stack').getChildStructs()[0];
       this.script.stack = NWScriptStack.FromActionStruct(stackStruct);
-      this.offset = struct.GetFieldByLabel('InstructionPtr').GetValue();
+      this.offset = struct.getFieldByLabel('InstructionPtr').getValue();
     }
   }
 
@@ -70,13 +70,13 @@ export class EventTimedEvent extends GameEvent {
   export(){
     let struct = new GFFStruct( 0xABCD );
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'CallerId') ).SetValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Day') ).SetValue(this.day);
-    let eventData = struct.AddField( new GFFField(GFFDataType.STRUCT, 'EventData') );
-    eventData.AddChildStruct( this.script.saveEventSituation() );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'EventId') ).SetValue(this.id);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Time') ).SetValue(this.time);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
+    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    eventData.addChildStruct( this.script.saveEventSituation() );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
 
     return struct;
   }

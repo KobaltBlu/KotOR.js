@@ -7,105 +7,105 @@ import isBuffer from "is-buffer";
 
 export class GFFField {
   uuid: string;
-  Type: number;
-  Label: string;
-  Data: Buffer;
-  Value: any;
-  ChildStructs: GFFStruct[] = [];
-  CExoLocString: CExoLocString;
-  Vector: THREE.Vector3;
-  Orientation: THREE.Quaternion;
+  type: number;
+  label: string;
+  data: Buffer;
+  value: any;
+  childStructs: GFFStruct[] = [];
+  cexoLocString: CExoLocString;
+  vector: THREE.Vector3;
+  orientation: THREE.Quaternion;
 
   index: number = 0;
   labelIndex: number = 0;
 
-  constructor(Type: number = 0, Label: string = "", Value?: any){
+  constructor(type: number = 0, label: string = "", value?: any){
     this.uuid = crypto.randomUUID();
-    this.Type = Type;
-    this.Label = Label;
-    this.Data = Buffer.alloc(0);
-    this.Value = Value;
-    this.ChildStructs = [];
+    this.type = type;
+    this.label = label;
+    this.data = Buffer.alloc(0);
+    this.value = value;
+    this.childStructs = [];
 
-    switch(this.Type){
+    switch(this.type){
       case GFFDataType.CEXOSTRING:
       case GFFDataType.RESREF:
-        if(typeof this.Value !== 'string')
-          this.Value = '';
+        if(typeof this.value !== 'string')
+          this.value = '';
       break;
       case GFFDataType.CEXOLOCSTRING:
-        this.Value = 0;
-        this.CExoLocString = (Value instanceof CExoLocString) ? Value : new CExoLocString();
+        this.value = 0;
+        this.cexoLocString = (value instanceof CExoLocString) ? value : new CExoLocString();
       break;
       case GFFDataType.ORIENTATION:
-        this.Value = 0;
-        if(typeof Value == 'object' && typeof Value.x == 'number' && typeof Value.y == 'number' && typeof Value.z == 'number' && typeof Value.w == 'number'){
-          this.Orientation = Value;
+        this.value = 0;
+        if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number' && typeof value.w == 'number'){
+          this.orientation = value;
         }else{
-          this.Orientation = new THREE.Quaternion(0, 0, 0, 1);
+          this.orientation = new THREE.Quaternion(0, 0, 0, 1);
         }
       break;
       case GFFDataType.VECTOR:
-        this.Value = 0;
-        if(typeof Value == 'object' && typeof Value.x == 'number' && typeof Value.y == 'number' && typeof Value.z == 'number'){
-          this.Vector = Value;
+        this.value = 0;
+        if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
+          this.vector = value;
         }else{
-          this.Vector = new THREE.Vector3(0, 0, 0);
+          this.vector = new THREE.Vector3(0, 0, 0);
         }
       break;
       case GFFDataType.STRUCT:
-        this.ChildStructs[0] = new GFFStruct();
+        this.childStructs[0] = new GFFStruct();
       break;
       case GFFDataType.VOID:
-        this.Data = Buffer.alloc(0);
-        this.Value = 0;
+        this.data = Buffer.alloc(0);
+        this.value = 0;
       break;
     }
 
   }
 
-  GetType(): number {
-    return this.Type;
+  getType(): number {
+    return this.type;
   }
 
-  GetLabel(): string {
-    return this.Label;
+  getLabel(): string {
+    return this.label;
   }
 
-  GetVoid(){
-    return this.Data;
+  getVoid(){
+    return this.data;
   }
 
-  GetValue(){
-    switch(this.Type){
+  getValue(){
+    switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
-        return this.CExoLocString.GetValue();
+        return this.cexoLocString.getValue();
       default:
-        return this.Value;
+        return this.value;
     }
   }
 
-  GetVector(){
-    return this.Vector;
+  getVector(){
+    return this.vector;
   }
 
-  GetChildStructs(){
-    return this.ChildStructs;
+  getChildStructs(){
+    return this.childStructs;
   }
 
-  GetChildStructByType(type = -1){
-    for(let i = 0; i < this.ChildStructs.length; i++){
-      if(this.ChildStructs[i].Type == type)
-        return this.ChildStructs[i];
+  getChildStructByType(type = -1){
+    for(let i = 0; i < this.childStructs.length; i++){
+      if(this.childStructs[i].type == type)
+        return this.childStructs[i];
     }
     return null;
   }
 
-  GetFieldByLabel(Label: string){
-    if(this.ChildStructs.length){
-      for(let i = 0; i < this.ChildStructs[0].Fields.length; i++){
-        let field = this.ChildStructs[0].Fields[i];
-        if (field.Label == Label){
+  getFieldByLabel(Label: string){
+    if(this.childStructs.length){
+      for(let i = 0; i < this.childStructs[0].fields.length; i++){
+        let field = this.childStructs[0].fields[i];
+        if (field.label == Label){
           return field;
         }
       }
@@ -114,29 +114,29 @@ export class GFFField {
     return null;
   }
 
-  GetCExoLocString(){
-    return this.CExoLocString;
+  getCExoLocString(){
+    return this.cexoLocString;
   }
 
-  GetOrientation(){
-    return this.Orientation;
+  getOrientation(){
+    return this.orientation;
   }
 
-  SetData(data: Buffer){
-    this.Data = data;
+  setData(data: Buffer){
+    this.data = data;
     return this;
   }
 
-  SetValue(val: any){
+  setValue(val: any){
 
-    switch(this.Type){
+    switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
         if(val instanceof CExoLocString){
-          this.CExoLocString = val;
+          this.cexoLocString = val;
         }else if(typeof val === 'number'){
-          this.CExoLocString.SetRESREF(val);
+          this.cexoLocString.setRESREF(val);
         }else if(typeof val === 'string'){
-          this.CExoLocString.AddSubString(val, 0);
+          this.cexoLocString.addSubString(val, 0);
         }
       break;
       case GFFDataType.RESREF:
@@ -146,7 +146,7 @@ export class GFFField {
         if(typeof val !== 'string')
           val = val.toString()
         
-        this.Value = val;
+        this.value = val;
       break;
       case GFFDataType.CEXOSTRING:
         if(!val)
@@ -155,7 +155,7 @@ export class GFFField {
         if(typeof val !== 'string')
           val = val.toString()
         
-        this.Value = val;
+        this.value = val;
       break;
       case GFFDataType.CHAR:
         if(!val)
@@ -164,7 +164,7 @@ export class GFFField {
         if(typeof val !== 'string')
           val = val.toString()
 
-        this.Value = val.toString();
+        this.value = val.toString();
       break;
       case GFFDataType.BYTE:
         if(typeof val === 'undefined'){
@@ -172,10 +172,10 @@ export class GFFField {
         }
         
         if(val >= 0 && val <= 255){
-          this.Value = val;
+          this.value = val;
         }else{
-          console.error('Field.SetValue BYTE OutOfBounds', val, this);
-          this.Value = val;
+          console.error('Field.setValue BYTE OutOfBounds', val, this);
+          this.value = val;
         }
       break;
       case GFFDataType.SHORT:
@@ -184,10 +184,10 @@ export class GFFField {
         }
         
         if(val >= -32768 && val <= 32767){
-          this.Value = val;
+          this.value = val;
         }else{
-          console.error('Field.SetValue SHORT OutOfBounds', val, this);
-          this.Value = val;
+          console.error('Field.setValue SHORT OutOfBounds', val, this);
+          this.value = val;
         }
       break;
       case GFFDataType.INT:
@@ -196,10 +196,10 @@ export class GFFField {
         }
         
         if(val >= -2147483648 && val <= 21474836487){
-          this.Value = val;
+          this.value = val;
         }else{
-          console.error('Field.SetValue INT OutOfBounds', val, this);
-          this.Value = val;
+          console.error('Field.setValue INT OutOfBounds', val, this);
+          this.value = val;
         }
       break;
       case GFFDataType.WORD:
@@ -208,10 +208,10 @@ export class GFFField {
         }
 
         if(val >= 0 && val <= 65535){
-          this.Value = val;
+          this.value = val;
         }else{
-          console.error('Field.SetValue WORD OutOfBounds', val, this);
-          this.Value = val;
+          console.error('Field.setValue WORD OutOfBounds', val, this);
+          this.value = val;
         }
       break;
       case GFFDataType.DWORD:
@@ -220,84 +220,84 @@ export class GFFField {
         }
 
         if(val >= 0 && val <= 4294967296){
-          this.Value = val;
+          this.value = val;
         }else{
-          console.error('Field.SetValue DWORD OutOfBounds', val, this);
-          this.Value = val;
+          console.error('Field.setValue DWORD OutOfBounds', val, this);
+          this.value = val;
         }
       break;
       case GFFDataType.VOID:
         if(isBuffer(val)){
-          this.Value = val;
+          this.value = val;
         }else if(val instanceof ArrayBuffer){
-          this.Value = Buffer.from(val);
+          this.value = Buffer.from(val);
         }
       break;
       default:
-        this.Value = val;
+        this.value = val;
       break;
     }
     return this;
 
   }
 
-  SetType(type: number){
-    this.Type = type;
+  setType(type: number){
+    this.type = type;
     return this;
   }
 
-  SetLabel(label: string){
-    this.Label = label;
+  setLabel(label: string){
+    this.label = label;
     return this;
   }
 
-  SetCExoLocString(val: CExoLocString){
-    this.CExoLocString = val;
+  setCExoLocString(val: CExoLocString){
+    this.cexoLocString = val;
     return this;
   }
 
-  SetVector(v: THREE.Vector3){
-    this.Vector = v;
+  setVector(v: THREE.Vector3){
+    this.vector = v;
     return this;
   }
 
-  SetOrientation(v: THREE.Quaternion){
-    this.Orientation = v;
+  setOrientation(v: THREE.Quaternion){
+    this.orientation = v;
     return this;
   }
 
-  AddChildStruct(strt: GFFStruct){
+  addChildStruct(strt: GFFStruct){
     if(!(strt instanceof GFFStruct)){
-      console.log('AddChildStruct invalid type', strt);
+      console.log('addChildStruct invalid type', strt);
       return this;
     }
 
-    switch(this.Type){
+    switch(this.type){
       case GFFDataType.LIST:
-        this.ChildStructs.push(strt);
+        this.childStructs.push(strt);
       break;
       case GFFDataType.STRUCT:
-        this.ChildStructs[0] = strt;
+        this.childStructs[0] = strt;
       break;
     }
 
     return this;
   }
 
-  RemoveChildStruct(strt: GFFStruct){
-    let index = this.ChildStructs.indexOf(strt);
+  removeChildStruct(strt: GFFStruct){
+    let index = this.childStructs.indexOf(strt);
     if(index >= 0){
-      this.ChildStructs.splice(index, 1);
+      this.childStructs.splice(index, 1);
     }
     return this;
   }
 
-  SetChildStructs(strts: GFFStruct[]){
-    this.ChildStructs = strts;
+  setChildStructs(strts: GFFStruct[]){
+    this.childStructs = strts;
     return this;
   }
 
-  ToJSON(){
+  toJSON(){
     return GFFObject.FieldToJSON(this);
   }
 

@@ -55,7 +55,7 @@ export class MenuMap extends GameMenu {
         e.stopPropagation();
         const mapNote: ModuleWaypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
-          this.LBL_MapNote.setText(mapNote.mapNote.GetValue())
+          this.LBL_MapNote.setText(mapNote.mapNote.getValue())
         }
       });
 
@@ -134,7 +134,7 @@ export class MenuMap extends GameMenu {
     this.LBL_MapNote.setText('');
     this.miniMap.mapNoteSelected = this.miniMap.areaMap.getRevealedMapNotes()[0];
     if(this.miniMap.mapNoteSelected){
-      this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.GetValue());
+      this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.getValue());
     }
   }
 

@@ -212,7 +212,7 @@ export class FactionManager {
     if(gff instanceof GFFObject){
       FactionManager.Init();
 
-      let factionList = gff.RootNode.GetFieldByLabel('FactionList').GetChildStructs();
+      let factionList = gff.RootNode.getFieldByLabel('FactionList').getChildStructs();
       FactionManager.FACTION_COUNT = factionList.length;
       for(let i = 0, len = factionList.length; i < len; i++){
         let factionStruct = factionList[i];
@@ -227,7 +227,7 @@ export class FactionManager {
         faction.initReputations(ReputationConstant.FRIENDLY);
       }
 
-      let repList = gff.RootNode.GetFieldByLabel('RepList').GetChildStructs();
+      let repList = gff.RootNode.getFieldByLabel('RepList').getChildStructs();
       for(let i = 0, len = repList.length; i < len; i++){
         let repStruct = repList[i];
         if(repStruct instanceof GFFStruct){
@@ -274,8 +274,8 @@ export class FactionManager {
     let gff = new GFFObject();
     gff.FileType = 'FAC ';
 
-    let factionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'FactionList') );
-    let repList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'RepList') );
+    let factionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FactionList') );
+    let repList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'RepList') );
 
     let facIdx = 0;
     let repIdx = 0;
@@ -283,7 +283,7 @@ export class FactionManager {
     FactionManager.factions.forEach( (faction, id) => {
       let facStruct = faction.toStruct(facIdx++);
       if(facStruct instanceof GFFStruct){
-        factionList.AddChildStruct(facStruct);
+        factionList.addChildStruct(facStruct);
       }
 
       for(let i = 0; i < faction.reputations.length; i++){
@@ -291,7 +291,7 @@ export class FactionManager {
         if(reputation.reputation < ReputationConstant.FRIENDLY){
           let repStruct = reputation.toStruct(repIdx++, id, i);
           if(repStruct instanceof GFFStruct){
-            repList.AddChildStruct(repStruct);
+            repList.addChildStruct(repStruct);
           }else{
             console.log('FactionManager.save', 'invalid struct', id, i, repStruct);
           }
@@ -309,7 +309,7 @@ export class FactionManager {
     return new Promise<void>( (resolve, reject) => {
       let fac = FactionManager.Save();
       if(fac instanceof GFFObject){
-        fac.Export( filename, () => {
+        fac.export( filename, () => {
           resolve();
         }, () => {
           resolve();

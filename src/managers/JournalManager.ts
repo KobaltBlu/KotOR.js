@@ -97,9 +97,9 @@ export class JournalManager {
     return new Promise<void>( (resolve, reject) => {
       ResourceLoader.loadResource(ResourceTypes.jrl, 'global', (buffer: Buffer) => {
         JournalManager.gff = new GFFObject(buffer);
-        if(JournalManager.gff.RootNode.HasField('Categories')){
+        if(JournalManager.gff.RootNode.hasField('Categories')){
           JournalManager.Categories = [];
-          const categories = JournalManager.gff.RootNode.GetFieldByLabel('Categories').GetChildStructs();
+          const categories = JournalManager.gff.RootNode.getFieldByLabel('Categories').getChildStructs();
           for(let i = 0; i < categories.length; i++){
             const struct = categories[i];
             JournalManager.Categories.push( JournalCategory.FromStruct(struct) );
@@ -132,11 +132,11 @@ export class JournalEntry {
   }
 
   getName(): string {
-    return this.category.name.GetTLKValue().Value;
+    return this.category.name.getTLKValue().Value;
   }
 
   getEntryText(): string {
-    return this.entry.text.GetTLKValue().Value;
+    return this.entry.text.getTLKValue().Value;
   }
 
   load(): void{
@@ -165,20 +165,20 @@ export class JournalEntry {
 
   toStruct(id: number = 0){
     const struct = new GFFStruct(id);
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'JNL_Date', this.date));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'JNL_Time', this.time));
-    struct.AddField(new GFFField(GFFDataType.CEXOSTRING, 'JNL_PlotID', this.category.tag));
-    struct.AddField(new GFFField(GFFDataType.INT, 'JNL_State', this.entry.id));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'JNL_Date', this.date));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'JNL_Time', this.time));
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'JNL_PlotID', this.category.tag));
+    struct.addField(new GFFField(GFFDataType.INT, 'JNL_State', this.entry.id));
     return struct;
   }
 
   static FromStruct(struct: GFFStruct): JournalEntry {
     const entry = new JournalEntry();
     if(struct instanceof GFFStruct){
-      if(struct.HasField('JNL_Date'))   entry.date    = struct.GetFieldByLabel('JNL_Date')?.GetValue();
-      if(struct.HasField('JNL_PlotID')) entry.plot_id = struct.GetFieldByLabel('JNL_PlotID')?.GetValue();
-      if(struct.HasField('JNL_State'))  entry.state   = struct.GetFieldByLabel('JNL_State')?.GetValue();
-      if(struct.HasField('JNL_Time'))   entry.time    = struct.GetFieldByLabel('JNL_Time')?.GetValue();
+      if(struct.hasField('JNL_Date'))   entry.date    = struct.getFieldByLabel('JNL_Date')?.getValue();
+      if(struct.hasField('JNL_PlotID')) entry.plot_id = struct.getFieldByLabel('JNL_PlotID')?.getValue();
+      if(struct.hasField('JNL_State'))  entry.state   = struct.getFieldByLabel('JNL_State')?.getValue();
+      if(struct.hasField('JNL_Time'))   entry.time    = struct.getFieldByLabel('JNL_Time')?.getValue();
 
       entry.load();
 
@@ -205,27 +205,27 @@ export class JournalCategory {
 
   toStruct(id: number = 0): GFFStruct {
     const struct = new GFFStruct(id);
-    struct.AddField(new GFFField(GFFDataType.WORD, 'Comment', this.comment));
-    struct.AddField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name', this.name));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'PlanetID', this.planet_id));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'PlotIndex', this.plot_index));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'Priority', this.priority));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'Tag', this.tag));
+    struct.addField(new GFFField(GFFDataType.WORD, 'Comment', this.comment));
+    struct.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Name', this.name));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'PlanetID', this.planet_id));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'PlotIndex', this.plot_index));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Priority', this.priority));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Tag', this.tag));
     return struct;
   }
 
   static FromStruct(struct: GFFStruct): JournalCategory {
     const category = new JournalCategory();
     if(struct instanceof GFFStruct){
-      if(struct.HasField('Comment'))    category.comment     = struct.GetFieldByLabel('Comment')?.GetValue();
-      if(struct.HasField('Name'))       category.name        = struct.GetFieldByLabel('Name')?.GetCExoLocString();
-      if(struct.HasField('PlanetID'))   category.planet_id   = struct.GetFieldByLabel('PlanetID')?.GetValue();
-      if(struct.HasField('PlotIndex'))  category.plot_index  = struct.GetFieldByLabel('PlotIndex')?.GetValue();
-      if(struct.HasField('Priority'))   category.priority    = struct.GetFieldByLabel('Priority')?.GetValue();
-      if(struct.HasField('Tag'))        category.tag         = struct.GetFieldByLabel('Tag')?.GetValue();
+      if(struct.hasField('Comment'))    category.comment     = struct.getFieldByLabel('Comment')?.getValue();
+      if(struct.hasField('Name'))       category.name        = struct.getFieldByLabel('Name')?.getCExoLocString();
+      if(struct.hasField('PlanetID'))   category.planet_id   = struct.getFieldByLabel('PlanetID')?.getValue();
+      if(struct.hasField('PlotIndex'))  category.plot_index  = struct.getFieldByLabel('PlotIndex')?.getValue();
+      if(struct.hasField('Priority'))   category.priority    = struct.getFieldByLabel('Priority')?.getValue();
+      if(struct.hasField('Tag'))        category.tag         = struct.getFieldByLabel('Tag')?.getValue();
 
-      if(struct.HasField('EntryList')){
-        const categories = struct.GetFieldByLabel('EntryList').GetChildStructs();
+      if(struct.hasField('EntryList')){
+        const categories = struct.getFieldByLabel('EntryList').getChildStructs();
         for(let i = 0; i < categories.length; i++){
           category.entries.push(
             JournalCategoryEntry.FromStruct(categories[i])
@@ -246,20 +246,20 @@ export class JournalCategoryEntry {
 
   toStruct(id: number = 0): GFFStruct {
     const struct = new GFFStruct(id);
-    struct.AddField(new GFFField(GFFDataType.WORD, 'End', this.end));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'ID', this.id));
-    struct.AddField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Text', this.text));
-    struct.AddField(new GFFField(GFFDataType.FLOAT, 'XP_Percentage', this.xp_percentage));
+    struct.addField(new GFFField(GFFDataType.WORD, 'End', this.end));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'ID', this.id));
+    struct.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Text', this.text));
+    struct.addField(new GFFField(GFFDataType.FLOAT, 'XP_Percentage', this.xp_percentage));
     return struct;
   }
 
   static FromStruct(struct: GFFStruct): JournalCategoryEntry {
     const entry = new JournalCategoryEntry();
     if(struct instanceof GFFStruct){
-      if(struct.HasField('End'))            entry.end           = struct.GetFieldByLabel('End')?.GetValue();
-      if(struct.HasField('ID'))             entry.id            = struct.GetFieldByLabel('ID')?.GetValue();
-      if(struct.HasField('Text'))           entry.text          = struct.GetFieldByLabel('Text')?.GetCExoLocString();
-      if(struct.HasField('XP_Percentage'))  entry.xp_percentage = struct.GetFieldByLabel('XP_Percentage')?.GetValue();
+      if(struct.hasField('End'))            entry.end           = struct.getFieldByLabel('End')?.getValue();
+      if(struct.hasField('ID'))             entry.id            = struct.getFieldByLabel('ID')?.getValue();
+      if(struct.hasField('Text'))           entry.text          = struct.getFieldByLabel('Text')?.getCExoLocString();
+      if(struct.hasField('XP_Percentage'))  entry.xp_percentage = struct.getFieldByLabel('XP_Percentage')?.getValue();
     }
     return entry;
   }

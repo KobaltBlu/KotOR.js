@@ -26,16 +26,16 @@ export class DialogMessageEntry {
 
   toStruct(){
     const struct = new GFFStruct(0);
-    struct.AddField(new GFFField(GFFDataType.CEXOSTRING, 'PT_DLG_MSG_MSG', this.message));
-    struct.AddField(new GFFField(GFFDataType.CEXOSTRING, 'PT_DLG_MSG_SPKR', this.speaker));
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_DLG_MSG_MSG', this.message));
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_DLG_MSG_SPKR', this.speaker));
     return struct;
   }
 
   static FromStruct(struct: GFFStruct): DialogMessageEntry {
     const entry = new DialogMessageEntry();
     if(struct instanceof GFFStruct){
-      if(struct.HasField('PT_DLG_MSG_MSG')) entry.message = struct.GetFieldByLabel('PT_DLG_MSG_MSG')?.GetValue();
-      if(struct.HasField('PT_DLG_MSG_SPKR')) entry.speaker = struct.GetFieldByLabel('PT_DLG_MSG_SPKR')?.GetValue();
+      if(struct.hasField('PT_DLG_MSG_MSG')) entry.message = struct.getFieldByLabel('PT_DLG_MSG_MSG')?.getValue();
+      if(struct.hasField('PT_DLG_MSG_SPKR')) entry.speaker = struct.getFieldByLabel('PT_DLG_MSG_SPKR')?.getValue();
     }
     return entry;
   }

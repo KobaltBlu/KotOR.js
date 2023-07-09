@@ -143,7 +143,7 @@ export class Utility {
     //             rim.getRawResource(res.ResRef, res.ResType, (data: Buffer) => {
     //               let are = new GFFObject(data, (gff: GFFObject) => {
 
-    //                 let Name = gff.GetFieldByLabel('Name').GetCExoLocString();
+    //                 let Name = gff.getFieldByLabel('Name').getCExoLocString();
 
     //                 _data.push({module: module, name: TLKManager.TLKStrings[Name.RESREF].Value, nameref: Name.RESREF});
 

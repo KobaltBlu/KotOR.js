@@ -11,7 +11,7 @@ export class CExoLocString {
     this.strings = [];
   }
 
-  AddSubString(subString: CExoLocSubString|string, index = -1) {
+  addSubString(subString: CExoLocSubString|string, index = -1) {
     if(index == -1)
       index = this.strings.length;
 
@@ -23,32 +23,32 @@ export class CExoLocString {
     return this;
   }
 
-  SetRESREF(RESREF: number = -1) {
+  setRESREF(RESREF: number = -1) {
     this.RESREF = RESREF;
     return this;
   }
 
-  GetStrings(): CExoLocSubString[] {
+  getStrings(): CExoLocSubString[] {
     return this.strings;
   }
 
-  GetString(index = 0): CExoLocSubString {
+  getString(index = 0): CExoLocSubString {
     return this.strings[index];
   }
 
-  GetTLKValue() {
+  getTLKValue() {
     return TLKManager.GetStringById(this.RESREF).Value;
   }
 
-  GetRESREF() {
+  getRESREF() {
     return this.RESREF;
   }
 
-  StringCount() {
+  stringCount() {
     return this.strings.length;
   }
 
-  GetValue(){
+  getValue(){
     if(this.strings.length){
       return this.strings[0].str;
     }else{

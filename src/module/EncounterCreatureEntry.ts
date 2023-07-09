@@ -13,10 +13,10 @@ export class EncounterCreatureEntry{
   save(){
     let struct = new GFFStruct();
 
-    //struct.AddField( new GFFField(GFFDataType.INT, 'Appearance') ).SetValue(this.appearance);
-    struct.AddField( new GFFField(GFFDataType.RESREF, 'ResRef') ).SetValue(this.resref);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'CR') ).SetValue(this.cr);
-    struct.AddField( new GFFField(GFFDataType.BYTE, 'SingleSpawn') ).SetValue(this.singleSpawn);
+    //struct.addField( new GFFField(GFFDataType.INT, 'Appearance') ).setValue(this.appearance);
+    struct.addField( new GFFField(GFFDataType.RESREF, 'ResRef') ).setValue(this.resref);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'CR') ).setValue(this.cr);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'SingleSpawn') ).setValue(this.singleSpawn);
 
     return struct;
   }
@@ -24,17 +24,17 @@ export class EncounterCreatureEntry{
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let entry = new EncounterCreatureEntry();
-      if(struct.HasField('Appearance'))
-        entry.appearance = struct.GetFieldByLabel('Appearance').GetValue();
+      if(struct.hasField('Appearance'))
+        entry.appearance = struct.getFieldByLabel('Appearance').getValue();
 
-      if(struct.HasField('ResRef'))
-        entry.resref = struct.GetFieldByLabel('ResRef').GetValue();
+      if(struct.hasField('ResRef'))
+        entry.resref = struct.getFieldByLabel('ResRef').getValue();
 
-      if(struct.HasField('CR'))
-        entry.cr = struct.GetFieldByLabel('CR').GetValue();
+      if(struct.hasField('CR'))
+        entry.cr = struct.getFieldByLabel('CR').getValue();
   
-      if(struct.HasField('SingleSpawn'))
-        entry.singleSpawn = struct.GetFieldByLabel('SingleSpawn').GetValue();
+      if(struct.hasField('SingleSpawn'))
+        entry.singleSpawn = struct.getFieldByLabel('SingleSpawn').getValue();
 
       return entry;
     }

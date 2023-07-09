@@ -49,8 +49,8 @@ export class GUISlider extends GUIControl{
       this.mouseInside();
     });
 
-    if(this.control.HasField('THUMB')){
-      this.thumbStruct = this.control.GetFieldByLabel('THUMB').GetChildStructs()[0];
+    if(this.control.hasField('THUMB')){
+      this.thumbStruct = this.control.getFieldByLabel('THUMB').getChildStructs()[0];
 
       this.thumb.mesh.position.z = 2;
       this.thumb.mesh.name = 'SCROLLBAR thumb';
@@ -70,8 +70,8 @@ export class GUISlider extends GUIControl{
         )
       )
 
-      if(this.thumbStruct.HasField('IMAGE')){
-        TextureLoader.enQueue(this.thumbStruct.GetFieldByLabel('IMAGE').GetValue(), this.thumb.material, TextureType.TEXTURE, () => {
+      if(this.thumbStruct.hasField('IMAGE')){
+        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, () => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;

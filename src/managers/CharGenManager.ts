@@ -186,89 +186,89 @@ export class CharGenManager {
         }
       }
     }
-    template.RootNode.AddField(new GFFField(GFFDataType.INT, 'AIState')).SetValue(appearanceIdx);
-    template.RootNode.AddField(new GFFField(GFFDataType.LIST, 'ActionList'));
-    template.RootNode.AddField(new GFFField(GFFDataType.INT, 'Age')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'AmbientAnimState')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.INT, 'Animation')).SetValue(10000);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Appearance_Head')).SetValue(1);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'Appearance_Type')).SetValue(appearanceIdx);
-    template.RootNode.AddField(new GFFField(GFFDataType.SHORT, 'ArmorClass')).SetValue(10);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'BodyBag')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'FactionID')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'PortraitId')).SetValue(portraitId);
-    template.RootNode.AddField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).SetValue('New Player');
-    template.RootNode.AddField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName'));
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'HitPoints')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'CurrentHitPoints')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'MaxHitPoints')).SetValue(20);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'ForcePoints')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'CurrentForce')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Gender')).SetValue(nth < 3 ? 0 : 1);
-    let equipment = template.RootNode.AddField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).SetValue('k_hen_attacked01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).SetValue('k_hen_damage01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptDialogue')).SetValue('k_hen_dialogue01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptDisturbed')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptEndRound')).SetValue('k_hen_combend01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat')).SetValue('k_hen_heartbt01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked')).SetValue('k_hen_blocked01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptOnNotice')).SetValue('k_hen_percept01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptRested')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptSpawn')).SetValue('k_hen_spawn01');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptSpellAt')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'ScriptUserDefine')).SetValue('');
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'GoodEvil')).SetValue(50);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'NaturalAC')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Con')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Dex')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Str')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Wis')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Cha')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Int')).SetValue(8);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'fortbonus')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'refbonus')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'willbonus')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'PerceptionRange')).SetValue(13);
-    let skillList = template.RootNode.AddField(new GFFField(GFFDataType.LIST, 'SkillList'));
+    template.RootNode.addField(new GFFField(GFFDataType.INT, 'AIState')).setValue(appearanceIdx);
+    template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ActionList'));
+    template.RootNode.addField(new GFFField(GFFDataType.INT, 'Age')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'AmbientAnimState')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.INT, 'Animation')).setValue(10000);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Appearance_Head')).setValue(1);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'Appearance_Type')).setValue(appearanceIdx);
+    template.RootNode.addField(new GFFField(GFFDataType.SHORT, 'ArmorClass')).setValue(10);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'BodyBag')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'FactionID')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'PortraitId')).setValue(portraitId);
+    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setValue('New Player');
+    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName'));
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'HitPoints')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentHitPoints')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'MaxHitPoints')).setValue(20);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'ForcePoints')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(nth < 3 ? 0 : 1);
+    let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_hen_damage01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDialogue')).setValue('k_hen_dialogue01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDisturbed')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptEndRound')).setValue('k_hen_combend01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat')).setValue('k_hen_heartbt01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked')).setValue('k_hen_blocked01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptOnNotice')).setValue('k_hen_percept01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptRested')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptSpawn')).setValue('k_hen_spawn01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptSpellAt')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptUserDefine')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GoodEvil')).setValue(50);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'NaturalAC')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Con')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Dex')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Str')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Wis')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Cha')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Int')).setValue(8);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'fortbonus')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'refbonus')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'willbonus')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PerceptionRange')).setValue(13);
+    let skillList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
     for (let i = 0; i < 8; i++) {
       let _skill = new GFFStruct();
-      _skill.AddField(new GFFField(GFFDataType.BYTE, 'Rank')).SetValue(0);
-      skillList.AddChildStruct(_skill);
+      _skill.addField(new GFFField(GFFDataType.BYTE, 'Rank')).setValue(0);
+      skillList.addChildStruct(_skill);
     }
-    let classList = template.RootNode.AddField(new GFFField(GFFDataType.LIST, 'ClassList'));
+    let classList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
     let classStruct = new GFFStruct();
-    classStruct.AddField(new GFFField(GFFDataType.INT, 'Class')).SetValue(classId);
-    classStruct.AddField(new GFFField(GFFDataType.SHORT, 'ClassLevel')).SetValue(1);
-    classStruct.AddField(new GFFField(GFFDataType.LIST, 'KnownList0'));
-    classList.AddChildStruct(classStruct);
+    classStruct.addField(new GFFField(GFFDataType.INT, 'Class')).setValue(classId);
+    classStruct.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel')).setValue(1);
+    classStruct.addField(new GFFField(GFFDataType.LIST, 'KnownList0'));
+    classList.addChildStruct(classStruct);
     let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
-    armorStruct.AddField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).SetValue('g_a_clothes01');
-    equipment.AddChildStruct(armorStruct);
+    armorStruct.addField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).setValue('g_a_clothes01');
+    equipment.addChildStruct(armorStruct);
     if (appearanceIdx >= 91 && appearanceIdx <= 105) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(83);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(83);
     } else if (appearanceIdx >= 106 && appearanceIdx <= 120) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(82);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(82);
     } else if (appearanceIdx >= 121 && appearanceIdx <= 135) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(83);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(83);
     } else if (appearanceIdx >= 136 && appearanceIdx <= 150) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(85);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(85);
     } else if (appearanceIdx >= 151 && appearanceIdx <= 165) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(84);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(84);
     } else if (appearanceIdx >= 166 && appearanceIdx <= 180) {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(85);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(85);
     } else {
-      template.RootNode.AddField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).SetValue(nth < 3 ? 85 : 83);
+      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(nth < 3 ? 85 : 83);
     }
-    template.RootNode.AddField(new GFFField(GFFDataType.BYTE, 'Race')).SetValue(6);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'XPosition')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'YPosition')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'ZPosition')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'XOrientation')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'YOrientation')).SetValue(0);
-    template.RootNode.AddField(new GFFField(GFFDataType.FLOAT, 'ZOrientation')).SetValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Race')).setValue(6);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'XPosition')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YPosition')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZPosition')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'XOrientation')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YOrientation')).setValue(0);
+    template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZOrientation')).setValue(0);
     return template;
   }
 

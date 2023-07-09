@@ -234,12 +234,12 @@ export class InventoryManager {
       let gff = new GFFObject();
       gff.FileType = 'INV ';
 
-      let itemList = gff.RootNode.AddField( new GFFField( GFFDataType.LIST, 'ItemList' ));
+      let itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        itemList.AddChildStruct( InventoryManager.inventory[i].save() );
+        itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
 
-      await gff.Export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
+      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
       resolve(gff);
     });
   }

@@ -54,17 +54,17 @@ export class GUIListBox extends GUIControl {
     this.offset = new THREE.Vector2(0, 0);
 
     //ProtoItem
-    this.hasProtoItem = control.HasField('PROTOITEM');
+    this.hasProtoItem = control.hasField('PROTOITEM');
     if(this.hasProtoItem){
-      //console.log(control.GetFieldByLabel('PROTOITEM'))
-      this.protoItem = GUIControl.FromStruct(control.GetFieldByLabel('PROTOITEM').GetChildStructs()[0], this.menu, this, this.scale);
+      //console.log(control.getFieldByLabel('PROTOITEM'))
+      this.protoItem = GUIControl.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
     }
 
     //ScrollBar
-    this.hasScrollBar = control.HasField('SCROLLBAR');
+    this.hasScrollBar = control.hasField('SCROLLBAR');
     if(this.hasScrollBar){
-      //console.log(control.GetFieldByLabel('SCROLLBAR'))
-      this._scrollbar = control.GetFieldByLabel('SCROLLBAR').GetChildStructs()[0];
+      //console.log(control.getFieldByLabel('SCROLLBAR'))
+      this._scrollbar = control.getFieldByLabel('SCROLLBAR').getChildStructs()[0];
     }
 
     this.itemGroup = new THREE.Group();
@@ -421,8 +421,8 @@ export class GUIListBox extends GUIControl {
   }
 
   isScrollBarLeft(){
-    if(this.control.HasField('LEFTSCROLLBAR')){
-      return this.control.GetFieldByLabel('LEFTSCROLLBAR').GetValue() == 1 ? true : false;
+    if(this.control.hasField('LEFTSCROLLBAR')){
+      return this.control.getFieldByLabel('LEFTSCROLLBAR').getValue() == 1 ? true : false;
     }
     return false;
   }
@@ -432,14 +432,14 @@ export class GUIListBox extends GUIControl {
     //console.log(!node)
     if(!node){
 
-      if(this.protoItem.control.HasField('EXTENT')){
-        let extent = this.protoItem.control.GetFieldByLabel('EXTENT').GetChildStructs()[0];
-        height += extent.GetFieldByLabel('HEIGHT').GetValue() || 0;
+      if(this.protoItem.control.hasField('EXTENT')){
+        let extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
+        height += extent.getFieldByLabel('HEIGHT').getValue() || 0;
       }
 
-      if(this.protoItem.control.HasField('BORDER')){
-        let border = this.protoItem.control.GetFieldByLabel('BORDER').GetChildStructs()[0];
-        height += (border.GetFieldByLabel('DIMENSION').GetValue() || 0) / 2;
+      if(this.protoItem.control.hasField('BORDER')){
+        let border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
+        height += (border.getFieldByLabel('DIMENSION').getValue() || 0) / 2;
       }
 
     }else{

@@ -101,28 +101,28 @@ export class CreatureClass {
 
   static FromCreatureClassStruct(cls_struct: GFFStruct){
     if(typeof cls_struct != 'undefined'){
-      let cls = new CreatureClass(cls_struct.GetFieldByLabel('Class').GetValue());
-      cls.setLevel(cls_struct.GetFieldByLabel('ClassLevel').GetValue());
-      let known_struct = cls_struct.GetFieldByLabel('KnownList0');
+      let cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
+      cls.setLevel(cls_struct.getFieldByLabel('ClassLevel').getValue());
+      let known_struct = cls_struct.getFieldByLabel('KnownList0');
       if(known_struct){
-        let known_spell_structs = known_struct.GetChildStructs();
+        let known_spell_structs = known_struct.getChildStructs();
         for(let i = 0; i < known_spell_structs.length; i++){
 
           let known_spell_struct = known_spell_structs[i];
           let spell = undefined;
 
-          if(known_spell_struct.HasField('Spell')){
+          if(known_spell_struct.hasField('Spell')){
             spell = new TalentSpell(
-              known_spell_struct.GetFieldByLabel('Spell').GetValue()
+              known_spell_struct.getFieldByLabel('Spell').getValue()
             );
           }
 
           if(typeof spell != 'undefined'){
-            if(known_spell_struct.HasField('SpellFlags'))
-              spell.setFlags(known_spell_struct.GetFieldByLabel('SpellFlags').GetValue());
+            if(known_spell_struct.hasField('SpellFlags'))
+              spell.setFlags(known_spell_struct.getFieldByLabel('SpellFlags').getValue());
         
-            if(known_spell_struct.HasField('SpellMetaMagic'))
-              spell.setMetaMagic(known_spell_struct.GetFieldByLabel('SpellMetaMagic').GetValue());
+            if(known_spell_struct.hasField('SpellMetaMagic'))
+              spell.setMetaMagic(known_spell_struct.getFieldByLabel('SpellMetaMagic').getValue());
 
             cls.addSpell(spell);
           }
@@ -136,21 +136,21 @@ export class CreatureClass {
 
   save(){
     let _class = new GFFStruct(2);
-    _class.AddField( new GFFField(GFFDataType.INT, 'Class') ).SetValue(this.id);
-    _class.AddField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).SetValue(this.level);
+    _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
+    _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
     //Spell Caster specific data
     if(this.spellcaster == 1){
       //Not sure what this is or if it is used in KOTOR
-      let spellsPerDay = _class.AddField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
+      let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
       let spellsPerDayStruct = new GFFStruct(17767);
-      spellsPerDayStruct.AddField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").SetValue(0));
-      spellsPerDay.AddChildStruct(spellsPerDayStruct);
+      spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").setValue(0));
+      spellsPerDay.addChildStruct(spellsPerDayStruct);
 
       //List of known spells
-      let knownList0 = _class.AddField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){
-        knownList0.AddChildStruct(this.spells[i].save());
+        knownList0.addChildStruct(this.spells[i].save());
       }
     }
 

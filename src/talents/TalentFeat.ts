@@ -162,7 +162,7 @@ export class TalentFeat extends TalentObject {
 
   save(){
     let featStruct = new GFFStruct(1);
-    featStruct.AddField( new GFFField(GFFDataType.WORD, 'Feat') ).SetValue(this.getId());
+    featStruct.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(this.getId());
     return featStruct;
   }
 

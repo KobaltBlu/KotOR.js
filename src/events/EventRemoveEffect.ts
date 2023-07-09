@@ -41,17 +41,17 @@ export class EventRemoveEffect extends GameEvent {
   export(){
     let struct = new GFFStruct( 0xABCD );
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'CallerId') ).SetValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Day') ).SetValue(this.day);
-    let eventData = struct.AddField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.script.caller instanceof ModuleObject ? this.script.caller.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
+    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     if(this.effect instanceof GameEffect){
       let effectStruct = this.effect.save();
-      effectStruct.SetType(0x1111);
-      eventData.AddChildStruct( effectStruct );
+      effectStruct.setType(0x1111);
+      eventData.addChildStruct( effectStruct );
     }
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'EventId') ).SetValue(this.id);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Time') ).SetValue(this.time);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.script.object instanceof ModuleObject ? this.script.object.id : 2130706432 );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
 
     return struct;
   }

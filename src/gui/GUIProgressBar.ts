@@ -25,9 +25,9 @@ export class GUIProgressBar extends GUIControl {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
 
-    this.startFromLeft = ( control.HasField('STARTFROMLEFT') ? control.GetFieldByLabel('STARTFROMLEFT')?.GetValue() : 0 );
-    this.curValue = ( control.HasField('CURVALUE') ? control.GetFieldByLabel('CURVALUE')?.GetValue() : 0 );
-    this.maxValue = ( control.HasField('MAXVALUE') ? control.GetFieldByLabel('MAXVALUE')?.GetValue() : 0 );
+    this.startFromLeft = ( control.hasField('STARTFROMLEFT') ? control.getFieldByLabel('STARTFROMLEFT')?.getValue() : 0 );
+    this.curValue = ( control.hasField('CURVALUE') ? control.getFieldByLabel('CURVALUE')?.getValue() : 0 );
+    this.maxValue = ( control.hasField('MAXVALUE') ? control.getFieldByLabel('MAXVALUE')?.getValue() : 0 );
 
     this.widget.userData.progress = new THREE.Group();
     this.widget.add(this.widget.userData.progress);
@@ -113,12 +113,12 @@ export class GUIProgressBar extends GUIControl {
     if(this.control instanceof GFFStruct){
       
       //Progress
-      this.hasProgress = control.HasField('PROGRESS');
+      this.hasProgress = control.hasField('PROGRESS');
       if(this.hasProgress){
-        let progress = control.GetFieldByLabel('PROGRESS')?.GetChildStructs()[0];
+        let progress = control.getFieldByLabel('PROGRESS')?.getChildStructs()[0];
         if(progress){
-          if(progress.HasField('COLOR')){
-            let color = progress.GetFieldByLabel('COLOR')?.GetVector();
+          if(progress.hasField('COLOR')){
+            let color = progress.getFieldByLabel('COLOR')?.getVector();
             if(color){
               this.progress.color.setRGB(color.x, color.y, color.z)
             }
@@ -128,17 +128,17 @@ export class GUIProgressBar extends GUIControl {
             this.progress.color = new THREE.Color(1, 1, 1); //this.defaultColor;
           }
 
-          this.progress.dimension = progress.GetFieldByLabel('DIMENSION')?.GetValue() || 0;
-          this.progress.corner = progress.GetFieldByLabel('CORNER')?.GetValue();
-          this.progress.edge = progress.GetFieldByLabel('EDGE')?.GetValue();
-          this.progress.fill.texture = progress.GetFieldByLabel('FILL')?.GetValue();
-          this.progress.fillstyle = progress.GetFieldByLabel('FILLSTYLE')?.GetValue() || 0;
-          this.progress.inneroffset = this.progress.inneroffsety = progress.GetFieldByLabel('INNEROFFSET')?.GetValue() || 0;
+          this.progress.dimension = progress.getFieldByLabel('DIMENSION')?.getValue() || 0;
+          this.progress.corner = progress.getFieldByLabel('CORNER')?.getValue();
+          this.progress.edge = progress.getFieldByLabel('EDGE')?.getValue();
+          this.progress.fill.texture = progress.getFieldByLabel('FILL')?.getValue();
+          this.progress.fillstyle = progress.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+          this.progress.inneroffset = this.progress.inneroffsety = progress.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
 
-          if(progress.HasField('INNEROFFSETY'))
-            this.progress.inneroffsety = progress.GetFieldByLabel('INNEROFFSETY')?.GetValue();
+          if(progress.hasField('INNEROFFSETY'))
+            this.progress.inneroffsety = progress.getFieldByLabel('INNEROFFSETY')?.getValue();
 
-          this.progress.pulsing = progress.GetFieldByLabel('PULSING')?.GetValue() || 0;
+          this.progress.pulsing = progress.getFieldByLabel('PULSING')?.getValue() || 0;
         }
       }
 

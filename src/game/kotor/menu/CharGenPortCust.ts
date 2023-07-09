@@ -144,8 +144,8 @@ export class CharGenPortCust extends GameMenu {
         e.stopPropagation();
         
         //Save appearance choice
-        CharGenManager.selectedCreature.template.GetFieldByLabel('Appearance_Type').SetValue(CharGenManager.selectedCreature.appearance);
-        CharGenManager.selectedCreature.template.GetFieldByLabel('PortraitId').SetValue(CharGenManager.selectedCreature.portraidId);
+        CharGenManager.selectedCreature.template.getFieldByLabel('Appearance_Type').setValue(CharGenManager.selectedCreature.appearance);
+        CharGenManager.selectedCreature.template.getFieldByLabel('PortraitId').setValue(CharGenManager.selectedCreature.portraidId);
         MenuManager.CharGenQuickPanel.step1 = true;
 
         this.Close();

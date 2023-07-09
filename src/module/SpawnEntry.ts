@@ -11,8 +11,8 @@ export class SpawnEntry{
   save(){
     let struct = new GFFStruct();
 
-    struct.AddField( new GFFField(GFFDataType.RESREF, 'SpawnResRef') ).SetValue(this.spawnResref);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'SpawnCR') ).SetValue(this.spawnCR);
+    struct.addField( new GFFField(GFFDataType.RESREF, 'SpawnResRef') ).setValue(this.spawnResref);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'SpawnCR') ).setValue(this.spawnCR);
 
     return struct;
   }
@@ -21,11 +21,11 @@ export class SpawnEntry{
     if(struct instanceof GFFStruct){
       let entry = new SpawnEntry();
 
-      if(struct.HasField('SpawnResRef'))
-        entry.spawnResref = struct.GetFieldByLabel('SpawnResRef').GetValue();
+      if(struct.hasField('SpawnResRef'))
+        entry.spawnResref = struct.getFieldByLabel('SpawnResRef').getValue();
 
-      if(struct.HasField('SpawnCR'))
-        entry.spawnCR = struct.GetFieldByLabel('SpawnCR').GetValue();
+      if(struct.hasField('SpawnCR'))
+        entry.spawnCR = struct.getFieldByLabel('SpawnCR').getValue();
 
       return entry;
     }

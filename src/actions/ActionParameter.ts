@@ -22,29 +22,29 @@ export class ActionParameter {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let type = struct.GetFieldByLabel('Type').GetValue();
+      let type = struct.getFieldByLabel('Type').getValue();
       let value = undefined;
       switch(type){
         case ActionParameterType.INT:
         case ActionParameterType.FLOAT:
         case ActionParameterType.DWORD:
         case ActionParameterType.STRING:
-          value = struct.GetFieldByLabel('Value').GetValue();
+          value = struct.getFieldByLabel('Value').getValue();
         break;
         case ActionParameterType.SCRIPT_SITUATION:
-          let scriptParamStructs = struct.GetFieldByLabel('Value').GetChildStructs()[0];
+          let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
           let script = new NWScript();
-          script.name = scriptParamStructs.GetFieldByLabel('Name').GetValue();
+          script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
           script.init(
-            scriptParamStructs.GetFieldByLabel('Code').GetVoid(),
-            scriptParamStructs.GetFieldByLabel('CodeSize').GetValue()
+            scriptParamStructs.getFieldByLabel('Code').getVoid(),
+            scriptParamStructs.getFieldByLabel('CodeSize').getValue()
           );
       
           let scriptInstance = script.newInstance();
           scriptInstance.isStoreState = true;
-          scriptInstance.offset = scriptInstance.address = scriptParamStructs.GetFieldByLabel('InstructionPtr').GetValue();
+          scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
       
-          let stackStruct = scriptParamStructs.GetFieldByLabel('Stack').GetChildStructs()[0];
+          let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
           scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
 
           value = scriptInstance;

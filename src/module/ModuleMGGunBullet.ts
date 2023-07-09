@@ -117,13 +117,13 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   initProperties(){
-    this.model_name = this.template.RootNode.GetFieldByLabel('Bullet_Model').GetValue();
-    this.collision_sound = this.template.RootNode.GetFieldByLabel('Collision_Sound').GetValue();
-    this.damage_amt = this.template.RootNode.GetFieldByLabel('Damage').GetValue();
-    this.lifespan = this.template.RootNode.GetFieldByLabel('Lifespan').GetValue();
-    this.rate_of_fire = this.template.RootNode.GetFieldByLabel('Rate_Of_Fire').GetValue();
-    this.speed = this.template.RootNode.GetFieldByLabel('Speed').GetValue();
-    this.target_type = this.template.RootNode.GetFieldByLabel('Target_Type').GetValue();
+    this.model_name = this.template.RootNode.getFieldByLabel('Bullet_Model').getValue();
+    this.collision_sound = this.template.RootNode.getFieldByLabel('Collision_Sound').getValue();
+    this.damage_amt = this.template.RootNode.getFieldByLabel('Damage').getValue();
+    this.lifespan = this.template.RootNode.getFieldByLabel('Lifespan').getValue();
+    this.rate_of_fire = this.template.RootNode.getFieldByLabel('Rate_Of_Fire').getValue();
+    this.speed = this.template.RootNode.getFieldByLabel('Speed').getValue();
+    this.target_type = this.template.RootNode.getFieldByLabel('Target_Type').getValue();
 
     //TSL speed needs to be increased
     if(this.speed < 1){

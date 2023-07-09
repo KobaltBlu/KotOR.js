@@ -12,10 +12,10 @@ export class SpawnPointEntry{
   save(){
     let struct = new GFFStruct();
 
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'X') ).SetValue(this.position.x);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Y') ).SetValue(this.position.y);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Z') ).SetValue(this.position.z);
-    struct.AddField( new GFFField(GFFDataType.FLOAT, 'Orientation') ).SetValue(this.orientation);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.position.z);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'Orientation') ).setValue(this.orientation);
 
     return struct;
   }
@@ -23,17 +23,17 @@ export class SpawnPointEntry{
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
       let entry = new SpawnPointEntry();
-      if(struct.HasField('X'))
-        entry.position.x = struct.GetFieldByLabel('X').GetValue();
+      if(struct.hasField('X'))
+        entry.position.x = struct.getFieldByLabel('X').getValue();
 
-      if(struct.HasField('Y'))
-        entry.position.y = struct.GetFieldByLabel('Y').GetValue();
+      if(struct.hasField('Y'))
+        entry.position.y = struct.getFieldByLabel('Y').getValue();
 
-      if(struct.HasField('Z'))
-        entry.position.z = struct.GetFieldByLabel('Z').GetValue();
+      if(struct.hasField('Z'))
+        entry.position.z = struct.getFieldByLabel('Z').getValue();
   
-      if(struct.HasField('Orientation'))
-        entry.orientation = struct.GetFieldByLabel('Orientation').GetValue();
+      if(struct.hasField('Orientation'))
+        entry.orientation = struct.getFieldByLabel('Orientation').getValue();
 
       return entry;
     }

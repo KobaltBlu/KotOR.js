@@ -47,7 +47,7 @@ export class TalentSkill extends TalentObject {
 
   save(){
     let skillStruct = new GFFStruct();
-    skillStruct.AddField( new GFFField(GFFDataType.BYTE, 'Rank') ).SetValue(this.getRank());
+    skillStruct.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue(this.getRank());
     return skillStruct;
   }
 

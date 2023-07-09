@@ -2553,8 +2553,8 @@ export class ModuleCreature extends ModuleObject {
     }else{
       return this.inventory;
     }
-    /*if(this.template.RootNode.HasField('ItemList')){
-      return this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+    /*if(this.template.RootNode.hasField('ItemList')){
+      return this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
     }
     return [];*/
   }
@@ -3101,8 +3101,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getSkillList(){
-    // if(this.template.RootNode.HasField('SkillList')){
-    //   return this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
+    // if(this.template.RootNode.hasField('SkillList')){
+    //   return this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
     // }
     return this.skills;
   }
@@ -3278,7 +3278,7 @@ export class ModuleCreature extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
         this.loadScripts();
         FactionManager.AddCreatureToFaction(this);
@@ -3299,20 +3299,20 @@ export class ModuleCreature extends ModuleObject {
 
   loadScripts (){
 
-    this.scripts.onAttacked = this.template.GetFieldByLabel('ScriptAttacked').GetValue();
-    this.scripts.onDamaged = this.template.GetFieldByLabel('ScriptDamaged').GetValue();
-    this.scripts.onDeath = this.template.GetFieldByLabel('ScriptDeath').GetValue();
-    this.scripts.onDialog = this.template.GetFieldByLabel('ScriptDialogue').GetValue();
-    this.scripts.onDisturbed = this.template.GetFieldByLabel('ScriptDisturbed').GetValue();
-    this.scripts.onEndDialog = this.template.GetFieldByLabel('ScriptEndDialogu').GetValue();
-    this.scripts.onEndRound = this.template.GetFieldByLabel('ScriptEndRound').GetValue();
-    this.scripts.onHeartbeat = this.template.GetFieldByLabel('ScriptHeartbeat').GetValue();
-    this.scripts.onBlocked = this.template.GetFieldByLabel('ScriptOnBlocked').GetValue();
-    this.scripts.onNotice = this.template.GetFieldByLabel('ScriptOnNotice').GetValue();
-    this.scripts.onRested = this.template.GetFieldByLabel('ScriptRested').GetValue();
-    this.scripts.onSpawn = this.template.GetFieldByLabel('ScriptSpawn').GetValue();
-    this.scripts.onSpellAt = this.template.GetFieldByLabel('ScriptSpellAt').GetValue();
-    this.scripts.onUserDefined = this.template.GetFieldByLabel('ScriptUserDefine').GetValue();
+    this.scripts.onAttacked = this.template.getFieldByLabel('ScriptAttacked').getValue();
+    this.scripts.onDamaged = this.template.getFieldByLabel('ScriptDamaged').getValue();
+    this.scripts.onDeath = this.template.getFieldByLabel('ScriptDeath').getValue();
+    this.scripts.onDialog = this.template.getFieldByLabel('ScriptDialogue').getValue();
+    this.scripts.onDisturbed = this.template.getFieldByLabel('ScriptDisturbed').getValue();
+    this.scripts.onEndDialog = this.template.getFieldByLabel('ScriptEndDialogu').getValue();
+    this.scripts.onEndRound = this.template.getFieldByLabel('ScriptEndRound').getValue();
+    this.scripts.onHeartbeat = this.template.getFieldByLabel('ScriptHeartbeat').getValue();
+    this.scripts.onBlocked = this.template.getFieldByLabel('ScriptOnBlocked').getValue();
+    this.scripts.onNotice = this.template.getFieldByLabel('ScriptOnNotice').getValue();
+    this.scripts.onRested = this.template.getFieldByLabel('ScriptRested').getValue();
+    this.scripts.onSpawn = this.template.getFieldByLabel('ScriptSpawn').getValue();
+    this.scripts.onSpellAt = this.template.getFieldByLabel('ScriptSpellAt').getValue();
+    this.scripts.onUserDefined = this.template.getFieldByLabel('ScriptUserDefine').getValue();
 
     let keys = Object.keys(this.scripts);
     for(let i = 0; i < keys.length; i++){
@@ -3564,8 +3564,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /*getEquip_ItemList(){
-    if(this.template.RootNode.HasField('Equip_ItemList')){
-      return this.template.GetFieldByLabel('Equip_ItemList').GetChildStructs()
+    if(this.template.RootNode.hasField('Equip_ItemList')){
+      return this.template.getFieldByLabel('Equip_ItemList').getChildStructs()
     }
     return [];
   }*/
@@ -3914,37 +3914,37 @@ export class ModuleCreature extends ModuleObject {
       this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
       
       if(!this.initialized){
-        if(this.template.RootNode.HasField('ObjectId')){
-          this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-        }else if(this.template.RootNode.HasField('ID')){
-          this.id = this.template.GetFieldByLabel('ID').GetValue();
+        if(this.template.RootNode.hasField('ObjectId')){
+          this.id = this.template.getFieldByLabel('ObjectId').getValue();
+        }else if(this.template.RootNode.hasField('ID')){
+          this.id = this.template.getFieldByLabel('ID').getValue();
         }
         
         ModuleObjectManager.AddObjectById(this);
       }
 
-      if(this.template.RootNode.HasField('Appearance_Type')){
-        this.appearance = this.template.GetFieldByLabel('Appearance_Type').GetValue();
+      if(this.template.RootNode.hasField('Appearance_Type')){
+        this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
         this.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.appearance);
       }
 
-      if(this.template.RootNode.HasField('Animation')){
+      if(this.template.RootNode.hasField('Animation')){
         this.setAnimationState(
-          this.template.GetFieldByLabel('Animation').GetValue()
+          this.template.getFieldByLabel('Animation').getValue()
         );
       }
 
-      if(this.template.RootNode.HasField('BodyBag'))
-        this.bodyBag = this.template.GetFieldByLabel('BodyBag').GetValue();
+      if(this.template.RootNode.hasField('BodyBag'))
+        this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
 
-      if(this.template.RootNode.HasField('BodyVariation'))
-        this.bodyBag = this.template.GetFieldByLabel('BodyVariation').GetValue();
+      if(this.template.RootNode.hasField('BodyVariation'))
+        this.bodyBag = this.template.getFieldByLabel('BodyVariation').getValue();
 
-      if(this.template.RootNode.HasField('ChallengeRating'))
-        this.challengeRating = this.template.GetFieldByLabel('ChallengeRating').GetValue();
+      if(this.template.RootNode.hasField('ChallengeRating'))
+        this.challengeRating = this.template.getFieldByLabel('ChallengeRating').getValue();
 
-      if(this.template.RootNode.HasField('ClassList')){
-        let classes = this.template.RootNode.GetFieldByLabel('ClassList').GetChildStructs();
+      if(this.template.RootNode.hasField('ClassList')){
+        let classes = this.template.RootNode.getFieldByLabel('ClassList').getChildStructs();
         for(let i = 0; i < classes.length; i++){
           this.classes.push(
             CreatureClass.FromCreatureClassStruct(classes[i])
@@ -3952,108 +3952,108 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      if(this.template.RootNode.HasField('Conversation')){
-        this.conversation = DLGObject.FromResRef(this.template.GetFieldByLabel('Conversation').GetValue());
+      if(this.template.RootNode.hasField('Conversation')){
+        this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
       }
 
-      if(this.template.RootNode.HasField('CurrentForce'))
-        this.currentForce = this.template.GetFieldByLabel('CurrentForce').GetValue();
+      if(this.template.RootNode.hasField('CurrentForce'))
+        this.currentForce = this.template.getFieldByLabel('CurrentForce').getValue();
 
-      if(this.template.RootNode.HasField('CurrentHitPoints'))
-        this.currentHitPoints = this.template.GetFieldByLabel('CurrentHitPoints').GetValue();
+      if(this.template.RootNode.hasField('CurrentHitPoints'))
+        this.currentHitPoints = this.template.getFieldByLabel('CurrentHitPoints').getValue();
 
-      if(this.template.RootNode.HasField('HitPoints'))
-        this.hitPoints = this.template.GetFieldByLabel('HitPoints').GetValue();
+      if(this.template.RootNode.hasField('HitPoints'))
+        this.hitPoints = this.template.getFieldByLabel('HitPoints').getValue();
 
-      if(this.template.RootNode.HasField('Disarmable'))
-        this.disarmable = this.template.GetFieldByLabel('Disarmable').GetValue();
+      if(this.template.RootNode.hasField('Disarmable'))
+        this.disarmable = this.template.getFieldByLabel('Disarmable').getValue();
     
-      if(this.template.RootNode.HasField('Experience'))
-        this.experience = this.template.RootNode.GetFieldByLabel('Experience').GetValue();
+      if(this.template.RootNode.hasField('Experience'))
+        this.experience = this.template.RootNode.getFieldByLabel('Experience').getValue();
 
-      if(this.template.RootNode.HasField('Listening')){
-        this.setListening(this.template.RootNode.GetFieldByLabel('Listening').GetValue());
+      if(this.template.RootNode.hasField('Listening')){
+        this.setListening(this.template.RootNode.getFieldByLabel('Listening').getValue());
       }
-      if(this.template.RootNode.HasField('Commandable')){
-        this.setCommadable(this.template.RootNode.GetFieldByLabel('Commandable').GetValue());
+      if(this.template.RootNode.hasField('Commandable')){
+        this.setCommadable(this.template.RootNode.getFieldByLabel('Commandable').getValue());
       }
 
-      if(this.template.RootNode.HasField('ExpressionList')){
-        let expressions = this.template.RootNode.GetFieldByLabel('ExpressionList').GetChildStructs();
+      if(this.template.RootNode.hasField('ExpressionList')){
+        let expressions = this.template.RootNode.getFieldByLabel('ExpressionList').getChildStructs();
         for(let i = 0; i < expressions.length; i++){
           this.setListeningPattern(
-            expressions[i].GetFieldByLabel('ExpressionString').GetValue(),
-            expressions[i].GetFieldByLabel('ExpressionId').GetValue()
+            expressions[i].getFieldByLabel('ExpressionString').getValue(),
+            expressions[i].getFieldByLabel('ExpressionId').getValue()
           );
         }
       }
           
-      if(this.template.RootNode.HasField('FactionID')){
-        this.factionId = this.template.GetFieldByLabel('FactionID').GetValue();
+      if(this.template.RootNode.hasField('FactionID')){
+        this.factionId = this.template.getFieldByLabel('FactionID').getValue();
         if((this.factionId & 0xFFFFFFFF) == -1){
           this.factionId = 0;
         }
       }
       this.faction = FactionManager.factions.get(this.factionId);
 
-      if(this.template.RootNode.HasField('FeatList')){
-        let feats = this.template.RootNode.GetFieldByLabel('FeatList').GetChildStructs();
+      if(this.template.RootNode.hasField('FeatList')){
+        let feats = this.template.RootNode.getFieldByLabel('FeatList').getChildStructs();
         for(let i = 0; i < feats.length; i++){
           this.feats.push(
-            new TalentFeat( feats[i].GetFieldByLabel('Feat').GetValue() )
+            new TalentFeat( feats[i].getFieldByLabel('Feat').getValue() )
           );
         }
       }
 
-      if(this.template.RootNode.HasField('FirstName'))
-        this.firstName = this.template.RootNode.GetFieldByLabel('FirstName').GetValue();
+      if(this.template.RootNode.hasField('FirstName'))
+        this.firstName = this.template.RootNode.getFieldByLabel('FirstName').getValue();
       
-      if(this.template.RootNode.HasField('ForcePoints'))
-        this.forcePoints = this.template.RootNode.GetFieldByLabel('ForcePoints').GetValue();
+      if(this.template.RootNode.hasField('ForcePoints'))
+        this.forcePoints = this.template.RootNode.getFieldByLabel('ForcePoints').getValue();
           
-      if(this.template.RootNode.HasField('Gender'))
-        this.gender = this.template.RootNode.GetFieldByLabel('Gender').GetValue();
+      if(this.template.RootNode.hasField('Gender'))
+        this.gender = this.template.RootNode.getFieldByLabel('Gender').getValue();
     
-      if(this.template.RootNode.HasField('GoodEvil'))
-        this.goodEvil = this.template.RootNode.GetFieldByLabel('GoodEvil').GetValue();
+      if(this.template.RootNode.hasField('GoodEvil'))
+        this.goodEvil = this.template.RootNode.getFieldByLabel('GoodEvil').getValue();
         
-      if(this.template.RootNode.HasField('Hologram'))
-        this.isHologram = this.template.GetFieldByLabel('Hologram').GetValue();
+      if(this.template.RootNode.hasField('Hologram'))
+        this.isHologram = this.template.getFieldByLabel('Hologram').getValue();
 
-      if(this.template.RootNode.HasField('Interruptable'))
-        this.interruptable = this.template.GetFieldByLabel('Interruptable').GetValue();
+      if(this.template.RootNode.hasField('Interruptable'))
+        this.interruptable = this.template.getFieldByLabel('Interruptable').getValue();
 
-      if(this.template.RootNode.HasField('IsPC'))
-        this.isPC = this.template.GetFieldByLabel('IsPC').GetValue();
+      if(this.template.RootNode.hasField('IsPC'))
+        this.isPC = this.template.getFieldByLabel('IsPC').getValue();
 
-      if(this.template.RootNode.HasField('LastName'))
-        this.lastName = this.template.GetFieldByLabel('LastName').GetValue();
+      if(this.template.RootNode.hasField('LastName'))
+        this.lastName = this.template.getFieldByLabel('LastName').getValue();
 
-      if(this.template.RootNode.HasField('MaxHitPoints')){
-        this.maxHitPoints = this.template.GetFieldByLabel('MaxHitPoints').GetValue();
+      if(this.template.RootNode.hasField('MaxHitPoints')){
+        this.maxHitPoints = this.template.getFieldByLabel('MaxHitPoints').getValue();
       }
 
-      if(this.template.RootNode.HasField('MaxForcePoints')){
-        this.maxForcePoints = this.template.GetFieldByLabel('MaxForcePoints').GetValue();
+      if(this.template.RootNode.hasField('MaxForcePoints')){
+        this.maxForcePoints = this.template.getFieldByLabel('MaxForcePoints').getValue();
       }
 
-      if(this.template.RootNode.HasField('Min1HP'))
-        this.min1HP = this.template.GetFieldByLabel('Min1HP').GetValue();
+      if(this.template.RootNode.hasField('Min1HP'))
+        this.min1HP = this.template.getFieldByLabel('Min1HP').getValue();
 
-      if(this.template.RootNode.HasField('NaturalAC'))
-        this.naturalAC = this.template.GetFieldByLabel('NaturalAC').GetValue();
+      if(this.template.RootNode.hasField('NaturalAC'))
+        this.naturalAC = this.template.getFieldByLabel('NaturalAC').getValue();
 
-      if(this.template.RootNode.HasField('NoPermDeath'))
-        this.noPermDeath = this.template.GetFieldByLabel('NoPermDeath').GetValue();
+      if(this.template.RootNode.hasField('NoPermDeath'))
+        this.noPermDeath = this.template.getFieldByLabel('NoPermDeath').getValue();
 
-      if(this.template.RootNode.HasField('NotReorienting'))
-        this.notReorienting = this.template.GetFieldByLabel('NotReorienting').GetValue();
+      if(this.template.RootNode.hasField('NotReorienting'))
+        this.notReorienting = this.template.getFieldByLabel('NotReorienting').getValue();
 
-      if(this.template.RootNode.HasField('PartyInteract'))
-        this.partyInteract = this.template.GetFieldByLabel('PartyInteract').GetValue();
+      if(this.template.RootNode.hasField('PartyInteract'))
+        this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
 
-      if(this.template.RootNode.HasField('PerceptionRange')){
-        this.perceptionRange = this.template.GetFieldByLabel('PerceptionRange').GetValue();
+      if(this.template.RootNode.hasField('PerceptionRange')){
+        this.perceptionRange = this.template.getFieldByLabel('PerceptionRange').getValue();
       }else{
         //https://forum.neverwintervault.org/t/perception-range/3191/9
         //It appears that PerceptionRange isn't saved inside the GIT file.
@@ -4061,118 +4061,118 @@ export class ModuleCreature extends ModuleObject {
         this.perceptionRange = 11;
       }
 
-      if(this.template.RootNode.HasField('Phenotype'))
-        this.phenotype = this.template.GetFieldByLabel('Phenotype').GetValue();
+      if(this.template.RootNode.hasField('Phenotype'))
+        this.phenotype = this.template.getFieldByLabel('Phenotype').getValue();
 
-      if(this.template.RootNode.HasField('Plot'))
-        this.plot = this.template.GetFieldByLabel('Plot').GetValue();
+      if(this.template.RootNode.hasField('Plot'))
+        this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-      if(this.template.RootNode.HasField('PortraitId'))
-        this.portraidId = this.template.GetFieldByLabel('PortraitId').GetValue();
+      if(this.template.RootNode.hasField('PortraitId'))
+        this.portraidId = this.template.getFieldByLabel('PortraitId').getValue();
     
-      if(this.template.RootNode.HasField('Race'))
-        this.race = this.template.RootNode.GetFieldByLabel('Race').GetValue();
+      if(this.template.RootNode.hasField('Race'))
+        this.race = this.template.RootNode.getFieldByLabel('Race').getValue();
 
-      if(this.template.RootNode.HasField('SkillList')){
-        let skills = this.template.RootNode.GetFieldByLabel('SkillList').GetChildStructs();
+      if(this.template.RootNode.hasField('SkillList')){
+        let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
         for(let i = 0; i < skills.length; i++){
-          this.skills[i] = new TalentSkill(i, skills[i].GetFieldByLabel('Rank').GetValue());
+          this.skills[i] = new TalentSkill(i, skills[i].getFieldByLabel('Rank').getValue());
         }
       }
 
-      if(this.template.RootNode.HasField('SoundSetFile'))
-        this.soundSetFile = this.template.RootNode.GetFieldByLabel('SoundSetFile').GetValue();
+      if(this.template.RootNode.hasField('SoundSetFile'))
+        this.soundSetFile = this.template.RootNode.getFieldByLabel('SoundSetFile').getValue();
     
-      if(this.template.RootNode.HasField('SubRace'))
-        this.subrace = this.template.RootNode.GetFieldByLabel('SubRace').GetValue();
+      if(this.template.RootNode.hasField('SubRace'))
+        this.subrace = this.template.RootNode.getFieldByLabel('SubRace').getValue();
 
-      if(this.template.RootNode.HasField('Tag'))
-        this.tag = this.template.GetFieldByLabel('Tag').GetValue();
+      if(this.template.RootNode.hasField('Tag'))
+        this.tag = this.template.getFieldByLabel('Tag').getValue();
 
-      if(this.template.RootNode.HasField('TemplateResRef'))
-        this.templateResRef = this.template.GetFieldByLabel('TemplateResRef').GetValue();
+      if(this.template.RootNode.hasField('TemplateResRef'))
+        this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-      if(this.template.RootNode.HasField('TextureVar'))
-        this.textureVar = this.template.GetFieldByLabel('TextureVar').GetValue();
+      if(this.template.RootNode.hasField('TextureVar'))
+        this.textureVar = this.template.getFieldByLabel('TextureVar').getValue();
 
-      if(this.template.RootNode.HasField('WalkRate'))
-        this.walkRate = this.template.GetFieldByLabel('WalkRate').GetValue();
+      if(this.template.RootNode.hasField('WalkRate'))
+        this.walkRate = this.template.getFieldByLabel('WalkRate').getValue();
 
-      if(this.template.RootNode.HasField('Str'))
-        this.str = this.template.GetFieldByLabel('Str').GetValue();
+      if(this.template.RootNode.hasField('Str'))
+        this.str = this.template.getFieldByLabel('Str').getValue();
     
-      if(this.template.RootNode.HasField('Dex'))
-        this.dex = this.template.GetFieldByLabel('Dex').GetValue();
+      if(this.template.RootNode.hasField('Dex'))
+        this.dex = this.template.getFieldByLabel('Dex').getValue();
     
-      if(this.template.RootNode.HasField('Con'))
-        this.con = this.template.GetFieldByLabel('Con').GetValue();
+      if(this.template.RootNode.hasField('Con'))
+        this.con = this.template.getFieldByLabel('Con').getValue();
     
-      if(this.template.RootNode.HasField('Cha'))
-        this.cha = this.template.GetFieldByLabel('Cha').GetValue();
+      if(this.template.RootNode.hasField('Cha'))
+        this.cha = this.template.getFieldByLabel('Cha').getValue();
     
-      if(this.template.RootNode.HasField('Wis'))
-        this.wis = this.template.GetFieldByLabel('Wis').GetValue();
+      if(this.template.RootNode.hasField('Wis'))
+        this.wis = this.template.getFieldByLabel('Wis').getValue();
     
-      if(this.template.RootNode.HasField('Int'))
-        this.int = this.template.GetFieldByLabel('Int').GetValue();
+      if(this.template.RootNode.hasField('Int'))
+        this.int = this.template.getFieldByLabel('Int').getValue();
 
-      if(this.template.RootNode.HasField('XPosition'))
-        this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+      if(this.template.RootNode.hasField('XPosition'))
+        this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
-      if(this.template.RootNode.HasField('YPosition'))
-        this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+      if(this.template.RootNode.hasField('YPosition'))
+        this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
-      if(this.template.RootNode.HasField('ZPosition'))
-        this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+      if(this.template.RootNode.hasField('ZPosition'))
+        this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
-      if(this.template.RootNode.HasField('XOrientation'))
-        this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+      if(this.template.RootNode.hasField('XOrientation'))
+        this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
-      if(this.template.RootNode.HasField('YOrientation'))
-        this.yOrientation = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
+      if(this.template.RootNode.hasField('YOrientation'))
+        this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
 
-      if(this.template.RootNode.HasField('ZOrientation'))
-        this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+      if(this.template.RootNode.hasField('ZOrientation'))
+        this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
         
-      if(this.template.RootNode.HasField('FortSaveThrow'))
-        this.fortitudeSaveThrow = this.template.RootNode.GetFieldByLabel('FortSaveThrow').GetValue();
+      if(this.template.RootNode.hasField('FortSaveThrow'))
+        this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
 
-      if(this.template.RootNode.HasField('RefSaveThrow'))
-        this.reflexSaveThrow = this.template.RootNode.GetFieldByLabel('RefSaveThrow').GetValue();
+      if(this.template.RootNode.hasField('RefSaveThrow'))
+        this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
 
-      if(this.template.RootNode.HasField('WillSaveThrow'))
-        this.willSaveThrow = this.template.RootNode.GetFieldByLabel('WillSaveThrow').GetValue();
+      if(this.template.RootNode.hasField('WillSaveThrow'))
+        this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
 
-        if(this.template.RootNode.HasField('SubraceIndex'))
-          this.subraceIndex = this.template.RootNode.GetFieldByLabel('SubraceIndex').GetValue();
+        if(this.template.RootNode.hasField('SubraceIndex'))
+          this.subraceIndex = this.template.RootNode.getFieldByLabel('SubraceIndex').getValue();
 
 
-      if(this.template.RootNode.HasField('SWVarTable')){
-        let localBools = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('BitArray').GetChildStructs();
+      if(this.template.RootNode.hasField('SWVarTable')){
+        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
         //console.log(localBools);
         for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+          let data = localBools[i].getFieldByLabel('Variable').getValue();
           for(let bit = 0; bit < 32; bit++){
             this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
           }
         }
-        let localNumbers = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0].GetFieldByLabel('ByteArray').GetChildStructs();
+        let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
         //console.log(localNumbers);
         for(let i = 0; i < localNumbers.length; i++){
-          let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+          let data = localNumbers[i].getFieldByLabel('Variable').getValue();
           this.setLocalNumber(i, data);
         }
       }
 
-      if(this.template.RootNode.HasField('PM_Appearance'))
-        this.pm_Appearance = this.template.RootNode.GetFieldByLabel('PM_Appearance').GetValue();
+      if(this.template.RootNode.hasField('PM_Appearance'))
+        this.pm_Appearance = this.template.RootNode.getFieldByLabel('PM_Appearance').getValue();
 
-      if(this.template.RootNode.HasField('PM_IsDisguised'))
-        this.pm_IsDisguised = !!this.template.RootNode.GetFieldByLabel('PM_IsDisguised').GetValue();
+      if(this.template.RootNode.hasField('PM_IsDisguised'))
+        this.pm_IsDisguised = !!this.template.RootNode.getFieldByLabel('PM_IsDisguised').getValue();
 
       try{
-        if(this.template.RootNode.HasField('EffectList')){
-          let effects = this.template.RootNode.GetFieldByLabel('EffectList').GetChildStructs() || [];
+        if(this.template.RootNode.hasField('EffectList')){
+          let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
           for(let i = 0; i < effects.length; i++){
             let effect = GameEffect.EffectFromStruct(effects[i]);
             if(effect instanceof GameEffect){
@@ -4189,14 +4189,14 @@ export class ModuleCreature extends ModuleObject {
       }
 
       try{
-        if(this.template.RootNode.HasField('Equip_ItemList')){
-          let equipment = this.template.RootNode.GetFieldByLabel('Equip_ItemList').GetChildStructs() || [];
+        if(this.template.RootNode.hasField('Equip_ItemList')){
+          let equipment = this.template.RootNode.getFieldByLabel('Equip_ItemList').getChildStructs() || [];
           for(let i = 0; i < equipment.length; i++){
             let strt = equipment[i];
             let equipped_item = undefined;
-            let slot_type = strt.Type;
-            if(strt.HasField('EquippedRes')){
-              equipped_item = new ModuleItem(strt.GetFieldByLabel('EquippedRes').GetValue());
+            let slot_type = strt.type;
+            if(strt.hasField('EquippedRes')){
+              equipped_item = new ModuleItem(strt.getFieldByLabel('EquippedRes').getValue());
             }else{
               equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
             }
@@ -4261,8 +4261,8 @@ export class ModuleCreature extends ModuleObject {
 
       this.parseEquipmentSlots();
 
-      if(this.template.RootNode.HasField('ItemList')){
-        let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
+      if(this.template.RootNode.hasField('ItemList')){
+        let inventory = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
         for(let i = 0; i < inventory.length; i++){
           this.loadItem(GFFObject.FromStruct(inventory[i]));
         }
@@ -4271,8 +4271,8 @@ export class ModuleCreature extends ModuleObject {
 
       //ActionList
       try{
-        if(this.template.RootNode.HasField('ActionList')){
-          let actionStructs = this.template.RootNode.GetFieldByLabel('ActionList').GetChildStructs();
+        if(this.template.RootNode.hasField('ActionList')){
+          let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
           for(let i = 0, len = actionStructs.length; i < len; i++){
             let action = Action.FromStruct(actionStructs[i]);
             if(action instanceof Action){
@@ -4286,13 +4286,13 @@ export class ModuleCreature extends ModuleObject {
 
       //PerceptionList
       try{
-        if(this.template.RootNode.HasField('PerceptionList')){
-          let perceptionList = this.template.RootNode.GetFieldByLabel('PerceptionList').GetChildStructs();
+        if(this.template.RootNode.hasField('PerceptionList')){
+          let perceptionList = this.template.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
           for(let i = 0, len = perceptionList.length; i < len; i++){
             let perception = perceptionList[i];
 
-            let objectId = perception.GetFieldByLabel('ObjectId').GetValue();
-            let data = perception.GetFieldByLabel('PerceptionData').GetValue();
+            let objectId = perception.getFieldByLabel('ObjectId').getValue();
+            let data = perception.getFieldByLabel('PerceptionData').getValue();
 
             let seen = false;
             let heard = false;
@@ -4526,270 +4526,270 @@ export class ModuleCreature extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTC ';
     
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).SetValue('Bad StrRef');
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).SetValue( this == GameState.player ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue('Bad StrRef');
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue( this == GameState.player ? 1 : 0);
     
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') )
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') )
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'AIState') ).SetValue(0);
-    let actionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Age') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Animation') ).SetValue(this.animationState.index);
-    //gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).SetValue(this.appearance);
-    //gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'AreaId') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).SetValue(this.getAC());
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).SetValue(this.bodyBag);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Cha') ).SetValue(this.cha);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).SetValue(this.challengeRating);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(0);
+    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animationState.index);
+    //gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(this.appearance);
+    //gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(this.getAC());
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') ).setValue(this.cha);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(this.challengeRating);
 
     //Classes
-    let classList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ClassList') );
+    let classList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
     for(let i = 0; i < this.classes.length; i++){
-      classList.AddChildStruct( this.classes[i].save() );
+      classList.addChildStruct( this.classes[i].save() );
     }
     
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Color_Skin') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).SetValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Skin') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
 
-    let combatInfoStruct = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
+    let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
 
     //TODO: CombatInfo
 
-    let combatRoundDataStruct = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
+    let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
 
     //TODO: CombatRoundData
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(this.getCommadable() ? 1 : 0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Con') ).SetValue(this.str);
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') ).SetValue(this.conversation ? this.conversation.resref : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).SetValue( this.spawned ? 1 : 0 );
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'CreatureSize') ).SetValue(3);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).SetValue(this.currentForce);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') ).SetValue(this.currentHitPoints);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).SetValue('');
-    //gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue();
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Dex') ).SetValue(this.dex);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).SetValue(255);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.str);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).setValue( this.spawned ? 1 : 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(3);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).setValue(this.currentForce);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') ).setValue(this.currentHitPoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue('');
+    //gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue();
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(this.dex);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(255);
     
     //Effects
-    let effectList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
-      effectList.AddChildStruct( this.effects[i].save() );
+      effectList.addChildStruct( this.effects[i].save() );
     }
 
     //Equipment
-    let equipItemList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
+    let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
 
     if(this.equipment.ARMOR){
       let equipItem = this.equipment.ARMOR.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.ARMOR);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.ARMOR);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.ARMS){
       let equipItem = this.equipment.ARMS.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.ARMS);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.ARMS);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.BELT){
       let equipItem = this.equipment.BELT.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.BELT);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.BELT);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW1){
       let equipItem = this.equipment.CLAW1.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.CLAW1);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.CLAW1);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW2){
       let equipItem = this.equipment.CLAW2.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.CLAW2);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.CLAW2);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW3){
       let equipItem = this.equipment.CLAW3.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.CLAW3);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.CLAW3);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.HEAD){
       let equipItem = this.equipment.HEAD.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.HEAD);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.HEAD);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.HIDE){
       let equipItem = this.equipment.HIDE.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.HIDE);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.HIDE);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.IMPLANT){
       let equipItem = this.equipment.IMPLANT.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.IMPLANT);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.IMPLANT);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTARMBAND){
       let equipItem = this.equipment.LEFTARMBAND.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.LEFTARMBAND);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.LEFTARMBAND);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTHAND){
       let equipItem = this.equipment.LEFTHAND.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.LEFTHAND);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.LEFTHAND);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTARMBAND){
       let equipItem = this.equipment.RIGHTARMBAND.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.RIGHTARMBAND);
+      equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTHAND){
       let equipItem = this.equipment.RIGHTHAND.save();
-      equipItem.SetType(ModuleCreatureArmorSlot.RIGHTHAND);
-      equipItemList.AddChildStruct(equipItem)
+      equipItem.setType(ModuleCreatureArmorSlot.RIGHTHAND);
+      equipItemList.addChildStruct(equipItem)
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Experience') ).SetValue(this.experience);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
     
-    let expressionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
+    let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
     let expressions = Object.keys(this.listeningPatterns);
     for(let i = 0; i < expressions.length; i++){
       let expressionString = expressions[i];
       let expressionId = this.listeningPatterns[expressionString];
 
       let expressionStruct = new GFFStruct();
-      expressionStruct.AddField( new GFFField(GFFDataType.INT, 'ExpressionId') ).SetValue( expressionId );
-      expressionStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).SetValue( expressionString );
-      expressionList.AddChildStruct(expressionStruct);
+      expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( expressionId );
+      expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( expressionString );
+      expressionList.addChildStruct(expressionStruct);
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') ).SetValue(this.faction ? this.faction.id : this.factionId);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(this.faction ? this.faction.id : this.factionId);
 
     //Feats
-    let featList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'FeatList') );
+    let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
     for(let i = 0; i < this.feats.length; i++){
-      featList.AddChildStruct( this.feats[i].save() );
+      featList.addChildStruct( this.feats[i].save() );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).SetValue( this.template.RootNode.GetFieldByLabel('FirstName')?.GetCExoLocString() );
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).SetValue(this.forcePoints);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).SetValue(this.fortitudeSaveThrow);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Gender') ).SetValue(this.gender);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'Gold') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).SetValue(this.goodEvil);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'HitPoints') ).SetValue(this.hitPoints);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Int') ).SetValue(this.int);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).SetValue(this.interruptable ? 1 : 0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).SetValue(1);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'IsPC') ).SetValue( this == GameState.player ? 1 : 0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).SetValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.template.RootNode.getFieldByLabel('FirstName')?.getCExoLocString() );
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).setValue(this.goodEvil);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HitPoints') ).setValue(this.hitPoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this == GameState.player ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(1);
 
     //Creature Inventory
-    let itemList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
       let itemStruct = this.inventory[i].save();
-      itemList.AddChildStruct(itemStruct);
+      itemList.addChildStruct(itemStruct);
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'JoiningXP') ).SetValue( this.joiningXP ? this.joiningXP : 0 );
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).SetValue( this.template.RootNode.GetFieldByLabel('LastName')?.GetCExoLocString() );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Listening') ).SetValue( this.isListening );
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'JoiningXP') ).setValue( this.joiningXP ? this.joiningXP : 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue( this.template.RootNode.getFieldByLabel('LastName')?.getCExoLocString() );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Listening') ).setValue( this.isListening );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).SetValue(this.maxForcePoints);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') ).SetValue(this.maxHitPoints);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).SetValue(this.min1HP);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).SetValue(this.naturalAC);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).SetValue(this.notReorienting);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).setValue(this.maxForcePoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') ).setValue(this.maxHitPoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(this.naturalAC);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).setValue(this.notReorienting);
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PM_IsDisguised') ).SetValue( this.hasEffect(GameEffectType.EffectDisguise) ? 1 : 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PM_IsDisguised') ).setValue( this.hasEffect(GameEffectType.EffectDisguise) ? 1 : 0 );
     if( this.hasEffect(GameEffectType.EffectDisguise) ){
-      gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PM_Appearance') ).SetValue( this.appearance );
+      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PM_Appearance') ).setValue( this.appearance );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).SetValue(this.partyInteract);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
 
-    let perceptionList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).SetValue(this.perceptionRange);
+    let perceptionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange);
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'Phenotype') ).SetValue(this.phenotype);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Plot') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraitId') ).SetValue(this.portraidId);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).SetValue(28);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Race') ).SetValue(this.race);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).SetValue(this.reflexSaveThrow);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraidId);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(28);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
+    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).setValue(this.reflexSaveThrow);
 
-    let swVarTable = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).SetValue(this.scripts.onAttacked ? this.scripts.onAttacked.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).SetValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).SetValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).SetValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).SetValue(this.scripts.onDisturbed ? this.scripts.onDisturbed.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).SetValue(this.scripts.onEndDialog ? this.scripts.onEndDialog.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).SetValue(this.scripts.onEndRound ? this.scripts.onEndRound.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).SetValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).SetValue(this.scripts.onBlocked ? this.scripts.onBlocked.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).SetValue(this.scripts.onNotice ? this.scripts.onNotice.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).SetValue(this.scripts.onRested ? this.scripts.onRested.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).SetValue(this.scripts.onSpawn ? this.scripts.onSpawn.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).SetValue(this.scripts.onSpellAt ? this.scripts.onSpellAt.name : '');
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).SetValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue(this.scripts.onAttacked ? this.scripts.onAttacked.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).setValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).setValue(this.scripts.onDisturbed ? this.scripts.onDisturbed.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).setValue(this.scripts.onEndDialog ? this.scripts.onEndDialog.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).setValue(this.scripts.onEndRound ? this.scripts.onEndRound.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).setValue(this.scripts.onBlocked ? this.scripts.onBlocked.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).setValue(this.scripts.onNotice ? this.scripts.onNotice.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).setValue(this.scripts.onRested ? this.scripts.onRested.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).setValue(this.scripts.onSpawn ? this.scripts.onSpawn.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).setValue(this.scripts.onSpellAt ? this.scripts.onSpellAt.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
 
     //Skills
-    let skillList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    let skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
     for(let i = 0; i < 8; i++){
-      skillList.AddChildStruct( this.skills[i].save() );
+      skillList.addChildStruct( this.skills[i].save() );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).SetValue( this.skillPoints ? this.skillPoints : 0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).SetValue(this.soundSetFile);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Str') ).SetValue(this.str);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).SetValue('');
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).SetValue(this.subrace);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Tail') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).SetValue(0);
-    let varTable = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).SetValue(this.willSaveThrow);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Wings') ).SetValue(0);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Wis') ).SetValue(this.wis);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') ).setValue(this.str);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).setValue('');
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subrace);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(0);
+    let varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wings') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') ).setValue(this.wis);
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue( this.position.x );
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue( this.position.y );
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue( this.position.z );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue( this.position.x );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
 
     let theta = this.rotation.z * Math.PI;
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue( 1 * Math.cos(theta) );
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue( 1 * Math.sin(theta) );
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).SetValue( 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue( 0 );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).SetValue(this.fortbonus);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'refbonus') ).SetValue(this.refbonus);
-    gff.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'refbonus') ).SetValue(this.refbonus);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).setValue(this.fortbonus);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
 
     this.template = gff;
 
@@ -4805,27 +4805,27 @@ export class ModuleCreature extends ModuleObject {
 
     let instance = new GFFStruct(4);
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
     );
 
@@ -4837,80 +4837,80 @@ export class ModuleCreature extends ModuleObject {
     let template = new GFFObject();
     template.FileType = 'UTC ';
 
-    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'Appearance_Type') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyBag') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BodyVariation') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Cha') );
-    template.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') );
-    template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ClassList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Comment') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Con') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'Conversation') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentForce') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Dex') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Disarmable') );
-    template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'FactionID') );
-    template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'FeatList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'ForcePoints') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Gender') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'GoodEvil') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'HitPoints') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Int') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Interruptable') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'IsPC') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'LawfulChaotic') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Min1HP') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NaturalAC') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'NotReorienting') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PalletID') ).SetValue(4);
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PartyInteract') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') );
-    template.RootNode.AddField( new GFFField(GFFDataType.INT, 'Phenotype') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Plot') );
-    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'PortraitId') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Race') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptRested') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') );
-    let skillList = template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'SkillList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.WORD, 'SoundSetFile') )
-    template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Str') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') );
-    template.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') );
-    template.RootNode.AddField( new GFFField(GFFDataType.LIST, 'TemplateList') );
-    template.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'TextureVar') );
-    template.RootNode.AddField( new GFFField(GFFDataType.INT, 'WalkRate') );
-    template.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Wis') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'fortbonus') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'refbonus') );
-    template.RootNode.AddField( new GFFField(GFFDataType.SHORT, 'willbonus') );
+    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') );
+    template.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') );
+    template.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Comment') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentForce') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') );
+    template.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
+    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') );
+    template.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GoodEvil') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HitPoints') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LawfulChaotic') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PalletID') ).setValue(4);
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') );
+    template.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') );
+    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') );
+    let skillList = template.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') )
+    template.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') );
+    template.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') );
+    template.RootNode.addField( new GFFField(GFFDataType.LIST, 'TemplateList') );
+    template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') );
+    template.RootNode.addField( new GFFField(GFFDataType.INT, 'WalkRate') );
+    template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') );
+    template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'willbonus') );
 
     for(let i = 0; i < 8; i++){
       let _skill = new GFFStruct();
-      _skill.AddField( new GFFField(GFFDataType.RESREF, 'Rank') ).SetValue(0);
-      skillList.AddChildStruct(_skill);
+      _skill.addField( new GFFField(GFFDataType.RESREF, 'Rank') ).setValue(0);
+      skillList.addChildStruct(_skill);
     }
 
     return template;

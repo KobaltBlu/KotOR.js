@@ -248,39 +248,39 @@ export class GameEffect {
     if(struct instanceof GFFStruct){
       let effect = undefined;
 
-      let eType = struct.GetFieldByLabel('Type').GetValue();
-      let eSubType = struct.GetFieldByLabel('SubType').GetValue();
-      let eCreator = struct.GetFieldByLabel('CreatorId').GetValue();
-      let eSpellId = struct.GetFieldByLabel('SpellId').GetValue();
+      let eType = struct.getFieldByLabel('Type').getValue();
+      let eSubType = struct.getFieldByLabel('SubType').getValue();
+      let eCreator = struct.getFieldByLabel('CreatorId').getValue();
+      let eSpellId = struct.getFieldByLabel('SpellId').getValue();
       
-      let eDuration = struct.GetFieldByLabel('Duration').GetValue();
-      let eExpireDay = struct.GetFieldByLabel('ExpireDay').GetValue();
-      let eExpireTime = struct.GetFieldByLabel('ExpireTime').GetValue();
-      let eNumIntegers = struct.GetFieldByLabel('NumIntegers').GetValue();
+      let eDuration = struct.getFieldByLabel('Duration').getValue();
+      let eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
+      let eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
+      let eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
 
       let intList = [];
       let floatList = [];
       let stringList = [];
       let objectList = [];
 
-      let tmpList = struct.GetFieldByLabel('IntList').GetChildStructs();
+      let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        intList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+        intList[i] = tmpList[i].getFieldByLabel('Value').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('FloatList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        floatList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+        floatList[i] = tmpList[i].getFieldByLabel('Value').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('StringList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('StringList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        stringList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+        stringList[i] = tmpList[i].getFieldByLabel('Value').getValue();
       }
 
-      tmpList = struct.GetFieldByLabel('ObjectList').GetChildStructs();
+      tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
-        objectList[i] = tmpList[i].GetFieldByLabel('Value').GetValue();
+        objectList[i] = tmpList[i].getFieldByLabel('Value').getValue();
       }
 
       //Initialize the effect object based on the type
@@ -458,7 +458,7 @@ export class GameEffect {
         break;
       }
 
-      let eSkipOnLoad = struct.GetFieldByLabel('SkipOnLoad').GetValue();
+      let eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
       if(!eSkipOnLoad){
 
         if(typeof effect !== 'undefined'){
@@ -477,13 +477,13 @@ export class GameEffect {
           //console.log('Handled Effect', eType, struct.ToJSON());
           //effect.initialize();
         }else{
-          console.log('Unhandled Effect', eType, struct.ToJSON());
+          console.log('Unhandled Effect', eType, struct.toJSON());
         }
       }else{
         if(typeof effect !== 'undefined'){
           //console.log('Skipped Effect', eType, struct.ToJSON());
         }else{
-          console.log('Unhandled Skipped Effect', eType, struct.ToJSON());
+          console.log('Unhandled Skipped Effect', eType, struct.toJSON());
         }
         effect = undefined;
       }
@@ -500,44 +500,44 @@ export class GameEffect {
   save(){
 
     let effectStruct = new GFFStruct(2);
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD64, 'Id') ).SetValue(0);
-    effectStruct.AddField( new GFFField(GFFDataType.WORD, 'Type') ).SetValue(this.getSaveType());
-    effectStruct.AddField( new GFFField(GFFDataType.WORD, 'SubType') ).SetValue(this.getSubTypeUnMasked());
-    effectStruct.AddField( new GFFField(GFFDataType.FLOAT, 'Duration') ).SetValue(this.getDuration());
-    effectStruct.AddField( new GFFField(GFFDataType.BYTE, 'SkipOnLoad') ).SetValue(this.skipOnLoad ? 1 : 0);
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'ExpireDay') ).SetValue(this.getExpireDay());
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'ExpireTime') ).SetValue(this.getExpireTime());
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).SetValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
-    effectStruct.AddField( new GFFField(GFFDataType.DWORD, 'SpellId') ).SetValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
-    effectStruct.AddField( new GFFField(GFFDataType.INT, 'IsExposed') ).SetValue(1);
-    effectStruct.AddField( new GFFField(GFFDataType.INT, 'NumIntegers') ).SetValue(8);
+    effectStruct.addField( new GFFField(GFFDataType.DWORD64, 'Id') ).setValue(0);
+    effectStruct.addField( new GFFField(GFFDataType.WORD, 'Type') ).setValue(this.getSaveType());
+    effectStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue(this.getSubTypeUnMasked());
+    effectStruct.addField( new GFFField(GFFDataType.FLOAT, 'Duration') ).setValue(this.getDuration());
+    effectStruct.addField( new GFFField(GFFDataType.BYTE, 'SkipOnLoad') ).setValue(this.skipOnLoad ? 1 : 0);
+    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'ExpireDay') ).setValue(this.getExpireDay());
+    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'ExpireTime') ).setValue(this.getExpireTime());
+    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
+    effectStruct.addField( new GFFField(GFFDataType.DWORD, 'SpellId') ).setValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
+    effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(1);
+    effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(8);
 
-    let intList = effectStruct.AddField( new GFFField(GFFDataType.LIST, 'IntList') );
+    let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
     for(let i = 0; i < 8; i++){
       let intStruct = new GFFStruct(3);
-      intStruct.AddField( new GFFField(GFFDataType.INT, "Value").SetValue(this.getInt(i) || 0));
-      intList.AddChildStruct(intStruct);
+      intStruct.addField( new GFFField(GFFDataType.INT, "Value").setValue(this.getInt(i) || 0));
+      intList.addChildStruct(intStruct);
     }
 
-    let floatList = effectStruct.AddField( new GFFField(GFFDataType.LIST, 'FloatList') );
+    let floatList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
     for(let i = 0; i < 4; i++){
       let floatStruct = new GFFStruct(4);
-      floatStruct.AddField( new GFFField(GFFDataType.FLOAT, "Value").SetValue(this.getFloat(i) || 0.0));
-      floatList.AddChildStruct(floatStruct);
+      floatStruct.addField( new GFFField(GFFDataType.FLOAT, "Value").setValue(this.getFloat(i) || 0.0));
+      floatList.addChildStruct(floatStruct);
     }
 
-    let stringList = effectStruct.AddField( new GFFField(GFFDataType.LIST, 'StringList') );
+    let stringList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'StringList') );
     for(let i = 0; i < 6; i++){
       let stringStruct = new GFFStruct(5);
-      stringStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, "Value").SetValue(this.getString(i) || ''));
-      stringList.AddChildStruct(stringStruct);
+      stringStruct.addField( new GFFField(GFFDataType.CEXOSTRING, "Value").setValue(this.getString(i) || ''));
+      stringList.addChildStruct(stringStruct);
     }
 
-    let objectList = effectStruct.AddField( new GFFField(GFFDataType.LIST, 'ObjectList') );
+    let objectList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
     for(let i = 0; i < 6; i++){
       let objectStruct = new GFFStruct(5);
-      objectStruct.AddField( new GFFField(GFFDataType.DWORD, "Value").SetValue( this.getObject(i) ? this.getObject(i).id : 2130706432 ));
-      objectList.AddChildStruct(objectStruct);
+      objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue( this.getObject(i) ? this.getObject(i).id : 2130706432 ));
+      objectList.addChildStruct(objectStruct);
     }
 
     return effectStruct;

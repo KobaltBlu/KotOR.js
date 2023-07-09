@@ -31,18 +31,18 @@ export class FeedbackMessageEntry {
 
   toStruct(){
     const struct = new GFFStruct(0);
-    struct.AddField(new GFFField(GFFDataType.BYTE, 'PT_FB_MSG_COLOR', this.color));
-    struct.AddField(new GFFField(GFFDataType.CEXOSTRING, 'PT_FB_MSG_MSG', this.message));
-    struct.AddField(new GFFField(GFFDataType.DWORD, 'PT_FB_MSG_TYPE', this.type));
+    struct.addField(new GFFField(GFFDataType.BYTE, 'PT_FB_MSG_COLOR', this.color));
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_FB_MSG_MSG', this.message));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'PT_FB_MSG_TYPE', this.type));
     return struct;
   }
 
   static FromStruct(struct: GFFStruct): FeedbackMessageEntry {
     const entry = new FeedbackMessageEntry();
     if(struct instanceof GFFStruct){
-      if(struct.HasField('PT_FB_MSG_COLOR')) entry.color = struct.GetFieldByLabel('PT_FB_MSG_COLOR')?.GetValue();
-      if(struct.HasField('PT_FB_MSG_MSG')) entry.message = struct.GetFieldByLabel('PT_FB_MSG_MSG')?.GetValue();
-      if(struct.HasField('PT_FB_MSG_TYPE')) entry.type = struct.GetFieldByLabel('PT_FB_MSG_TYPE')?.GetValue();
+      if(struct.hasField('PT_FB_MSG_COLOR')) entry.color = struct.getFieldByLabel('PT_FB_MSG_COLOR')?.getValue();
+      if(struct.hasField('PT_FB_MSG_MSG')) entry.message = struct.getFieldByLabel('PT_FB_MSG_MSG')?.getValue();
+      if(struct.hasField('PT_FB_MSG_TYPE')) entry.type = struct.getFieldByLabel('PT_FB_MSG_TYPE')?.getValue();
     }
     return entry;
   }

@@ -315,9 +315,9 @@ export class Faction {
   toStruct(structIdx: number){
     let struct = new GFFStruct(structIdx);
 
-    struct.AddField( new GFFField(GFFDataType.WORD, 'FactionGlobal') ).SetValue(this.global);
-    struct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'FactionName') ).SetValue(this.label);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'FactionParentID') ).SetValue(this.parentId);
+    struct.addField( new GFFField(GFFDataType.WORD, 'FactionGlobal') ).setValue(this.global);
+    struct.addField( new GFFField(GFFDataType.CEXOSTRING, 'FactionName') ).setValue(this.label);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'FactionParentID') ).setValue(this.parentId);
 
     return struct;
   }
@@ -340,16 +340,16 @@ export class Faction {
     if( struct instanceof GFFStruct ){
       let faction = new Faction();
 
-      faction.id = struct.GetType();
+      faction.id = struct.getType();
 
-      if(struct.HasField('FactionGlobal'))
-        faction.global = struct.GetFieldByLabel('FactionGlobal').GetValue();
+      if(struct.hasField('FactionGlobal'))
+        faction.global = struct.getFieldByLabel('FactionGlobal').getValue();
 
-      if(struct.HasField('FactionName'))
-        faction.label = struct.GetFieldByLabel('FactionName').GetValue();
+      if(struct.hasField('FactionName'))
+        faction.label = struct.getFieldByLabel('FactionName').getValue();
 
-      if(struct.HasField('FactionParentID'))
-        faction.parentId = struct.GetFieldByLabel('FactionParentID').GetValue();
+      if(struct.hasField('FactionParentID'))
+        faction.parentId = struct.getFieldByLabel('FactionParentID').getValue();
 
       return faction;
     }

@@ -198,13 +198,13 @@ export class Action {
 
   static FromStruct( struct: GFFStruct ){
     let action = undefined;
-    let actionId = struct.GetFieldByLabel('ActionId').GetValue();
-    let groupId = struct.GetFieldByLabel('GroupActionId').GetValue();
-    let paramCount = struct.GetFieldByLabel('NumParams').GetValue();
+    let actionId = struct.getFieldByLabel('ActionId').getValue();
+    let groupId = struct.getFieldByLabel('GroupActionId').getValue();
+    let paramCount = struct.getFieldByLabel('NumParams').getValue();
 
     let paramStructs: GFFStruct[] = [];
-    if(struct.HasField('Paramaters'))
-      paramStructs = struct.GetFieldByLabel('Paramaters').GetChildStructs();
+    if(struct.hasField('Paramaters'))
+      paramStructs = struct.getFieldByLabel('Paramaters').getChildStructs();
 
     switch(actionId){
       case ActionType.ActionCombat:

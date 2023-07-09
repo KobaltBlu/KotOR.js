@@ -6156,7 +6156,7 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.Mod_Name.GetValue();
+      return GameState.module.Mod_Name.getValue();
     }
   },
   562:{

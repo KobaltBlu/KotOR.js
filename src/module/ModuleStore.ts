@@ -57,7 +57,7 @@ export class ModuleStore extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], this.getTemplateResRef());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
       }else{
         console.error('Failed to load ModuleStore template');
@@ -74,76 +74,76 @@ export class ModuleStore extends ModuleObject {
   initProperties(){
     
     if(!this.initialized){
-      if(this.template.RootNode.HasField('ObjectId')){
-        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-      }else if(this.template.RootNode.HasField('ID')){
-        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       ModuleObjectManager.AddObjectById(this);
     }
 
-    if(this.template.RootNode.HasField('BuySellFlag'))
-      this.buySellFlag = this.template.GetFieldByLabel('BuySellFlag').GetValue()
+    if(this.template.RootNode.hasField('BuySellFlag'))
+      this.buySellFlag = this.template.getFieldByLabel('BuySellFlag').getValue()
 
-    if(this.template.RootNode.HasField('LocName'))
-      this.locName = this.template.GetFieldByLabel('LocName').GetCExoLocString();
+    if(this.template.RootNode.hasField('LocName'))
+      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
-    if(this.template.RootNode.HasField('MarkDown'))
-      this.markDown = this.template.GetFieldByLabel('MarkDown').GetValue();
+    if(this.template.RootNode.hasField('MarkDown'))
+      this.markDown = this.template.getFieldByLabel('MarkDown').getValue();
 
-    if(this.template.RootNode.HasField('MarkUp'))
-      this.markUp = this.template.GetFieldByLabel('MarkUp').GetChildStructs();
+    if(this.template.RootNode.hasField('MarkUp'))
+      this.markUp = this.template.getFieldByLabel('MarkUp').getValue();
 
-    if(this.template.RootNode.HasField('OnOpenStore'))
-      this.onOpenStore = this.template.GetFieldByLabel('OnOpenStore').GetValue();
+    if(this.template.RootNode.hasField('OnOpenStore'))
+      this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
       
-    if(this.template.RootNode.HasField('Tag'))
-      this.tag = this.template.GetFieldByLabel('Tag').GetValue(); 
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue(); 
     
-    if(this.template.RootNode.HasField('XPosition'))
-      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+    if(this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
-    if(this.template.RootNode.HasField('YPosition'))
-      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+    if(this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
-    if(this.template.RootNode.HasField('ZPosition'))
-      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+    if(this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
     
-    if(this.template.RootNode.HasField('XOrientation'))
-      this.rotation.x = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+    if(this.template.RootNode.hasField('XOrientation'))
+      this.rotation.x = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
-    if(this.template.RootNode.HasField('YOrientation'))
-      this.rotation.y = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
+    if(this.template.RootNode.hasField('YOrientation'))
+      this.rotation.y = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
 
-    if(this.template.RootNode.HasField('ZOrientation'))
-      this.rotation.z = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+    if(this.template.RootNode.hasField('ZOrientation'))
+      this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
-    if(this.template.RootNode.HasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.GetFieldByLabel('SWVarTable').GetChildStructs()[0];
+    if(this.template.RootNode.hasField('SWVarTable')){
+      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
-        if(swVarTableStruct.HasField('BitArray')){
-          let localBools = swVarTableStruct.GetFieldByLabel('BitArray').GetChildStructs();
+        if(swVarTableStruct.hasField('BitArray')){
+          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].GetFieldByLabel('Variable').GetValue();
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
           }
         }
 
-        if(swVarTableStruct.HasField('ByteArray')){
-          let localNumbers = swVarTableStruct.GetFieldByLabel('ByteArray').GetChildStructs();
+        if(swVarTableStruct.hasField('ByteArray')){
+          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].GetFieldByLabel('Variable').GetValue();
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
       }
     }
             
-    if(this.template.RootNode.HasField('ItemList')){
-      let items = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs() || [];
+    if(this.template.RootNode.hasField('ItemList')){
+      let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
@@ -171,34 +171,34 @@ export class ModuleStore extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTM ';
-    gff.RootNode.Type = 6;
+    gff.RootNode.type = 6;
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    gff.RootNode.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).SetValue(this.locName);
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'MarkDown') ).SetValue(this.markDown);
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'MarkUp') ).SetValue(this.markUp);
-    gff.RootNode.AddField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).SetValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).SetValue(this.buySellFlag);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkDown') ).setValue(this.markDown);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MarkUp') ).setValue(this.markUp);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
 
-    let itemList = gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      itemList.AddChildStruct( this.inventory[i].save() );
+      itemList.addChildStruct( this.inventory[i].save() );
     }
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.position.y);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.position.z);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue(this.rotation.x);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue(this.rotation.y);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).SetValue(this.rotation.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.rotation.x);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.rotation.y);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.rotation.z);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.AddField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.AddChildStruct( this.getSWVarTableSaveStruct() );
+    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.LIST, 'ActionList') );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Commandable') ).SetValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
 
 
     this.template = gff;
@@ -209,27 +209,27 @@ export class ModuleStore extends ModuleObject {
 
     let instance = new GFFStruct(11);
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.RESREF, 'ResRef', this.resref)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'XOrientation', 0.0)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'YOrientation', 1.0)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
     );
 

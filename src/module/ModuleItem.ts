@@ -63,15 +63,15 @@ export class ModuleItem extends ModuleObject {
     if(typeof gff === 'string'){
       this.equippedRes = gff;
       this.template = new GFFObject();
-      this.template.RootNode.AddField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).SetValue(gff);
+      this.template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).setValue(gff);
     }else{
       this.template = gff;
     }
 
-    // if(gff instanceof GFFObject && gff.RootNode.HasField('ObjectId')){
-    //   this.id = gff.GetFieldByLabel('ObjectId').GetValue();
-    // }else if(gff instanceof GFFObject && gff.RootNode.HasField('ID')){
-    //   this.id = gff.GetFieldByLabel('ID').GetValue();
+    // if(gff instanceof GFFObject && gff.RootNode.hasField('ObjectId')){
+    //   this.id = gff.getFieldByLabel('ObjectId').getValue();
+    // }else if(gff instanceof GFFObject && gff.RootNode.hasField('ID')){
+    //   this.id = gff.getFieldByLabel('ID').getValue();
     // }else{
     //   this.id = -1;
     // }
@@ -144,8 +144,8 @@ export class ModuleItem extends ModuleObject {
   }
 
   getPropertiesList(){
-    if(this.template.RootNode.HasField('PropertiesList')){
-      return this.template.RootNode.GetFieldByLabel('PropertiesList').GetChildStructs();
+    if(this.template.RootNode.hasField('PropertiesList')){
+      return this.template.RootNode.getFieldByLabel('PropertiesList').getChildStructs();
     }
     return null;
   }
@@ -201,7 +201,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   getLocalizedName(){
-    return this.localizedName.GetValue().replace(/\0[\s\S]*$/g,'');
+    return this.localizedName.getValue().replace(/\0[\s\S]*$/g,'');
   }
 
   getPalleteID(){
@@ -354,7 +354,7 @@ export class ModuleItem extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
         //
       }else{
@@ -368,7 +368,7 @@ export class ModuleItem extends ModuleObject {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getInventoryRes());
       if(buffer){
         const gff = new GFFObject(buffer);
-        this.template.Merge(gff);
+        this.template.merge(gff);
         this.initProperties();
       }else{
         console.error('Failed to load ModuleItem template');
@@ -436,9 +436,9 @@ export class ModuleItem extends ModuleObject {
 
   /*getIcon(onLoad = null){
 
-    let baseClass = Global.kotor2DA.baseitems.rows[this.template.GetFieldByLabel('BaseItem').Value]['itemclass'].toLowerCase();
-    let texVariantNode = this.template.GetFieldByLabel('TextureVar');
-    let modelVariantNode = this.template.GetFieldByLabel('ModelVariation');
+    let baseClass = Global.kotor2DA.baseitems.rows[this.template.getFieldByLabel('BaseItem').Value]['itemclass'].toLowerCase();
+    let texVariantNode = this.template.getFieldByLabel('TextureVar');
+    let modelVariantNode = this.template.getFieldByLabel('ModelVariation');
 
     let variant = 1;
 
@@ -483,76 +483,76 @@ export class ModuleItem extends ModuleObject {
     }
     
     if(!this.initialized){
-      if(this.template.RootNode.HasField('ObjectId')){
-        this.id = this.template.GetFieldByLabel('ObjectId').GetValue();
-      }else if(this.template.RootNode.HasField('ID')){
-        this.id = this.template.GetFieldByLabel('ID').GetValue();
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
       ModuleObjectManager.AddObjectById(this);
     }
 
-    if(this.template.RootNode.HasField('AddCost'))
-      this.addCost = parseInt(this.template.GetFieldByLabel('AddCost').GetValue());
+    if(this.template.RootNode.hasField('AddCost'))
+      this.addCost = parseInt(this.template.getFieldByLabel('AddCost').getValue());
 
-    if(this.template.RootNode.HasField('BaseItem')){
-      this.baseItem = this.template.GetFieldByLabel('BaseItem').GetValue();
+    if(this.template.RootNode.hasField('BaseItem')){
+      this.baseItem = this.template.getFieldByLabel('BaseItem').getValue();
       this._baseItem = BaseItem.From2DA(this.baseItem);
     }
 
-    if(this.template.RootNode.HasField('Charges'))
-      this.charges = this.template.GetFieldByLabel('Charges').GetValue();
+    if(this.template.RootNode.hasField('Charges'))
+      this.charges = this.template.getFieldByLabel('Charges').getValue();
 
-    if(this.template.RootNode.HasField('Cost'))
-      this.cost = parseInt(this.template.GetFieldByLabel('Cost').GetValue());
+    if(this.template.RootNode.hasField('Cost'))
+      this.cost = parseInt(this.template.getFieldByLabel('Cost').getValue());
 
-    if(this.template.RootNode.HasField('DELETING'))
-      this.deleting = this.template.GetFieldByLabel('DELETING').GetValue();
+    if(this.template.RootNode.hasField('DELETING'))
+      this.deleting = this.template.getFieldByLabel('DELETING').getValue();
 
-    if(this.template.RootNode.HasField('DescIdentified'))
-      this.descIdentified = this.template.GetFieldByLabel('DescIdentified').GetValue();
+    if(this.template.RootNode.hasField('DescIdentified'))
+      this.descIdentified = this.template.getFieldByLabel('DescIdentified').getValue();
 
-    if(this.template.RootNode.HasField('Description'))
-      this.description = this.template.GetFieldByLabel('Description').GetValue();
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getValue();
 
-    if(this.template.RootNode.HasField('Dropable'))
-      this.dropable = this.template.GetFieldByLabel('Dropable').GetValue();
+    if(this.template.RootNode.hasField('Dropable'))
+      this.dropable = this.template.getFieldByLabel('Dropable').getValue();
       
-    if(this.template.RootNode.HasField('EquippedRes'))
-      this.equippedRes = this.template.GetFieldByLabel('EquippedRes').GetValue();
+    if(this.template.RootNode.hasField('EquippedRes'))
+      this.equippedRes = this.template.getFieldByLabel('EquippedRes').getValue();
 
-    if(this.template.RootNode.HasField('Identified'))
-      this.identified = this.template.GetFieldByLabel('Identified').GetValue();
+    if(this.template.RootNode.hasField('Identified'))
+      this.identified = this.template.getFieldByLabel('Identified').getValue();
 
-    if(this.template.RootNode.HasField('Infinite'))
-      this.infinite = this.template.GetFieldByLabel('Infinite').GetValue();
+    if(this.template.RootNode.hasField('Infinite'))
+      this.infinite = this.template.getFieldByLabel('Infinite').getValue();
 
-    if(this.template.RootNode.HasField('InventoryRes'))
-      this.inventoryRes = this.template.GetFieldByLabel('InventoryRes').GetValue();
+    if(this.template.RootNode.hasField('InventoryRes'))
+      this.inventoryRes = this.template.getFieldByLabel('InventoryRes').getValue();
   
-    if(this.template.RootNode.HasField('LocalizedName'))
-      this.localizedName = this.template.RootNode.GetFieldByLabel('LocalizedName').GetCExoLocString();
+    if(this.template.RootNode.hasField('LocalizedName'))
+      this.localizedName = this.template.RootNode.getFieldByLabel('LocalizedName').getCExoLocString();
         
-    if(this.template.RootNode.HasField('MaxCharges'))
-      this.maxCharges = this.template.RootNode.GetFieldByLabel('MaxCharges').GetValue();
+    if(this.template.RootNode.hasField('MaxCharges'))
+      this.maxCharges = this.template.RootNode.getFieldByLabel('MaxCharges').getValue();
 
-    if(this.template.RootNode.HasField('ModelVariation'))
-      this.modelVariation = this.template.RootNode.GetFieldByLabel('ModelVariation').GetValue();
+    if(this.template.RootNode.hasField('ModelVariation'))
+      this.modelVariation = this.template.RootNode.getFieldByLabel('ModelVariation').getValue();
     
-    if(this.template.RootNode.HasField('NewItem'))
-      this.newItem = this.template.RootNode.GetFieldByLabel('NewItem').GetValue();
+    if(this.template.RootNode.hasField('NewItem'))
+      this.newItem = this.template.RootNode.getFieldByLabel('NewItem').getValue();
         
-    if(this.template.RootNode.HasField('NonEquippable'))
-      this.nonEquippable = this.template.RootNode.GetFieldByLabel('NonEquippable').GetValue();
+    if(this.template.RootNode.hasField('NonEquippable'))
+      this.nonEquippable = this.template.RootNode.getFieldByLabel('NonEquippable').getValue();
   
-    if(this.template.RootNode.HasField('Pickpocketable'))
-      this.pickpocketable = this.template.RootNode.GetFieldByLabel('Pickpocketable').GetValue();
+    if(this.template.RootNode.hasField('Pickpocketable'))
+      this.pickpocketable = this.template.RootNode.getFieldByLabel('Pickpocketable').getValue();
       
-    if(this.template.RootNode.HasField('Plot'))
-      this.plot = this.template.GetFieldByLabel('Plot').GetValue();
+    if(this.template.RootNode.hasField('Plot'))
+      this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-    if(this.template.RootNode.HasField('PropertiesList')){
-      let propertiesList = this.template.GetFieldByLabel('PropertiesList').GetChildStructs();
+    if(this.template.RootNode.hasField('PropertiesList')){
+      let propertiesList = this.template.getFieldByLabel('PropertiesList').getChildStructs();
       this.properties = [];
       for(let i = 0, len = propertiesList.length; i < len; i++){
         this.properties.push( 
@@ -563,42 +563,42 @@ export class ModuleItem extends ModuleObject {
       }
     }
 
-    if(this.template.RootNode.HasField('StackSize'))
-      this.stackSize = this.template.GetFieldByLabel('StackSize').GetValue();
+    if(this.template.RootNode.hasField('StackSize'))
+      this.stackSize = this.template.getFieldByLabel('StackSize').getValue();
 
-    if(this.template.RootNode.HasField('Stolen'))
-      this.stolen = this.template.GetFieldByLabel('Stolen').GetValue();
+    if(this.template.RootNode.hasField('Stolen'))
+      this.stolen = this.template.getFieldByLabel('Stolen').getValue();
 
-    if(this.template.RootNode.HasField('Tag'))
-      this.tag = this.template.GetFieldByLabel('Tag').GetValue().replace(/\0[\s\S]*$/g,'');
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue().replace(/\0[\s\S]*$/g,'');
 
-    if(this.template.RootNode.HasField('TextureVar'))
-      this.textureVariation = this.template.GetFieldByLabel('TextureVar').GetValue();
+    if(this.template.RootNode.hasField('TextureVar'))
+      this.textureVariation = this.template.getFieldByLabel('TextureVar').getValue();
 
-    if(this.template.RootNode.HasField('Upgrades')){
-      this.upgrades = this.template.GetFieldByLabel('Upgrades').GetValue();
+    if(this.template.RootNode.hasField('Upgrades')){
+      this.upgrades = this.template.getFieldByLabel('Upgrades').getValue();
     }
 
-    if(this.template.RootNode.HasField('XPosition'))
-      this.position.x = this.template.RootNode.GetFieldByLabel('XPosition').GetValue();
+    if(this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
-    if(this.template.RootNode.HasField('YPosition'))
-      this.position.y = this.template.RootNode.GetFieldByLabel('YPosition').GetValue();
+    if(this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
 
-    if(this.template.RootNode.HasField('ZPosition'))
-      this.position.z = this.template.RootNode.GetFieldByLabel('ZPosition').GetValue();
+    if(this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
-    if(this.template.RootNode.HasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.GetFieldByLabel('XOrientation').GetValue();
+    if(this.template.RootNode.hasField('XOrientation'))
+      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
-    if(this.template.RootNode.HasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.GetFieldByLabel('YOrientation').GetValue();
+    if(this.template.RootNode.hasField('YOrientation'))
+      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
 
-    if(this.template.RootNode.HasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.GetFieldByLabel('ZOrientation').GetValue();
+    if(this.template.RootNode.hasField('ZOrientation'))
+      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
-    if(this.template.RootNode.HasField('PaletteID'))
-      this.palleteID = this.template.RootNode.GetFieldByLabel('PaletteID').GetValue();
+    if(this.template.RootNode.hasField('PaletteID'))
+      this.palleteID = this.template.RootNode.getFieldByLabel('PaletteID').getValue();
 
     this.initialized = true
 
@@ -652,40 +652,40 @@ export class ModuleItem extends ModuleObject {
     let itemStruct = new GFFStruct(0);
 
     if(this.id >= 0)
-      itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue(this.id);
+      itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     
-    itemStruct.AddField( new GFFField(GFFDataType.INT, 'BaseItem') ).SetValue(this.getBaseItemId());
-    itemStruct.AddField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).SetValue(this.tag);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Identified') ).SetValue(this.identified);
-    itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).SetValue(this.template.GetFieldByLabel('Description')?.GetCExoLocString());
-    itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).SetValue(this.template.GetFieldByLabel('DescIdentified')?.GetCExoLocString());
-    itemStruct.AddField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).SetValue(this.template.GetFieldByLabel('LocalizedName')?.GetCExoLocString());
-    itemStruct.AddField( new GFFField(GFFDataType.WORD, 'StackSize') ).SetValue(this.stackSize);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Stolen') ).SetValue(this.stolen);
-    itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).SetValue(this.upgrades);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Dropable') ).SetValue(this.dropable);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).SetValue(1);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).SetValue(this.modelVariation);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Charges') ).SetValue(this.charges);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).SetValue(this.maxCharges);
-    itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'Cost') ).SetValue(this.cost);
-    itemStruct.AddField( new GFFField(GFFDataType.DWORD, 'AddCost') ).SetValue(this.addCost);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'Plot') ).SetValue(this.plot);
+    itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
+    itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.template.getFieldByLabel('Description')?.getCExoLocString());
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).setValue(this.template.getFieldByLabel('DescIdentified')?.getCExoLocString());
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.template.getFieldByLabel('LocalizedName')?.getCExoLocString());
+    itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.stackSize);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Stolen') ).setValue(this.stolen);
+    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).setValue(this.upgrades);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(1);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Charges') ).setValue(this.charges);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).setValue(this.maxCharges);
+    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Cost') ).setValue(this.cost);
+    itemStruct.addField( new GFFField(GFFDataType.DWORD, 'AddCost') ).setValue(this.addCost);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
 
-    let propertiesList = itemStruct.AddField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
+    let propertiesList = itemStruct.addField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
     for(let i = 0; i < this.properties.length; i++){
-      propertiesList.AddChildStruct( this.properties[i].save() );
+      propertiesList.addChildStruct( this.properties[i].save() );
     }
 
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).SetValue(this.position.x);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).SetValue(this.position.y);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).SetValue(this.position.z);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).SetValue(this.xOrientation);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).SetValue(this.yOrientation);
-    itemStruct.AddField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).SetValue(this.zOrientation);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'NonEquippable') ).SetValue(this.nonEquippable);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'NewItem') ).SetValue(this.newItem);
-    itemStruct.AddField( new GFFField(GFFDataType.BYTE, 'DELETING') ).SetValue(0);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.xOrientation);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.yOrientation);
+    itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NonEquippable') ).setValue(this.nonEquippable);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NewItem') ).setValue(this.newItem);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(0);
 
     return itemStruct;
   }
@@ -877,50 +877,50 @@ export class ItemProperty {
   }
 
   initProperties(){
-    if(this.template.RootNode.HasField('PropertyName'))
-      this.propertyName = this.template.RootNode.GetFieldByLabel('PropertyName').GetValue();
+    if(this.template.RootNode.hasField('PropertyName'))
+      this.propertyName = this.template.RootNode.getFieldByLabel('PropertyName').getValue();
     
-    if(this.template.RootNode.HasField('Subtype'))
-      this.subType = this.template.RootNode.GetFieldByLabel('Subtype').GetValue();
+    if(this.template.RootNode.hasField('Subtype'))
+      this.subType = this.template.RootNode.getFieldByLabel('Subtype').getValue();
 
-    if(this.template.RootNode.HasField('CostTable'))
-      this.costTable = this.template.RootNode.GetFieldByLabel('CostTable').GetValue();
+    if(this.template.RootNode.hasField('CostTable'))
+      this.costTable = this.template.RootNode.getFieldByLabel('CostTable').getValue();
 
-    if(this.template.RootNode.HasField('CostValue'))
-      this.costValue = this.template.RootNode.GetFieldByLabel('CostValue').GetValue();
+    if(this.template.RootNode.hasField('CostValue'))
+      this.costValue = this.template.RootNode.getFieldByLabel('CostValue').getValue();
 
-    if(this.template.RootNode.HasField('Param1'))
-      this.param1 = this.template.RootNode.GetFieldByLabel('Param1').GetValue();
+    if(this.template.RootNode.hasField('Param1'))
+      this.param1 = this.template.RootNode.getFieldByLabel('Param1').getValue();
 
-    if(this.template.RootNode.HasField('Param1Value'))
-      this.param1Value = this.template.RootNode.GetFieldByLabel('Param1Value').GetValue();
+    if(this.template.RootNode.hasField('Param1Value'))
+      this.param1Value = this.template.RootNode.getFieldByLabel('Param1Value').getValue();
 
-    if(this.template.RootNode.HasField('ChanceAppear'))
-      this.chanceAppear = this.template.RootNode.GetFieldByLabel('ChanceAppear').GetValue();
+    if(this.template.RootNode.hasField('ChanceAppear'))
+      this.chanceAppear = this.template.RootNode.getFieldByLabel('ChanceAppear').getValue();
 
-    if(this.template.RootNode.HasField('UsesPerDay'))
-      this.usesPerDay = this.template.RootNode.GetFieldByLabel('UsesPerDay').GetValue();
+    if(this.template.RootNode.hasField('UsesPerDay'))
+      this.usesPerDay = this.template.RootNode.getFieldByLabel('UsesPerDay').getValue();
 
-    if(this.template.RootNode.HasField('Useable'))
-      this.useable = this.template.RootNode.GetFieldByLabel('Useable').GetValue();
+    if(this.template.RootNode.hasField('Useable'))
+      this.useable = this.template.RootNode.getFieldByLabel('Useable').getValue();
 
-    if(this.template.RootNode.HasField('UpgradeType'))
-      this.upgradeType = this.template.RootNode.GetFieldByLabel('UpgradeType').GetValue();
+    if(this.template.RootNode.hasField('UpgradeType'))
+      this.upgradeType = this.template.RootNode.getFieldByLabel('UpgradeType').getValue();
   }
 
   save(){
     let propStruct = new GFFStruct(0);
 
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'PropertyName') ).SetValue( this.propertyName == -1 ? 255 : this.propertyName);
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'SubType') ).SetValue( this.subType == -1 ? 255 : this.subType);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'CostTable') ).SetValue( this.costTable == -1 ? 255 : this.costTable);
-    propStruct.AddField( new GFFField(GFFDataType.WORD, 'CostValue') ).SetValue( this.costValue == -1 ? 255 : this.costValue);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Param1') ).SetValue( this.param1 == -1 ? 255 : this.param1);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Param1Value') ).SetValue( this.param1Value == -1 ? 255 : this.param1Value);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') ).SetValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') ).SetValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'Usable') ).SetValue( this.useable == -1 ? 255 : this.useable);
-    propStruct.AddField( new GFFField(GFFDataType.BYTE, 'UpgradeType') ).SetValue( this.upgradeType == -1 ? 255 : this.upgradeType);
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') ).setValue( this.propertyName == -1 ? 255 : this.propertyName);
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue( this.subType == -1 ? 255 : this.subType);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') ).setValue( this.costTable == -1 ? 255 : this.costTable);
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') ).setValue( this.costValue == -1 ? 255 : this.costValue);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') ).setValue( this.param1 == -1 ? 255 : this.param1);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') ).setValue( this.param1Value == -1 ? 255 : this.param1Value);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') ).setValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') ).setValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Usable') ).setValue( this.useable == -1 ? 255 : this.useable);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') ).setValue( this.upgradeType == -1 ? 255 : this.upgradeType);
 
     return propStruct;
   }

@@ -20,10 +20,10 @@ export class EventSpawnBodyBag extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.bodyBagId  = struct.GetFieldByLabel('BodyBagId').GetValue();
-      this.position.x = struct.GetFieldByLabel('PositionX').GetValue();
-      this.position.y = struct.GetFieldByLabel('PositionY').GetValue();
-      this.position.z = struct.GetFieldByLabel('PositionZ').GetValue();
+      this.bodyBagId  = struct.getFieldByLabel('BodyBagId').getValue();
+      this.position.x = struct.getFieldByLabel('PositionX').getValue();
+      this.position.y = struct.getFieldByLabel('PositionY').getValue();
+      this.position.z = struct.getFieldByLabel('PositionZ').getValue();
     }
   }
 
@@ -33,23 +33,23 @@ export class EventSpawnBodyBag extends GameEvent {
 
   saveEventData(){
     let struct = new GFFStruct(0x5555);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'BodyBagId' ) ).SetValue(this.bodyBagId);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'PositionX' ) ).SetValue(this.position.x);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'PositionY' ) ).SetValue(this.position.y);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'PositionZ' ) ).SetValue(this.position.z);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'BodyBagId' ) ).setValue(this.bodyBagId);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionX' ) ).setValue(this.position.x);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionY' ) ).setValue(this.position.y);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionZ' ) ).setValue(this.position.z);
     return struct;
   }
 
   export(){
     let struct = new GFFStruct( 0xABCD );
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'CallerId') ).SetValue( this.callerId );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Day') ).SetValue(this.day);
-    let eventData = struct.AddField( new GFFField(GFFDataType.STRUCT, 'EventData') );
-    eventData.AddChildStruct( this.saveEventData() );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'EventId') ).SetValue(this.id);
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).SetValue( this.objectId );
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'Time') ).SetValue(this.time);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.callerId );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
+    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    eventData.addChildStruct( this.saveEventData() );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.objectId );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
 
     return struct;
   }

@@ -75,7 +75,7 @@ export class Planetary {
   static SaveStruct(){
     let struct = new GFFStruct();
 
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).SetValue(Planetary.planets.length);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
 
     let planetMask = 0
     for(let i = 0; i < Planetary.planets.length; i++){
@@ -85,8 +85,8 @@ export class Planetary {
       }
       planetMask = planetMask >>> 0;
     }
-    struct.AddField( new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk') ).SetValue(planetMask);
-    struct.AddField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).SetValue(Planetary.selectedIndex);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk') ).setValue(planetMask);
+    struct.addField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).setValue(Planetary.selectedIndex);
 
     return struct;
   }

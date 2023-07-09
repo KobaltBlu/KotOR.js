@@ -376,9 +376,9 @@ export class TalentSpell extends TalentObject {
 
   save(){
     let spellStruct = new GFFStruct(3);
-    spellStruct.AddField( new GFFField(GFFDataType.WORD, 'Spell') ).SetValue(this.getId());
-    //spellStruct.AddField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).SetValue(this.getFlags());
-    //spellStruct.AddField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).SetValue(this.getMetaMagic());
+    spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(this.getId());
+    //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).setValue(this.getFlags());
+    //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).setValue(this.getMetaMagic());
     return spellStruct;
   }
 

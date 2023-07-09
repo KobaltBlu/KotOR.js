@@ -40,8 +40,8 @@ export class TabUTCEditorState extends TabState {
           this.processEventListener('onEditorFileLoad', [this]);
           this.moduleCreature = new KotOR.ModuleCreature(this.blueprint);
           this.moduleCreature.setContext(this.ui3DRenderer as any);
-          this.moduleCreature.Load();
-          this.moduleCreature.LoadModel().then( () => {
+          this.moduleCreature.load();
+          this.moduleCreature.loadModel().then( () => {
             this.ui3DRenderer.scene.add(this.moduleCreature.container);
             this.updateCameraFocus();
           });

@@ -102,10 +102,10 @@ export class AreaMap {
 
   loadDataStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      this.data = struct.GetFieldByLabel('AreaMapData').GetVoid();
-      this.dataSize = struct.GetFieldByLabel('AreaMapDataSize').GetValue();
-      this.mapResX = struct.GetFieldByLabel('AreaMapResX').GetValue();
-      this.mapResY = struct.GetFieldByLabel('AreaMapResY').GetValue();
+      this.data = struct.getFieldByLabel('AreaMapData').getVoid();
+      this.dataSize = struct.getFieldByLabel('AreaMapDataSize').getValue();
+      this.mapResX = struct.getFieldByLabel('AreaMapResX').getValue();
+      this.mapResY = struct.getFieldByLabel('AreaMapResY').getValue();
       this.generateAlphaTexture();      
     }
   }
@@ -305,17 +305,17 @@ export class AreaMap {
   export(): GFFStruct {
     let mapStruct = new GFFStruct(14);
 
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).SetValue(this.mapPt1X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).SetValue(this.mapPt1Y);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'MapPt2X') ).SetValue(this.mapPt2X);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapPt2Y') ).SetValue(this.mapPt2Y);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapResX') ).SetValue(this.mapResX);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'MapZoom') ).SetValue(this.mapZoom);
-    mapStruct.AddField( new GFFField(GFFDataType.INT, 'NorthAxis') ).SetValue(this.northAxis);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1X') ).SetValue(this.worldPt1X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt1Y') ).SetValue(this.worldPt1Y);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2X') ).SetValue(this.worldPt2X);
-    mapStruct.AddField( new GFFField(GFFDataType.FLOAT, 'WorldPt2Y') ).SetValue(this.worldPt2Y);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).setValue(this.mapPt1X);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).setValue(this.mapPt1Y);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt2X') ).setValue(this.mapPt2X);
+    mapStruct.addField( new GFFField(GFFDataType.INT, 'MapPt2Y') ).setValue(this.mapPt2Y);
+    mapStruct.addField( new GFFField(GFFDataType.INT, 'MapResX') ).setValue(this.mapResX);
+    mapStruct.addField( new GFFField(GFFDataType.INT, 'MapZoom') ).setValue(this.mapZoom);
+    mapStruct.addField( new GFFField(GFFDataType.INT, 'NorthAxis') ).setValue(this.northAxis);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'WorldPt1X') ).setValue(this.worldPt1X);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'WorldPt1Y') ).setValue(this.worldPt1Y);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'WorldPt2X') ).setValue(this.worldPt2X);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'WorldPt2Y') ).setValue(this.worldPt2Y);
 
     return mapStruct;
   }
@@ -333,10 +333,10 @@ export class AreaMap {
       }
     }
 
-    dataStruct.AddField( new GFFField(GFFDataType.VOID, 'AreaMapData') ).SetData(this.data);
-    dataStruct.AddField( new GFFField(GFFDataType.DWORD, 'AreaMapDataSize') ).SetValue(this.dataSize);
-    dataStruct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResX') ).SetValue(this.mapResX);
-    dataStruct.AddField( new GFFField(GFFDataType.INT, 'AreaMapResY') ).SetValue(this.mapResY);
+    dataStruct.addField( new GFFField(GFFDataType.VOID, 'AreaMapData') ).setData(this.data);
+    dataStruct.addField( new GFFField(GFFDataType.DWORD, 'AreaMapDataSize') ).setValue(this.dataSize);
+    dataStruct.addField( new GFFField(GFFDataType.INT, 'AreaMapResX') ).setValue(this.mapResX);
+    dataStruct.addField( new GFFField(GFFDataType.INT, 'AreaMapResY') ).setValue(this.mapResY);
     
     return dataStruct;
   }
@@ -376,17 +376,17 @@ export class AreaMap {
     if(struct instanceof GFFStruct){
       let areaMap = new AreaMap();
 
-      areaMap.mapPt1X = struct.GetFieldByLabel('MapPt1X').GetValue();
-      areaMap.mapPt1Y = struct.GetFieldByLabel('MapPt1Y').GetValue();
-      areaMap.mapPt2X = struct.GetFieldByLabel('MapPt2X').GetValue();
-      areaMap.mapPt2Y = struct.GetFieldByLabel('MapPt2Y').GetValue();
-      areaMap.mapResX = struct.GetFieldByLabel('MapResX').GetValue();
-      areaMap.mapZoom = struct.GetFieldByLabel('MapZoom').GetValue();
-      areaMap.northAxis = struct.GetFieldByLabel('NorthAxis').GetValue();
-      areaMap.worldPt1X = struct.GetFieldByLabel('WorldPt1X').GetValue();
-      areaMap.worldPt1Y = struct.GetFieldByLabel('WorldPt1Y').GetValue();
-      areaMap.worldPt2X = struct.GetFieldByLabel('WorldPt2X').GetValue();
-      areaMap.worldPt2Y = struct.GetFieldByLabel('WorldPt2Y').GetValue();
+      areaMap.mapPt1X = struct.getFieldByLabel('MapPt1X').getValue();
+      areaMap.mapPt1Y = struct.getFieldByLabel('MapPt1Y').getValue();
+      areaMap.mapPt2X = struct.getFieldByLabel('MapPt2X').getValue();
+      areaMap.mapPt2Y = struct.getFieldByLabel('MapPt2Y').getValue();
+      areaMap.mapResX = struct.getFieldByLabel('MapResX').getValue();
+      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue();
+      areaMap.northAxis = struct.getFieldByLabel('NorthAxis').getValue();
+      areaMap.worldPt1X = struct.getFieldByLabel('WorldPt1X').getValue();
+      areaMap.worldPt1Y = struct.getFieldByLabel('WorldPt1Y').getValue();
+      areaMap.worldPt2X = struct.getFieldByLabel('WorldPt2X').getValue();
+      areaMap.worldPt2Y = struct.getFieldByLabel('WorldPt2Y').getValue();
 
       areaMap.init();
 

@@ -40,8 +40,8 @@ export class TabUTDEditorState extends TabState {
           this.processEventListener('onEditorFileLoad', [this]);
           this.moduleDoor = new KotOR.ModuleDoor(this.blueprint);
           this.moduleDoor.setContext(this.ui3DRenderer as any);
-          this.moduleDoor.Load();
-          this.moduleDoor.LoadModel().then( () => {
+          this.moduleDoor.load();
+          this.moduleDoor.loadModel().then( () => {
             this.ui3DRenderer.scene.add(this.moduleDoor.container);
             this.updateCameraFocus();
           });

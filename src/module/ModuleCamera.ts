@@ -56,26 +56,26 @@ export class ModuleCamera {
 
   initProperties(){
 
-    if(this.template.RootNode.HasField('CameraID'))
-      this.cameraID = this.template.GetFieldByLabel('CameraID').GetValue();
+    if(this.template.RootNode.hasField('CameraID'))
+      this.cameraID = this.template.getFieldByLabel('CameraID').getValue();
 
-    if(this.template.RootNode.HasField('FieldOfView'))
-      this.fov = this.template.GetFieldByLabel('FieldOfView').GetValue();
+    if(this.template.RootNode.hasField('FieldOfView'))
+      this.fov = this.template.getFieldByLabel('FieldOfView').getValue();
 
-    if(this.template.RootNode.HasField('Height'))
-      this.height = this.template.GetFieldByLabel('Height').GetValue();
+    if(this.template.RootNode.hasField('Height'))
+      this.height = this.template.getFieldByLabel('Height').getValue();
 
-    if(this.template.RootNode.HasField('MicRange'))
-      this.micRange = this.template.GetFieldByLabel('MicRange').GetValue();
+    if(this.template.RootNode.hasField('MicRange'))
+      this.micRange = this.template.getFieldByLabel('MicRange').getValue();
 
-    if(this.template.RootNode.HasField('Orientation'))
-      this.orientation = this.template.GetFieldByLabel('Orientation').GetOrientation();
+    if(this.template.RootNode.hasField('Orientation'))
+      this.orientation = this.template.getFieldByLabel('Orientation').getOrientation();
 
-    if(this.template.RootNode.HasField('Pitch'))
-      this.pitch = this.template.GetFieldByLabel('Pitch').GetValue();
+    if(this.template.RootNode.hasField('Pitch'))
+      this.pitch = this.template.getFieldByLabel('Pitch').getValue();
 
-    if(this.template.RootNode.HasField('Position')){
-      this.position.copy(this.template.GetFieldByLabel('Position').GetVector());
+    if(this.template.RootNode.hasField('Position')){
+      this.position.copy(this.template.getFieldByLabel('Position').getVector());
     }
 
     this.initialized = true;
@@ -84,15 +84,15 @@ export class ModuleCamera {
 
   save(){
     let gff = new GFFObject();
-    gff.RootNode.Type = 14;
+    gff.RootNode.type = 14;
 
-    gff.RootNode.AddField( new GFFField(GFFDataType.INT, 'CameraID') ).SetValue(this.cameraID);
-    gff.RootNode.AddField( new GFFField(GFFDataType.DWORD, 'FieldOfView') ).SetValue(this.fov);
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Height') ).SetValue(this.height);
-    gff.RootNode.AddField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).SetValue(this.micRange);
-    gff.RootNode.AddField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).SetValue( this.template.GetFieldByLabel('Orientation').GetOrientation() );
-    gff.RootNode.AddField( new GFFField(GFFDataType.BYTE, 'Pitch') ).SetValue(this.pitch);
-    gff.RootNode.AddField( new GFFField(GFFDataType.VECTOR, 'Position') ).SetValue( this.template.GetFieldByLabel('Position').GetVector() );
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'FieldOfView') ).setValue(this.fov);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Height') ).setValue(this.height);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);
+    gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setValue( this.template.getFieldByLabel('Orientation').getOrientation() );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Pitch') ).setValue(this.pitch);
+    gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setValue( this.template.getFieldByLabel('Position').getVector() );
 
     this.template = gff;
     return gff;
@@ -102,31 +102,31 @@ export class ModuleCamera {
 
     let instance = new GFFStruct(4);
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.INT, 'CameraID', this.cameraID)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'FieldOfView', this.fov)
     );
 
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'Height', this.height)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'MicRange', this.micRange)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.ORIENTATION, 'Orientation', this.orientation)
     )
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.FLOAT, 'Pitch', this.position.z)
     );
     
-    instance.AddField(
+    instance.addField(
       new GFFField(GFFDataType.VECTOR, 'Position', this.position)
     );
 

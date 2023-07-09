@@ -89,23 +89,23 @@ export class ModuleMGObstacle extends ModuleObject {
       onHitFollower: undefined,
     };
 
-    let scriptsNode = this.template.GetFieldByLabel('Scripts').GetChildStructs()[0];
+    let scriptsNode = this.template.getFieldByLabel('Scripts').getChildStructs()[0];
     if(scriptsNode){
       
-      if(scriptsNode.HasField('OnAnimEvent'))
-        this.scripts.onAnimEvent = scriptsNode.GetFieldByLabel('OnAnimEvent').GetValue();
+      if(scriptsNode.hasField('OnAnimEvent'))
+        this.scripts.onAnimEvent = scriptsNode.getFieldByLabel('OnAnimEvent').getValue();
 
-      if(scriptsNode.HasField('OnCreate'))
-        this.scripts.onCreate = scriptsNode.GetFieldByLabel('OnCreate').GetValue();
+      if(scriptsNode.hasField('OnCreate'))
+        this.scripts.onCreate = scriptsNode.getFieldByLabel('OnCreate').getValue();
 
-      if(scriptsNode.HasField('OnHeartbeat'))
-        this.scripts.onHeartbeat = scriptsNode.GetFieldByLabel('OnHeartbeat').GetValue();
+      if(scriptsNode.hasField('OnHeartbeat'))
+        this.scripts.onHeartbeat = scriptsNode.getFieldByLabel('OnHeartbeat').getValue();
       
-      if(scriptsNode.HasField('OnHitBullet'))
-        this.scripts.onHitBullet = scriptsNode.GetFieldByLabel('OnHitBullet').GetValue();
+      if(scriptsNode.hasField('OnHitBullet'))
+        this.scripts.onHitBullet = scriptsNode.getFieldByLabel('OnHitBullet').getValue();
 
-      if(scriptsNode.HasField('OnHitFollower'))
-        this.scripts.onHitFollower = scriptsNode.GetFieldByLabel('OnHitFollower').GetValue();
+      if(scriptsNode.hasField('OnHitFollower'))
+        this.scripts.onHitFollower = scriptsNode.getFieldByLabel('OnHitFollower').getValue();
 
     }
 
@@ -121,8 +121,8 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   initProperties(){
-    if(this.template.RootNode.HasField('Name'))
-      this.name = this.template.GetFieldByLabel('Name').GetValue().toLowerCase();
+    if(this.template.RootNode.hasField('Name'))
+      this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
 
     this.initialized = true;
   }

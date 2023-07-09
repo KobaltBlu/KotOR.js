@@ -3,62 +3,62 @@ import { GFFObject } from "./GFFObject";
 
 export class GFFStruct {
   uuid: string;
-  Fields: GFFField[];
-  Type: number;
+  fields: GFFField[];
+  type: number;
 
   index: number = 0;
   fieldCount: number = 0;
 
-  constructor(Type = 0){
+  constructor(type = 0){
     this.uuid = crypto.randomUUID();
-    this.Fields = [];
-    this.Type = Type;
+    this.fields = [];
+    this.type = type;
   }
 
-  SetType(i: number){
-    this.Type = i;
+  setType(i: number){
+    this.type = i;
     return this;
   }
 
-  AddField(field: GFFField){
+  addField(field: GFFField){
     if(field instanceof GFFField){
-      return this.Fields[this.Fields.length] = field;
+      return this.fields[this.fields.length] = field;
     }
     return undefined;
   }
 
-  RemoveFieldByLabel(label = ''){
+  removeFieldByLabel(label = ''){
     let field;
-    for(let i = 0, len = this.Fields.length; i < len; i++){
-      field = this.Fields[i];
-      if(field.Label == label){
-        this.Fields.splice(i, 1);
+    for(let i = 0, len = this.fields.length; i < len; i++){
+      field = this.fields[i];
+      if(field.label == label){
+        this.fields.splice(i, 1);
         return true;
       }
     }
     return false;
   }
 
-  GetType(){
-    return this.Type;
+  getType(){
+    return this.type;
   }
 
-  GetFields(){
-    return this.Fields;
+  getFields(){
+    return this.fields;
   }
 
-  GetFieldByLabel(Label: string): GFFField|null {
+  getFieldByLabel(Label: string): GFFField {
 
-    for(let i = 0; i < this.Fields.length; i++){
-      let field = this.Fields[i];
-      if (field.Label == Label){
+    for(let i = 0; i < this.fields.length; i++){
+      let field = this.fields[i];
+      if (field.label == Label){
         return field;
       }
 
-      /*if (field.GetType() == GFFDataType.LIST || field.GetType() == GFFDataType.STRUCT){
-        for(let j = 0; j!=field.GetChildStructs().length; j++){
-          let str = field.GetChildStructs()[j];
-          let child = str.GetFieldByLabel(Label);
+      /*if (field.getType() == GFFDataType.LIST || field.getType() == GFFDataType.STRUCT){
+        for(let j = 0; j!=field.getChildStructs().length; j++){
+          let str = field.getChildStructs()[j];
+          let child = str.getFieldByLabel(Label);
           if (child != null){
             return child;
           }
@@ -69,25 +69,25 @@ export class GFFStruct {
     return null;
   }
 
-  MergeStruct(strt: GFFStruct){
+  mergeStruct(strt: GFFStruct){
     if(strt instanceof GFFStruct){
-      for(let i = 0; i < strt.Fields.length; i++){
-        this.Fields.push(strt.Fields[i]);
+      for(let i = 0; i < strt.fields.length; i++){
+        this.fields.push(strt.fields[i]);
       }
     }
     return this;
   }
 
-  HasField(Label: string){
-    for(let i = 0; i < this.Fields.length; i++){
-      let field = this.Fields[i];
-      if (field.Label == Label)
+  hasField(Label: string){
+    for(let i = 0; i < this.fields.length; i++){
+      let field = this.fields[i];
+      if (field.label == Label)
         return true;
     }
     return false;
   }
 
-  ToJSON(){
+  toJSON(){
     return GFFObject.StructToJSON(this);
   }
 

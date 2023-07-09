@@ -28,23 +28,23 @@ export class ModuleMiniGame {
   tracks: ModuleMGTrack[] = [];
 
   constructor(struct: GFFStruct){
-    this.bumpPlane = struct.GetFieldByLabel('Bump_Plane').GetValue();
-    this.cameraViewAngle = struct.GetFieldByLabel('CameraViewAngle').GetValue();
-    this.dof = struct.GetFieldByLabel('DOF').GetValue();
-    this.doBumping = struct.GetFieldByLabel('DoBumping').GetValue();
-    this.farClip = struct.GetFieldByLabel('Far_Clip').GetValue();
-    this.lateralAccel = struct.GetFieldByLabel('LateralAccel').GetValue();
-    this.movementPerSec = struct.GetFieldByLabel('MovementPerSec').GetValue();
-    this.music = struct.GetFieldByLabel('Music').GetValue();
-    this.nearClip = struct.GetFieldByLabel('Near_Clip').GetValue();
-    this.type = struct.GetFieldByLabel('Type').GetValue();
-    this.useInertia = struct.GetFieldByLabel('UseInertia').GetValue();
+    this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
+    this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
+    this.dof = struct.getFieldByLabel('DOF').getValue();
+    this.doBumping = struct.getFieldByLabel('DoBumping').getValue();
+    this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
+    this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
+    this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
+    this.music = struct.getFieldByLabel('Music').getValue();
+    this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
+    this.type = struct.getFieldByLabel('Type').getValue();
+    this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
 
     this.player = new ModuleMGPlayer(
-      GFFObject.FromStruct(struct.GetFieldByLabel('Player').GetChildStructs()[0])
+      GFFObject.FromStruct(struct.getFieldByLabel('Player').getChildStructs()[0])
     );
 
-    const enemies = struct.GetFieldByLabel('Enemies').GetChildStructs();
+    const enemies = struct.getFieldByLabel('Enemies').getChildStructs();
     for(let i = 0; i < enemies.length; i++){
       this.enemies.push(
         new ModuleMGEnemy(

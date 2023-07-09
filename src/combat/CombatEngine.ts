@@ -544,13 +544,13 @@ export class CombatEngine {
           if(claw3)
             claw = claw3;
 
-          let wProps = claw.template.GetFieldByLabel('PropertiesList').GetChildStructs();
+          let wProps = claw.template.getFieldByLabel('PropertiesList').getChildStructs();
           for(let i = 0; i < wProps.length; i++){
             let prop = wProps[i];
-            let propName = prop.GetFieldByLabel('PropertyName');
-            if(propName && propName.GetValue() == 51){
-              let costTableIdx = prop.GetFieldByLabel('CostTable').GetValue();
-              let costTableValue = prop.GetFieldByLabel('CostValue').GetValue();
+            let propName = prop.getFieldByLabel('PropertyName');
+            if(propName && propName.getValue() == 51){
+              let costTableIdx = prop.getFieldByLabel('CostTable').getValue();
+              let costTableValue = prop.getFieldByLabel('CostValue').getValue();
               let iprp_costtable2DA = TwoDAManager.datatables.get('iprp_costtable');
               if(iprp_costtable2DA){
                 let _2daName = iprp_costtable2DA.rows[19].name;
