@@ -33,7 +33,7 @@ export class ModuleRoom extends ModuleObject {
   creatures: ModuleCreature[];
   triggers: ModuleTrigger[];
   encounters: ModuleEncounter[];
-  grass: any;
+  grass: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 
   constructor( args: any = {} ){
     super();
@@ -523,7 +523,19 @@ export class ModuleRoom extends ModuleObject {
     try{
       let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
-    }catch(e){}
+    }catch(e){
+      console.error(e);
+    }
+
+    try{
+      if(this.grass){
+        this.grass.geometry.dispose();
+        this.grass.material.dispose();
+        this.grass.removeFromParent();
+      }
+    }catch(e){
+      console.error(e);
+    }
   }
 
   toToolsetInstance(){

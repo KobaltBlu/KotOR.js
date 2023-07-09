@@ -218,13 +218,6 @@ export class ModuleArea extends ModuleObject {
       pm.destroy();
     }
 
-    //Clear grass geometries
-    while (GameState.group.grass.children.length){
-      (GameState.group.grass.children[0] as any).geometry.dispose();
-      (GameState.group.grass.children[0] as any).material.dispose();
-      GameState.group.grass.remove(GameState.group.grass.children[0]);
-    }
-
     this.weather.destroy();
     
   }
