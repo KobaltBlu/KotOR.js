@@ -2944,12 +2944,12 @@ NWScriptDefK1.Actions = {
           buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], args[1]);
           if(buffer){
             const creature = new ModuleCreature(new GFFObject(buffer));
-            creature.Load();
+            creature.load();
             creature.position.copy(args[2].position);
             creature.setFacing(args[2].getFacing(), true);
             args[2].area.attachObject(creature);
             
-            creature.LoadModel().then( (model: OdysseyModel3D) => {
+            creature.loadModel().then( (model: OdysseyModel3D) => {
               model.userData.moduleObject = creature;
               model.hasCollision = true;
               model.name = creature.getTag();
@@ -2967,12 +2967,12 @@ NWScriptDefK1.Actions = {
           buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], args[1]);
           if(buffer){
             const plc = new ModulePlaceable(new GFFObject(buffer));
-            plc.Load();
+            plc.load();
             plc.position.copy(args[2].position);
             plc.rotation.set(0, 0, args[2].getFacing());
 
-            plc.LoadModel().then( (model: OdysseyModel3D) => {
-              plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
+            plc.loadModel().then( (model: OdysseyModel3D) => {
+              plc.loadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
                 plc.model.userData.moduleObject = plc;
                 
                 model.hasCollision = true;
@@ -7296,8 +7296,8 @@ NWScriptDefK1.Actions = {
       if(buffer){
         let partyMember = new ModuleCreature(new GFFObject(buffer));
         args[1].area.attachObject(partyMember);
-        partyMember.Load();
-        partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+        partyMember.load();
+        partyMember.loadModel().then( (model: OdysseyModel3D) => {
           partyMember.model.userData.moduleObject = partyMember;
           partyMember.position.copy(args[1].position);
           partyMember.setFacing(args[1].getFacing(), true);
@@ -8003,8 +8003,8 @@ NWScriptDefK1.Actions = {
         item.position.copy(args[1].position);
         item.rotation.order = 'ZYX';
         item.rotation.set(args[1].getFacing(), Math.PI/2, 0);
-        item.Load();
-        item.LoadModel().then( (model: OdysseyModel3D) => {
+        item.load();
+        item.loadModel().then( (model: OdysseyModel3D) => {
           item.model.userData.moduleObject = item;
           
           model.name = item.getTag();

@@ -419,7 +419,7 @@ export class ModuleArea extends ModuleObject {
     new AsyncLoop({
       array: this.creatures,
       onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-        creature.LoadModel().then(() => {
+        creature.loadModel().then(() => {
           asyncLoop.next();
         });
       }
@@ -427,7 +427,7 @@ export class ModuleArea extends ModuleObject {
       new AsyncLoop({
         array: PartyManager.party,
         onLoop: (partyMember: ModuleCreature, asyncLoop: AsyncLoop) => {
-          partyMember.LoadModel().then(() => {
+          partyMember.loadModel().then(() => {
             asyncLoop.next();
           });
         }
@@ -435,7 +435,7 @@ export class ModuleArea extends ModuleObject {
         new AsyncLoop({
           array: this.placeables,
           onLoop: (placeable: ModulePlaceable, asyncLoop: AsyncLoop) => {
-            placeable.LoadModel().then(() => {
+            placeable.loadModel().then(() => {
               asyncLoop.next();
             });
           }
@@ -443,7 +443,7 @@ export class ModuleArea extends ModuleObject {
           new AsyncLoop({
             array: this.doors,
             onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-              door.LoadModel().then(() => {
+              door.loadModel().then(() => {
                 asyncLoop.next();
               });
             }
@@ -471,11 +471,11 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  SetTransitionWaypoint(sTag = ''){
+  setTransitionWaypoint(sTag = ''){
     this.transWP = sTag;
   }
 
-  Load(onLoad?: Function){
+  load(onLoad?: Function){
 
     //BEGIN AREA LOAD
 
@@ -757,10 +757,10 @@ export class ModuleArea extends ModuleObject {
       FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     }
 
-    this.LoadVis( () => {
-      this.LoadLayout( () => {
+    this.loadVis( () => {
+      this.loadLayout( () => {
         this.loadPath( () => {
-          this.LoadScripts();
+          this.loadScripts();
           GameState.scene.fog = this.fog;
           if(typeof onLoad == 'function')
             onLoad(this);
@@ -781,14 +781,14 @@ export class ModuleArea extends ModuleObject {
   loadPath(onLoad?: Function){
     console.log('ModuleArea.loadPath');
     this.path = new ModulePath(this._name);
-    this.path.Load( () => {
+    this.path.load( () => {
       if(typeof onLoad == 'function')
         onLoad(this);
     });
   }
 
-  LoadVis(onLoad?: Function){
-    console.log('ModuleArea.LoadVis');
+  loadVis(onLoad?: Function){
+    console.log('ModuleArea.loadVis');
     ResourceLoader.loadResource(ResourceTypes['vis'], this._name, (visData: Buffer) => {
       this.visObject = new VISObject(visData, this);
       if(typeof onLoad == 'function')
@@ -800,8 +800,8 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  LoadLayout(onLoad?: Function){
-    console.log('ModuleArea.LoadLayout');
+  loadLayout(onLoad?: Function){
+    console.log('ModuleArea.loadLayout');
     ResourceLoader.loadResource(ResourceTypes['lyt'], this._name, (data: Buffer) => {
       this.layout = new LYTObject(data);
 
@@ -979,7 +979,7 @@ export class ModuleArea extends ModuleObject {
   loadCameras(){
     for(let i = 0; i < this.cameras.length; i++){
       const camera = this.cameras[i];
-      camera.Load();
+      camera.load();
       GameState.staticCameras.push(camera.perspectiveCamera);
     }
   }
@@ -1146,8 +1146,8 @@ export class ModuleArea extends ModuleObject {
           GameState.player.force = 0;
           GameState.player.collisionData.groundFace = undefined;
           GameState.player.collisionData.lastGroundFace = undefined;
-          GameState.player.Load();
-          GameState.player.LoadModel().then( (model: OdysseyModel3D) => {
+          GameState.player.load();
+          GameState.player.loadModel().then( (model: OdysseyModel3D) => {
             GameState.player.model = model;
             GameState.player.model.hasCollision = true;
             //let spawnLoc = this.getSpawnLocation();
@@ -1166,7 +1166,7 @@ export class ModuleArea extends ModuleObject {
           let player = new ModulePlayer( this.getPlayerTemplate() );
           player.partyID = -1;
           
-          player.Load();
+          player.load();
           GameState.player = player;
         
           if(!this.miniGame){
@@ -1174,7 +1174,7 @@ export class ModuleArea extends ModuleObject {
             GameState.group.party.add( player.container );
           }
 
-          player.LoadModel().then( (model: OdysseyModel3D) => {
+          player.loadModel().then( (model: OdysseyModel3D) => {
             model.userData.moduleObject = player;
             model.hasCollision = true;
 
@@ -1285,14 +1285,14 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.doors,
         onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-          door.Load();
+          door.load();
   
           // door.position.x = door.getX();
           // door.position.y = door.getY();
           // door.position.z = door.getZ();
           door.rotation.set(0, 0, door.getBearing());
-          door.LoadModel().then( (model: OdysseyModel3D) => {
-            door.LoadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
+          door.loadModel().then( (model: OdysseyModel3D) => {
+            door.loadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
               door.computeBoundingBox();
               try{
                 model.userData.walkmesh = dwk;
@@ -1342,12 +1342,12 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.placeables,
         onLoop: (plc: ModulePlaceable, asyncLoop: AsyncLoop) => {
-          plc.Load();
+          plc.load();
           plc.position.set(plc.getX(), plc.getY(), plc.getZ());
           plc.rotation.set(0, 0, plc.getBearing());
-          plc.LoadModel().then( (model: OdysseyModel3D) => {
+          plc.loadModel().then( (model: OdysseyModel3D) => {
             GameState.group.placeables.add( plc.container );
-            plc.LoadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
+            plc.loadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
               GameState.walkmeshList.push( pwk.mesh );
               plc.computeBoundingBox();
 
@@ -1381,7 +1381,7 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.waypoints,
         onLoop: (waypnt: ModuleWaypoint, asyncLoop: AsyncLoop) => {
-          waypnt.Load();
+          waypnt.load();
           let wpObj = new THREE.Object3D();
           wpObj.name = waypnt.getTag();
           wpObj.position.copy(waypnt.position);
@@ -1423,7 +1423,7 @@ export class ModuleArea extends ModuleObject {
         array: this.encounters,
         onLoop: (encounter: ModuleEncounter, asyncLoop: AsyncLoop) => {
           try{
-            encounter.Load();
+            encounter.load();
             let _distance = 1000000000;
             let _currentRoom = null;
             let roomCenter = new THREE.Vector3();
@@ -1461,7 +1461,7 @@ export class ModuleArea extends ModuleObject {
         array: this.areaOfEffects,
         onLoop: (aoe: ModuleAreaOfEffect, asyncLoop: AsyncLoop) => {
           try{
-            aoe.Load();
+            aoe.load();
             GameState.group.effects.add( aoe.container );
             asyncLoop.next();
           }catch(e){
@@ -1483,7 +1483,7 @@ export class ModuleArea extends ModuleObject {
         array: this.triggers,
         onLoop: (trig: ModuleTrigger, asyncLoop: AsyncLoop) => {
           try{
-            trig.Load();
+            trig.load();
             let _distance = 1000000000;
             let _currentRoom = null;
             let roomCenter = new THREE.Vector3();
@@ -1520,8 +1520,8 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.creatures,
         onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-          creature.Load();
-          creature.LoadModel().then( (model: OdysseyModel3D) => {
+          creature.load();
+          creature.loadModel().then( (model: OdysseyModel3D) => {
             creature.model.userData.moduleObject = creature;
             
             //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
@@ -1553,7 +1553,7 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.stores,
         onLoop: (store: ModuleStore, asyncLoop: AsyncLoop) => {
-          store.Load();
+          store.load();
           asyncLoop.next();
         }
       });
@@ -1570,8 +1570,8 @@ export class ModuleArea extends ModuleObject {
       let loop = new AsyncLoop({
         array: this.sounds,
         onLoop: (sound: ModuleSound, asyncLoop: AsyncLoop) => {
-          sound.Load();
-          sound.LoadSound( () => {
+          sound.load();
+          sound.loadSound( () => {
             asyncLoop.next();
           });
         }
@@ -1628,8 +1628,8 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  LoadScripts(){
-    console.log('ModuleArea.LoadScripts');
+  loadScripts(){
+    console.log('ModuleArea.loadScripts');
     let keys = Object.keys(this.scripts);
     for(let i = 0; i < keys.length; i++){
       const key = keys[i];

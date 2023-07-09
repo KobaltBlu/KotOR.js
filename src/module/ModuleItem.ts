@@ -347,7 +347,7 @@ export class ModuleItem extends ModuleObject {
     }
   }
 
-  Load(){
+  load(){
 
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
@@ -379,11 +379,11 @@ export class ModuleItem extends ModuleObject {
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      // this.LoadScripts();
+      // this.loadScripts();
     }
   }
 
-  LoadModel(): Promise<OdysseyModel3D> {
+  loadModel(): Promise<OdysseyModel3D> {
     let itemclass = this._baseItem.itemClass;
     let DefaultModel = this._baseItem.defaultModel;
     itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();

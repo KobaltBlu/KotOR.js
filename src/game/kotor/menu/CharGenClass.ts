@@ -67,8 +67,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 0;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -84,8 +84,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 1;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -101,8 +101,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 2;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -118,8 +118,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 3;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -135,8 +135,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 4;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -152,8 +152,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedClass = 5;
         let template = CharGenManager.templates.get(CharGenManager.selectedClass);
         CharGenManager.selectedCreature = new ModulePlayer(template);
-        CharGenManager.selectedCreature.Load();
-        CharGenManager.selectedCreature.LoadModel().then((model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.load();
+        CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
             MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
@@ -208,8 +208,8 @@ export class CharGenClass extends GameMenu {
           _3dView.camera.position.copy(_3dViewModel.camerahook.position);
           _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
           _3dView.camera.position.z = 0.9;
-          creature.Load();
-          creature.LoadModel().then((creature_model: OdysseyModel3D) => {
+          creature.load();
+          creature.loadModel().then((creature_model: OdysseyModel3D) => {
             creature.model.position.set(0, 0, 0);
             creature.model.rotation.z = -Math.PI / 2;
             _3dView.addModel(creature.model);

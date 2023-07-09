@@ -36,7 +36,7 @@ export class EffectDisguise extends GameEffect {
         this.object.appearance = this.getInt(0);
         this.object.creatureAppearance = disguise_appearance;
         console.log('Disguise applying', this.object, this);
-        this.object.LoadModel().then( () => {
+        this.object.loadModel().then( () => {
           console.log('Disguise applied', this.object, this);
         });
       }
@@ -51,7 +51,7 @@ export class EffectDisguise extends GameEffect {
         this.object.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.object.appearance);
       }
       console.log('Disguise removing', this.object, this);
-      this.object.LoadModel().then( () => {
+      this.object.loadModel().then( () => {
         console.log('Disguise removed', this.object, this);
       });
     }

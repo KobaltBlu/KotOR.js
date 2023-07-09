@@ -180,7 +180,7 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ute'], this.getTemplateResRef());
@@ -188,21 +188,21 @@ export class ModuleEncounter extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.initProperties();
-        this.LoadScripts();
+        this.loadScripts();
         try{ this.buildGeometry(); }catch(e){console.error(e)}
         //this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          this.LoadScripts();
+          this.loadScripts();
           try{ this.buildGeometry(); }catch(e){console.error(e)}
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      this.LoadScripts();
+      this.loadScripts();
       try{ this.buildGeometry(); }catch(e){console.error(e)}
     }
   }
@@ -251,7 +251,7 @@ export class ModuleEncounter extends ModuleObject {
     return trigGeom;
   }
 
-  LoadScripts(){
+  loadScripts(){
     this.scripts.onEntered = this.template.GetFieldByLabel('OnEntered').GetValue();
     this.scripts.onExhausted = this.template.GetFieldByLabel('OnExhausted').GetValue();
     this.scripts.onExit = this.template.GetFieldByLabel('OnExit').GetValue();

@@ -495,7 +495,7 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], this.getTemplateResRef());
@@ -503,25 +503,25 @@ export class ModulePlaceable extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.initProperties();
-        this.LoadInventory();
-        this.LoadScripts();
+        this.loadInventory();
+        this.loadScripts();
       }else{
         console.error('Failed to load ModulePlaceable template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          this.LoadInventory();
-          this.LoadScripts();
+          this.loadInventory();
+          this.loadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      this.LoadInventory();
-      this.LoadScripts();
+      this.loadInventory();
+      this.loadScripts();
     }
   }
 
-  LoadModel(): Promise<OdysseyModel3D> {
+  loadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       GameState.ModelLoader.load(modelName)
@@ -559,7 +559,7 @@ export class ModulePlaceable extends ModuleObject {
     });
   }
 
-  LoadScripts (){
+  loadScripts (){
     this.scripts = {
       onClosed: undefined,
       onDamaged: undefined,
@@ -640,17 +640,17 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  LoadInventory(){
+  loadInventory(){
     let inventory = this.getItemList();
     for(let i = 0; i < inventory.length; i++){
-      this.LoadItem( GFFObject.FromStruct( inventory[i] ) );
+      this.loadItem( GFFObject.FromStruct( inventory[i] ) );
     }
   }
 
-  LoadItem( template: GFFObject){
+  loadItem( template: GFFObject){
     let item = new ModuleItem(template);
     item.initProperties();
-    item.Load();
+    item.load();
     let hasItem = this.getItem(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
@@ -661,7 +661,7 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  LoadWalkmesh(ResRef = '', onLoad?: Function){
+  loadWalkmesh(ResRef = '', onLoad?: Function){
     let wokKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['pwk']);
     if(wokKey != null){
       KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {

@@ -29,12 +29,12 @@ export class ModuleWaypoint extends ModuleObject {
 
   }
 
-  SetFacingVector(facing = new THREE.Vector3()){
+  setFacingVector(facing = new THREE.Vector3()){
     if(this.model instanceof OdysseyModel3D)
       this.model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(this.getXOrientation(), this.getYOrientation()));
   }
 
-  GetFacingVector(){
+  getFacingVector(){
     if(this.model instanceof OdysseyModel3D){
       let facing = new THREE.Vector3(0, 1, 0);
       facing.applyQuaternion(this.model.quaternion);
@@ -63,7 +63,7 @@ export class ModuleWaypoint extends ModuleObject {
     return this.templateResRef;
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], this.getTemplateResRef());

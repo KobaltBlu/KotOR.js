@@ -247,14 +247,14 @@ export class ModuleMGEnemy extends ModuleObject {
     this.track.updateMatrixWorld();
   }
 
-  Load( onLoad?: Function ){
+  load( onLoad?: Function ){
     this.initProperties();
     GameState.scene.add(this.sphere_geom);
     if(onLoad != null)
       onLoad(this.template);
   }
 
-  LoadModel (onLoad?: Function){
+  loadModel (onLoad?: Function){
 
     let loop = new AsyncLoop({
       array: this.modelProps,
@@ -288,11 +288,11 @@ export class ModuleMGEnemy extends ModuleObject {
 
   }
 
-  LoadGunBanks(onLoad?: Function){
+  loadGunBanks(onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.gunBanks,
       onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
-        gunbank.Load().then( () => {
+        gunbank.load().then( () => {
           this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
             this.gun_hook.add(gunbank.model);
@@ -362,7 +362,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  LoadScripts (){
+  loadScripts (){
     this.scripts = {
       onAccelerate: undefined,
       onAnimEvent: undefined,

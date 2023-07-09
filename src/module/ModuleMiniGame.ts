@@ -104,10 +104,10 @@ export class ModuleMiniGame {
     return new Promise<void>( (resolve, reject) => {
       console.log('Loading MG Player')
       let player: ModuleMGPlayer = this.player;
-      player.Load();
-      player.LoadCamera( () => {
-        player.LoadModel( () => {
-          player.LoadGunBanks( () => {
+      player.load();
+      player.loadCamera( () => {
+        player.loadModel( () => {
+          player.loadGunBanks( () => {
             let track = this.tracks.find(o => o.track === player.trackName);
             // model.userData.moduleObject = player;
             // model.hasCollision = true;
@@ -129,8 +129,8 @@ export class ModuleMiniGame {
       let loop = new AsyncLoop({
         array: this.tracks,
         onLoop: (track: ModuleMGTrack, asyncLoop: AsyncLoop) => {
-          track.Load( () => {
-            track.LoadModel( (model: OdysseyModel3D) => {
+          track.load( () => {
+            track.loadModel( (model: OdysseyModel3D) => {
               track.model = model;
               model.userData.moduleObject = track;
               model.userData.index = trackIndex;
@@ -158,9 +158,9 @@ export class ModuleMiniGame {
       let loop = new AsyncLoop({
         array: this.enemies,
         onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
-          enemy.Load();
-          enemy.LoadModel( () => {
-            enemy.LoadGunBanks( () => {
+          enemy.load();
+          enemy.loadModel( () => {
+            enemy.loadGunBanks( () => {
               let track = this.tracks.find(o => o.track === enemy.trackName);
               // model.userData.moduleObject = enemy;
               // model.hasCollision = true;

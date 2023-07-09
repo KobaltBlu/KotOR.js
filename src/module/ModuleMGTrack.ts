@@ -37,12 +37,12 @@ export class ModuleMGTrack extends ModuleObject {
     
   }
 
-  Load( onLoad?: Function ){
+  load( onLoad?: Function ){
     if(typeof onLoad == 'function')
       onLoad();
   }
 
-  LoadModel (onLoad?: Function){
+  loadModel (onLoad?: Function){
     GameState.ModelLoader.load(this.track).then((mdl: OdysseyModel) => {
       OdysseyModel3D.FromMDL(mdl, {
         onComplete: (model: OdysseyModel3D) => {

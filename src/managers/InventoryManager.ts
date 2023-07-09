@@ -111,7 +111,7 @@ export class InventoryManager {
       if(item.getBaseItemId() == 57){ //Credits
         PartyManager.Gold += item.getStackSize();
       }else{
-        item.Load();
+        item.load();
         let hasItem = InventoryManager.getItem(item.getTag());
         if(hasItem){
 

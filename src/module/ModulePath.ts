@@ -145,7 +145,7 @@ export class ModulePath {
     this.name = pathName;
   }
 
-  Load( onLoad?: Function ){
+  load( onLoad?: Function ){
     TemplateLoader.Load({
       ResRef: this.name,
       ResType: ResourceTypes.pth,

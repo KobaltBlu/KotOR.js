@@ -29,7 +29,7 @@ export class ModuleCamera {
     this.template = gff;
   }
 
-  Load(){
+  load(){
     this.initProperties();
     this.buildCamera();
   }

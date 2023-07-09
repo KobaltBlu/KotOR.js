@@ -2244,7 +2244,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  SetFacingVector( facing = new THREE.Vector3() ){
+  setFacingVector( facing = new THREE.Vector3() ){
 
     this.props['XOrientation'] = facing.x;
     this.props['YOrientation'] = facing.y;
@@ -2254,7 +2254,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  GetFacingVector(){
+  getFacingVector(){
     if((this.model instanceof OdysseyModel3D)){
       let facing = new THREE.Vector3(0, 1, 0);
       facing.applyQuaternion(this.model.quaternion);
@@ -2385,8 +2385,6 @@ export class ModuleCreature extends ModuleObject {
       instance.run(this, script_num);
     }
   }
-
-  
 
   use(object: ModuleObject){
     if(this.hasInventory()){
@@ -3274,7 +3272,7 @@ export class ModuleCreature extends ModuleObject {
     super.initEffects();
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], this.getTemplateResRef());
@@ -3282,24 +3280,24 @@ export class ModuleCreature extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.initProperties();
-        this.LoadScripts();
+        this.loadScripts();
         FactionManager.AddCreatureToFaction(this);
       }else{
         console.error('Failed to load character template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          this.LoadScripts();
+          this.loadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      this.LoadScripts();
+      this.loadScripts();
       FactionManager.AddCreatureToFaction(this);
     }
   }
 
-  LoadScripts (){
+  loadScripts (){
 
     this.scripts.onAttacked = this.template.GetFieldByLabel('ScriptAttacked').GetValue();
     this.scripts.onDamaged = this.template.GetFieldByLabel('ScriptDamaged').GetValue();
@@ -3327,12 +3325,12 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  LoadModel (): Promise<OdysseyModel3D> {
+  loadModel (): Promise<OdysseyModel3D> {
     this.isReady = false;
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      this.LoadEquipmentModels().then(() => {
-        this.LoadBody().then( () => {
-          this.LoadHead().then(() => {
+      this.loadEquipmentModels().then(() => {
+        this.loadBody().then( () => {
+          this.loadHead().then(() => {
             this.isReady = true;
             this.updateCollision(0.0000000000000000000001);
             this.update(0.0000000000000000000001);
@@ -3344,7 +3342,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  LoadBody(): Promise<OdysseyModel3D> {
+  loadBody(): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       let appearance = this.creatureAppearance;
       this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -3505,7 +3503,7 @@ export class ModuleCreature extends ModuleObject {
     });
   }
 
-  LoadHead(): Promise<OdysseyModel3D> {
+  loadHead(): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       let appearance = this.creatureAppearance;
       let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -3582,18 +3580,18 @@ export class ModuleCreature extends ModuleObject {
 
     this.unequipSlot(slot);
     item.onEquip(this);
-    item.LoadModel().then( () => {
+    item.loadModel().then( () => {
       switch(slot){
         case ModuleCreatureArmorSlot.ARMOR:
           this.equipment.ARMOR = item;
-          this.LoadModel().then(() => {
+          this.loadModel().then(() => {
             if(typeof onLoad == 'function')
               onLoad();
           });
         break;
         case ModuleCreatureArmorSlot.RIGHTHAND:
           this.equipment.RIGHTHAND = item;
-          item.LoadModel().then(() => {
+          item.loadModel().then(() => {
             if(item.model instanceof OdysseyModel3D)
               this.model.rhand.add(item.model);
 
@@ -3603,7 +3601,7 @@ export class ModuleCreature extends ModuleObject {
         break;
         case ModuleCreatureArmorSlot.LEFTHAND:
           this.equipment.LEFTHAND = item;
-          item.LoadModel().then(() => {
+          item.loadModel().then(() => {
             if(item.model instanceof OdysseyModel3D)
               this.model.lhand.add(item.model);
 
@@ -3655,7 +3653,7 @@ export class ModuleCreature extends ModuleObject {
           }catch(e){}
 
           this.equipment.HEAD = undefined;
-          this.LoadModel();
+          this.loadModel();
         break;
         case ModuleCreatureArmorSlot.ARMS:
           try{
@@ -3697,7 +3695,7 @@ export class ModuleCreature extends ModuleObject {
           }
 
           this.equipment.ARMOR = undefined;
-          this.LoadModel();
+          this.loadModel();
         break;
         case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
@@ -3842,7 +3840,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  LoadEquipmentItem(args: any = {}){
+  loadEquipmentItem(args: any = {}){
 
     args = Object.assign({
       item: new GFFObject(),
@@ -3850,7 +3848,7 @@ export class ModuleCreature extends ModuleObject {
       onLoad: null,
       onError: null
     }, args);
-    //console.log('LoadEquipmentItem', args);
+    //console.log('loadEquipmentItem', args);
     let uti: ModuleItem = args.item;
 
     if(uti instanceof GFFObject)
@@ -3898,8 +3896,8 @@ export class ModuleCreature extends ModuleObject {
       break;
     }
     
-    uti.Load();
-    uti.LoadModel().then( () => {
+    uti.load();
+    uti.loadModel().then( () => {
       if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
         uti.model.playAnimation('off', true);
       }
@@ -4261,15 +4259,15 @@ export class ModuleCreature extends ModuleObject {
         console.error(e);
       }
 
-      this.ParseEquipmentSlots();
+      this.parseEquipmentSlots();
 
       if(this.template.RootNode.HasField('ItemList')){
         let inventory = this.template.RootNode.GetFieldByLabel('ItemList').GetChildStructs();
         for(let i = 0; i < inventory.length; i++){
-          this.LoadItem(GFFObject.FromStruct(inventory[i]));
+          this.loadItem(GFFObject.FromStruct(inventory[i]));
         }
       }
-      this.LoadSoundSet();
+      this.loadSoundSet();
 
       //ActionList
       try{
@@ -4350,14 +4348,14 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  LoadEquipmentModels(): Promise<void> {
+  loadEquipmentModels(): Promise<void> {
     return new Promise<void>( (resolve, reject) => {
       let loop = new AsyncLoop({
         array: Object.keys(this.equipment),
         onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
           let slot: ModuleItem = (this.equipment as any)[slot_key];
           if(slot){
-            slot.LoadModel().then( () => {
+            slot.loadModel().then( () => {
               if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
                 slot.model.playAnimation('off', true);
               }
@@ -4374,18 +4372,18 @@ export class ModuleCreature extends ModuleObject {
     })
   }
 
-  ParseEquipmentSlots(){
+  parseEquipmentSlots(){
     let slots = Object.keys(this.equipment);
     for(let i = 0; i < slots.length; i++){
       let slot: ModuleItem = (this.equipment as any)[slots[i]];
       if(slot){
         slot.setPossessor(this);
-        slot.Load();
+        slot.load();
       }
     }
   }
 
-  LoadSoundSet(){
+  loadSoundSet(){
     const soundset2DA = TwoDAManager.datatables.get('soundset');
     if(soundset2DA){
       let ss_row = soundset2DA.rows[this.soundSetFile];
@@ -4396,11 +4394,11 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  LoadItem( template: GFFObject ){
+  loadItem( template: GFFObject ){
 
     let item = new ModuleItem(template);
     item.initProperties();
-    item.Load();
+    item.load();
     let hasItem = this.getItem(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);

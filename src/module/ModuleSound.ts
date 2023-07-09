@@ -74,7 +74,7 @@ export class ModuleSound extends ModuleObject {
 
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uts'], this.getTemplateResRef());
@@ -94,7 +94,7 @@ export class ModuleSound extends ModuleObject {
     }
   }
 
-  LoadModel ( onLoad?: Function ) {
+  loadModel ( onLoad?: Function ) {
     if(typeof onLoad === 'function')
       onLoad(this.mesh);
 
@@ -174,7 +174,7 @@ export class ModuleSound extends ModuleObject {
   }
 
 
-  LoadSound(onLoad?: Function){
+  loadSound(onLoad?: Function){
 
     let template: any = {
       sounds: [],//this.gff.GetFieldByLabel('Sounds').GetChildStructs(),

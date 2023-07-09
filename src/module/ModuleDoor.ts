@@ -829,7 +829,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  Load(){
+  load(){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utd'], this.getTemplateResRef());
@@ -838,22 +838,22 @@ export class ModuleDoor extends ModuleObject {
         this.template.Merge(gff);
         //console.log(this.template, gff, this)
         this.initProperties();
-        this.LoadScripts();
+        this.loadScripts();
       }else{
         console.error(`Failed to load ${ModuleDoor.name} template`);
         if(this.template instanceof GFFObject){
           this.initProperties();
-          this.LoadScripts();
+          this.loadScripts();
         }
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      this.LoadScripts();
+      this.loadScripts();
     }
   }
 
-  LoadModel(): Promise<OdysseyModel3D> {
+  loadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       GameState.ModelLoader.load(modelName).then((mdl: OdysseyModel) => {
@@ -913,7 +913,7 @@ export class ModuleDoor extends ModuleObject {
     });
   }
 
-  LoadScripts(){
+  loadScripts(){
 
     this.scripts = {
       onClick: undefined,
@@ -995,7 +995,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  LoadWalkmesh(ResRef = '', onLoad?: Function ){
+  loadWalkmesh(ResRef = '', onLoad?: Function ){
     
     let wokKey = KEYManager.Key.GetFileKey(ResRef+'0', ResourceTypes['dwk']);
     if(wokKey){

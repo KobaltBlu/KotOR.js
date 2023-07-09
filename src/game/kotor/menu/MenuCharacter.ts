@@ -307,7 +307,7 @@ export class MenuCharacter extends GameMenu {
       } else if (clone.goodEvil >= 0) {
         this._3dViewModel.playAnimation('evil');
       }
-      objectCreature.LoadModel().then( (model: OdysseyModel3D) => {
+      objectCreature.loadModel().then( (model: OdysseyModel3D) => {
         model.position.set(0, 0, 0);
         model.rotation.x = -Math.PI / 2;
         model.rotation.z = Math.PI;

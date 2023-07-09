@@ -841,7 +841,7 @@ export class ModuleObject {
   }
 
   addItem(item: ModuleItem){
-    item.Load();
+    item.load();
     let hasItem = this.getItem(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);

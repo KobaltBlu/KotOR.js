@@ -84,7 +84,7 @@ export class ModuleMGGunBank extends ModuleObject {
       }
 
       const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
-      bullet.Load().then( () => {
+      bullet.load().then( () => {
         this.bullet_hook.getWorldPosition(bullet.position);
         //this.bullet_hook.getWorldQuaternion(bullet.quaternion);
         this.owner.model.getWorldQuaternion(bullet.quaternion);
@@ -96,16 +96,16 @@ export class ModuleMGGunBank extends ModuleObject {
     }
   }
 
-  Load(){
+  load(){
     this.initProperties();
     return new Promise<void>( (resolve, reject) => {
-      this.LoadModel().then( () => {
+      this.loadModel().then( () => {
         resolve();
       });
     });
   }
 
-  LoadModel(){
+  loadModel(){
     return new Promise<void>( (resolve, reject) => {
       const resref = this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase();
       GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {

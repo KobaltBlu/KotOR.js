@@ -273,11 +273,11 @@ export class PartyManager {
       const quaternion = player.quaternion.clone();
 
       partyMember.partyID = 0;
-      partyMember.Load();
+      partyMember.load();
       partyMember.position.copy(spawn);
       partyMember.quaternion.copy(quaternion);
-      partyMember.LoadScripts();
-      partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+      partyMember.loadScripts();
+      partyMember.loadModel().then( (model: OdysseyModel3D) => {
         PartyManager.party[0] = partyMember;
         
         model.userData.moduleObject = partyMember;
@@ -384,7 +384,7 @@ export class PartyManager {
       try{
         if(!(currentSlot instanceof ModuleCreature)){
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
-          partyMember.Load();
+          partyMember.load();
             //PartyManager.party[nIdx+1] = partyMember;
 
             /*if(PartyManager.CurrentMembers[nIdx].isLeader){
@@ -396,7 +396,7 @@ export class PartyManager {
             partyMember.position.copy(spawn.position);
             partyMember.setFacing(spawn.getFacing(), true);
             
-            partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+            partyMember.loadModel().then( (model: OdysseyModel3D) => {
               model.userData.moduleObject = partyMember;
 
               partyMember.position.copy(spawn.position);
@@ -436,8 +436,8 @@ export class PartyManager {
     if(npc){
       if(npc.template){
         let partyMember = new ModuleCreature(npc.template);
-        partyMember.Load();
-        partyMember.LoadModel().then( (model: OdysseyModel3D) => {
+        partyMember.load();
+        partyMember.loadModel().then( (model: OdysseyModel3D) => {
           model.userData.moduleObject = partyMember;
           partyMember.onSpawn();
           if(typeof onLoad === 'function')

@@ -90,16 +90,16 @@ export class ModuleMGGunBullet extends ModuleObject {
     
   }
 
-  Load(){
+  load(){
     this.initProperties();
     return new Promise<void>( (resolve, reject) => {
-      this.LoadModel().then( () => {
+      this.loadModel().then( () => {
         resolve();
       });
     });
   }
 
-  LoadModel(){
+  loadModel(){
     const resref = this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<void>( (resolve, reject) => {
       GameState.ModelLoader.load(resref).then(

@@ -124,7 +124,7 @@ export class ModuleTrigger extends ModuleObject {
     return trigGeom;
   }
 
-  Load( onLoad?: Function ){
+  load( onLoad?: Function ){
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());
@@ -132,14 +132,14 @@ export class ModuleTrigger extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.Merge(gff);
         this.initProperties();
-        this.LoadScripts()
+        this.loadScripts()
         this.buildGeometry();
         this.initObjectsInside();
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
           this.initProperties();
-          this.LoadScripts();
+          this.loadScripts();
           this.buildGeometry();
           this.initObjectsInside();
         }
@@ -148,7 +148,7 @@ export class ModuleTrigger extends ModuleObject {
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
-      this.LoadScripts()
+      this.loadScripts()
       this.buildGeometry();
       this.initObjectsInside();
     }
@@ -351,7 +351,7 @@ export class ModuleTrigger extends ModuleObject {
     }
   }
 
-  LoadScripts(){
+  loadScripts(){
 
     this.scripts = {
       onClick: undefined,

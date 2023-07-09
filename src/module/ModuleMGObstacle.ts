@@ -80,7 +80,7 @@ export class ModuleMGObstacle extends ModuleObject {
     }
   }
 
-  LoadScripts (){
+  loadScripts (){
     this.scripts = {
       onAnimEvent: undefined,
       onCreate: undefined,

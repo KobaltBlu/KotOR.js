@@ -856,8 +856,8 @@ export class Module {
                         module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                         module.areas = [module.area];
                         module.area.module = module;
-                        module.area.SetTransitionWaypoint(module.transWP);
-                        module.area.Load( () => {
+                        module.area.setTransitionWaypoint(module.transWP);
+                        module.area.load( () => {
 
                           if(module.Mod_NextObjId0)
                             ModuleObjectManager.COUNT = module.Mod_NextObjId0;
@@ -904,10 +904,10 @@ export class Module {
                     module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                     module.area.module = module;
                     module.areas = [module.area];
-                    module.area.SetTransitionWaypoint(module.transWP);
+                    module.area.setTransitionWaypoint(module.transWP);
 
                     ModuleObjectManager.module = module;
-                    module.area.Load( () => {
+                    module.area.load( () => {
                       if(typeof onComplete == 'function')
                         onComplete(module);
                     });                        

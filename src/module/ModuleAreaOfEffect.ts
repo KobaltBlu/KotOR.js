@@ -55,7 +55,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     this.objectType |= ModuleObjectType.ModuleAreaOfEffect;
   }
 
-  Load(){
+  load(){
     //We already have the template (From SAVEGAME)
     this.initProperties();
   }

@@ -78,7 +78,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           }
         }
 
-        CharGenManager.selectedCreature.LoadModel().then( (model: any) => {
+        CharGenManager.selectedCreature.loadModel().then( (model: any) => {
           this.updateCamera();
           this.UpdatePortrait();
           if(model){
@@ -118,7 +118,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           }
         }
 
-        CharGenManager.selectedCreature.LoadModel().then( (model: OdysseyModel3D) => {
+        CharGenManager.selectedCreature.loadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
           if(model){
@@ -137,7 +137,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           //Restore previous appearance
           CharGenManager.selectedCreature.appearance = this.appearance;
           CharGenManager.selectedCreature.portraidId = this.portraidId;
-          CharGenManager.selectedCreature.LoadModel().then( (model: any) => {
+          CharGenManager.selectedCreature.loadModel().then( (model: any) => {
             this.exiting = false;
             this.Close();
           });

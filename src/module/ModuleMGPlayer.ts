@@ -681,12 +681,12 @@ export class ModuleMGPlayer extends ModuleObject {
     return face;
   }
 
-  Load(){
+  load(){
     this.initProperties();
     GameState.scene.add(this.sphere_geom);
   }
 
-  LoadCamera( onLoad?: Function ){
+  loadCamera( onLoad?: Function ){
     if(this.cameraName){
       const resref = this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase();
       GameState.ModelLoader.load(resref).then(
@@ -718,7 +718,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  LoadModel (onLoad?: Function){
+  loadModel (onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.modelProps,
       onLoop: (item: ModelListItem, asyncLoop: AsyncLoop) => {
@@ -758,11 +758,11 @@ export class ModuleMGPlayer extends ModuleObject {
 
   }
 
-  LoadGunBanks(onLoad?: Function){
+  loadGunBanks(onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.gunBanks,
-      onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
-        gunbank.Load().then( () => {
+      onLoop: (gunbank: ModuleMGGunBank, asyncLoop: AsyncLoop) => {
+        gunbank.load().then( () => {
           this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
           if(this.gun_hook instanceof THREE.Object3D){
             this.gun_hook.add(gunbank.model);
@@ -838,7 +838,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  LoadScripts (){
+  loadScripts (){
     this.scripts = {
       onAccelerate: undefined,
       onAnimEvent: undefined,

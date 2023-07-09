@@ -51,7 +51,7 @@ export class ModuleStore extends ModuleObject {
     return this.markUp * .01;
   }
 
-  Load(){
+  load(){
     if(this.getResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], this.getTemplateResRef());
@@ -147,7 +147,7 @@ export class ModuleStore extends ModuleObject {
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
-        moduleItem.Load();
+        moduleItem.load();
       }
     }
     
