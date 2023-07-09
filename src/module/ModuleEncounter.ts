@@ -12,7 +12,6 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 import { FactionManager } from "../FactionManager";

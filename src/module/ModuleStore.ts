@@ -9,7 +9,6 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectManager } from "../managers";
 

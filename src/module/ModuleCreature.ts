@@ -3,7 +3,7 @@
 
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { Action, ActionCastSpell, ActionFollowLeader, ActionItemCastSpell, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
+import { Action, ActionCastSpell, ActionFollowLeader, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CombatEngine } from "../combat/CombatEngine";
 import { CreatureClass } from "../combat/CreatureClass";
@@ -16,7 +16,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader, TemplateLoader } from "../loaders";
+import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { SSFObject } from "../resource/SSFObject";
 import { TalentFeat } from "../talents/TalentFeat";
@@ -39,14 +39,12 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { CombatAction } from "../interface/combat/CombatAction";
-import { EngineState } from "../enums/engine/EngineState";
 import { DLGObject } from "../resource/DLGObject";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { AppearanceManager, AutoPauseManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager } from "../managers";
 import { CreatureAnimationState } from "../interface/animation/CreatureAnimationState";
 import { OverlayAnimationState } from "../interface/animation/OverlayAnimationState";
-import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
 import { AudioEngine } from "../audio/AudioEngine";
@@ -135,7 +133,6 @@ export class ModuleCreature extends ModuleObject {
 
   animationState: CreatureAnimationState;
   overlayAnimationState: OverlayAnimationState;
-  // dialogAnimationState: DialogAnimationState;
   
   equipment: { 
     HEAD: ModuleItem; 

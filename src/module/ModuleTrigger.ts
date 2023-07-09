@@ -4,11 +4,10 @@
 import { ModuleObject } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectManager, PartyManager } from "../managers";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";

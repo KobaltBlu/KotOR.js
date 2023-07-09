@@ -1,7 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleCreature, ModuleItem, ModuleObject, ModuleRoom } from ".";
+import { ModuleObject, ModuleItem } from ".";
+import type { ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { BinaryReader } from "../BinaryReader";
 import { GameEffect } from "../effects";
@@ -23,11 +24,11 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager, ModuleObjectManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 /* @file
  * The ModulePlaceable class.
@@ -197,7 +198,7 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.model instanceof OdysseyModel3D){
-      if(this.room instanceof ModuleRoom){
+      if(this.room){
         if(this.room.model instanceof OdysseyModel3D){
           if(this.model){
             this.model.visible = this.room.model.visible;
@@ -459,18 +460,14 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   attemptUnlock(object: ModuleObject){
-    if(object instanceof ModuleCreature){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       let d20 = 20;//d20 rolls are auto 20's outside of combat
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
         this.locked = false;
-        if(object instanceof ModuleCreature){
-          object.PlaySoundSet(SSFObjectType.UNLOCK_SUCCESS);
-        }
+        object.PlaySoundSet(SSFObjectType.UNLOCK_SUCCESS);
       }else{
-        if(object instanceof ModuleCreature){
-          object.PlaySoundSet(SSFObjectType.UNLOCK_FAIL);
-        }
+        object.PlaySoundSet(SSFObjectType.UNLOCK_FAIL);
       }
       this.use(object);
       return true;

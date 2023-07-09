@@ -1,7 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleCreature, ModuleDoor, ModuleEncounter, ModuleObject, ModulePlaceable, ModuleTrigger } from ".";
+import { ModuleObject } from ".";
+import type { ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -17,6 +18,7 @@ import { GFFField } from "../resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { KEYManager, ShaderManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 /* @file
  * The ModuleRoom class.
@@ -89,15 +91,15 @@ export class ModuleRoom extends ModuleObject {
   }
 
   attachChildObject(object: ModuleObject){
-    if(object instanceof ModuleCreature){
-      if(this.creatures.indexOf(object) >= 0) return;
-      this.creatures.push(object);
-    }else if (object instanceof ModulePlaceable){
-      if(this.placeables.indexOf(object) >= 0) return;
-      this.placeables.push(object);
-    }else if(object instanceof ModuleDoor){
-      if(this.doors.indexOf(object) >= 0) return;
-      this.doors.push(object);
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      if(this.creatures.indexOf(object as ModuleCreature) >= 0) return;
+      this.creatures.push(object as ModuleCreature);
+    }else if (BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+      if(this.placeables.indexOf(object as ModulePlaceable) >= 0) return;
+      this.placeables.push(object as ModulePlaceable);
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+      if(this.doors.indexOf(object as ModuleDoor) >= 0) return;
+      this.doors.push(object as ModuleDoor);
     }
   }
 
