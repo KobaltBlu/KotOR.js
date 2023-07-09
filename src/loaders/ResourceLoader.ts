@@ -1,15 +1,14 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { Module } from "../module";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { Utility } from "../utility/Utility";
 import { ERFObject, ERFResource } from "../resource/ERFObject";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { RIMObject } from "../resource/RIMObject";
 import { CacheScope } from "../enums/resource/CacheScope";
 import { ResourceCacheScopes } from "../interface/resource/ResourceCacheScopes";
-import { KEYManager, RIMManager } from "../managers";
+import { KEYManager } from "../managers/KEYManager";
+import { RIMManager } from "../managers/RIMManager";
 
 /* @file
  * The ResourceLaoder class.

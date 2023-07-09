@@ -9,7 +9,6 @@ import * as THREE from "three";
 import { ResourceLoader } from ".";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TXI } from "../resource/TXI";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { TextureLoader } from "./TextureLoader";
 import { GameFileSystem } from "../utility/GameFileSystem";

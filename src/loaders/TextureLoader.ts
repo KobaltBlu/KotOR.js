@@ -4,10 +4,8 @@
 import * as THREE from 'three';
 import * as path from "path";
 import { GameState } from '../GameState';
-import { ApplicationProfile } from '../utility/ApplicationProfile';
 import { AsyncLoop } from '../utility/AsyncLoop';
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
-import { AnimatedTexture } from '../AnimatedTexture';
 import { TextureType } from '../enums/loaders/TextureType';
 import { TextureLoaderQueuedRef } from '../interface/loaders/TextureLoaderQueuedRef';
 import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
