@@ -473,10 +473,10 @@ export class ModuleCreature extends ModuleObject {
             let painsound = THREE.MathUtils.randInt(0, 1);
             switch(painsound){
               case 1:
-                this.PlaySoundSet(SSFObjectType.PAIN_2);
+                this.playSoundSet(SSFObjectType.PAIN_2);
               break;
               default:
-                this.PlaySoundSet(SSFObjectType.PAIN_1);
+                this.playSoundSet(SSFObjectType.PAIN_1);
               break;
             }
       
@@ -542,7 +542,7 @@ export class ModuleCreature extends ModuleObject {
           this.deathStarted = true;
           this.clearAllActions();
           this.onDeath();
-          this.PlaySoundSet(SSFObjectType.DEAD);
+          this.playSoundSet(SSFObjectType.DEAD);
           this.resetOverlayAnimationState();
           this.setAnimationState(ModuleCreatureAnimState.DIE);
         }
@@ -4412,7 +4412,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  PlaySoundSet(type = -1){
+  playSoundSet(type = -1){
     if(this.ssf instanceof SSFObject){
       let resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
       if(resref != ''){

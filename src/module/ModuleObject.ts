@@ -1792,7 +1792,7 @@ export class ModuleObject {
     console.warn("Method not implemented.", this.tag);
   }
 
-  PlaySoundSet(ssfType: SSFObjectType){
+  playSoundSet(ssfType: SSFObjectType){
     console.warn("Method not implemented.", this.tag);
   }
   

@@ -275,13 +275,13 @@ export class InGameOverlay extends GameMenu {
         PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_2);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_3);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_1);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_1);
           break;
         }
       });
@@ -290,13 +290,13 @@ export class InGameOverlay extends GameMenu {
         PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_2);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_3);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].PlaySoundSet(SSFObjectType.SELECT_1);
+            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_1);
           break;
         }
       });

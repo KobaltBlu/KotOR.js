@@ -339,13 +339,13 @@ export class CombatEngine {
     let attack_sound = THREE.MathUtils.randInt(0, 2);
     switch(attack_sound){
       case 1:
-        creature.PlaySoundSet(SSFObjectType.ATTACK_2);
+        creature.playSoundSet(SSFObjectType.ATTACK_2);
       break;
       case 2:
-        creature.PlaySoundSet(SSFObjectType.ATTACK_3);
+        creature.playSoundSet(SSFObjectType.ATTACK_3);
       break;
       default:
-        creature.PlaySoundSet(SSFObjectType.ATTACK_1);
+        creature.playSoundSet(SSFObjectType.ATTACK_1);
       break;
     }
 

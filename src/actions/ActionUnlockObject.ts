@@ -34,7 +34,7 @@ export class ActionUnlockObject extends Action {
 
     if(!this.shouted){
       this.shouted = true;
-      this.owner.PlaySoundSet(SSFObjectType.UNLOCK);
+      this.owner.playSoundSet(SSFObjectType.UNLOCK);
     }
 
     let distance = Utility.Distance2D(this.owner.position, this.target.position);

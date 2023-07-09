@@ -465,9 +465,9 @@ export class ModulePlaceable extends ModuleObject {
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
         this.locked = false;
-        object.PlaySoundSet(SSFObjectType.UNLOCK_SUCCESS);
+        object.playSoundSet(SSFObjectType.UNLOCK_SUCCESS);
       }else{
-        object.PlaySoundSet(SSFObjectType.UNLOCK_FAIL);
+        object.playSoundSet(SSFObjectType.UNLOCK_FAIL);
       }
       this.use(object);
       return true;

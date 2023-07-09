@@ -396,11 +396,11 @@ export class ModuleDoor extends ModuleObject {
       if(skillCheck >= 1){
         this.locked = false;
         if(object instanceof ModuleCreature){
-          object.PlaySoundSet(SSFObjectType.UNLOCK_SUCCESS);
+          object.playSoundSet(SSFObjectType.UNLOCK_SUCCESS);
         }
       }else{
         if(object instanceof ModuleCreature){
-          object.PlaySoundSet(SSFObjectType.UNLOCK_FAIL);
+          object.playSoundSet(SSFObjectType.UNLOCK_FAIL);
         }
       }
          
