@@ -168,47 +168,47 @@ export class ModuleArea extends ModuleObject {
 
     this.areaMap.dispose();
 
-    //Clear room geometries
+    //clear area room objects
     while (this.rooms.length){
       this.rooms[0].destroy();
     }
 
-    //Clear areaOfEffect geometries
+    //clear area areaOfEffect objects
     while (this.areaOfEffects.length){
       this.areaOfEffects[0].destroy();
     }
 
-    //Clear creature geometries
+    //clear area creature objects
     while (this.creatures.length){
       this.creatures[0].destroy();
     }
 
-    //Clear item geometries
+    //clear area item objects
     while (this.items.length){
       this.items[0].destroy();
     }
 
-    //Clear placeable geometries
+    //clear area placeable objects
     while (this.placeables.length){
       this.placeables[0].destroy();
     }
 
-    //Clear door geometries
+    //clear area door objects
     while (this.doors.length){
       this.doors[0].destroy();
     }
 
-    //Clear trigger geometries
+    //clear area trigger objects
     while (this.triggers.length){
       this.triggers[0].destroy();
     }
 
-    //Clear waypoint geometries
+    //clear area waypoint objects
     while (this.waypoints.length){
       this.waypoints[0].destroy();
     }
 
-    //Clear sound geometries
+    //clear area sound objects
     while (this.sounds.length){
       this.sounds[0].destroy();
     }
