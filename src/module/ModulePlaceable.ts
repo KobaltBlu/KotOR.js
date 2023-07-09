@@ -181,6 +181,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   detachFromRoom(room: ModuleRoom): void {
+    if(!room) return;
     const index = room.placeables.indexOf(this);
     if(index >= 0){
       room.placeables.splice(index, 1);

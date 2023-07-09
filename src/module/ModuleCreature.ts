@@ -1157,6 +1157,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   detachFromRoom(room: ModuleRoom): void {
+    if(!room) return;
     const index = room.creatures.indexOf(this);
     if(index >= 0){
       room.creatures.splice(index, 1);

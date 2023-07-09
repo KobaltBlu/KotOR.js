@@ -32,6 +32,7 @@ import { ResourceLoader, TextureLoader } from "../loaders";
 import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 import { AudioEngine } from "../audio";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 /* @file
  * The ModuleArea class.
@@ -634,7 +635,7 @@ export class ModuleArea extends ModuleObject {
     if(cameras){
       for(let i = 0; i < cameras.ChildStructs.length; i++){
         let strt = cameras.ChildStructs[i];
-        this.cameras.push( new ModuleCamera(GFFObject.FromStruct(strt) ) );
+        this.attachObject( new ModuleCamera(GFFObject.FromStruct(strt) ) );
       }
     }
 
@@ -642,7 +643,7 @@ export class ModuleArea extends ModuleObject {
     if(areaEffects){
       for(let i = 0; i < areaEffects.ChildStructs.length; i++){
         let strt = areaEffects.ChildStructs[i];
-        this.areaOfEffects.push( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -650,7 +651,7 @@ export class ModuleArea extends ModuleObject {
     if(creatures){
       for(let i = 0; i < creatures.ChildStructs.length; i++){
         let strt = creatures.ChildStructs[i];
-        this.creatures.push( new ModuleCreature(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -658,7 +659,7 @@ export class ModuleArea extends ModuleObject {
     if(triggers){
       for(let i = 0; i < triggers.ChildStructs.length; i++){
         let strt = triggers.ChildStructs[i];
-        this.triggers.push( new ModuleTrigger(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -666,7 +667,7 @@ export class ModuleArea extends ModuleObject {
     if(encounters){
       for(let i = 0; i < encounters.ChildStructs.length; i++){
         let strt = encounters.ChildStructs[i];
-        this.encounters.push( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -674,7 +675,7 @@ export class ModuleArea extends ModuleObject {
     if(doors){
       for(let i = 0; i < doors.ChildStructs.length; i++ ){
         let strt = doors.ChildStructs[i];
-        this.doors.push( new ModuleDoor(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleDoor(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -682,7 +683,7 @@ export class ModuleArea extends ModuleObject {
     if(placeables){
       for(let i = 0; i < placeables.ChildStructs.length; i++ ){
         let strt = placeables.ChildStructs[i];
-        this.placeables.push( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -690,7 +691,7 @@ export class ModuleArea extends ModuleObject {
     if(sounds){
       for(let i = 0; i < sounds.ChildStructs.length; i++ ){
         let strt = sounds.ChildStructs[i];
-        this.sounds.push( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
+        this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
 
@@ -698,7 +699,7 @@ export class ModuleArea extends ModuleObject {
     if(stores){
       for(let i = 0; i < stores.ChildStructs.length; i++ ){
         let strt = stores.ChildStructs[i];
-        this.stores.push( new ModuleStore(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -719,7 +720,7 @@ export class ModuleArea extends ModuleObject {
           }
         }
         
-        this.waypoints.push( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -791,11 +792,11 @@ export class ModuleArea extends ModuleObject {
   LoadVis(onLoad?: Function){
     console.log('ModuleArea.LoadVis');
     ResourceLoader.loadResource(ResourceTypes['vis'], this._name, (visData: Buffer) => {
-      this.visObject = new VISObject(visData);
+      this.visObject = new VISObject(visData, this);
       if(typeof onLoad == 'function')
         onLoad(this);
     }, () => {
-      this.visObject = new VISObject();
+      this.visObject = new VISObject(null, this);
       if(typeof onLoad == 'function')
         onLoad(this);
     });
@@ -1029,11 +1030,113 @@ export class ModuleArea extends ModuleObject {
   }
 
   attachObject(object: ModuleObject){
+    if(!object) return;
     object.area = this;
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      this.creatures.push(object as ModuleCreature);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+      this.placeables.push(object as ModulePlaceable);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+      this.doors.push(object as ModuleDoor);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      this.triggers.push(object as ModuleTrigger);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+      this.encounters.push(object as ModuleEncounter);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleStore)){
+      this.stores.push(object as ModuleStore);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleWaypoint)){
+      this.waypoints.push(object as ModuleWaypoint);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+      this.sounds.push(object as ModuleSound);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleAreaOfEffect)){
+      this.areaOfEffects.push(object as ModuleAreaOfEffect);
+    }
   }
 
   detachObject(object: ModuleObject){
+    if(!object) return;
+
     object.area = undefined;
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      const idx = this.creatures.indexOf(object as ModuleCreature);
+      if(idx >= 0){
+        this.creatures.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+      const idx = this.placeables.indexOf(object as ModulePlaceable);
+      if(idx >= 0){
+        this.placeables.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+      const idx = this.doors.indexOf(object as ModuleDoor);
+      if(idx >= 0){
+        this.doors.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      const idx = this.triggers.indexOf(object as ModuleTrigger);
+      if(idx >= 0){
+        this.triggers.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+      const idx = this.encounters.indexOf(object as ModuleEncounter);
+      if(idx >= 0){
+        this.encounters.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleStore)){
+      const idx = this.stores.indexOf(object as ModuleStore);
+      if(idx >= 0){
+        this.stores.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleWaypoint)){
+      const idx = this.waypoints.indexOf(object as ModuleWaypoint);
+      if(idx >= 0){
+        this.waypoints.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+      const idx = this.sounds.indexOf(object as ModuleSound);
+      if(idx >= 0){
+        this.sounds.slice(idx, 1);
+      }
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleAreaOfEffect)){
+      const idx = this.areaOfEffects.indexOf(object as ModuleAreaOfEffect);
+      if(idx >= 0){
+        this.areaOfEffects.slice(idx, 1);
+      }
+    }
   }
 
   async loadPlayer(): Promise<void> {

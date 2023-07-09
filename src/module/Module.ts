@@ -36,6 +36,8 @@ import { AudioEngine } from "../audio/AudioEngine";
 
 export class Module {
   area: ModuleArea;
+  areas: ModuleArea[] = [];
+
   timeManager: ModuleTimeManager;
   scripts: any = {};
   archives: (RIMObject|ERFObject)[] = [];
@@ -43,7 +45,7 @@ export class Module {
   eventQueue: any[] = [];
   customTokens: Map<any, any>;
   Expansion_Pack: any;
-  Mod_Area_list: any[] = [];
+  Mod_Area_list: { Area_Name: number, ObjectId: number }[] = [];
   Mod_Creator_ID: number;
   Mod_CutSceneList: any[] = [];
   Mod_DawnHour: any;
@@ -157,17 +159,17 @@ export class Module {
       //Setup Module Calendar
       this.timeManager.setFromIFO(ifo);
       
-      let Mod_Area_list = ifo.GetFieldByLabel('Mod_Area_list');
-      let Mod_Area_listLen = Mod_Area_list.GetChildStructs().length;
-      let Mod_Area = Mod_Area_list.ChildStructs[0];
+      const areaList = ifo.GetFieldByLabel('Mod_Area_list');
+      const areaCount = areaList.GetChildStructs().length;
+      let Mod_Area = areaList.ChildStructs[0];
 
       this.Area_Name = ifo.GetFieldByLabel('Area_Name', Mod_Area.GetFields()).GetValue();
 
       this.Mod_Area_list = [];
       //KOTOR modules should only ever have one area. But just incase lets loop through the list
-      for(let i = 0; i < Mod_Area_listLen; i++){
-        let Mod_Area = Mod_Area_list.ChildStructs[0];
-        let area: any = {};
+      for(let i = 0; i < areaCount; i++){
+        let Mod_Area = areaList.ChildStructs[0];
+        const area: { Area_Name: number, ObjectId: number } = {} as any;
 
         if(Mod_Area.HasField('Area_Name'))
           area.Area_Name = Mod_Area.GetFieldByLabel('Area_Name').GetValue()
@@ -548,9 +550,9 @@ export class Module {
       }
 
       let areaList = ifo.RootNode.AddField( new GFFField(GFFDataType.LIST, 'Mod_Area_list') );
-      for(let i = 0; i < this.Mod_Area_list.length; i++){
-        areaList.AddChildStruct( this.Mod_Area_list[i].saveAreaListStruct() );
-        this.Mod_Area_list[i].save();
+      if(this.area){
+        areaList.AddChildStruct( this.area.saveAreaListStruct() );
+        this.area.save();
       }
 
       ifo.RootNode.AddField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID') ).SetValue(this.Mod_Creator_ID);
@@ -619,8 +621,8 @@ export class Module {
       let sav = new ERFObject();
 
       sav.addResource('module', ResourceTypes['ifo'], this.ifo.GetExportBuffer());
-      for(let i = 0; i < this.Mod_Area_list.length; i++){
-        let area = this.Mod_Area_list[i];
+      for(let i = 0; i < this.areas.length; i++){
+        const area = this.areas[i];
         sav.addResource(area._name, ResourceTypes['are'], area.are.GetExportBuffer());
         sav.addResource(area._name, ResourceTypes['git'], area.git.GetExportBuffer());
       }
@@ -852,7 +854,7 @@ export class Module {
                     ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data: Buffer) => {
                       new GFFObject(data, (are) => {
                         module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
-                        module.Mod_Area_list = [module.area];
+                        module.areas = [module.area];
                         module.area.module = module;
                         module.area.SetTransitionWaypoint(module.transWP);
                         module.area.Load( () => {
@@ -901,7 +903,7 @@ export class Module {
                     //console.log('Module.FromProject', 'ARE', are);
                     module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                     module.area.module = module;
-                    module.Mod_Area_list = [module.area];
+                    module.areas = [module.area];
                     module.area.SetTransitionWaypoint(module.transWP);
 
                     ModuleObjectManager.module = module;

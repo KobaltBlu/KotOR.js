@@ -195,7 +195,7 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  isOnScreen(frustum?: THREE.Frustum): boolean {
+  isOnScreen(frustum: THREE.Frustum = GameState.viewportFrustum): boolean {
     this.box.getBoundingSphere(this.sphere);
     return frustum.intersectsSphere(this.sphere);
   }
@@ -713,6 +713,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   detachFromRoom(room: ModuleRoom): void {
+    if(!room) return;
     let index = room.doors.indexOf(this);
     if(index >= 0){
       room.doors.splice(index, 1);
