@@ -1,22 +1,13 @@
 /* KotOR JS - A remake of the Odyssey GameState.Engine that powered KotOR I & II
 */
 
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { GameMenu, GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { ModuleCreature, ModulePlayer } from "../../../module";
-import { OdysseyModel } from "../../../odyssey";
-import { GFFField } from "../../../resource/GFFField";
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFStruct } from "../../../resource/GFFStruct";
+import { ModulePlayer } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import * as THREE from "three";
 import { CharGenClasses } from "../../CharGenClasses";
-import { CharGenManager, MenuManager, TLKManager } from "../../../managers";
+import { CharGenManager, TLKManager } from "../../../managers";
 
 /* @file
 * The CharGenClass menu class.
@@ -57,7 +48,7 @@ export class CharGenClass extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MainMenu.Start();
+        this.manager.MainMenu.Start();
       });
 
       this.BTN_SEL1.addEventListener('click', (e: any) => {
@@ -71,8 +62,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -88,8 +79,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -105,8 +96,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -122,8 +113,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -139,8 +130,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -156,8 +147,8 @@ export class CharGenClass extends GameMenu {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -214,7 +205,7 @@ export class CharGenClass extends GameMenu {
             creature.model.rotation.z = -Math.PI / 2;
             _3dView.addModel(creature.model);
             TextureLoader.LoadQueue(() => {
-              MenuManager.LoadScreen.setProgress((nth + 1) / 6 * 100);
+              this.manager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               _3dViewModel.playAnimation(0, true);
               resolve();
             });
@@ -284,7 +275,7 @@ export class CharGenClass extends GameMenu {
   }
 
   async Init() {
-    MenuManager.LoadScreen.setProgress(0);
+    this.manager.LoadScreen.setProgress(0);
     await this.load3D();
   }
 

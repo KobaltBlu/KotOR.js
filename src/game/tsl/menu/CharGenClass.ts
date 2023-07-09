@@ -1,9 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GUILabel, GUIButton, GUIControl, LBL_3DView } from "../../../gui";
+import { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, MenuManager } from "../../../managers";
+import { CharGenManager } from "../../../managers";
 import { ModulePlayer } from "../../../module";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
@@ -47,7 +47,7 @@ export class CharGenClass extends K1_CharGenClass {
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MainMenu.Start();
+        this.manager.MainMenu.Start();
       });
 
       this.BTN_SEL1.addEventListener('click', (e: any) => {
@@ -61,8 +61,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -78,8 +78,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -95,8 +95,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -112,8 +112,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -129,8 +129,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
@@ -146,8 +146,8 @@ export class CharGenClass extends K1_CharGenClass {
         CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
           TextureLoader.LoadQueue(() => {
             this.selecting = false;
-            MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-            MenuManager.CharGenMain.Open();
+            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+            this.manager.CharGenMain.Open();
           });
         });
       });
