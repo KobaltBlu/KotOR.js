@@ -218,11 +218,6 @@ export class ModuleArea extends ModuleObject {
       pm.destroy();
     }
 
-    //Clear sound geometries
-    while (GameState.group.sounds.children.length){
-      GameState.group.sounds.remove(GameState.group.sounds.children[0]);
-    }
-
     //Clear grass geometries
     while (GameState.group.grass.children.length){
       (GameState.group.grass.children[0] as any).geometry.dispose();
