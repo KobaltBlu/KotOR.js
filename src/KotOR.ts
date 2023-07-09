@@ -4,8 +4,8 @@ export * from "./odyssey";
 export * from "./module";
 export * from "./gui";
 export * from "./GameInitializer";
-export * from "./managers";
 export * from "./GameState";
+export * from "./managers";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 
