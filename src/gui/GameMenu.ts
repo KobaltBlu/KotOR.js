@@ -19,8 +19,6 @@ import { ResourceLoader, TextureLoader } from "../loaders";
  */
 
 export class GameMenu {
-  args: any;
-
   gui_resref: string;
   menuGFF: GFFObject;
   manager: typeof MenuManager;
