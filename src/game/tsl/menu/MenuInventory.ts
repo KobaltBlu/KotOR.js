@@ -1,12 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem } from "../../../module";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import type { ModuleItem } from "../../../module";
 import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
 
 /* @file

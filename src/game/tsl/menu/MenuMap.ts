@@ -2,8 +2,9 @@
 */
 
 import { MapMode } from "../../../enums/engine/MapMode";
-import { GUILabel, GUIButton, LBL_MapView } from "../../../gui";
-import { ModuleWaypoint } from "../../../module";
+import { LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
+import type { ModuleWaypoint } from "../../../module";
 import { CExoLocString } from "../../../resource/CExoLocString";
 import { MenuMap as K1_MenuMap } from "../../kotor/KOTOR";
 

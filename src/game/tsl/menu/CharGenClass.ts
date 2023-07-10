@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GUILabel, GUIButton } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { CharGenManager } from "../../../managers";
 import { ModulePlayer } from "../../../module";

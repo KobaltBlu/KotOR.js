@@ -1,10 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
 
 /* @file
@@ -46,7 +43,7 @@ export class MenuJournal extends K1_MenuJournal {
       this.BTN_MESSAGES.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close()
-        MenuManager.MenuMessages.open();
+        this.manager.MenuMessages.open();
       });
       resolve();
     });

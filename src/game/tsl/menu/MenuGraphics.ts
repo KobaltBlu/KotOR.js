@@ -2,10 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
 import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuGraphics menu class.
@@ -44,16 +42,16 @@ export class MenuGraphics extends K1_MenuGraphics {
         e.stopPropagation();
         /*this.Hide();
         if(GameState.Mode == EngineMode.INGAME){
-          MenuManager.MenuOptions.Show();
+          this.manager.MenuOptions.Show();
         }else{
-          MenuManager.MainOptions.Show();
+          this.manager.MainOptions.Show();
         }*/
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_ADVANCED.addEventListener('click', (e: any) => {
-        MenuManager.MenuGraphicsAdvanced.open();
+        this.manager.MenuGraphicsAdvanced.open();
       });
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
@@ -64,7 +62,7 @@ export class MenuGraphics extends K1_MenuGraphics {
       };
 
       this.BTN_RESOLUTION.addEventListener('click', (e: any) => {
-        MenuManager.MenuResolutions.open();
+        this.manager.MenuResolutions.open();
       });
 
       this.BTN_RESOLUTION.hide();

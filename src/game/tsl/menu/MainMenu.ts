@@ -1,18 +1,15 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { BinaryReader } from "../../../BinaryReader";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton, LBL_3DView } from "../../../gui";
+import { LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, MenuManager } from "../../../managers";
+import { CharGenManager } from "../../../managers";
 import { OdysseyModel } from "../../../odyssey";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MainMenu menu class.
@@ -58,8 +55,8 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.open();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_MOVIES.addEventListener('click', (e: any) => {
@@ -68,7 +65,7 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_OPTIONS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MainOptions.open();
+        this.manager.MainOptions.open();
       });
 
       this.BTN_EXIT.addEventListener('click', (e: any) => {

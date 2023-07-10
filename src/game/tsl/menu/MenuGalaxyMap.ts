@@ -2,9 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, LBL_3DView } from "../../../gui";
+import { LBL_3DView } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { Planetary } from "../../../Planetary";
 import { GlobalVariableManager } from "../../../managers";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";

@@ -1,10 +1,9 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
+import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { MenuManager, PartyManager, TwoDAManager } from "../../../managers";
+import { PartyManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
@@ -78,49 +77,49 @@ export class MenuTop extends K1_MenuTop {
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuPartySelection.open();
+        this.manager.MenuPartySelection.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuJournal.open();
+        this.manager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuMap.open();
+        this.manager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuOptions.open();
+        this.manager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuCharacter.open();
+        this.manager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuAbilities.open();
+        this.manager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuInventory.open();
+        this.manager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
-        MenuManager.MenuEquipment.open();
+        this.manager.MenuEquipment.open();
       });
 
       this.BTN_CHANGE2.addEventListener('click', (e: any) => {
@@ -231,8 +230,8 @@ export class MenuTop extends K1_MenuTop {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = MenuManager.GetCurrentMenu();
-    if (currentMenu == MenuManager.MenuAbilities || currentMenu == MenuManager.MenuInventory || currentMenu == MenuManager.MenuJournal || currentMenu == MenuManager.MenuMap || currentMenu == MenuManager.MenuMessages || currentMenu == MenuManager.MenuFeedback || currentMenu == MenuManager.MenuOptions || currentMenu == MenuManager.MenuCharacter || currentMenu == MenuManager.MenuPartySelection || currentMenu == MenuManager.MenuEquipment) {
+    let currentMenu = this.manager.GetCurrentMenu();
+    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }
   }

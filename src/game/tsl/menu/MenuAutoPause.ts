@@ -2,9 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
+import type { GUILabel, GUICheckBox, GUIListBox, GUIButton } from "../../../gui";
 import { MenuAutoPause as K1_MenuAutoPause } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { AutoPauseManager, TLKManager } from "../../../managers";
 

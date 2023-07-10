@@ -1,12 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel, LBL_3DView } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyModel3D } from "../../../three/odyssey";
+import { LBL_3DView, type GUILabel } from "../../../gui";
 import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenMain menu class.

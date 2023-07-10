@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 import { MenuPazaakWager as K1_MenuPazaakWager } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuPazaakWager menu class.

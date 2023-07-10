@@ -1,8 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIListBox, GUIButton } from "../../../gui";
+import type { GUIListBox, GUIButton } from "../../../gui";
 import { InGameConfirm as K1_InGameConfirm } from "../../kotor/KOTOR";
 
 /* @file

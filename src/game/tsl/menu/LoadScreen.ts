@@ -1,9 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIProgressBar, GUILabel } from "../../../gui";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import type { GUIProgressBar, GUILabel } from "../../../gui";
 import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 

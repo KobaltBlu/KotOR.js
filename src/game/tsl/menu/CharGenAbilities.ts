@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { CharGenAbilities as K1_CharGenAbilities } from "../../kotor/KOTOR";
 import { CharGenManager } from "../../../managers";
 import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";

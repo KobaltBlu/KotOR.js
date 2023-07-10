@@ -1,8 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox } from "../../../gui";
+import type { GUILabel, GUIListBox } from "../../../gui";
 import { TwoDAManager } from "../../../managers";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";

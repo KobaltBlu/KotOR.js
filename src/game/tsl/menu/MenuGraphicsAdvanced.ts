@@ -2,10 +2,9 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
+import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { TwoDAManager, TLKManager } from "../../../managers";
 
 /* @file

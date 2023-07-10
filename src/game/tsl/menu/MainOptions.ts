@@ -48,17 +48,17 @@ export class MainOptions extends K1_MainOptions {
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.open();
+        this.manager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuGraphics.open();
+        this.manager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSound.open();
+        this.manager.MenuSound.open();
       });
 
       this.BTN_FEEDBACK.addEventListener('click', (e: any) => {

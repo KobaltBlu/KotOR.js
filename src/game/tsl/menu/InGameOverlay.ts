@@ -1,22 +1,17 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { ActionUnlockObject } from "../../../actions";
-import { ActionParameterType } from "../../../enums/actions/ActionParameterType";
-import { ActionType } from "../../../enums/actions/ActionType";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, GUICheckBox, GUIProgressBar, LBL_MapView } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "../../../module";
+import { LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
 import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
-import * as THREE from "three";
 import { ActionMenuManager } from "../../../ActionMenuManager";
 import { TalentObject } from "../../../talents";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { AutoPauseManager, MenuManager, PartyManager } from "../../../managers";
+import { AutoPauseManager, PartyManager } from "../../../managers";
 
 /* @file
 * The InGameOverlay menu class.
@@ -219,42 +214,42 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.BTN_MSG.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuPartySelection.open();
+        this.manager.MenuPartySelection.open();
       });
 
       this.BTN_JOU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuJournal.open();
+        this.manager.MenuJournal.open();
       });
 
       this.BTN_MAP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuMap.open();
+        this.manager.MenuMap.open();
       });
 
       this.BTN_OPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuOptions.open();
+        this.manager.MenuOptions.open();
       });
 
       this.BTN_CHAR.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.open();
+        this.manager.MenuCharacter.open();
       });
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuCharacter.open();
+        this.manager.MenuCharacter.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuInventory.open();
+        this.manager.MenuInventory.open();
       });
 
       this.BTN_EQU.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuEquipment.open();
+        this.manager.MenuEquipment.open();
       });
 
       this.TB_PAUSE.addEventListener('click', (e: any) => {
@@ -277,7 +272,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
-        MenuManager.MenuEquipment.open()
+        this.manager.MenuEquipment.open()
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {

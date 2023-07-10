@@ -1,16 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox } from "../../../gui";
-import { ModuleCreature, ModuleObject } from "../../../module";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { GFFObject } from "../../../resource/GFFObject";
-import { LIPObject } from "../../../resource/LIPObject";
-import { AsyncLoop } from "../../../utility/AsyncLoop";
+import type { GUILabel, GUIListBox } from "../../../gui";
 import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
 
 /* @file

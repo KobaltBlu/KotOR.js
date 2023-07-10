@@ -1,12 +1,10 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GUIButton, GUILabel, GUIListBox } from "../../../gui";
-import { MenuManager } from "../../../managers";
+import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 import { Module } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "../../kotor/KOTOR";
@@ -53,29 +51,29 @@ export class MenuOptions extends K1_MenuOptions {
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        MenuManager.MenuSaveLoad.open();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
-        MenuManager.MenuSaveLoad.open();
+        this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuAutoPause.open();
+        this.manager.MenuAutoPause.open();
       });
 
       this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuGraphics.open();
+        this.manager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.MenuSound.open();
+        this.manager.MenuSound.open();
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
@@ -92,7 +90,7 @@ export class MenuOptions extends K1_MenuOptions {
 
         //Resets all keys to their default state
         GameState.controls.initKeys();
-        MenuManager.MainMenu.Start();
+        this.manager.MainMenu.Start();
       });
       resolve();
     });

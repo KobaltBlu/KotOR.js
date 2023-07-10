@@ -2,15 +2,11 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton, GUIProtoItem } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { Module } from "../../../module";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { MenuManager } from "../../../managers";
 
 /* @file
 * The MenuSaveLoad menu class.
@@ -54,7 +50,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
           if(savegame instanceof SaveGame){
-            MenuManager.ClearMenus();
+            this.manager.ClearMenus();
             if(GameState.module instanceof Module){
               GameState.module.dispose();
               GameState.module = undefined;
@@ -63,8 +59,8 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
           }
         }else{
           if(savegame instanceof NewSaveItem){
-            MenuManager.MenuSaveName.show();
-            MenuManager.MenuSaveName.onSave = ( name = '' ) => {
+            this.manager.MenuSaveName.show();
+            this.manager.MenuSaveName.onSave = ( name = '' ) => {
               console.log('SaveGame', name);
             };
           }else{

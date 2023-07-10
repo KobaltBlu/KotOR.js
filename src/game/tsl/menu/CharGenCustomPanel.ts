@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIControl, GUIButton, GUILabel } from "../../../gui";
+import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { CharGenCustomPanel as K1_CharGenCustomPanel } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The CharGenCustomPanel menu class.

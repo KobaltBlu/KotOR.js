@@ -2,7 +2,8 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GUILabel, GUICheckBox, GUIButton, LBL_3DView } from "../../../gui";
+import { LBL_3DView } from "../../../gui";
+import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { ModuleCreature } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
@@ -11,7 +12,6 @@ import { OdysseyModel } from "../../../odyssey";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { PartyManager } from "../../../managers";
 
 /* @file
@@ -369,7 +369,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     if (this.forceNPC2 > -1)
       this.addToParty(this.forceNPC2);
     if (this.ignoreUnescapable) {
-      // MenuManager.MenuTop.toggleNavUI(false);
+      // this.manager.MenuTop.toggleNavUI(false);
     }
     for (let i = 0; i < 12; i++) {
       const LBL_CHAR = this.getControlByName('LBL_CHAR' + i);

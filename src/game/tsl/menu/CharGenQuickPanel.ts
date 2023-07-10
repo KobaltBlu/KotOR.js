@@ -3,9 +3,8 @@
 
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
-import { GUIButton, GUIControl, GUILabel } from "../../../gui";
+import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 import { CharGenManager, GlobalVariableManager, MenuManager, PartyManager } from "../../../managers";
 
 /* @file
@@ -39,12 +38,12 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
     return new Promise<void>((resolve, reject) => {
       this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenPortCust.open();
+        this.manager.CharGenPortCust.open();
       });
 
       this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenName.open();
+        this.manager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
@@ -61,9 +60,9 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        MenuManager.CharGenMain.close();
-        MenuManager.CharGenMain.childMenu = MenuManager.CharGenQuickOrCustom;
-        MenuManager.CharGenMain.open();
+        this.manager.CharGenMain.close();
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
       });
 
       this.BTN_BACK.reattach(this.tGuiPanel);

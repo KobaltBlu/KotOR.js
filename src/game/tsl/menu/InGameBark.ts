@@ -1,13 +1,11 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel } from "../../../gui";
+import type { GUILabel } from "../../../gui";
 import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 import * as THREE from "three";
 import { LIPObject } from "../../../resource/LIPObject";
 import { ModuleCreature } from "../../../module";
-import { MenuManager } from "../../../managers";
 
 /* @file
 * The InGameBark menu class.
@@ -54,7 +52,7 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(lip);
           }
         });
-        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
+        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
           if (!error) {
             this.close();
           } else {
@@ -70,7 +68,7 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(lip);
           }
         });
-        MenuManager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
+        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
           if (!error) {
             this.close();
           } else {

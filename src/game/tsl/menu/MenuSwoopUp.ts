@@ -1,9 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIListBox, GUILabel, GUIButton, GameMenu } from "../../../gui";
-import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameMenu } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /* @file
 * The MenuSwoopUp menu class.
@@ -47,8 +46,8 @@ export class MenuSwoopUp extends GameMenu {
     this.voidFill = false;
   }
 
-  async MenuControlInitializer(skipInit: boolean = false) {
-    await super.MenuControlInitializer(true);
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();

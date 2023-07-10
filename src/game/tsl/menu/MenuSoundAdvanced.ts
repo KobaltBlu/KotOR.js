@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
+import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
 import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuSoundAdvanced menu class.

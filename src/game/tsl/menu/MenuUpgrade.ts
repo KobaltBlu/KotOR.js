@@ -1,10 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuUpgrade as K1_MenuUpgrade } from "../../kotor/KOTOR";
-import { EngineMode } from "../../../enums/engine/EngineMode";
 
 /* @file
 * The MenuUpgrade menu class.

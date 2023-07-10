@@ -1,8 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
 */
 
-import { GameState } from "../../../GameState";
-import { GUILabel } from "../../../gui";
+import type { GUILabel } from "../../../gui";
 import { MenuToolTip as K1_MenuToolTip } from "../../kotor/KOTOR";
 
 /* @file

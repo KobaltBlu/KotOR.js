@@ -2,13 +2,10 @@
 */
 
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIButton, GUIListBox, GUIProtoItem } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem } from "../../../module";
+import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
+import type { ModuleItem } from "../../../module";
 import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { PartyManager } from "../../../managers";
 
@@ -199,7 +196,7 @@ export class MenuEquipment extends K1_MenuEquipment {
 
       this.BTN_EQUIP.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.selectedItem instanceof ModuleItem){
+        if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
           let currentPC = PartyManager.party[0];
           currentPC.equipItem(this.slot, this.selectedItem, () => {
