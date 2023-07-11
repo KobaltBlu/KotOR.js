@@ -5,7 +5,7 @@ import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
-import { CharGenManager, GlobalVariableManager, MenuManager, PartyManager } from "../../../managers";
+import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
 /* @file
 * The CharGenQuickPanel menu class.
