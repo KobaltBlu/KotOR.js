@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { OdysseyModel, OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
 import { BinaryReader } from "../BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TextureLoader } from "../loaders";
