@@ -1,7 +1,8 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { ModuleCreature, ModuleItem, ModuleObject, ModuleRoom } from ".";
+import { ModuleObject } from ".";
+import type { ModuleCreature, ModuleItem, ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
@@ -31,6 +32,7 @@ import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 /* @file
  * The ModuleDoor class.
@@ -348,7 +350,7 @@ export class ModuleDoor extends ModuleObject {
       
       if(this.isLocked()){
         if(this.keyRequired && this.keyName.length){
-          if(InventoryManager.getItem(this.keyName) instanceof ModuleItem){
+          if(BitWise.InstanceOf(InventoryManager.getItem(this.keyName)?.objectType, ModuleObjectType.ModuleItem)){
             this.locked = false;
           }
         }
@@ -395,11 +397,12 @@ export class ModuleDoor extends ModuleObject {
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
         this.locked = false;
-        if(object instanceof ModuleCreature){
+        
+        if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
           object.playSoundSet(SSFObjectType.UNLOCK_SUCCESS);
         }
       }else{
-        if(object instanceof ModuleCreature){
+        if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
           object.playSoundSet(SSFObjectType.UNLOCK_FAIL);
         }
       }
@@ -452,7 +455,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     //Notice all creatures within range that someone opened this door
-    if(object instanceof ModuleCreature){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
         let creature = GameState.module.area.creatures[i];
         let distance = creature.position.distanceTo(this.position);
@@ -488,7 +491,7 @@ export class ModuleDoor extends ModuleObject {
 
   closeDoor(object: ModuleObject){
 
-    if(object instanceof ModuleCreature){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       object.lastDoorExited = this;
     }
 
