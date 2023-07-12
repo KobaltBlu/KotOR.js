@@ -3,11 +3,11 @@
 
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
-import { GameMenu, GUIProtoItem } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
+import { GameMenu } from "../../../gui";
+import { GUISaveGameItem } from "../gui/GUISaveGameItem";
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
-import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../resource/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
 import { TLKManager } from "../../../managers";
@@ -178,22 +178,4 @@ export class NewSaveItem extends SaveGame {
   getFullName(){
     return TLKManager.TLKStrings[1586].Value;
   }
-}
-
-export class GUISaveGameItem extends GUIProtoItem {
-
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
-    super(menu, control, parent, scale);
-  }
-
-  createControl(){
-    try{
-      super.createControl();
-      this.setText(this.node.getFullName());
-    }catch(e){
-      console.error(e);
-    }
-    return this.widget;
-  }
-
 }
