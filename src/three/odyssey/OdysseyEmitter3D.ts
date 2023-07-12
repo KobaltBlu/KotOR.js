@@ -2,11 +2,10 @@
  */
 
 import * as THREE from "three";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { TextureLoader } from "../../loaders";
 import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
-import { OdysseyController } from "../../odyssey/controllers";
+import type { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyObject3D } from ".";
 
 /* @file

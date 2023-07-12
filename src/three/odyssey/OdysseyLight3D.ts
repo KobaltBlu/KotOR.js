@@ -1,7 +1,7 @@
 import { GameState } from "../../GameState";
 import { OdysseyObject3D } from ".";
 import * as THREE from "three";
-import { OdysseyModelNodeLight } from "../../odyssey";
+import type { OdysseyModelNodeLight } from "../../odyssey";
 
 
 //THREE.js representation of an OdysseyLight

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { TXI } from "../../resource/TXI";
+import type { TXI } from "../../resource/TXI";
 
 export class OdysseyCompressedTexture extends THREE.CompressedTexture {
   material: THREE.Material;
