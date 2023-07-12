@@ -10,7 +10,6 @@ import { GFFField } from "./GFFField";
 import { GFFStruct } from "./GFFStruct";
 
 import * as THREE from "three";
-import * as fs from "fs";
 import * as path from "path";
 import { GameFileSystem } from "../utility/GameFileSystem";
 

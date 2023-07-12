@@ -20,7 +20,6 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { ERFObject } from "../resource/ERFObject";
 import { CurrentGame } from "../CurrentGame";
 import * as path from "path";
-import * as fs from "fs";
 import { RIMObject } from "../resource/RIMObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "../events";
