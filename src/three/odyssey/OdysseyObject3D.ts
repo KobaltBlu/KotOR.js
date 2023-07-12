@@ -1,10 +1,9 @@
 import * as THREE from "three";
-import { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
-import { OdysseyController } from "../../odyssey/controllers/OdysseyController";
-import { GUIControl } from "../../gui/GUIControl";
-import { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from ".";
-import { ModuleObject } from "../../module";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
+import type { OdysseyController } from "../../odyssey/controllers/OdysseyController";
+import type { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from ".";
+import type { ModuleObject } from "../../module";
+
 export class OdysseyObject3D extends THREE.Object3D {
   odysseyModel: OdysseyModel3D;
   odysseyModelNode: OdysseyModelNode;
@@ -25,13 +24,7 @@ export class OdysseyObject3D extends THREE.Object3D {
     position: THREE.Vector3,
     quaternion: THREE.Quaternion,
   };
-  isClickable: (e: any) => any;
-  onClick: (e: any) => void;
-  onMouseMove: (e: any) => void;
-  onMouseDown: (e: any) => void;
-  onMouseUp: (e: any) => void;
-  onHover: (e: any) => void;
-  getControl: () => GUIControl;
+  
   head: any;
   lipping: boolean = false;
   
