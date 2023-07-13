@@ -23,6 +23,7 @@ import { GameEngineType } from "../enums/engine/GameEngineType";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";
 import { GUIControlColors } from "../interface/gui/GUIControlColors";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ShaderManager, MenuManager, TLKManager } from "../managers";
 
 const itemSize = 2
@@ -33,6 +34,7 @@ const box = { min: [0, 0], max: [0, 0] }
  */
 
 export class GUIControl {
+  objectType: number = GUIControlTypeMask.GUIControl;
   position: THREE.Vector3 = new THREE.Vector3();
   node: any;
   visible: boolean = true;

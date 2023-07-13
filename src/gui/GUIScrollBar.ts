@@ -10,6 +10,7 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";
 import { GameState } from "../GameState";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUIScrollBar class.
@@ -38,6 +39,7 @@ export class GUIScrollBar extends GUIControl{
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUIScrollBar;
 
     this.scrollPos = 0;
     this.scrollMax = 1;

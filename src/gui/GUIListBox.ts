@@ -10,6 +10,7 @@ import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { Mouse } from "../controls";
 import { GUIControlType } from "../enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUIListBox class.
@@ -46,6 +47,7 @@ export class GUIListBox extends GUIControl {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUIListBox;
 
     this.listItems = [];
     this.lastHeight = 0;

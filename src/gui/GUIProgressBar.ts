@@ -9,6 +9,7 @@ import { TextureLoader } from "../loaders";
 import { ShaderManager } from "../managers";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUIProgressBar class.
@@ -24,6 +25,7 @@ export class GUIProgressBar extends GUIControl {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUIProgressBar;
 
     this.startFromLeft = ( control.hasField('STARTFROMLEFT') ? control.getFieldByLabel('STARTFROMLEFT')?.getValue() : 0 );
     this.curValue = ( control.hasField('CURVALUE') ? control.getFieldByLabel('CURVALUE')?.getValue() : 0 );

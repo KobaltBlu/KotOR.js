@@ -3,6 +3,7 @@
 
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameMenu, GUIControl } from ".";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUILabel class.
@@ -12,6 +13,7 @@ export class GUILabel extends GUIControl {
   
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUILabel;
 
     this.onKeyDown = (e: any) => {
       //e.stopPropagation();

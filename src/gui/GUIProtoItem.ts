@@ -5,6 +5,7 @@ import { GameMenu, GUIControl, GUIListBox } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 import { Anchor } from "../enums/gui/Anchor";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUIProtoItem class.
@@ -18,6 +19,7 @@ export class GUIProtoItem extends GUIControl{
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUIProtoItem;
     this.zOffset = 2;
     this.isProtoItem = false;
 

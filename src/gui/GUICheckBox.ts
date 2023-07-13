@@ -10,6 +10,7 @@ import { OdysseyTexture } from "../resource/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
 import { ShaderManager } from "../managers";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUICheckbox class.
@@ -26,6 +27,7 @@ export class GUICheckBox extends GUIControl{
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUICheckBox;
 
     this.value = 0;
 

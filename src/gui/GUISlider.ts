@@ -8,6 +8,7 @@ import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { GameState } from "../GameState";
 import { Mouse } from "../controls/Mouse";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file
  * The GUISlider class.
@@ -26,6 +27,7 @@ export class GUISlider extends GUIControl{
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.objectType |= GUIControlTypeMask.GUISlider;
 
     this.scrollPos = 0.5;
     this.scrollMax = 1;
