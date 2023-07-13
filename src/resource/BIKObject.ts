@@ -1,8 +1,4 @@
-import * as path from "path";
-import * as fs from "fs";
 import * as THREE from "three";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { GameState } from "../GameState";
 import { AudioEngine } from "../audio/AudioEngine";
 
 export class BIKObject {

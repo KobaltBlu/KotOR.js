@@ -1,14 +1,12 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from "fs";
 import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { Endians } from "../enums/resource/Endians";
 import { GameState } from "../GameState";
-import { ModuleObject } from "../module";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameFileSystem } from "../utility/GameFileSystem";

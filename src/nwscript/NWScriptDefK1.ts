@@ -24,8 +24,6 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
-import { EngineState } from "../enums/engine/EngineState";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
 import { EventTimedEvent, GameEvent } from "../events";
@@ -52,7 +50,6 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { ResourceLoader } from "../loaders";
-import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
 

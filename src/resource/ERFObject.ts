@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from "fs";
 import isBuffer from "is-buffer";
 import * as path from "path";
 import { BinaryReader } from "../BinaryReader";

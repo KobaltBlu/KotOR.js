@@ -8,7 +8,6 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { PartyManager } from "./PartyManager";
-import * as fs from "fs";
 import * as path from "path";
 import { TwoDAManager } from "./TwoDAManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
