@@ -25,6 +25,7 @@ import { Mouse } from "../controls";
 import { GUIControlColors } from "../interface/gui/GUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ShaderManager, MenuManager, TLKManager } from "../managers";
+import { GUIControlEventFactory } from "./GUIControlEventFactory";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -2394,7 +2395,7 @@ export class GUIControl {
     let processed = false;
 
     if(!args.length)
-      args = [GUIControl.generateEventObject()];
+      args = [GUIControlEventFactory.generateEventObject()];
 
     if(this.eventListeners.hasOwnProperty(name)){
       let len = (this.eventListeners as any)[name].length;
@@ -2406,10 +2407,6 @@ export class GUIControl {
       }
     }
     return processed;
-  }
-
-  static generateEventObject(): GUIControlEvent{
-    return new GUIControlEvent();
   }
 
   click(){

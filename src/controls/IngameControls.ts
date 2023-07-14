@@ -4,15 +4,19 @@
 import { GamePad, Mouse, MouseState, Keyboard, KeyMapper, AnalogInput } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { GameMenu, GUIControl, GUIListBox, GUIScrollBar } from "../gui";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
 import { Utility } from "../utility/Utility";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
-import { ModuleObject } from "../module";
+import type { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
 import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
 
 /* @file
  * The IngameControls class.
@@ -84,7 +88,7 @@ export class IngameControls {
       
       let clickCaptured = false;
 
-      let customEvent = GUIControl.generateEventObject();
+      let customEvent = GUIControlEventFactory.generateEventObject();
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
@@ -130,7 +134,7 @@ export class IngameControls {
       //onMouseMove events HERE
       //console.log('move', Mouse.downItem, Mouse.leftDown);
       if(Mouse.downItem && Mouse.leftDown){
-        if((Mouse.downItem instanceof GUIControl)){
+        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
           //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
             if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
               Mouse.downItem.processEventListener('mouseMove', [])
@@ -180,12 +184,12 @@ export class IngameControls {
         
         let clickCaptured = false;
 
-        let customEvent = GUIControl.generateEventObject();
+        let customEvent = GUIControlEventFactory.generateEventObject();
   
         //GameState.selected = undefined;
 
         //Try to fire mouse up regardless if mouse is still inside object
-        if((Mouse.downItem instanceof GUIControl)){
+        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
           //if(typeof Mouse.downItem.widget.parent !== 'undefined'){
             if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
               try{
@@ -237,7 +241,7 @@ export class IngameControls {
             GameState.onMouseHitInteractive( (moduleObject: ModuleObject, intersection: any) => {
               if(GameState.debug.selectedObject)
                 console.log('Mesh', intersection)
-              if(moduleObject instanceof ModuleObject){
+              if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
                 if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
 
                   selectedObject = true;
@@ -281,16 +285,16 @@ export class IngameControls {
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
       if(e.deltaY < 0){
-        if(MenuManager.hoveredGUIElement instanceof GUIListBox){
-          MenuManager.hoveredGUIElement.scrollUp();
-        }else if(MenuManager.hoveredGUIElement instanceof GUIScrollBar){
-          MenuManager.hoveredGUIElement.list.scrollUp();
+        if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
+        }else if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
         }
       }else{
-        if(MenuManager.hoveredGUIElement instanceof GUIListBox){
-          MenuManager.hoveredGUIElement.scrollDown();
-        }else if(MenuManager.hoveredGUIElement instanceof GUIScrollBar){
-          MenuManager.hoveredGUIElement.list.scrollDown();
+        if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
+        }else if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
         }
       }
     });
@@ -733,7 +737,7 @@ export class IngameControls {
       Mouse.OffsetX = Mouse.OffsetY = 0;
     }
 
-    if(currentMenu instanceof GameMenu){
+    if(currentMenu){
       if(this.gamePad.button_a.pressed){
         currentMenu.triggerControllerAPress();
       }else if(this.gamePad.button_b.pressed){
