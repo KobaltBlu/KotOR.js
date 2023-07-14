@@ -70,12 +70,12 @@ export class MenuEquipment extends GameMenu {
     this.gui_resref = 'equip';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
+    this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 

@@ -41,12 +41,12 @@ export class MenuMap extends GameMenu {
     this.gui_resref = 'map';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
+    this.childMenu = this.manager.MenuTop;
     return new Promise<void>( async (resolve, reject) => {
       this.LBL_MapNote.setText('');
       this.LBL_Map.addEventListener('click', (e: any) => {

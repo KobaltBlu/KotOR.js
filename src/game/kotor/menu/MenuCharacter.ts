@@ -93,12 +93,12 @@ export class MenuCharacter extends GameMenu {
     this.gui_resref = 'character';
     this.background = '1600x1200back';
     this.voidFill = true;
-    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
+    this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();

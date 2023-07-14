@@ -21,12 +21,12 @@ export class MenuFeedback extends GameMenu {
     this.gui_resref = 'optfeedback';
     this.background = 'blackfill';
     this.voidFill = true;
-    this.childMenu = this.manager.MenuTop;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
+    this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this._button_b = this.BTN_BACK;
 
