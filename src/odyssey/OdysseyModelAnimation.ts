@@ -24,8 +24,8 @@ export class OdysseyModelAnimation {
   length: number;
   transition: number;
   modelName: string;
-  events: any[];
-  nodes: OdysseyModelAnimationNode[];
+  events: {length: number; name: string; }[] = [];
+  nodes: OdysseyModelAnimationNode[] = [];
   rootNode: OdysseyModelAnimationNode;
   currentFrame: number = 0;
   elapsed: number = 0;
