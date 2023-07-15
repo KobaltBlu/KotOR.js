@@ -100,6 +100,9 @@ export class MenuCharacter extends GameMenu {
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
+      this.SLD_ALIGN.setVertical();
+      this.SLD_ALIGN.disableSelection = true;
+
       this.BTN_EXIT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close();
@@ -136,9 +139,6 @@ export class MenuCharacter extends GameMenu {
 
         this.BTN_AUTO?.hide();
         this.BTN_LEVELUP?.hide();
-
-        if(this.LBL_LIGHT) this.LBL_LIGHT.extent.left = 10;
-        if(this.LBL_DARK) this.LBL_DARK.extent.left = 10;
         
         OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,
@@ -184,6 +184,7 @@ export class MenuCharacter extends GameMenu {
   }
 
   updateCharacterStats(character: ModuleCreature) {
+    if(!character) return;
     this.LBL_CLASS1?.hide();
     this.LBL_LEVEL1?.hide();
     this.LBL_CLASS2?.hide();
@@ -232,6 +233,7 @@ export class MenuCharacter extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_CHA.onHoverIn();
     this.recalculatePosition();
+    this.SLD_ALIGN?.setValue(0.5);
     this.updateCharacterPortrait(PartyManager.party[0]);
     this.updateCharacterStats(PartyManager.party[0]);
     this.BTN_CHANGE1?.hide();
@@ -254,6 +256,10 @@ export class MenuCharacter extends GameMenu {
   }
 
   updateCharacterPortrait( creature: ModuleCreature ){
+    if(!creature) return;
+
+    this.SLD_ALIGN?.setValue(creature.getGoodEvil()/100);
+
     if (this.char) {
       this._3dViewModel.children[0].children[0].remove(this.char);
     }
