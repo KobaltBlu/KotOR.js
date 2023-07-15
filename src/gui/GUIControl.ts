@@ -1219,6 +1219,7 @@ export class GUIControl {
       if(name.length){
         TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.setFillTexture(texture)
+          this.setHighlightFillTexture(texture);
           resolve(texture);
         });
       }
