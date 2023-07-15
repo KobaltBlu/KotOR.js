@@ -1,6 +1,5 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 
 export class EffectHealForcePoints extends GameEffect {
   constructor(){
@@ -17,6 +16,7 @@ export class EffectHealForcePoints extends GameEffect {
       
     super.onApply();
 
+    if(!this.object) return;
     this.object.addFP(this.getAmount());
   }
 

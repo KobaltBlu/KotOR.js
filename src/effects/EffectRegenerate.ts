@@ -2,7 +2,6 @@ import { EffectHeal, EffectHealForcePoints, GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GameState } from "../GameState";
-import { ModuleCreature, ModuleObject } from "../module";
 
 export class EffectRegenerate extends GameEffect {
   constructor(){
@@ -25,10 +24,6 @@ export class EffectRegenerate extends GameEffect {
 
     this.setInt(2, GameState.module.timeManager.pauseDay);
     this.setInt(3, GameState.module.timeManager.pauseTime);
-    
-    if(this.object instanceof ModuleCreature){
-      //
-    }
   }
 
   update(delta = 0){

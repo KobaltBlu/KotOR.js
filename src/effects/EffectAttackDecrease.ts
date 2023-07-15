@@ -1,6 +1,5 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 
 export class EffectAttackDecrease extends GameEffect {
   constructor(){
@@ -17,10 +16,6 @@ export class EffectAttackDecrease extends GameEffect {
       return;
       
     super.onApply();
-    
-    if(this.object instanceof ModuleObject){
-      //
-    }
   }
 
 }

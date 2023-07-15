@@ -1,7 +1,6 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ModuleObject } from "../module";
+// import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 
 export class EffectDeath extends GameEffect {
   constructor(){
@@ -18,6 +17,7 @@ export class EffectDeath extends GameEffect {
       
     super.onApply();
     
+    if(!this.object) return;
     this.object.setHP(-11);
     if(this.isSpeactacular()){
       //this.object.animState = ModuleCreatureAnimState.DEAD;

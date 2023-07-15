@@ -1,6 +1,5 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 
 export class EffectDisease extends GameEffect {
   constructor(){
@@ -13,10 +12,6 @@ export class EffectDisease extends GameEffect {
       return;
       
     super.onApply();
-  }
-
-  update(delta = 0){
-    
   }
 
 }

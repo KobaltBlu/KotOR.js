@@ -1,6 +1,5 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 import * as THREE from "three";
 import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
 

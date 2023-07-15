@@ -1,7 +1,9 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { AppearanceManager } from "../managers";
-import { ModuleCreature, ModuleObject } from "../module";
+import type { ModuleCreature } from "../module";
+import { BitWise } from "../utility/BitWise";
 
 export class EffectDisguise extends GameEffect {
   appearance: any;
@@ -30,29 +32,31 @@ export class EffectDisguise extends GameEffect {
 
     const disguise_appearance = AppearanceManager.GetCreatureAppearanceById(this.getInt(0));
     if(disguise_appearance){
-      if(this.object instanceof ModuleCreature){
-        this.object.pm_Appearance = this.object.appearance;
-        this.object.pm_IsDisguised = true;
-        this.object.appearance = this.getInt(0);
-        this.object.creatureAppearance = disguise_appearance;
-        console.log('Disguise applying', this.object, this);
-        this.object.loadModel().then( () => {
-          console.log('Disguise applied', this.object, this);
+      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+        const creature = this.object as ModuleCreature;
+        creature.pm_Appearance = creature.appearance;
+        creature.pm_IsDisguised = true;
+        creature.appearance = this.getInt(0);
+        creature.creatureAppearance = disguise_appearance;
+        console.log('Disguise applying', creature, this);
+        creature.loadModel().then( () => {
+          console.log('Disguise applied', creature, this);
         });
       }
     }
   }
 
   onRemove(){
-    if(this.object instanceof ModuleCreature){
-      if(this.object.pm_IsDisguised){
-        this.object.appearance = this.object.pm_Appearance;
-        this.object.pm_IsDisguised = false;
-        this.object.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.object.appearance);
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+      const creature = this.object as ModuleCreature;
+      if(creature.pm_IsDisguised){
+        creature.appearance = creature.pm_Appearance;
+        creature.pm_IsDisguised = false;
+        creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
       }
-      console.log('Disguise removing', this.object, this);
-      this.object.loadModel().then( () => {
-        console.log('Disguise removed', this.object, this);
+      console.log('Disguise removing', creature, this);
+      creature.loadModel().then( () => {
+        console.log('Disguise removed', creature, this);
       });
     }
   }

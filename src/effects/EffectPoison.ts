@@ -1,7 +1,6 @@
 import { EffectVisualEffect, GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { TwoDAManager } from "../managers";
-import { ModuleObject } from "../module";
 
 export class EffectPoison extends GameEffect {
   time: number;
@@ -57,10 +56,6 @@ export class EffectPoison extends GameEffect {
 
   getPoisionId(){
     return this.intList[0];
-  }
-
-  update(delta = 0){
-    
   }
 
 }

@@ -1,12 +1,14 @@
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
 import { TwoDAManager } from "../managers";
-import { ModuleCreature } from "../module";
+import type { ModuleCreature } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
+import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { GameEffect } from "./GameEffect";
 
@@ -137,7 +139,7 @@ export class EffectVisualEffect extends GameEffect {
 
     super.onApply();
 
-    if(this.object instanceof ModuleCreature){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
 
       //FireAndForget
       if(this.visualEffect.type_fd == 'F'){
@@ -165,8 +167,9 @@ export class EffectVisualEffect extends GameEffect {
   }
 
   getImpactRootModel(){
-    if(this.object instanceof ModuleCreature){
-      switch(this.object.getAppearance().sizecategory){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+      const creature = this.object as ModuleCreature;
+      switch(creature.getAppearance().sizecategory){
         case 1: //TINY
           return this.visualEffect.imp_root_s_node;
         case 2: //SMALL
@@ -215,7 +218,7 @@ export class EffectVisualEffect extends GameEffect {
     this.impactHead();
 
     if(this.visualEffect.soundimpact != '***'){
-      if(this.object instanceof ModuleCreature || this.object?.audioEmitter instanceof AudioEmitter){
+      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature) || this.object?.audioEmitter instanceof AudioEmitter){
         this.object.audioEmitter.PlaySound(this.visualEffect.soundimpact);
       }
     }
@@ -286,8 +289,9 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
       let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
       
-      if(this.object instanceof ModuleCreature){
-        GameState.ModelLoader.load(this.object.bodyModel)
+      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+        const creature = this.object as ModuleCreature;
+        GameState.ModelLoader.load(creature.bodyModel)
         .then(
           (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
@@ -302,23 +306,19 @@ export class EffectVisualEffect extends GameEffect {
               model.quaternion.copy(this.object.quaternion);
               //model.disableMatrixUpdate();
               
-              if(this.object instanceof ModuleCreature){
-                if(this.object.headModel){
-                  GameState.ModelLoader.load(this.object.headModel).then(
-                    (mdl: OdysseyModel) => {
-                    OdysseyModel3D.FromMDL(mdl, {
-                      textureVar: fx_tex,
-                      context: this.object.context,
-                      isForceShield: true,
-                    }).then((head: OdysseyModel3D) => {
-                      this.model.attachHead(head);
-                      //head.disableMatrixUpdate();
-                      TextureLoader.LoadQueue();
-                    })
+              if(creature.headModel){
+                GameState.ModelLoader.load(creature.headModel).then(
+                  (mdl: OdysseyModel) => {
+                  OdysseyModel3D.FromMDL(mdl, {
+                    textureVar: fx_tex,
+                    context: this.object.context,
+                    isForceShield: true,
+                  }).then((head: OdysseyModel3D) => {
+                    this.model.attachHead(head);
+                    //head.disableMatrixUpdate();
+                    TextureLoader.LoadQueue();
                   })
-                }else{
-                  TextureLoader.LoadQueue();
-                }
+                })
               }else{
                 TextureLoader.LoadQueue();
               }
@@ -339,8 +339,9 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
       let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
       
-      if(this.object instanceof ModuleCreature){
-        GameState.ModelLoader.load(this.object.bodyModel).then((mdl: OdysseyModel) => {
+      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+        const creature = this.object as ModuleCreature;
+        GameState.ModelLoader.load(creature.bodyModel).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             textureVar: fx_tex,
             isForceShield: true,
@@ -352,27 +353,23 @@ export class EffectVisualEffect extends GameEffect {
               model.rotation.copy(this.object.rotation);
               model.quaternion.copy(this.object.quaternion);
               //model.disableMatrixUpdate();
-              if(this.object instanceof ModuleCreature){
-                if(this.object.headModel){
-                  GameState.ModelLoader.load(this.object.headModel)
-                  .then((mdl: OdysseyModel) => {
-                    OdysseyModel3D.FromMDL(mdl, {
-                      textureVar: fx_tex,
-                      context: this.object.context,
-                      isForceShield: true,
-                    }).then((head: OdysseyModel3D) => {
-                      this.model.attachHead(head);
-                      //head.disableMatrixUpdate();
-                      TextureLoader.LoadQueue();
-                    }).catch(() => {
-                      TextureLoader.LoadQueue();
-                    });
+              if(creature.headModel){
+                GameState.ModelLoader.load(creature.headModel)
+                .then((mdl: OdysseyModel) => {
+                  OdysseyModel3D.FromMDL(mdl, {
+                    textureVar: fx_tex,
+                    context: this.object.context,
+                    isForceShield: true,
+                  }).then((head: OdysseyModel3D) => {
+                    this.model.attachHead(head);
+                    //head.disableMatrixUpdate();
+                    TextureLoader.LoadQueue();
                   }).catch(() => {
                     TextureLoader.LoadQueue();
                   });
-                }else{
+                }).catch(() => {
                   TextureLoader.LoadQueue();
-                }
+                });
               }else{
                 TextureLoader.LoadQueue();
               }

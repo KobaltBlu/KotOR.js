@@ -1,10 +1,11 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
 import { TextureLoader } from "../loaders";
 import { TwoDAManager } from "../managers";
-import { ModuleObject } from "../module";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { BitWise } from "../utility/BitWise";
 
 export class EffectIcon extends GameEffect {
   constructor(){
@@ -22,7 +23,7 @@ export class EffectIcon extends GameEffect {
     super.onApply();
 
     const featIconId = this.getInt(0);
-    if(this.object instanceof ModuleObject){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
       const iconExists = this.object.effectIconList.find( (effectIcon: EffectIconListItem) => {
         return effectIcon.id == featIconId;
       });
@@ -55,7 +56,7 @@ export class EffectIcon extends GameEffect {
   onRemove(): void {
     super.onRemove();
     const featIconId = this.getInt(0);
-    if(this.object instanceof ModuleObject){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
       const icon = this.object.effectIconList.find( (effectIcon: EffectIconListItem) => {
         return effectIcon.id == featIconId;
       });

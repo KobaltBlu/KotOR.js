@@ -1,6 +1,7 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 export class EffectDamage extends GameEffect {
   constructor(){
@@ -38,7 +39,7 @@ export class EffectDamage extends GameEffect {
       
     super.onApply();
     
-    if(this.object instanceof ModuleObject){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
       this.object.subtractHP(this.getDamageAmount());
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;

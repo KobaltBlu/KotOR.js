@@ -1,6 +1,5 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 
 export class EffectMovementSpeedDecrease extends GameEffect {
   constructor(){
@@ -17,16 +16,17 @@ export class EffectMovementSpeedDecrease extends GameEffect {
       
     super.onApply();
     
+    if(!this.object) return;
     if(this.getInt(0) <= 99){
-      if(this.object)
-        this.object.updateMovementSpeed();
+      this.object.updateMovementSpeed();
     }
   }
 
   onRemove(){
     super.onRemove();
-    if(this.object)
-      this.object.updateMovementSpeed();
+
+    if(!this.object) return;
+    this.object.updateMovementSpeed();
   }
 
 }

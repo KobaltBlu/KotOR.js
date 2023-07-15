@@ -1,9 +1,10 @@
 import { EffectSetState, GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreature, ModuleObject } from "../module";
 import * as THREE from 'three';
 import { GameState } from "../GameState";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 export class EffectForcePushed extends GameEffect {
   constructor(){
@@ -32,7 +33,7 @@ export class EffectForcePushed extends GameEffect {
     
     super.onApply();
 
-    if(this.object instanceof ModuleCreature){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
 
       if(!this.getInt(0)){
 
