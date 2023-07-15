@@ -9,6 +9,8 @@ import { TextureType } from "../enums/loaders/TextureType";
 import { GameState } from "../GameState";
 import { Mouse } from "../controls/Mouse";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
+import { OdysseyTexture } from "../resource/OdysseyTexture";
 
 /* @file
  * The GUISlider class.
@@ -23,7 +25,8 @@ export class GUISlider extends GUIControl{
   scrollMax: number;
   mouseOffset: { x: number; y: number; };
   value: number;
-  thumb: { texture: string; material: THREE.SpriteMaterial; mesh: THREE.Sprite; geometry: THREE.BufferGeometry; };
+  thumb: { texture: string; material: THREE.SpriteMaterial; mesh: THREE.Sprite; geometry: THREE.BufferGeometry; width: number; height: number; };
+  direction: GUISliderDirection = GUISliderDirection.Horizontal;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -38,7 +41,9 @@ export class GUISlider extends GUIControl{
       texture: '',
       material: undefined,
       mesh: undefined,
-      geometry: undefined
+      geometry: undefined,
+      width: 8,
+      height: 32,
     };
 
     this.thumb.material = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
@@ -56,8 +61,8 @@ export class GUISlider extends GUIControl{
 
       this.thumb.mesh.position.z = 2;
       this.thumb.mesh.name = 'SCROLLBAR thumb';
-      this.thumb.mesh.scale.x = 8;
-      this.thumb.mesh.scale.y = 32;
+      this.thumb.mesh.scale.x = this.thumb.width;
+      this.thumb.mesh.scale.y = this.thumb.height;
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
@@ -73,10 +78,15 @@ export class GUISlider extends GUIControl{
       )
 
       if(this.thumbStruct.hasField('IMAGE')){
-        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, () => {
+        TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
+          if(texture.header){
+            this.thumb.width = texture.header.width;
+            this.thumb.height = texture.header.height;
+            this.thumb.mesh.scale.set(texture.header.width, texture.header.height, 1);
+          }
         });
         TextureLoader.LoadQueue();
       }
@@ -86,19 +96,28 @@ export class GUISlider extends GUIControl{
       this.mouseInside();
     })
 
-    this.addEventListener('click', () =>{
-      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+    this.addEventListener('click', (e: any) =>{
+      e.stopPropagation();
+      const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+      const mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
+      const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
 
-      let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       this.mouseOffset.x = scrollLeft;
+      this.mouseOffset.y = scrollTop;
+
       this.mouseInside();
     });
 
     this.addEventListener('mouseDown', (e: any) => {
       e.stopPropagation();
-      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      let scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
+      const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+      const mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
+      const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
+
       this.mouseOffset.x = scrollLeft;
+      this.mouseOffset.y = scrollTop;
     });
 
     this.addEventListener('mouseUp', () => {
@@ -115,26 +134,51 @@ export class GUISlider extends GUIControl{
   }
 
   mouseInside(){
+    if(this.disableSelection) return;
 
-    let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-    let scrollBarWidth = this.extent.width;
-    let threshold = (this.extent.width - 8)/2;
-    this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;
+    const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
+    const mouseY = -(Mouse.positionClient.y - (window.innerHeight / 2));
+    const scrollBarWidth = this.extent.width;
+    const scrollBarHeight = this.extent.height;
 
-    if(this.thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
-      this.thumb.mesh.position.x = -((scrollBarWidth - this.thumb.mesh.scale.x))/2
+    let value = this.value;
+    let valueChanged = false;
+
+    if(this.direction == GUISliderDirection.Horizontal){
+      this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;
+
+      if(this.thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+        this.thumb.mesh.position.x = -((scrollBarWidth - this.thumb.mesh.scale.x))/2
+      }
+
+      if(this.thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
+        this.thumb.mesh.position.x = ((scrollBarWidth - this.thumb.mesh.scale.x))/2
+      }
+
+      const maxScroll = ((scrollBarWidth - this.thumb.mesh.scale.x)/2);
+      scrollX = (this.thumb.mesh.position.x + maxScroll) / (maxScroll*2);
+      this.thumb.mesh.position.y = 0;
+      valueChanged = (scrollX != this.value);
+      value = scrollX;
+    }else{
+      this.thumb.mesh.position.y = (mouseY + 12.5);
+
+      if(this.thumb.mesh.position.y < -((scrollBarHeight - this.thumb.mesh.scale.y))/2 ){
+        this.thumb.mesh.position.y = -((scrollBarHeight - this.thumb.mesh.scale.y))/2
+      }
+
+      if(this.thumb.mesh.position.y > ((scrollBarHeight - this.thumb.mesh.scale.y))/2 ){
+        this.thumb.mesh.position.y = ((scrollBarHeight - this.thumb.mesh.scale.y))/2
+      }
+
+      const maxScroll = ((scrollBarHeight - this.thumb.mesh.scale.y)/2);
+      scrollY = (this.thumb.mesh.position.y + maxScroll) / (maxScroll*2);
+      this.thumb.mesh.position.x = 0;
+      valueChanged = (scrollY != this.value);
+      value = scrollY;
     }
 
-    if(this.thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
-      this.thumb.mesh.position.x = ((scrollBarWidth - this.thumb.mesh.scale.x))/2
-    }
-
-    //console.log((thumb.mesh.position.x + threshold) / threshold);
-
-    let maxScroll = ((scrollBarWidth - this.thumb.mesh.scale.x)/2);
-    scrollX = (this.thumb.mesh.position.x + maxScroll) / (maxScroll*2);
-    let valueChanged = (scrollX != this.value);
-    this.value = scrollX;
+    this.value = value;
 
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, (this.value * 100) | 0);
@@ -148,10 +192,22 @@ export class GUISlider extends GUIControl{
   setValue(value = 0){
 
     this.value = value;
-    let maxWidth = (this.extent.width - 8)
-    let threshold = maxWidth/2;
-    let thumbX = (maxWidth * value) - threshold;
-    this.thumb.mesh.position.x = thumbX;
+
+    if(this.direction == GUISliderDirection.Horizontal){
+      const maxWidth = (this.extent.width - this.thumb.width);
+      const threshold = maxWidth/2;
+      const thumbX = (maxWidth * value) - threshold;
+
+      this.thumb.mesh.position.x = thumbX;
+      this.thumb.mesh.position.y = 0;
+    }else{
+      const maxHeight = (this.extent.height - this.thumb.height);
+      const threshold = maxHeight/2;
+      const thumbY = (maxHeight * value) - threshold;
+
+      this.thumb.mesh.position.y = thumbY;
+      this.thumb.mesh.position.x = 0;
+    }
 
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, (this.value * 100) | 0);
@@ -160,6 +216,14 @@ export class GUISlider extends GUIControl{
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 
+  }
+
+  setVertical(){
+    this.direction = GUISliderDirection.Vertical;
+  }
+
+  setHorizontal(){
+    this.direction = GUISliderDirection.Horizontal;
   }
 
 }
