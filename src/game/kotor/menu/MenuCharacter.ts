@@ -10,7 +10,7 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 
 import * as THREE from "three";
 import { OdysseyModel } from "../../../odyssey";
-import { TwoDAManager, PartyManager } from "../../../managers";
+import { TwoDAManager, PartyManager, AppearanceManager } from "../../../managers";
 
 /* @file
 * The MenuCharacter menu class.
@@ -268,6 +268,7 @@ export class MenuCharacter extends GameMenu {
       let objectCreature = new ModuleCreature();
       let clone = creature;
       objectCreature.appearance = clone.appearance;
+      objectCreature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new ModuleItem(clone.equipment.ARMOR.template);
       }

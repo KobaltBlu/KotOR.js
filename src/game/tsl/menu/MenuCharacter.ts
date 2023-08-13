@@ -145,8 +145,7 @@ export class MenuCharacter extends K1_MenuCharacter {
     try {
       this._3dView.render(delta);
       (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) {
-    }
+    } catch (e: any) { }
   }
 
   show() {
@@ -155,13 +154,14 @@ export class MenuCharacter extends K1_MenuCharacter {
     this.updateCharacterPortrait(PartyManager.party[0]);
     this.updateCharacterStats(PartyManager.party[0]);
     
-    this['BTN_CHANGE1'].hide();
-    this['BTN_CHANGE2'].hide();
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
     for (let i = 0; i < PartyManager.party.length; i++) {
       let partyMember = PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
       let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       if (!i) {
+        
       } else {
         const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
         BTN_CHANGE.show();
