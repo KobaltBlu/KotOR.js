@@ -34,7 +34,7 @@
     "cross-env": "^7.0.3",
     "css-loader": "^6.7.1",
     "dxt-js": "^0.0.3",
-    "electron": "^23.2.0",
+    "electron": "^23.3.13",
     "escodegen": "^2.0.0",
     "eslint-plugin-import": "^2.27.5",
     "esprima": "^4.0.1",
