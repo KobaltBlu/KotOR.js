@@ -30,7 +30,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   ids: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
 
   particleCount: number;
-  referenceNode: OdysseyObject3D;
+  referenceNode: OdysseyObject3D = new OdysseyObject3D();
   _lightningDelay: any;
   lightningZigZag: number;
   lightningScale: number;
@@ -128,7 +128,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.sizes = [0, 0, 0];
     this.spread = 0;
     this.opacity = [];
-    this.lifeExp = 0;
+    this.lifeExp = -1;
     this._detonate = 0;
     this.birthRate = 0;
 
@@ -155,7 +155,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.material = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge( [
           THREE.ShaderLib['odyssey-emitter'].uniforms, {
-            textureAnimation: { value: new THREE.Vector4(this.node.gridX, this.node.gridY, this.node.gridX * this.node.gridY, 1) },
+            textureAnimation: { value: new THREE.Vector4(this.node.gridX || 1, this.node.gridY || 1, (this.node.gridX || 1) * (this.node.gridY || 1), 1) },
           }
         ]),
         vertexShader: THREE.ShaderLib['odyssey-emitter'].vertexShader,
@@ -216,7 +216,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
               this.spread = controller.data[0].value;
             break;
             case OdysseyModelControllerType.LifeExp:
-              this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : 100;
+              this.lifeExp = controller.data[0].value >= 0 ? controller.data[0].value : -1;
             break;
             case OdysseyModelControllerType.BirthRate:
               this.birthRate = controller.data[0].value;
@@ -291,9 +291,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         }
       });
   
-      this.maxParticleCount = this.birthRate * this.lifeExp;
+      this.maxParticleCount = this.birthRate * (this.lifeExp >= 0 ? this.lifeExp : 1);
       this.material.uniforms.tDepth.value = this.context?.depthTarget?.depthTexture;
-      this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : 100);
+      this.material.uniforms.maxAge.value = (this.lifeExp >= 0 ? this.lifeExp : -1);
       this.material.uniforms.colorStart.value.copy(this.colorStart);
       this.material.uniforms.colorMid.value.copy(this.colorMid);
       this.material.uniforms.colorEnd.value.copy(this.colorEnd);
@@ -328,6 +328,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         case 'Lighten':
         case 'Punch-Through':
           this.material.blending = THREE.AdditiveBlending;
+          this.material.depthWrite = false;
+          this.material.needsUpdate = true;
         break;
       }
   
@@ -415,7 +417,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         return ((Math.ceil(this.lifeExp) * Math.ceil(this.birthRate)) * 2) * 3;
       }
     }else{
-      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.birthRate)) * 2;
+      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.birthRate));
     }
   }
 
@@ -647,68 +649,73 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }else{
 
         let age = this.props.getX(i) || 0;
-        let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : 100);
+        let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : -1);
         let alive = this.props.getZ(i) == 1;
 
         if(i < this.maxParticleCount){
 
-          if(alive){
-            if(age >= maxAge){
-              age = 0;
-              if(this.node.updateMode != 'Single'){
+          if(this.node.updateMode == 'Single'){
+            age += delta;
+            this.props.setX(i, age || 0);
+            this.props.setY(i, 1.0);
+            this.props.setZ(i, 1);
+            updateProperties = true;
+          }else{
+            if(alive){
+              if(age >= maxAge){
+                age = 0;
                 this.particleCount -= 1;
                 //mark particle as dead
                 this.props.setZ(i, 0);
               }else{
-                //mark particle as alive
-                this.props.setZ(i, 1);
+                age += delta;
+                if(age > maxAge) age = maxAge;
               }
             }else{
-              age += delta;
+
+              let canSpawn = !this._birthTimer;
+              let maxSpawn = 1;//this.birthRate * (1/this.birthRate);
+
+              if(this.node.updateMode == 'Explosion'){
+                canSpawn = this.isDetonated;
+                maxSpawn = this.birthRate;
+              }
+
+              //If the birthtimer has expired and we can still spawn more particles this frame
+              if(canSpawn && birthCount < maxSpawn){
+                //Birth and reset the particle
+                this.spawnParticle(i);
+                updatePositions = true;
+                if(this.node.renderMode != 'Linked')
+                  updateVelocity = true;
+                birthCount++;
+              }
+
+              //Make sure the age is set to zero
+              age = 0;
             }
-          }else if(this.node.updateMode != 'Single'){
-
-            let canSpawn = !this._birthTimer;
-            let maxSpawn = 1;//this.birthRate * (1/this.birthRate);
-
-            if(this.node.updateMode == 'Explosion'){
-              canSpawn = this.isDetonated;
-              maxSpawn = this.birthRate;
-            }
-
-            //If the birthtimer has expired and we can still spawn more particles this frame
-            if(canSpawn && birthCount < maxSpawn){
-              //Birth and reset the particle
-              this.spawnParticle(i);
-              updatePositions = true;
-              if(this.node.renderMode != 'Linked')
-                updateVelocity = true;
-              birthCount++;
-            }
-
-            //Make sure the age is set to zero
-            age = 0;
           }
+
           this.props.setX(i, age || 0);
           updateProperties = true;
 
         }else{
-
-          if(alive){
-            if(age >= maxAge){
-              age = 0;
-              this.particleCount -= 1;
-              //mark particle as dead
-              this.props.setZ(i, 0);
+          if(this.node.updateMode != 'Single'){
+            if(alive){
+              if(age >= maxAge){
+                age = 0;
+                this.particleCount -= 1;
+                //mark particle as dead
+                this.props.setZ(i, 0);
+              }else{
+                age += delta;
+              }
             }else{
-              age += delta;
+              age = 0;
             }
-          }else{
-            age = 0;
+            this.props.setX(i, age || 0);
+            updateProperties = true;
           }
-          this.props.setX(i, age || 0);
-          updateProperties = true;
-
         }
 
       }

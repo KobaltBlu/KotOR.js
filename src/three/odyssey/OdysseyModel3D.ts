@@ -7,7 +7,7 @@ import { GameState } from "../../GameState";
 import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
 import { OdysseyTexture } from "../../resource/OdysseyTexture";
-import { TextureLoader } from "../../loaders";
+import { ResourceLoader, TextureLoader } from "../../loaders";
 import { TextureType } from "../../enums/loaders/TextureType";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
@@ -75,6 +75,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   skins: THREE.SkinnedMesh[] = [];
   forceShieldGeometry: any[] = [];
+  childModels: OdysseyModel3D[] = [];
 
   //Beta AnimationManager
   animationManager: OdysseyModelAnimationManager = new OdysseyModelAnimationManager(this);
@@ -193,6 +194,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     if(node == null)
       node = this;
+
+    while(this.childModels.length){
+      const childModel3D = this.childModels.shift();
+      if(childModel3D){
+        childModel3D.dispose();
+      }
+    }
 
     for(let i = 0; i < this.emitters.length; i++){
       if((this.emitters[i] as any).group)
@@ -349,6 +357,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
     //Update emitters
     for(let i = 0; i < this.emitters.length; i++){
       this.emitters[i].tick(delta);
+    }
+    
+    //Update childModels
+    for(let i = 0; i < this.childModels.length; i++){
+      this.childModels[i].update(delta);
     }
 
     this.oddFrame = !this.oddFrame;
@@ -997,8 +1010,25 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
     if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
       //console.log('OdysseyModel', 'Reference Node', options.parent);
-      if(parentNode.parent instanceof OdysseyEmitter3D)
+      if(parentNode.parent instanceof OdysseyEmitter3D){
         parentNode.parent.emitter.setReferenceNode(node)
+      }else{
+        console.log('Loading child model: '+odysseyNode.modelName);
+        GameState.ModelLoader.load(odysseyNode.modelName).then( (childModel) => {
+          if(childModel){
+            OdysseyModel3D.FromMDL(childModel, {context: odysseyModel.options.context, editorMode: odysseyModel.options.editorMode}).then( (childModel3D) => {
+              if(childModel3D){
+                node.add(childModel3D);
+                odysseyModel.childModels.push(childModel3D);
+              }
+            }).catch((e) => {
+              console.error(e);
+            });
+          }
+        }).catch((e) => {
+          console.error(e);
+        });
+      }
     }
 
     switch(node.name){

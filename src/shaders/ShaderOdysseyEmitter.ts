@@ -99,7 +99,7 @@ export class ShaderOdysseyEmitter extends Shader {
 
     float getFloatOverLifetime( in float positionInTime, in vec3 attr ) {
       highp float value = 0.0;
-      float deltaAge = positionInTime * ( 3.0 - 1.0 );
+      float deltaAge = mod(positionInTime * ( 3.0 - 1.0 ), 1.0);
       float fIndex = 0.0;
       float shouldApplyValue = 0.0;
 
@@ -159,7 +159,10 @@ export class ShaderOdysseyEmitter extends Shader {
       highp float maxAge = props.y;
       float alive = props.z;
       
-      highp float positionInTime = (age / maxAge);
+      highp float positionInTime = age / maxAge;
+      if(maxAge == -1.0){
+        positionInTime = age / 1.0;
+      }
 
       vec3 force = vec3(0.0);
       vec3 vel   = vec3(velocity.xyz) * age;
@@ -203,8 +206,13 @@ export class ShaderOdysseyEmitter extends Shader {
 
       //Get the color value to send to the fagment shader
       colorMixed = getColorOverLifetime(positionInTime, colorStart, colorMid, colorEnd);
+
       //Get the alpha value to send to the fragment shader
       alpha = getFloatOverLifetime( positionInTime, vec3( opacity.x, opacity.y, opacity.z ) ) * alive;
+      if(maxAge == -1.0){
+        positionInTime = 1.0;
+      }
+
       //Get the current scale of the particle
       float scaleF = getFloatOverLifetime( positionInTime, vec3( scale.x, scale.y, scale.z ) );
 
