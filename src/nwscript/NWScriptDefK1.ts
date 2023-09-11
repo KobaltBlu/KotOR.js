@@ -52,6 +52,7 @@ import { DLGObject } from "../resource/DLGObject";
 import { ResourceLoader } from "../loaders";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
+import { PerceptionMask } from "../enums/engine/PerceptionMask";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -131,8 +132,6 @@ NWScriptDefK1.Actions = {
           args[1].script.caller = args[0];
           args[1].script.debug = this.debug;
           args[1].script.runScript({
-            _instr: null, 
-            index: -1, 
             seek: args[1].offset
           });
         }else{
@@ -3162,8 +3161,8 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(this.lastPerceived instanceof ModuleCreature){
-        return this.lastPerceived;
+      if(this.lastPerceived.object instanceof ModuleCreature){
+        return this.lastPerceived.object;
       }
       return undefined;
     }
@@ -3174,8 +3173,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(this.lastPerceived instanceof ModuleObject){
-        return 0;
+      if(this.lastPerceived.object instanceof ModuleObject){
+        return !this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.HEARD);
       }else{
         return 0;
       }
@@ -3187,8 +3186,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(this.lastPerceived instanceof ModuleObject){
-        return 0;
+      if(this.lastPerceived.object instanceof ModuleObject){
+        return this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.INAUDIBLE);
       }else{
         return 0;
       }
@@ -3200,8 +3199,8 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(this.caller instanceof ModuleCreature)
-        return this.lastPerceived.seen ? true : false;
+      if(this.lastPerceived.object instanceof ModuleCreature)
+        return !this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.SEEN);
       else
         return 0;
     }
@@ -3219,7 +3218,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(this.lastPerceived.object instanceof ModuleObject){
-        return this.lastPerceived.object.isDead() || (this.lastPerceived.seen ? false : true);
+        return this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.INVISIBLE);
       }else{
         return 0;
       }
@@ -3487,18 +3486,13 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      //console.log('GetObjectSeen', args[0], args[1]);
       if(args[1] instanceof ModuleCreature){
-        //console.log('SEEN?', args[1].hasLineOfSight(args[0]) ? 'true' : 'false' );
-        //return args[1].hasLineOfSight(args[0]) ? 1 : 0;
-        
         for(let i = 0, len = args[1].perceptionList.length; i < len; i++){
           let perception = args[1].perceptionList[i];
-          if(perception.object == args[0] && perception.seen){
+          if(perception.object == args[0] && !!(perception.data & PerceptionMask.SEEN)){
             return true;
           }
         }
-        //return args[1].perceptionList.indexOf(args[0]) > -1 ? 1 : 0;
       }else
         return 0;
     }
@@ -3507,7 +3501,18 @@ NWScriptDefK1.Actions = {
     comment: "290: Determine whether oSource hears oTarget.\n",
     name: "GetObjectHeard",
     type: 3,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(args[1] instanceof ModuleCreature){
+        for(let i = 0, len = args[1].perceptionList.length; i < len; i++){
+          let perception = args[1].perceptionList[i];
+          if(perception.object == args[0] && !!(perception.data & PerceptionMask.HEARD)){
+            return true;
+          }
+        }
+      }else
+        return 0;
+    }
   },
   291:{
     comment: "291: Use this in an OnPlayerDeath module script to get the last player that died.\n",
@@ -7366,7 +7371,10 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return args[0].aiStyle;
+      if(args[0] instanceof ModuleCreature)
+        return args[0].aiStyle;
+
+      return 0;
     }
   },
   706:{

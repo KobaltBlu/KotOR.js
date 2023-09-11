@@ -52,6 +52,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { PerceptionType } from "../enums/engine/PerceptionType";
 
 /* @file
  * The ModuleCreature class.
@@ -4288,53 +4289,21 @@ export class ModuleCreature extends ModuleObject {
       try{
         if(this.template.RootNode.hasField('PerceptionList')){
           let perceptionList = this.template.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
+          if(perceptionList.length){
+            this.perceptionList = [];
+          }
+
           for(let i = 0, len = perceptionList.length; i < len; i++){
-            let perception = perceptionList[i];
+            const perception = perceptionList[i];
 
-            let objectId = perception.getFieldByLabel('ObjectId').getValue();
-            let data = perception.getFieldByLabel('PerceptionData').getValue();
-
-            let seen = false;
-            let heard = false;
-            let hasSeen = false;
-            let hasHeard = false;
-            //https://nwnlexicon.com/index.php?title=Perception
-            switch(data){
-              case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
-                seen = true; heard = true;
-              break;
-              case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
-                seen = false; heard = false;
-              break;
-              case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
-                seen = false; heard = true;
-              break;
-              case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
-                seen = true; heard = false;
-              break;
-              case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
-                seen = false; heard = false;
-              break;
-              case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
-                seen = false; heard = true;
-              break;
-              case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silenced.
-                seen = false; heard = false;
-              break;
-              case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silenced.
-                seen = true; heard = false;
-              break;
-            }
+            const objectId = perception.getFieldByLabel('ObjectId').getValue();
+            const data = perception.getFieldByLabel('PerceptionData').getValue() as PerceptionType;
 
             this.perceptionList.push({
+              object: undefined,
               objectId: objectId,
-              data: data,
-              seen: seen,
-              heard: heard,
-              hasSeen: seen,
-              hasHeard: heard
+              data: data
             });
-
           }
         }
       }catch(e: any){
@@ -4727,7 +4696,17 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
 
+    //Save PerceptionLists
     let perceptionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
+    for(let i = 0; i < this.perceptionList.length; i++){
+      let percept = this.perceptionList[i];
+
+      let perceptionStruct = new GFFStruct();
+      perceptionStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( percept.objectId );
+      perceptionStruct.addField( new GFFField(GFFDataType.BYTE, 'PerceptionData') ).setValue( (percept.data & 0xFF) );
+      perceptionList.addChildStruct(perceptionStruct);
+    }
+
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange);
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);

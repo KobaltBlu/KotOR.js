@@ -56,13 +56,8 @@ export class EventTimedEvent extends GameEvent {
   execute(){
     if(this.script instanceof NWScriptInstance){
       this.script.setCaller(this.getCaller());
-      this.script.beginLoop({
-        _instr: null, 
-        index: -1, 
-        seek: this.offset,
-        onComplete: () => { 
-          //console.log('ScriptEvent: complete', this); 
-        }
+      this.script.runScript({
+        seek: this.offset
       });
     }
   }

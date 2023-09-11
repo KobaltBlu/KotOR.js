@@ -4,7 +4,6 @@
 import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { Endians } from "../enums/resource/Endians";
 import { GameState } from "../GameState";
 import { ResourceLoader } from "../loaders";
@@ -13,62 +12,59 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
-import { NWScriptSubroutine } from "./NWScriptSubroutine";
-import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
-import * as THREE from "three";
-import { ModuleObjectManager } from "../managers";
+
+import {
+  OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
+  OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
+  OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP, OP_JSR,
+  OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
+  OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
+} from './NWScriptOPCodes';
+
+import {
+  CALL_CPDOWNSP, CALL_RSADD, CALL_CPTOPSP, CALL_CONST, CALL_ACTION, CALL_LOGANDII, CALL_LOGORII, CALL_INCORII, CALL_EXCORII,
+  CALL_BOOLANDII, CALL_EQUAL, CALL_NEQUAL, CALL_GEQ, CALL_GT, CALL_LT, CALL_LEQ, CALL_SHLEFTII, CALL_SHRIGHTII, CALL_USHRIGHTII,
+  CALL_ADD, CALL_SUB, CALL_MUL, CALL_DIV, CALL_MOD, CALL_NEG, CALL_COMPI, CALL_MOVSP, CALL_STORE_STATEALL, CALL_JMP,   CALL_JSR,
+  CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
+  CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
+} from './NWScriptInstructionSet';
+import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 
 /* @file
  * The NWScript class.
  */
 
 export class NWScript {
-
-  static readonly TRUE  = 1;
-  static readonly FALSE = 0;
   
   name: string;
 
   instrIdx: number;
-  _lastOffset: number;
-  subscripts: Map<any, any>;
-  instances: any[];
+  lastOffset: number;
+  instances: NWScriptInstance[];
   global: boolean;
-  subRoutines: any[];
   stack: NWScriptStack;
   state: any[];
-  enteringObject: any;
-  exitingObject: any;
-  listenPatternNumber: number;
   debugging: boolean;
   debug: { action: boolean; build: boolean; equal: boolean; nequal: boolean; };
   params: number[];
   paramString: string;
   verified: boolean;
-  globalCache: any;
   prevByteCode: number;
   instructions: Map<number, NWScriptInstruction>;
   eofFound: boolean;
   prog: number;
   progSize: number;
-  code: any;
+  code: Buffer;
 
   constructor ( dataOrFile: any = null, onComplete?: Function, decompile = true ){
 
     this.instrIdx = 0;
-    this._lastOffset = -1;
+    this.lastOffset = -1;
 
-    this.subscripts = new Map();
     this.instances = [];
     this.global = false;
 
-    this.subRoutines = [];
     this.stack = new NWScriptStack();
-    this.state = [];
-
-    this.enteringObject = undefined;
-    this.exitingObject = undefined;
-    this.listenPatternNumber = 1;
     this.debugging = false;
     this.debug = {
       'action': false,
@@ -77,7 +73,6 @@ export class NWScript {
       'nequal': false
     };
     this.name = '';
-    this.state = [];
 
     this.params = [0, 0, 0, 0, 0];
     this.paramString = '';
@@ -104,8 +99,6 @@ export class NWScript {
     }else{
       //init empty / new nwscript
     }
-
-    this.globalCache = null;
 
   }
   
@@ -148,45 +141,237 @@ export class NWScript {
 
     //PASS 1: Create a listing of all of the instructions in order as they occur
 
-    this._lastOffset = -1;
+    this.lastOffset = -1;
     while ( reader.position < this.progSize ){
-      this.parseIntr(reader);
+      this.parseIntruction(reader);
     };
     
     reader.position = 0;
 
   }
 
-  parseIntr( reader: BinaryReader ) {
+  parseIntruction( reader: BinaryReader ) {
 
-    let _pos = reader.position;
+    const position = reader.position;
 
-    let instr = new NWScriptInstruction({
+    let instruction = new NWScriptInstruction({
       code: reader.readByte(),
       type: reader.readByte(),
-      address: _pos,
-      prevInstr: ( this._lastOffset >= 0 ? this.instructions.get(this._lastOffset) : null ),
+      address: position,
+      prevInstr: ( this.lastOffset >= 0 ? this.instructions.get(this.lastOffset) : null ),
       eof: false,
       isArg: false,
       index: this.instrIdx++
     });
 
     //If we already have parsed an instruction set the property of nextInstr on the previous instruction to the current one
-    if(this._lastOffset >= 0){
-      this.instructions.get(this._lastOffset).nextInstr = instr;
+    if(this.lastOffset >= 0){
+      this.instructions.get(this.lastOffset).nextInstr = instruction;
     }
 
-    if(typeof NWScript.ByteCodes[instr.code] === 'undefined'){
-      console.error('Unhandled NWScript Instruction');
-      console.log(this, instr);
+    switch(instruction.code){
+      case OP_CPDOWNSP:
+        instruction.opCall = CALL_CPDOWNSP;
+        instruction.offset = reader.readUInt32();
+        instruction.size = reader.readUInt16();
+      break;
+      case OP_RSADD:
+        instruction.opCall = CALL_RSADD;
+      break;
+      case OP_CPTOPSP:
+        instruction.opCall = CALL_CPTOPSP;
+        instruction.pointer = reader.readUInt32();
+        instruction.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+      break;
+      case OP_CONST:
+        instruction.opCall = CALL_CONST;
+        switch(instruction.type){
+          case 3:
+            instruction.integer = reader.readInt32();
+          break;
+          case 4:
+            instruction.float = reader.readSingle();
+          break;
+          case 5:
+            instruction.string = reader.readChars(reader.readUInt16());
+          break;
+          case 6:
+            instruction.object = reader.readInt32();
+          break;
+        }
+      break;
+      case OP_ACTION:
+        instruction.opCall = CALL_ACTION;
+        instruction.action = reader.readUInt16();
+        instruction.argCount = reader.readByte();
+        instruction.arguments = [];
+      break;
+      case OP_LOGANDII:
+        instruction.opCall = CALL_LOGANDII;
+      break;
+      case OP_LOGORII:
+        instruction.opCall = CALL_LOGORII;
+      break;
+      case OP_INCORII:
+        instruction.opCall = CALL_INCORII;
+      break;
+      case OP_EXCORII:
+        instruction.opCall = CALL_EXCORII;
+      break;
+      case OP_BOOLANDII:
+        instruction.opCall = CALL_BOOLANDII;
+      break;
+      case OP_BOOLANDII:
+        instruction.opCall = CALL_BOOLANDII;
+      break;
+      case OP_EQUAL:
+        instruction.opCall = CALL_EQUAL;
+        if(instruction.type == NWScriptDataType.STRUCTURE){
+          instruction.sizeOfStructure = reader.readUInt16();
+        }
+      break;
+      case OP_NEQUAL:
+        instruction.opCall = CALL_NEQUAL;
+        if(instruction.type == NWScriptDataType.STRUCTURE){
+          instruction.sizeOfStructure = reader.readUInt16();
+        }
+      break;
+      case OP_GEQ:
+        instruction.opCall = CALL_GEQ;
+      break;
+      case OP_GT:
+        instruction.opCall = CALL_GT;
+      break;
+      case OP_LT:
+        instruction.opCall = CALL_LT;
+      break;
+      case OP_LEQ:
+        instruction.opCall = CALL_LEQ;
+      break;
+      case OP_SHLEFTII:
+        instruction.opCall = CALL_SHLEFTII;
+      break;
+      case OP_SHRIGHTII:
+        instruction.opCall = CALL_SHRIGHTII;
+      break;
+      case OP_USHRIGHTII:
+        instruction.opCall = CALL_USHRIGHTII;
+      break;
+      case OP_ADD:
+        instruction.opCall = CALL_ADD;
+      break;
+      case OP_SUB:
+        instruction.opCall = CALL_SUB;
+      break;
+      case OP_MUL:
+        instruction.opCall = CALL_MUL;
+      break;
+      case OP_DIV:
+        instruction.opCall = CALL_DIV;
+      break;
+      case OP_MODII:
+        instruction.opCall = CALL_MOD;
+      break;
+      case OP_NEG:
+        instruction.opCall = CALL_NEG;
+      break;
+      case OP_COMPI:
+        instruction.opCall = CALL_COMPI;
+      break;
+      case OP_MOVSP:
+        instruction.opCall = CALL_MOVSP;
+        instruction.offset = reader.readInt32();
+      break;
+      case OP_STORE_STATEALL:
+        instruction.opCall = CALL_NOP;
+      break;
+      case OP_JMP:
+        instruction.opCall = CALL_JMP;
+        instruction.offset = reader.readUInt32();
+      break;
+      case OP_JSR:
+        instruction.opCall = CALL_JSR;
+        instruction.offset = reader.readUInt32();
+      break;
+      case OP_JZ:
+        instruction.opCall = CALL_JZ;
+        instruction.offset = reader.readUInt32();
+      break;
+      case OP_RETN:
+        instruction.opCall = CALL_RETN;
+        if(!this.eofFound){
+          instruction.eof = true;
+          this.eofFound = true;
+        }
+      break;
+      case OP_DESTRUCT:
+        instruction.opCall = CALL_DESTRUCT;
+        instruction.sizeToDestroy = reader.readInt16();
+        instruction.offsetToSaveElement = reader.readInt16();
+        instruction.sizeOfElementToSave = reader.readInt16();
+      break;
+      case OP_NOTI:
+        instruction.opCall = CALL_NOTI;
+      break;
+      case OP_DECISP:
+        instruction.opCall = CALL_DECISP;
+        instruction.offset = reader.readInt32();
+      break;
+      case OP_INCISP:
+        instruction.opCall = CALL_INCISP;
+        instruction.offset = reader.readInt32();
+      break;
+      case OP_JNZ:
+        instruction.opCall = CALL_JNZ;
+        instruction.offset = reader.readInt32();
+      break;
+      case OP_CPDOWNBP:
+        instruction.opCall = CALL_CPDOWNBP;
+        instruction.offset = reader.readInt32();
+        instruction.size = reader.readUInt16();
+      break;
+      case OP_CPTOPBP:
+        instruction.opCall = CALL_CPTOPBP;
+        instruction.pointer = reader.readUInt32();
+        instruction.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+      break;
+      case OP_DECIBP:
+        instruction.opCall = CALL_DECIBP;
+        instruction.offset = reader.readUInt32();
+      break;
+      case OP_INCIBP:
+        instruction.opCall = CALL_INCIBP;
+        instruction.offset = reader.readUInt32();
+      break;
+      case OP_SAVEBP:
+        instruction.opCall = CALL_SAVEBP;
+      break;
+      case OP_RESTOREBP:
+        instruction.opCall = CALL_RESTOREBP;
+      break;
+      case OP_STORE_STATE:
+        instruction.opCall = CALL_STORE_STATE;
+        instruction.bpOffset = reader.readUInt32();
+        instruction.spOffset = reader.readUInt32();
+      break;
+      case OP_T:
+        instruction.opCall = CALL_NOP;
+        reader.position -= 2; //We need to go back 2bytes because this instruction
+        //doesn't have a int16 type arg. We then need to read the 4Byte Int32 size arg
+        instruction.size = reader.readInt32();
+      break;
+      case OP_NOP:
+        instruction.opCall = CALL_NOP;
+      break;
+      default:
+        console.error('Unhandled NWScript Instruction');
+        console.log(this, instruction);
+      break;
     }
-
-    //Run the instruction's parse method
-    NWScript.ByteCodes[instr.code].parse.call(this, instr, reader);
     
     //this.instructions.push(instr);
-    this.instructions.set(instr.address, instr);
-    this._lastOffset = instr.address;
+    this.instructions.set(instruction.address, instruction);
+    this.lastOffset = instruction.address;
   }
 
   clone(){
@@ -197,35 +382,28 @@ export class NWScript {
     return script;
   }
 
-  isDebugging(type = ''){
-    if(type){
-      return GameState.Flags.LogScripts || this.debugging || (this.debug as any)[type];
-    }else{
-      return GameState.Flags.LogScripts || this.debugging;
-    }
-  }
-
   //newInstance
   //When loading a new script always return a NWScriptInstance which will share large data from the parent NWScript
   //like the instruction array, but will have it's own NWScriptStack
   //This whould reduse memory overhead because only one instance of the large data is created per script
-  newInstance(scope?: any){
+  newInstance(parentInstance?: NWScriptInstance){
 
-    let script = new NWScriptInstance({
-      name: this.name,
-      instructions: this.instructions
-    });
+    let script = new NWScriptInstance(
+      this.instructions
+    );
+
+    script.name = this.name;
 
     script.nwscript = this;
 
     //Add the new instance to the instances array
     this.instances.push(script);
 
-    if(scope instanceof NWScriptInstance){
-      script.debug = scope.debug;
-      script.debugging = scope.debugging;
-      script.lastPerceived = scope.lastPerceived;
-      script.listenPatternNumber = scope.listenPatternNumber;
+    if(parentInstance instanceof NWScriptInstance){
+      script.debug = parentInstance.debug;
+      script.debugging = parentInstance.debugging;
+      script.lastPerceived = parentInstance.lastPerceived;
+      script.listenPatternNumber = parentInstance.listenPatternNumber;
     }
 
     return script;
@@ -300,1060 +478,7 @@ export class NWScript {
     });
   }
 
-  static ByteCodes: any = {
-    1 : { 
-      name: 'CPDOWNSP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        //Replace the target stack element with the appropriate element relative to the top of the stack
-        this.stack.stack.copyWithin(
-          Math.max((this.stack.pointer + scope.instr.offset) / 4, 0),
-          (this.stack.pointer - scope.instr.size)/4,
-          (this.stack.pointer)/4,
-        );
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-        instr.size = reader.readUInt16();
-      }
-    },
-    2 : { 
-      name: 'RSADD', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-  
-        switch(scope.instr.type){
-          case 3:
-            this.stack.push(0, NWScriptDataType.INTEGER);
-          break;
-          case 4:
-            this.stack.push(0.0, NWScriptDataType.FLOAT);
-          break;
-          case 5:
-            this.stack.push('', NWScriptDataType.STRING);
-          break;
-          case 6:
-            this.stack.push(undefined, NWScriptDataType.OBJECT);
-          break;
-          case 16:
-            this.stack.push(undefined, NWScriptDataType.EFFECT);
-          break;
-          case 17:
-            this.stack.push(undefined, NWScriptDataType.EVENT);
-          break;
-          case 18:
-            this.stack.push(undefined, NWScriptDataType.LOCATION);
-          break;
-          case 19:
-            this.stack.push(undefined, NWScriptDataType.TALENT);
-          break;
-          default:
-            console.log(scope.instr);
-            throw 'unknown type '+scope.instr.type;
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    }, //Reserve Space On Stack
-    3 : { 
-      name: 'CPTOPSP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        const elements = this.stack.copyAtPointer( scope.instr.pointer, scope.instr.size );
-        if(elements.length == (scope.instr.size / 4)){
-          this.stack.stack.push( ...elements );
-          this.stack.pointer += scope.instr.size;
-        }else{
-          throw new Error(`CPTOPSP: copy size miss-match, expected: ${scope.instr.size} | received: ${elements.length*4}`);
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.pointer = reader.readUInt32();
-        instr.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-        instr.data = null;
-      }
-    },
-    4 : { 
-      name: 'CONST', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        switch(scope.instr.type){
-          case 3:
-            this.stack.push(scope.instr.integer, NWScriptDataType.INTEGER);
-          break;
-          case 4:
-            this.stack.push(scope.instr.float, NWScriptDataType.FLOAT);
-          break;
-          case 5:
-            this.stack.push(scope.instr.string, NWScriptDataType.STRING);
-          break;
-          case 6:
-            if(scope.instr.object == 0){
-              this.stack.push(this.caller, NWScriptDataType.OBJECT);
-            }else{
-              this.stack.push(undefined, NWScriptDataType.OBJECT);
-            }
-          break;
-          case 12:
-            this.stack.push(scope.instr.string, NWScriptDataType.LOCATION);
-          break;
-          default:
-            console.warn('CONST', scope.instr.type, scope.instr);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        switch(instr.type){
-          case 3:
-            instr.integer = parseInt(reader.readInt32());
-          break;
-          case 4:
-            instr.float = parseFloat(reader.readSingle());
-          break;
-          case 5:
-            instr.strLen = reader.readUInt16();
-            instr.string = reader.readChars(instr.strLen);
-          break;
-          case 6:
-            instr.object = reader.readInt32();
-          break;
-        }
-      }
-    }, //Constant Type is declared by the next byte x03, x04, x05, x06
-    5 : { 
-      name: 'ACTION', 
-      run: function( scope: any = {} ){
-  
-        const action_definition: NWScriptDefAction = this.actionsMap[scope.instr.action];
-        const args: any[] = [];
-
-        for(let i = 0, len = action_definition.args.length; i < len; i++){
-          switch(action_definition.args[i]){
-            case NWScriptDataType.OBJECT:
-              args.push( this.stack.pop().value );
-              //Test for and fix instances where an object id is pushed instead of an object reference
-              if(typeof args[i] == 'number') args[i] = ModuleObjectManager.GetObjectById(args[i]);
-            break;
-            case NWScriptDataType.STRING:
-            case NWScriptDataType.INTEGER:
-            case NWScriptDataType.FLOAT:
-            case NWScriptDataType.EFFECT:
-            case NWScriptDataType.EVENT:
-            case NWScriptDataType.LOCATION:
-            case NWScriptDataType.TALENT:
-              args.push( this.stack.pop().value );
-            break;
-            case NWScriptDataType.ACTION:
-              args.push( this.state.pop() );
-            break;
-            case NWScriptDataType.VECTOR:
-              args.push(new THREE.Vector3(
-                this.stack.pop().value,
-                this.stack.pop().value,
-                this.stack.pop().value
-              ))
-            break;
-            default:
-              //Pop the function variables off the stack after we are done with them
-              args.push(this.stack.pop().value);
-              console.warn('UNKNOWN ARG', action_definition, args);
-            break;
-          }
-        }
-  
-        if(typeof action_definition.action === 'function'){
-          const actionValue = action_definition.action.call(this, args);
-          if(action_definition.type != NWScriptDataType.VOID){
-            this.stack.push( actionValue, action_definition.type );
-          }
-        }else{
-          console.warn(`NWScript Action ${action_definition.name} not found`, action_definition);
-        }
-  
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.action = reader.readUInt16();
-        instr.argCount = reader.readByte();
-        instr.arguments = [];
-      }
-    },
-    6 : { 
-      name: 'LOGANDII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        if(this.var1 && this.var2)
-          this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-        else
-          this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    7 : { 
-      name: 'LOGORII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        if(this.var1 || this.var2)
-          this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-        else
-          this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    8 : { 
-      name: 'INCORII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        this.stack.push( this.var1 | this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    9 : { 
-      name: 'EXCORII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-        this.stack.push( this.var1 ^ this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    10 : { 
-      name: 'BOOLANDII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        this.stack.push( this.var1 & this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    11 : { 
-      name: 'EQUAL', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        if(scope.instr.type == NWScriptDataType.STRUCTURE){
-          this.struct2 = [];
-          this.struct1 = [];
-  
-          let count = scope.instr.sizeOfStructure / 4;
-          //populate structure2's variables
-          for(let i = 0; i < count; i++){
-            this.struct2.push(this.stack.pop().value);
-          }
-          //populate structure1's variables
-          for(let i = 0; i < count; i++){
-            this.struct1.push(this.stack.pop().value);
-          }
-  
-          let areStructuresEqual = true;
-          //Check for equality between the structures variables
-          for(let i = 0; i < count; i++){
-            if(this.struct1[i] != this.struct2[i]){
-              areStructuresEqual = false;
-            }
-          }
-  
-          // console.log('EQUALTT', areStructuresEqual, this.struct1, this.struct2);
-  
-          if(areStructuresEqual)
-            this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-  
-        }else{
-          this.var2 = this.stack.pop().value;
-          this.var1 = this.stack.pop().value;
-  
-          switch(scope.instr.type){
-            case NWScriptTypes.II:
-              if(this.var1 == this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.FF:
-              if(this.var1 == this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.OO:
-              if(this.var1 == this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.SS:
-              if(this.var1.toLowerCase() == this.var2.toLowerCase())
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.LOCLOC:
-              if(this.locationCompare(this.var1, this.var2)){
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              }else{
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//TRUE
-              }
-            break;
-            default:
-              console.warn('EQUAL: Missing Type', scope.instr.type);
-            break;
-          }
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        if(instr.type == NWScriptDataType.STRUCTURE){
-          instr.sizeOfStructure = parseInt(reader.readUInt16());
-        }
-      }
-    }, //Constant Type is declared by the next byte x03, x04, x05, x06
-    12 : { 
-      name: 'NEQUAL', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        if(scope.instr.type == NWScriptDataType.STRUCTURE){
-          this.struct2 = [];
-          this.struct1 = [];
-  
-          let count = scope.instr.sizeOfStructure / 4;
-  
-          //populate structure2's variables
-          for(let i = 0; i < count; i++){
-            this.struct2.push(this.stack.pop().value);
-          }
-          //populate structure1's variables
-          for(let i = 0; i < count; i++){
-            this.struct1.push(this.stack.pop().value);
-          }
-  
-          let areStructuresEqual = true;
-          //Check for equality between the structures variables
-          for(let i = 0; i < count; i++){
-            if(this.struct1[i] != this.struct2[i]){
-              areStructuresEqual = false;
-            }
-          }
-  
-          // console.log('NEQUALTT', !areStructuresEqual, this.struct1, this.struct2);
-  
-          if(!areStructuresEqual)
-            this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-          else
-            this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-  
-        }else{
-          this.var2 = this.stack.pop().value;
-          this.var1 = this.stack.pop().value;
-  
-          switch(scope.instr.type){
-            case NWScriptTypes.II:
-              if(this.var1 != this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.FF:
-              if(this.var1 != this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.OO:
-              if(this.var1 != this.var2)
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.SS:
-              if(this.var1.toLowerCase() != this.var2.toLowerCase())
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              else
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-            break;
-            case NWScriptTypes.LOCLOC:
-              if(!this.locationCompare(this.var1, this.var2)){
-                this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-              }else{
-                this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//TRUE
-              }
-            break;
-            default:
-              console.warn('NEQUAL: Missing Type', scope.instr.type);
-            break;
-          }
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        if(instr.type == NWScriptDataType.STRUCTURE){
-          instr.sizeOfStructure = parseInt(reader.readUInt16());
-        }
-      }
-    }, //Constant Type is declared by the next byte x03, x04, x05, x06
-    13 : { 
-      name: 'GEQ', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            if(this.var1 >= this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          case NWScriptTypes.FF:
-            if(this.var1 >= this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          default:
-            console.warn('GEQ: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    }, //Constant Type is declared by the next byte x03, x04
-    14 : { 
-      name: 'GT', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            if(this.var1 > this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          case NWScriptTypes.FF:
-            if(this.var1 > this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          default:
-            console.warn('GT: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    }, //Constant Type is declared by the next byte x03, x04
-    15 : { 
-      name: 'LT', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            if(this.var1 < this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          case NWScriptTypes.FF:
-            if(this.var1 < this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          default:
-            console.warn('LT: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    }, //Constant Type is declared by the next byte x03, x04
-    16 : { 
-      name: 'LEQ', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            if(this.var1 <= this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          case NWScriptTypes.FF:
-            if(this.var1 <= this.var2)
-              this.stack.push( NWScript.TRUE, NWScriptDataType.INTEGER )//TRUE
-            else
-              this.stack.push( NWScript.FALSE, NWScriptDataType.INTEGER )//FALSE
-          break;
-          default:
-            console.warn('LEQ: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    }, //Constant Type is declared by the next byte x03, x04
-    17 : { 
-      name: 'SHLEFTII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-        this.stack.push( this.var1 << this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    18 : { 
-      name: 'SHRIGHTII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-        this.stack.push( this.var1 >> this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    19 : { 
-      name: 'USHRIGHTII', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-        this.stack.push( this.var1 >>> this.var2, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    20 : { 
-      name: 'ADD', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = (this.stack.pop().value);
-        this.var1 = (this.stack.pop().value);
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            this.stack.push( this.var1 + this.var2, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.IF:
-            this.stack.push( this.var1 + this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FI:
-            this.stack.push( this.var1 + this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FF:
-            this.stack.push( this.var1 + this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.SS:
-            this.stack.push( this.var1 + this.var2, NWScriptDataType.STRING );
-          break;
-          case NWScriptTypes.VV:
-            this.var3 = this.stack.pop().value;
-            this.stack.push( this.var1 + this.stack.pop().value, NWScriptDataType.FLOAT );
-            this.stack.push( this.var2 + this.stack.pop().value, NWScriptDataType.FLOAT );
-            this.stack.push( this.var3 + this.stack.pop().value, NWScriptDataType.FLOAT );
-          break;
-          default:
-            console.warn('ADD: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    21 : { 
-      name: 'SUB', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            this.stack.push( this.var1 - this.var2, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.IF:
-            this.stack.push( this.var1 - this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FI:
-            this.stack.push( this.var1 - this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FF:
-            this.stack.push( this.var1 - this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.VV:
-            this.var3 = this.stack.pop().value;
-            this.stack.push( this.var1 - this.stack.pop().value, NWScriptDataType.FLOAT );
-            this.stack.push( this.var2 - this.stack.pop().value, NWScriptDataType.FLOAT );
-            this.stack.push( this.var3 - this.stack.pop().value, NWScriptDataType.FLOAT );
-          break;
-          default:
-            console.warn('SUB: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    22 : { 
-      name: 'MUL', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.IF:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FI:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FF:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.VF:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.FLOAT ); //Z
-            this.stack.push( this.stack.pop().value * this.var2, NWScriptDataType.FLOAT ); //Y
-            this.stack.push( this.stack.pop().value * this.var2, NWScriptDataType.FLOAT ); //X
-          break;
-          case NWScriptTypes.FV:
-            this.stack.push( this.var1 * this.var2, NWScriptDataType.FLOAT ); //Z
-            this.stack.push( this.var1 * this.stack.pop().value, NWScriptDataType.FLOAT ); //Y
-            this.stack.push( this.var1 * this.stack.pop().value, NWScriptDataType.FLOAT ); //X
-          break;
-          default:
-            console.warn('MUL: Missing Type', scope.instr.type);
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    23 : { 
-      name: 'DIV', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-  
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            this.stack.push( (this.var1 / this.var2) | 0, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.IF:
-            this.stack.push( this.var1 / this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FI:
-            this.stack.push( this.var1 / this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FF:
-            this.stack.push( this.var1 / this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.VF:
-            this.stack.push( this.var1 / this.var2, NWScriptDataType.FLOAT ); //Z
-            this.stack.push( this.stack.pop().value / this.var2, NWScriptDataType.FLOAT ); //Y
-            this.stack.push( this.stack.pop().value / this.var2, NWScriptDataType.FLOAT ); //X
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    24 : { 
-      name: 'MOD', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var2 = this.stack.pop().value;
-        this.var1 = this.stack.pop().value;
-  
-        switch(scope.instr.type){
-          case NWScriptTypes.II:
-            this.stack.push( this.var1 % this.var2, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.IF:
-            this.stack.push( this.var1 % this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FI:
-            this.stack.push( this.var1 % this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.FF:
-            this.stack.push( this.var1 % this.var2, NWScriptDataType.FLOAT );
-          break;
-          case NWScriptTypes.VF:
-            this.stack.push( this.var1 % this.var2, NWScriptDataType.FLOAT ); //Z
-            this.stack.push( this.stack.pop().value % this.var2, NWScriptDataType.FLOAT ); //Y
-            this.stack.push( this.stack.pop().value % this.var2, NWScriptDataType.FLOAT ); //X
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    25 : { 
-      name: 'NEG', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        switch(scope.instr.type){
-          case NWScriptTypes.I:
-            this.stack.push( -this.stack.pop().value, NWScriptDataType.INTEGER );
-          break;
-          case NWScriptTypes.F:
-            this.stack.push( -this.stack.pop().value, NWScriptDataType.FLOAT );
-          break;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    26 : { 
-      name: 'COMPI', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.stack.push( ~this.stack.pop().value, NWScriptDataType.INTEGER );
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    27 : { 
-      name: 'MOVSP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.stack.stack.splice(
-          (this.stack.pointer += scope.instr.offset) / 4, 
-          (Math.abs(scope.instr.offset)/4)
-        );
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readInt32();
-      }
-    },
-    28 : { 
-      name: 'STORE_STATEALL', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        //OBSOLETE NOT SURE IF USED IN KOTOR
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    29 : { 
-      name: 'JMP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        scope.seek = scope.instr.address + scope.instr.offset;
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-      }
-    },
-    30 : { 
-      name: 'JSR', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        let pos = scope.instr.address;
-        scope.seek = pos + scope.instr.offset;
-        this.subRoutine = new NWScriptSubroutine(scope.instr.nextInstr.address);
-        this.subRoutines.push( this.subRoutine ); //Where to return to after the subRoutine is done
-  
-        if(this.subRoutines.length > 1000)
-          throw 'JSR seems to be looping endlessly';
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-      }
-    },
-    31 : { 
-      name: 'JZ', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        let popped = this.stack.pop().value;
-        if(popped == 0){
-          scope.seek = scope.instr.address + scope.instr.offset;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-      }
-    },
-    32 : { 
-      name: 'RETN', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        
-        if(this.subRoutines.length){
-          const subRoutine = this.subRoutines.pop();
-          subRoutine.onEnd();
-  
-          this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
-  
-          if(subRoutine.returnAddress == -1){
-            scope.seek = null;
-            scope.instr.eof = true;
-          }else{
-            scope.seek = subRoutine.returnAddress; //Resume the code just after our pervious jump
-            if(!scope.seek){
-              //
-            }
-          }
-        }else{
-          //let subRoutine = this.subRoutines.pop();
-          //scope.seek = subRoutine.returnAddress;
-          this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
-          scope.instr.eof = true;
-          scope.running = false;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        if(!this.eofFound){
-          instr.eof = true;
-          this.eofFound = true;
-        }
-      }
-    },
-    33 : { 
-      name: 'DESTRUCT', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        //retrieve the elements to save from the stack by popping them off of the stack
-        const elements = this.stack.stack.splice(
-          //offset of the first element to retrieve
-          ( ( this.stack.pointer - scope.instr.sizeToDestroy ) + scope.instr.offsetToSaveElement ) / 4,
-          //count of elements to save
-          scope.instr.sizeOfElementToSave / 4
-        );
-        //push the saved elements back onto the stack
-        this.stack.stack.push(
-          //the spread operator (...) merges the returned array elements back onto the stack array instead 
-          //of pushing the array itself back onto the stack 
-          ...elements
-        );
-        
-        //destroy the remaing elements off the stack
-        this.stack.stack.splice(
-          //offset of the first element to destory
-          ( this.stack.pointer - scope.instr.sizeToDestroy ) / 4,
-          //count of elements to destroy
-          ( scope.instr.sizeToDestroy - scope.instr.sizeOfElementToSave ) / 4
-        )
-        
-        //Adjust the stack pointer accoringly
-        this.stack.pointer -= (scope.instr.sizeToDestroy - scope.instr.sizeOfElementToSave);
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.sizeToDestroy = reader.readInt16();
-        instr.offsetToSaveElement = reader.readInt16();
-        instr.sizeOfElementToSave = reader.readInt16();
-      }
-    },
-    34 : { 
-      name: 'NOTI', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        if(!this.stack.pop().value)
-          this.stack.push(NWScript.TRUE, NWScriptDataType.INTEGER);//TRUE
-        else
-          this.stack.push(NWScript.FALSE, NWScriptDataType.INTEGER)//FALSE
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    35 : { 
-      name: 'DECISP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var1 = (this.stack.getAtPointer( scope.instr.offset));
-        this.var1.value -= 1;
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readInt32();
-      }
-    },
-    36 : { 
-      name: 'INCISP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var1 = (this.stack.getAtPointer( scope.instr.offset));
-        this.var1.value += 1;
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readInt32();
-      }
-    },
-    37 : { 
-      name: 'JNZ', //I believe this is used in SWITCH statements
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        let jnzTOS = this.stack.pop().value
-        if(jnzTOS != 0){
-          scope.seek = scope.instr.address + scope.instr.offset;
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readInt32();
-      }
-    },
-    38 : { 
-      name: 'CPDOWNBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.stack.stack.copyWithin(
-          (this.stack.basePointer + scope.instr.offset)/4,
-          (this.stack.pointer     - scope.instr.size)/4,
-        );
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readInt32();
-        instr.size = reader.readUInt16();
-      }
-    },
-    39 : { 
-      name: 'CPTOPBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        const elements = this.stack.copyAtBasePointer( scope.instr.pointer, scope.instr.size );
-        if(elements.length == (scope.instr.size / 4)){
-          this.stack.stack.push( ...elements );
-          this.stack.pointer += scope.instr.size;
-        }else{
-          throw new Error(`CPTOPBP: copy size miss-match, expected: ${scope.instr.size} | received: ${elements.length*4}`);
-        }
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.pointer = reader.readUInt32();
-        instr.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-        instr.data = null;
-      }
-    },
-    40 : { 
-      name: 'DECIBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
-        this.var1.value -= 1;
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-      }
-    },
-    41 : { 
-      name: 'INCIBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.var1 = (this.stack.getAtBasePointer( scope.instr.offset));
-        this.var1.value += 1;
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.offset = reader.readUInt32();
-      }
-    },
-    42 : { 
-      name: 'SAVEBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.stack.saveBP();
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    43 : { 
-      name: 'RESTOREBP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-        this.stack.restoreBP();
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    44 : { 
-      name: 'STORE_STATE', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-  
-        let state: any = {
-          offset: scope.instr.nextInstr.nextInstr.address,
-          base: [],//this.stack.stack.slice(0, (instr.bpOffset/4)),
-          local: [],//this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)
-          instr: scope.instr
-        };
-  
-        //console.log('STORE_STATE', this.stack.stack.length, this.stack.basePointer);
-  
-        state.script = new NWScriptInstance();
-        state.script.address = state.offset;
-        state.script.offset = state.offset;
-        state.script.nwscript = this.nwscript;
-        state.script.isStoreState = true;
-        state.script.name = this.name;
-        state.script.prevByteCode = 0;
-        //state.script.Definition = this.Definition;
-        state.script.instructions = this.instructions;//.slice();
-        state.script.subRoutines = [];
-        state.script.stack = new NWScriptStack();
-  
-        state.script.stack.stack = this.stack.stack.slice();
-        state.script.stack.basePointer = this.stack.basePointer;
-        state.script.stack.pointer = this.stack.pointer;
-        state.script.caller = this.caller;
-        state.script.enteringObject = this.enteringObject;
-        state.script.listenPatternNumber = this.listenPatternNumber;
-        state.script.listenPatternSpeaker = this.listenPatternSpeaker;
-        state.script.scriptVar = this.scriptVar;
-        this.state.push(state);
-        state.script.state = this.state.slice();
-  
-        //console.log('STORE_STATE', state.script);
-  
-      }, 
-      parse: function( instr: any, reader: any ){
-        instr.bpOffset = reader.readUInt32();
-        instr.spOffset = reader.readUInt32();
-      }
-    },
-    45 : { 
-      name: 'NOP', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-  
-      }, 
-      parse: function( instr: any, reader: any ){
-  
-      }
-    },
-    46 : { 
-      name: 'T', 
-      run: function(this: NWScriptInstance, scope: any = {} ){
-  
-      }, 
-      parse: function( instr: any, reader: any ){
-        reader.position -= 2; //We need to go back 2bytes because this instruction
-        //doesn't have a int16 type arg. We then need to read the 4Byte Int32 size arg
-        instr.size = reader.readInt32();
-      }
-    },
-  
-    getKeyByValue: function( value: any ) {
-      for( let prop in NWScript.ByteCodes ) {
-        if( NWScript.ByteCodes.hasOwnProperty( prop ) ) {
-          if( NWScript.ByteCodes[ prop ] === value )
-            return prop;
-        }
-      }
-    }
-  };
-
-  static scripts: Map<any, any> = new Map();
+  static scripts: Map<string, NWScript> = new Map();
 
 }
 

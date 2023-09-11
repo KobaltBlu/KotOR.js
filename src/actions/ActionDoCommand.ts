@@ -18,9 +18,7 @@ export class ActionDoCommand extends Action {
     let script = this.getParameter(0);
     if(script instanceof NWScriptInstance){
       script.setCaller(this.owner);
-      script.beginLoop({
-        _instr: null, 
-        index: -1, 
+      script.runScript({
         seek: script.offset
       });
       return ActionStatus.COMPLETE;

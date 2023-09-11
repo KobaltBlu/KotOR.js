@@ -1,19 +1,43 @@
-import { NWScript } from "./NWScript";
+import { NWScriptInstructionInfo } from "./NWScriptInstructionInfo";
+import type { NWScriptInstance } from "./NWScriptInstance";
 
 export class NWScriptInstruction {
-  code: any;
-  type: any;
-  address: any;
-  prevInstr: any;
-  nextInstr: any;
-  codeName: any;
-  eof: any;
-  isArg: any;
-  index: any;
+  code: number;
+  type: number;
+  address: number;
+  prevInstr: NWScriptInstruction;
+  nextInstr: NWScriptInstruction;
+  codeName: string;
+  eof: boolean;
+  isArg: boolean;
+  index: number;
   code_hex: string;
   type_hex: string;
   address_hex: string;
   break_point: boolean = false;
+
+  offset: number;
+  size: number;
+  pointer: number;
+
+  bpOffset: number;
+  spOffset: number;
+
+  sizeOfStructure: number;
+  sizeToDestroy: number;
+  offsetToSaveElement: number;
+  sizeOfElementToSave: number;
+
+  action: number;
+  argCount: number;
+  arguments: any[];
+
+  integer: number;
+  float: number;
+  object: number;
+  string: string;
+
+  opCall: ( this: NWScriptInstance, instruction: NWScriptInstruction ) => void
 
   constructor(args: any = {}){
 
@@ -34,7 +58,7 @@ export class NWScriptInstruction {
     this.prevInstr = args.prevInstr;
     this.nextInstr = args.nextInstr;
 
-    this.codeName = NWScript.ByteCodes[this.code];
+    this.codeName = NWScriptInstructionInfo[this.code]?.name;
 
     this.eof = args.eof;
     this.isArg = args.isArg;

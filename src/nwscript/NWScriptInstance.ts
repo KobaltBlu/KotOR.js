@@ -1,60 +1,72 @@
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { EventTimedEvent } from "../events";
+import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
-import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
+import type { PerceptionInfo } from "../interface/engine/PerceptionInfo";
+import type { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
+import type { NWScriptStoreState } from "../interface/nwscript/NWScriptStoreState";
 import { ModuleObjectManager } from "../managers";
-import { ModuleObject } from "../module";
+import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject, TalentSpell } from "../talents";
-import { NWScript } from "./NWScript";
+import type { NWScript } from "./NWScript";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptDefK2 } from "./NWScriptDefK2";
+import type { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
+import type { NWScriptStackVariable } from "./NWScriptStackVariable";
+import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 
 export class NWScriptInstance {
-  name: any;
-  instructions: any;
-  talent: any;
+  name: string;
+  instructions: Map<number, NWScriptInstruction> = new Map();
   actionsMap: { [key: number]: NWScriptDefAction; };
-  globalCache: any;
-  _disposed: boolean;
-  isStoreState: any;
+  globalCache: any = null;
+  _disposed: boolean = false;
+  isStoreState: boolean = false;
   nwscript: NWScript;
   caller: ModuleObject;
   scriptVar: number;
-  onComplete: any;
-  subRoutines: any[];
-  subRoutine: any;
-  enteringObject: any;
-  exitingObject: any;
+  subRoutines: NWScriptSubroutine[] = [];
+  subRoutine: NWScriptSubroutine;
   debugging: boolean;
   debug: any = {};
-  state: any[];
+  state: NWScriptStoreState[] = [];
   var1: any;
   var2: any;
   var3: any;
-  struct1: any;
-  struct2: any;
+  struct1: NWScriptStackVariable[] = [];
+  struct2: NWScriptStackVariable[] = [];
   params: number[];
   paramString: string;
   verified: boolean;
   stack: NWScriptStack;
   delayCommands: EventTimedEvent[] = [];
-  lastSpeaker: any;
   firstLoop: boolean;
-  address: any;
-  lastPerceived: any;
-  offset: any;
+  address: number;
+  offset: number;
+  
+  lastPerceived: PerceptionInfo;
+
+  lastSpeaker: ModuleObject;
   object: ModuleObject;
 
   running: boolean = false;
+  currentInstruction: NWScriptInstruction;
+  prevByteCode: number;
+  seek: number;
+  iterations: number = 0;
+
+  enteringObject: ModuleObject;
+  exitingObject: ModuleObject;
 
   //ListenPattern
   listenPatternNumber: number = -1;
   listenPatternSpeaker: ModuleObject = undefined;
+
+  talent: TalentObject;
 
   //Spell
   lastSpellCaster: ModuleObject;
@@ -75,15 +87,9 @@ export class NWScriptInstance {
   attackerIndex: number = 0;
   inventoryIndex: number = 0;
 
-  constructor( args: any = {} ){
+  constructor( instructions: Map<number, NWScriptInstruction> ){
 
-    args = Object.assign({
-      name: '',
-      instructions: []
-    }, args);
-
-    this.name = args.name;
-    this.instructions = args.instructions;
+    this.instructions = instructions;
     this.talent = undefined;
 
     this.init();
@@ -110,7 +116,6 @@ export class NWScriptInstance {
 
     this.caller = undefined;
     this.scriptVar = 0;
-    this.onComplete = undefined;
 
     this.subRoutines = [];
     this.subRoutine = undefined;
@@ -192,12 +197,12 @@ export class NWScriptInstance {
       this.stack.stack = this.globalCache.stack.stack.slice();
       
       return this.runScript({
-        instr: this.globalCache.instr,
+        instruction: this.globalCache.instr,
         seek: null,
       });
     }else{
       return this.runScript({
-        instr: this.instructions.values().next().value,
+        instruction: this.instructions.values().next().value,
         seek: null,
       });
     }
@@ -232,50 +237,56 @@ export class NWScriptInstance {
     return this.instructions.get(offset);
   }
 
-
-  //BeginLoop should be merged with runscript and possibly renamed
-  //The code base will need to be refactored to deal with this change
-  beginLoop(data: any){
-    this.runScript(data);
-  }
-
-  runScript(scope: any = {}){
+  runScript(scope: {
+    seek?: number,
+    instruction?: NWScriptInstruction
+  } = {}){
 
     scope = Object.assign({
-      running: true,
-      prevByteCode: -1,
       seek: null,
-      prevInstr: null,
-      instr: null,
+      instruction: null,
     }, scope);
+
+    this.running = true;
+
+    if(scope.instruction){
+      this.currentInstruction = scope.instruction;
+      this.firstLoop = true;
+    }else if(scope.seek != null){
+      this.currentInstruction = this.getInstrAtOffset( scope.seek );
+      this.firstLoop = false;
+    }
+    
+    //If the currentInstruction is empty start at the first instruction
+    if(!this.currentInstruction){
+      this.currentInstruction = this.getInstrAtOffset( 0 );
+      this.firstLoop = true;
+    }
+
     this.delayCommands = [];
 
-    scope.iterations = 0;
+    this.iterations = 0;
 
-    while(scope.running && !this._disposed){
+    while(this.running && !this._disposed){
 
-      if(scope.instr)
-        scope.prevByteCode = scope.instr.code;
-      
-      if( scope.seek != null ) {
-        scope.instr = this.getInstrAtOffset( scope.seek );
-        this.firstLoop = false;
-      }else{
-        if(!scope.instr.eof){
-          if(scope.instr.nextInstr != null){
-            scope.instr = this.firstLoop ? scope.instr : scope.instr.nextInstr;
-            this.firstLoop = false;
-          }
-        }else{ }
+      if(this.currentInstruction)
+        this.prevByteCode = this.currentInstruction.code;
+
+      if(this.seek != null){
+        this.currentInstruction = this.getInstrAtOffset( this.seek );
+        this.seek = null;
       }
 
-      this.address = scope.instr.address;
+      if(!this.currentInstruction) break;
 
-      scope.seek = null;
+      this.address = this.currentInstruction.address;
+
       //Run the instruction's run method
-      if(scope.instr.break_point) debugger;
-      NWScript.ByteCodes[scope.instr.code].run.call(this, scope);
+      if(this.currentInstruction.break_point) debugger;
+      this.currentInstruction.opCall.call(this, this.currentInstruction);
 
+      this.currentInstruction = this.currentInstruction.nextInstr;
+      this.firstLoop = false;
     }
 
     //Stop early if disposed
@@ -305,37 +316,22 @@ export class NWScriptInstance {
 
   }
 
-  runInstr ( instr: any, scope: any ) {
-
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name,  'runInstr', instr.index, NWScript.ByteCodes[instr.code], instr );
-    }
-
-    //Run the instruction's run method
-    NWScript.ByteCodes[instr.code].run.call(this, scope);
-    
-    if(this.isDebugging()){
-      console.log('NWScript: '+this.name, 'STACK_LEN', this.stack.stack.length);
-    }
-
-  }
-
-  executeScript(script: NWScriptInstance, scope: any, args: any){
+  executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){
     //console.log('executeScript', args);
-    script.lastPerceived = scope.lastPerceived;
-    script.debug = scope.debug;
-    script.debugging = scope.debugging;
-    script.listenPatternNumber = scope.listenPatternNumber;
-    script.listenPatternSpeaker = scope.listenPatternSpeaker;
-    script.talent = scope.talent;
-    return script.run( args[1], args[2]);
+    instance.lastPerceived = parentInstance.lastPerceived;
+    instance.debug = parentInstance.debug;
+    instance.debugging = parentInstance.debugging;
+    instance.listenPatternNumber = parentInstance.listenPatternNumber;
+    instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
+    instance.talent = parentInstance.talent;
+    return instance.run( args[1], args[2] );
   }
 
   locationCompare(loc1: any, loc2: any){
     return loc1.position.x == loc2.position.x && loc1.position.y == loc2.position.y && loc1.position.z == loc2.position.z && loc1.facing == loc2.facing;
   }
 
-  pushVectorToStack(vector: any){
+  pushVectorToStack(vector: {x: number, y: number; z: number}){
     //Push Z to the stack
     this.stack.push(vector.z || 0.0, NWScriptDataType.FLOAT);
     //Push Y to the stack

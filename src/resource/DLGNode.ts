@@ -153,7 +153,6 @@ export class DLGNode {
       this.script.setScriptParam(4, this.scriptParams.Param4);
       this.script.setScriptParam(5, this.scriptParams.Param5);
       this.script.setScriptStringParam(this.scriptParams.String);
-      this.script.name = this.script;
       this.script.run(this.speaker || this.dialog?.owner || this.dialog?.owner, 0);
     }
   }

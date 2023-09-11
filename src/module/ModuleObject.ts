@@ -45,6 +45,8 @@ import { DialogAnimationState } from "../interface/animation/DialogAnimationStat
 import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import type { PerceptionInfo } from "../interface/engine/PerceptionInfo";
+import { PerceptionMask } from "../enums/engine/PerceptionMask";
 
 /* @file
  * The ModuleObject class.
@@ -152,7 +154,7 @@ export class ModuleObject {
 
   //Perception
   heardStrings: any[];
-  perceptionList: any[] = [];
+  perceptionList: PerceptionInfo[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
   perceptionRange: any;
@@ -328,7 +330,15 @@ export class ModuleObject {
 
     this._healTarget = undefined;
 
-    this.perceptionList = [];
+    //Always add the object to it's own perceptionList
+    this.perceptionList = [
+      {
+        object: this,
+        objectId: this.id,
+        data: PerceptionMask.SEEN_AND_HEARD
+      }
+    ];
+    
     this.isListening = false;
     this.listeningPatterns = {};
     this.combatData.initiative = 0;
@@ -1598,23 +1608,22 @@ export class ModuleObject {
   }
 
   notifyPerceptionHeardObject(object: ModuleObject, heard = false){
+    if(!object) return;
+
     let triggerOnNotice = false;
     let perceptionObject;
     let exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
       let existingObject = exists[0];
-      triggerOnNotice = (existingObject.heard != heard);
-      existingObject.hasHeard = existingObject.hasHeard ? true : (existingObject.heard == heard ? true : false);
-      existingObject.heard = heard;
+      triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
+      existingObject.data |= 0x02;
       perceptionObject = existingObject;
     }else{
       if(heard){
         let newObject = {
           object: object,
-          heard: heard,
-          seen: false,
-          hasSeen: false,
-          hasHeard: false
+          objectId: object.id,
+          data: 0x02
         };
         this.perceptionList.push(newObject);
         perceptionObject = newObject;
@@ -1632,23 +1641,21 @@ export class ModuleObject {
   }
 
   notifyPerceptionSeenObject(object: ModuleObject, seen = false){
+    if(!object) return;
+
     let triggerOnNotice = false;
     let perceptionObject;
     let exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
       let existingObject = exists[0];
-      triggerOnNotice = (existingObject.seen != seen);
-      existingObject.hasSeen = existingObject.seen == seen;
-      existingObject.seen = seen;
+      triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
       perceptionObject = existingObject;
     }else{
       if(seen){
         let newObject = {
           object: object,
-          heard: false,
-          seen: seen,
-          hasSeen: false,
-          hasHeard: false
+          objectId: object.id,
+          data: 0x01
         };
         this.perceptionList.push(newObject);
         perceptionObject = newObject;
