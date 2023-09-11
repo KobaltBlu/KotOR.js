@@ -72,7 +72,7 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
     this.updateMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
     this.renderMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
     this.blendMode = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
-    this.textureResRef = this.odysseyModel.mdlReader.readChars(64).replace(/\0[\s\S]*$/g,'');
+    this.textureResRef = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
     this.chunkResRef = this.odysseyModel.mdlReader.readChars(16).replace(/\0[\s\S]*$/g,'');
 
     this.twoSidedTex = this.odysseyModel.mdlReader.readUInt32();
