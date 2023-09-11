@@ -197,15 +197,15 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       top: 0,
       right: (layout_north_enabled && layout_north_open) ? east_bounds.width + east_gutter_size : 0,
       left: (layout_north_enabled && layout_north_open) ? west_bounds.width + west_gutter_size : 0,
-      width: (layout_north_enabled && layout_north_open) ? (tabWidth - west_bounds.width) - east_bounds.width : 0,
+      width: (tabWidth - west_bounds.width) - east_bounds.width,
       height: (layout_north_enabled && layout_north_open) ? layout_north_size - (north_gutter_size/2) : 0,
     };
 
     let south_bounds = {
       bottom: 0,
-      right: (layout_south_enabled && layout_south_open) ? east_bounds.width + east_gutter_size : 0,
-      left: (layout_south_enabled && layout_south_open) ? west_bounds.width + west_gutter_size : 0,
-      width: (layout_south_enabled && layout_south_open) ? (tabWidth - west_bounds.width) - east_bounds.width : 0,
+      right: (layout_east_enabled && layout_east_open) ? east_bounds.width + east_gutter_size : 0,
+      left: (layout_west_enabled && layout_west_open) ? west_bounds.width + west_gutter_size : 0,
+      width: (tabWidth - west_bounds.width) - east_bounds.width,
       height: (layout_south_enabled && layout_south_open) ? layout_south_size  - (south_gutter_size/2) : 0,
     };
 
@@ -354,7 +354,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       }
       southHandleStyle = {
         position: 'absolute',
-        top: layout_south_open ? (tabHeight - south_bounds.height - south_gutter_size) : 0,
+        top: layout_south_open ? (tabHeight - south_bounds.height - south_gutter_size) : tabHeight - south_gutter_size,
         left: south_bounds.left,
         right: south_bounds.right,
         height: south_gutter_size,
