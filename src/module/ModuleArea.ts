@@ -144,7 +144,7 @@ export class ModuleArea extends ModuleObject {
   onHeartbeat: any;
   onUserDefined: any;
   // scripts: { onEnter: any; onExit: any; onHeartbeat: any; onUserDefined: any; };
-  fog: any;
+  fog: THREE.Fog;
   // _locals: any;
   path: ModulePath;
   visObject: VISObject;
