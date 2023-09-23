@@ -37,7 +37,7 @@ export const TabScriptInspector = function(props: any){
         <tbody>
           {
             instructions.map( (instruction) => {
-              const address = ('000000000' + (parseInt(instruction.address, 16) + offset).toString(16).toUpperCase()).substr(-8);
+              const address = ('000000000' + (parseInt(instruction.address as any, 16) + offset).toString(16).toUpperCase()).substr(-8);
               const code_hex = instruction.code_hex.toUpperCase();
               const type_hex = instruction.type_hex.toUpperCase();
               let value = ``;
