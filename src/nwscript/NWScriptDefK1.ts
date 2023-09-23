@@ -53,6 +53,7 @@ import { ResourceLoader } from "../loaders";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
+import { NW_FALSE } from "./NWScriptConstants";
 
 /* @file
  * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
@@ -7826,7 +7827,12 @@ NWScriptDefK1.Actions = {
     comment: "746: SetAreaFogColor\nSet the fog color for the area oArea.\n",
     name: "SetAreaFogColor",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleArea, number, number, number]){
+      if(args[0]){
+        args[0].fog.color.setRGB(args[1], args[2], args[3]);
+      }
+    }
   },
   747:{
     comment: "747: ChangeItemCost\nChange the cost of an item\n",
@@ -7838,7 +7844,10 @@ NWScriptDefK1.Actions = {
     comment: "748: GetIsLiveContentAvailable\nDetermines whether a given live content package is available\nnPkg = LIVE_CONTENT_PKG1, LIVE_CONTENT_PKG2, ..., LIVE_CONTENT_PKG6\n",
     name: "GetIsLiveContentAvailable",
     type: 3,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      return NW_FALSE;
+    }
   },
   749:{
     comment: "749: ResetDialogState\nResets the GlobalDialogState for the engine.\nNOTE: NEVER USE THIS UNLESS YOU KNOW WHAT ITS FOR!\nonly to be used for a failing OnDialog script\n",
@@ -7858,7 +7867,15 @@ NWScriptDefK1.Actions = {
     comment: "750: SetAlignmentGoodEvil\nSet oCreature's alignment value\n",
     name: "SetGoodEvilValue",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleCreature, number]){
+      if(args[1] > 100) args[1] = 100;
+      if(args[1] < 0) args[1] = 0;
+
+      if(args[0]){
+        args[0].goodEvil = args[1];
+      }
+    }
   },
   751:{
     comment: "751: GetIsPoisoned\nReturns TRUE if the object specified is poisoned.\n",
@@ -7888,7 +7905,10 @@ NWScriptDefK1.Actions = {
     comment: "753: SetSoloMode\nActivates/Deactivates solo mode for the player's party.\n",
     name: "SetSoloMode",
     type: 0,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.SOLOMODE = !!args[0];
+    }
   },
   754:{
     comment: "754: EffectCutSceneHorrified\nGet a horrified effect for cutscene purposes (ie. this effect will ignore immunities).\n",
@@ -7942,7 +7962,12 @@ NWScriptDefK1.Actions = {
     comment: "758: SetMaxHitPoints\nSet the maximum hitpoints of oObject\nThe objects maximum AND current hitpoints will be nMaxHP after the function is called\n",
     name: "SetMaxHitPoints",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(args[0]){
+        args[0].setMaxHP(args[1]);
+      }
+    }
   },
   759:{
     comment: "759: NoClicksFor()\nThis command will not allow clicking on anything for 'fDuration' seconds\n",
