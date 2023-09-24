@@ -17,6 +17,7 @@ export class MenuResolutions extends GameMenu {
 
   constructor(){
     super();
+    this.isOverlayGUI = true;
     this.gui_resref = 'optresolution';
     this.background = '';
     this.voidFill = false;

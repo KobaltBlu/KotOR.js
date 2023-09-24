@@ -17,6 +17,7 @@ export class MenuResolutions extends K1_MenuResolutions {
 
   constructor(){
     super();
+    this.isOverlayGUI = true;
     this.gui_resref = 'optresolution_p';
     this.background = '';
     this.voidFill = false;
