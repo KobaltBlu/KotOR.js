@@ -1,4 +1,4 @@
-export const NWScriptInstructionInfo: any = {
+export const NWScriptInstructionInfo: {[key: number]: {name: string}} = {
   1 : { 
     name: 'CPDOWNSP', 
   },
