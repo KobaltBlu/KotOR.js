@@ -2,7 +2,7 @@
 */
 
 import type { GUILabel, GUIButton } from "../../../gui";
-import { AutoPauseManager } from "../../../managers";
+import { AutoPauseManager, ResolutionManager } from "../../../managers";
 import { InGamePause as K1_InGamePause } from "../../kotor/KOTOR";
 
 /* @file
@@ -36,8 +36,8 @@ export class InGamePause extends K1_InGamePause {
 
   update(delta: number = 0) {
     super.update(delta);
-    this.tGuiPanel.extent.left = (window.innerWidth / 2) - (this.tGuiPanel.extent.width / 2) - 5;
-    this.tGuiPanel.extent.top = (-window.innerHeight / 2) + (this.tGuiPanel.extent.height / 2) + 45;
+    this.tGuiPanel.extent.left = (ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 5;
+    this.tGuiPanel.extent.top = (-ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 45;
     this.recalculatePosition();
   }
   

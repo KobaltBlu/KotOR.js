@@ -24,7 +24,7 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { Mouse } from "../controls";
 import { GUIControlColors } from "../interface/gui/GUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ShaderManager, MenuManager, TLKManager } from "../managers";
+import { ShaderManager, MenuManager, TLKManager, ResolutionManager } from "../managers";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
 
 const itemSize = 2
@@ -1312,8 +1312,8 @@ export class GUIControl {
       parentOffsetY = this.menu.tGuiPanel.extent.top;
     }
 
-    let wRatio = window.innerWidth / this.menu.tGuiPanel.extent.width;
-    let hRatio = window.innerHeight / this.menu.tGuiPanel.extent.height;
+    // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
     let posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
@@ -1349,34 +1349,34 @@ export class GUIControl {
 
     switch(this.anchor){
       case Anchor.TopLeft:
-        this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = -((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
       break;
       case Anchor.TopCenter:
         if(this.extent.left < halfX){
-          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
         }else{
-          this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
         }
       break;
       case Anchor.TopRight:
-        this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = ((window.innerHeight) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = ((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
       break;
       case Anchor.BottomLeft:
-        this.anchorOffset.x = -((window.innerWidth) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = -((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
       break;
       case Anchor.BottomCenter:
         if(this.extent.left < (halfX)){
-          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+          this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
         }else{
-          this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
+          this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
         }
       break;
       case Anchor.BottomRight:
-        this.anchorOffset.x = ((window.innerWidth) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = -(((window.innerHeight) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = ((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
       break;
       default:
         this.anchorOffset = new THREE.Vector2(posX, posY);
@@ -1436,8 +1436,8 @@ export class GUIControl {
   getControlExtent(){
     let renderSize = this.getRendererSize();
 
-    let wRatio = window.innerWidth / this.menu.tGuiPanel.extent.width;
-    let hRatio = window.innerHeight / this.menu.tGuiPanel.extent.height;
+    let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     let parentExtent = { width: this.menu.width, height: this.menu.height };
     //if(!(this.parent instanceof THREE.Scene)){
@@ -2151,7 +2151,7 @@ export class GUIControl {
 
   getRendererSize(){
     //window.renderer;
-    return {width: window.innerWidth, height: window.innerHeight};
+    return {width: ResolutionManager.getViewportWidth(), height: ResolutionManager.getViewportHeight()};
   }
 
   setText(str: any = '', renderOrder = 5){

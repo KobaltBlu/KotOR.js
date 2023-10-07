@@ -10,7 +10,7 @@ import { GameState } from "../GameState";
 import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { ShaderManager } from "../managers";
+import { ResolutionManager, ShaderManager } from "../managers";
 import type { MenuManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 
@@ -248,8 +248,8 @@ export class GameMenu {
 
     if(this.voidFill){
       this.backgroundVoidMaterial.uniforms.u_time.value = GameState.deltaTimeFixed;
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight);
-      this.backgroundVoidSprite.scale.set(window.innerWidth, window.innerHeight, 1);
+      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+      this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
     }
 
     if(this.background){

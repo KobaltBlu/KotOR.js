@@ -81,8 +81,8 @@ export class IngameControls {
       if(GameState.debug.controls)
         console.log('DOWN');
 
-      // GameState.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-      // GameState.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+      // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
+      // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
 
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
       
@@ -174,8 +174,8 @@ export class IngameControls {
 
       if(Mouse.leftDown){
         Mouse.Update( event.clientX, event.clientY );
-        // GameState.mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-        // GameState.mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+        // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
+        // GameState.mouse.y = - ( event.clientY / ResolutionManager.getViewportHeight() ) * 2 + 1;
 
         //If the NoClickTimer is active then we will return out of this function
         if(GameState.noClickTimer){

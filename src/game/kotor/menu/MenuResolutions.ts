@@ -8,12 +8,18 @@ import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 * The MenuResolutions menu class.
 */
 
+import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
+import { ResolutionManager } from "../../../managers";
+
 export class MenuResolutions extends GameMenu {
 
   BTN_OK: GUIButton;
   BTN_CANCEL: GUIButton;
   LB_RESOLUTIONS: GUIListBox;
   LBL_RESOLUTION: GUILabel;
+
+  activeResolution: IScreenResolution;
+  supportedResolutions: IScreenResolution[] = [];
 
   constructor(){
     super();
@@ -35,10 +41,32 @@ export class MenuResolutions extends GameMenu {
 
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        ResolutionManager.screenResolution = this.activeResolution;
+        window.dispatchEvent(new Event('resize'));
         this.close();
       });
+
+      this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
+        console.log('LB_RESOLUTIONS', res);
+        this.activeResolution = res;
+      }
       resolve();
     });
+  }
+
+  show() {
+    super.show();
+    this.supportedResolutions = ResolutionManager.getSupportedResolutions();
+    this.activeResolution = this.supportedResolutions[0];
+    this.LB_RESOLUTIONS.clearItems();
+
+    for(let i = 0; i < this.supportedResolutions.length; i++){
+      const res = this.supportedResolutions[i];
+      this.LB_RESOLUTIONS.addItem( res );
+    }
+
+    this.LB_RESOLUTIONS.setSelectedIndex(this.supportedResolutions.indexOf(this.activeResolution));
+    this.tGuiPanel.widget.position.z = 10;
   }
   
 }

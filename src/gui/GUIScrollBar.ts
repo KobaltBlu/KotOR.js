@@ -11,6 +11,7 @@ import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";
 import { GameState } from "../GameState";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { ResolutionManager } from "../managers";
 
 /* @file
  * The GUIScrollBar class.
@@ -208,8 +209,8 @@ export class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('click', () =>{
-      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
 
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
@@ -224,8 +225,8 @@ export class GUIScrollBar extends GUIControl{
 
     this.addEventListener('mouseDown', (e: any) => {
       e.stopPropagation();
-      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       this.mouseOffset.y = scrollTop;
       this.upArrow.userData.updateBox();
@@ -233,8 +234,8 @@ export class GUIScrollBar extends GUIControl{
     });
 
     this.addEventListener('mouseUp', () => {
-      let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
       //this.mouseOffset.y = scrollTop;
       //console.log('GUIScrollBar', 'blah');
@@ -261,8 +262,8 @@ export class GUIScrollBar extends GUIControl{
 
   mouseInside(){
 
-    let mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-    let mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+    let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+    let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
     //console.log(mouseY);
     //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
 
@@ -355,8 +356,8 @@ export class GUIScrollBar extends GUIControl{
       parentOffsetX = parentOffsetY = 0;
     }
 
-    let wRatio = window.innerWidth / this.menu.tGuiPanel.extent.width;
-    let hRatio = window.innerHeight / this.menu.tGuiPanel.extent.height;
+    // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     if(this.list){
       if(this.list.isScrollBarLeft()){

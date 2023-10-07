@@ -11,6 +11,7 @@ import { Mouse } from "../controls/Mouse";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
 import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { ResolutionManager } from "../managers";
 
 /* @file
  * The GUISlider class.
@@ -98,8 +99,8 @@ export class GUISlider extends GUIControl{
 
     this.addEventListener('click', (e: any) =>{
       e.stopPropagation();
-      const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      const mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
 
@@ -111,8 +112,8 @@ export class GUISlider extends GUIControl{
 
     this.addEventListener('mouseDown', (e: any) => {
       e.stopPropagation();
-      const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-      const mouseY = Mouse.positionClient.y - (window.innerHeight / 2);
+      const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+      const mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
       const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
       const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
 
@@ -136,8 +137,8 @@ export class GUISlider extends GUIControl{
   mouseInside(){
     if(this.disableSelection) return;
 
-    const mouseX = Mouse.positionClient.x - (window.innerWidth / 2);
-    const mouseY = -(Mouse.positionClient.y - (window.innerHeight / 2));
+    const mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
+    const mouseY = -(Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2));
     const scrollBarWidth = this.extent.width;
     const scrollBarHeight = this.extent.height;
 

@@ -4,7 +4,7 @@
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
-import { AutoPauseManager } from "../../../managers";
+import { AutoPauseManager, ResolutionManager } from "../../../managers";
 
 /* @file
 * The InGamePause menu class.
@@ -45,8 +45,8 @@ export class InGamePause extends GameMenu {
 
   update(delta: number = 0) {
     super.update(delta);
-    this.tGuiPanel.extent.left = (window.innerWidth / 2) - (this.tGuiPanel.extent.width / 2) - 0;
-    this.tGuiPanel.extent.top = (-window.innerHeight / 2) + (this.tGuiPanel.extent.height / 2) + 36;
+    this.tGuiPanel.extent.left = (ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 0;
+    this.tGuiPanel.extent.top = (-ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 36;
     this.recalculatePosition();
   }
   

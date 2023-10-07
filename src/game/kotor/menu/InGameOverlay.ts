@@ -15,7 +15,7 @@ import { SSFObjectType } from "../../../interface/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager } from "../../../managers";
+import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager, ResolutionManager } from "../../../managers";
 
 /* @file
 * The InGameOverlay menu class.
@@ -568,8 +568,8 @@ export class InGameOverlay extends GameMenu {
       if (health > 100)
         health = 100;
       this.PB_HEALTH.setProgress(health);
-      let maxBoundsX = window.innerWidth / 2 + 640 / 2 - 125;
-      let maxBoundsX2 = window.innerWidth / 2 - 640 / 2 - 125;
+      let maxBoundsX = ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
+      let maxBoundsX2 = ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
       let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
       let pos = new THREE.Vector3();
       if (CursorManager.selectedObject instanceof ModuleCreature) {
@@ -579,8 +579,8 @@ export class InGameOverlay extends GameMenu {
         pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
       }
       pos.project(GameState.currentCamera);
-      const widthHalf = window.innerWidth / 2;
-      const heightHalf = window.innerHeight / 2;
+      const widthHalf = ResolutionManager.getViewportWidth() / 2;
+      const heightHalf = ResolutionManager.getViewportHeight() / 2;
       pos.x = pos.x * widthHalf;
       pos.y = -(pos.y * heightHalf);
       pos.z = 0;

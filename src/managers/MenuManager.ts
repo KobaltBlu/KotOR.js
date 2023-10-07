@@ -183,8 +183,8 @@ export class MenuManager {
 
   // static updateCursorPosition(){
   //   CursorManager.setCursor('default');
-  //   GameState.scene_cursor_holder.position.x = Mouse.positionClient.x - (window.innerWidth/2) + (32/2);
-  //   GameState.scene_cursor_holder.position.y = (Mouse.positionClient.y*-1) + (window.innerHeight/2) - (32/2);
+  //   GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (window.innerWidth/2) + (32/2);
+  //   GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (window.innerHeight/2) - (32/2);
   // }
 
   // static updateCursor(){

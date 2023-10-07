@@ -33,7 +33,7 @@ import { ConfigClient } from "./utility/ConfigClient";
 import { FollowerCamera } from "./engine/FollowerCamera";
 import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ShaderManager, TwoDAManager } from "./managers";
+import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ResolutionManager, ShaderManager, TwoDAManager } from "./managers";
 import { ResourceLoader, TextureLoader } from "./loaders";
 import { TextureType } from "./enums/loaders/TextureType";
 
@@ -49,10 +49,6 @@ import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { BitWise } from "./utility/BitWise";
 import { ModuleObjectType } from "./enums/module/ModuleObjectType";
-
-// These are for GetFirstInPersistentObject() and GetNextInPersistentObject()
-export const PERSISTENT_ZONE_ACTIVE = 0;
-export const PERSISTENT_ZONE_FOLLOW = 1;
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -283,16 +279,17 @@ export class GameState implements EngineContext {
       preserveDrawingBuffer: false
     });
 
+    
     GameState.renderer.autoClear = false;
-    GameState.renderer.setSize( window.innerWidth, window.innerHeight );
+    GameState.renderer.setSize( ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
-		GameState.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+		GameState.depthTarget = new THREE.WebGLRenderTarget( ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), pars );
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
     GameState.depthTarget.depthBuffer = true;
-    GameState.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+    GameState.depthTarget.depthTexture = new THREE.DepthTexture(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     (window as any).renderer = GameState.renderer;
@@ -325,19 +322,19 @@ export class GameState implements EngineContext {
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
-    GameState.camera_dialog = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
+    GameState.camera_dialog = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    GameState.camera_animated = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );
+    GameState.camera_animated = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     GameState.camera.up = new THREE.Vector3( 0, 0, 1 );
     GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     GameState.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
     GameState.camera_gui = new THREE.OrthographicCamera(
-      window.innerWidth / -2,
-      window.innerWidth / 2,
-      window.innerHeight / 2,
-      window.innerHeight / -2,
+      ResolutionManager.getViewportWidth() / -2,
+      ResolutionManager.getViewportWidth() / 2,
+      ResolutionManager.getViewportHeight() / 2,
+      ResolutionManager.getViewportHeight() / -2,
       1, 1000
     );
     GameState.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -453,8 +450,8 @@ export class GameState implements EngineContext {
       focus: 1.0,
       aperture:	0.0001,
       maxblur:	1.0,
-      // width: window.innerWidth,
-      // height: window.innerHeight
+      // width: ResolutionManager.getViewportWidth(),
+      // height: ResolutionManager.getViewportHeight()
     });
 
     GameState.renderPassAA.sampleLevel = 1;
@@ -625,8 +622,9 @@ export class GameState implements EngineContext {
   }
 
   static EventOnResize(){
-    let width = window.innerWidth;
-    let height = window.innerHeight;
+    ResolutionManager.recalculate();
+    let width = ResolutionManager.getViewportWidth();
+    let height = ResolutionManager.getViewportHeight();
 
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
@@ -657,12 +655,19 @@ export class GameState implements EngineContext {
 
     //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
-    GameState.screenCenter.x = ( (window.innerWidth/2) / window.innerWidth ) * 2 - 1;
-    GameState.screenCenter.y = - ( (window.innerHeight/2) / window.innerHeight ) * 2 + 1; 
+    GameState.screenCenter.x = ( (ResolutionManager.getViewportWidth()/2) / ResolutionManager.getViewportWidth() ) * 2 - 1;
+    GameState.screenCenter.y = - ( (ResolutionManager.getViewportHeight()/2) / ResolutionManager.getViewportHeight() ) * 2 + 1; 
 
     MenuManager.Resize();
 
-    GameState.depthTarget.setSize(window.innerWidth * GameState.rendererUpscaleFactor, window.innerHeight * GameState.rendererUpscaleFactor);
+    GameState.depthTarget.setSize(ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
+
+    if(ResolutionManager.vpScaleFactor){
+      GameState.canvas.style.transform = 'scale('+ResolutionManager.vpScaleFactor+')';
+    }else{
+      GameState.canvas.style.transform = '';
+    }
+
   }
 
   static initGUIAudio(){
@@ -838,8 +843,8 @@ export class GameState implements EngineContext {
 
   static updateCursorPosition(){
     CursorManager.setCursor('default');
-    GameState.scene_cursor_holder.position.x = Mouse.positionClient.x - (window.innerWidth/2) + (32/2);
-    GameState.scene_cursor_holder.position.y = (Mouse.positionClient.y*-1) + (window.innerHeight/2) - (32/2);
+    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (ResolutionManager.getViewportWidth()/2) + (32/2);
+    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (ResolutionManager.getViewportHeight()/2) - (32/2);
   }
 
   static updateCursor(){

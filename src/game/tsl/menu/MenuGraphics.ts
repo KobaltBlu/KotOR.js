@@ -65,7 +65,7 @@ export class MenuGraphics extends K1_MenuGraphics {
         this.manager.MenuResolutions.open();
       });
 
-      this.BTN_RESOLUTION.hide();
+      // this.BTN_RESOLUTION.hide();
 
       this.CB_GRASS.onValueChanged = (value: any) => {
         //Toggle Grass

@@ -3,6 +3,7 @@
 
 import * as THREE from "three";
 import { GUIControl } from "../gui";
+import { ResolutionManager } from "../managers";
 
 /* @file
  * The Mouse class.
@@ -52,7 +53,10 @@ export class Mouse {
   static position: THREE.Vector2 = new THREE.Vector2();
 
   //MouseEvent client x/y
-  static positionClient: THREE.Vector2 = new THREE.Vector2();
+  static positionWindow: THREE.Vector2 = new THREE.Vector2();
+
+  //MouseEvent client x/y
+  static positionViewport: THREE.Vector2 = new THREE.Vector2();
 
   //Game UI mouse position
   static positionUI: THREE.Vector2 = new THREE.Vector2();
@@ -66,12 +70,28 @@ export class Mouse {
   }
 
   static Update(x: number, y: number){
-    Mouse.positionClient.x = x;
-    Mouse.positionClient.y = y;
-    Mouse.position.x = Mouse.Vector.x = ( x / window.innerWidth ) * 2 - 1;
-    Mouse.position.y = Mouse.Vector.y = - ( y / window.innerHeight ) * 2 + 1; 
-    Mouse.positionUI.x = Mouse.Vector.x = ( x - (window.innerWidth/2) );
-    Mouse.positionUI.y = Mouse.Vector.y = - ( y -(window.innerHeight/2) ); 
+    Mouse.positionWindow.x = x;
+    Mouse.positionWindow.y = y;
+
+    const res = ResolutionManager.screenResolution;
+
+    if(res.isDynamicRes){
+      Mouse.positionViewport.x = x;
+      Mouse.positionViewport.y = y;
+
+      Mouse.position.x = Mouse.Vector.x = ( x / window.innerWidth ) * 2 - 1;
+      Mouse.position.y = Mouse.Vector.y = - ( y / window.innerHeight ) * 2 + 1; 
+      Mouse.positionUI.x = Mouse.Vector.x = ( x - (window.innerWidth/2) );
+      Mouse.positionUI.y = Mouse.Vector.y = - ( y -(window.innerHeight/2) ); 
+    }else{
+      Mouse.positionViewport.x = x - ((ResolutionManager.windowResolution.width/2) - ((res.width)/2));
+      Mouse.positionViewport.y = y - ((ResolutionManager.windowResolution.height/2) - ((res.height)/2));
+
+      Mouse.position.x = Mouse.Vector.x = ( Mouse.positionViewport.x / res.width ) * 2 - 1;
+      Mouse.position.y = Mouse.Vector.y = - ( Mouse.positionViewport.y / res.height ) * 2 + 1; 
+      Mouse.positionUI.x = Mouse.Vector.x = ( Mouse.positionViewport.x - (res.width/2) );
+      Mouse.positionUI.y = Mouse.Vector.y = - ( Mouse.positionViewport.y -(res.height/2) ); 
+    }
   }
 
   static getMouseAxis(axis: MouseAxis){

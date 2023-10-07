@@ -6,6 +6,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { ResolutionManager } from "../managers";
 
 /* @file
  * The GUIProtoItem class.
@@ -61,8 +62,8 @@ export class GUIProtoItem extends GUIControl{
       parentOffsetX = parentOffsetY = 0;
     }
 
-    let wRatio = window.innerWidth / this.menu.tGuiPanel.extent.width;
-    let hRatio = window.innerHeight / this.menu.tGuiPanel.extent.height;
+    let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     //let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
 

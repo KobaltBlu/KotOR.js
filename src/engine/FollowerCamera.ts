@@ -6,12 +6,13 @@ import type { ModuleArea, ModuleMGPlayer } from "../module";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ResolutionManager } from "../managers/ResolutionManager";
 
 export class FollowerCamera {
 
   static DEFAULT_FOV = 55;
 
-  static camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 55, window.innerWidth / window.innerHeight, 0.01, 15000 );;
+  static camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
   static box: THREE.Box3 = new THREE.Box3();
 
   static turning: boolean = false;
@@ -173,8 +174,8 @@ export class FollowerCamera {
   }
 
   static resize(){
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const width = ResolutionManager.getViewportWidth();
+    const height = ResolutionManager.getViewportHeight();
     FollowerCamera.camera.fov = FollowerCamera.fov;
     FollowerCamera.camera.aspect = width / height;
     FollowerCamera.camera.updateProjectionMatrix();

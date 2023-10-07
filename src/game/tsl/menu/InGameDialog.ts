@@ -2,7 +2,7 @@
 */
 
 import type { GUILabel, GUIListBox } from "../../../gui";
-import { TwoDAManager } from "../../../managers";
+import { ResolutionManager, TwoDAManager } from "../../../managers";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
 
@@ -29,8 +29,8 @@ export class InGameDialog extends K1_InGameDialog {
 
       this.LBL_MESSAGE.setText('');
 
-      this.LB_REPLIES.extent.left = -(window.innerWidth/2) + this.LB_REPLIES.extent.width/2 + 16;
-      this.LB_REPLIES.extent.top = (window.innerHeight/2) - this.LB_REPLIES.extent.height/2;
+      this.LB_REPLIES.extent.left = -(ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
+      this.LB_REPLIES.extent.top = (ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
       this.LB_REPLIES.padding = 5;

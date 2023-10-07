@@ -24,3 +24,4 @@ export * from "./ShaderManager";
 export * from "./TLKManager";
 export * from "./TutorialManager";
 export * from "./TwoDAManager";
+export * from "./ResolutionManager";

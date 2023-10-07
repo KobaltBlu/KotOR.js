@@ -16,7 +16,7 @@ import { DLGNode } from "../../../resource/DLGNode";
 import { ModuleCreatureAnimState } from "../../../enums/module/ModuleCreatureAnimState";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { OdysseyModelAnimation } from "../../../odyssey";
-import { FadeOverlayManager, ModuleObjectManager } from "../../../managers";
+import { FadeOverlayManager, ModuleObjectManager, ResolutionManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
 /* @file
@@ -66,8 +66,8 @@ export class InGameDialog extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.LBL_MESSAGE.setText('');
 
-      this.LB_REPLIES.extent.left = -(window.innerWidth/2) + this.LB_REPLIES.extent.width/2 + 16;
-      this.LB_REPLIES.extent.top = (window.innerHeight/2) - this.LB_REPLIES.extent.height/2;
+      this.LB_REPLIES.extent.left = -(ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
+      this.LB_REPLIES.extent.top = (ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
       this.LB_REPLIES.padding = 5;
@@ -123,7 +123,7 @@ export class InGameDialog extends GameMenu {
     this.isListening = true;
     this.canLetterbox = false;
     this.letterBoxed = false;
-    this.topBar.position.y = window.innerHeight / 2 + 100 / 2;
+    this.topBar.position.y = ResolutionManager.getViewportHeight() / 2 + 100 / 2;
     this.bottomBar.position.y = -this.topBar.position.y;
     this.resetLetterBox();
     this.LB_REPLIES.hide();
@@ -749,9 +749,9 @@ export class InGameDialog extends GameMenu {
       let width = Math.abs(bb.min.x) + Math.abs(bb.max.x);
       let padding = 10;
       if (this.isListening) {
-        this.LBL_MESSAGE.widget.position.y = -window.innerHeight / 2 + 50;
+        this.LBL_MESSAGE.widget.position.y = -ResolutionManager.getViewportHeight() / 2 + 50;
       } else {
-        this.LBL_MESSAGE.widget.position.y = window.innerHeight / 2 - 50;
+        this.LBL_MESSAGE.widget.position.y = ResolutionManager.getViewportHeight() / 2 - 50;
       }
       this.LBL_MESSAGE.box = new THREE.Box2(new THREE.Vector2(this.LBL_MESSAGE.widget.position.x - width / 2, this.LBL_MESSAGE.widget.position.y - height / 2), new THREE.Vector2(this.LBL_MESSAGE.widget.position.x + width / 2, this.LBL_MESSAGE.widget.position.y + height / 2));
     }
@@ -764,8 +764,8 @@ export class InGameDialog extends GameMenu {
   }
 
   recalculatePosition() {
-    this.LB_REPLIES.extent.left = -(window.innerWidth / 2) + this.LB_REPLIES.extent.width / 2 + 16;
-    this.LB_REPLIES.extent.top = window.innerHeight / 2 - this.LB_REPLIES.extent.height / 2;
+    this.LB_REPLIES.extent.left = -(ResolutionManager.getViewportWidth() / 2) + this.LB_REPLIES.extent.width / 2 + 16;
+    this.LB_REPLIES.extent.top = ResolutionManager.getViewportHeight() / 2 - this.LB_REPLIES.extent.height / 2;
     this.LB_REPLIES.calculatePosition();
     this.LB_REPLIES.calculateBox();
     this.resetLetterBox();
@@ -774,20 +774,20 @@ export class InGameDialog extends GameMenu {
   updateLetterBox(delta: number = 0){
     if (this.dialog.isAnimatedCutscene) {
       if (this.canLetterbox) {
-        this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
-        this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
+        this.bottomBar.position.y = -(ResolutionManager.getViewportHeight() / 2) + 100 / 2;
+        this.topBar.position.y = ResolutionManager.getViewportHeight() / 2 - 100 / 2;
         this.letterBoxed = true;
         this.LBL_MESSAGE.show();
       }
     }else{
       if (this.canLetterbox) {
-        if (this.bottomBar.position.y < -(window.innerHeight / 2) + 100 / 2) {
+        if (this.bottomBar.position.y < -(ResolutionManager.getViewportHeight() / 2) + 100 / 2) {
           this.bottomBar.position.y += 5;
           this.topBar.position.y -= 5;
           this.LBL_MESSAGE.hide();
         } else {
-          this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
-          this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
+          this.bottomBar.position.y = -(ResolutionManager.getViewportHeight() / 2) + 100 / 2;
+          this.topBar.position.y = ResolutionManager.getViewportHeight() / 2 - 100 / 2;
           this.letterBoxed = true;
           this.LBL_MESSAGE.show();
         }
@@ -796,14 +796,14 @@ export class InGameDialog extends GameMenu {
   }
 
   resetLetterBox() {
-    this.topBar.scale.x = this.bottomBar.scale.x = window.innerWidth;
+    this.topBar.scale.x = this.bottomBar.scale.x = ResolutionManager.getViewportWidth();
     this.topBar.scale.y = this.bottomBar.scale.y = this.barHeight;
     if (!this.letterBoxed) {
-      this.topBar.position.y = window.innerHeight / 2 + 100 / 2;
+      this.topBar.position.y = ResolutionManager.getViewportHeight() / 2 + 100 / 2;
       this.bottomBar.position.y = -this.topBar.position.y;
     } else {
-      this.bottomBar.position.y = -(window.innerHeight / 2) + 100 / 2;
-      this.topBar.position.y = window.innerHeight / 2 - 100 / 2;
+      this.bottomBar.position.y = -(ResolutionManager.getViewportHeight() / 2) + 100 / 2;
+      this.topBar.position.y = ResolutionManager.getViewportHeight() / 2 - 100 / 2;
     }
   }
 

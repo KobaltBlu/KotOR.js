@@ -319,6 +319,21 @@ export class GUIListBox extends GUIControl {
 
   }
 
+  setSelectedIndex(index: number = 0){
+    if(index >= 0 && index < this.children.length){
+      let lastSelectedIndex = 0;
+      for(let i = 0, len = this.children.length; i < len; i++){
+        if(this.children[i].selected == true) lastSelectedIndex = i;
+        this.children[i].selected = false;
+      }
+
+      this.children[index].selected = true;
+      if(index != lastSelectedIndex && typeof this.children[index].onSelect === 'function'){
+        this.children[index].onSelect.call(this);
+      }
+    }
+  }
+
   select(item: GUIControl){
     try{
       let len = this.children.length;
