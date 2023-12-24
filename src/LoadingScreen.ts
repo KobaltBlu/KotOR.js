@@ -9,6 +9,7 @@ export class LoadingScreen {
   static main: LoadingScreen;
   message: string;
 
+  parent: HTMLElement;
   loader: HTMLElement;
   background: HTMLElement;
   logo_wrapper: HTMLElement;
@@ -46,9 +47,7 @@ export class LoadingScreen {
     if(!isGlobal){
       this.loader.style.position = 'absolute';
     }
-
-    //console.log(parent);
-    parent.append(this.loader);
+    this.parent = parent;
   }
 
   SetLogo(src: string){
@@ -69,6 +68,13 @@ export class LoadingScreen {
   }
 
   Show(msg?: string){
+    if(!this.parent){
+      return;
+    }
+    if(!this.loader.parentNode){
+      this.parent.append(this.loader);
+    }
+
     clearTimeout(this.fadeOutTimeout);
     this.SetMessage(msg);
     this.loader.style.display = 'block';
