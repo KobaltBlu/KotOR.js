@@ -27,24 +27,27 @@ export interface KEY {
 }
 
 export class KEYObject {
-  bifs: BIF[];
-  keys: KEY[];
+  bifs: BIF[] = [];
+  keys: KEY[] = [];
 
-  file: string;
+  file: string = '';
   reader: BinaryReader;
-  FileType: string;
-  FileVersion: string;
-  BIFCount: number;
-  KeyCount: number;
-  OffsetToFileTable: number;
-  OffsetToKeyTable: number;
-  BuildYear: number;
-  BuildDay: number;
+  FileType: string = 'KEY ';
+  FileVersion: string = 'V1  ';
+  BIFCount: number = 0;
+  KeyCount: number = 0;
+  OffsetToFileTable: number = 0;
+  OffsetToKeyTable: number = 0;
+  BuildYear: number = 0;
+  BuildDay: number = 0;
   Reserved: Buffer;
 
-  constructor(file: string, onComplete?: Function){
-    this.file = file;
+  constructor(){
     this.keys = [];
+  }
+
+  loadFile(file: string, onComplete?: Function){
+    
     GameFileSystem.readFile(file).then( (buffer) => {
 
       this.reader = new BinaryReader(buffer);
@@ -85,16 +88,16 @@ export class KEYObject {
         } as KEY;
       }
 
-      if(onComplete != null)
+      if(typeof onComplete === 'function'){
         onComplete();
+      }
 
     }).catch( (err) => {
       console.error(err);
-      if(onComplete != null)
+      if(typeof onComplete === 'function'){
         onComplete();
+      }
     })
-
-
   }
 
   GetFileLabel(index = 0){

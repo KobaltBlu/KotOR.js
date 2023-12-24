@@ -6,14 +6,13 @@ import { BIFManager } from "./BIFManager";
 
 export class KEYManager {
 
-  static Key: KEYObject;
+  static Key: KEYObject = new KEYObject();
 
   static Load( filepath: string, onComplete?: Function ){
-
-    KEYManager.Key = new KEYObject(filepath, () => {
+    KEYManager.Key = new KEYObject();
+    KEYManager.Key.loadFile(filepath, () => {
       KEYManager.LoadBIFs(onComplete);
     });
-
   }
 
   static LoadBIFs(onComplete?: Function){
