@@ -500,7 +500,7 @@ export class TextureLoader {
 
             //tex.material.map.flipY = true;
           }else{
-            console.error('Envmap missing');
+            console.error(`Envmap missing: ${texture.txi.envMapTexture}`);
           }
         }
 
