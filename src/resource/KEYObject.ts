@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
 import { BIFObject, BIFResource } from './BIFObject';
@@ -13,17 +12,17 @@ import { GameFileSystem } from '../utility/GameFileSystem';
  */
 
 export interface BIF {
-  FileSize: number;
-  FilenameOffset: number;
-  FilenameSize: number;
-  Drives: number;
+  fileSize: number;
+  filenameOffset: number;
+  filenameSize: number;
+  drives: number;
   filename: string;
 }
 
 export interface KEY {
-  ResRef: string,
-  ResType: number,
-  ResID: number,
+  resRef: string,
+  resType: number,
+  resId: number,
 }
 
 export class KEYObject {
@@ -32,15 +31,15 @@ export class KEYObject {
 
   file: string = '';
   reader: BinaryReader;
-  FileType: string = 'KEY ';
+  fileType: string = 'KEY ';
   FileVersion: string = 'V1  ';
-  BIFCount: number = 0;
-  KeyCount: number = 0;
-  OffsetToFileTable: number = 0;
-  OffsetToKeyTable: number = 0;
-  BuildYear: number = 0;
-  BuildDay: number = 0;
-  Reserved: Buffer;
+  bifCount: number = 0;
+  keyCount: number = 0;
+  offsetToFileTable: number = 0;
+  offsetToKeyTable: number = 0;
+  buildYear: number = 0;
+  buildDay: number = 0;
+  reserved: Buffer;
 
   constructor(){
     this.keys = [];
@@ -52,39 +51,39 @@ export class KEYObject {
 
       this.reader = new BinaryReader(buffer);
 
-      this.FileType = this.reader.readChars(4);
+      this.fileType = this.reader.readChars(4);
       this.FileVersion = this.reader.readChars(4);
-      this.BIFCount = this.reader.readUInt32();
-      this.KeyCount = this.reader.readUInt32();
-      this.OffsetToFileTable = this.reader.readUInt32();
-      this.OffsetToKeyTable = this.reader.readUInt32();
-      this.BuildYear = this.reader.readUInt32();
-      this.BuildDay = this.reader.readUInt32();
-      this.Reserved = this.reader.readBytes(32);
+      this.bifCount = this.reader.readUInt32();
+      this.keyCount = this.reader.readUInt32();
+      this.offsetToFileTable = this.reader.readUInt32();
+      this.offsetToKeyTable = this.reader.readUInt32();
+      this.buildYear = this.reader.readUInt32();
+      this.buildDay = this.reader.readUInt32();
+      this.reserved = this.reader.readBytes(32);
 
       this.bifs = [];
 
-      this.reader.seek(this.OffsetToFileTable);
-      for(let i = 0; i < this.BIFCount; i++){
+      this.reader.seek(this.offsetToFileTable);
+      for(let i = 0; i < this.bifCount; i++){
         this.bifs[i] = {
-          FileSize:this.reader.readUInt32(),
-          FilenameOffset: this.reader.readUInt32(),
-          FilenameSize: this.reader.readUInt16(),
-          Drives: this.reader.readUInt16()
+          fileSize:this.reader.readUInt32(),
+          filenameOffset: this.reader.readUInt32(),
+          filenameSize: this.reader.readUInt16(),
+          drives: this.reader.readUInt16()
         } as BIF;
       }
 
-      for(let i = 0; i < this.BIFCount; i++){
-        this.reader.seek(this.bifs[i].FilenameOffset);
-        this.bifs[i].filename = this.reader.readChars(this.bifs[i].FilenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
+      for(let i = 0; i < this.bifCount; i++){
+        this.reader.seek(this.bifs[i].filenameOffset);
+        this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
       }
 
-      this.reader.seek(this.OffsetToKeyTable);
-      for(let i = 0; i < this.KeyCount; i++){
+      this.reader.seek(this.offsetToKeyTable);
+      for(let i = 0; i < this.keyCount; i++){
         this.keys[i] = {
-          ResRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
-          ResType: this.reader.readUInt16(),
-          ResID: this.reader.readUInt32(),
+          resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
+          resType: this.reader.readUInt16(),
+          resId: this.reader.readUInt32(),
         } as KEY;
       }
 
@@ -100,10 +99,10 @@ export class KEYObject {
     })
   }
 
-  GetFileLabel(index = 0){
+  getFileLabel(index = 0){
     for(let i = 0; i < this.keys.length; i++){
-      if(index == this.keys[i].ResID)
-        return this.keys[i].ResRef;
+      if(index == this.keys[i].resId)
+        return this.keys[i].resRef;
     }
     /*try{
       return this.keys[index].ResRef;
@@ -111,34 +110,34 @@ export class KEYObject {
     return null;
   }
 
-  GetFileKey(ResRef: string, ResType: number){
+  getFileKey(ResRef: string, ResType: number){
     for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
-      if ( key.ResRef == ResRef && key.ResType == ResType){
+      if ( key.resRef == ResRef && key.resType == ResType){
         return key;
       }
     }
     return null;
   }
 
-  GetFileKeyByRes(Res: BIFResource): KEY {
+  getFileKeyByRes(Res: BIFResource): KEY {
     for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
-      if ( key.ResID == Res.ID && key.ResType == Res.ResType){
+      if ( key.resId == Res.Id && key.resType == Res.resType){
         return key;
       }
     }
     return;
   }
 
-  GetFilesByResType(ResType: number){
+  getFilesByResType(ResType: number){
     const bifResults: BIFResource[][] = [];
     this.bifs.forEach( (bifRes: BIF, index: number) => {
       if(BIFManager.bifs.has(index)){
         const bif = BIFManager.bifs.get(index);
         if(bif){
           bifResults[index] = bif.resources.filter( (res: BIFResource) => {
-            return res.ResType == ResType;
+            return res.resType == ResType;
           });
         }
       }
@@ -146,32 +145,21 @@ export class KEYObject {
     return bifResults.flat();
   }
 
-  GetFileData(key: KEY, onComplete?: Function, onError?: Function){
-    if(key){
-      const bif: BIFObject = BIFManager.bifs.get(KEYObject.GetBIFIndex(key.ResID));
-      if(bif){
-        bif.GetResourceData(bif.GetResourceById(key.ResID), onComplete);
-        return true;
-      }
-    }
+  async getFileBuffer(key: KEY): Promise<Buffer>{
+    if(!key){ return Buffer.allocUnsafe(0); }
 
-    if(typeof onError === 'function')
-      onError(undefined);
-    
-    return false;
+    const bif: BIFObject = BIFManager.bifs.get(KEYObject.getBIFIndex(key.resId));
+    if(!bif){ return Buffer.allocUnsafe(0); }
+
+    const buffer = await bif.getResourceBuffer(bif.GetResourceById(key.resId));
+    return buffer;
   }
 
-  GetFileDataAsync(key: KEY): Promise<Buffer> {
-    return new Promise<Buffer>( (resolve, reject) => {
-      this.GetFileData(key, resolve, reject);
-    });
-  }
-
-  static GetBIFIndex( ResID: number = 0 ): number{
+  static getBIFIndex( ResID: number = 0 ): number{
     return (ResID >> 20);
   }
 
-  static GetBIFResourceIndex( ResID: number = 0 ): number{
+  static getBIFResourceIndex( ResID: number = 0 ): number{
     return (ResID & 0x3FFF);
   }
 

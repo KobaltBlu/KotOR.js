@@ -188,15 +188,14 @@ export class ForgeState {
 
   static initNWScriptParser(){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.ResourceLoader.loadResource(
-        KotOR.ResourceTypes.nss, 'nwscript', 
+      KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
         (nss: Buffer) => {
           this.nwscript_nss = nss;
           this.nwScriptParser = new NWScriptParser(this.nwscript_nss.toString());
           this.initNWScriptLanguage();
           resolve();
         }
-      );
+      ).catch( (e) => {console.error(e)});
     });
   }
 

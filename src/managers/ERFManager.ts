@@ -11,7 +11,8 @@ export class ERFManager {
     new AsyncLoop({
       array: keyPaths,
       onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {
-        new ERFObject(path.join(data_dir, erf_obj.filename), (erf: ERFObject) => {
+        const erf = new ERFObject(path.join(data_dir, erf_obj.filename));
+        erf.load().then((erf: ERFObject) => {
           if(erf instanceof ERFObject){
             erf.group = 'Modules';
             ERFManager.ERFs.set(erf_obj.name, erf);

@@ -318,51 +318,50 @@ export class TabModelViewerState extends TabState {
     if(key) {
       // this.layoutSceneGraphNode
       return new Promise<void>( async (resolve, reject) => {
-        KotOR.KEYManager.Key.GetFileData(key, async (data: Buffer) => {
-          // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
-          // this.tab.tabLoader.Show();
-          const lyt = new KotOR.LYTObject(data);
-          this.layout = lyt;
-          for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-            let room = this.layout.rooms[i];
-            // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-            let mdl = await KotOR.GameState.ModelLoader.load(room.name);
-            if(mdl){
-              let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
-                // manageLighting: false,
-                context: this.ui3DRenderer, 
-                mergeStatic: false,
-              });
-              if(model){
-                model.position.copy( room.position )
-                this.layout_group.add(model);
-              }
+        const data = await KotOR.KEYManager.Key.getFileBuffer(key);
+        // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
+        // this.tab.tabLoader.Show();
+        const lyt = new KotOR.LYTObject(data);
+        this.layout = lyt;
+        for(let i = 0, len = this.layout.rooms.length; i < len; i++){
+          let room = this.layout.rooms[i];
+          // this.tabLoader.SetMessage(`Loading: ${room.name}`);
+          let mdl = await KotOR.GameState.ModelLoader.load(room.name);
+          if(mdl){
+            let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+              // manageLighting: false,
+              context: this.ui3DRenderer, 
+              mergeStatic: false,
+            });
+            if(model){
+              model.position.copy( room.position )
+              this.layout_group.add(model);
             }
-            this.layoutSceneGraphNode.addChildNode(
-              new SceneGraphNode({
-                name: room.name,
-              })
-            )
           }
-          this.ui3DRenderer.sceneGraphManager.rebuild();
-          KotOR.TextureLoader.LoadQueue(() => {
-            if(this.ui3DRenderer.renderer)
-              this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
-            // this.tab.tabLoader.Hide();
-            resolve();
-          }, (texObj: KotOR.TextureLoaderQueuedRef) => {
-            if(texObj.material){
-              if(texObj.material instanceof KotOR.THREE.ShaderMaterial){
-                if(texObj.material.uniforms.map.value){
-                  // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
-                  console.log('iniTexture', texObj.name);
+          this.layoutSceneGraphNode.addChildNode(
+            new SceneGraphNode({
+              name: room.name,
+            })
+          )
+        }
+        this.ui3DRenderer.sceneGraphManager.rebuild();
+        KotOR.TextureLoader.LoadQueue(() => {
+          if(this.ui3DRenderer.renderer)
+            this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
+          // this.tab.tabLoader.Hide();
+          resolve();
+        }, (texObj: KotOR.TextureLoaderQueuedRef) => {
+          if(texObj.material){
+            if(texObj.material instanceof KotOR.THREE.ShaderMaterial){
+              if(texObj.material.uniforms.map.value){
+                // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
+                console.log('iniTexture', texObj.name);
 
-                  if(this.ui3DRenderer.renderer)
-                    this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
-                }
+                if(this.ui3DRenderer.renderer)
+                  this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
               }
             }
-          });
+          }
         });
       });
     }

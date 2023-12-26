@@ -658,7 +658,8 @@ export class Module {
   static async GetModuleMod(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join('modules', modName+'.mod');
-      new ERFObject(resource_path, (mod: ERFObject) => {
+      const mod = new ERFObject(resource_path);
+      mod.load().then((mod: ERFObject) => {
         console.log('Module.GetModuleMod success', resource_path);
         resolve(mod);
       }, () => {
@@ -671,7 +672,8 @@ export class Module {
   static async GetModuleRimA(modName = ''){
     return new Promise<RIMObject>( (resolve, reject) => {
       let resource_path = path.join('modules', modName+'.rim');
-      new RIMObject(resource_path, (rim: RIMObject) => {
+      const rim = new RIMObject(resource_path);
+      rim.load().then( (rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimA failed', resource_path);
@@ -683,7 +685,8 @@ export class Module {
   static async GetModuleRimB(modName = ''){
     return new Promise<RIMObject>( (resolve, reject) => {
       let resource_path = path.join('modules', modName+'_s.rim');
-      new RIMObject(resource_path, (rim: RIMObject) => {
+      const rim = new RIMObject(resource_path);
+      rim.load().then((rim: RIMObject) => {
         resolve(rim);
       }, () => {
         console.error('Module.GetModuleRimB failed', resource_path);
@@ -695,7 +698,8 @@ export class Module {
   static async GetModuleLipsLoc(){
     return new Promise<any>( (resolve, reject) => {
       let resource_path = path.join('lips', 'localization.mod');
-      new ERFObject(resource_path, (mod: ERFObject) => {
+      const mod = new ERFObject(resource_path);
+      mod.load().then((mod: ERFObject) => {
         console.log('Module.GetModuleLipsLoc success', resource_path);
         resolve(mod);
       }, () => {
@@ -708,7 +712,8 @@ export class Module {
   static async GetModuleLips(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join('lips', modName+'_loc.mod');
-      new ERFObject(resource_path, (mod: ERFObject) => {
+      const mod = new ERFObject(resource_path);
+      mod.load().then((mod: ERFObject) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleLips failed', resource_path);
@@ -720,7 +725,8 @@ export class Module {
   static async GetModuleDLG(modName = ''){
     return new Promise<ERFObject>( (resolve, reject) => {
       let resource_path = path.join('modules', modName+'_dlg.erf');
-      new ERFObject(resource_path, (mod: ERFObject) => {
+      const erf = new ERFObject(resource_path);
+      erf.load().then((mod: ERFObject) => {
         resolve(mod);
       }, () => {
         console.error('Module.GetModuleDLG failed', resource_path);
@@ -843,14 +849,14 @@ export class Module {
         ModuleObjectManager.Reset();
         Module.GetModuleArchives(modName).then( (archives) => {
           ResourceLoader.InitModuleCache(archives).then( () => {
-            ResourceLoader.loadResource(ResourceTypes['ifo'], 'module', (ifo_data: Buffer) => {
+            ResourceLoader.loadResource(ResourceTypes['ifo'], 'module').then((ifo_data: Buffer) => {
               new GFFObject(ifo_data, (ifo) => {
                 module.setFromIFO(ifo, GameState.isLoadingSave);
                 GameState.time = module.timeManager.pauseTime / 1000;
 
-                ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area, (data: Buffer) => {
+                ResourceLoader.loadResource(ResourceTypes['git'], module.Mod_Entry_Area).then((data: Buffer) => {
                   new GFFObject(data, (git) => {
-                    ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area, (data: Buffer) => {
+                    ResourceLoader.loadResource(ResourceTypes['are'], module.Mod_Entry_Area).then((data: Buffer) => {
                       new GFFObject(data, (are) => {
                         module.area = new ModuleArea(module.Mod_Entry_Area, are, git);
                         module.areas = [module.area];
@@ -866,13 +872,11 @@ export class Module {
                             onComplete(module);
                         });                        
                       });
-                    });
+                    }).catch( (e) => {console.error(e)});
                   });
-                });
+                }).catch( (e) => {console.error(e)});
               });
-            }, (err: any) => {
-              console.error('LoadModule', err);
-            });
+            }).catch( (e) => {console.error('LoadModule', e)});
           });
         });
       }catch(e){

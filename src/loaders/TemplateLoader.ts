@@ -33,12 +33,19 @@ export class TemplateLoader {
       onFail: null
     }, args);
 
-    ResourceLoader.loadResource(args.ResType, args.ResRef, (data: Buffer) => {
+    console.log('TemplateLoader', args.ResType, args.ResRef)
+    ResourceLoader.loadResource(args.ResType, args.ResRef).then((data: Buffer) => {
+      console.log('TemplateLoader', args.ResType, args.ResRef, data);
       new GFFObject(data, (gff) => {
         if(args.onLoad != null)
           args.onLoad(gff);
       }); 
-    }, args.onFail);
+    }).catch( (e) => {
+      console.error(e)
+      if(typeof args.onFail === 'function'){
+        args.onFail(e);
+      }
+    });
 
   }
 
@@ -56,7 +63,7 @@ export class TemplateLoader {
     //   let resKey = GameState.module.rim_s.GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
     //     //console.log('Template Resource found');
-    //     GameState.module.rim_s.GetResourceData(resKey, (buffer) => {
+    //     GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);
     //     });
@@ -67,7 +74,7 @@ export class TemplateLoader {
     //   resKey = BIFManager.GetBIFByName('templates').GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
     //     //console.log('Template Resource found');
-    //     BIFManager.GetBIFByName('templates').GetResourceData(resKey, (buffer) => {
+    //     BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {
     //       if(args.onLoad != null)
     //         args.onLoad(buffer);
     //     });

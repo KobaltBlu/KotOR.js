@@ -37,7 +37,8 @@ export class CurrentGame {
         let buffer = await GameFileSystem.readFile( 
           path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav') 
         );
-        new ERFObject(buffer, (rim: ERFObject) => {
+        const erf = new ERFObject(buffer);
+        erf.load().then( (rim: ERFObject) => {
           // console.log('CurrentGame', 'GetModuleRim', name, rim);
           resolve(rim);
         });
@@ -116,9 +117,9 @@ export class CurrentGame {
     return new Promise<void>( (resolve, reject) => {
       if(erf instanceof ERFObject){
         let loop = new AsyncLoop({
-          array: erf.KeyList,
+          array: erf.keyList,
           onLoop: (erf_key: ERFKeyEntry, asyncLoop: AsyncLoop) => {
-            erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.ResRef, erf_key.ResType, () => {
+            erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType).then(() => {
               asyncLoop.next();
             });
           }

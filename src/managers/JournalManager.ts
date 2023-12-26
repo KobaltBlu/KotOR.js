@@ -95,7 +95,7 @@ export class JournalManager {
 
   static LoadJournal(){
     return new Promise<void>( (resolve, reject) => {
-      ResourceLoader.loadResource(ResourceTypes.jrl, 'global', (buffer: Buffer) => {
+      ResourceLoader.loadResource(ResourceTypes.jrl, 'global').then((buffer: Buffer) => {
         JournalManager.gff = new GFFObject(buffer);
         if(JournalManager.gff.RootNode.hasField('Categories')){
           JournalManager.Categories = [];
@@ -106,9 +106,9 @@ export class JournalManager {
           }
         }
         resolve();
-      }, (err: any) => {
+      }).catch( (e) => {
         console.warn(`Failed to load global.jrl`);
-        console.error(err);
+        console.error(e);
         resolve();
       });
     });

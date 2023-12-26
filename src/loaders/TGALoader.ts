@@ -31,7 +31,7 @@ export class TGALoader {
 		let texture = new OdysseyTexture();
 		let found = false;
 
-		ResourceLoader.loadResourceAsync(ResourceTypes.tga, url).then( (buffer: Buffer) => {
+		ResourceLoader.loadResource(ResourceTypes.tga, url).then( (buffer: Buffer) => {
 			if(!buffer){
 				if(typeof onLoad == 'function')
 					onLoad( undefined );
@@ -44,7 +44,7 @@ export class TGALoader {
 			texture.generateMipmaps = true;
 
 			//Check for TXI info
-			ResourceLoader.loadResourceAsync(ResourceTypes.txi, url).then( (txiBuffer: Buffer) => {
+			ResourceLoader.loadResource(ResourceTypes.txi, url).then( (txiBuffer: Buffer) => {
 				if(typeof txiBuffer !== 'undefined'){
 					if ( typeof onLoad !== 'undefined' ) {
 						texture.txi = new TXI(txiBuffer);
@@ -58,7 +58,16 @@ export class TGALoader {
 							onLoad( undefined );
 					}
 				}
+			}).catch( (e) => {
+				console.error(e);
+				texture.txi = new TXI('');
+				if(typeof onLoad == 'function')
+					onLoad( undefined );
 			});
+		}).catch( (e) => {
+			console.error(e);
+			if(typeof onLoad === 'function')
+			onLoad( undefined );
 		});
 	
 	};

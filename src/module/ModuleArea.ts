@@ -789,11 +789,12 @@ export class ModuleArea extends ModuleObject {
 
   loadVis(onLoad?: Function){
     console.log('ModuleArea.loadVis');
-    ResourceLoader.loadResource(ResourceTypes['vis'], this._name, (visData: Buffer) => {
+    ResourceLoader.loadResource(ResourceTypes['vis'], this._name).then((visData: Buffer) => {
       this.visObject = new VISObject(visData, this);
       if(typeof onLoad == 'function')
         onLoad(this);
-    }, () => {
+    }).catch( (e) => {
+      console.error(e);
       this.visObject = new VISObject(null, this);
       if(typeof onLoad == 'function')
         onLoad(this);
@@ -802,7 +803,7 @@ export class ModuleArea extends ModuleObject {
 
   loadLayout(onLoad?: Function){
     console.log('ModuleArea.loadLayout');
-    ResourceLoader.loadResource(ResourceTypes['lyt'], this._name, (data: Buffer) => {
+    ResourceLoader.loadResource(ResourceTypes['lyt'], this._name).then((data: Buffer) => {
       this.layout = new LYTObject(data);
 
       //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
@@ -848,7 +849,8 @@ export class ModuleArea extends ModuleObject {
       if(typeof onLoad == 'function')
         onLoad();
 
-    }, () => {
+    }).catch( (e) => {
+      console.error(e);
       this.layout = new LYTObject();
       if(typeof onLoad == 'function')
         onLoad();

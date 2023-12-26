@@ -159,7 +159,8 @@ export class GameInitializer {
           onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
             switch(module_obj.ext){
               case 'mod':
-                new ERFObject(path.join(data_dir, module_obj.filename), (mod: ERFObject) => {
+                const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+                mod.load().then( (mod: ERFObject) => {
                   if(mod instanceof ERFObject){
                     mod.group = 'Lips';
                     ERFManager.addERF(module_obj.name, mod);
@@ -202,7 +203,8 @@ export class GameInitializer {
         onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
           switch(module_obj.ext){
             case 'rim':
-              new RIMObject(path.join(data_dir, module_obj.filename), (rim: RIMObject) => {
+              const rim = new RIMObject(path.join(data_dir, module_obj.filename));
+              rim.load().then((rim: RIMObject) => {
                 if(rim instanceof RIMObject){
                   rim.group = 'Module';
                   RIMManager.addRIM(module_obj.name, rim);
@@ -211,7 +213,8 @@ export class GameInitializer {
               });
             break;
             case 'mod':
-              new ERFObject(path.join(data_dir, module_obj.filename), (mod: ERFObject) => {
+              const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+              mod.load().then((mod: ERFObject) => {
                 if(mod instanceof ERFObject){
                   mod.group = 'Module';
                   ERFManager.addERF(module_obj.name, mod);
@@ -264,7 +267,8 @@ export class GameInitializer {
       let loop = new AsyncLoop({
         array: erfs,
         onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {
-          new ERFObject(path.join(data_dir, erf_obj.filename), (erf: ERFObject) => {
+          const erf = new ERFObject(path.join(data_dir, erf_obj.filename));
+          erf.load().then((erf: ERFObject) => {
             if(erf instanceof ERFObject){
               erf.group = 'Textures';
               ERFManager.addERF(erf_obj.name, erf);

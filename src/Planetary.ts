@@ -30,7 +30,7 @@ export class Planetary {
     for(let i = 0; i < planetary2DA.RowCount; i++){
       const planet = new Planet(planetList[i]);
       Planetary.planets.push(planet);
-      if(planet.model != '****'){
+      if(planet.model != '****' && planet.model){
         try{
           const mdl = await GameState.ModelLoader.load(planet.model);
           if(mdl){

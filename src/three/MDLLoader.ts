@@ -34,8 +34,8 @@ export class MDLLoader {
           // const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
           resolve(ref.model);
         }else{
-          ResourceLoader.loadResource(ResourceTypes['mdl'], resref, (mdl_buffer: Buffer) => {
-            ResourceLoader.loadResource(ResourceTypes['mdx'], resref, (mdx_buffer: Buffer) => {
+          ResourceLoader.loadResource(ResourceTypes['mdl'], resref).then((mdl_buffer: Buffer) => {
+            ResourceLoader.loadResource(ResourceTypes['mdx'], resref).then((mdx_buffer: Buffer) => {
               const mdl = MDLLoader.MDLFromBuffer(mdl_buffer, mdx_buffer);
 
               ModelCache.models.set(resref, {
@@ -45,11 +45,13 @@ export class MDLLoader {
               });
 
               resolve(mdl);
-            }, (e: any) => {
+            }).catch( (e) => {
+              console.error(e);
               console.error('MDX 404', resref);
               reject(e);
-            })
-          }, (e: any) => {
+            });
+          }).catch( (e) => {
+            console.error(e);
             console.error('MDL 404', resref);
             reject(e);
           });

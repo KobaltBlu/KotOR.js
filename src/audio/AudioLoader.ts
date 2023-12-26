@@ -32,9 +32,9 @@ export class AudioLoader {
       if(onLoad != null)
         onLoad(AudioLoader.cache[ResRef]);
     }else{
-      let visKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['wav']);
+      let visKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['wav']);
       if(visKey != null){
-        KEYManager.Key.GetFileData(visKey, (buffer: Buffer) => {
+        KEYManager.Key.getFileBuffer(visKey).then( (buffer: Buffer) => {
           //console.log(buffer);
           new AudioFile(buffer, (af: AudioFile)=> {
             //console.log(af, buffer)

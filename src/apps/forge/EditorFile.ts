@@ -240,8 +240,9 @@ export class EditorFile extends EventListenerModel {
 
             switch(this.protocol){
               case EditorFileProtocol.BIF:
-                new KotOR.BIFObject(this.archive_path, (archive: KotOR.BIFObject) => {
-                  archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
+                const bif = new KotOR.BIFObject(this.archive_path);
+                bif.load().then((archive: KotOR.BIFObject) => {
+                  archive.getResourceBuffer(archive.GetResourceByLabel(this.resref, this.reskey)).then( (buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
                       buffer: Buffer.from(this.buffer as Buffer),
@@ -251,8 +252,9 @@ export class EditorFile extends EventListenerModel {
               break;
               case EditorFileProtocol.ERF:
               case EditorFileProtocol.MOD:
-                new KotOR.ERFObject(this.archive_path, (archive: KotOR.ERFObject) => {
-                  archive.getRawResource(this.resref, this.reskey, (buffer: Buffer) => {
+                const erf = new KotOR.ERFObject(this.archive_path);
+                erf.load().then( (archive: KotOR.ERFObject) => {
+                  archive.getRawResource(this.resref, this.reskey).then((buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
                       buffer: Buffer.from(this.buffer as Buffer),
@@ -261,8 +263,9 @@ export class EditorFile extends EventListenerModel {
                 });
               break;
               case EditorFileProtocol.RIM:
-                new KotOR.RIMObject(this.archive_path, (archive: KotOR.RIMObject) => {
-                  archive.GetResourceData(archive.GetResourceByLabel(this.resref, this.reskey), (buffer: Buffer) => {
+                const rim = new KotOR.RIMObject(this.archive_path);
+                rim.load().then( (archive: KotOR.RIMObject) => {
+                  archive.getResourceBuffer(archive.getResourceByLabel(this.resref, this.reskey)).then( (buffer: Buffer) => {
                     this.buffer = buffer;
                     resolve({
                       buffer: Buffer.from(this.buffer as Buffer),
@@ -356,15 +359,15 @@ export class EditorFile extends EventListenerModel {
       if(this.archive_path){
         switch(this.protocol){
           case EditorFileProtocol.BIF:
-            const key_mdl = KotOR.KEYManager.Key.GetFileKey(this.resref, KotOR.ResourceTypes['mdl']);
-            const key_mdx = KotOR.KEYManager.Key.GetFileKey(this.resref, KotOR.ResourceTypes['mdx']);
+            const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
+            const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
 
             if((!isBuffer(this.buffer) || !this.buffer?.length) && key_mdl){
-              this.buffer = await KotOR.KEYManager.Key.GetFileDataAsync(key_mdl);
+              this.buffer = await KotOR.KEYManager.Key.getFileBuffer(key_mdl);
             }
 
             if((!isBuffer(this.buffer2) || !this.buffer2?.length) && key_mdx){
-              this.buffer2 = await KotOR.KEYManager.Key.GetFileDataAsync(key_mdx);
+              this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
             }
             
             resolve({
@@ -374,15 +377,16 @@ export class EditorFile extends EventListenerModel {
           break;
           case EditorFileProtocol.ERF:
           case EditorFileProtocol.MOD:
-            new KotOR.ERFObject(this.archive_path, async (archive: KotOR.ERFObject) => {
+            const erf = new KotOR.ERFObject(this.archive_path);
+            erf.load().then( async (archive: KotOR.ERFObject) => {
               //MDL
               if(!isBuffer(this.buffer) || !this.buffer?.length){
-                this.buffer = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdl']);
+                this.buffer = await archive.getRawResource(this.resref, KotOR.ResourceTypes['mdl']);
               }
 
               //MDX
               if(!isBuffer(this.buffer2) || !this.buffer2?.length){
-                this.buffer2 = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdx']);
+                this.buffer2 = await archive.getRawResource(this.resref, KotOR.ResourceTypes['mdx']);
               }
 
               resolve({
@@ -392,15 +396,16 @@ export class EditorFile extends EventListenerModel {
             });
           break;
           case EditorFileProtocol.RIM:
-            new KotOR.RIMObject(this.archive_path, async (archive: KotOR.RIMObject) => {
+            const rim = new KotOR.RIMObject(this.archive_path);
+            rim.load().then( async (archive: KotOR.RIMObject) => {
               //MDL
               if(!isBuffer(this.buffer) || !this.buffer?.length){
-                this.buffer = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdl']);
+                this.buffer = await archive.getResourceBufferAsync(this.resref, KotOR.ResourceTypes['mdl']);
               }
 
               //MDX
               if(!isBuffer(this.buffer2) || !this.buffer2?.length){
-                this.buffer2 = await archive.getResourceDataAsync(this.resref, KotOR.ResourceTypes['mdx']);
+                this.buffer2 = await archive.getResourceBufferAsync(this.resref, KotOR.ResourceTypes['mdx']);
               }
 
               resolve({

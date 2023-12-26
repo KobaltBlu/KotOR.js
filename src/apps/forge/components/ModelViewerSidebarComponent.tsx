@@ -36,10 +36,10 @@ export const ModelViewerSidebarComponent = function(props: any){
   useEffectOnce( () => { //constructor
 
     let keys: KotOR.KEY[] = [];
-    let res_list = KotOR.KEYManager.Key.GetFilesByResType(KotOR.ResourceTypes['lyt']);
+    let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
       keys.push(
-        KotOR.KEYManager.Key.GetFileKeyByRes(res)
+        KotOR.KEYManager.Key.getFileKeyByRes(res)
       );
     });
     setLayouts(keys);
@@ -85,7 +85,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   };
 
   const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
-    tab.loadLayout( layouts.find( key => key.ResID == selectedLayout ) );
+    tab.loadLayout( layouts.find( key => key.resId == selectedLayout ) );
   };
 
   const onBtnDisposeLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -168,7 +168,7 @@ export const ModelViewerSidebarComponent = function(props: any){
               <option value={-1}>None</option>
               {
                 layouts.map( (lytKEY) => {
-                  return <option value={lytKEY.ResID}>{lytKEY.ResRef}</option>
+                  return <option value={lytKEY.resId}>{lytKEY.resRef}</option>
                 })
               }
             </Form.Select>

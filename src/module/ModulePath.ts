@@ -1,7 +1,7 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import { TemplateLoader } from "../loaders";
+import { ResourceLoader } from "../loaders";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import * as THREE from "three";
@@ -146,24 +146,22 @@ export class ModulePath {
   }
 
   load( onLoad?: Function ){
-    TemplateLoader.Load({
-      ResRef: this.name,
-      ResType: ResourceTypes.pth,
-      onLoad: (gff: GFFObject) => {
-
-        this.template = gff;
-        //console.log(this.template, gff, this)
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['pth'], this.name);
+    if(buffer){
+      const gff = new GFFObject(buffer);
+      this.template = gff;
+      //console.log(this.template, gff, this)
+      this.initProperties();
+      if(typeof onLoad === 'function')
+        onLoad(this);
+    }else{
+      console.error('Failed to load ModulePath template');
+      if(this.template instanceof GFFObject){
         this.initProperties();
-        if(typeof onLoad === 'function')
-          onLoad(this);
-
-      },
-      onFail: () => {
-        console.error('Failed to load path template');
-        if(typeof onLoad === 'function')
-          onLoad(this);
       }
-    });
+      if(typeof onLoad === 'function')
+        onLoad(this);
+    }
   }
 
   initProperties(){

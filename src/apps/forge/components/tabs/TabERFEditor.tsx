@@ -35,8 +35,8 @@ export const TabERFEditor = function(props: BaseTabProps) {
       case "export-file":
         console.log(event, props);
         if(props){
-          tab.erf.getResourceDataAsync(props.ResRef, props.ResType).then( async (buffer) => {
-            const currentFile = new EditorFile({resref: props.ResRef, reskey: props.ResType, buffer: buffer });
+          tab.erf.getRawResource(props.resRef, props.resType).then( async (buffer) => {
+            const currentFile = new EditorFile({resref: props.resRef, reskey: props.resType, buffer: buffer });
             if(!currentFile.buffer) return;
             try{
               if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -88,8 +88,8 @@ export const TabERFEditor = function(props: BaseTabProps) {
   }
 
   const onEditorFileLoad = () => {
-    setEntries(tab.erf.KeyList);
-    setResources(tab.erf.Resources);
+    setEntries(tab.erf.keyList);
+    setResources(tab.erf.resources);
   };
 
   useEffectOnce( () => { //constructor
@@ -120,21 +120,21 @@ export const TabERFEditor = function(props: BaseTabProps) {
   const openERFResource = async (key: KotOR.ERFKeyEntry) => {
     let buffer: Buffer;
     let buffer2: Buffer;
-    if(key.ResType == KotOR.ResourceTypes['mdl'] || key.ResType == KotOR.ResourceTypes['mdx']){
-      buffer = await tab.erf.getResourceDataAsync(key.ResRef, KotOR.ResourceTypes['mdl']);
-      buffer2 = await tab.erf.getResourceDataAsync(key.ResRef, KotOR.ResourceTypes['mdx']);
+    if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
+      buffer = await tab.erf.getRawResource(key.resRef, KotOR.ResourceTypes['mdl']);
+      buffer2 = await tab.erf.getRawResource(key.resRef, KotOR.ResourceTypes['mdx']);
       FileTypeManager.onOpenResource(
         new EditorFile({
-          resref: key.ResRef,
+          resref: key.resRef,
           reskey: KotOR.ResourceTypes['mdl'],
           buffer: buffer,
           buffer2: buffer2
         })
       );
     }else {
-      buffer = await tab.erf.getResourceDataAsync(key.ResRef, key.ResType);
+      buffer = await tab.erf.getRawResource(key.resRef, key.resType);
       FileTypeManager.onOpenResource(
-        new EditorFile({resref: key.ResRef, reskey: key.ResType, buffer: buffer })
+        new EditorFile({resref: key.resRef, reskey: key.resType, buffer: buffer })
       );
     }
   }
@@ -150,12 +150,12 @@ export const TabERFEditor = function(props: BaseTabProps) {
         <ul className="file-browser-list">
           {
             entries?.map( (key: KotOR.ERFKeyEntry) => {
-              const resource = tab.erf.getResourceByKey(key.ResRef, key.ResType);
+              const resource = tab.erf.getResourceByKey(key.resRef, key.resType);
               return (
                 <li className={`file-browser-item ${selectedEntry == key ? `selected` : ``}`} onClick={(e) => onResourceClick(e, key)} onDoubleClick={(e) => onResourceDoubleClick(e, key)} onContextMenu={(e) => onContextMenu(e, key)}>
-                  <span>{key.ResRef}</span>
-                  <span>{KotOR.ResourceTypes.getKeyByValue(key.ResType)}</span>
-                  <span>{KotOR.Utility.bytesToSize( resource ? resource.ResourceSize : 0 )}</span>
+                  <span>{key.resRef}</span>
+                  <span>{KotOR.ResourceTypes.getKeyByValue(key.resType)}</span>
+                  <span>{KotOR.Utility.bytesToSize( resource ? resource.size : 0 )}</span>
                 </li>
               )
             })

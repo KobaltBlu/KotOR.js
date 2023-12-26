@@ -311,9 +311,10 @@ export class LIPObject {
 
   static async Load(resref: string = ''): Promise<LIPObject>{
     return new Promise<LIPObject|any>( (resolve, reject) => {
-      ResourceLoader.loadResource(ResourceTypes['lip'], resref, (buffer: Buffer) => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Buffer) => {
         resolve(new LIPObject(buffer));
-      }, () => {
+      }).catch( (e) => {
+        console.error(e);
         resolve(undefined);
       });
     });

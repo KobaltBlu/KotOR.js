@@ -248,9 +248,9 @@ export class ModuleRoom extends ModuleObject {
 
   loadWalkmesh(ResRef = '', onLoad?: Function ){
     
-    let wokKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['wok']);
+    let wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['wok']);
     if(wokKey != null){
-      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
+      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
 
         let wok = new OdysseyWalkMesh(new BinaryReader(buffer));
         wok.name = ResRef;

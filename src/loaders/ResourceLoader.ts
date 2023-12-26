@@ -4,7 +4,7 @@
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ERFObject, ERFResource } from "../resource/ERFObject";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { RIMObject } from "../resource/RIMObject";
+import { RIMObject, RIMResource } from "../resource/RIMObject";
 import { CacheScope } from "../enums/resource/CacheScope";
 import { ResourceCacheScopes } from "../interface/resource/ResourceCacheScopes";
 import { KEYManager } from "../managers/KEYManager";
@@ -56,12 +56,12 @@ export class ResourceLoader {
     console.log('Caching Types:', cacheableTemplates);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.GLOBAL];
-    const keys = KEYManager.Key.keys.filter( k => cacheableTemplates.includes(k.ResType) );
+    const keys = KEYManager.Key.keys.filter( k => cacheableTemplates.includes(k.resType) );
     for(let i = 0; i < keys.length; i++){
       const key = keys[i];
-      scope.get(key.ResType).set(
-        key.ResRef.toLocaleLowerCase(), 
-        await KEYManager.Key.GetFileDataAsync(key)
+      scope.get(key.resType).set(
+        key.resRef.toLocaleLowerCase(), 
+        await KEYManager.Key.getFileBuffer(key)
       );
     }
     let end = Date.now();
@@ -80,21 +80,25 @@ export class ResourceLoader {
     for(let i = 0; i < archives.length; i++){
       const archive = archives[i];
       if(archive instanceof RIMObject){
-        const resources = archive.Resources;
+        const resources = archive.resources;
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
-          scope.get(resource.ResType).set(
-            resource.ResRef.toLocaleLowerCase(), 
-            await archive.getResourceByKeyAsync(resource)
+          const buffer = await archive.getResourceByKeyAsync(resource);
+          // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
+          scope.get(resource.resType).set(
+            resource.resRef.toLocaleLowerCase(), 
+            buffer
           );
         }
       }else if(archive instanceof ERFObject){
-        const resources = archive.KeyList;
+        const resources = archive.keyList;
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
-          scope.get(resource.ResType).set(
-            resource.ResRef.toLocaleLowerCase(), 
-            await archive.getResourceByKeyAsync(resource)
+          const buffer = await archive.getResourceByKeyAsync(resource);
+          // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
+          scope.get(resource.resType).set(
+            resource.resRef.toLocaleLowerCase(), 
+            buffer
           );
         }
       }
@@ -112,110 +116,49 @@ export class ResourceLoader {
       });
   }
 
-  static loadResource(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    
-    if(resRef){
+  static async loadResource(resId: number, resRef: string): Promise<Buffer> {
 
-      let cache = ResourceLoader.getCache(resId, resRef);
-      if(!cache){
-        this._searchLocal(resId, resRef, (data: Buffer) => {
-          ResourceLoader.setCache(resId, resRef, data);
-          if(typeof onLoad === 'function')
-            onLoad(data);
-        }, (e: any) => {
-          this._searchKeyTable(resId, resRef, (data: Buffer) => {
-            ResourceLoader.setCache(resId, resRef, data);
-            if(typeof onLoad === 'function')
-              onLoad(data);
-          }, (e: any) => {
-            this._searchModuleArchives(resId, resRef, (data: Buffer) => {
-              ResourceLoader.setCache(resId, resRef, data);
-              if(typeof onLoad === 'function')
-                onLoad(data);
-            }, (e: any) => {
-              if(typeof onError === 'function')
-                onError(e);
-            });
-          });
-        });
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad(cache);
-      }
+    if(!resId){
+      throw new Error(`Invalid resId ${resId}`);
+    }
 
-    }else{
-      console.error('ResRef not set');
-      if(typeof onError === 'function')
-        onError();
+    if(!resRef){
+      throw new Error(`Invalid resRef ${resRef}`);
+    }
+
+    //Resource Cache
+    let data = ResourceLoader.getCache(resId, resRef);
+    if(data){
+      return data;
+    }
+
+    data = await this.searchLocal(resId, resRef);
+    if(data){
+      ResourceLoader.setCache(resId, resRef, data);
+      return data;
+    }
+
+    data = await this.searchKeyTable(resId, resRef);
+    if(data){
+      ResourceLoader.setCache(resId, resRef, data);
+      return data;
+    }
+
+    data = await this.searchModuleArchives(resId, resRef);
+    if(data){
+      ResourceLoader.setCache(resId, resRef, data);
+      return data;
+    }
+
+    //Resource Not Found
+    if(!data){
+      throw new Error(`Resource not found: ResRef: ${resRef} ResId: ${resId}`);
     }
 
   }
 
-  static loadResourceAsync(resId: number, resRef: string): Promise<Buffer> {
-    return new Promise((resolve: Function, reject: Function) => {
-      ResourceLoader.loadResource(resId, resRef, (buffer: Buffer) => {
-        resolve(buffer);
-      }, () => {
-        resolve(undefined);
-      });
-    });
-  }
-
   static loadCachedResource(resId: number, resRef: string): Buffer {
     return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
-  }
-
-  static _searchLocal(resId: number, resRef = '', onLoad?: Function, onError?: Function){
-    this._searchOverride(resId, resRef, (data: Buffer) => {
-      if(typeof onLoad === 'function')
-        onLoad(data);
-    }, (e: any) => {
-      if(typeof onError === 'function')
-        onError();
-    });
-  }
-
-  static _searchModuleArchives(resId: number, resRef = '', onLoad?: Function, onError?: Function){
-    let loop = new AsyncLoop({
-      array: this.ModuleArchives,
-      onLoop: (archive: RIMObject|ERFObject, asyncLoop: AsyncLoop) => {
-
-        if(archive instanceof RIMObject){
-          let resKey = archive.getResourceByKey(resRef, resId);
-          if(resKey){
-            archive.getRawResource(resRef, resId, (data: Buffer) => {
-              if(typeof onLoad === 'function')
-                onLoad(data);
-            });
-          }else{
-            asyncLoop.next();
-          }
-        }else if(archive instanceof ERFObject){
-          let resKey = archive.getResourceByKey(resRef, resId);
-          if(resKey){
-            archive.getRawResource(resRef, resId, (data: Buffer) => {
-              if(typeof onLoad === 'function')
-                onLoad(data);
-            });
-          }else{
-            asyncLoop.next();
-          }
-        }else{
-          asyncLoop.next();
-        }
-      
-      }
-    });
-    loop.iterate(() => {
-      if(typeof onError === 'function')
-        onError();
-    });
-  }
-
-  static loadTexture(resId: number, resRef: string){
-
-
-
   }
 
   static setResource(resId: number, resRef: string, opts = {}){
@@ -270,123 +213,64 @@ export class ResourceLoader {
     return null;
   }
 
-  //Check the module dlg arf archive (TSL ONLY)//if(GameState.GameKey == 'TSL'){
-  // static _searchDLG(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-
-  //   if(!GameState.module || GameState.GameKey != 'TSL'){
-  //     if(typeof onError === 'function')
-  //       onError();
-  //     return;
-  //   }
-
-  //   if(GameState.module.erf_dlg instanceof ERFObject){
-    
-  //     let resKey = GameState.module.erf_dlg.getResourceByKey(resRef, resId);
-  //     if(resKey){
-  //       GameState.module.erf_dlg.getRawResource(resRef, resId, (data) => {
-  //         if(typeof onLoad === 'function')
-  //           onLoad(data);
-  //       });
-  //     }else{
-  //       if(typeof onError === 'function')
-  //         onError();
-  //     }
-
-  //   }else{
-  //     if(typeof onError === 'function')
-  //       onError();
-  //   }
-
-  // }
-
-
-  //Check the module RIM archive A
-  static _searchRIMa(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    throw new Error('deprecated! ResourceLoader._searchRIMa');
-    // if(!GameState.module){
-    //   if(typeof onError === 'function')
-    //     onError();
-    //   return;
-    // }
-    
-    // let resKey = GameState.module.rim.getResourceByKey(resRef, resId);
-    // if(resKey){
-    //   GameState.module.rim.getRawResource(resRef, resId, (data) => {
-    //     if(typeof onLoad === 'function')
-    //       onLoad(data);
-    //   });
-    // }else{
-    //   if(typeof onError === 'function')
-    //     onError();
-    // }
-  }
-
-  //Check the module RIM archive B
-  static _searchRIMb(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    throw new Error('deprecated! ResourceLoader._searchRIMb');
-    // if(!GameState.module){
-    //   if(typeof onError === 'function')
-    //     onError();
-    //   return;
-    // }
-
-    // let resKey = GameState.module.rim_s.getResourceByKey(resRef, resId);
-    // if(resKey){
-    //   GameState.module.rim_s.getRawResource(resRef, resId, (data) => {
-    //     if(typeof onLoad === 'function')
-    //       onLoad(data);
-    //   });
-    // }else{
-    //   if(typeof onError === 'function')
-    //     onError();
-    // }
-  }
-
-  static _searchKeyTable(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    let keyLookup = KEYManager.Key.GetFileKey(resRef, resId);
-    if(keyLookup){
-      KEYManager.Key.GetFileData(keyLookup, (data: Buffer) => {
-        if(typeof onLoad === 'function')
-          onLoad(data);
-      });
-    }else{
-      if(typeof onError === 'function')
-        onError();
+  static async searchLocal(resId: number, resRef = ''): Promise<Buffer> {
+    let data = await this.searchOverride(resId, resRef);
+    if(data){
+      return data;
     }
   }
 
-  static _searchModules(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    let found = false;
-    RIMManager.RIMs.forEach( (rim: RIMObject) => {
-      if(rim instanceof RIMObject){
-        let res = rim.getResourceByKey(resRef, resId);
-        if(res){
-          //console.log('found');
-          found = true;
-          rim.GetResourceData(res, (data: Buffer) => {
-            if(typeof onLoad === 'function')
-              onLoad(data);
-          });
-          return;
-        }
+  static async searchOverride(resId: number, resRef = ''): Promise<Buffer> {
+    //TODO
+    return;
+  }
+
+  static async searchModuleArchives(resId: number, resRef = ''): Promise<Buffer> {
+    let data: Buffer;
+    const archiveCount = this.ModuleArchives.length;
+
+    for(let i = 0; i < archiveCount; i++){
+      const archive = this.ModuleArchives;
+      if(archive instanceof RIMObject){
+        let key = archive.getResourceByKey(resRef, resId);
+        if(!key){ continue; }
+
+        let data = await archive.getResourceByKeyAsync(key);
+        if(data){ break; }
+      }else if(archive instanceof ERFObject){
+        data = await archive.getRawResource(resRef, resId);
+        if(data){ break; }
       }
-    });
-
-    if(!found){
-      if(typeof onError === 'function')
-        onError();
     }
 
+    return data;
   }
 
-  static _searchOverride(resId: number, resRef: string, onLoad?: Function, onError?: Function){
-    let overrideLookup = false;
-    if(overrideLookup){
-      //TODO: Check override folder
-    }else{
-      if(typeof onError === 'function')
-        onError();
+  static async searchKeyTable(resId: number, resRef: string): Promise<Buffer> {
+    let keyLookup = KEYManager.Key.getFileKey(resRef, resId);
+    if(keyLookup){
+      return await KEYManager.Key.getFileBuffer(keyLookup);
     }
+  }
+
+  static async searchModules(resId: number, resRef: string): Promise<Buffer> {
+    const rims = Array.from(RIMManager.RIMs.values());
+    const rimCount = rims.length;
+
+    let data: Buffer;
+    let rim: RIMObject;
+    let res: RIMResource;
+    for(let i = 0; i < rimCount; i++){
+      rim = rims[i];
+      if(!rim){ continue; }
+
+      res = rim.getResourceByKey(resRef, resId);
+      if(!res){ continue; }
+
+      data = await rim.getResourceByKeyAsync(res);
+    }
+
+    return data;
   }
 
 }

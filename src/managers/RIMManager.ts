@@ -46,7 +46,8 @@ export class RIMManager {
   static LoadRIMObject( rimObj: any ){
     //{ext: args[1].toLowerCase(), name: args[0], filename: filename}
     return new Promise<RIMObject>( async (resolve, reject) => {
-      new RIMObject(rimObj.filename, (rim: RIMObject) => {
+      const rim = new RIMObject(rimObj.filename);
+      rim.load().then( (rim: RIMObject) => {
         RIMManager.RIMs.set(rimObj.name, rim);
         resolve(rim);
       }, (err: any) => {

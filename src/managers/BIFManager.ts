@@ -12,9 +12,13 @@ export class BIFManager {
 
   static LoadBIFResource(resource: BIFResource, onComplete?: Function){
     if(resource){
-      const bif: BIFObject = BIFManager.bifs.get( KEYObject.GetBIFIndex(resource.ID) )
+      const bif: BIFObject = BIFManager.bifs.get( KEYObject.getBIFIndex(resource.Id) )
       if(bif){
-        bif.GetResourceData(resource, onComplete);
+        bif.getResourceBuffer(resource).then( (buffer: Buffer) => {
+          if(typeof onComplete === 'function'){
+            onComplete(buffer);
+          }
+        });
         return;
       }
     }

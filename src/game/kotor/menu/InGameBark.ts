@@ -47,11 +47,11 @@ export class InGameBark extends GameMenu {
       this.tGuiPanel.widget.position.y = ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
       if (entry.sound != '') {
         console.log('lip', entry.sound);
-        ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound, (buffer: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound).then((buffer: Buffer) => {
           if (entry.speaker instanceof ModuleCreature) {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
-        });
+        }).catch( (e) => {console.error(e)});
         this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
           if (!error) {
             this.close();
@@ -63,11 +63,11 @@ export class InGameBark extends GameMenu {
         });
       } else if (entry.vo_resref != '') {
         console.log('lip', entry.vo_resref);
-        ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref, (buffer: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref).then((buffer: Buffer) => {
           if (entry.speaker instanceof ModuleCreature) {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
-        });
+        }).catch( (e) => {console.error(e)});
         this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
           if (!error) {
             this.close();

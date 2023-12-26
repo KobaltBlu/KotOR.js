@@ -47,7 +47,7 @@ export class TPCLoader {
     if(resKey instanceof Object){
   
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get(archive).getRawResource(tex, ResourceTypes['tpc'], (buffer: Buffer) => {
+        ERFManager.ERFs.get(archive).getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(
             new TPCObject({
               filename: tex,
@@ -73,7 +73,7 @@ export class TPCLoader {
     let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceByKey(tex, ResourceTypes['tpc']);
     if(erfResource){
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get('swpc_tex_gui').getRawResource(tex, ResourceTypes['tpc'], (buffer: Buffer) => {
+        ERFManager.ERFs.get('swpc_tex_gui').getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(buffer, 0);
         });
       }
@@ -100,7 +100,7 @@ export class TPCLoader {
     if(erfResource){
   
       if (typeof onComplete === 'function') {
-        activeTexturePack.getRawResource(tex, ResourceTypes['tpc'], (buffer: Buffer) => {
+        activeTexturePack.getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(buffer, TextureLoader.TextureQuality || 2);
         });
       }
@@ -112,7 +112,7 @@ export class TPCLoader {
     if(resKey){
   
       if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpb.getRawResource(resKey, (buffer) => {
+        Global.kotorERF.swpc_tex_tpb.getRawResource(resKey).then((buffer) => {
           onComplete(buffer, 2);
         });
       }
@@ -124,7 +124,7 @@ export class TPCLoader {
     if(resKey){
   
       if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpc.getRawResource(resKey, (buffer) => {
+        Global.kotorERF.swpc_tex_tpc.getRawResource(resKey).then((buffer) => {
           onComplete(buffer, 3);
         });
       }
@@ -134,11 +134,11 @@ export class TPCLoader {
   
     //Check in BIF files
   
-    let resKey = KEYManager.Key.GetFileKey(tex, ResourceTypes['tpc']);
+    let resKey = KEYManager.Key.getFileKey(tex, ResourceTypes['tpc']);
     if(resKey){
   
       if (typeof onComplete === 'function') {
-        KEYManager.Key.GetFileData( resKey, (buffer: Buffer) => {
+        KEYManager.Key.getFileBuffer( resKey).then( (buffer: Buffer) => {
           onComplete(buffer);
         });
       }

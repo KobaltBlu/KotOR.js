@@ -162,9 +162,9 @@ export class TabTextEditorState extends TabState {
         const resref = match[1];
         if(!includeMap.has(resref)){
           if(resref){
-            const key = KotOR.KEYManager.Key.GetFileKey(resref, KotOR.ResourceTypes.nss);
+            const key = KotOR.KEYManager.Key.getFileKey(resref, KotOR.ResourceTypes.nss);
             if(key){
-              const buffer = await KotOR.KEYManager.Key.GetFileDataAsync(key);
+              const buffer = await KotOR.KEYManager.Key.getFileBuffer(key);
               if(isBuffer(buffer)){
                 const source = buffer.toString();
                 includeMap.set(resref, source);

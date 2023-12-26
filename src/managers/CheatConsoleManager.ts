@@ -110,11 +110,11 @@ export class CheatConsoleManager {
   }
 
   static giveRandomLoot(amount: number = 1) {
-    const items = KEYManager.Key.keys.filter( (k) => k.ResType == ResourceTypes.uti );
+    const items = KEYManager.Key.keys.filter( (k) => k.resType == ResourceTypes.uti );
     for(let i = 0; i < amount; i++){
       const item = items[Math.floor(Math.random()*items.length)];
       if(item){
-        CheatConsoleManager.giveItem(item.ResRef, 1);
+        CheatConsoleManager.giveItem(item.resRef, 1);
       }
     }
   }

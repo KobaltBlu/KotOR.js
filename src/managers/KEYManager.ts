@@ -20,11 +20,11 @@ export class KEYManager {
       array: KEYManager.Key.bifs,
       onLoop: async (bifRes: BIF, loop: AsyncLoop, index: number, count: number) => {
         const bifPath: string = bifRes.filename;
-        new BIFObject(bifPath, (bif: BIFObject) => {
-          BIFManager.bifIndexes.set( path.parse(bifRes.filename).name, index );
-          BIFManager.bifs.set(index, bif);
-          loop.next();
-        });
+        const bif = new BIFObject(bifPath);
+        await bif.load()
+        BIFManager.bifIndexes.set( path.parse(bifRes.filename).name, index );
+        BIFManager.bifs.set(index, bif);
+        loop.next();
       }
     }).iterate(onComplete);
   }

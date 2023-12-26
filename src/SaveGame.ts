@@ -334,7 +334,8 @@ export class SaveGame {
   }
 
   InitSaveGameResourceLoader(onLoad?: Function){
-    this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'), (sav: ERFObject) => {
+    this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'));
+    this.SAVEGAME.load().then((sav: ERFObject) => {
       this.isLoaded = true;
       if(typeof onLoad === 'function')
         onLoad();

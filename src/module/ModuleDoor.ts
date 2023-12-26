@@ -1000,9 +1000,9 @@ export class ModuleDoor extends ModuleObject {
 
   loadWalkmesh(ResRef = '', onLoad?: Function ){
     
-    let wokKey = KEYManager.Key.GetFileKey(ResRef+'0', ResourceTypes['dwk']);
+    let wokKey = KEYManager.Key.getFileKey(ResRef+'0', ResourceTypes['dwk']);
     if(wokKey){
-      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
+      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
 
         this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = ResRef;

@@ -77,7 +77,7 @@ export class GameMenu {
       //mainmenu16x12
       this.loadBackground( () => {
         
-        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref, async (buffer: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref).then(async (buffer: Buffer) => {
           
           this.menuGFF = new GFFObject(buffer);
           
@@ -112,7 +112,7 @@ export class GameMenu {
             resolve(this);
           });
   
-        });
+        }).catch( (e) => {console.error(e)});
   
       });
     });

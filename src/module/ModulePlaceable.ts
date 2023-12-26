@@ -662,9 +662,9 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadWalkmesh(ResRef = '', onLoad?: Function){
-    let wokKey = KEYManager.Key.GetFileKey(ResRef, ResourceTypes['pwk']);
+    let wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['pwk']);
     if(wokKey != null){
-      KEYManager.Key.GetFileData(wokKey, (buffer: Buffer) => {
+      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
 
         this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
         this.collisionData.walkmesh.name = ResRef;
