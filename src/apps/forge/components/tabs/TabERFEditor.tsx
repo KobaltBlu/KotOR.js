@@ -35,7 +35,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
       case "export-file":
         console.log(event, props);
         if(props){
-          tab.erf.getRawResource(props.resRef, props.resType).then( async (buffer) => {
+          tab.erf.getResourceBufferByResRef(props.resRef, props.resType).then( async (buffer) => {
             const currentFile = new EditorFile({resref: props.resRef, reskey: props.resType, buffer: buffer });
             if(!currentFile.buffer) return;
             try{
@@ -121,8 +121,8 @@ export const TabERFEditor = function(props: BaseTabProps) {
     let buffer: Buffer;
     let buffer2: Buffer;
     if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
-      buffer = await tab.erf.getRawResource(key.resRef, KotOR.ResourceTypes['mdl']);
-      buffer2 = await tab.erf.getRawResource(key.resRef, KotOR.ResourceTypes['mdx']);
+      buffer = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdl']);
+      buffer2 = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdx']);
       FileTypeManager.onOpenResource(
         new EditorFile({
           resref: key.resRef,
@@ -132,7 +132,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
         })
       );
     }else {
-      buffer = await tab.erf.getRawResource(key.resRef, key.resType);
+      buffer = await tab.erf.getResourceBufferByResRef(key.resRef, key.resType);
       FileTypeManager.onOpenResource(
         new EditorFile({resref: key.resRef, reskey: key.resType, buffer: buffer })
       );
@@ -150,7 +150,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
         <ul className="file-browser-list">
           {
             entries?.map( (key: KotOR.ERFKeyEntry) => {
-              const resource = tab.erf.getResourceByKey(key.resRef, key.resType);
+              const resource = tab.erf.getResource(key.resRef, key.resType);
               return (
                 <li className={`file-browser-item ${selectedEntry == key ? `selected` : ``}`} onClick={(e) => onResourceClick(e, key)} onDoubleClick={(e) => onResourceDoubleClick(e, key)} onContextMenu={(e) => onContextMenu(e, key)}>
                   <span>{key.resRef}</span>

@@ -60,7 +60,7 @@ export class TemplateLoader {
 
     // if(true){
 
-    //   let resKey = GameState.module.rim_s.GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
+    //   let resKey = GameState.module.rim_s.getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
     //     //console.log('Template Resource found');
     //     GameState.module.rim_s.getResourceBuffer(resKey, (buffer) => {
@@ -71,7 +71,7 @@ export class TemplateLoader {
     //     return;
     //   }
 
-    //   resKey = BIFManager.GetBIFByName('templates').GetResourceByLabel(args.ResRef.toLowerCase(), args.ResType);
+    //   resKey = BIFManager.GetBIFByName('templates').getResource(args.ResRef.toLowerCase(), args.ResType);
     //   if(resKey != null){
     //     //console.log('Template Resource found');
     //     BIFManager.GetBIFByName('templates').getResourceBuffer(resKey, (buffer) => {

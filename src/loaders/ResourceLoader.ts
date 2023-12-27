@@ -83,7 +83,7 @@ export class ResourceLoader {
         const resources = archive.resources;
         for(let i = 0; i < resources.length; i++){
           const resource = resources[i];
-          const buffer = await archive.getResourceByKeyAsync(resource);
+          const buffer = await archive.getResourceBuffer(resource);
           // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(resource.resType).set(
             resource.resRef.toLocaleLowerCase(), 
@@ -91,13 +91,13 @@ export class ResourceLoader {
           );
         }
       }else if(archive instanceof ERFObject){
-        const resources = archive.keyList;
-        for(let i = 0; i < resources.length; i++){
-          const resource = resources[i];
-          const buffer = await archive.getResourceByKeyAsync(resource);
+        const keyList = archive.keyList;
+        for(let i = 0; i < keyList.length; i++){
+          const key = keyList[i];
+          const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
           // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
-          scope.get(resource.resType).set(
-            resource.resRef.toLocaleLowerCase(), 
+          scope.get(key.resType).set(
+            key.resRef.toLocaleLowerCase(), 
             buffer
           );
         }
@@ -232,13 +232,13 @@ export class ResourceLoader {
     for(let i = 0; i < archiveCount; i++){
       const archive = this.ModuleArchives;
       if(archive instanceof RIMObject){
-        let key = archive.getResourceByKey(resRef, resId);
+        let key = archive.getResource(resRef, resId);
         if(!key){ continue; }
 
-        let data = await archive.getResourceByKeyAsync(key);
+        let data = await archive.getResourceBuffer(key);
         if(data){ break; }
       }else if(archive instanceof ERFObject){
-        data = await archive.getRawResource(resRef, resId);
+        data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){ break; }
       }
     }
@@ -264,10 +264,10 @@ export class ResourceLoader {
       rim = rims[i];
       if(!rim){ continue; }
 
-      res = rim.getResourceByKey(resRef, resId);
+      res = rim.getResource(resRef, resId);
       if(!res){ continue; }
 
-      data = await rim.getResourceByKeyAsync(res);
+      data = await rim.getResourceBuffer(res);
     }
 
     return data;

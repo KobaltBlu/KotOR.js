@@ -140,7 +140,7 @@ export class Utility {
     //         switch(res.ResType){
     //           case ResourceTypes['are']:
 
-    //             rim.getRawResource(res.ResRef, res.ResType, (data: Buffer) => {
+    //             rim.getResourceBufferByResRef(res.ResRef, res.ResType, (data: Buffer) => {
     //               let are = new GFFObject(data, (gff: GFFObject) => {
 
     //                 let Name = gff.getFieldByLabel('Name').getCExoLocString();

@@ -151,7 +151,7 @@ export class KEYObject {
     const bif: BIFObject = BIFManager.bifs.get(KEYObject.getBIFIndex(key.resId));
     if(!bif){ return Buffer.allocUnsafe(0); }
 
-    const buffer = await bif.getResourceBuffer(bif.GetResourceById(key.resId));
+    const buffer = await bif.getResourceBuffer(bif.getResourceById(key.resId));
     return buffer;
   }
 

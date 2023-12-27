@@ -43,11 +43,11 @@ export class TPCLoader {
 	}
 
   loadFromArchive( archive: string, tex: string, onComplete?: Function, onError?: Function ){
-    let resKey = ERFManager.ERFs.get(archive).getResourceByKey(tex, ResourceTypes['tpc']);
+    let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes['tpc']);
     if(resKey instanceof Object){
   
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get(archive).getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
+        ERFManager.ERFs.get(archive).getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(
             new TPCObject({
               filename: tex,
@@ -70,10 +70,10 @@ export class TPCLoader {
   
     tex = tex.toLocaleLowerCase();
   
-    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceByKey(tex, ResourceTypes['tpc']);
+    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(tex, ResourceTypes['tpc']);
     if(erfResource){
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get('swpc_tex_gui').getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
+        ERFManager.ERFs.get('swpc_tex_gui').getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(buffer, 0);
         });
       }
@@ -96,11 +96,11 @@ export class TPCLoader {
       break;
     }
   
-    erfResource = activeTexturePack.getResourceByKey(tex, ResourceTypes['tpc']);
+    erfResource = activeTexturePack.getResource(tex, ResourceTypes['tpc']);
     if(erfResource){
   
       if (typeof onComplete === 'function') {
-        activeTexturePack.getRawResource(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
+        activeTexturePack.getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
           onComplete(buffer, TextureLoader.TextureQuality || 2);
         });
       }
@@ -108,11 +108,11 @@ export class TPCLoader {
       return;
     }
   
-    /*resKey = Global.kotorERF.swpc_tex_tpb.getResourceByKey(tex, ResourceTypes['tpc']);
+    /*resKey = Global.kotorERF.swpc_tex_tpb.getResource(tex, ResourceTypes['tpc']);
     if(resKey){
   
       if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpb.getRawResource(resKey).then((buffer) => {
+        Global.kotorERF.swpc_tex_tpb.getResourceBufferByResRef(resKey).then((buffer) => {
           onComplete(buffer, 2);
         });
       }
@@ -120,11 +120,11 @@ export class TPCLoader {
       return;
     }
   
-    resKey = Global.kotorERF.swpc_tex_tpc.getResourceByKey(tex, ResourceTypes['tpc']);
+    resKey = Global.kotorERF.swpc_tex_tpc.getResource(tex, ResourceTypes['tpc']);
     if(resKey){
   
       if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpc.getRawResource(resKey).then((buffer) => {
+        Global.kotorERF.swpc_tex_tpc.getResourceBufferByResRef(resKey).then((buffer) => {
           onComplete(buffer, 3);
         });
       }

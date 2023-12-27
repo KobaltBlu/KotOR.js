@@ -27,14 +27,15 @@ export interface RIMResource {
   size: number;
 }
 
+const RIM_HEADER_LENGTH = 160;
+
 export class RIMObject {
   resource_path: string;
   buffer: Buffer;
   inMemory: boolean = false;
 
   group: string;
-  resources: RIMResource[];
-  headerLength: number;
+  resources: RIMResource[] = [];
   reader: BinaryReader;
   header: RIMHeader;
   rimDataOffset: number;
@@ -42,8 +43,6 @@ export class RIMObject {
   constructor(file: Buffer|string){
 
     this.resources = [];
-    this.headerLength = 160;
-
     this.inMemory = false;
 
     if(typeof file == 'string'){
@@ -83,12 +82,12 @@ export class RIMObject {
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
     this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
-    let header = Buffer.from(buffer, 0, this.rimDataOffset);
+    const header = Buffer.from(buffer, 0, this.rimDataOffset);
     this.reader = new BinaryReader(header);
     this.reader.seek(this.header.resourcesOffset);
 
     for (let i = 0; i < this.header.resourceCount; i++) {
-      let res = {
+      const res = {
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
@@ -100,120 +99,62 @@ export class RIMObject {
     }
   }
 
-  readHeaderFromFileDecriptor(fd: any){
-    return new Promise<void>( (resolve, reject) => {
-      let header = Buffer.allocUnsafe(this.headerLength);
-      GameFileSystem.read(fd, header, 0, this.headerLength, 0).then( () => {
-        this.reader = new BinaryReader(header);
+  async readHeaderFromFileDecriptor(fd: any){
+    let header = Buffer.allocUnsafe(RIM_HEADER_LENGTH);
+    await GameFileSystem.read(fd, header, 0, RIM_HEADER_LENGTH, 0);
+    this.reader = new BinaryReader(header);
 
-        this.header = {} as RIMHeader;
+    this.header = {} as RIMHeader;
 
-        this.header.fileType = this.reader.readChars(4);
-        this.header.fileVersion = this.reader.readChars(4);
+    this.header.fileType = this.reader.readChars(4);
+    this.header.fileVersion = this.reader.readChars(4);
 
-        this.reader.skip(4);
+    this.reader.skip(4);
 
-        this.header.resourceCount = this.reader.readUInt32();
-        this.header.resourcesOffset = this.reader.readUInt32();
+    this.header.resourceCount = this.reader.readUInt32();
+    this.header.resourcesOffset = this.reader.readUInt32();
 
-        //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-        this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
-        header = Buffer.allocUnsafe(this.rimDataOffset);
-        GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0).then( () => {
-          this.reader.reuse(header);
-          this.reader.seek(this.header.resourcesOffset);
+    //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
+    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    header = Buffer.allocUnsafe(this.rimDataOffset);
+    await GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0);
+    this.reader.reuse(header);
+    this.reader.seek(this.header.resourcesOffset);
 
-          for (let i = 0; i < this.header.resourceCount; i++) {
-            let res: RIMResource = {
-              resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
-              resType: this.reader.readUInt16(),
-              unused: this.reader.readUInt16(),
-              resId: this.reader.readUInt32(),
-              offset: this.reader.readUInt32(),
-              size: this.reader.readUInt32()
-            } as RIMResource;
-            this.resources.push(res);
-          }
-
-          this.reader.dispose();
-          resolve();
-        }).catch( (err) => {
-          console.error(err);
-        });
-      }).catch( (err) => {
-        console.error(err);
-      });
-    });
-  }
-
-  loadFromBuffer(buffer: Buffer){
-    return new Promise<RIMObject>( (resolve, reject) => {
-      this.inMemory = true;
-      let header = Buffer.from(buffer, 0, this.headerLength);
-      this.reader = new BinaryReader(header);
-      this.readHeaderFromBuffer(buffer);
-      this.reader.dispose();
-      resolve(this);
-    });
-  }
-
-  loadFromDisk(resource_path: string){
-    return new Promise<RIMObject>( (resolve, reject) => {
-      GameFileSystem.open(resource_path, 'r').then( (fd) => {
-        
-        try{
-          this.readHeaderFromFileDecriptor(fd).then( () => {
-            GameFileSystem.close(fd).then( () => {
-              resolve(this);
-            });
-          }).catch( (err) => {
-            console.error('RIM Header Read', err);
-            GameFileSystem.close(fd).then( () => {
-              resolve(this);
-            });
-          });
-        }catch(e){
-          GameFileSystem.close(fd).then( () => {
-            resolve(this);
-          });
-        }
-
-      }).catch( (err: any) => {
-        console.error('RIM Header Read', err);
-        reject(err);
-        return;
-      });
-    });
-  }
-
-  async getRawResource(resRef: string = '', resType: number = 0x000F): Promise<Buffer> {
-    let buffer = Buffer.allocUnsafe(0);
-
-    for(let i = 0; i < this.resources.length; i++){
-      let resource: RIMResource = this.resources[i];
-      if (resource.resRef == resRef && resource.resType == resType) {
-        try {
-          if(this.inMemory && isBuffer(this.buffer)){
-            buffer = Buffer.alloc(resource.size);
-            this.buffer.copy(buffer, 0, resource.offset, resource.offset + (resource.size - 1));
-          }else{
-            const fd = await GameFileSystem.open(this.resource_path, 'r');
-            buffer = Buffer.alloc(resource.size);
-            await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
-            await GameFileSystem.close(fd);
-          }
-        } catch (e) {
-          console.error('getRawResource', e);
-        }
-        break;
-      }
+    for (let i = 0; i < this.header.resourceCount; i++) {
+      const res: RIMResource = {
+        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
+        resType: this.reader.readUInt16(),
+        unused: this.reader.readUInt16(),
+        resId: this.reader.readUInt32(),
+        offset: this.reader.readUInt32(),
+        size: this.reader.readUInt32()
+      } as RIMResource;
+      this.resources.push(res);
     }
-    
-    return buffer;
 
+    this.reader.dispose();
   }
 
-  getResourceByKey(resRef: string, resType: number): RIMResource|undefined {
+  async loadFromBuffer(buffer: Buffer){
+    this.inMemory = true;
+    let header = Buffer.from(buffer, 0, RIM_HEADER_LENGTH);
+    this.reader = new BinaryReader(header);
+    this.readHeaderFromBuffer(buffer);
+    this.reader.dispose();
+  }
+
+  async loadFromDisk(resource_path: string){
+    const fd = await GameFileSystem.open(resource_path, 'r');
+    try{
+      await this.readHeaderFromFileDecriptor(fd);
+    }catch(e){
+      console.error('RIM Header Read', e);
+    }
+    await GameFileSystem.close(fd);
+  }
+
+  getResource(resRef: string, resType: number): RIMResource {
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.resources.length; i++){
       let key = this.resources[i];
@@ -222,10 +163,6 @@ export class RIMObject {
       }
     };
     return;
-  }
-
-  getResourceByLabel(label: string, ResType: number){
-    return this.getResourceByKey(label, ResType);
   }
 
   async getResourceBuffer(resource?: RIMResource): Promise<Buffer> {
@@ -252,12 +189,21 @@ export class RIMObject {
     return Buffer.allocUnsafe(0);
   }
 
+  async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Buffer> {
+    const resource = this.getResource(resRef, resType);
+    if(!resource){
+      return;
+    }
+
+    return await this.getResourceBuffer(resource);
+  }
+
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Buffer> {
     if(directory == null){
       return Buffer.allocUnsafe(0);
     }
 
-    const resource = this.getResourceByKey(resref, restype);
+    const resource = this.getResource(resref, restype);
     if(!resource){
       return Buffer.allocUnsafe(0);
     }
@@ -276,15 +222,6 @@ export class RIMObject {
       );
       return buffer;
     }
-    return Buffer.allocUnsafe(0);
-  }
-
-  async getResourceByKeyAsync(key: RIMResource): Promise<Buffer> {
-    return await this.getRawResource(key.resRef, key.resType);
-  }
-
-  async getResourceDataAsync(resref: string, restype: number): Promise<Buffer> {
-    return await this.getRawResource(resref, restype);
   }
 
 }

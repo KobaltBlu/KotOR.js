@@ -34,17 +34,17 @@ export class BIFObject {
   buffer: Buffer;
   inMemory: boolean = false;
 
-  fileType: any;
-  fileVersion: any;
-  variableResourceCount: any;
-  fixedResourceCount: any;
-  variableTableOffset: any;
+  fileType: string;
+  fileVersion: string;
+  variableResourceCount: number;
+  fixedResourceCount: number;
+  variableTableOffset: number;
   variableTableRowSize: number;
   variableTableSize: number;
   reader: BinaryReader;
 
   resourceDiskInfo: IResourceDiskInfo;
-  resources: BIFResource[];
+  resources: BIFResource[] = [];
   file: string;
 
   constructor(file: Buffer|string){
@@ -121,7 +121,7 @@ export class BIFObject {
     await GameFileSystem.close(fd);
   }
 
-  GetResourceById(id: number){
+  getResourceById(id: number){
     if(id != null){
       for(let i = 0; i < this.variableResourceCount; i++){
         if(this.resources[i].Id == id){
@@ -132,7 +132,7 @@ export class BIFObject {
     return null;
   }
 
-  GetResourcesByType(ResType: number){
+  getResourcesByType(ResType: number){
     let arr: BIFResource[] = []
     if(ResType != null){
       for(let i = 0; i < this.variableResourceCount; i++){
@@ -144,22 +144,23 @@ export class BIFObject {
     return arr;
   }
 
-  GetResourceByLabel(label: string, ResType: number): BIFResource|undefined {
-    if(label != null){
-      let len = KEYManager.Key.keys.length;
-      for(let i = 0; i < len; i++){
-        let key = KEYManager.Key.keys[i];
-        if(key.resRef == label && key.resType == ResType){
-          for(let j = 0; j != this.resources.length; j++){
-            let res = this.resources[j];
-            if(res.Id == key.resId && res.resType == ResType){
-              return res;
-            }
+  getResource(resRef: string, ResType: number): BIFResource|undefined {
+    if(resRef == null){
+      return undefined;
+    }
+
+    const len = KEYManager.Key.keys.length;
+    for(let i = 0; i < len; i++){
+      let key = KEYManager.Key.keys[i];
+      if(key.resRef == resRef && key.resType == ResType){
+        for(let j = 0; j != this.resources.length; j++){
+          let res = this.resources[j];
+          if(res.Id == key.resId && res.resType == ResType){
+            return res;
           }
         }
       }
     }
-    return undefined;
   }
 
   async getResourceBuffer(res?: BIFResource): Promise<Buffer> {
@@ -167,17 +168,25 @@ export class BIFObject {
     if(!res.size){ return Buffer.allocUnsafe(0); }
 
     try{
-
       const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r')
       const buffer = Buffer.alloc(res.size);
       await GameFileSystem.read(fd, buffer, 0, buffer.length, res.offset);
       await GameFileSystem.close(fd);
 
       return buffer;
-
     }catch(e){
       return Buffer.allocUnsafe(0);
     }
+  }
+
+  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Buffer> {
+    const resource = this.getResource(resRef, resType);
+    if (typeof resource === 'undefined') {
+      console.error('getResourceBufferByResRef', resRef, resType, resource);
+      return Buffer.allocUnsafe(0);
+    }
+
+    return await this.getResourceBuffer(resource);
   }
 
   /*load( path: string, onLoad?: Function, onError?: Function ){
@@ -187,7 +196,7 @@ export class BIFObject {
     if(pathInfo.location == 'archive' && pathInfo.archive.type == 'bif'){
       let key = KEYManager.Key.GetFileKey(pathInfo.file.name, ResourceTypes[pathInfo.file.ext]);
       if(key != null){
-        const res = this.GetResourceByLabel(pathInfo.file.name, ResourceTypes[pathInfo.file.ext]);
+        const res = this.getResource(pathInfo.file.name, ResourceTypes[pathInfo.file.ext]);
         if(res){
           this.getResourceBuffer(res).then( (buffer: Buffer) => {
             if(typeof onLoad === 'function')

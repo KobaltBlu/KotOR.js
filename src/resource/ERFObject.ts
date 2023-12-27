@@ -54,9 +54,9 @@ export class ERFObject {
   buffer: Buffer;
   inMemory: boolean = false;
   
-  localizedStrings: ERFLanguage[];
-  keyList: ERFKeyEntry[];
-  resources: ERFResource[];
+  localizedStrings: ERFLanguage[] = [];
+  keyList: ERFKeyEntry[] = [];
+  resources: ERFResource[] = [];
   header: ERFObjectHeader;
   pathInfo: path.ParsedPath;
   reader: BinaryReader;
@@ -81,7 +81,6 @@ export class ERFObject {
       this.inMemory = false;
       this.pathInfo = path.parse(file);
     }
-
   }
 
   async load(): Promise<ERFObject> {
@@ -94,7 +93,7 @@ export class ERFObject {
     }
   }
 
-  async loadFromDisk(){
+  async loadFromDisk(): Promise<void> {
     try{
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       let header = Buffer.alloc(ERF_HEADER_SIZE);
@@ -162,7 +161,7 @@ export class ERFObject {
     }
   }
 
-  async loadFromBuffer(){
+  async loadFromBuffer(): Promise<void> {
     let header = Buffer.from(this.buffer, 0, ERF_HEADER_SIZE);
     this.reader = new BinaryReader(header);
 
@@ -222,6 +221,17 @@ export class ERFObject {
     this.reader.dispose();
   }
 
+  getResource(resRef: string, resType: number): ERFResource{
+    resRef = resRef.toLowerCase();
+    for(let i = 0; i < this.keyList.length; i++){
+      let key = this.keyList[i];
+      if (key.resRef == resRef && key.resType == resType) {
+        return this.resources[key.resId];
+      }
+    };
+    return undefined;
+  }
+
   async getResourceBuffer(resource: ERFResource): Promise<Buffer> {
     if (typeof resource == 'undefined') {
       return Buffer.allocUnsafe(0);
@@ -246,32 +256,21 @@ export class ERFObject {
     return buffer;
   }
 
-  async getRawResource(resRef: string, resType: number): Promise<Buffer> {
-    const resource = this.getResourceByKey(resRef, resType);
+  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Buffer> {
+    const resource = this.getResource(resRef, resType);
     if (typeof resource === 'undefined') {
-      console.error('getRawResource', resRef, resType, resource);
+      console.error('getResourceBufferByResRef', resRef, resType, resource);
       return Buffer.allocUnsafe(0);
     }
 
     return await this.getResourceBuffer(resource);
   }
 
-  getResourceByKey(resRef: string, resType: number): ERFResource{
-    resRef = resRef.toLowerCase();
-    for(let i = 0; i < this.keyList.length; i++){
-      let key = this.keyList[i];
-      if (key.resRef == resRef && key.resType == resType) {
-        return this.resources[key.resId];
-      }
-    };
-    return undefined;
-  }
-
-  getResourcesByType(restype: number){
+  getResourcesByType(resType: number): ERFResource[] {
     const resources: ERFResource[] = [];
     for(let i = 0; i < this.keyList.length; i++){
       const key = this.keyList[i];
-      if (key.resType == restype) {
+      if (key.resType == resType) {
         resources.push(this.resources[key.resId]);
       }
     };
@@ -283,7 +282,7 @@ export class ERFObject {
       return Buffer.allocUnsafe(0);
     }
 
-    const resource = this.getResourceByKey(resref, restype);
+    const resource = this.getResource(resref, restype);
     if(!resource){
       return Buffer.allocUnsafe(0);
     }
@@ -302,21 +301,20 @@ export class ERFObject {
       );
       return buffer;
     }
-    return Buffer.allocUnsafe(0);
   }
 
-  addResource(resref: string, reskey: number, data: Buffer){
+  addResource(resRef: string, resType: number, buffer: Buffer){
 
-    let resId = this.resources.push({
+    const resId = this.resources.push({
       offset: -1,
-      size: data.length,
-      data: data
+      size: buffer.length,
+      data: buffer
     }) - 1;
 
     this.keyList.push({
-      resRef: resref,
+      resRef: resRef,
       resId: resId,
-      resType: reskey,
+      resType: resType,
       unused: 0
     });
 
@@ -412,14 +410,6 @@ export class ERFObject {
     }
 
     return output.buffer;
-  }
-
-  async getResourceByKeyAsync(key: ERFKeyEntry): Promise<Buffer> {
-    return await this.getRawResource(key.resRef, key.resType);
-  }
-
-  async getResourceDataAsync(resref: string, restype: number): Promise<Buffer> {
-    return await this.getRawResource(resref, restype);
   }
   
   static DayOfTheYear(date?: Date) {

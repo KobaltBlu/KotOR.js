@@ -66,7 +66,7 @@ export class AudioFile {
 
         switch(info.archive.type){
           case 'bif':
-            // Global.kotorBIF[info.archive.name].getResourceBuffer(Global.kotorBIF[info.archive.name].GetResourceByLabel(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
+            // Global.kotorBIF[info.archive.name].getResourceBuffer(Global.kotorBIF[info.archive.name].getResource(info.file.name, ResourceTypes[info.file.ext]), (buffer) => {
             //   this.reader = new BinaryReader(buffer);
             //   this.ProcessFile(onComplete);
             //   return;
