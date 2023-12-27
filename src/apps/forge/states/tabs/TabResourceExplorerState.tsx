@@ -311,26 +311,26 @@ export class TabResourceExplorerState extends TabState {
 
           rimList.addChildNode(node);
 
-          let files = ((rim as any)?.KeyList ? (rim as any).KeyList : rim.resources as any);
+          let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
 
           for (let i = 0; i < files.length; i++) {
             let resource = files[i];
-            let resref = resource.ResRef;
+            let resref = resource.resRef;
 
-            if (subTypes[resource.ResType] == undefined) {
-              subTypes[resource.ResType] = new FileBrowserNode({
-                name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
+            if (subTypes[resource.resType] == undefined) {
+              subTypes[resource.resType] = new FileBrowserNode({
+                name: KotOR.ResourceTypes.getKeyByValue(resource.resType),
                 type: 'group',
                 canOrphan: true,
               });
-              node.addChildNode(subTypes[resource.ResType]);
+              node.addChildNode(subTypes[resource.resType]);
             }
 
-            subTypes[resource.ResType].addChildNode(new FileBrowserNode({
-              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
+            subTypes[resource.resType].addChildNode(new FileBrowserNode({
+              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
               type: 'resource',
               data: {
-                path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
+                path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
               }
             }));
           }
@@ -398,25 +398,25 @@ export class TabResourceExplorerState extends TabState {
 
 					rimList.addChildNode(node);
 
-					let files = ((rim as any)?.KeyList ? (rim as any).KeyList : rim.resources as any);
+					let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
 
 					for (let i = 0; i < files.length; i++) {
 						let resource = files[i];
-						let resref = resource.ResRef;
+						let resRef = resource.resRef;
 
-						if (subTypes[resource.ResType] == undefined) {
-							subTypes[resource.ResType] = new FileBrowserNode({
-								name: KotOR.ResourceTypes.getKeyByValue(resource.ResType),
+						if (subTypes[resource.resType] == undefined) {
+							subTypes[resource.resType] = new FileBrowserNode({
+								name: KotOR.ResourceTypes.getKeyByValue(resource.resType),
 								type: 'group',
 							});
-							node.addChildNode(subTypes[resource.ResType]);
+							node.addChildNode(subTypes[resource.resType]);
 						}
 
-						subTypes[resource.ResType].addChildNode(new FileBrowserNode({
-							name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
+						subTypes[resource.resType].addChildNode(new FileBrowserNode({
+							name: `${resRef}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
 							type: 'resource',
 							data: {
-								path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.ResType)}`,
+								path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resRef}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
 							}
 						}));
 					}
