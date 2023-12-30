@@ -53,7 +53,6 @@ onmessage = function (e: any = {}){
   }else{
     imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
   }
-
-  //@ts-expect-error
+  
   postMessage(imagePixels, [imagePixels.buffer]);
 }
