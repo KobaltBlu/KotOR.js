@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { EAXPresets } from "./EAXPresets";
-import { AudioEmitter } from "./AudioEmitter";
+import type { AudioEmitter } from "./AudioEmitter";
 import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
 import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 
@@ -20,18 +20,16 @@ export class AudioEngine {
   audioCtx: AudioContext;
   // reverbLF: any;
   // reverbHF: any;
-  sfxGain: any;
-  musicGain: any;
-  voGain: any;
-  movieGain: any;
-  emitters: any[];
-  bgm: any;
-  bgmTimeout: any;
-  dialogBGM: any;
-  dialogBGMTimeout: any;
-  ambient: any;
-  bgmBuffer: any;
-  dialogMusicBuffer: any;
+  sfxGain: GainNode;
+  musicGain: GainNode;
+  voGain: GainNode;
+  movieGain: GainNode;
+  emitters: AudioEmitter[];
+  bgm: AudioBufferSourceNode;
+  bgmTimeout: NodeJS.Timeout;
+  bgmBuffer: AudioBuffer;
+  dialogMusicBuffer: AudioBuffer;
+  ambient: AudioBufferSourceNode;
 
   mode: AudioEngineMode = AudioEngine.Mode;
   areaProperies: AreaAudioProperties;
@@ -64,8 +62,6 @@ export class AudioEngine {
     this.emitters = [];
     this.bgm = null;
     this.bgmTimeout = null;
-    this.dialogBGM = null;
-    this.dialogBGMTimeout = null;
     this.ambient = null;
 
     AudioEngine.engines.push(this);
@@ -226,7 +222,7 @@ export class AudioEngine {
     });
   }
 
-  StartBackgroundMusic(buffer?: Buffer){
+  StartBackgroundMusic(buffer?: AudioBuffer){
 
     if(buffer == undefined)
       buffer = this.bgmBuffer;
@@ -241,8 +237,7 @@ export class AudioEngine {
     this.bgm.connect( this.musicGain );
 
     this.bgm.onended = () => {
-      this.bgm.currentTime = 0;
-      if(AudioEngine.loopBGM){// && this.dialogBGM == null){
+      if(AudioEngine.loopBGM){
         this.bgmTimeout = global.setTimeout( () => {
           this.StartBackgroundMusic();
         }, this.GetBackgroundMusicLoopTime());
