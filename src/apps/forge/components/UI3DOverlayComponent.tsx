@@ -1,12 +1,12 @@
 import React, { useState } from "react"
 import { useEffectOnce } from "../helpers/UseEffectOnce"
 import { UI3DRenderer } from "../UI3DRenderer";
-import * as KotOR from "../KotOR";
+import * as THREE from 'three';
 
 export const UI3DOverlayComponent = function(props: any){
 
   const ui3DRenderer: UI3DRenderer = props.context;
-  const [camera, setCamera] = useState<KotOR.THREE.PerspectiveCamera>(ui3DRenderer?.currentCamera);
+  const [camera, setCamera] = useState<THREE.PerspectiveCamera>(ui3DRenderer?.currentCamera);
 
   const [cameraPositionX, setCameraPositionX] = useState<number>(0);
   const [cameraPositionY, setCameraPositionY] = useState<number>(0);

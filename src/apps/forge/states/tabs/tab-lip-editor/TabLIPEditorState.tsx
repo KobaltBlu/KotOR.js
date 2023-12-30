@@ -12,6 +12,7 @@ import { SceneGraphNode } from "../../../SceneGraphNode";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSystem";
 import * as KotOR from "../../../KotOR";
+import * as THREE from 'three';
 
 export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -71,11 +72,11 @@ export class TabLIPEditorState extends TabState {
   scrubDuration: number|undefined;
 
   head: KotOR.OdysseyModel3D;
-  head_hook: THREE.Object3D<THREE.Event> = new KotOR.THREE.Object3D();
+  head_hook: THREE.Object3D<THREE.Event> = new THREE.Object3D();
   pointLight: THREE.PointLight;
 
   ui3DRenderer: UI3DRenderer;
-  box3: THREE.Box3 = new KotOR.THREE.Box3();
+  box3: THREE.Box3 = new THREE.Box3();
 
   keyframesSceneGraphNode: SceneGraphNode = new SceneGraphNode({
     name: 'Key Frames',
@@ -172,7 +173,7 @@ export class TabLIPEditorState extends TabState {
           receiveShadow: true,
         }).then((model: KotOR.OdysseyModel3D) => {
 
-          if(this.head instanceof KotOR.THREE.Object3D){
+          if(this.head instanceof THREE.Object3D){
             this.head.parent?.remove(this.head);
           }
 
@@ -215,15 +216,15 @@ export class TabLIPEditorState extends TabState {
       this.head.update(delta);
 
       if(this.ui3DRenderer){
-        let center: THREE.Vector3 = new KotOR.THREE.Vector3;
+        let center: THREE.Vector3 = new THREE.Vector3;
         this.box3.getCenter(center);
-        let size: THREE.Vector3 = new KotOR.THREE.Vector3;
+        let size: THREE.Vector3 = new THREE.Vector3;
         this.box3.getSize(size);
         //Center the object to 0
         this.head.position.set(-center.x, -center.y, -center.z);
         this.ui3DRenderer.camera.position.z = 0;
         this.ui3DRenderer.camera.position.y = size.x + size.y + size.z;
-        this.ui3DRenderer.camera.lookAt(new KotOR.THREE.Vector3)
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
       }
     }
 

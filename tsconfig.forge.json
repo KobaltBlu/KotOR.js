@@ -2,7 +2,7 @@
   "compilerOptions": {
     "moduleResolution": "node",
     "target": "ESNext",
-    "module": "commonjs",
+    "module": "esnext",
     "declaration": false,
     "noImplicitAny": true,
     "removeComments": true,
@@ -23,7 +23,8 @@
     ],
     "lib": [
       "ESNext",
-      "dom"
+      "dom",
+      "WebWorker"
     ],
     "outDir": "dist",
   },

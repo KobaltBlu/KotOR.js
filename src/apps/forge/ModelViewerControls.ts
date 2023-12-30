@@ -2,17 +2,18 @@ import { EditorControlsTool } from "./enum/EditorControlsTool";
 
 import * as KotOR from "./KotOR";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "./UI3DRenderer";
+import * as THREE from 'three';
 
 export class ModelViewerControls {
 
   context: UI3DRenderer;
   element: HTMLCanvasElement;
 
-  axisFront: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3(0, -1, 0);
-  lookAt: KotOR.THREE.Vector3 = new KotOR.THREE.Vector3();
+  axisFront: THREE.Vector3 = new THREE.Vector3(0, -1, 0);
+  lookAt: THREE.Vector3 = new THREE.Vector3();
   pitch: number = 0;
   yaw: number = 0;
-  pointerLockVector: KotOR.THREE.Vector2 = new KotOR.THREE.Vector2();
+  pointerLockVector: THREE.Vector2 = new THREE.Vector2();
   currentTool: EditorControlsTool;
 
   static CameraMoveSpeed: number = 10;
@@ -69,7 +70,7 @@ export class ModelViewerControls {
 
     this.context = context;
 
-    this.axisFront = new KotOR.THREE.Vector3(0.0, -1.0, 0.0);
+    this.axisFront = new THREE.Vector3(0.0, -1.0, 0.0);
 
     this.pitch = 0;
     this.yaw = -90;
@@ -192,7 +193,7 @@ export class ModelViewerControls {
           axisMoverSelected = true;
         }*/
 
-        const isObjectTransformControl = (intersection?: KotOR.THREE.Intersection) => {
+        const isObjectTransformControl = (intersection?: THREE.Intersection) => {
           if(!intersection) return false;
           return (intersection.object as any).isTransformControls 
             || (intersection.object as any).isTransformControlsGizmo 
@@ -272,12 +273,12 @@ export class ModelViewerControls {
     }
 
     if(this.keys['a']){
-      this.context.camera.position.sub((new KotOR.THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
+      this.context.camera.position.sub((new THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
     if(this.keys['d']){
-      this.context.camera.position.add((new KotOR.THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
+      this.context.camera.position.add((new THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
@@ -328,9 +329,9 @@ export class ModelViewerControls {
   }
 
   axisUpdate(){
-    this.axisFront.x = Math.cos(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
-    this.axisFront.y = Math.sin(KotOR.THREE.MathUtils.degToRad(this.yaw)) * Math.cos(KotOR.THREE.MathUtils.degToRad(this.pitch));
-    this.axisFront.z = Math.sin(KotOR.THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.x = Math.cos(THREE.MathUtils.degToRad(this.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.y = Math.sin(THREE.MathUtils.degToRad(this.yaw)) * Math.cos(THREE.MathUtils.degToRad(this.pitch));
+    this.axisFront.z = Math.sin(THREE.MathUtils.degToRad(this.pitch));
 
     this.axisFront.normalize();
 

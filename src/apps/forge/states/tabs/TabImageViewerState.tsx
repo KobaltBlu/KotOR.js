@@ -4,6 +4,21 @@ import { TabImageViewer } from "../../components/tabs/TabImageViewer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
+import { PixelManager } from "../../../../utility/PixelManager";
+
+const concatenate = (resultConstructor: any, ...arrays: any) => {
+  let totalLength = 0;
+  for (let arr of arrays) {
+    totalLength += arr.length;
+  }
+  let result = new resultConstructor(totalLength);
+  let offset = 0;
+  for (let arr of arrays) {
+    result.set(arr, offset);
+    offset += arr.length;
+  }
+  return result;
+}
 
 export class TabImageViewerState extends TabState {
 
@@ -53,17 +68,42 @@ export class TabImageViewerState extends TabState {
   getPixelData(): Promise<Uint8Array>{
     return new Promise<Uint8Array>( (resolve, reject) => {
       if(this.image instanceof KotOR.TPCObject){
-        const worker = new Worker('worker-tex.js'); 
-    
-        worker.addEventListener('message', function(e) {
-          resolve(new Uint8Array(e.data));
-        }, false);
-    
-        worker.postMessage({
-          Header: this.image.header,
-          buffer: this.image.file,
-          txi: this.image.txi
-        }, [this.image.file.buffer]);
+        const tpc = this.image;
+        const dds = tpc.getDDS(false);
+        let imagePixels = new Uint8Array(0);
+
+        const width = tpc.header.width;
+        const height = tpc.header.height;
+        const mipmapCount = 1;
+
+        if(!tpc.txi.procedureType){
+          if(tpc.header.faces > 1){
+            for ( let face = 0; face < tpc.header.faces; face ++ ) {
+              for ( let i = 0; i < 1; i++ ) {
+                const mipmap = dds.mipmaps[face + (i * dds.mipmapCount)];
+                if(tpc.header.faces == 6){
+                  switch(face){
+                    case 3:
+                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
+                    break;
+                    case 1:
+                      mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
+                    break;
+                    case 0:
+                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
+                    break;
+                  }
+                }
+                imagePixels = concatenate(Uint8Array, imagePixels, mipmap.data);
+              }
+            }
+          }else{
+            imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
+          }
+        }else{
+          imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
+        }
+        resolve(imagePixels);
       }else{
         this.image.getPixelData( (buffer: Uint8Array) => {
           resolve(new Uint8Array(buffer));

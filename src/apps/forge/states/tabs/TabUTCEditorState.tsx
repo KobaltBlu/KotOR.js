@@ -2,6 +2,7 @@ import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
+import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabUTCEditor } from "../../components/tabs/TabUTCEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
@@ -57,14 +58,14 @@ export class TabUTCEditorState extends TabState {
     this.moduleCreature.container.position.set(0, 0, 0);
     this.moduleCreature.box.setFromObject(this.moduleCreature.container);
 
-    let center = new KotOR.THREE.Vector3();
+    let center = new THREE.Vector3();
     this.moduleCreature.box.getCenter(center);
 
-    let size = new KotOR.THREE.Vector3();
+    let size = new THREE.Vector3();
     this.moduleCreature.box.getSize(size);
 
     //Center the object to 0
-    let origin = new KotOR.THREE.Vector3();
+    let origin = new THREE.Vector3();
     this.moduleCreature.container.position.set(-center.x, -center.y, -center.z);
     this.ui3DRenderer.camera.position.z = 0;
     this.ui3DRenderer.camera.position.y = size.x + size.y;

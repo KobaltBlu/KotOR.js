@@ -5,6 +5,7 @@ import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager"
 import { EventListenerModel } from "./EventListenerModel";
 
 import * as KotOR from "./KotOR";
+import * as THREE from 'three';
 import { ModelViewerControls } from "./ModelViewerControls";
 import { SceneGraphNode } from "./SceneGraphNode";
 import { FlyControls } from 'three/examples/jsm/controls/FlyControls.js';
@@ -43,25 +44,25 @@ export class UI3DRenderer extends EventListenerModel {
   width: number = 640;
   height: number = 480;
 
-  clock: KotOR.THREE.Clock;
-  renderer?: KotOR.THREE.WebGLRenderer;
-  clearColor: KotOR.THREE.Color = new KotOR.THREE.Color(0x333333);
-  scene: KotOR.THREE.Scene = new KotOR.THREE.Scene();
-  camera: KotOR.THREE.PerspectiveCamera;
-  currentCamera: KotOR.THREE.PerspectiveCamera;
-  cameras: KotOR.THREE.PerspectiveCamera[] = [];
-  light: KotOR.THREE.AmbientLight;
-  lights: KotOR.THREE.Group = new KotOR.THREE.Group();
-  globalLight: KotOR.THREE.Light;
-  depthTarget: KotOR.THREE.WebGLRenderTarget;
-  raycaster: KotOR.THREE.Raycaster = new KotOR.THREE.Raycaster();
+  clock: THREE.Clock;
+  renderer?: THREE.WebGLRenderer;
+  clearColor: THREE.Color = new THREE.Color(0x333333);
+  scene: THREE.Scene = new THREE.Scene();
+  camera: THREE.PerspectiveCamera;
+  currentCamera: THREE.PerspectiveCamera;
+  cameras: THREE.PerspectiveCamera[] = [];
+  light: THREE.AmbientLight;
+  lights: THREE.Group = new THREE.Group();
+  globalLight: THREE.Light;
+  depthTarget: THREE.WebGLRenderTarget;
+  raycaster: THREE.Raycaster = new THREE.Raycaster();
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 
-  referenceNode: KotOR.THREE.Object3D = new KotOR.THREE.Object3D();
+  referenceNode: THREE.Object3D = new THREE.Object3D();
 
-  selectable: KotOR.THREE.Group = new KotOR.THREE.Group();
-  unselectable: KotOR.THREE.Group = new KotOR.THREE.Group();
+  selectable: THREE.Group = new THREE.Group();
+  unselectable: THREE.Group = new THREE.Group();
 
   resizeObserver: ResizeObserver;
   loadingTextures: boolean;
@@ -73,19 +74,19 @@ export class UI3DRenderer extends EventListenerModel {
   queuedAnimationFrame: number;
 
   odysseyModels: KotOR.OdysseyModel3D[] = [];
-  selectionBox = new KotOR.THREE.BoxHelper(new KotOR.THREE.Object3D(), 0xffffff);
+  selectionBox = new THREE.BoxHelper(new THREE.Object3D(), 0xffffff);
 
   flyControls: FirstPersonControls;
   transformControls: TransformControls;
   viewHelper: ViewHelper;
 
   group: { 
-    lights: KotOR.THREE.Group; 
-    light_helpers: KotOR.THREE.Group; 
-    shadow_lights: KotOR.THREE.Group; 
+    lights: THREE.Group; 
+    light_helpers: THREE.Group; 
+    shadow_lights: THREE.Group; 
   };
-  frustumMat4: KotOR.THREE.Matrix4;
-  viewportFrustum: KotOR.THREE.Frustum;
+  frustumMat4: THREE.Matrix4;
+  viewportFrustum: THREE.Frustum;
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -96,19 +97,19 @@ export class UI3DRenderer extends EventListenerModel {
     this.width = width;
     this.height = height;
 
-    this.frustumMat4 = new KotOR.THREE.Matrix4();
-    this.viewportFrustum = new KotOR.THREE.Frustum();
+    this.frustumMat4 = new THREE.Matrix4();
+    this.viewportFrustum = new THREE.Frustum();
 
     this.time = 0;
     this.deltaTime = 0;
 
-    this.clock = new KotOR.THREE.Clock();
+    this.clock = new THREE.Clock();
     this.selectionBox.visible = false;
 
     this.group = {
-      lights: new KotOR.THREE.Group(),
-      light_helpers: new KotOR.THREE.Group(),
-      shadow_lights: new KotOR.THREE.Group(),
+      lights: new THREE.Group(),
+      light_helpers: new THREE.Group(),
+      shadow_lights: new THREE.Group(),
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
@@ -127,7 +128,7 @@ export class UI3DRenderer extends EventListenerModel {
     }
     
     this.controls = new ModelViewerControls(this);
-    this.controls.attachEventListener('onSelect', (intersect: KotOR.THREE.Intersection) => {
+    this.controls.attachEventListener('onSelect', (intersect: THREE.Intersection) => {
       this.selectObject(intersect?.object);
     })
     this.selectionBox.visible = false;
@@ -168,7 +169,7 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
-  attachObject(object: KotOR.THREE.Object3D, selectable: boolean = true){
+  attachObject(object: THREE.Object3D, selectable: boolean = true){
     if(object){
       if(selectable) this.selectable.add(object);
       else this.unselectable.add(object);
@@ -185,7 +186,7 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
-  detachObject(object: KotOR.THREE.Object3D){
+  detachObject(object: THREE.Object3D){
     object.removeFromParent();
 
     object.traverse( (node) => {
@@ -200,13 +201,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.sceneGraphManager.rebuild();
   }
   
-  attachCamera(camera: KotOR.THREE.PerspectiveCamera){
-    camera.userData.heler = new KotOR.THREE.CameraHelper( camera );
+  attachCamera(camera: THREE.PerspectiveCamera){
+    camera.userData.heler = new THREE.CameraHelper( camera );
     this.scene.add( camera.userData.heler );
     this.cameras.push(camera);
   }
 
-  selectObject(object: KotOR.THREE.Object3D){
+  selectObject(object: THREE.Object3D){
     if(object){
       this.selectionBox.setFromObject(object);
       this.selectionBox.visible = true;
@@ -240,10 +241,10 @@ export class UI3DRenderer extends EventListenerModel {
 
   private buildCamera(){
     // if(this.camera) this.camera.dispose();
-    this.camera = new KotOR.THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1500 );
-    this.camera.up = new KotOR.THREE.Vector3( 0, 0, 1 );
+    this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1500 );
+    this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.position.set( .1, 5, 1 ); // offset the camera a bit
-    this.camera.lookAt(new KotOR.THREE.Vector3( 0, 0, 0 ));
+    this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
 
@@ -255,7 +256,7 @@ export class UI3DRenderer extends EventListenerModel {
       this.globalLight.removeFromParent();
       this.globalLight.dispose();
     }
-    this.globalLight = new KotOR.THREE.AmbientLight(0x7F7F7F); //0x60534A
+    this.globalLight = new THREE.AmbientLight(0x7F7F7F); //0x60534A
     this.globalLight.name = 'Ambient Light';
     this.globalLight.position.x = 0;
     this.globalLight.position.y = 0;
@@ -265,7 +266,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private buildScene(){
-    // this.scene = new KotOR.THREE.Scene();
+    // this.scene = new THREE.Scene();
 
     this.scene.add(this.selectionBox);
     this.scene.add(this.lights);
@@ -280,7 +281,7 @@ export class UI3DRenderer extends EventListenerModel {
   
   private buildWebGLRenderer(){
     if(this.renderer) this.renderer.dispose();
-    this.renderer = new KotOR.THREE.WebGLRenderer({
+    this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: false,
       // autoClear: false,
@@ -299,13 +300,13 @@ export class UI3DRenderer extends EventListenerModel {
 
   private buildDepthTarget(){
     if(this.depthTarget) this.depthTarget.dispose();
-    const pars = { minFilter: KotOR.THREE.LinearFilter, magFilter: KotOR.THREE.LinearFilter, format: KotOR.THREE.RGBAFormat };
-		this.depthTarget = new KotOR.THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+    const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
+		this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
     this.depthTarget.texture.generateMipmaps = false;
     this.depthTarget.stencilBuffer = false;
     this.depthTarget.depthBuffer = true;
-    this.depthTarget.depthTexture = new KotOR.THREE.DepthTexture(window.innerWidth, window.innerHeight);
-    this.depthTarget.depthTexture.type = KotOR.THREE.UnsignedShortType;
+    this.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
+    this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
   }
 
   setSize( width = 100, height = 100){
@@ -313,7 +314,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.height = height;
     if(this.renderer) this.renderer.setSize(this.width, this.height);
 
-    this.camera.up = new KotOR.THREE.Vector3( 0, 0, 1 );
+    this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.depthTarget.setSize( this.width, this.height );
@@ -326,7 +327,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   resetScene(){
-    this.scene = new KotOR.THREE.Scene();
+    this.scene = new THREE.Scene();
     this.scene.add(this.light);
 
     return this.scene;

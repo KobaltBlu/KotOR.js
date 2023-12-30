@@ -84,8 +84,10 @@ const libraryConfig = (name, color) => ({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
+        { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
+        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' }
       ]
-    })
+    }),
   ],
   resolve: {
     alias: {
@@ -99,6 +101,7 @@ const libraryConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    three: 'THREE'
   },
   output: {
     library: 'KotOR',
@@ -218,6 +221,7 @@ const launcherConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    three: 'THREE'
   },
   output: {
     filename: '[name].js',
@@ -335,6 +339,7 @@ const gameConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    three: 'THREE',
     '../../KotOR': 'KotOR',
   },
   output: {
@@ -348,11 +353,9 @@ const forgeConfig = (name, color) => ({
   entry: {
     forge: [
       './src/apps/forge/forge.tsx', 
-      './src/apps/forge/forge.scss'
-    ],
-    "worker-tex": [
+      './src/apps/forge/forge.scss',
       './src/worker/worker-tex.ts'
-    ],
+    ]
   },
   stats: {
     colors: true,
@@ -469,11 +472,22 @@ const forgeConfig = (name, color) => ({
   },
   externals: {
     fs: 'window.fs',
+    three: 'THREE',
     '../../KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
-    path: path.resolve(__dirname, 'dist/forge'), 
+    path: path.resolve(__dirname, 'dist/forge'),
+    globalObject: 'this', 
+    assetModuleFilename: (pathData) => {
+      const { filename } = pathData;
+
+      if (filename.endsWith('.ts')) {
+          return '[name].js';
+      } else {
+          return '[name][ext]';
+      }
+    },
   },
 });
 

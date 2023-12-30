@@ -1,6 +1,7 @@
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
 import * as KotOR from "../../KotOR";
+import * as THREE from 'three';
 import React from "react";
 import { TabModelViewer } from "../../components/tabs/TabModelViewer";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
@@ -63,13 +64,13 @@ export class TabModelViewerState extends TabState {
 
   dragging_frame: any;
   selected_frame: any;
-  groundColor: KotOR.THREE.Color;
-  groundGeometry: KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>;
-  groundMaterial: KotOR.THREE.LineBasicMaterial;
-  groundMesh: KotOR.THREE.LineSegments<KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>, KotOR.THREE.LineBasicMaterial>;
+  groundColor: THREE.Color;
+  groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
+  groundMaterial: THREE.LineBasicMaterial;
+  groundMesh: THREE.LineSegments<THREE.WireframeGeometry<THREE.PlaneGeometry>, THREE.LineBasicMaterial>;
 
   //layout
-  layout_group: KotOR.THREE.Group = new KotOR.THREE.Group();
+  layout_group: THREE.Group = new THREE.Group();
   selectedLayoutIndex: number = -1;
   layoutSceneGraphNode: SceneGraphNode;
   layout: KotOR.LYTObject;
@@ -90,10 +91,10 @@ export class TabModelViewerState extends TabState {
     }
 
     // Geometry
-    this.groundColor = new KotOR.THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new KotOR.THREE.WireframeGeometry(new KotOR.THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
-    this.groundMaterial = new KotOR.THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
-    this.groundMesh = new KotOR.THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
+    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
+    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
     // this.unselectable.add( this.groundMesh );
     
     this.ui3DRenderer = new UI3DRenderer();
@@ -150,7 +151,7 @@ export class TabModelViewerState extends TabState {
               })
 
               if(model.camerahook){
-                const camera = new KotOR.THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+                const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
                 camera.name = model.name;
                 model.camerahook.add(camera);
                 this.ui3DRenderer.attachCamera(camera);
@@ -352,7 +353,7 @@ export class TabModelViewerState extends TabState {
           resolve();
         }, (texObj: KotOR.TextureLoaderQueuedRef) => {
           if(texObj.material){
-            if(texObj.material instanceof KotOR.THREE.ShaderMaterial){
+            if(texObj.material instanceof THREE.ShaderMaterial){
               if(texObj.material.uniforms.map.value){
                 // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
                 console.log('iniTexture', texObj.name);

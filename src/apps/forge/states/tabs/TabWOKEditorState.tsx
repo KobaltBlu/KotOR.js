@@ -2,6 +2,7 @@ import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
+import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { UI3DRenderer } from "../../UI3DRenderer";
 import { TabWOKEditor } from "../../components/tabs/TabWOKEditor";
@@ -17,20 +18,20 @@ export class TabWOKEditorState extends TabState {
 
   ui3DRenderer: UI3DRenderer;
   wok: KotOR.OdysseyWalkMesh;
-  groundColor: KotOR.THREE.Color;
-  groundGeometry: KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>;
-  groundMaterial: KotOR.THREE.LineBasicMaterial;
-  groundMesh: KotOR.THREE.LineSegments<KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>, KotOR.THREE.LineBasicMaterial>;
-  faceHelperMesh: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.Material | KotOR.THREE.Material[]>;
-  faceHelperGeometry: KotOR.THREE.BufferGeometry;
-  faceHelperMaterial: KotOR.THREE.MeshBasicMaterial;
-  wireMaterial: KotOR.THREE.MeshBasicMaterial;
-  wireframe: KotOR.THREE.Mesh<KotOR.THREE.BufferGeometry, KotOR.THREE.MeshBasicMaterial>;
-  selectColor = new KotOR.THREE.Color(0x607D8B);
+  groundColor: THREE.Color;
+  groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
+  groundMaterial: THREE.LineBasicMaterial;
+  groundMesh: THREE.LineSegments<THREE.WireframeGeometry<THREE.PlaneGeometry>, THREE.LineBasicMaterial>;
+  faceHelperMesh: THREE.Mesh<THREE.BufferGeometry, THREE.Material | THREE.Material[]>;
+  faceHelperGeometry: THREE.BufferGeometry;
+  faceHelperMaterial: THREE.MeshBasicMaterial;
+  wireMaterial: THREE.MeshBasicMaterial;
+  wireframe: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
+  selectColor = new THREE.Color(0x607D8B);
 
-  vertexHelperGeometry = new KotOR.THREE.BoxGeometry(1, 1, 1, 1, 1);
-  vertexHelpersGroup: KotOR.THREE.Group = new KotOR.THREE.Group();
-  vertexHelpers: KotOR.THREE.Mesh[] = [];
+  vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
+  vertexHelpersGroup: THREE.Group = new THREE.Group();
+  vertexHelpers: THREE.Mesh[] = [];
   vertexHelperSize: number = 0.125;
 
   controlMode: TabWOKEditorControlMode = TabWOKEditorControlMode.FACE;
@@ -42,18 +43,18 @@ export class TabWOKEditorState extends TabState {
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     
-    this.groundColor = new KotOR.THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new KotOR.THREE.WireframeGeometry(new KotOR.THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
-    this.groundMaterial = new KotOR.THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
-    this.groundMesh = new KotOR.THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
+    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
+    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
 
-    this.faceHelperGeometry = new KotOR.THREE.BufferGeometry();
-    this.faceHelperGeometry.setAttribute('position', new KotOR.THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
+    this.faceHelperGeometry = new THREE.BufferGeometry();
+    this.faceHelperGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
 
-    this.faceHelperMaterial = new KotOR.THREE.MeshBasicMaterial();
+    this.faceHelperMaterial = new THREE.MeshBasicMaterial();
     this.faceHelperMaterial.wireframe = true;
     this.faceHelperMaterial.visible = false;
-    this.faceHelperMesh = new KotOR.THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial)
+    this.faceHelperMesh = new THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial)
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.controlsEnabled = true;
@@ -61,7 +62,7 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
     
-    this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: KotOR.THREE.Intersection) => {
+    this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: THREE.Intersection) => {
       this.ui3DRenderer.selectionBox.visible = false;
 
       switch(this.controlMode){
@@ -111,11 +112,11 @@ export class TabWOKEditorState extends TabState {
           console.log(response.buffer);
           this.wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(response.buffer));
           this.wok.material.visible = true;
-          this.wok.material.side = KotOR.THREE.DoubleSide;
+          this.wok.material.side = THREE.DoubleSide;
           this.ui3DRenderer.selectable.add(this.wok.mesh);
 
-          this.wireMaterial = new KotOR.THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
-          this.wireframe = new KotOR.THREE.Mesh(this.wok.geometry, this.wireMaterial);
+          this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+          this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.ui3DRenderer.unselectable.add(this.wireframe);
           this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
           this.buildVertexHelpers();
@@ -138,14 +139,14 @@ export class TabWOKEditorState extends TabState {
 
     // this.modulePlaceable.container.position.set(0, 0, 0);
 
-    // let center = new KotOR.THREE.Vector3();
+    // let center = new THREE.Vector3();
     // this.modulePlaceable.box.getCenter(center);
 
-    // let size = new KotOR.THREE.Vector3();
+    // let size = new THREE.Vector3();
     // this.modulePlaceable.box.getSize(size);
 
     // //Center the object to 0
-    // let origin = new KotOR.THREE.Vector3();
+    // let origin = new THREE.Vector3();
     // this.modulePlaceable.container.position.set(-center.x, -center.y, -center.z);
     // this.ui3DRenderer.camera.position.z = 0;
     // this.ui3DRenderer.camera.position.y = size.x + size.y;
@@ -155,7 +156,7 @@ export class TabWOKEditorState extends TabState {
   recenterCamera(){
     const lookAt = this.wok.vertices.reduce( (acc, value) => {
       return acc.add(value)
-    }, new KotOR.THREE.Vector3);
+    }, new THREE.Vector3);
     lookAt.divideScalar(this.wok.vertices.length);
     // this.ui3DRenderer.controls.lookAt(lookAt);
   }
@@ -202,7 +203,7 @@ export class TabWOKEditorState extends TabState {
             !selectedVertexHelper.position.equals(selectedVertex)
           )
           if(vertexNeedsUpdate){
-            const position = this.wok.geometry.attributes.position as KotOR.THREE.BufferAttribute;
+            const position = this.wok.geometry.attributes.position as THREE.BufferAttribute;
             selectedVertex.copy(selectedVertexHelper.position);
             for(let i = 0; i < this.wok.faces.length; i++){
               const face = this.wok.faces[i];
@@ -243,7 +244,7 @@ export class TabWOKEditorState extends TabState {
       helper.removeFromParent();
     }
     for(let i = 0; i < this.wok.vertices.length; i++){
-      const helper = new KotOR.THREE.Mesh(this.vertexHelperGeometry, new KotOR.THREE.MeshBasicMaterial({color: 0x000000}));
+      const helper = new THREE.Mesh(this.vertexHelperGeometry, new THREE.MeshBasicMaterial({color: 0x000000}));
       this.vertexHelpers.push(helper);
       this.vertexHelpersGroup.add(helper);
     }
@@ -260,7 +261,7 @@ export class TabWOKEditorState extends TabState {
   }
 
   resetFaceColors(){
-    const color = this.wok.geometry.attributes.color as KotOR.THREE.BufferAttribute;
+    const color = this.wok.geometry.attributes.color as THREE.BufferAttribute;
     for(let i = 0; i < this.wok.faces.length; i++){
       const face = this.wok.faces[i];
       const index = i * 3;
@@ -283,9 +284,9 @@ export class TabWOKEditorState extends TabState {
     this.resetFaceColors();
     this.selectedFaceIndex = -1;
     if(face){
-      const position = this.wok.geometry.attributes.position as KotOR.THREE.BufferAttribute;
-      const h_position = this.faceHelperGeometry.attributes.position as KotOR.THREE.BufferAttribute;
-      const color = this.wok.geometry.attributes.color as KotOR.THREE.BufferAttribute;
+      const position = this.wok.geometry.attributes.position as THREE.BufferAttribute;
+      const h_position = this.faceHelperGeometry.attributes.position as THREE.BufferAttribute;
+      const color = this.wok.geometry.attributes.color as THREE.BufferAttribute;
       this.selectedFaceIndex = this.wok.faces.indexOf(face);
       const index = this.selectedFaceIndex * 3;
       color.setX(index, this.selectColor.r);
@@ -325,8 +326,8 @@ export class TabWOKEditorState extends TabState {
     this.selectedVertexIndex = index;
     this.ui3DRenderer.transformControls.detach();
     for(let i = 0; i < this.vertexHelpersGroup.children.length; i++){
-      const helper = this.vertexHelpersGroup.children[i] as KotOR.THREE.Mesh;
-      const material = helper.material as KotOR.THREE.MeshBasicMaterial;
+      const helper = this.vertexHelpersGroup.children[i] as THREE.Mesh;
+      const material = helper.material as THREE.MeshBasicMaterial;
       if(i == index){
         material.color.setHex(0xFFFFFF);
         this.ui3DRenderer.transformControls.attach(helper);

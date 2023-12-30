@@ -79,6 +79,6 @@ export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 export * from "./utility/Utility";
 
-export * as THREE from "three";
+// export * as THREE from "three";
 
 export { Buffer } from "buffer";

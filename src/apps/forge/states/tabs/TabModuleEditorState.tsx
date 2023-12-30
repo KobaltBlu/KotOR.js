@@ -2,17 +2,17 @@ import React from "react";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./";
-import * as KotOR from "../../KotOR";
+import * as THREE from 'three';
 
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
 
   ui3DRenderer: UI3DRenderer;
-  groundColor: KotOR.THREE.Color;
-  groundGeometry: KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>;
-  groundMaterial: KotOR.THREE.LineBasicMaterial;
-  groundMesh: KotOR.THREE.LineSegments<KotOR.THREE.WireframeGeometry<KotOR.THREE.PlaneGeometry>, KotOR.THREE.LineBasicMaterial>;
+  groundColor: THREE.Color;
+  groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
+  groundMaterial: THREE.LineBasicMaterial;
+  groundMesh: THREE.LineSegments<THREE.WireframeGeometry<THREE.PlaneGeometry>, THREE.LineBasicMaterial>;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -20,10 +20,10 @@ export class TabModuleEditorState extends TabState {
     this.isClosable = true;
     
     // Geometry
-    this.groundColor = new KotOR.THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new KotOR.THREE.WireframeGeometry(new KotOR.THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
-    this.groundMaterial = new KotOR.THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
-    this.groundMesh = new KotOR.THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
+    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
+    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));

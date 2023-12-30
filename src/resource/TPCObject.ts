@@ -88,34 +88,6 @@ export class TPCObject {
 
   }
 
-  getPixelData( onLoad?: Function ) {
-    return new Promise<Uint8Array>( (resolve, reject) => {
-      // Parse header
-      if(this.header === null)
-        this.header = this.readHeader();
-  
-      if(typeof TPCObject.worker === 'undefined'){
-        TPCObject.worker = new Worker('worker-tex.js'); 
-      }
-  
-      this.txi = new TXI( this.getTXIData() );
-  
-      TPCObject.worker.addEventListener('message', function(e) {
-        //console.log('TPCObject', 'Worker said: ', e.data);
-        if(typeof onLoad === 'function')
-          onLoad(new Uint8Array(e.data));
-        
-        resolve(new Uint8Array(e.data));
-      }, false);
-  
-      TPCObject.worker.postMessage({
-        Header: this.header,
-        buffer: this.file,
-        txi: this.txi.info
-      }, [this.file.buffer]);
-    });
-  }
-
   getMIPMaps(){
 
   }
@@ -135,24 +107,24 @@ export class TPCObject {
           // 8bpp grayscale
         break;
         case ENCODING.RGB:
-    			dds.format = THREE.RGBAFormat
+    			dds.format = 1023;//THREE.RGBAFormat
         break;
         case ENCODING.RGBA:
-          dds.format = THREE.RGBAFormat;
+          dds.format = 1023;//THREE.RGBAFormat;
         break;
         case ENCODING.BGRA:
-          dds.format = THREE.RGBAFormat;
+          dds.format = 1023;//THREE.RGBAFormat;
         break;
       }
     }else{
       switch(this.header.encoding){
         case ENCODING.RGB:
           // S3TC DXT1
-          dds.format = THREE.RGB_S3TC_DXT1_Format;
+          dds.format = 33776;//THREE.RGB_S3TC_DXT1_Format;
         break;
         case ENCODING.RGBA:
           // S3TC DXT5
-          dds.format = THREE.RGBA_S3TC_DXT5_Format;
+          dds.format = 33779;//THREE.RGBA_S3TC_DXT5_Format;
         break;
       }
     }
