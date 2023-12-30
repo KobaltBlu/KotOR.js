@@ -22,7 +22,8 @@
     ],
     "lib": [
       "ESNext",
-      "dom"
+      "dom",
+      "WebWorker"
     ],
     "outDir": "dist",
   },
