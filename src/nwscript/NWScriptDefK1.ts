@@ -616,7 +616,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [string]){
       if(this.caller instanceof ModuleObject){
         try{
-          this.caller.audioEmitter.PlaySound(args[0]);
+          this.caller.audioEmitter.playSound(args[0]);
         }catch(e){ console.error(e); }
       }
     }
@@ -4836,7 +4836,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(args[0] instanceof ModuleSound)
-      args[0].emitter.PlayNextSound();
+      args[0].emitter.playNextSound();
     }
   },
   414:{

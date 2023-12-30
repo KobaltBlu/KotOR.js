@@ -12,6 +12,8 @@ import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectManager } from "../managers";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 
 /* @file
  * The ModuleSound class.
@@ -177,7 +179,7 @@ export class ModuleSound extends ModuleObject {
   loadSound(onLoad?: Function){
 
     let template: any = {
-      sounds: [],//this.gff.getFieldByLabel('Sounds').getChildStructs(),
+      sounds: [],
       isActive: this.getActive(),
       isLooping: this.getLooping(),
       isRandom: this.getRandom(),
@@ -194,19 +196,22 @@ export class ModuleSound extends ModuleObject {
       template.sounds.push(snds[i].getFieldByLabel('Sound').getValue());
     }
 
-    //console.log('UTSObject', template);
-
-    this.emitter = new AudioEmitter({
-      engine: this.audioEngine,
-      props: this,
-      template: template,
-      onLoad: () => {
-        if(onLoad != null)
-          onLoad();
-      },
-      onError: () => {
-        if(onLoad != null)
-          onLoad();
+    const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    
+    this.emitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
+    this.emitter.isActive = this.getActive();
+    this.emitter.isLooping = this.getLooping();
+    this.emitter.isRandom = this.getRandom();
+    this.emitter.isRandomPosition = this.getRandomPosition();
+    this.emitter.interval = this.getInterval();
+    this.emitter.intervalVariation = this.getInternalVrtn();
+    this.emitter.maxDistance = this.getMaxDistance();
+    this.emitter.volume = this.getVolume();
+    console.log('UTS Volume: ', this.getVolume());
+    this.emitter.type = type;
+    this.emitter.load().then( () => {
+      if(typeof onLoad === 'function'){
+        onLoad();
       }
     });
 

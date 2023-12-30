@@ -197,7 +197,7 @@ export class TabLIPEditorState extends TabState {
 
   loadSound(sound = 'nm35aabast06217_'){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.AudioLoader.LoadStreamWave(sound, (data: any) => {
+      KotOR.AudioLoader.LoadStreamWave(sound).then((data: any) => {
         this.audio_name = sound;
         KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
           this.audio_buffer = buffer;

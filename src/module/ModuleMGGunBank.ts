@@ -76,7 +76,7 @@ export class ModuleMGGunBank extends ModuleObject {
       this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
 
       if(this.fire_sound){
-        GameState.audioEmitter.PlaySound(this.fire_sound);
+        GameState.audioEmitter.playSound(this.fire_sound);
       }
 
       if(this.model instanceof OdysseyModel3D){

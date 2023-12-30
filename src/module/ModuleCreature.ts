@@ -53,6 +53,7 @@ import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType"
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { PerceptionType } from "../enums/engine/PerceptionType";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 
 /* @file
  * The ModuleCreature class.
@@ -364,47 +365,15 @@ export class ModuleCreature extends ModuleObject {
 
     try{
 
-      this.audioEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: this,
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 50,
-          volume: 127,
-          positional: 1
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
+      this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      this.audioEmitter.maxDistance = 50;
+      this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.load();
 
-      this.footstepEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: this,
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 50,
-          volume: 127,
-          positional: 1
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
+      this.footstepEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      this.footstepEmitter.maxDistance = 50;
+      this.footstepEmitter.type = AudioEmitterType.POSITIONAL;
+      this.footstepEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
     }
@@ -416,7 +385,7 @@ export class ModuleCreature extends ModuleObject {
     super.update(delta);
 
     if(this.audioEmitter){
-      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z + 1.0);
+      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
     }
 
     this.AxisFront.set(0, 0, 0);
@@ -426,7 +395,7 @@ export class ModuleCreature extends ModuleObject {
     if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG){
 
       if(this.animationState.index == ModuleCreatureAnimState.IDLE){
-        this.footstepEmitter.Stop();
+        this.footstepEmitter.stop();
       }
 
       if(!this.isReady){
@@ -1903,8 +1872,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   playEvent(event: any){
-    this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
-    this.footstepEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
+    this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
+    this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     let appearance = this.creatureAppearance;
 
     let rhSounds, lhSounds;
@@ -1958,17 +1927,17 @@ export class ModuleCreature extends ModuleObject {
           }
 
           if(sound != '****'){
-            this.footstepEmitter.Stop();
-            this.footstepEmitter.PlaySound(sound);
+            this.footstepEmitter.stop();
+            this.footstepEmitter.playSound(sound);
           }else if(sndTable['rolling'] != '****'){
             if(!this.footstepEmitter.currentSound){
-              this.footstepEmitter.Stop();
-              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: AudioBufferSourceNode) => {
+              this.footstepEmitter.stop();
+              this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
-            }else if(this.footstepEmitter.currentSound && this.footstepEmitter.currentSound.name != sndTable['rolling']){
-              this.footstepEmitter.Stop();
-              this.footstepEmitter.PlaySound(sndTable['rolling'], (buffer: AudioBufferSourceNode) => {
+            }else if(this.footstepEmitter.currentSound && (this.footstepEmitter.currentSound as any).name != sndTable['rolling']){
+              this.footstepEmitter.stop();
+              this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
             }
@@ -1977,27 +1946,27 @@ export class ModuleCreature extends ModuleObject {
       break;
       case 'Swingshort':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.PlaySound(rhSounds['swingshort'+sndIdx]);
+          this.audioEmitter.playSound(rhSounds['swingshort'+sndIdx]);
         }
       break;
       case 'Swinglong':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.PlaySound(rhSounds['swinglong'+sndIdx]);
+          this.audioEmitter.playSound(rhSounds['swinglong'+sndIdx]);
         }
       break;
       case 'HitParry':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.PlaySound(rhSounds['parry'+sndIdx2]);
+          this.audioEmitter.playSound(rhSounds['parry'+sndIdx2]);
         }
       break;
       case 'Contact':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.PlaySound(rhSounds['clash'+sndIdx2]);
+          this.audioEmitter.playSound(rhSounds['clash'+sndIdx2]);
         }
       break;
       case 'Clash':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.PlaySound(rhSounds['clash'+sndIdx2]);
+          this.audioEmitter.playSound(rhSounds['clash'+sndIdx2]);
         }
       break;
       case 'Hit':
@@ -2011,7 +1980,7 @@ export class ModuleCreature extends ModuleObject {
 
         if(this.equipment.RIGHTHAND){
           if(this.equipment.RIGHTHAND){
-            this.audioEmitter.PlaySound(rhSounds['leather'+Math.round(Math.random()*1)]);
+            this.audioEmitter.playSound(rhSounds['leather'+Math.round(Math.random()*1)]);
           }
         }
       break;
@@ -4384,7 +4353,7 @@ export class ModuleCreature extends ModuleObject {
       let resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
       if(resref != ''){
         if(this.audioEmitter)
-          this.audioEmitter.PlaySound(resref);
+          this.audioEmitter.playSound(resref);
       }
     }
   }

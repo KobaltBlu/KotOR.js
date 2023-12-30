@@ -28,6 +28,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AudioEngine } from "../audio/AudioEngine";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 
 /* @file
  * The Module class.
@@ -286,27 +287,11 @@ export class Module {
         }
       };
 
-      object.audioEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: object,
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 50,
-          volume: 127,
-          positional: 1
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
-      object.audioEmitter.SetPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
+      object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      object.audioEmitter.maxDistance = 50;
+      object.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      object.audioEmitter.load();
+      object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
 
       object.model.position.copy(lLocation.position);
 

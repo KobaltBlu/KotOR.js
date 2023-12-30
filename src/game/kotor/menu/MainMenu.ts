@@ -121,7 +121,7 @@ export class MainMenu extends GameMenu {
   Start(){
     return new Promise<void>( (resolve, reject) => {
       this.manager.ClearMenus(); 
-      AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
+      AudioLoader.LoadMusic(this.bgMusicResRef).then((data: ArrayBuffer) => {
         AudioEngine.GetAudioEngine().setBackgroundMusic(data);
         this.open();
         resolve();

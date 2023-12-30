@@ -200,7 +200,7 @@ export class InGameDialog extends GameMenu {
 
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
-      AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
+      AudioLoader.LoadMusic(this.dialog.ambientTrack).then((data: ArrayBuffer) => {
         AudioEngine.GetAudioEngine().stopBackgroundMusic();
         AudioEngine.GetAudioEngine().setDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
@@ -264,7 +264,7 @@ export class InGameDialog extends GameMenu {
       if(!this.currentEntry.skippable) return;
       this.currentEntry.checkList.isSkipped = true;
       this.updateCamera();
-      this.audioEmitter.Stop();
+      this.audioEmitter.stop();
       this.showReplies(this.currentEntry);
     }
   }
@@ -432,7 +432,7 @@ export class InGameDialog extends GameMenu {
     if (GameState.ConversationPaused) {
       this.ended = true;
     }
-    this.audioEmitter.Stop();
+    this.audioEmitter.stop();
     this.close();
     GameState.currentCamera = GameState.camera;
     this.state = -1;

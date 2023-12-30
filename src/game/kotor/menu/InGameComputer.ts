@@ -101,7 +101,7 @@ export class InGameComputer extends GameMenu {
 
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
-      AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
+      AudioLoader.LoadMusic(this.dialog.ambientTrack).then((data: ArrayBuffer) => {
         AudioEngine.GetAudioEngine().stopBackgroundMusic();
         AudioEngine.GetAudioEngine().setDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
@@ -208,7 +208,7 @@ export class InGameComputer extends GameMenu {
 
   playerSkipEntry(entry: DLGNode) {
     if (this.currentEntry instanceof DLGNode) {
-      this.audioEmitter.Stop();
+      this.audioEmitter.stop();
       this.showReplies(this.currentEntry);
     }
   }
@@ -323,7 +323,7 @@ export class InGameComputer extends GameMenu {
     if (GameState.ConversationPaused) {
       this.ended = true;
     }
-    this.audioEmitter.Stop();
+    this.audioEmitter.stop();
     this.close();
     this.state = -1;
     if(this.dialog){

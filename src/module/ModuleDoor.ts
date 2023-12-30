@@ -33,6 +33,7 @@ import { DoorAppearance } from "../engine/DoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 
 /* @file
  * The ModuleDoor class.
@@ -152,27 +153,10 @@ export class ModuleDoor extends ModuleObject {
     this.bearing = 0;
 
     try{
-
-      this.audioEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: this,
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 50,
-          volume: 127,
-          positional: 1
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
+      this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      this.audioEmitter.maxDistance = 50;
+      this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
     }
@@ -362,7 +346,7 @@ export class ModuleDoor extends ModuleObject {
         }
 
         if(this.getObjectSounds()['locked'] != '****'){
-          this.audioEmitter.PlaySound(this.getObjectSounds()['locked'].toLowerCase());
+          this.audioEmitter.playSound(this.getObjectSounds()['locked'].toLowerCase());
         }
         /*if(this.requiresKey()){
           console.log('key required', this.keyName())
@@ -433,7 +417,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.getObjectSounds()['opened'] != '****'){
-      this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
+      this.audioEmitter.playSound(this.getObjectSounds()['opened'].toLowerCase());
     }
 
     // if(GameState.selectedObject == this){
@@ -496,7 +480,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.getObjectSounds()['closed'] != '****'){
-      this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
+      this.audioEmitter.playSound(this.getObjectSounds()['closed'].toLowerCase());
     }
 
     if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
@@ -552,7 +536,7 @@ export class ModuleDoor extends ModuleObject {
 
       this.box.setFromObject(this.model);
 
-      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
+      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
       this.boxHelper = new THREE.Box3Helper( this.box, (new THREE.Color()).setHex(0xff0000) );
       GameState.group.light_helpers.add( this.boxHelper );
     }

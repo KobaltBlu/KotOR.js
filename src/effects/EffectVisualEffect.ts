@@ -219,7 +219,7 @@ export class EffectVisualEffect extends GameEffect {
 
     if(this.visualEffect.soundimpact != '***'){
       if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature) || this.object?.audioEmitter instanceof AudioEmitter){
-        this.object.audioEmitter.PlaySound(this.visualEffect.soundimpact);
+        this.object.audioEmitter.playSound(this.visualEffect.soundimpact);
       }
     }
   }

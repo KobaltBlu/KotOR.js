@@ -52,14 +52,14 @@ export class InGameBark extends GameMenu {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         }).catch( (e) => {console.error(e)});
-        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, null, (error = false) => {
-          if (!error) {
+        this.manager.InGameDialog.audioEmitter.playStreamWave(entry.sound).then((audioNode) => {
+          audioNode.onended = () => {
             this.close();
-          } else {
-            setTimeout(() => {
-              this.close();
-            }, 3000);
-          }
+          };
+        }).catch((e) => {
+          setTimeout(() => {
+            this.close();
+          }, 3000);
         });
       } else if (entry.vo_resref != '') {
         console.log('lip', entry.vo_resref);
@@ -68,14 +68,14 @@ export class InGameBark extends GameMenu {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         }).catch( (e) => {console.error(e)});
-        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, null, (error = false) => {
-          if (!error) {
+        this.manager.InGameDialog.audioEmitter.playStreamWave(entry.vo_resref).then((audioNode) => {
+          audioNode.onended = () => {
             this.close();
-          } else {
-            setTimeout(() => {
-              this.close();
-            }, 3000);
-          }
+          };
+        }).catch((e) => {
+          setTimeout(() => {
+            this.close();
+          }, 3000);
         });
       } else {
         console.error('VO ERROR', entry);

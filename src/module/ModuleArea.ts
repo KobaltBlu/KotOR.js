@@ -1585,19 +1585,20 @@ export class ModuleArea extends ModuleObject {
   }
 
   loadAudio(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( async (resolve, reject) => {
       const ambientsound2DA = TwoDAManager.datatables.get('ambientsound');
       if(ambientsound2DA){
         let ambientDay = ambientsound2DA.rows[this.audio.AmbientSndDay].resource;
 
-        AudioLoader.LoadAmbientSound(ambientDay, (data: Buffer) => {
+        try{
+          const data = await AudioLoader.LoadAmbientSound(ambientDay);
           //console.log('Loaded Ambient Sound', ambientDay);
           AudioEngine.GetAudioEngine().setAmbientSound(data);
           resolve();
-        }, () => {
+        }catch(e){
           console.error('Ambient Audio not found', ambientDay);
           resolve();
-        });
+        }
       }else{
         resolve();
       }
@@ -1605,19 +1606,20 @@ export class ModuleArea extends ModuleObject {
   }
 
   loadBackgroundMusic(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( async (resolve, reject) => {
       const ambientmusic2DA = TwoDAManager.datatables.get('ambientmusic');
       if(ambientmusic2DA){
-        let bgMusic = ambientmusic2DA.rows[this.audio.MusicDay].resource;
-
-        AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
+        const bgMusic = ambientmusic2DA.rows[this.audio.MusicDay].resource;
+        try{
+          const data = await AudioLoader.LoadMusic(bgMusic);
           //console.log('Loaded Background Music', bgMusic);
           AudioEngine.GetAudioEngine().setBackgroundMusic(data);
           resolve();
-        }, () => {
-          console.error('Background Music not found', bgMusic);
+        }catch(e){
+          console.log('Background Music not found', bgMusic);
+          console.error(e);
           resolve();
-        });
+        }
       }else{
         resolve();
       }

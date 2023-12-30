@@ -302,7 +302,7 @@ export class AudioEngine {
     global.clearTimeout(this.bgmTimeout);
 
     for(let i = 0; i < this.emitters.length; i++)
-      this.emitters[i].Destroy();
+      this.emitters[i].destroy();
 
     this.emitters = [];
 
@@ -318,7 +318,7 @@ export class AudioEngine {
     global.clearTimeout(this.bgmTimeout);
 
     for(let i = 0; i < this.emitters.length; i++)
-      this.emitters[i].Destroy();
+      this.emitters[i].destroy();
 
     this.emitters = [];
 

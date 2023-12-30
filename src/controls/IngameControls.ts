@@ -115,7 +115,7 @@ export class IngameControls {
               customEvent.propagate = false;
             }
             
-            //GameState.guiAudioEmitter.PlaySound('gui_click');
+            //GameState.guiAudioEmitter.playSound('gui_click');
             if(GameState.debug.controls)
               console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
           }catch(e){
@@ -195,7 +195,7 @@ export class IngameControls {
               try{
                 Mouse.downItem.processEventListener('mouseUp', [customEvent]);
                 //Mouse.downItem.onMouseUp(customEvent);
-                //GameState.guiAudioEmitter.PlaySound('gui_click');
+                //GameState.guiAudioEmitter.playSound('gui_click');
                 if(GameState.debug.controls)
                   console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
                 Mouse.leftClick = false;
@@ -222,7 +222,7 @@ export class IngameControls {
                   //control.onClick(customEvent);
                   MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
-                  GameState.guiAudioEmitter.PlaySound('gui_click');
+                  GameState.guiAudioEmitter.playSound('gui_click');
                   if(GameState.debug.controls)
                     console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;

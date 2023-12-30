@@ -26,109 +26,85 @@ export class AudioLoader {
     return ab;
 }
 
-  static LoadSound (ResRef: string, onLoad?: Function, onError?: Function){
+  static async LoadSound (resRef: string){
 
-    if(AudioLoader.cache.hasOwnProperty(ResRef)){
-      if(onLoad != null)
-        onLoad(AudioLoader.cache[ResRef]);
+    if(AudioLoader.cache.hasOwnProperty(resRef)){
+      return AudioLoader.cache[resRef];
     }else{
-      let visKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['wav']);
-      if(visKey != null){
-        KEYManager.Key.getFileBuffer(visKey).then( (buffer: Buffer) => {
-          //console.log(buffer);
-          new AudioFile(buffer, (af: AudioFile)=> {
-            //console.log(af, buffer)
-            af.GetPlayableByteStream( (data: Uint8Array) => {
+      const visKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['wav']);
+      if(!!visKey){
+        try{
+          const buffer = await KEYManager.Key.getFileBuffer(visKey);
+          if(!buffer){ return; }
+        
+          const af = new AudioFile(buffer);
+          const data = await af.getPlayableByteStream();
 
-              if(data.byteLength){
-                //AudioLoader.cache[ResRef] = data;
-                if(onLoad != null)
-                  onLoad(data);
-              }else{
-                //AudioLoader.cache[ResRef] = buffer;
-                if(onLoad != null)
-                  onLoad(buffer);
-              }
-              
-            });
-          });
-        });
+          if(data.byteLength){
+            return data;
+          }else{
+            return buffer;
+          }
+        }catch(e){
+          console.error(e);
+          throw e;
+        }
       }else{
-        //console.log('LoadStreamSound', ResRef)
-        this.LoadStreamSound( ResRef, onLoad, onError);
+        await this.LoadStreamSound( resRef);
       }
 
     }
 
   }
 
-  static LoadStreamSound (ResRef: string, onLoad?: Function, onError?: Function) {
-
-    let file = path.join('streamsounds', ResRef+'.wav');
-
-    //console.log('LoadStreamSound', ResRef, file);
-
-    GameFileSystem.readFile(file).then( (buffer) => {
-      new AudioFile(buffer, (af: AudioFile)=> {
-        //console.log(af, buffer)
-        af.GetPlayableByteStream( (data: any) => {
-          if(onLoad != null)
-            onLoad(data);
-        });
-      });
-    }).catch((err) => {
-      //console.log('AudioLoader.LoadStreamSound : read', err);
-      if(typeof onError === 'function')
-        onError(err);
-    });
-
-  }
-
-  static LoadStreamWave (ResRef: string, onLoad?: Function, onError?: Function) {
-
-    let snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
-    if(snd){
-      //console.log('LoadStreamSound', ResRef, snd);
-
-      GameFileSystem.readFile(snd.file).then( (buffer) => {
-        new AudioFile(buffer, (af: AudioFile)=> {
-          af.GetPlayableByteStream( (data: any) => {
-            if(onLoad != null)
-              onLoad(data);
-          });
-        });
-      }).catch( (err) => {
-        console.log('AudioLoader.LoadStreamWave : read', err);
-        if(typeof onError === 'function')
-          onError(err);
-      });
-    }else{
-      if(typeof onError === 'function')
-        onError();
+  static async LoadStreamSound (resRef: string) {
+    try{
+      const file = path.join('streamsounds', resRef+'.wav');
+      const buffer = await GameFileSystem.readFile(file);
+      const af = new AudioFile(buffer);
+      const data = await af.getPlayableByteStream();
+      return data;
+    }catch(e){
+      console.log(`AudioLoader.LoadStreamSound : read`);
+      console.error(e);
+      throw e;
     }
-
   }
 
-  static LoadMusic (ResRef?: string, onLoad?: Function, onError?: Function){
-    AudioLoader.LoadAmbientSound(ResRef, onLoad, onError);
+  static async LoadStreamWave (ResRef: string) {
+    const snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
+    if(!!snd){
+      try{
+        const buffer = await GameFileSystem.readFile(snd.file);
+        const af = new AudioFile(buffer);
+        const data = await af.getPlayableByteStream();
+        return data;
+      }catch(e){
+        console.log(`AudioLoader.LoadStreamWave : read`);
+        console.error(e);
+        throw e;
+      }
+    }else{
+      throw new Error(`LoadSteamWave: failed to locate playable resource`);
+    }
   }
 
-  static LoadAmbientSound (ResRef: string, onLoad?: Function, onError?: Function) {
+  static async LoadMusic (resRef?: string){
+    return await AudioLoader.LoadAmbientSound(resRef);
+  }
 
-    let file = path.join('streammusic', ResRef+'.wav');
-    GameFileSystem.readFile(file).then( (buffer) => {
-      new AudioFile(buffer, (af: AudioFile)=> {
-        af.GetPlayableByteStream( (data: any) => {
-          if(onLoad != null)
-            onLoad(data);
-        });
-      });
-    }).catch( (err) => {
-      console.log('AudioLoader.LoadAmbientSound : read', err);
-      if(onError != null)
-        onError(err);
-    })
-
+  static async LoadAmbientSound (resRef: string): Promise<ArrayBuffer> {
+    try{
+      const file = path.join('streammusic', resRef+'.wav');
+      const buffer = await GameFileSystem.readFile(file);
+      const af = new AudioFile(buffer);
+      const data = await af.getPlayableByteStream();
+      return data;
+    }catch(e){
+      console.log(`AudioLoader.LoadAmbientSound : read`);
+      console.error(e);
+      throw e;
+    }
   }
 
   static cache: any = {};

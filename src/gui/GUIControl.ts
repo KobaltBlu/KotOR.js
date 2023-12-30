@@ -881,7 +881,7 @@ export class GUIControl {
       this.hideBorder();
 
     if(this.isClickable()){
-      GameState.guiAudioEmitter.PlaySound('gui_scroll');
+      GameState.guiAudioEmitter.playSound('gui_scroll');
     }
 
     this.processEventListener('hover');

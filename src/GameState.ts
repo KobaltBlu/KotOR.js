@@ -49,6 +49,7 @@ import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
 import { BitWise } from "./utility/BitWise";
 import { ModuleObjectType } from "./enums/module/ModuleObjectType";
+import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -212,7 +213,7 @@ export class GameState implements EngineContext {
   static module: Module;
   static TutorialWindowTracker: any[];
   static audioEmitter: AudioEmitter;
-  static guiAudioEmitter: any;
+  static guiAudioEmitter: AudioEmitter;
   static State: EngineState;
   static inMenu: boolean;
   static OnReadyCalled: boolean;
@@ -520,30 +521,10 @@ export class GameState implements EngineContext {
     GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
     const audioEngine = AudioEngine.GetAudioEngine();
 
-    GameState.audioEmitter = new AudioEmitter({
-      engine: audioEngine,
-      props: {
-        XPosition: 0,
-        YPosition: 0,
-        ZPosition: 0
-      },
-      template: {
-        sounds: [],
-        isActive: true,
-        isLooping: false,
-        isRandom: false,
-        isRandomPosition: false,
-        interval: 0,
-        intervalVariation: 0,
-        maxDistance: 100,
-        volume: 127,
-        positional: 0
-      },
-      onLoad: () => {
-      },
-      onError: () => {
-      }
-    });
+    GameState.audioEmitter = new AudioEmitter(audioEngine);
+    GameState.audioEmitter.maxDistance = 50;
+    GameState.audioEmitter.type = AudioEmitterType.GLOBAL;
+    GameState.audioEmitter.load();
 
     //AudioEngine.Unmute()
     GameState.Mode = EngineMode.GUI;
@@ -672,31 +653,10 @@ export class GameState implements EngineContext {
 
   static initGUIAudio(){
     try{
-
-      GameState.guiAudioEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: {
-          XPosition: 0,
-          YPosition: 0,
-          ZPosition: 0
-        },
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 100,
-          volume: 127,
-          positional: 0
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
+      GameState.guiAudioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      GameState.guiAudioEmitter.maxDistance = 100;
+      GameState.guiAudioEmitter.volume = 127;
+      GameState.guiAudioEmitter.load();
     }catch(e){
 
     }
@@ -946,31 +906,10 @@ export class GameState implements EngineContext {
   static ResetModuleAudio(){                        
     MenuManager.InGameComputer.audioEmitter = 
     MenuManager.InGameDialog.audioEmitter = 
-    this.audioEmitter = new AudioEmitter({
-      engine: AudioEngine.GetAudioEngine(),
-      channel: AudioEngineChannel.VO,
-      props: {
-        XPosition: 0,
-        YPosition: 0,
-        ZPosition: 0
-      },
-      template: {
-        sounds: [],
-        isActive: true,
-        isLooping: false,
-        isRandom: false,
-        isRandomPosition: false,
-        interval: 0,
-        intervalVariation: 0,
-        maxDistance: 50,
-        volume: 127,
-        positional: 0
-      },
-      onLoad: () => {
-      },
-      onError: () => {
-      }
-    });
+    this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
+    this.audioEmitter.maxDistance = 50;
+    this.audioEmitter.type = AudioEmitterType.GLOBAL;
+    this.audioEmitter.load();
   }
 
   static LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
@@ -1057,7 +996,7 @@ export class GameState implements EngineContext {
                                   }
                 
                                   if(anyCanLevel){
-                                    GameState.audioEmitter.PlaySound('gui_level');
+                                    GameState.audioEmitter.playSound('gui_level');
                                   }
                 
                                 }

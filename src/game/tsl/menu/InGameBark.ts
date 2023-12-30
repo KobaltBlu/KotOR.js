@@ -53,14 +53,14 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(lip);
           }
         });
-        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.sound, undefined, (error = false) => {
-          if (!error) {
+        this.manager.InGameDialog.audioEmitter.playStreamWave(entry.sound).then((audioNode) => {
+          audioNode.onended = () => {
             this.close();
-          } else {
-            setTimeout(() => {
-              this.close();
-            }, 3000);
-          }
+          };
+        }).catch((e) => {
+          setTimeout(() => {
+            this.close();
+          }, 3000);
         });
       } else if (entry.vo_resref != '') {
         console.log('lip', entry.vo_resref);
@@ -69,14 +69,14 @@ export class InGameBark extends K1_InGameBark {
             entry.speaker.setLIP(lip);
           }
         });
-        this.manager.InGameDialog.audioEmitter.PlayStreamWave(entry.vo_resref, undefined, (error = false) => {
-          if (!error) {
+        this.manager.InGameDialog.audioEmitter.playStreamWave(entry.vo_resref).then((audioNode) => {
+          audioNode.onended = () => {
             this.close();
-          } else {
-            setTimeout(() => {
-              this.close();
-            }, 3000);
-          }
+          };
+        }).catch((e) => {
+          setTimeout(() => {
+            this.close();
+          }, 3000);
         });
       } else {
         console.error('VO ERROR', entry);

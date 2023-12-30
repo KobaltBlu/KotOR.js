@@ -144,26 +144,9 @@ export class ModulePlaceable extends ModuleObject {
     this.inventory = [];
 
     try{
-      this.audioEmitter = new AudioEmitter({
-        engine: AudioEngine.GetAudioEngine(),
-        props: this,
-        template: {
-          sounds: [],
-          isActive: true,
-          isLooping: false,
-          isRandom: false,
-          isRandomPosition: false,
-          interval: 0,
-          intervalVariation: 0,
-          maxDistance: 50,
-          volume: 127,
-          positional: 1
-        },
-        onLoad: () => {
-        },
-        onError: () => {
-        }
-      });
+      this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+      this.audioEmitter.maxDistance = 50;
+      this.audioEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
     }
@@ -209,7 +192,7 @@ export class ModulePlaceable extends ModuleObject {
       if(this.model.visible)
         this.model.update(delta);
 
-      this.audioEmitter.SetPosition(this.position.x, this.position.y, this.position.z);
+      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
     this.action = this.actionQueue[0];
@@ -443,7 +426,7 @@ export class ModulePlaceable extends ModuleObject {
     this.setOpenState(ModulePlaceableState.OPEN);
 
     if(this.getObjectSounds()['opened'] != '****'){
-      this.audioEmitter.PlaySound(this.getObjectSounds()['opened'].toLowerCase());
+      this.audioEmitter.playSound(this.getObjectSounds()['opened'].toLowerCase());
     }
 
     if(this.hasInventory){
@@ -491,7 +474,7 @@ export class ModulePlaceable extends ModuleObject {
     this.setOpenState(ModulePlaceableState.CLOSED);
 
     if(this.getObjectSounds()['closed'] != '****'){
-      this.audioEmitter.PlaySound(this.getObjectSounds()['closed'].toLowerCase());
+      this.audioEmitter.playSound(this.getObjectSounds()['closed'].toLowerCase());
     }
   }
 

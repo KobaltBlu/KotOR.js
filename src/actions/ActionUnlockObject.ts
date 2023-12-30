@@ -64,7 +64,7 @@ export class ActionUnlockObject extends Action {
 
       if(this.timer == undefined){
         this.timer = 1.5;
-        this.target.audioEmitter.PlaySound('gui_lockpick');
+        this.target.audioEmitter.playSound('gui_lockpick');
       }
 
       if(!this.owner.isSimpleCreature()){

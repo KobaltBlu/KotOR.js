@@ -294,40 +294,40 @@ export class DLGNode {
     });
   }
 
-  loadLIP(): Promise<boolean> {
-    return new Promise( (resolve, reject) => {
-      const resref = this.getVoiceResRef();
-      if(resref){
-        LIPObject.Load(resref).then( (lip: LIPObject) => {
-          if (this.speaker instanceof ModuleCreature) {
-            this.speaker.setLIP(lip);
-          }
-          resolve(true);
-        });
-      }else{
-        resolve(false);
+  async loadLIP(): Promise<boolean> {
+    const resref = this.getVoiceResRef();
+    if(resref){
+      const lip = await LIPObject.Load(resref);
+      if (this.speaker instanceof ModuleCreature) {
+        this.speaker.setLIP(lip);
       }
-    });
+      return true;
+    }else{
+      return false;
+    }
   }
 
-  playVoiceOver(audioEmitter: AudioEmitter): Promise<boolean> {
-    return new Promise( (resolve, reject) => {
-      const resref = this.getVoiceResRef();
-      if(resref){
-        this.loadLIP();
-        audioEmitter.PlayStreamWave(resref, null, (error: boolean = false) => {
-          if(!error){
+  async playVoiceOver(audioEmitter: AudioEmitter): Promise<boolean> {
+    const resref = this.getVoiceResRef();
+    if(resref){
+      await this.loadLIP();
+      try{
+        const audioNode = await audioEmitter.playStreamWave(resref);
+        if(audioNode){
+          audioNode.onended = () => {
             this.checkList.voiceOverComplete = true;
-          }else{
-            this.checkList.voiceOverError = true;
           }
-          resolve(error);
-        });
-      }else{
+          return true;
+        }
+        return false;
+      }catch(e){
         this.checkList.voiceOverError = true;
-        resolve(false);
+        return false;
       }
-    });
+    }else{
+      this.checkList.voiceOverError = true;
+      return false;
+    }
   }
 
   getVoiceResRef(): string {
