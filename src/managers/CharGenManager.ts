@@ -74,7 +74,7 @@ export class CharGenManager {
     return new Promise<void>( (resolve, reject) => {
       let audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
       AudioLoader.LoadMusic(audioResRef, (data: any) => {
-        AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().setBackgroundMusic(data);
         resolve();
       }, () => {
         resolve();

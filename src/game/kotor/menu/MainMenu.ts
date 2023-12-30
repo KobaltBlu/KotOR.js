@@ -122,7 +122,7 @@ export class MainMenu extends GameMenu {
     return new Promise<void>( (resolve, reject) => {
       this.manager.ClearMenus(); 
       AudioLoader.LoadMusic(this.bgMusicResRef, (data: ArrayBuffer) => {
-        AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().setBackgroundMusic(data);
         this.open();
         resolve();
       }, () => {
@@ -144,7 +144,7 @@ export class MainMenu extends GameMenu {
 
   show() {
     super.show();
-    AudioEngine.GetAudioEngine().SetBackgroundMusic(this.bgMusicBuffer);
+    AudioEngine.GetAudioEngine().setBackgroundMusic(this.bgMusicBuffer);
     GameState.AlphaTest = 0.5;
     CurrentGame.InitGameInProgressFolder(false).then( () => {
 

@@ -626,7 +626,7 @@ export class ModuleArea extends ModuleObject {
     this.audio.MusicDay = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
     this.audio.MusicDelay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
     this.audio.MusicNight = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
-    AudioEngine.GetAudioEngine().SetAreaAudioProperties(this.audio);
+    AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
     //Cameras
     if(cameras){
@@ -748,7 +748,7 @@ export class ModuleArea extends ModuleObject {
 
     GameState.AlphaTest = this.Alphatest;
 
-    AudioEngine.GetAudioEngine().SetReverbProfile(this.audio.EnvAudio);
+    AudioEngine.GetAudioEngine().setReverbProfile(this.audio.EnvAudio);
 
     FollowerCamera.setCameraStyle(this.getCameraStyle());
     if(this.miniGame){
@@ -1592,7 +1592,7 @@ export class ModuleArea extends ModuleObject {
 
         AudioLoader.LoadAmbientSound(ambientDay, (data: Buffer) => {
           //console.log('Loaded Ambient Sound', ambientDay);
-          AudioEngine.GetAudioEngine().SetAmbientSound(data);
+          AudioEngine.GetAudioEngine().setAmbientSound(data);
           resolve();
         }, () => {
           console.error('Ambient Audio not found', ambientDay);
@@ -1612,7 +1612,7 @@ export class ModuleArea extends ModuleObject {
 
         AudioLoader.LoadMusic(bgMusic, (data: Buffer) => {
           //console.log('Loaded Background Music', bgMusic);
-          AudioEngine.GetAudioEngine().SetBackgroundMusic(data);
+          AudioEngine.GetAudioEngine().setBackgroundMusic(data);
           resolve();
         }, () => {
           console.error('Background Music not found', bgMusic);

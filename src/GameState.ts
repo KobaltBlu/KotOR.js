@@ -1107,7 +1107,7 @@ export class GameState implements EngineContext {
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
     AudioEngine.GetAudioEngine().stopBackgroundMusic();
-    AudioEngine.GetAudioEngine().Reset();
+    AudioEngine.GetAudioEngine().reset();
     CombatEngine.Reset();
 
     GameState.lightManager.clearLights();
@@ -1303,7 +1303,7 @@ export class GameState implements EngineContext {
 
     }
 
-    AudioEngine.GetAudioEngine().Update(GameState.currentCamera.position, GameState.currentCamera.rotation);
+    AudioEngine.GetAudioEngine().update(GameState.currentCamera.position, GameState.currentCamera.rotation);
     CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.updateCursorPosition();

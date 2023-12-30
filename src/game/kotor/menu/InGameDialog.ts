@@ -202,7 +202,7 @@ export class InGameDialog extends GameMenu {
     if (this.dialog.ambientTrack != '') {
       AudioLoader.LoadMusic(this.dialog.ambientTrack, (data: Buffer) => {
         AudioEngine.GetAudioEngine().stopBackgroundMusic();
-        AudioEngine.GetAudioEngine().SetDialogBackgroundMusic(data);
+        AudioEngine.GetAudioEngine().setDialogBackgroundMusic(data);
         this.showEntry(this.startingEntry);
       }, () => {
         this.showEntry(this.startingEntry);

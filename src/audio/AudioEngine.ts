@@ -68,19 +68,7 @@ export class AudioEngine {
 
   }
 
-  static GetAudioEngine(){
-    if(!this.engines.length) this.engines.push(new AudioEngine());
-    return this.engines[0];
-  }
-
-  static SetEngineMode(mode: AudioEngineMode){
-    this.Mode = mode;
-    for(let i = 0; i < this.engines.length; i++){
-      this.engines[i].mode = this.Mode;
-    }
-  }
-
-  SetReverbState(state = false){
+  setReverbState(state = false){
     this.sfxGain.disconnect();
     //this.musicGain.disconnect();
     this.voGain.disconnect();
@@ -103,19 +91,19 @@ export class AudioEngine {
     }
   }
 
-  SetReverbProfile(index = 0){
-    this.SetReverbState(false);
+  setReverbProfile(index = 0){
+    this.setReverbState(false);
     return;
-    console.log('SetReverbProfile:', index);
+    console.log('setReverbProfile:', index);
 
     const software_mode = (this.mode == AudioEngineMode.Software);
     if(software_mode){
-      console.warn('SetReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
+      console.warn('setReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
     }
 
     if(index >= 0){
       let data = EAXPresets.PresetFromIndex(index);
-      console.log('SetReverbProfile:', data);
+      console.log('setReverbProfile:', data);
       // this.reverbHF.gain.value = data.gainHF;
       // this.reverbLF.gain.value = data.gainLF;
 
@@ -131,13 +119,13 @@ export class AudioEngine {
       // this.reverbHF.dry.value = 1;
       // this.reverbLF.dry.value = 1;
       
-      this.SetReverbState(!software_mode);
+      this.setReverbState(!software_mode);
     }else{
-      this.SetReverbState(false);
+      this.setReverbState(false);
     }
   }
 
-  Update ( position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
+  update ( position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
     if(typeof this.audioCtx.listener.setPosition === 'function'){
       this.audioCtx.listener.setPosition(position.x, position.y, position.z);
     }else{
@@ -165,7 +153,7 @@ export class AudioEngine {
 
   }
 
-  AddEmitter(emitter: AudioEmitter){
+  addEmitter(emitter: AudioEmitter){
     this.emitters.push(emitter);
   }
 
@@ -208,26 +196,26 @@ export class AudioEngine {
 
   }*/
 
-  SetBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
+  setBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
     this.audioCtx.decodeAudioData( data, ( buffer ) => {
       this.bgmBuffer = buffer;
-      this.StartBackgroundMusic();
+      this.startBackgroundMusic();
     });
   }
 
-  SetDialogBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
+  setDialogBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
     this.audioCtx.decodeAudioData( data, ( buffer ) => {
       this.dialogMusicBuffer = buffer;
-      this.StartBackgroundMusic(this.dialogMusicBuffer);
+      this.startBackgroundMusic(this.dialogMusicBuffer);
     });
   }
 
-  StartBackgroundMusic(buffer?: AudioBuffer){
+  startBackgroundMusic(buffer?: AudioBuffer){
 
     if(buffer == undefined)
       buffer = this.bgmBuffer;
 
-    this.StopBackgroundMusic();
+    this.stopBackgroundMusic();
     //Create the new audio buffer and callbacks
     this.bgm = this.audioCtx.createBufferSource();
 
@@ -239,13 +227,13 @@ export class AudioEngine {
     this.bgm.onended = () => {
       if(AudioEngine.loopBGM){
         this.bgmTimeout = global.setTimeout( () => {
-          this.StartBackgroundMusic();
-        }, this.GetBackgroundMusicLoopTime());
+          this.startBackgroundMusic();
+        }, this.getBackgroundMusicLoopTime());
       }
     };
   }
 
-  StopBackgroundMusic(){
+  stopBackgroundMusic(){
     try{
       if (this.bgm != null) {
         this.bgm.onended = undefined;
@@ -256,11 +244,11 @@ export class AudioEngine {
     }catch(e){}
   }
 
-  SetAreaAudioProperties(props: AreaAudioProperties){
+  setAreaAudioProperties(props: AreaAudioProperties){
     this.areaProperies = props;
   }
 
-  GetBackgroundMusicLoopTime(){
+  getBackgroundMusicLoopTime(){
     if(this.areaProperies){
       return this.areaProperies.MusicDelay;
     }else{
@@ -268,7 +256,7 @@ export class AudioEngine {
     }
   }
 
-  SetAmbientSound ( data: ArrayBuffer, loop = true, vol = 0.66 ) {
+  setAmbientSound ( data: ArrayBuffer, loop = true, vol = 0.66 ) {
 
     this.audioCtx.decodeAudioData( data, ( buffer ) => {
 
@@ -289,16 +277,6 @@ export class AudioEngine {
 
   }
 
-  stopBackgroundMusic(){
-    try{
-      this.bgm.stop()
-      this.bgm.disconnect();
-      this.bgm = null;
-    }catch(e){
-      console.error(e);
-    }
-  }
-
   stopAmbientSound(){
     try{
       this.ambient.stop()
@@ -309,7 +287,7 @@ export class AudioEngine {
     }
   }
 
-  GetAudioBuffer (data: ArrayBuffer, onBuffered?: Function) {
+  getAudioBuffer (data: ArrayBuffer, onBuffered?: Function) {
 
     this.audioCtx.decodeAudioData(data, (buffer) => {
       if(onBuffered != null)
@@ -318,7 +296,7 @@ export class AudioEngine {
 
   }
 
-  Destroy(){
+  destroy(){
 
     //Clear the BGM repeat timeout just incase it is active
     global.clearTimeout(this.bgmTimeout);
@@ -334,7 +312,7 @@ export class AudioEngine {
     this.audioCtx.close();
   }
 
-  Reset(){
+  reset(){
     
     //Clear the BGM repeat timeout just incase it is active
     global.clearTimeout(this.bgmTimeout);
@@ -347,6 +325,18 @@ export class AudioEngine {
     this.stopAmbientSound();
     this.stopBackgroundMusic();
 
+  }
+
+  static GetAudioEngine(){
+    if(!this.engines.length) this.engines.push(new AudioEngine());
+    return this.engines[0];
+  }
+
+  static SetEngineMode(mode: AudioEngineMode){
+    this.Mode = mode;
+    for(let i = 0; i < this.engines.length; i++){
+      this.engines[i].mode = this.Mode;
+    }
   }
 
   static ToggleMute(){
