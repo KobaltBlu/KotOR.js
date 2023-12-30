@@ -1,4 +1,4 @@
-export const SWConfig: any = {
+export default {
 	"Display Options": {
 		"FullScreen": "1",
 		"Disable Movies": "0",

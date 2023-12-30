@@ -1,4 +1,4 @@
-export const SWConfig: any = {
+export default {
   "Game Options": {
     "TooltipDelay Sec": "1",
     "Disable Intro Movies": "1",
