@@ -141,9 +141,25 @@ export class AudioEngine {
     }
   }
 
-  Update ( position = new THREE.Vector3(0), rotation = new THREE.Euler(0) ) {
-    this.audioCtx.listener.setPosition(position.x,position.y,position.z);
-    this.audioCtx.listener.setOrientation(rotation.x,rotation.y,rotation.z, 0, 0, 1);
+  Update ( position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
+    if(typeof this.audioCtx.listener.setPosition === 'function'){
+      this.audioCtx.listener.setPosition(position.x, position.y, position.z);
+    }else{
+      this.audioCtx.listener.positionX.value = position.x;
+      this.audioCtx.listener.positionY.value = position.y;
+      this.audioCtx.listener.positionZ.value = position.z;
+    }
+
+    if(typeof this.audioCtx.listener.setOrientation === 'function'){
+      this.audioCtx.listener.setOrientation(rotation.x, rotation.y, rotation.z, 0, 0, 1);
+    }else{
+      this.audioCtx.listener.forwardX.value = rotation.x;
+      this.audioCtx.listener.forwardY.value = rotation.y;
+      this.audioCtx.listener.forwardZ.value = rotation.z;
+      this.audioCtx.listener.upX.value = 0;
+      this.audioCtx.listener.upY.value = 0;
+      this.audioCtx.listener.upZ.value = 1;
+    }
 
     /*soundsLen = this.sounds.length;
     for(let i = 0; i < soundsLen; i++){
