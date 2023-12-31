@@ -5,7 +5,7 @@ import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { CharGenManager, TwoDAManager } from "../../../managers";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
 /* @file
@@ -136,7 +136,7 @@ export class CharGenMain extends GameMenu {
     this.PORTRAIT_LBL.show();
     if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
       this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);
-      TextureLoader.tpcLoader.fetch(portrait.baseresref, (texture: OdysseyTexture) => {
+      TextureLoader.tpcLoader.fetch(portrait.baseresref).then((texture: OdysseyTexture) => {
         this.PORTRAIT_LBL.setFillTexture(texture);
       });
     }

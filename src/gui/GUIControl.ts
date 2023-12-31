@@ -18,7 +18,7 @@ import { createQuadElements as createIndicies } from "../utility/QuadIndices";
 import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";

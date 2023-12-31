@@ -9,7 +9,7 @@ import { ModuleCreature } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 import { PartyManager } from "../../../managers";
@@ -381,7 +381,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         let portrait = PartyManager.GetPortraitByIndex(i);
         if (LBL_NA.getFillTextureName() != portrait) {
           LBL_CHAR.setFillTextureName(portrait);
-          TextureLoader.Load(portrait, (texture: OdysseyTexture) => {
+          TextureLoader.Load(portrait).then((texture: OdysseyTexture) => {
             LBL_CHAR.setFillTexture(texture);
             if (this.isSelectable(i)) {
               (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 1;

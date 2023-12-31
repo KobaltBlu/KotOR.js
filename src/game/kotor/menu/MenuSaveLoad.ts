@@ -8,7 +8,7 @@ import { GUISaveGameItem } from "../gui/GUISaveGameItem";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
 import { TLKManager } from "../../../managers";
 

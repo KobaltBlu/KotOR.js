@@ -2,7 +2,7 @@ import { GUIProtoItem, GUIButton } from "../../../gui";
 import type { GUIControl, GameMenu } from "../../../gui";
 import * as THREE from "three";
 import { TextureType } from "../../../enums/loaders/TextureType";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import type { GFFStruct } from "../../../resource/GFFStruct";
 import { GameState } from "../../../GameState";
 import { TextureLoader } from "../../../loaders";

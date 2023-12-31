@@ -9,7 +9,7 @@ import * as THREE from "three";
 import { ResourceLoader } from ".";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { TextureLoader } from "./TextureLoader";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
@@ -21,131 +21,103 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 
 export class TGALoader {
-	manager: any;
-	constructor( manager?: any ){
-		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
-	}
 
-	load( url: string, onLoad: Function = undefined, onError: Function = undefined ) {
-	
-		let texture = new OdysseyTexture();
-		let found = false;
-
-		ResourceLoader.loadResource(ResourceTypes.tga, url).then( (buffer: Buffer) => {
+	async fetch( resRef: string ): Promise<OdysseyTexture> {
+		const texture = new OdysseyTexture();
+		
+		try{
+			const buffer = await ResourceLoader.loadResource(ResourceTypes.tga, resRef);
 			if(!buffer){
-				if(typeof onLoad == 'function')
-					onLoad( undefined );
-				return;
+				return undefined
 			}
-			texture.image = this.parse( buffer, url );
+
+			texture.image = this.parse( buffer, resRef );
 			texture.needsUpdate = true;
-			texture.name = url;
+			texture.name = resRef;
 			texture.bumpMapType = 'BUMP';
 			texture.generateMipmaps = true;
+
+			texture.txi = new TXI('');
 
 			//Check for TXI info
-			ResourceLoader.loadResource(ResourceTypes.txi, url).then( (txiBuffer: Buffer) => {
+			try{
+				const txiBuffer = await ResourceLoader.loadResource(ResourceTypes.txi, resRef);
+
 				if(typeof txiBuffer !== 'undefined'){
-					if ( typeof onLoad !== 'undefined' ) {
-						texture.txi = new TXI(txiBuffer);
-						if(typeof onLoad == 'function')
-							onLoad( texture );
-					}
-				}else{
-					if ( typeof onLoad !== 'undefined' ) {
-						texture.txi = new TXI('');
-						if(typeof onLoad == 'function')
-							onLoad( undefined );
-					}
+					texture.txi = new TXI(txiBuffer);
+					return texture;
 				}
-			}).catch( (e) => {
+
+				return texture;
+			}catch(e){
 				console.error(e);
-				texture.txi = new TXI('');
-				if(typeof onLoad == 'function')
-					onLoad( undefined );
-			});
-		}).catch( (e) => {
+				return texture;
+			}
+		}catch(e){
 			console.error(e);
-			if(typeof onLoad === 'function')
-			onLoad( undefined );
-		});
-	
-	};
+			return undefined;
+		}
+	}
 
-	load_override = function ( name: string, onLoad?: Function, onError?: Function ) {
+	async fetchOverride ( name: string ): Promise<OdysseyTexture> {
+		const dir = path.join('Override');
+		const texture = new OdysseyTexture();
+	
+		try{
+			const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
-		let dir = path.join('Override');
-		
-		let scope = this;
-		let texture = new OdysseyTexture();
-	
-		GameFileSystem.readFile(path.join(dir, name)+'.tga').then( (buffer) => {
-
-			texture.image = scope.parse( buffer, name );
-			texture.needsUpdate = true;
-			texture.name = name;
-			texture.bumpMapType = 'BUMP';
-			texture.generateMipmaps = true;
-	
-			GameFileSystem.readFile(path.join(dir, name)+'.txi').then( (txiBuffer) => {
-	
-				TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
-
-					if(tpcCheck){
-						texture.txi = tpcCheck.txi;
-						if(typeof onLoad == 'function')
-							onLoad( texture );
-					}else{
-						texture.txi = new TXI('');
-						if(typeof onLoad == 'function')
-							onLoad( texture );
-					}
-
-				});
-	
-			}).catch( (err) => {
-				texture.txi = new TXI('');
-				if(typeof onLoad == 'function')
-					onLoad( texture );
-			})
-	
-		}).catch( (err) => {
-			if(typeof onError == 'function')
-				onError( err );
-
-			return;
-		})
-	
-	};
-	
-	load_local( name: string, onLoad: Function = undefined, onError: Function = undefined ) {
-		
-		let texture = new OdysseyTexture();
-	
-		GameFileSystem.readFile(name).then( (buffer) => {
 			texture.image = this.parse( buffer, name );
 			texture.needsUpdate = true;
 			texture.name = name;
+			texture.bumpMapType = 'BUMP';
+			texture.generateMipmaps = true;
+			texture.txi = new TXI('');
+
+			const txiBuffer = await GameFileSystem.readFile(path.join(dir, name)+'.txi');
+
+			const tpcCheck = await TextureLoader.tpcLoader.fetch(name);
+
+			if(tpcCheck){
+				texture.txi = tpcCheck.txi;
+				return texture;
+			}else{
+				texture.txi = new TXI('');
+				return texture;
+			}
+		}catch(e){
+			console.error(e);
+			throw e;
+		}
+	}
+	
+	async fetchLocal( resRef: string ) {
+		const texture = new OdysseyTexture();
+	
+		try{
+			const buffer = await GameFileSystem.readFile(resRef);
+			texture.image = this.parse( buffer, resRef );
+			texture.needsUpdate = true;
+			texture.name = resRef;
 			texture.bumpMapType = 'BUMP';
 			texture.generateMipmaps = true;
 	
 			//fs.readFile(path.join(dir, name)+'.txi', (err, txiBuffer) => {
 	
 				//if(err){
+			
+				try{
+					const tpcCheck = await TextureLoader.tpcLoader.fetch(resRef);
 	
-					TextureLoader.tpcLoader.fetch(name, (tpcCheck: any) => {
-	
-						/*if(tpcCheck){
-							texture.txi = tpcCheck.txi;
-							onLoad( texture );
-						}else{*/
-							texture.txi = new TXI('');
-							if(typeof onLoad == 'function')
-								onLoad( texture );
-						//}
-	
-					});
-	
+					/*if(tpcCheck){
+						texture.txi = tpcCheck.txi;
+						onLoad( texture );
+					}else{*/
+						texture.txi = new TXI('');
+					//}
+				}catch(e){
+
+				}
+
 				/*}else{
 					texture.txi = new TXI(txiBuffer);
 					if(typeof onLoad == 'function')
@@ -153,18 +125,11 @@ export class TGALoader {
 				}*/
 	
 			//});
-	
-		}).catch( (err) => {
-			if(typeof onError === 'function')
-				onError( err );
-
-			return;
-		})
-	
-	};
-
-
-
+			return texture;
+		}catch(e){
+			throw e;
+		}
+	}
 
 	// reference from vthibault, https://github.com/vthibault/roBrowser/blob/master/src/Loaders/Targa.js
 	parse( buffer: Buffer, name: string ) {
@@ -685,6 +650,6 @@ export class TGALoader {
 
 		return canvases;
 
-	};
+	}
 
 }

@@ -5,7 +5,7 @@ import { GameMenu, GUIControl, GUIProtoItem, GUIScrollBar } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { Mouse } from "../controls";
@@ -644,18 +644,18 @@ GUIListBox.InitTextures = function(){
       }else{
         name = 'lbl_hex_'+(i+1);
       }
-      TextureLoader.Load(name, (texture: OdysseyTexture) => {
+      TextureLoader.Load(name).then((texture: OdysseyTexture) => {
         GUIListBox.hexTextures.set(texture?.name, texture);
       });
     }
   }else{
-    TextureLoader.Load('uibit_eqp_itm1', (texture: OdysseyTexture) => {
+    TextureLoader.Load('uibit_eqp_itm1').then((texture: OdysseyTexture) => {
       GUIListBox.hexTextures.set(texture?.name, texture);
     });
-    TextureLoader.Load('uibit_eqp_itm2', (texture: OdysseyTexture) => {
+    TextureLoader.Load('uibit_eqp_itm2').then((texture: OdysseyTexture) => {
       GUIListBox.hexTextures.set(texture?.name, texture);
     });
-    TextureLoader.Load('uibit_eqp_itm3', (texture: OdysseyTexture) => {
+    TextureLoader.Load('uibit_eqp_itm3').then((texture: OdysseyTexture) => {
       GUIListBox.hexTextures.set(texture?.name, texture);
     });
   }

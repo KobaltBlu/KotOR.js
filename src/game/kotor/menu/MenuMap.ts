@@ -7,7 +7,7 @@ import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { MapMode } from "../../../enums/engine/MapMode";
 import { Mouse } from "../../../controls";
 import type { ModuleWaypoint } from "../../../module";
@@ -115,7 +115,7 @@ export class MenuMap extends GameMenu {
 
   SetMapTexture(sTexture = '') {
     try {
-      TextureLoader.Load(sTexture, (texture: OdysseyTexture) => {
+      TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
     } catch (e: any) {

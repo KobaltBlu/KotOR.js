@@ -207,7 +207,6 @@ export class ModuleSound extends ModuleObject {
     this.emitter.intervalVariation = this.getInternalVrtn();
     this.emitter.maxDistance = this.getMaxDistance();
     this.emitter.volume = this.getVolume();
-    console.log('UTS Volume: ', this.getVolume());
     this.emitter.type = type;
     this.emitter.load().then( () => {
       if(typeof onLoad === 'function'){

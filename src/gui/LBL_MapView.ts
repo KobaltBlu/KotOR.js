@@ -1,6 +1,6 @@
 import { GameState } from "../GameState";
 import { AreaMap, ModuleWaypoint } from "../module";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GUIControl, GUILabel } from ".";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { MapMode } from "../enums/engine/MapMode";
@@ -149,21 +149,21 @@ export class LBL_MapView {
     this.scene.add(this.mapGroup);
     this.scene.add(this.fogGroup);
 
-    TextureLoader.Load('blackdot', (texture: OdysseyTexture) => {
+    TextureLoader.Load('blackdot').then((texture: OdysseyTexture) => {
       fogPlaneMaterial.uniforms.map.value = texture;
       this.fogTexture = texture;
     });
 
-    TextureLoader.Load('mm_barrow', (texture: OdysseyTexture) => {
+    TextureLoader.Load('mm_barrow').then((texture: OdysseyTexture) => {
       this.arrowTexture = texture;
       (this.arrowPlane.material as THREE.MeshBasicMaterial).map = texture;
     });
 
-    TextureLoader.Load('whitetarget', (texture: OdysseyTexture) => {
+    TextureLoader.Load('whitetarget').then((texture: OdysseyTexture) => {
       this.noteTexture = texture;
     });
 
-    TextureLoader.Load('lbl_mapcircle', (texture: OdysseyTexture) => {
+    TextureLoader.Load('lbl_mapcircle').then((texture: OdysseyTexture) => {
       this.pmTexture = pmCircleMaterial.map = texture;
     });
   }

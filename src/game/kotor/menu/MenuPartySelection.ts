@@ -8,7 +8,7 @@ import { TextureLoader } from "../../../loaders";
 import { PartyManager, TLKManager } from "../../../managers";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 
 /* @file
 * The MenuPartySelection menu class.

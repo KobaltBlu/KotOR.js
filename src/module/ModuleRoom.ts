@@ -11,7 +11,7 @@ import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
 import { BinaryReader } from "../BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
@@ -431,7 +431,7 @@ export class ModuleRoom extends ModuleObject {
             GameState.group.grass.add(this.grass);
 
             //Load in the grass texture
-            TextureLoader.Load(GameState.module.area.Grass.TexName, (grassTexture: OdysseyTexture) => {
+            TextureLoader.Load(GameState.module.area.Grass.TexName).then((grassTexture: OdysseyTexture) => {
               if(grassTexture){
                 grassTexture.minFilter = THREE.LinearFilter;
                 grassTexture.magFilter = THREE.LinearFilter;
@@ -439,7 +439,7 @@ export class ModuleRoom extends ModuleObject {
                 grass_material.uniformsNeedUpdate = true;
                 grass_material.needsUpdate = true;
                 //Load in the grass lm texture
-                TextureLoader.Load(lm_texture, (lmTexture: OdysseyTexture) => {
+                TextureLoader.Load(lm_texture).then((lmTexture: OdysseyTexture) => {
                   if(lmTexture){
                     lmTexture.minFilter = THREE.LinearFilter;
                     lmTexture.magFilter = THREE.LinearFilter;

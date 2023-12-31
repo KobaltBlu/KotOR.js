@@ -1,4 +1,4 @@
-import { OdysseyTexture } from "../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
 
 export interface EffectIconListItem {
   id: number;

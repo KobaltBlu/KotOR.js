@@ -6,7 +6,7 @@ import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, Odys
 import { GameState } from "../../GameState";
 import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
-import { OdysseyTexture } from "../../resource/OdysseyTexture";
+import { OdysseyTexture } from "./OdysseyTexture";
 import { ResourceLoader, TextureLoader } from "../../loaders";
 import { TextureType } from "../../enums/loaders/TextureType";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";

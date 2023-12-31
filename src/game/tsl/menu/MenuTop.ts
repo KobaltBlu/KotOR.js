@@ -4,7 +4,7 @@
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { PartyManager, TwoDAManager } from "../../../managers";
-import { OdysseyTexture } from "../../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
 /* @file
@@ -191,7 +191,7 @@ export class MenuTop extends K1_MenuTop {
       let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portrait.baseresref) {
         pmBG.setFillTextureName(portrait.baseresref);
-        TextureLoader.Load(portrait.baseresref, (texture: OdysseyTexture) => {
+        TextureLoader.Load(portrait.baseresref).then((texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }

@@ -8,7 +8,7 @@ import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
 import { TextureLoader } from "../loaders";
 import { ShaderManager } from "../managers";
 import { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /* @file

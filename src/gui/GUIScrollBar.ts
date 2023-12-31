@@ -6,7 +6,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 
 import * as THREE from "three";
 import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";
 import { GameState } from "../GameState";
@@ -54,7 +54,7 @@ export class GUIScrollBar extends GUIControl{
     if(this.control.hasField('DIR')){
       this._dir = this.control.getFieldByLabel('DIR')?.getChildStructs()[0];
       if(this._dir?.hasField('IMAGE')){
-        TextureLoader.tpcLoader.fetch(this._dir.getFieldByLabel('IMAGE')?.getValue(), (texture: OdysseyTexture) => {
+        TextureLoader.tpcLoader.fetch(this._dir.getFieldByLabel('IMAGE')?.getValue()).then((texture: OdysseyTexture) => {
           this.arrowTex = texture;
           
           //Up Arrow

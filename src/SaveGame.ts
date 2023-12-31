@@ -4,7 +4,7 @@
 import * as path from "path";
 import { GFFObject } from "./resource/GFFObject";
 import { TextureLoader } from "./loaders";
-import { OdysseyTexture } from "./resource/OdysseyTexture";
+import { OdysseyTexture } from "./three/odyssey/OdysseyTexture";
 import { CurrentGame } from "./CurrentGame";
 import { GFFField } from "./resource/GFFField";
 import { GameState } from "./GameState";
@@ -217,8 +217,7 @@ export class SaveGame {
   GetThumbnail( onLoad?: Function ){
 
     if(this.thumbnail == null){
-      TextureLoader.tgaLoader.load_local(
-        path.join(this.directory, 'Screen.tga'),
+      TextureLoader.tgaLoader.fetchLocal(path.join(this.directory, 'Screen.tga')).then(
         (texture: OdysseyTexture) => {
           this.thumbnail = texture;
           if(typeof onLoad === 'function'){
@@ -226,14 +225,14 @@ export class SaveGame {
           }
         },
         () => {
-          TextureLoader.Load('load_'+this.getLastModule(), (texture: OdysseyTexture) => {
+          TextureLoader.Load('load_'+this.getLastModule()).then((texture: OdysseyTexture) => {
             if(texture){
               this.thumbnail = texture;
               if(typeof onLoad === 'function'){
                 onLoad(this.thumbnail);
               }
             }else{
-              TextureLoader.Load('whitefill', (texture: OdysseyTexture) => {
+              TextureLoader.Load('whitefill').then((texture: OdysseyTexture) => {
                 if(texture){
                   this.thumbnail = texture;
                   if(typeof onLoad === 'function'){
@@ -263,7 +262,7 @@ export class SaveGame {
       name = (this as any)['PORTRAIT'+nth];
     }
     if(typeof name === 'string'){
-      TextureLoader.Load(name, (texture: OdysseyTexture) => {
+      TextureLoader.Load(name).then((texture: OdysseyTexture) => {
         if(typeof onLoad === 'function'){
           onLoad(texture);
         }

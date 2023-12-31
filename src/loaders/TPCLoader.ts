@@ -9,38 +9,120 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ERFManager } from "../managers/ERFManager";
 import { KEYManager } from "../managers/KEYManager";
+import { OdysseyCompressedTexture } from "../three/odyssey";
+import { FindTPCResult } from "../interface/graphics/FindTPCResult";
 
 /* @file
  * The THREE.TPCLoader class is used to decode the TPC image format found in the game archives.
  */
 
-export const PixelFormat = {
-  R8G8B8 : 1,
-  B8G8R8 : 2,
-  R8G8B8A8 : 3,
-  B8G8R8A8 : 4,
-  A1R5G5B5 : 5,
-  R5G6B5 : 6,
-  Depth16 : 7,
-  DXT1 : 8,
-  DXT3 : 9,
-  DXT5 : 10
-};
-
-export const encodingGray = 0x01;
-export const encodingRGB = 0x02;
-export const encodingRGBA = 0x04;
-export const encodingBGRA = 0x0C;
-
-export const TPCHeaderLength = 128;
-
-//THREE.CompressedTextureLoader
 export class TPCLoader {
-	manager: THREE.LoadingManager;
+  
+  async findTPC( resRef: string ): Promise<FindTPCResult> {
+    resRef = resRef.toLocaleLowerCase();
+  
+    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(resRef, ResourceTypes['tpc']);
+    if(erfResource){
+      const buffer = await ERFManager.ERFs.get('swpc_tex_gui').getResourceBuffer(erfResource);
+      return { pack: 0, buffer: buffer };
+    }
+  
+    let activeTexturePack;
+    switch(TextureLoader.TextureQuality){
+      case 2:
+        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
+      break;
+      case 1:
+        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpb');
+      break;
+      case 0:
+        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpc');
+      break;
+      default:
+        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
+      break;
+    }
+  
+    erfResource = activeTexturePack.getResource(resRef, ResourceTypes['tpc']);
+    if(erfResource){
+      const buffer = await activeTexturePack.getResourceBuffer(erfResource);
+      return { pack: TextureLoader.TextureQuality || 2, buffer: buffer };
+    }
+  
+    //Check in BIF files
+    const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['tpc']);
+    if(resKey){
+      const buffer = await KEYManager.Key.getFileBuffer( resKey);
+      return { pack: TextureLoader.TextureQuality || 2, buffer: buffer };
+    }
+  
+    throw new Error('TPC not found in game resources!');
+  }
+  
+  async fetch(resRef: string = ''): Promise<OdysseyCompressedTexture>{
+    try{
+      const result = await this.findTPC(resRef);
+      const tpc = new TPCObject({
+        filename: resRef,
+        file: result.buffer,
+        pack: result.pack,
+      });
 
-	constructor( manager: THREE.LoadingManager = undefined ){
-		this.manager = ( manager !== undefined ) ? manager : THREE.DefaultLoadingManager;
-	}
+      let texture = tpc.toCompressedTexture();
+      //console.log("loaded texture", resRef);
+
+      return texture;
+    }catch(e){
+      console.error(e);
+      return undefined;
+    }
+  }
+  
+  async fetchOverride(resRef: string = ''): Promise<OdysseyCompressedTexture> {
+    const dir = path.join('Override');
+  
+    try{
+      const buffer = await GameFileSystem.readFile(path.join(dir, resRef)+'.tpc');
+      if(!buffer){
+        throw new Error(`Failed to load ${resRef}.tpc from the override folder`);
+      }
+  
+      const tpc = new TPCObject({
+        filename: resRef,
+        file: buffer
+      });
+  
+      const texture = tpc.toCompressedTexture();
+
+      return texture;
+    }catch(e){
+
+    }
+  };
+  
+  /*fetchLocal( resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
+  
+    let file_info = path.parse(resRef);
+    if(file_info.ext == '.tpc'){
+      GameFileSystem.readFile(resRef).then( (buffer) => {
+        let tpc = new TPCObject({
+          filename: file_info.name,
+          file: buffer
+        });
+  
+        let texture = tpc.toCompressedTexture();
+        //console.log("loaded texture", texName);
+  
+        if ( typeof onLoad === 'function' ) onLoad( texture );
+  
+      }).catch( (err) => {
+        throw err; // Fail if the file can't be read.
+      })
+    }else{
+      onError('Unsupported File Format');
+    }
+  
+  };
 
   loadFromArchive( archive: string, tex: string, onComplete?: Function, onError?: Function ){
     let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes['tpc']);
@@ -63,199 +145,28 @@ export class TPCLoader {
     if (typeof onError === 'function') {
       onError('TPC not found in game archive '+archive+'.erf!');
     }
-  
   }
   
-  findTPC( tex: string, onComplete?: Function, onError?: Function ){
-  
-    tex = tex.toLocaleLowerCase();
-  
-    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(tex, ResourceTypes['tpc']);
-    if(erfResource){
-      if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get('swpc_tex_gui').getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
-          onComplete(buffer, 0);
-        });
-      }
-      return;
-    }
-  
-    let activeTexturePack;
-    switch(TextureLoader.TextureQuality){
-      case 2:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
-      break;
-      case 1:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpb');
-      break;
-      case 0:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpc');
-      break;
-      default:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
-      break;
-    }
-  
-    erfResource = activeTexturePack.getResource(tex, ResourceTypes['tpc']);
-    if(erfResource){
-  
-      if (typeof onComplete === 'function') {
-        activeTexturePack.getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
-          onComplete(buffer, TextureLoader.TextureQuality || 2);
-        });
-      }
-  
-      return;
-    }
-  
-    /*resKey = Global.kotorERF.swpc_tex_tpb.getResource(tex, ResourceTypes['tpc']);
-    if(resKey){
-  
-      if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpb.getResourceBufferByResRef(resKey).then((buffer) => {
-          onComplete(buffer, 2);
-        });
-      }
-  
-      return;
-    }
-  
-    resKey = Global.kotorERF.swpc_tex_tpc.getResource(tex, ResourceTypes['tpc']);
-    if(resKey){
-  
-      if (typeof onComplete === 'function') {
-        Global.kotorERF.swpc_tex_tpc.getResourceBufferByResRef(resKey).then((buffer) => {
-          onComplete(buffer, 3);
-        });
-      }
-  
-      return;
-    }*/
-  
-    //Check in BIF files
-  
-    let resKey = KEYManager.Key.getFileKey(tex, ResourceTypes['tpc']);
-    if(resKey){
-  
-      if (typeof onComplete === 'function') {
-        KEYManager.Key.getFileBuffer( resKey).then( (buffer: Buffer) => {
-          onComplete(buffer);
-        });
-      }
-  
-      return;
-    }
-  
-  
-    if (typeof onError === 'function') {
-      onError('TPC not found in game resources!');
-    }
-  
-  }
-  
-  fetch( url = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
-  
-    if ( Array.isArray( url ) ) {
-      let loaded = 0;
-      for ( let i = 0, il = url.length; i < il; i++ )
-        this.loadTexture(url[i], onLoad = onLoad, onProgress = onProgress, onError = onError);
-    } else {
-      this.loadTexture(url, onLoad = onLoad, onProgress = onProgress, onError = onError);
-    }
-  
-    //return this.texture;
-  
-  };
-  
-  loadTexture = function(texName: string, onLoad?: Function, onProgress?: Function, onError?: Function ){
-    // compressed cubemap texture stored in a single DDS file
-    //console.log('Texture', texName);
-  
-    this.findTPC(texName, (buffer: Buffer, pack: number) => {
-  
-      let tpc = new TPCObject({
-        filename: texName,
-        file: buffer,
-        pack: pack,
-      });
-  
-      let texture = tpc.toCompressedTexture();
-      //console.log("loaded texture", texName);
-  
-      if ( typeof onLoad === 'function' ) onLoad( texture );
-    }, () => {
-      if ( typeof onLoad === 'function' ) onLoad( null );
-    });
-  }
-  
-  fetch_override( name = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
-    
-    let dir = path.join('Override');
-  
-    GameFileSystem.readFile(path.join(dir, name)+'.tpc').then( (buffer) => {
-  
-      let tpc = new TPCObject({
-        filename: name,
-        file: buffer
-      });
-  
-      let texture = tpc.toCompressedTexture();
-
-      if ( typeof onLoad === 'function' ) onLoad( texture );
-  
-    }).catch( (err) => {
-      throw err; // Fail if the file can't be read.
-    })
-  
-  };
-  
-  fetch_local( name = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
-  
-    let file_info = path.parse(name);
-    if(file_info.ext == '.tpc'){
-      GameFileSystem.readFile(name).then( (buffer) => {
-        let tpc = new TPCObject({
-          filename: file_info.name,
-          file: buffer
-        });
-  
-        let texture = tpc.toCompressedTexture();
-        //console.log("loaded texture", texName);
-  
-        if ( typeof onLoad === 'function' ) onLoad( texture );
-  
-      }).catch( (err) => {
-        throw err; // Fail if the file can't be read.
-      })
-    }else{
-      onError('Unsupported File Format');
-    }
-  
-  };
-  
-  load( name: string, isLocal = false, onLoad?: Function, onError?: Function ) {
+  async load( resRef: string, isLocal = false ): Promise<TPCObject> {
     if(!isLocal){
-      //console.log('Image searching');
+      try{
+        const result = await this.findTPC(resRef);
+        const tpc = new TPCObject({
+          filename: resRef,
+          file: result.buffer,
+          pack: result.pack,
+        });
   
-      this.findTPC(name, (buffer: Buffer, pack: number) => {
-  
-        if ( typeof onLoad === 'function' ){
-          onLoad(
-            new TPCObject({
-              filename: name,
-              file: buffer,
-              pack: pack,
-            })
-          );
-        }
-  
-      }, (error: any) => {
-        console.error(error);
-      });
+        return tpc;
+      }catch(e){
+        console.error(e);
+        return undefined;
+      }
   
     }else{
       console.warn('Local files not implemented yet');
     }
-  };
+    return undefined;
+  };*/
 
 }

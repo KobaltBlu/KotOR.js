@@ -8,6 +8,7 @@ import { TXI } from './TXI';
 import * as dxtJs from "dxt-js";
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { ENCODING } from '../enums/graphics/tpc/Encoding';
+import { OdysseyCompressedTexture } from '../three/odyssey';
 
 /* @file
  * The TPCObject class.
@@ -445,7 +446,7 @@ export class TPCObject {
   toCompressedTexture(){
     let images = [];
     let texDatas = this.getDDS( true );
-    let _texture: THREE.CompressedTexture|THREE.CanvasTexture = new THREE.CompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
+    let _texture: OdysseyCompressedTexture|THREE.CanvasTexture = new OdysseyCompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
 
     // if(this.canvas.length){
     //   _texture = new THREE.CanvasTexture(this.canvas[0] as any);

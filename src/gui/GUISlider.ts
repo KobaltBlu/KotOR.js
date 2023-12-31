@@ -10,7 +10,7 @@ import { GameState } from "../GameState";
 import { Mouse } from "../controls/Mouse";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { ResolutionManager } from "../managers";
 
 /* @file

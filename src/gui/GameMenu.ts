@@ -4,7 +4,7 @@
 import { GUIControl, GUIProtoItem } from ".";
 import * as THREE from "three";
 import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { OdysseyObject3D } from "../three/odyssey";
@@ -155,7 +155,7 @@ export class GameMenu {
 
 
     if(this.background){
-      TextureLoader.tpcLoader.fetch(this.background, (texture: OdysseyTexture) => {
+      TextureLoader.tpcLoader.fetch(this.background).then((texture: OdysseyTexture) => {
         const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
         this.backgroundMaterial = new THREE.ShaderMaterial({
           uniforms: THREE.UniformsUtils.merge([
@@ -183,7 +183,7 @@ export class GameMenu {
 
   loadTexture( resRef: string ): Promise<OdysseyTexture> {
     return new Promise<OdysseyTexture>( (resolve, reject) => {
-      TextureLoader.Load(resRef, (texture: OdysseyTexture) => {
+      TextureLoader.Load(resRef).then((texture: OdysseyTexture) => {
         resolve(texture);
       });
     });

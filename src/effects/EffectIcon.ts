@@ -4,7 +4,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
 import { TextureLoader } from "../loaders";
 import { TwoDAManager } from "../managers";
-import { OdysseyTexture } from "../resource/OdysseyTexture";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { BitWise } from "../utility/BitWise";
 
 export class EffectIcon extends GameEffect {
@@ -44,7 +44,7 @@ export class EffectIcon extends GameEffect {
               priority: priority
             };
             this.object.effectIconList.push(icon)
-            TextureLoader.Load(iconResRef, (texture: OdysseyTexture) => {
+            TextureLoader.Load(iconResRef).then((texture: OdysseyTexture) => {
               icon.texture = texture;
             });
           }

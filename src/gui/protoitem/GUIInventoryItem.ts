@@ -3,7 +3,7 @@ import { GameEngineType } from "../../enums/engine/GameEngineType";
 import { GameState } from "../../GameState";
 import { TextureLoader } from "../../loaders";
 import { GFFStruct } from "../../resource/GFFStruct";
-import { OdysseyTexture } from "../../resource/OdysseyTexture";
+import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
 
 export class GUIInventoryItem extends GUIProtoItem {
@@ -78,7 +78,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.widget.userData.iconMaterial.transparent = true;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
       //console.log(this.node.getIcon());
-      TextureLoader.Load(this.node.getIcon(), (texture: OdysseyTexture) => {
+      TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
         if(texture){
           this.widget.userData.iconMaterial.map = texture;
           this.widget.userData.iconMaterial.needsUpdate = true;
