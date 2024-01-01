@@ -180,7 +180,7 @@ export class MenuPartySelection extends GameMenu {
         }
 
         //Area Unescapable disables party selection as well as transit
-        if(!GameState.module.area.Unescapable || this.ignoreUnescapable){
+        if(!GameState.module.area.unescapable || this.ignoreUnescapable){
           if(this.npcInParty(this.selectedNPC)){
             PartyManager.RemoveNPCById(this.selectedNPC);
             this.UpdateSelection();
@@ -212,7 +212,7 @@ export class MenuPartySelection extends GameMenu {
       isLeader: false,
       memberID: selected
     }) - 1;
-    PartyManager.LoadPartyMember(idx, () => {
+    PartyManager.LoadPartyMember(idx).then(() => {
       this.UpdateSelection();
       if (!this.npcInParty(selected)) {
         PartyManager.RemoveNPCById(selected);

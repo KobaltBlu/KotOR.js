@@ -246,7 +246,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.Unescapable = args[0] ? true : false;
+      GameState.module.area.unescapable = args[0] ? true : false;
     }
   },
   15:{
@@ -255,7 +255,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.Unescapable ? 1 : 0;
+      return GameState.module.area.unescapable ? 1 : 0;
     }
   },
   16:{
@@ -2969,7 +2969,7 @@ NWScriptDefK1.Actions = {
             plc.rotation.set(0, 0, args[2].getFacing());
 
             plc.loadModel().then( (model: OdysseyModel3D) => {
-              plc.loadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
+              plc.loadWalkmesh(model.name).then((pwk: OdysseyWalkMesh) => {
                 plc.model.userData.moduleObject = plc;
                 
                 model.hasCollision = true;

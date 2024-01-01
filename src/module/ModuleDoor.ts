@@ -982,28 +982,19 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  loadWalkmesh(ResRef = '', onLoad?: Function ){
-    
-    let wokKey = KEYManager.Key.getFileKey(ResRef+'0', ResourceTypes['dwk']);
-    if(wokKey){
-      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
+  async loadWalkmesh(resRef = ''){
+    const wokKey = KEYManager.Key.getFileKey(resRef+'0', ResourceTypes['dwk']);
+    if(!wokKey){ return undefined; }
 
-        this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-        this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = ResRef;
-        this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
+    const buffer = await KEYManager.Key.getFileBuffer(wokKey);
 
-        this.updateCollisionState();
+    this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+    this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = resRef;
+    this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
 
-        if(typeof onLoad === 'function')
-          onLoad(this.collisionData.walkmesh);
+    this.updateCollisionState();
 
-      });
-
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad(null);
-    }
-
+    return this.collisionData.walkmesh;
   }
 
   initProperties(){

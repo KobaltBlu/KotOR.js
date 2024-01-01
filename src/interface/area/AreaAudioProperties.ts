@@ -1,11 +1,17 @@
 export interface AreaAudioProperties {
-  AmbientSndDay: number,
-  AmbientSndDayVol: number,
-  AmbientSndNight: number,
-  AmbientSndNitVol: number,
-  EnvAudio: number,
-  MusicBattle: number,
-  MusicDay: number,
-  MusicDelay: number,
-  MusicNight: number
+  ambient: {
+    day: number;
+    dayVolume: number;
+    night: number;
+    nightVolume: number;
+  }
+
+  music: {
+    battle: number;
+    day: number;
+    night: number;
+    delay: number;
+  }
+
+  environmentAudio: number;
 }

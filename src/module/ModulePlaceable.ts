@@ -644,31 +644,25 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  loadWalkmesh(ResRef = '', onLoad?: Function){
-    let wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['pwk']);
-    if(wokKey != null){
-      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
-
-        this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-        this.collisionData.walkmesh.name = ResRef;
-        this.collisionData.walkmesh.moduleObject = this;
-        this.model.add(this.collisionData.walkmesh.mesh);
-
-        if(typeof onLoad === 'function')
-          onLoad(this.collisionData.walkmesh);
-
-      });
-
-    }else{
+  async loadWalkmesh(ResRef = ''): Promise<OdysseyWalkMesh> {
+    const wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['pwk']);
+    if(!wokKey){
       console.warn('ModulePlaceable', 'PWK Missing', ResRef);
       this.collisionData.walkmesh = new OdysseyWalkMesh();
       this.collisionData.walkmesh.name = ResRef;
       this.collisionData.walkmesh.moduleObject = this;
 
-      if(typeof onLoad === 'function')
-        onLoad(this.collisionData.walkmesh);
+      return this.collisionData.walkmesh;
     }
 
+    const buffer = await KEYManager.Key.getFileBuffer(wokKey);
+
+    this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+    this.collisionData.walkmesh.name = ResRef;
+    this.collisionData.walkmesh.moduleObject = this;
+    this.model.add(this.collisionData.walkmesh.mesh);
+
+    return this.collisionData.walkmesh;
   }
 
   initProperties(){

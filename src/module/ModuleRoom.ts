@@ -270,9 +270,9 @@ export class ModuleRoom extends ModuleObject {
   }
 
   buildGrass(){
-    if(GameState.module.area.Grass.TexName){
-      let density = GameState.module.area.Grass.Density;
-      let quadOffsetZ = GameState.module.area.Grass.QuadSize/2;
+    if(GameState.module.area.grass.textureName){
+      let density = GameState.module.area.grass.density;
+      let quadOffsetZ = GameState.module.area.grass.quadSize/2;
       if(this.model){
         let aabb = this.model.aabb;
         if(aabb instanceof OdysseyModelNodeAABB){
@@ -283,7 +283,7 @@ export class ModuleRoom extends ModuleObject {
             let lm_texture: any = null;
             
             for(let i = 0; i < 4; i++){
-              let blade = new THREE.PlaneGeometry(GameState.module.area.Grass.QuadSize, GameState.module.area.Grass.QuadSize, 1, 1);
+              let blade = new THREE.PlaneGeometry(GameState.module.area.grass.quadSize, GameState.module.area.grass.quadSize, 1, 1);
               blade.rotateX(Math.PI/2);
               blade.rotateZ(Math.PI/4 * i);
               if(grassGeometry){
@@ -332,10 +332,10 @@ export class ModuleRoom extends ModuleObject {
                   map: { value: null },
                   lightMap: { value: null },
                   time: { value: 0 },
-                  ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(GameState.module.area.SunFogColor).toString(16))) },
-                  windPower: { value: GameState.module.area.WindPower },
+                  ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(GameState.module.area.sun.fogColor).toString(16))) },
+                  windPower: { value: GameState.module.area.windPower },
                   playerPosition: { value: new THREE.Vector3 },
-                  alphaTest: { value: GameState.module.area.AlphaTest }
+                  alphaTest: { value: GameState.module.area.alphaTest }
                 }
               ]),
               vertexShader: ShaderManager.Shaders.get('grass').getVertex(),
@@ -431,7 +431,7 @@ export class ModuleRoom extends ModuleObject {
             GameState.group.grass.add(this.grass);
 
             //Load in the grass texture
-            TextureLoader.Load(GameState.module.area.Grass.TexName).then((grassTexture: OdysseyTexture) => {
+            TextureLoader.Load(GameState.module.area.grass.textureName).then((grassTexture: OdysseyTexture) => {
               if(grassTexture){
                 grassTexture.minFilter = THREE.LinearFilter;
                 grassTexture.magFilter = THREE.LinearFilter;
@@ -459,11 +459,11 @@ export class ModuleRoom extends ModuleObject {
 
   getRandomGrassUVIndex(){
     let rnd = Math.random();
-    if(rnd < GameState.module.area.Grass.Prob_UL){
+    if(rnd < GameState.module.area.grass.probabilityUpperLeft){
       return 0;
-    }else if(rnd < GameState.module.area.Grass.Prob_UL + GameState.module.area.Grass.Prob_UR){
+    }else if(rnd < GameState.module.area.grass.probabilityUpperLeft + GameState.module.area.grass.probabilityUpperRight){
       return 1;
-    }else if(rnd < GameState.module.area.Grass.Prob_UL + GameState.module.area.Grass.Prob_UR + GameState.module.area.Grass.Prob_LL){
+    }else if(rnd < GameState.module.area.grass.probabilityUpperLeft + GameState.module.area.grass.probabilityUpperRight + GameState.module.area.grass.probabilityLowerLeft){
       return 2;
     }else{
       return 3;

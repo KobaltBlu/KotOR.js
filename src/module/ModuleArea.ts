@@ -12,14 +12,12 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { LYTObject } from "../resource/LYTObject";
 import { Utility } from "../utility/Utility";
 import EngineLocation from "../engine/EngineLocation";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { OdysseyWalkMesh } from "../odyssey";
 import { AudioLoader } from "../audio/AudioLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
@@ -33,12 +31,38 @@ import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
 import { AudioEngine } from "../audio";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
+import { AmbientSource } from "../interface/area/AmbientSource";
 
 /* @file
  * The ModuleArea class.
  */
 
+interface Grass {
+  ambient: number;
+  density: number;
+  diffuse: number;
+  probabilityLowerLeft: number;
+  probabilityLowerRight:  number;
+  probabilityUpperLeft:  number;
+  probabilityUpperRight:  number;
+  quadSize: number;
+  textureName: string;
+}
+
+type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
+
 export class ModuleArea extends ModuleObject {
+
+  module: Module;
+  are: GFFObject;
+  git: GFFObject;
+  transWP: string|GFFObject;
+  weather: AreaWeather = new AreaWeather(this);
+  fog: THREE.Fog;
+  path: ModulePath;
+  visObject: VISObject;
+  layout: LYTObject;
+  areaMap: AreaMap;
 
   cameras: ModuleCamera[] = [];
   creatures: ModuleCreature[] = [];
@@ -53,119 +77,213 @@ export class ModuleArea extends ModuleObject {
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
   miniGame: ModuleMiniGame;
+  walkmesh_rooms: ModuleRoom[] = [];
+
+  scriptResRefs: Map<AreaScriptKeys, string> = new Map<AreaScriptKeys, string>();
 
   audio: AreaAudioProperties = {
-    AmbientSndDay: 0,
-    AmbientSndDayVol: 0,
-    AmbientSndNight: 0,
-    AmbientSndNitVol: 0,
-    EnvAudio: 0,
-    MusicBattle: 0,
-    MusicDay: 0,
-    MusicDelay: 0,
-    MusicNight: 0
+    ambient: {
+      day: 0,
+      dayVolume: 0,
+      night: 0,
+      nightVolume: 0
+    },
+    music: {
+      day: 0,
+      battle: 0,
+      night: 0,
+      delay: 0
+    },
+    environmentAudio: 0,
   };
 
-  AlphaTest = 0.200000002980232;
-  CameraStyle = 0;
-  ChanceLightning = 0;
-  ChanceRain = 0;
-  ChanceSnow = 0;
-  Comments = '';
-  Creator_ID = 0;
-  DayNightCycle = 0;
-  DefaultEnvMap = '';
-  DynAmbientColor = 6312778;
-  Expansion_List: any[] = [];
-  Flags = 1;
+  alphaTest = 0.200000002980232;
 
-  Grass = {
-    Ambient: 0,
-    Density: 0,
-    Diffuse: 0,
-    Prob_LL: 0.25,
-    Prob_LR: 0.25,
-    Prob_UL: 0.25,
-    Prob_UR: 0.25,
-    QuadSize: 0,
-    TexName: ''
+  /**
+   * Index into camerastyle.2da
+   */
+  cameraStyle = 0;
+
+  /**
+   * Module designer comments
+   */
+  comments = '';
+
+  /**
+   * @deprecated Deprecated: since NWN
+   */
+  creatorId = -1;
+
+  /**
+   * Determines if there is an active day/night cycle
+   * @remarks not supported by KotOR or TSL. not sure if we will add support for this in the engine
+   */
+  dayNightCycle: boolean = false;
+
+  /**
+   * 
+   */
+  defaultEnvMap = '';
+
+  /**
+   * 
+   */
+  dynamicAmbientColor = 6312778;
+
+  /**
+   * @deprecated Deprecated: since NWN
+   */
+  expansionList: any[] = [];
+
+  /**
+   * @remarks Set of bit flags specifying area terrain type:
+   * 0x0001: INTERIOR     (exterior if unset)
+   * 0x0002: UNDERGROUND  (aboveground if unset)
+   * 0x0004: NATURAL      (urban if unset)
+   * These flags affect game behaviour with respect to ability to hear things behind walls, map exploration visibility, and whether certain feats are active, though not necessarily in that order. They do not affect how the toolset presents the area to the user.
+   */
+  flags = 1;
+
+  grass: Grass = {
+    ambient: 0,
+    density: 0,
+    diffuse: 0,
+    probabilityLowerLeft: 0.25,
+    probabilityLowerRight: 0.25,
+    probabilityUpperLeft: 0.25,
+    probabilityUpperRight: 0.25,
+    quadSize: 0,
+    textureName: ''
   };
 
-  ID = 0;
-  IsNight = 0;
-  LightingScheme = 0;
-  LoadScreenID = 0;
+  /**
+   * TRUE if the area is always night, FALSE if area is always day. Meaningful only if DayNightCycle is FALSE
+   */
+  isNight: boolean = false;
 
-  areaMap: AreaMap;
+  lightingScheme = 0;
 
-  ModListenCheck = 0;
-  ModSpotCheck = 0;
-  MoonAmbientColor = 0;
-  MoonDiffuseColor = 0;
-  MoonFogColor = 0;
-  MoonFogFar = 100;
-  MoonFogNear = 99;
-  MoonFogOn = 0;
-  MoonShadows = 0;
-  AreaName: CExoLocString;
-  NoHangBack = 0;
-  NoRest = 0;
-  OnEnter = "";
-  OnExit = "";
-  OnHeartbeat = "";
-  OnUserDefined = "";
-  PlayerOnly = 0;
-  PlayerVsPlayer = 0;
-  ShadowOpacity = 0;
-  StealthXPEnabled = 0;
-  StealthXPLoss = 0;
-  StealthXPMax = 0;
-  SunAmbientColor = 0;
-  SunDiffuseColor = 0;
-  SunFogColor = 0;
-  SunFogFar = 2000;
-  SunFogNear = 1000;
-  SunFogOn = 0;
-  SunShadows = 0;
-  Tag = '';
-  Unescapable: boolean = false;
-  Version = 1;
-  WindPower = 0;
-  module: Module;
-  _name: any;
-  are: GFFObject;
-  git: GFFObject;
-  transWP: string|GFFObject;
-  weather: AreaWeather;
-  cameraBoundingBox: any;
-  Alphatest: any;
-  onEnter: any;
-  onExit: any;
-  onHeartbeat: any;
-  onUserDefined: any;
-  // scripts: { onEnter: any; onExit: any; onHeartbeat: any; onUserDefined: any; };
-  fog: THREE.Fog;
-  // _locals: any;
-  path: ModulePath;
-  visObject: VISObject;
-  layout: LYTObject;
-  walkmesh_rooms: any[];
+  /**
+   * Index into loadscreens.2da. Default loading screen to use when loading this area. 
+   * @remarks Note that a Door or Trigger that has an area transition can override the loading screen of the destination area
+   * @remarks not supported by KotOR or TSL. not sure if we will add support for this in the engine
+   */
+  loadScreenId = 0;
+
+  /**
+   * Modifier to Listen akill checks made in area
+   */
+  modListenCheck = 0;
+
+  /**
+   * Modifier to Spot skill checks made in area
+   */
+  modSpotCheck = 0;
+
+  /**
+   * Moon AmbientSource properties
+   */
+  moon: AmbientSource = {
+    ambientColor: 0,
+    diffuseColor: 0,
+    fogColor: 0,
+    fogNear: 99,
+    fogFar: 100,
+    fogAmount: 1,
+    fogOn: false,
+    shadows: false
+  };
+
+  /**
+   * Sun AmbientSource properties
+   */
+  sun: AmbientSource = {
+    ambientColor: 0,
+    diffuseColor: 0,
+    fogColor: 0,
+    fogNear: 1000,
+    fogFar: 2000,
+    fogAmount: 1,
+    fogOn: false,
+    shadows: false
+  };
+
+  /**
+   * Name of area as seen in game. 
+   * ToDo: If there is a colon (:) in the name, then the game does not show any of the text up to and including the first colon
+   */
+  areaName: CExoLocString;
+
+  /**
+   * @remarks unimplemented
+   */
+  noHangBack: boolean;
+
+  /**
+   * Determines if the player can rest
+   */
+  noRest: boolean;
+  
+  playerOnly: boolean = false;
+
+  /**
+   * Index into pvpsettings.2da. 
+   * Note that the settings are actually hard-coded into the game, and pvpsettings.2da serves only to provide text descriptions of the settings
+   */
+  playerVsPlayer: boolean = false;
+  
+  /**
+   * Opacity of shadows (0-100)
+   */
+  shadowOpacity = 0;
+
+  /**
+   * @remarks unimplemented
+   */
+  stealthXPEnabled = 0;
+
+  /**
+   * @remarks unimplemented
+   */
+  stealthXPLoss = 0;
+
+  /**
+   * @remarks unimplemented
+   */
+  stealthXPMax = 0;
+
+  /**
+   * Tag of the area, used for scripting
+   */
+  tag = '';
+
+  /**
+   * Determines if the player can escape to the hideout
+   */
+  unescapable: boolean = false;
+
+  /**
+   * Revision number of the area. Initially 1 when area is first saved to disk, and increments every time the ARE file is saved. Equals 2 on second save, and so on
+   */
+  version = 1;
+
+  /**
+   * Strength of the wind in the area. None, Weak, or Strong (0-2).
+   */
+  windPower = 0;
+
   restrictMode: number;
 
-  constructor(name = '', are = new GFFObject(), git = new GFFObject()){
+  constructor(resRef = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
     this.objectType |= ModuleObjectType.ModuleArea;
-    this._name = name;
+    this.name = resRef;
     this.are = are;
     this.git = git;
-
     this.transWP = '';
-    this.weather = new AreaWeather(this);
-
   }
 
   dispose(){
-
     this.areaMap.dispose();
 
     //clear area room objects
@@ -219,7 +337,6 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.weather.destroy();
-    
   }
 
   update(delta: number = 0){
@@ -353,7 +470,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   updateRoomVisibility(delta: number = 0){
-    let roomList: ModuleRoom[] = [];
+    const roomList: ModuleRoom[] = [];
     let pos = undefined;
 
     switch(GameState.Mode){
@@ -484,35 +601,35 @@ export class ModuleArea extends ModuleObject {
 
     let rooms = this.are.getFieldByLabel('Rooms');
 
-    this.Alphatest = this.are.getFieldByLabel('AlphaTest').getValue();
-    this.CameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
-    this.ChanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
-    this.ChanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
-    this.ChanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
-    this.Comments = this.are.getFieldByLabel('Comments').getValue();
-    this.Creator_ID = this.are.getFieldByLabel('Creator_ID').getValue();
-    this.DayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
-    this.DefaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    this.DynAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
-    this.Expansion_List = [];
+    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
+    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
+    this.weather.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
+    this.weather.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
+    this.weather.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
+    this.comments = this.are.getFieldByLabel('Comments').getValue();
+    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
+    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
+    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
+    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.expansionList = [];
 
-    this.Flags = this.are.getFieldByLabel('Flags').getValue();
-    this.Grass = {
-      Ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
-      Density: this.are.getFieldByLabel('Grass_Density').getValue(),
-      Diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
-      Prob_LL: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
-      Prob_LR: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
-      Prob_UL: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
-      Prob_UR: this.are.getFieldByLabel('Grass_Prob_UR').getValue(),
-      QuadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
-      TexName: this.are.getFieldByLabel('Grass_TexName').getValue()
+    this.flags = this.are.getFieldByLabel('Flags').getValue();
+    this.grass = {
+      ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
+      density: this.are.getFieldByLabel('Grass_Density').getValue(),
+      diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
+      probabilityLowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
+      probabilityLowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
+      probabilityUpperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
+      probabilityUpperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue(),
+      quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
+      textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
     };
 
-    this.ID = this.are.getFieldByLabel('ID').getValue();
-    this.IsNight = this.are.getFieldByLabel('IsNight').getValue();
-    this.LightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
-    this.LoadScreenID = this.are.getFieldByLabel('LoadScreenID').getValue();
+    this.id = this.are.getFieldByLabel('ID').getValue();
+    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
+    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
+    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
     let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     if(map){
@@ -525,34 +642,27 @@ export class ModuleArea extends ModuleObject {
       );
     }
 
-    this.ModListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
-    this.ModSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
-    this.MoonAmbientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
-    this.MoonDiffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
-    this.MoonFogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
-    this.MoonFogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.MoonFogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
-    this.MoonFogOn = this.are.getFieldByLabel('MoonFogOn').getValue();
-    this.MoonShadows = this.are.getFieldByLabel('MoonShadows').getValue();
-    this.AreaName = this.are.getFieldByLabel('Name').getCExoLocString();
+    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
+    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
+    this.moon.ambientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
+    this.moon.diffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
+    this.moon.fogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
+    this.moon.fogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
+    this.moon.fogFar = this.are.getFieldByLabel('MoonFogNear').getValue();
+    this.moon.fogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
+    this.moon.shadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
+    this.areaName = this.are.getFieldByLabel('Name').getCExoLocString();
 
-    this.NoHangBack = this.are.getFieldByLabel('NoHangBack').getValue();
-    this.NoRest = this.are.getFieldByLabel('NoRest').getValue();
+    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
+    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
 
-    this.onEnter = this.are.getFieldByLabel('OnEnter').getValue();
-    this.onExit = this.are.getFieldByLabel('OnExit').getValue();
-    this.onHeartbeat = this.are.getFieldByLabel('OnHeartbeat').getValue();
-    this.onUserDefined = this.are.getFieldByLabel('OnUserDefined').getValue();
+    this.scriptResRefs.set('OnEnter', this.are.getFieldByLabel('OnEnter').getValue());
+    this.scriptResRefs.set('OnExit', this.are.getFieldByLabel('OnExit').getValue());
+    this.scriptResRefs.set('OnHeartbeat', this.are.getFieldByLabel('OnHeartbeat').getValue());
+    this.scriptResRefs.set('OnUserDefined', this.are.getFieldByLabel('OnUserDefined').getValue());
 
-    this.scripts = {
-      onEnter: this.onEnter,
-      onExit: this.onExit,
-      onHeartbeat: this.onHeartbeat,
-      onUserDefined: this.onUserDefined
-    };
-
-    this.PlayerOnly = this.are.getFieldByLabel('PlayerOnly').getValue();
-    this.PlayerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
+    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
+    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
 
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
@@ -566,29 +676,31 @@ export class ModuleArea extends ModuleObject {
       this.rooms.push(room);
     }
 
-    this.ShadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
-    this.StealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
-    this.StealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
-    this.StealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
-    this.SunAmbientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
-    this.SunDiffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
-    this.SunFogColor = this.are.getFieldByLabel('SunFogColor').getValue();
-    this.SunFogFar = this.are.getFieldByLabel('SunFogFar').getValue();
-    this.SunFogNear = this.are.getFieldByLabel('SunFogNear').getValue();
-    this.SunFogOn = this.are.getFieldByLabel('SunFogOn').getValue();
-    this.SunShadows = this.are.getFieldByLabel('SunShadows').getValue();
-    this.Tag = this.are.getFieldByLabel('Tag').getValue();
-    this.Unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
-    this.Version = this.are.getFieldByLabel('Version').getValue();
-    this.WindPower = this.are.getFieldByLabel('WindPower').getValue();
+    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
+
+    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
+    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
+    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
+
+    this.sun.ambientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
+    this.sun.diffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
+    this.sun.fogColor = this.are.getFieldByLabel('SunFogColor').getValue();
+    this.sun.fogFar = this.are.getFieldByLabel('SunFogFar').getValue();
+    this.sun.fogNear = this.are.getFieldByLabel('SunFogNear').getValue();
+    this.sun.fogOn = this.are.getFieldByLabel('SunFogOn').getValue();
+    this.sun.shadows = this.are.getFieldByLabel('SunShadows').getValue();
+    this.tag = this.are.getFieldByLabel('Tag').getValue();
+    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
+    this.version = this.are.getFieldByLabel('Version').getValue();
+    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
 
     this.fog = undefined;
 
-    if(this.SunFogOn){
+    if(this.sun.fogOn){
       this.fog = new THREE.Fog(
-        this.SunFogColor,
-        this.SunFogNear,
-        this.SunFogFar
+        this.sun.fogColor,
+        this.sun.fogNear,
+        this.sun.fogFar
       );
     }else{
       GameState.scene.fog = undefined;
@@ -596,35 +708,34 @@ export class ModuleArea extends ModuleObject {
 
     //BEGIN GIT LOAD
 
-    let areaMap = this.git.getFieldByLabel('AreaMap');
-    let areaProps = this.git.getFieldByLabel('AreaProperties');
-    let areaEffects = this.git.getFieldByLabel('AreaEffectList');
-    let cameras = this.git.getFieldByLabel('CameraList');
-    let creatures = this.git.getFieldByLabel('Creature List');
-    let doors = this.git.getFieldByLabel('Door List');
-    let encounters = this.git.getFieldByLabel('Encounter List');
-    let placeables = this.git.getFieldByLabel('Placeable List');
-    let sounds = this.git.getFieldByLabel('SoundList');
-    let stores = this.git.getFieldByLabel('StoreList');
-    let triggers = this.git.getFieldByLabel('TriggerList');
-    let waypoints = this.git.getFieldByLabel('WaypointList');
+    const areaMap = this.git.getFieldByLabel('AreaMap');
+    const areaProps = this.git.getFieldByLabel('AreaProperties');
+    const areaEffects = this.git.getFieldByLabel('AreaEffectList');
+    const cameras = this.git.getFieldByLabel('CameraList');
+    const creatures = this.git.getFieldByLabel('Creature List');
+    const doors = this.git.getFieldByLabel('Door List');
+    const encounters = this.git.getFieldByLabel('Encounter List');
+    const placeables = this.git.getFieldByLabel('Placeable List');
+    const sounds = this.git.getFieldByLabel('SoundList');
+    const stores = this.git.getFieldByLabel('StoreList');
+    const triggers = this.git.getFieldByLabel('TriggerList');
+    const waypoints = this.git.getFieldByLabel('WaypointList');
 
-    let areaPropsField = areaProps.getChildStructs()[0].getFields();
-
-    this.audio.AmbientSndDay = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
-    this.audio.AmbientSndDayVol = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
-    this.audio.AmbientSndNight = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
-    this.audio.AmbientSndNitVol = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
+    const areaPropsField = areaProps.getChildStructs()[0].getFields();
+    this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
+    this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
+    this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
+    this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
     if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
-      this.audio.EnvAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
+      this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
     }else{
-      this.audio.EnvAudio = -1;
+      this.audio.environmentAudio = -1;
     }
     
-    this.audio.MusicBattle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
-    this.audio.MusicDay = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
-    this.audio.MusicDelay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
-    this.audio.MusicNight = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
+    this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
+    this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
+    this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
+    this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
     AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
     //Cameras
@@ -639,7 +750,7 @@ export class ModuleArea extends ModuleObject {
     //AreaEffects
     if(areaEffects){
       for(let i = 0; i < areaEffects.childStructs.length; i++){
-        let strt = areaEffects.childStructs[i];
+        const strt = areaEffects.childStructs[i];
         this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
       }
     }
@@ -647,7 +758,7 @@ export class ModuleArea extends ModuleObject {
     //Creatures
     if(creatures){
       for(let i = 0; i < creatures.childStructs.length; i++){
-        let strt = creatures.childStructs[i];
+        const strt = creatures.childStructs[i];
         this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
       }
     }
@@ -655,7 +766,7 @@ export class ModuleArea extends ModuleObject {
     //Triggers
     if(triggers){
       for(let i = 0; i < triggers.childStructs.length; i++){
-        let strt = triggers.childStructs[i];
+        const strt = triggers.childStructs[i];
         this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
       }
     }
@@ -663,7 +774,7 @@ export class ModuleArea extends ModuleObject {
     //Encounter
     if(encounters){
       for(let i = 0; i < encounters.childStructs.length; i++){
-        let strt = encounters.childStructs[i];
+        const strt = encounters.childStructs[i];
         this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
       }
     }
@@ -671,7 +782,7 @@ export class ModuleArea extends ModuleObject {
     //Doors
     if(doors){
       for(let i = 0; i < doors.childStructs.length; i++ ){
-        let strt = doors.childStructs[i];
+        const strt = doors.childStructs[i];
         this.attachObject( new ModuleDoor(GFFObject.FromStruct(strt)) );
       }
     }
@@ -679,7 +790,7 @@ export class ModuleArea extends ModuleObject {
     //Placeables
     if(placeables){
       for(let i = 0; i < placeables.childStructs.length; i++ ){
-        let strt = placeables.childStructs[i];
+        const strt = placeables.childStructs[i];
         this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
       }
     }
@@ -687,7 +798,7 @@ export class ModuleArea extends ModuleObject {
     //Sounds
     if(sounds){
       for(let i = 0; i < sounds.childStructs.length; i++ ){
-        let strt = sounds.childStructs[i];
+        const strt = sounds.childStructs[i];
         this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
@@ -695,7 +806,7 @@ export class ModuleArea extends ModuleObject {
     //Stores
     if(stores){
       for(let i = 0; i < stores.childStructs.length; i++ ){
-        let strt = stores.childStructs[i];
+        const strt = stores.childStructs[i];
         this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
       }
     }
@@ -703,7 +814,7 @@ export class ModuleArea extends ModuleObject {
     //Waypoints
     if(waypoints){
       for(let i = 0; i < waypoints.childStructs.length; i++ ){
-        let strt = waypoints.childStructs[i];
+        const strt = waypoints.childStructs[i];
 
         if(this.transWP){
           if(typeof this.transWP === 'string'){
@@ -745,9 +856,9 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    GameState.AlphaTest = this.Alphatest;
+    GameState.AlphaTest = this.alphaTest;
 
-    AudioEngine.GetAudioEngine().setReverbProfile(this.audio.EnvAudio);
+    AudioEngine.GetAudioEngine().setReverbProfile(this.audio.environmentAudio);
 
     FollowerCamera.setCameraStyle(this.getCameraStyle());
     if(this.miniGame){
@@ -767,14 +878,14 @@ export class ModuleArea extends ModuleObject {
   getCameraStyle(){
     const cameraStyle2DA = TwoDAManager.datatables.get('camerastyle');
     if(cameraStyle2DA){
-      return cameraStyle2DA.rows[this.CameraStyle];
+      return cameraStyle2DA.rows[this.cameraStyle];
     }
     return cameraStyle2DA.rows[0];
   }
 
   async loadPath(){
     console.log('ModuleArea.loadPath');
-    this.path = new ModulePath(this._name);
+    this.path = new ModulePath(this.name);
     try{
       await this.path.load();
     }catch(e){
@@ -785,7 +896,7 @@ export class ModuleArea extends ModuleObject {
   async loadVis(){
     console.log('ModuleArea.loadVis');
     try{
-      const buffer = await ResourceLoader.loadResource(ResourceTypes['vis'], this._name);
+      const buffer = await ResourceLoader.loadResource(ResourceTypes.vis, this.name);
       this.visObject = new VISObject(buffer, this);
       return;
     }catch(e){
@@ -797,7 +908,7 @@ export class ModuleArea extends ModuleObject {
   async loadLayout(){
     console.log('ModuleArea.loadLayout');
     try{
-      const buffer = await ResourceLoader.loadResource(ResourceTypes['lyt'], this._name);
+      const buffer = await ResourceLoader.loadResource(ResourceTypes.lyt, this.name);
       this.layout = new LYTObject(buffer);
 
       //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
@@ -806,7 +917,7 @@ export class ModuleArea extends ModuleObject {
         let roomLYT = this.layout.rooms[i];
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
-          if(room.roomName.toLowerCase() == roomLYT['name'].toLowerCase()){
+          if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
             room.position.copy(roomLYT.position);
             sortedRooms.push(room);
           }
@@ -900,6 +1011,15 @@ export class ModuleArea extends ModuleObject {
 
   async loadScene(){
     try{
+      try{
+        MenuManager.InGameOverlay.miniMap.setAreaMap(this.areaMap);
+        MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.name);
+        MenuManager.MenuMap.miniMap.setAreaMap(this.areaMap);
+        MenuManager.MenuMap.SetMapTexture('lbl_map'+this.name);
+      }catch(e){
+        console.error(e);
+      }
+
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(10);
@@ -922,7 +1042,7 @@ export class ModuleArea extends ModuleObject {
 
       MenuManager.LoadScreen.setProgress(40);
 
-      try { await this.loadSoundTemplates(); } catch(e){ console.error(e); }
+      try { await this.loadsounds(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(50);
 
@@ -943,11 +1063,10 @@ export class ModuleArea extends ModuleObject {
       try { await this.loadStores(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(80);
-      try { await this.loadTextures(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(90);
 
-      try { await this.loadAudio(); } catch(e){ console.error(e); }
+      try { await this.loadAmbientAudio(); } catch(e){ console.error(e); }
       try { await this.loadBackgroundMusic(); } catch(e){ console.error(e); }
 
       MenuManager.LoadScreen.setProgress(100);
@@ -963,19 +1082,9 @@ export class ModuleArea extends ModuleObject {
     }catch(e){
       console.error(e);
     }
-
   }
 
-  loadCameras(){
-    for(let i = 0; i < this.cameras.length; i++){
-      const camera = this.cameras[i];
-      camera.load();
-      GameState.staticCameras.push(camera.perspectiveCamera);
-    }
-  }
-
-  getSpawnLocation(){
-
+  getSpawnLocation(): EngineLocation {
     if(GameState.isLoadingSave){
       return new EngineLocation(
         PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),
@@ -998,15 +1107,14 @@ export class ModuleArea extends ModuleObject {
     }else{
       console.log('No TransWP');
       return new EngineLocation(
-        GameState.module['entryX'],
-        GameState.module['entryY'],
-        GameState.module['entryZ'],
-        GameState.module['entryDirectionX'],
-        GameState.module['entryDirectionY'],
+        this.module.entryX,
+        this.module.entryY,
+        this.module.entryZ,
+        this.module.entryDirectionX,
+        this.module.entryDirectionY,
         0
       );
     }
-
   }
 
   getPlayerTemplate(): GFFObject {
@@ -1120,520 +1228,471 @@ export class ModuleArea extends ModuleObject {
   }
 
   async loadPlayer(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Player', GameState.player)
-      try{
-        if(GameState.player instanceof ModuleCreature){
-          GameState.player.partyID = -1;
+    console.log('Loading Player', GameState.player)
+    try{
+      if(GameState.player instanceof ModuleCreature){
+        GameState.player.partyID = -1;
 
-          if(!this.miniGame){
-            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
-            GameState.group.party.add( GameState.player.container );
-          }
-
-          //Reset the players actions between modules
-          GameState.player.clearAllActions();
-          GameState.player.force = 0;
-          GameState.player.collisionData.groundFace = undefined;
-          GameState.player.collisionData.lastGroundFace = undefined;
-          GameState.player.load();
-          GameState.player.loadModel().then( (model: OdysseyModel3D) => {
-            GameState.player.model = model;
-            GameState.player.model.hasCollision = true;
-            //let spawnLoc = this.getSpawnLocation();
-            let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
-            GameState.player.position.copy(spawnLoc.position);
-            GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-
-            GameState.player.getCurrentRoom();
-            // GameState.player.computeBoundingBox(true);
-
-            resolve();
-          }).catch(() => {
-            resolve();
-          });
-        }else{
-          let player = new ModulePlayer( this.getPlayerTemplate() );
-          player.partyID = -1;
-          
-          player.load();
-          GameState.player = player;
-        
-          if(!this.miniGame){
-            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
-            GameState.group.party.add( player.container );
-          }
-
-          player.loadModel().then( (model: OdysseyModel3D) => {
-            model.userData.moduleObject = player;
-            model.hasCollision = true;
-
-            let spawnLoc = this.getSpawnLocation();
-
-            player.position.copy(spawnLoc.position);
-            player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-            //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-
-            player.getCurrentRoom();
-            player.computeBoundingBox(true);
-
-            resolve();
-          });
+        if(!this.miniGame){
+          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
+          GameState.group.party.add( GameState.player.container );
         }
+
+        //Reset the players actions between modules
+        GameState.player.clearAllActions();
+        GameState.player.force = 0;
+        GameState.player.collisionData.groundFace = undefined;
+        GameState.player.collisionData.lastGroundFace = undefined;
+        GameState.player.load();
+        try{
+          const model = await GameState.player.loadModel();
+          GameState.player.model = model;
+          GameState.player.model.hasCollision = true;
+          //let spawnLoc = this.getSpawnLocation();
+          let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
+          GameState.player.position.copy(spawnLoc.position);
+          GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+
+          GameState.player.getCurrentRoom();
+          // GameState.player.computeBoundingBox(true);
+        }catch(e){
+          console.error(e);
+        }
+      }else{
+        let player = new ModulePlayer( this.getPlayerTemplate() );
+        player.partyID = -1;
+        
+        player.load();
+        GameState.player = player;
+      
+        if(!this.miniGame){
+          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+          GameState.group.party.add( player.container );
+        }
+
+        try{
+          const model = await player.loadModel();
+          model.userData.moduleObject = player;
+          model.hasCollision = true;
+
+          let spawnLoc = this.getSpawnLocation();
+
+          player.position.copy(spawnLoc.position);
+          player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+          //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+
+          player.getCurrentRoom();
+          player.computeBoundingBox(true);
+        }catch(e){
+          console.error(e);
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /**
+   * Load the active party members
+   */
+  async loadParty(): Promise<void> {
+    console.log('Loading Party Member');
+    for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
+      await PartyManager.LoadPartyMember(i);
+    }
+  }
+
+  /**
+   * Load the area's static cameras
+   */
+  async loadCameras(){
+    console.log('Loading Cameras');
+    for(let i = 0; i < this.cameras.length; i++){
+      const camera = this.cameras[i];
+      camera.load();
+      GameState.staticCameras.push(camera.perspectiveCamera);
+    }
+  }
+
+  /**
+   * Load the area's rooms
+   */
+  async loadRooms(): Promise<void> {
+    console.log('Loading Rooms');
+    for(let i = 0; i < this.rooms.length; i++){
+      const room = this.rooms[i];
+      const model = await room.loadModel();
+      if(model instanceof OdysseyModel3D){
+        if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
+          GameState.walkmeshList.push( room.collisionData.walkmesh.mesh );
+          GameState.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
+        }
+
+        if(typeof model.walkmesh != 'undefined'){
+          GameState.collisionList.push(model.walkmesh);
+        }
+        
+        model.name = room.roomName;
+        GameState.group.rooms.add(room.container);
+
+        room.computeBoundingBox();
+        room.model.updateMatrix();
+      }
+    }
+
+    for(let j = 0; j < this.rooms.length; j++){
+      this.rooms[j].link_rooms(this.rooms);
+    }
+
+    //Room Linking Pass 2
+    for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
+      let room1 = this.rooms[i];
+      //console.log(room1.linked_rooms);
+      //Look for all rooms that can see this room
+      for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
+        let room2 = this.rooms[j];
+        //console.log(room2.linked_rooms);
+        if(room2 instanceof ModuleRoom){
+          let room2_links_to_room1 = room2.linked_rooms.indexOf(room1) >= 0;
+          let room1_links_to_room2 = room1.linked_rooms.indexOf(room2) >= 0;
+
+          let should_link = room2_links_to_room1 || room1_links_to_room2;
+          //console.log('room', room1.roomName, room2.roomName, should_link);
+          if(should_link && room1.linked_rooms.indexOf(room2) == -1 ){
+            room1.linked_rooms.push(room2);
+          }
+
+          if(should_link && room2.linked_rooms.indexOf(room1) == -1 ){
+            room2.linked_rooms.push(room1);
+          }
+        }
+      }
+      this.walkmesh_rooms = [room1].concat(room1.linked_rooms);
+    }
+  }
+
+  /**
+   * Load the area's doors
+   */
+  async loadDoors(): Promise<void> {
+    console.log('Loading Doors');
+    for(let i = 0; i < this.doors.length; i++){
+      const door = this.doors[i];
+      try{
+        door.load();
+        // door.position.x = door.getX();
+        // door.position.y = door.getY();
+        // door.position.z = door.getZ();
+        door.rotation.set(0, 0, door.getBearing());
+        const model = await door.loadModel();
+        door.computeBoundingBox();
+        const dwk = await door.loadWalkmesh(model.name);
+
+        try{
+          model.userData.walkmesh = dwk;
+          door.collisionData.walkmesh = dwk;
+          GameState.walkmeshList.push( dwk.mesh );
+
+          if(dwk.mesh instanceof THREE.Object3D){
+            dwk.mat4.makeRotationFromEuler(door.rotation);
+            dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
+            dwk.mesh.geometry.applyMatrix4(dwk.mat4);
+            dwk.updateMatrix();
+            //dwk.mesh.position.copy(door.position);
+            // if(!door.isOpen()){
+            //   GameState.group.room_walkmeshes.add( dwk.mesh );
+            // }
+          }
+        }catch(e){
+          console.error('Failed to add dwk', model.name, dwk, e);
+        }
+
+        if(door.model instanceof OdysseyModel3D){
+          door.box.setFromObject(door.model);
+        }
+
+        if(door.openState){
+          door.model.playAnimation('opened1', true);
+        }
+        door.getCurrentRoom();
+        GameState.group.doors.add( door.container );
       }catch(e){
         console.error(e);
       }
-    });
+    }
   }
 
-  async loadParty(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Party Member')
-      let loop = new AsyncLoop({
-        array: PartyManager.CurrentMembers,
-        onLoop: (currentMember: any, asyncLoop: AsyncLoop) => {
-          PartyManager.LoadPartyMember(asyncLoop.index-1, () => {
-            asyncLoop.next();
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  async loadRooms(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Rooms');
-      let loop = new AsyncLoop({
-        array: this.rooms,
-        onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
-          room.loadModel().then( (model: OdysseyModel3D) => {
-            if(room.model instanceof OdysseyModel3D){
-
-              if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
-                GameState.walkmeshList.push( room.collisionData.walkmesh.mesh );
-                GameState.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
-              }
-    
-              if(typeof room.model.walkmesh != 'undefined'){
-                GameState.collisionList.push(room.model.walkmesh);
-              }
-              
-              room.model.name = room.roomName;
-              GameState.group.rooms.add(room.container);
-    
-              room.computeBoundingBox();
-              room.model.updateMatrix();
-              
-            }
-            
-            asyncLoop.next();
-          });
-        }
-      });
-      loop.iterate(() => {
-        for(let j = 0; j < this.rooms.length; j++){
-          this.rooms[j].link_rooms(this.rooms);
-        }
-
-        //Room Linking Pass 2
-        for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
-          let room1 = this.rooms[i];
-          //console.log(room1.linked_rooms);
-          //Look for all rooms that can see this room
-          for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
-            let room2 = this.rooms[j];
-            //console.log(room2.linked_rooms);
-            if(room2 instanceof ModuleRoom){
-              let room2_links_to_room1 = room2.linked_rooms.indexOf(room1) >= 0;
-              let room1_links_to_room2 = room1.linked_rooms.indexOf(room2) >= 0;
-  
-              let should_link = room2_links_to_room1 || room1_links_to_room2;
-              //console.log('room', room1.roomName, room2.roomName, should_link);
-              if(should_link && room1.linked_rooms.indexOf(room2) == -1 ){
-                room1.linked_rooms.push(room2);
-              }
-  
-              if(should_link && room2.linked_rooms.indexOf(room1) == -1 ){
-                room2.linked_rooms.push(room1);
-              }
-            }
-          }
-          this.walkmesh_rooms = [room1].concat(room1.linked_rooms);
-        }
-        resolve();
-      });
-
-    });
-  }
-
-  async loadDoors(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Doors');
-      let loop = new AsyncLoop({
-        array: this.doors,
-        onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-          door.load();
-  
-          // door.position.x = door.getX();
-          // door.position.y = door.getY();
-          // door.position.z = door.getZ();
-          door.rotation.set(0, 0, door.getBearing());
-          door.loadModel().then( (model: OdysseyModel3D) => {
-            door.loadWalkmesh(model.name, (dwk: OdysseyWalkMesh) => {
-              door.computeBoundingBox();
-              try{
-                model.userData.walkmesh = dwk;
-                door.collisionData.walkmesh = dwk;
-                GameState.walkmeshList.push( dwk.mesh );
-  
-                if(dwk.mesh instanceof THREE.Object3D){
-                  dwk.mat4.makeRotationFromEuler(door.rotation);
-                  dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
-                  dwk.mesh.geometry.applyMatrix4(dwk.mat4);
-                  dwk.updateMatrix();
-                  //dwk.mesh.position.copy(door.position);
-                  // if(!door.isOpen()){
-                  //   GameState.group.room_walkmeshes.add( dwk.mesh );
-                  // }
-                }
-
-                if(door.model instanceof OdysseyModel3D){
-                  door.box.setFromObject(door.model);
-                }
-  
-                if(door.openState){
-                  door.model.playAnimation('opened1', true);
-                }
-              }catch(e){
-                console.error('Failed to add dwk', model.name, dwk, e);
-              }
-  
-              door.getCurrentRoom();
-              GameState.group.doors.add( door.container );
-
-              asyncLoop.next();
-            });
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-
-    });
-  }
-
+  /**
+   * Load the area's placeables
+   */
   async loadPlaceables(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Placeables');
-      let loop = new AsyncLoop({
-        array: this.placeables,
-        onLoop: (plc: ModulePlaceable, asyncLoop: AsyncLoop) => {
-          plc.load();
-          plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-          plc.rotation.set(0, 0, plc.getBearing());
-          plc.loadModel().then( (model: OdysseyModel3D) => {
-            GameState.group.placeables.add( plc.container );
-            plc.loadWalkmesh(model.name, (pwk: OdysseyWalkMesh) => {
-              GameState.walkmeshList.push( pwk.mesh );
-              plc.computeBoundingBox();
+    console.log('Loading Placeables');
+    for(let i = 0; i < this.placeables.length; i++){
+      const plc = this.placeables[i];
+      plc.load();
+      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+      plc.rotation.set(0, 0, plc.getBearing());
+      const model = await plc.loadModel();
+      GameState.group.placeables.add( plc.container );
+      const pwk = await plc.loadWalkmesh(model.name);
+      GameState.walkmeshList.push( pwk.mesh );
+      plc.computeBoundingBox();
 
-              if(pwk.mesh instanceof THREE.Object3D){
-                pwk.mat4.makeRotationFromEuler(plc.rotation);
-                pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
-                pwk.mesh.geometry.applyMatrix4(pwk.mat4);
-                pwk.updateMatrix();
-                //pwk.mesh.position.copy(plc.position);
-                GameState.group.room_walkmeshes.add( pwk.mesh );
-              }
-  
-              plc.getCurrentRoom();
-              plc.position.set(plc.getX(), plc.getY(), plc.getZ());
-              plc.computeBoundingBox();
-  
-              asyncLoop.next()
-            });
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
+      if(pwk.mesh instanceof THREE.Object3D){
+        pwk.mat4.makeRotationFromEuler(plc.rotation);
+        pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
+        pwk.mesh.geometry.applyMatrix4(pwk.mat4);
+        pwk.updateMatrix();
+        //pwk.mesh.position.copy(plc.position);
+        GameState.group.room_walkmeshes.add( pwk.mesh );
+      }
+
+      plc.getCurrentRoom();
+      plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+      plc.computeBoundingBox();
+    }
   }
 
+  /**
+   * Load the area's waypoints
+   */
   async loadWaypoints(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Waypoints');
-      let loop = new AsyncLoop({
-        array: this.waypoints,
-        onLoop: (waypnt: ModuleWaypoint, asyncLoop: AsyncLoop) => {
-          waypnt.load();
-          let wpObj = new THREE.Object3D();
-          wpObj.name = waypnt.getTag();
-          wpObj.position.copy(waypnt.position);
-          wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
-          waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
-          GameState.group.waypoints.add(wpObj);
+    console.log('Loading Waypoints');
+    for(let i = 0; i < this.waypoints.length; i++){
+      const waypnt = this.waypoints[i];
+      waypnt.load();
+      const wpObj = new THREE.Object3D();
+      wpObj.name = waypnt.getTag();
+      wpObj.position.copy(waypnt.position);
+      wpObj.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()));
+      waypnt.rotation.z = Math.atan2(-waypnt.getYOrientation(), -waypnt.getXOrientation()) + Math.PI/2;
+      GameState.group.waypoints.add(wpObj);
 
-          let _distance = 1000000000;
-          let _currentRoom = null;
-          let roomCenter = new THREE.Vector3();
-          for(let i = 0; i < GameState.group.rooms.children.length; i++){
-            let room = GameState.group.rooms.children[i];
-            if(room instanceof OdysseyModel3D){
-              if(room.box.containsPoint(wpObj.position)){
-                room.box.getCenter(roomCenter);
-                let distance = wpObj.position.distanceTo(roomCenter);
-                if(distance < _distance){
-                  _distance = distance;
-                  _currentRoom = room;
-                }
-              }
+      let _distance = 1000000000;
+      let _currentRoom = null;
+      let roomCenter = new THREE.Vector3();
+      for(let i = 0; i < GameState.group.rooms.children.length; i++){
+        let room = GameState.group.rooms.children[i];
+        if(room instanceof OdysseyModel3D){
+          if(room.box.containsPoint(wpObj.position)){
+            room.box.getCenter(roomCenter);
+            let distance = wpObj.position.distanceTo(roomCenter);
+            if(distance < _distance){
+              _distance = distance;
+              _currentRoom = room;
             }
           }
-          wpObj.userData.area = _currentRoom;
-          this.areaMap.addMapNote(waypnt);
-          asyncLoop.next();
         }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  async loadEncounters(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Encounters');
-      let loop = new AsyncLoop({
-        array: this.encounters,
-        onLoop: (encounter: ModuleEncounter, asyncLoop: AsyncLoop) => {
-          try{
-            encounter.load();
-            let _distance = 1000000000;
-            let _currentRoom = null;
-            let roomCenter = new THREE.Vector3();
-            for(let i = 0; i < GameState.group.rooms.children.length; i++){
-              let room = GameState.group.rooms.children[i];
-              if(room instanceof OdysseyModel3D){
-                if(room.box.containsPoint(encounter.mesh.position)){
-                  room.box.getCenter(roomCenter);
-                  let distance = encounter.mesh.position.distanceTo(roomCenter);
-                  if(distance < _distance){
-                    _distance = distance;
-                    _currentRoom = room;
-                  }
-                }
-              }
-            }
-            encounter.mesh.userData.area = _currentRoom;
-            asyncLoop.next();
-          }catch(e){
-            console.error(e);
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  async loadAreaEffects(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading AreaEffects');
-      let loop = new AsyncLoop({
-        array: this.areaOfEffects,
-        onLoop: (aoe: ModuleAreaOfEffect, asyncLoop: AsyncLoop) => {
-          try{
-            aoe.load();
-            GameState.group.effects.add( aoe.container );
-            asyncLoop.next();
-          }catch(e){
-            console.error(e);
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  async loadTriggers(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Triggers');
-      let loop = new AsyncLoop({
-        array: this.triggers,
-        onLoop: (trig: ModuleTrigger, asyncLoop: AsyncLoop) => {
-          try{
-            trig.load();
-            let _distance = 1000000000;
-            let _currentRoom = null;
-            let roomCenter = new THREE.Vector3();
-            for(let i = 0; i < GameState.group.rooms.children.length; i++){
-              let room = GameState.group.rooms.children[i];
-              if(room instanceof OdysseyModel3D){
-                if(room.box.containsPoint(trig.mesh.position)){
-                  room.box.getCenter(roomCenter);
-                  let distance = trig.mesh.position.distanceTo(roomCenter);
-                  if(distance < _distance){
-                    _distance = distance;
-                    _currentRoom = room;
-                  }
-                }
-              }
-            }
-            trig.mesh.userData.area = _currentRoom;
-            asyncLoop.next();
-          }catch(e){
-            console.error(e);
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  async loadCreatures(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Creatures');
-      let loop = new AsyncLoop({
-        array: this.creatures,
-        onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-          creature.load();
-          creature.loadModel().then( (model: OdysseyModel3D) => {
-            creature.model.userData.moduleObject = creature;
-            
-            //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
-            creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
-
-            model.hasCollision = true;
-            model.name = creature.getTag();
-            GameState.group.creatures.add( creature.container );
-
-            creature.getCurrentRoom();
-            creature.updateCollision(0.0000000000000000000001);
-            creature.update(0.0000000000000000000001);
-            creature.computeBoundingBox();
-
-            asyncLoop.next();
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-
-    });
-  }
-
-  async loadStores(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Stores');
-      let loop = new AsyncLoop({
-        array: this.stores,
-        onLoop: (store: ModuleStore, asyncLoop: AsyncLoop) => {
-          store.load();
-          asyncLoop.next();
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-
-    });
-  }
-
-  async loadSoundTemplates(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading Sound Emitter');
-      let loop = new AsyncLoop({
-        array: this.sounds,
-        onLoop: (sound: ModuleSound, asyncLoop: AsyncLoop) => {
-          sound.load();
-          sound.loadSound( () => {
-            asyncLoop.next();
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
-  }
-
-  loadAudio(): Promise<void>{
-    return new Promise<void>( async (resolve, reject) => {
-      const ambientsound2DA = TwoDAManager.datatables.get('ambientsound');
-      if(ambientsound2DA){
-        let ambientDay = ambientsound2DA.rows[this.audio.AmbientSndDay].resource;
-
-        try{
-          const data = await AudioLoader.LoadAmbientSound(ambientDay);
-          //console.log('Loaded Ambient Sound', ambientDay);
-          AudioEngine.GetAudioEngine().setAmbientSound(data);
-          resolve();
-        }catch(e){
-          console.error('Ambient Audio not found', ambientDay);
-          resolve();
-        }
-      }else{
-        resolve();
       }
-    });
+      wpObj.userData.area = _currentRoom;
+      this.areaMap.addMapNote(waypnt);
+    }
   }
 
-  loadBackgroundMusic(): Promise<void>{
-    return new Promise<void>( async (resolve, reject) => {
-      const ambientmusic2DA = TwoDAManager.datatables.get('ambientmusic');
-      if(ambientmusic2DA){
-        const bgMusic = ambientmusic2DA.rows[this.audio.MusicDay].resource;
-        try{
-          const data = await AudioLoader.LoadMusic(bgMusic);
-          //console.log('Loaded Background Music', bgMusic);
-          AudioEngine.GetAudioEngine().setBackgroundMusic(data);
-          resolve();
-        }catch(e){
-          console.log('Background Music not found', bgMusic);
-          console.error(e);
-          resolve();
+  /**
+   * Load the area's encounters
+   */
+  async loadEncounters(): Promise<void> {
+    console.log('Loading Encounters');
+    for(let i = 0; i < this.encounters.length; i++){
+      const encounter = this.encounters[i];
+      try{
+        encounter.load();
+        let _distance = 1000000000;
+        let _currentRoom = null;
+        let roomCenter = new THREE.Vector3();
+        for(let i = 0; i < GameState.group.rooms.children.length; i++){
+          let room = GameState.group.rooms.children[i];
+          if(room instanceof OdysseyModel3D){
+            if(room.box.containsPoint(encounter.mesh.position)){
+              room.box.getCenter(roomCenter);
+              let distance = encounter.mesh.position.distanceTo(roomCenter);
+              if(distance < _distance){
+                _distance = distance;
+                _currentRoom = room;
+              }
+            }
+          }
         }
-      }else{
-        resolve();
+        encounter.mesh.userData.area = _currentRoom;
+      }catch(e){
+        console.error(e);
       }
-    });
+    }
   }
 
-  async loadTextures(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      resolve();
-    });
+  /**
+   * Load the area's Area of Effects
+   */
+  async loadAreaEffects(): Promise<void> {
+    console.log('Loading AreaEffects');
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      try{
+        const aoe = this.areaOfEffects[i];
+        aoe.load();
+        GameState.group.effects.add( aoe.container );
+      }catch(e){
+        console.error(e);
+      }
+    }
   }
 
+  /**
+   * Load the area's triggers
+   */
+  async loadTriggers(): Promise<void> {
+    console.log('Loading Triggers');
+    for(let i = 0; i < this.triggers.length; i++){
+      try{
+        const trig = this.triggers[i];
+        trig.load();
+        let _distance = 1000000000;
+        let _currentRoom = null;
+        let roomCenter = new THREE.Vector3();
+        for(let i = 0; i < GameState.group.rooms.children.length; i++){
+          let room = GameState.group.rooms.children[i];
+          if(room instanceof OdysseyModel3D){
+            if(room.box.containsPoint(trig.mesh.position)){
+              room.box.getCenter(roomCenter);
+              let distance = trig.mesh.position.distanceTo(roomCenter);
+              if(distance < _distance){
+                _distance = distance;
+                _currentRoom = room;
+              }
+            }
+          }
+        }
+        trig.mesh.userData.area = _currentRoom;
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+
+  /**
+   * Load the area's creatures
+   */
+  async loadCreatures(): Promise<void> {
+    console.log('Loading Creatures');
+    for(let i = 0; i < this.creatures.length; i++){
+      try{
+        const creature = this.creatures[i];
+        creature.load();
+        const model = await creature.loadModel();
+        creature.model.userData.moduleObject = creature;
+        
+        //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
+        creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
+
+        model.hasCollision = true;
+        model.name = creature.getTag();
+        GameState.group.creatures.add( creature.container );
+
+        creature.getCurrentRoom();
+        creature.updateCollision(0.0000000000000000000001);
+        creature.update(0.0000000000000000000001);
+        creature.computeBoundingBox();
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+
+  /**
+   * Load the area's stores
+   */
+  async loadStores(): Promise<void> {
+    console.log('Loading Stores');
+    for(let i = 0; i < this.stores.length; i++){
+      try{
+        const store = this.stores[i];
+        store.load();
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+
+  /**
+   * Load the area's sounds
+   */
+  async loadsounds(): Promise<void> {
+    console.log('Loading Sound Emitter');
+    for(let i = 0; i < this.sounds.length; i++){
+      try{
+        const sound = this.sounds[i];
+        sound.load();
+        await sound.loadSound();
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+
+  /**
+   * Load the area's ambient audio
+   */
+  async loadAmbientAudio(): Promise<void> {
+    const ambientsound2DA = TwoDAManager.datatables.get('ambientsound');
+    if(!ambientsound2DA){ return; }
+
+    const ambientDay = ambientsound2DA.rows[this.audio.ambient.day].resource;
+    try{
+      const data = await AudioLoader.LoadAmbientSound(ambientDay);
+      //console.log('Loaded Ambient Sound', ambientDay);
+      AudioEngine.GetAudioEngine().setAmbientSound(data);
+    }catch(e){
+      console.error('Ambient Audio not found', ambientDay);
+    }
+  }
+
+  /**
+   * Load the area's background music
+   */
+  async loadBackgroundMusic(): Promise<void> {
+    const ambientmusic2DA = TwoDAManager.datatables.get('ambientmusic');
+    if(!ambientmusic2DA){ return; }
+
+    const bgMusic = ambientmusic2DA.rows[this.audio.music.day].resource;
+    try{
+      const data = await AudioLoader.LoadMusic(bgMusic);
+      //console.log('Loaded Background Music', bgMusic);
+      AudioEngine.GetAudioEngine().setBackgroundMusic(data);
+    }catch(e){
+      console.log('Background Music not found', bgMusic);
+      console.error(e);
+    }
+  }
+
+  /**
+   * Load the area's scripts
+   */
   async loadScripts(){
     console.log('ModuleArea.loadScripts');
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
+
+    const scriptKeys = Array.from(this.scriptResRefs.keys());
+    const scriptResRefs = Array.from(this.scriptResRefs.values());
+    for(let i = 0; i < scriptResRefs.length; i++){
+      const resRef = scriptResRefs[i];
+      if(!resRef){ continue; }
+
+      const key = scriptKeys[i];
+      const script = NWScript.Load(resRef);
+      if(!script){ continue; }
+
+      if(key == 'OnEnter'){
+        this.scripts.onEnter = script;
+      }else if(key == 'OnExit'){
+        this.scripts.onExit = script;
+      }else if(key == 'OnHeartbeat'){
+        this.scripts.onHeartbeat = script;
+      }else if(key == 'OnUserDefined'){
+        this.scripts.onUserDefined = script;
       }
     }
   }
 
   async initAreaObjects(runSpawnScripts = false){
-
     for(let i = 0; i < this.doors.length; i++){
       if(this.doors[i] instanceof ModuleObject){
         this.doors[i].onSpawn(runSpawnScripts);
@@ -1675,7 +1734,6 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.runStartScripts();
-
   }
 
   runOnEnterScripts(){
@@ -1736,34 +1794,34 @@ export class ModuleArea extends ModuleObject {
     let are = new GFFObject();
     are.FileType = 'ARE ';
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'AlphaTest', this.AlphaTest)
+      new GFFField(GFFDataType.FLOAT, 'AlphaTest', this.alphaTest)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'CameraStyle', this.CameraStyle)
+      new GFFField(GFFDataType.INT, 'CameraStyle', this.cameraStyle)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceLightning', this.ChanceLightning)
+      new GFFField(GFFDataType.INT, 'ChanceLightning', this.weather.chanceLightning)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceRain', this.ChanceRain)
+      new GFFField(GFFDataType.INT, 'ChanceRain', this.weather.chanceRain)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceSnow', this.ChanceSnow)
+      new GFFField(GFFDataType.INT, 'ChanceSnow', this.weather.chanceSnow)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.CEXOSTRING, 'Comments', this.Comments)
+      new GFFField(GFFDataType.CEXOSTRING, 'Comments', this.comments)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'Creator_ID', this.Creator_ID)
+      new GFFField(GFFDataType.INT, 'Creator_ID', this.creatorId)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'DayNightCycle', this.DayNightCycle)
+      new GFFField(GFFDataType.BYTE, 'DayNightCycle', this.dayNightCycle)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'DefaultEnvMap', this.DefaultEnvMap)
+      new GFFField(GFFDataType.RESREF, 'DefaultEnvMap', this.defaultEnvMap)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'DynAmbientColor', this.DynAmbientColor)
+      new GFFField(GFFDataType.DWORD, 'DynAmbientColor', this.dynamicAmbientColor)
     );
 
     are.RootNode.addField(
@@ -1771,46 +1829,46 @@ export class ModuleArea extends ModuleObject {
     );
 
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Flags', this.Flags)
+      new GFFField(GFFDataType.DWORD, 'Flags', this.flags)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Grass_Ambient', this.Grass.Ambient)
+      new GFFField(GFFDataType.DWORD, 'Grass_Ambient', this.grass.ambient)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Density', this.Grass.Density)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Density', this.grass.density)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Grass_Diffuse', this.Grass.Diffuse)
+      new GFFField(GFFDataType.DWORD, 'Grass_Diffuse', this.grass.diffuse)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LL', this.Grass.Prob_LL)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LL', this.grass.probabilityLowerLeft)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LR', this.Grass.Prob_LR)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LR', this.grass.probabilityLowerRight)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UL', this.Grass.Prob_UL)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UL', this.grass.probabilityUpperLeft)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UR', this.Grass.Prob_UR)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UR', this.grass.probabilityUpperRight)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_QuadSize', this.Grass.QuadSize)
+      new GFFField(GFFDataType.FLOAT, 'Grass_QuadSize', this.grass.quadSize)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'Grass_TexName', this.Grass.TexName)
+      new GFFField(GFFDataType.RESREF, 'Grass_TexName', this.grass.textureName)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ID', this.ID)
+      new GFFField(GFFDataType.INT, 'ID', this.id)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'IsNight', this.IsNight)
+      new GFFField(GFFDataType.BYTE, 'IsNight', this.isNight)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'LightingScheme', this.LightingScheme)
+      new GFFField(GFFDataType.BYTE, 'LightingScheme', this.lightingScheme)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.WORD, 'LoadScreenID', this.LoadScreenID)
+      new GFFField(GFFDataType.WORD, 'LoadScreenID', this.loadScreenId)
     );
 
     let mapField = new GFFField(GFFDataType.STRUCT, 'Map');
@@ -1819,58 +1877,58 @@ export class ModuleArea extends ModuleObject {
 
 
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ModListenCheck', this.ModListenCheck)
+      new GFFField(GFFDataType.INT, 'ModListenCheck', this.modListenCheck)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ModSpotCheck', this.ModSpotCheck)
+      new GFFField(GFFDataType.INT, 'ModSpotCheck', this.modSpotCheck)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonAmbientColor', this.MoonAmbientColor)
+      new GFFField(GFFDataType.DWORD, 'MoonAmbientColor', this.moon.ambientColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonDiffuseColor', this.MoonDiffuseColor)
+      new GFFField(GFFDataType.DWORD, 'MoonDiffuseColor', this.moon.diffuseColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonFogColor', this.MoonFogColor)
+      new GFFField(GFFDataType.DWORD, 'MoonFogColor', this.moon.fogColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'MoonFogFar', this.MoonFogFar)
+      new GFFField(GFFDataType.FLOAT, 'MoonFogFar', this.moon.fogFar)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'MoonFogNear', this.MoonFogNear)
+      new GFFField(GFFDataType.FLOAT, 'MoonFogNear', this.moon.fogNear)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'MoonFogOn', this.MoonFogOn)
+      new GFFField(GFFDataType.BYTE, 'MoonFogOn', this.moon.fogOn)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'MoonShadows', this.MoonShadows)
+      new GFFField(GFFDataType.BYTE, 'MoonShadows', this.moon.shadows)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.CEXOLOCSTRING, 'Name').setCExoLocString(this.AreaName)
+      new GFFField(GFFDataType.CEXOLOCSTRING, 'Name').setCExoLocString(this.areaName)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'NoHangBack', this.NoHangBack)
+      new GFFField(GFFDataType.BYTE, 'NoHangBack', this.noHangBack ? 1 : 0)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'NoRest', this.NoRest)
+      new GFFField(GFFDataType.BYTE, 'NoRest', this.noRest ? 1 : 0)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnEnter', this.onEnter)
+      new GFFField(GFFDataType.RESREF, 'OnEnter', this.scriptResRefs.get('OnEnter'))
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnExit', this.onExit)
+      new GFFField(GFFDataType.RESREF, 'OnExit', this.scriptResRefs.get('OnExit'))
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnHeartbeat', this.onHeartbeat)
+      new GFFField(GFFDataType.RESREF, 'OnHeartbeat', this.scriptResRefs.get('OnHeartbeat'))
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined)
+      new GFFField(GFFDataType.RESREF, 'OnUserDefined', this.scriptResRefs.get('OnUserDefined'))
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'PlayerOnly', this.PlayerOnly)
+      new GFFField(GFFDataType.BYTE, 'PlayerOnly', this.playerOnly ? 1 : 0)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'PlayerVsPlayer', this.PlayerVsPlayer)
+      new GFFField(GFFDataType.BYTE, 'PlayerVsPlayer', this.playerVsPlayer ? 1 : 0)
     );
 
     let roomsField = new GFFField(GFFDataType.LIST, 'Rooms');
@@ -1880,49 +1938,49 @@ export class ModuleArea extends ModuleObject {
     are.RootNode.addField(roomsField);
 
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'ShadowOpacity', this.ShadowOpacity)
+      new GFFField(GFFDataType.BYTE, 'ShadowOpacity', this.shadowOpacity)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'StealthXPEnabled', this.StealthXPEnabled)
+      new GFFField(GFFDataType.BYTE, 'StealthXPEnabled', this.stealthXPEnabled)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'StealthXPLoss', this.StealthXPLoss)
+      new GFFField(GFFDataType.DWORD, 'StealthXPLoss', this.stealthXPLoss)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'StealthXPMax', this.StealthXPMax)
+      new GFFField(GFFDataType.DWORD, 'StealthXPMax', this.stealthXPMax)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunAmbientColor', this.SunAmbientColor)
+      new GFFField(GFFDataType.DWORD, 'SunAmbientColor', this.sun.ambientColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunDiffuseColor', this.SunDiffuseColor)
+      new GFFField(GFFDataType.DWORD, 'SunDiffuseColor', this.sun.diffuseColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunFogColor', this.SunFogColor)
+      new GFFField(GFFDataType.DWORD, 'SunFogColor', this.sun.fogColor)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'SunFogFar', this.SunFogFar)
+      new GFFField(GFFDataType.FLOAT, 'SunFogFar', this.sun.fogFar)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'SunFogNear', this.SunFogNear)
+      new GFFField(GFFDataType.FLOAT, 'SunFogNear', this.sun.fogNear)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'SunFogOn', this.SunFogOn)
+      new GFFField(GFFDataType.BYTE, 'SunFogOn', this.sun.fogOn)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'SunShadows', this.SunShadows)
+      new GFFField(GFFDataType.BYTE, 'SunShadows', this.sun.shadows)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'Tag', this.Tag)
+      new GFFField(GFFDataType.RESREF, 'Tag', this.tag)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'Unescapable', this.Unescapable)
+      new GFFField(GFFDataType.BYTE, 'Unescapable', this.unescapable)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Version', this.Version)
+      new GFFField(GFFDataType.DWORD, 'Version', this.version)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'WindPower', this.WindPower)
+      new GFFField(GFFDataType.INT, 'WindPower', this.windPower)
     );
 
     return are;
@@ -1931,16 +1989,16 @@ export class ModuleArea extends ModuleObject {
 
   getAreaPropertiesStruct(){
     let struct = new GFFStruct();
-    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.AmbientSndDay);
-    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.AmbientSndDayVol);
-    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.AmbientSndNight);
-    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.AmbientSndNitVol);
-    struct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.EnvAudio);
+    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
+    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
+    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
+    struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.ambient.nightVolume);
+    struct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.environmentAudio);
     
-    struct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.MusicBattle);
-    struct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.MusicDay);
-    struct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.MusicDelay);
-    struct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.MusicNight);
+    struct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.music.battle);
+    struct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.music.day);
+    struct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.music.delay);
+    struct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
 
     struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode ? 1 : 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(0);
@@ -1951,73 +2009,73 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.Unescapable);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable);
     return struct;
   }
 
   saveAreaListStruct(){
     let areaStruct = new GFFStruct();
-    areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).setValue(this._name);
+    areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).setValue(this.name);
     areaStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     //unescapable
     return areaStruct;
   }
 
-  save(){
-    let git = new GFFObject();
+  save(): { git: GFFObject, are: GFFObject }{
+    const git = new GFFObject();
     git.FileType = 'GIT ';
 
-    let aoeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'AreaEffectList') );
+    const aoeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'AreaEffectList') );
     for(let i = 0; i < this.areaOfEffects.length; i++){
       aoeList.addChildStruct( this.areaOfEffects[i].save().RootNode );
     }
 
-    let areaMapField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
+    const areaMapField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaMap') );
     areaMapField.addChildStruct( this.areaMap.exportData() );
 
-    let areaPropertiesField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaProperties') );
+    const areaPropertiesField = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'AreaProperties') );
     areaPropertiesField.addChildStruct( this.getAreaPropertiesStruct() );
 
-    let cameraList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CameraList') );
+    const cameraList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CameraList') );
     for(let i = 0; i < this.cameras.length; i++){
       cameraList.addChildStruct( this.cameras[i].save().RootNode );
     }
 
-    let creatureList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
+    const creatureList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
     for(let i = 0; i < this.creatures.length; i++){
       creatureList.addChildStruct( this.creatures[i].save().RootNode );
     }
 
-    git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CurrentWeather') ).setValue(0);
+    git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CurrentWeather') ).setValue(this.weather.currentWeather);
 
-    let doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );
+    const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );
     for(let i = 0; i < this.doors.length; i++){
       doorList.addChildStruct( this.doors[i].save().RootNode );
     }
 
-    let encounterList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Encounter List') );
+    const encounterList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Encounter List') );
     for(let i = 0; i < this.encounters.length; i++){
       encounterList.addChildStruct( this.encounters[i].save().RootNode );
     }
 
     //Area Items List
-    let list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
+    const list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
 
-    let placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
+    const placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
     for(let i = 0; i < this.placeables.length; i++){
       placeableList.addChildStruct( this.placeables[i].save().RootNode );
     }
 
     //SWVarTable
-    let swVarTable = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = git.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
-    let soundList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'SoundList') );
+    const soundList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'SoundList') );
     for(let i = 0; i < this.sounds.length; i++){
       soundList.addChildStruct( this.sounds[i].save().RootNode );
     }
 
-    let storeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'StoreList') );
+    const storeList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'StoreList') );
     for(let i = 0; i < this.stores.length; i++){
       storeList.addChildStruct( this.stores[i].save().RootNode );
     }
@@ -2026,19 +2084,19 @@ export class ModuleArea extends ModuleObject {
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
 
-    let triggerList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'TriggerList') );
+    const triggerList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'TriggerList') );
     for(let i = 0; i < this.triggers.length; i++){
       triggerList.addChildStruct( this.triggers[i].save().RootNode );
     }
 
     git.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
 
-    let waypointList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'WaypointList') );
+    const waypointList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'WaypointList') );
     for(let i = 0; i < this.waypoints.length; i++){
       waypointList.addChildStruct( this.waypoints[i].save().RootNode );
     }
     
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'WeatherStarted') ).setValue(0);
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'WeatherStarted') ).setValue(this.weather.started ? 1 : 0);
 
     this.git = git;
 
@@ -2052,15 +2110,15 @@ export class ModuleArea extends ModuleObject {
     git.FileType = 'GIT ';
 
     let areaPropertiesStruct = new GFFStruct(14);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.AmbientSndDay);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.AmbientSndDayVol);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.AmbientSndNight);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.AmbientSndNitVol);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.EnvAudio);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.MusicBattle);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.MusicDay);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.MusicDelay);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.MusicNight);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.ambient.nightVolume);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.environmentAudio);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.music.battle);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.music.day);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.music.delay);
+    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
 
     let areaPropertiesField = new GFFField(GFFDataType.STRUCT, 'AreaProperties');
     areaPropertiesField.addChildStruct(areaPropertiesStruct);

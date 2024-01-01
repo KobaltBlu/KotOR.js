@@ -451,10 +451,10 @@ export class Module {
       
       ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.SunFogOn && this.area.SunFogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.SunFogColor.toString(16)));
+      if(this.area.sun.fogOn && this.area.sun.fogColor){
+        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
       }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.DynAmbientColor.toString(16)));
+        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
       }
       
       GameState.globalLight.color.setRGB(
@@ -482,15 +482,6 @@ export class Module {
         GameState.camera.userData.pitch = -89.0;
 
       MenuManager.LoadScreen.setProgress(0);
-
-      try{
-        MenuManager.InGameOverlay.miniMap.setAreaMap(this.area.areaMap);
-        MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.entryArea);
-        MenuManager.MenuMap.miniMap.setAreaMap(this.area.areaMap);
-        MenuManager.MenuMap.SetMapTexture('lbl_map'+this.entryArea);
-      }catch(e){
-        console.error(e);
-      }
 
       await this.area.loadScene();
       this.transWP = null;
@@ -702,8 +693,8 @@ export class Module {
     sav.addResource('module', ResourceTypes['ifo'], this.ifo.getExportBuffer());
     for(let i = 0; i < this.areas.length; i++){
       const area = this.areas[i];
-      sav.addResource(area._name, ResourceTypes['are'], area.are.getExportBuffer());
-      sav.addResource(area._name, ResourceTypes['git'], area.git.getExportBuffer());
+      sav.addResource(area.name, ResourceTypes['are'], area.are.getExportBuffer());
+      sav.addResource(area.name, ResourceTypes['git'], area.git.getExportBuffer());
     }
 
     if(this.includeInSave()){
@@ -995,7 +986,7 @@ export class Module {
     //KotOR only supports one Area per module
     if(this.area instanceof ModuleArea){
       let areaStruct = new GFFStruct(6);
-      areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name', this.area._name) );
+      areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name', this.area.name) );
       areaList.addChildStruct(areaStruct);
     }
 

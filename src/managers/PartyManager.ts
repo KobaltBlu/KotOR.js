@@ -372,7 +372,7 @@ export class PartyManager {
   // }
 
   //Load the PartyMember by it's index in the CurrentMembers array.
-  static LoadPartyMember(nIdx = 0, onLoad?: Function){
+  static async LoadPartyMember(nIdx = 0){
     let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     const template = npc.template;
     template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
@@ -385,48 +385,39 @@ export class PartyManager {
         if(!(currentSlot instanceof ModuleCreature)){
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.load();
-            //PartyManager.party[nIdx+1] = partyMember;
+          //PartyManager.party[nIdx+1] = partyMember;
 
-            /*if(PartyManager.CurrentMembers[nIdx].isLeader){
-              PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
-            }*/
-            PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
-            PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
-            let spawn = PartyManager.GetSpawnLocation(partyMember);
-            partyMember.position.copy(spawn.position);
-            partyMember.setFacing(spawn.getFacing(), true);
-            
-            partyMember.loadModel().then( (model: OdysseyModel3D) => {
-              model.userData.moduleObject = partyMember;
+          /*if(PartyManager.CurrentMembers[nIdx].isLeader){
+            PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
+          }*/
+          PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
+          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
+          let spawn = PartyManager.GetSpawnLocation(partyMember);
+          partyMember.position.copy(spawn.position);
+          partyMember.setFacing(spawn.getFacing(), true);
+          
+          const model = await partyMember.loadModel();
+          model.userData.moduleObject = partyMember;
 
-              partyMember.position.copy(spawn.position);
-              partyMember.setFacing(spawn.getFacing(), true);
-              //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-        
-              model.hasCollision = true;
-              GameState.group.party.add( partyMember.container );
+          partyMember.position.copy(spawn.position);
+          partyMember.setFacing(spawn.getFacing(), true);
+          //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+    
+          model.hasCollision = true;
+          GameState.group.party.add( partyMember.container );
 
-              partyMember.onSpawn();
-              if(typeof onLoad === 'function')
-                onLoad();
-            });
+          partyMember.onSpawn();
         }else{
           let spawn = PartyManager.GetSpawnLocation(currentSlot);
           currentSlot.position.copy(spawn.position);
           currentSlot.setFacing(spawn.getFacing(), true);
           //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-          if(typeof onLoad === 'function')
-            onLoad();
         }
       }catch(e){
         console.error(e);
-        if(typeof onLoad === 'function')
-          onLoad();
       }
     }else{
-      console.error('LoadPartyMember', 'Wrong index', nIdx, npc, partyMember);
-      if(typeof onLoad === 'function')
-        onLoad();
+      console.log('LoadPartyMember', 'Wrong index', nIdx, npc, partyMember);
     }
   }
 

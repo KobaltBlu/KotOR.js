@@ -65,7 +65,7 @@ export class MenuMap extends GameMenu {
       this.BTN_RETURN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close();
-        if(!GameState.module.area.Unescapable){
+        if(!GameState.module.area.unescapable){
           if(this.onTransitScript instanceof NWScriptInstance)
             this.onTransitScript.run();
         }

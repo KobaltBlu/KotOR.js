@@ -250,7 +250,7 @@ export class AudioEngine {
 
   getBackgroundMusicLoopTime(){
     if(this.areaProperies){
-      return this.areaProperies.MusicDelay;
+      return this.areaProperies.music.delay;
     }else{
       return 30000;
     }

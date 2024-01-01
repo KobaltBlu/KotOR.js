@@ -972,7 +972,7 @@ export class GameState implements EngineContext {
                               MenuManager.InGameOverlay.open();
 
                               GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-                              GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.SunFogColor) );
+                              GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
                               
                               console.log('ModuleArea.initAreaObjects');
                               GameState.module.area

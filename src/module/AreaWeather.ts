@@ -2,13 +2,19 @@ import { GameState } from "../GameState";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
 import { ModuleArea } from "./ModuleArea";
+import { WeatherCondition } from "../enums/module/WeatherCondition";
 import * as THREE from "three";
 
 export class AreaWeather {
   area: ModuleArea;
+  
   model: OdysseyModel3D;
-  ChanceSnow: number;
-  ChanceRain: number;
+  chanceSnow: number = 0;
+  chanceRain: number = 0;
+  chanceLightning: number = 0;
+  currentWeather: WeatherCondition = WeatherCondition.CLEAR;
+  started: boolean = false;
+
   constructor(area: ModuleArea){
     this.area = area;
   }
@@ -22,7 +28,7 @@ export class AreaWeather {
 
   async load(){
     return new Promise<void>( (resolve, reject) => {
-      if(this.ChanceSnow == 100){
+      if(this.chanceSnow == 100){
         GameState.ModelLoader.load('fx_snow')
         .then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
@@ -36,7 +42,7 @@ export class AreaWeather {
             resolve();
           }).catch(resolve);
         }).catch(resolve);
-      }else if(this.ChanceRain == 100){
+      }else if(this.chanceRain == 100){
         GameState.ModelLoader.load('fx_rain')
         .then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
