@@ -145,22 +145,20 @@ export class ModulePath {
     this.name = pathName;
   }
 
-  load( onLoad?: Function ){
+  async load(){
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['pth'], this.name);
     if(buffer){
       const gff = new GFFObject(buffer);
       this.template = gff;
       //console.log(this.template, gff, this)
       this.initProperties();
-      if(typeof onLoad === 'function')
-        onLoad(this);
+      return this;
     }else{
       console.error('Failed to load ModulePath template');
       if(this.template instanceof GFFObject){
         this.initProperties();
       }
-      if(typeof onLoad === 'function')
-        onLoad(this);
+      return this;
     }
   }
 

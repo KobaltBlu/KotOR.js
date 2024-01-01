@@ -940,7 +940,7 @@ export class GameState implements EngineContext {
                 GameState.controls.initKeys();
 
                 FactionManager.Load().then( () => {
-                  Module.BuildFromExisting(name, waypoint, (module: Module) => {
+                  Module.Load(name, waypoint).then((module: Module) => {
                     GameState.module = module;
                     GameState.scene.visible = false;
 
@@ -951,11 +951,11 @@ export class GameState implements EngineContext {
                       FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
                       console.log('Module.loadScene');
-                      module.loadScene( (d: any) => {
+                      module.loadScene().then((d: any) => {
                         TextureLoader.LoadQueue( () => {
                           module.initEventQueue();
                           console.log('Module.initScripts');
-                          module.initScripts( () => {
+                          module.initScripts().then(() => {
                             MenuManager.LoadScreen.close();
                             window.setTimeout( ()=> {
                               //GameState.scene_gui.background = null;

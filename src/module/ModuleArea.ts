@@ -475,7 +475,7 @@ export class ModuleArea extends ModuleObject {
     this.transWP = sTag;
   }
 
-  load(onLoad?: Function){
+  async load(){
 
     //BEGIN AREA LOAD
 
@@ -524,7 +524,6 @@ export class ModuleArea extends ModuleObject {
         this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
       );
     }
-
 
     this.ModListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
     this.ModSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
@@ -757,16 +756,11 @@ export class ModuleArea extends ModuleObject {
       FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
     }
 
-    this.loadVis( () => {
-      this.loadLayout( () => {
-        this.loadPath( () => {
-          this.loadScripts();
-          GameState.scene.fog = this.fog;
-          if(typeof onLoad == 'function')
-            onLoad(this);
-        });
-      });
-    });
+    await this.loadVis();
+    await this.loadLayout();
+    await this.loadPath();
+    await this.loadScripts();
+    GameState.scene.fog = this.fog;
 
   }
 
@@ -778,33 +772,33 @@ export class ModuleArea extends ModuleObject {
     return cameraStyle2DA.rows[0];
   }
 
-  loadPath(onLoad?: Function){
+  async loadPath(){
     console.log('ModuleArea.loadPath');
     this.path = new ModulePath(this._name);
-    this.path.load( () => {
-      if(typeof onLoad == 'function')
-        onLoad(this);
-    });
-  }
-
-  loadVis(onLoad?: Function){
-    console.log('ModuleArea.loadVis');
-    ResourceLoader.loadResource(ResourceTypes['vis'], this._name).then((visData: Buffer) => {
-      this.visObject = new VISObject(visData, this);
-      if(typeof onLoad == 'function')
-        onLoad(this);
-    }).catch( (e) => {
+    try{
+      await this.path.load();
+    }catch(e){
       console.error(e);
-      this.visObject = new VISObject(null, this);
-      if(typeof onLoad == 'function')
-        onLoad(this);
-    });
+    }
   }
 
-  loadLayout(onLoad?: Function){
+  async loadVis(){
+    console.log('ModuleArea.loadVis');
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['vis'], this._name);
+      this.visObject = new VISObject(buffer, this);
+      return;
+    }catch(e){
+      console.error(e);
+    }
+    this.visObject = new VISObject(null, this);
+  }
+
+  async loadLayout(){
     console.log('ModuleArea.loadLayout');
-    ResourceLoader.loadResource(ResourceTypes['lyt'], this._name).then((data: Buffer) => {
-      this.layout = new LYTObject(data);
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['lyt'], this._name);
+      this.layout = new LYTObject(buffer);
 
       //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
       let sortedRooms = [];
@@ -845,16 +839,10 @@ export class ModuleArea extends ModuleObject {
         }
         room.setLinkedRooms(linked_rooms);
       }
-
-      if(typeof onLoad == 'function')
-        onLoad();
-
-    }).catch( (e) => {
+    }catch(e){
       console.error(e);
       this.layout = new LYTObject();
-      if(typeof onLoad == 'function')
-        onLoad();
-    });
+    }
   }
 
   cleanupUninitializedObjects(){
@@ -1010,11 +998,11 @@ export class ModuleArea extends ModuleObject {
     }else{
       console.log('No TransWP');
       return new EngineLocation(
-        GameState.module['Mod_Entry_X'],
-        GameState.module['Mod_Entry_Y'],
-        GameState.module['Mod_Entry_Z'],
-        GameState.module['Mod_Entry_Dir_X'],
-        GameState.module['Mod_Entry_Dir_Y'],
+        GameState.module['entryX'],
+        GameState.module['entryY'],
+        GameState.module['entryZ'],
+        GameState.module['entryDirectionX'],
+        GameState.module['entryDirectionY'],
         0
       );
     }
@@ -1632,7 +1620,7 @@ export class ModuleArea extends ModuleObject {
     });
   }
 
-  loadScripts(){
+  async loadScripts(){
     console.log('ModuleArea.loadScripts');
     let keys = Object.keys(this.scripts);
     for(let i = 0; i < keys.length; i++){

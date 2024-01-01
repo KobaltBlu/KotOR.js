@@ -3,6 +3,8 @@ import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./";
 import * as THREE from 'three';
+import * as KotOR from '../../KotOR';
+import * as path from "path";
 
 export class TabModuleEditorState extends TabState {
 
@@ -52,6 +54,55 @@ export class TabModuleEditorState extends TabState {
 
   animate(delta: number = 0){
 
+  }
+
+  
+
+  //This should only be used inside KotOR Forge
+  static FromProject(directory?: string, onComplete?: Function){
+    console.log('BuildFromExisting', directory);
+    const module = new KotOR.Module();
+    module.transWP = '';
+    if(directory != null){
+      KotOR.GameFileSystem.readFile(path.join(directory, 'module.ifo')).then( (ifo_data) => {
+        new KotOR.GFFObject(ifo_data, (ifo) => {
+          //console.log('Module.FromProject', 'IFO', ifo);
+          try{
+            module.setFromIFO(ifo);
+            KotOR.GameState.time = module.timeManager.pauseTime / 1000;
+            KotOR.GameFileSystem.readFile(path.join(directory, module.entryArea+'.git')).then( (buffer) => {
+              new KotOR.GFFObject(buffer, (git) => {
+                //console.log('Module.FromProject', 'GIT', git);
+                KotOR.GameFileSystem.readFile(path.join(directory, module.entryArea+'.are')).then( (buffer) => {
+                  new KotOR.GFFObject(buffer, (are) => {
+                    //console.log('Module.FromProject', 'ARE', are);
+                    module.area = new KotOR.ModuleArea(module.entryArea, are, git);
+                    module.area.module = module;
+                    module.areas = [module.area];
+                    module.area.setTransitionWaypoint(module.transWP);
+
+                    KotOR.ModuleObjectManager.module = module;
+                    module.area.load().then(() => {
+                      if(typeof onComplete == 'function')
+                        onComplete(module);
+                    });                        
+                  });
+                }).catch( (e) => {
+                  console.error(e);
+                });
+              });
+            }).catch( (e) => {
+              console.error(e);
+            });
+          }catch(e){
+            console.error(e);
+          }
+        });
+      }).catch( (e) => {
+        console.error(e);
+      });
+    }
+    return module;
   }
 
 }
