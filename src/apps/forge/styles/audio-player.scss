@@ -8,7 +8,7 @@
   -webkit-app-region: no-drag;
 
   .audio-player-controls {
-
+    width: 100%;
     cursor: initial;
     display:flex;
 
@@ -17,7 +17,7 @@
     }
 
     input[type=range].track {
-      flex-grow: 100;
+      flex: 1;
       margin: 0 5px;
       width: auto;
       display:inline-block;

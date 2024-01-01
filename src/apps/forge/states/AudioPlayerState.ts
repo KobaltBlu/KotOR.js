@@ -1,11 +1,13 @@
 import { EditorFile } from "../EditorFile";
 import * as fs from "fs";
 import * as KotOR from "../KotOR";
+import { ForgeState } from "./ForgeState";
+import { TabAudioPlayerState } from "./tabs/TabAudioPlayerState";
 
 declare const dialog: any;
 
 export type AudioPlayerEventListenerTypes =
-  'onPlay'|'onPause'|'onStop'|'onLoad'|'onVolume'|'onLoop';
+  'onPlay'|'onPause'|'onStop'|'onLoad'|'onVolume'|'onLoop'|'onOpen';
 
 export interface TabManagerEventListeners {
   onPlay: Function[],
@@ -14,6 +16,7 @@ export interface TabManagerEventListeners {
   onLoad: Function[],
   onVolume: Function[],
   onLoop: Function[],
+  onOpen: Function[],
 }
 
 export class AudioPlayerState {
@@ -32,8 +35,12 @@ export class AudioPlayerState {
     onLoad: [],
     onVolume: [],
     onLoop: [],
+    onOpen: [],
   };
   
+  static analyser: AnalyserNode;
+  static analyserBufferLength: number; 
+  static analyserData: Uint8Array;
   static source: AudioBufferSourceNode;
   static gainNode: GainNode;
   static loading: boolean;
@@ -91,6 +98,7 @@ export class AudioPlayerState {
   }
 
   static OpenAudio(file: EditorFile){
+    ForgeState.tabManager.addTab(new TabAudioPlayerState());
     AudioPlayerState.Reset();
     AudioPlayerState.Stop();
     
@@ -98,8 +106,8 @@ export class AudioPlayerState {
     if(file instanceof EditorFile){
       file.readFile().then( (response) => {
         try{
-          // AudioPlayerState.$title.text(file.resref+'.'+file.ext);
           AudioPlayerState.audioFile = new KotOR.AudioFile(response.buffer);
+          AudioPlayerState.audioFile.filename = file.resref+'.'+file.ext;
           if(AudioPlayerState.isPlaying()){
             AudioPlayerState.Stop();
           }
@@ -108,6 +116,7 @@ export class AudioPlayerState {
           }
           AudioPlayerState.Play();
           // AudioPlayerState.Show();
+          AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
         }
         catch (e) {
           console.error(e);
@@ -174,10 +183,16 @@ export class AudioPlayerState {
           AudioPlayerState.loading = false;
           let offset = AudioPlayerState.pausedAt;
           AudioPlayerState.source.buffer = AudioPlayerState.buffer;
-          AudioPlayerState.source.connect(AudioPlayerState.gainNode);
+          AudioPlayerState.analyser = KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
+          AudioPlayerState.analyser.fftSize = 128; 
+          AudioPlayerState.source.connect(AudioPlayerState.analyser);
+          AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
           AudioPlayerState.gainNode.connect(KotOR.AudioEngine.GetAudioEngine().audioCtx.destination);
           AudioPlayerState.source.loop = false;
           AudioPlayerState.source.start(0, offset);
+
+          AudioPlayerState.analyserBufferLength = AudioPlayerState.analyser.frequencyBinCount; 
+          AudioPlayerState.analyserData = new Uint8Array(AudioPlayerState.analyserBufferLength);
 
           AudioPlayerState.startedAt = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - offset;
           AudioPlayerState.pausedAt = 0;

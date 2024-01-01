@@ -82,7 +82,7 @@ export class AudioFile {
 
     //BinaryReader
     else if(this.reader instanceof BinaryReader){
-      this.filename = 'Unknown';
+      if(!this.filename) this.filename = 'Unknown';
       if(this.isProcessed){
         return this.data;
       }else{
@@ -91,7 +91,7 @@ export class AudioFile {
       }
 
     } else {
-      this.filename = 'Unknown';
+      if(!this.filename) this.filename = 'Unknown';
       if(this.isProcessed){
         this.reader = new BinaryReader(this.data);
         return this.data;
