@@ -225,21 +225,79 @@ export class TextureLoader {
     });
   }
 
-  static UpdateMaterial(tex: TextureLoaderQueuedRef){
-    return new Promise<void>( async (resolve, reject) => {
-      switch(tex.type){
-        case TextureType.TEXTURE:
-          let texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
-          if(!!texture && tex.material instanceof THREE.Material){
+  static async UpdateMaterial(tex: TextureLoaderQueuedRef){
+    switch(tex.type){
+      case TextureType.TEXTURE:
+        let texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
+        if(!!texture && tex.material instanceof THREE.Material){
+
+          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            //console.log('THREE.RawShaderMaterial', tex);
+            tex.material.uniforms.map.value = texture;
+            (tex.material as any).map = texture;
+            tex.material.uniformsNeedUpdate = true;
+            tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+          }else{
+            (tex.material as any).map = texture;
+            (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
+          }
+
+          /*
+            //Obsolete now that the alpha value was discovered in the TPC Header
+            //This was causing all DTX5 textures to enable transparency even if they were opaque
+            //This lead to bad issues with auto sorting objects in the renderer because opaque and
+            //objects with transparency need to be on separate layers when rendering to keep everything
+            //blending smoothly. I'm leaving the commented code below just because :/
+          
+            if(texture.format == THREE.RGBA_S3TC_DXT5_Format){
+              tex.material.transparent = true;
+            }
+          */
+
+          await TextureLoader.ParseTXI(texture, tex);
+
+          //Check to see if alpha value is set in the TPC Header
+          //I think this has to do with alphaTesting... Not sure...
+          if(typeof texture.header === 'object'){
+            if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
+              if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
+                tex.material.transparent = true;
+              }
+              
+              if(texture.txi.blending == TXIBlending.ADDITIVE){
+                //tex.material.alphaTest = 0;
+              }
+
+              if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXIBlending.PUNCHTHROUGH){
+                if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+                  tex.material.alphaTest = texture.header.alphaTest;
+                  if(tex.material.uniforms?.alphaTest){
+                    tex.material.uniforms.alphaTest.value = texture.header.alphaTest;
+                  }
+                }
+                tex.material.transparent = false;
+              }
+
+              //if(!texture.txi.blending)
+              //  tex.material.alphaTest = texture.header.alphaTest;
+            }
+          }
+
+          //tex.material.needsUpdate = true;
+          if(typeof tex.onLoad == 'function')
+            tex.onLoad(texture, tex)
+        }else if(!texture && !!tex.fallback){
+          let fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
+          if(!!fallback && tex.material instanceof THREE.Material){
 
             if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
               //console.log('THREE.RawShaderMaterial', tex);
-              tex.material.uniforms.map.value = texture;
-              (tex.material as any).map = texture;
+              tex.material.uniforms.map.value = fallback;
+              (tex.material as any).map = fallback;
               tex.material.uniformsNeedUpdate = true;
               tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
             }else{
-              (tex.material as any).map = texture;
+              (tex.material as any).map = fallback;
               (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
             }
 
@@ -250,156 +308,95 @@ export class TextureLoader {
               //objects with transparency need to be on separate layers when rendering to keep everything
               //blending smoothly. I'm leaving the commented code below just because :/
             
-              if(texture.format == THREE.RGBA_S3TC_DXT5_Format){
+              if(fallback.format == THREE.RGBA_S3TC_DXT5_Format){
                 tex.material.transparent = true;
               }
             */
 
-            await TextureLoader.ParseTXI(texture, tex);
+            await TextureLoader.ParseTXI(fallback, tex);
 
             //Check to see if alpha value is set in the TPC Header
             //I think this has to do with alphaTesting... Not sure...
-            if(typeof texture.header === 'object'){
-              if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
-                if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
+            if(typeof fallback.header === 'object'){
+              if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null){
+                if(fallback.txi.blending != TXIBlending.PUNCHTHROUGH){
                   tex.material.transparent = true;
                 }
-                
-                if(texture.txi.blending == TXIBlending.ADDITIVE){
+                if(fallback.txi.blending == TXIBlending.ADDITIVE){
                   //tex.material.alphaTest = 0;
                 }
-
-                if( (texture.header.alphaTest && texture.header.format != PixelFormat.DXT5) || texture.txi.blending == TXIBlending.PUNCHTHROUGH){
-                  if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-                    tex.material.alphaTest = texture.header.alphaTest;
-                    if(tex.material.uniforms?.alphaTest){
-                      tex.material.uniforms.alphaTest.value = texture.header.alphaTest;
-                    }
-                  }
-                  tex.material.transparent = false;
-                }
-
-                //if(!texture.txi.blending)
-                //  tex.material.alphaTest = texture.header.alphaTest;
+                //tex.material.alphaTest = fallback.header.alphaTest;
               }
             }
 
             //tex.material.needsUpdate = true;
-            if(typeof tex.onLoad == 'function')
-              tex.onLoad(texture, tex)
-          }else if(!texture && !!tex.fallback){
-            let fallback: OdysseyTexture = await TextureLoader.Load(tex.fallback, TextureLoader.CACHE);
-            if(!!fallback && tex.material instanceof THREE.Material){
-
-              if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-                //console.log('THREE.RawShaderMaterial', tex);
-                tex.material.uniforms.map.value = fallback;
-                (tex.material as any).map = fallback;
-                tex.material.uniformsNeedUpdate = true;
-                tex.material.needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-              }else{
-                (tex.material as any).map = fallback;
-                (tex.material as any).needsUpdate = true; //This is required for cached textures. If not models will not update with a cached texture
-              }
-
-              /*
-                //Obsolete now that the alpha value was discovered in the TPC Header
-                //This was causing all DTX5 textures to enable transparency even if they were opaque
-                //This lead to bad issues with auto sorting objects in the renderer because opaque and
-                //objects with transparency need to be on separate layers when rendering to keep everything
-                //blending smoothly. I'm leaving the commented code below just because :/
-              
-                if(fallback.format == THREE.RGBA_S3TC_DXT5_Format){
-                  tex.material.transparent = true;
-                }
-              */
-
-              await TextureLoader.ParseTXI(fallback, tex);
-
-              //Check to see if alpha value is set in the TPC Header
-              //I think this has to do with alphaTesting... Not sure...
-              if(typeof fallback.header === 'object'){
-                if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null){
-                  if(fallback.txi.blending != TXIBlending.PUNCHTHROUGH){
-                    tex.material.transparent = true;
-                  }
-                  if(fallback.txi.blending == TXIBlending.ADDITIVE){
-                    //tex.material.alphaTest = 0;
-                  }
-                  //tex.material.alphaTest = fallback.header.alphaTest;
-                }
-              }
-
-              //tex.material.needsUpdate = true;
-            }
-
-            if(typeof tex.onLoad == 'function')
-              tex.onLoad(texture, tex)
-          }else{
-            if(typeof tex.onLoad == 'function')
-              tex.onLoad(texture, tex)
-          }
-        break;
-        case TextureType.LIGHTMAP:
-          let lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
-          if(!!lightmap){
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              tex.material.uniforms.lightMap.value = lightmap;
-              (tex.material as any).lightMap = lightmap;
-              lightmap.updateMatrix();
-              if(tex.material.uniforms.map.value){
-                tex.material.uniforms.map.value.updateMatrix();
-              }
-              tex.material.defines.USE_LIGHTMAP = '';
-              tex.material.defines.USE_ENVMAP = '';
-              tex.material.defines.ENVMAP_TYPE_CUBE = '';
-              delete tex.material.defines.IGNORE_LIGHTING;
-              tex.material.defines.AURORA = "";
-              tex.material.uniformsNeedUpdate = true;
-            }else{
-              (tex.material as any).lightMap = lightmap;
-              (tex.material as any).defines = (tex.material as any).defines || {};
-              if((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')){
-                delete (tex.material as any).defines.IGNORE_LIGHTING;
-              }
-            }
-            
-            tex.material.needsUpdate = true;
-          }else{
-            if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
-              delete tex.material.defines.IGNORE_LIGHTING;
-              tex.material.uniformsNeedUpdate = true;
-            }
-          }
-
-          if(typeof tex.onLoad == 'function')
-            tex.onLoad(lightmap, tex)
-        break;
-        case TextureType.PARTICLE:
-          let particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
-          if(!!particle_texture){
-            if(tex.partGroup instanceof OdysseyEmitter3D){
-              tex.partGroup.material.uniforms.map.value = particle_texture;
-              (tex.partGroup.material as any).map = particle_texture;
-              tex.partGroup.material.depthWrite = false;
-              tex.partGroup.material.needsUpdate = true;
-            }else{
-              tex.partGroup.material.uniforms.texture.value = particle_texture;
-              tex.partGroup.material.map = particle_texture;
-              tex.partGroup.material.depthWrite = false;
-              tex.partGroup.material.needsUpdate = true;
-            }
           }
 
           if(typeof tex.onLoad == 'function')
             tex.onLoad(texture, tex)
-        break;
-        default:
-          console.warn('TextureLoader.UpdateMaterial: Unhandled Texture Type', tex);
-        break;
-      }
-      resolve();
-    });
+        }else{
+          if(typeof tex.onLoad == 'function')
+            tex.onLoad(texture, tex)
+        }
+      break;
+      case TextureType.LIGHTMAP:
+        let lightmap: OdysseyTexture = await TextureLoader.LoadLightmap(tex.name, TextureLoader.CACHE);
+        if(!!lightmap){
+          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            tex.material.uniforms.lightMap.value = lightmap;
+            (tex.material as any).lightMap = lightmap;
+            lightmap.updateMatrix();
+            if(tex.material.uniforms.map.value){
+              tex.material.uniforms.map.value.updateMatrix();
+            }
+            tex.material.defines.USE_LIGHTMAP = '';
+            tex.material.defines.USE_ENVMAP = '';
+            tex.material.defines.ENVMAP_TYPE_CUBE = '';
+            delete tex.material.defines.IGNORE_LIGHTING;
+            tex.material.defines.AURORA = "";
+            tex.material.uniformsNeedUpdate = true;
+          }else{
+            (tex.material as any).lightMap = lightmap;
+            (tex.material as any).defines = (tex.material as any).defines || {};
+            if((tex.material as any).defines.hasOwnProperty('IGNORE_LIGHTING')){
+              delete (tex.material as any).defines.IGNORE_LIGHTING;
+            }
+          }
+          
+          tex.material.needsUpdate = true;
+        }else{
+          if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
+            delete tex.material.defines.IGNORE_LIGHTING;
+            tex.material.uniformsNeedUpdate = true;
+          }
+        }
+
+        if(typeof tex.onLoad == 'function')
+          tex.onLoad(lightmap, tex)
+      break;
+      case TextureType.PARTICLE:
+        let particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
+        if(!!particle_texture){
+          if(tex.partGroup instanceof OdysseyEmitter3D){
+            tex.partGroup.material.uniforms.map.value = particle_texture;
+            (tex.partGroup.material as any).map = particle_texture;
+            tex.partGroup.material.depthWrite = false;
+            tex.partGroup.material.needsUpdate = true;
+          }else{
+            tex.partGroup.material.uniforms.texture.value = particle_texture;
+            tex.partGroup.material.map = particle_texture;
+            tex.partGroup.material.depthWrite = false;
+            tex.partGroup.material.needsUpdate = true;
+          }
+        }
+
+        if(typeof tex.onLoad == 'function')
+          tex.onLoad(texture, tex)
+      break;
+      default:
+        console.warn('TextureLoader.UpdateMaterial: Unhandled Texture Type', tex);
+      break;
+    }
   }
 
   static ParseTXI(texture: OdysseyTexture, tex: TextureLoaderQueuedRef){
