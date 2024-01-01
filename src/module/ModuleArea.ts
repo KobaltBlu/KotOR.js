@@ -141,6 +141,7 @@ export class ModuleArea extends ModuleObject {
    * 0x0002: UNDERGROUND  (aboveground if unset)
    * 0x0004: NATURAL      (urban if unset)
    * These flags affect game behaviour with respect to ability to hear things behind walls, map exploration visibility, and whether certain feats are active, though not necessarily in that order. They do not affect how the toolset presents the area to the user.
+   * @remarks currently unused
    */
   flags = 1;
 
