@@ -4,7 +4,7 @@
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, TwoDAManager } from "../../../managers";
+import { AppearanceManager, CharGenManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
@@ -34,7 +34,7 @@ export class CharGenPortCust extends GameMenu {
   portraidId: any;
 
   _3dView: LBL_3DView;
-  _3dViewModel: OdysseyModel3D;
+  sceneModel3D: OdysseyModel3D;
 
   constructor(){
     super();
@@ -50,30 +50,32 @@ export class CharGenPortCust extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.BTN_ARRL.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        const creature = CharGenManager.selectedCreature;
       
-        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(CharGenManager.selectedCreature.appearance);
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
         let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx <= 0){
-          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[arrayLength - 1];
+          creature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[arrayLength - 1];
         }else{
-          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
+          creature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[--idx];
         }
+        creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
         for(let i = 0; i < TwoDAManager.datatables.get('portraits').RowCount; i++){
           let port = TwoDAManager.datatables.get('portraits').rows[i];
-          if(parseInt(port['appearancenumber']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          if(parseInt(port['appearancenumber']) == creature.appearance){
+            creature.portraidId = i;
             break;
-          }else if(parseInt(port['appearance_l']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          }else if(parseInt(port['appearance_l']) == creature.appearance){
+            creature.portraidId = i;
             break;
-          }else if(parseInt(port['appearance_s']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          }else if(parseInt(port['appearance_s']) == creature.appearance){
+            creature.portraidId = i;
             break;
           }
         }
 
-        CharGenManager.selectedCreature.loadModel().then( (model: OdysseyModel3D) => {
+        creature.loadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
           if(model){
@@ -87,30 +89,32 @@ export class CharGenPortCust extends GameMenu {
 
       this.BTN_ARRR.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        const creature = CharGenManager.selectedCreature;
 
-        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(CharGenManager.selectedCreature.appearance);
+        let idx = CharGenClasses[CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
         let arrayLength = CharGenClasses[CharGenManager.selectedClass].appearances.length;
         if(idx >= arrayLength - 1){
-          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[0];
+          creature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[0];
         }else{
-          CharGenManager.selectedCreature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
+          creature.appearance = CharGenClasses[CharGenManager.selectedClass].appearances[++idx];
         }
+        creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
         for(let i = 0; i < TwoDAManager.datatables.get('portraits').RowCount; i++){
           let port = TwoDAManager.datatables.get('portraits').rows[i];
-          if(parseInt(port['appearancenumber']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          if(parseInt(port['appearancenumber']) == creature.appearance){
+            creature.portraidId = i;
             break;
-          }else if(parseInt(port['appearance_l']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          }else if(parseInt(port['appearance_l']) == creature.appearance){
+            creature.portraidId = i;
             break;
-          }else if(parseInt(port['appearance_s']) == CharGenManager.selectedCreature.appearance){
-            CharGenManager.selectedCreature.portraidId = i;
+          }else if(parseInt(port['appearance_s']) == creature.appearance){
+            creature.portraidId = i;
             break;
           }
         }
 
-        CharGenManager.selectedCreature.loadModel().then( (model: OdysseyModel3D) => {
+        creature.loadModel().then( (model: OdysseyModel3D) => {
           this.updateCamera();
           this.UpdatePortrait();
           if(model){
@@ -124,12 +128,14 @@ export class CharGenPortCust extends GameMenu {
 
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        const creature = CharGenManager.selectedCreature;
         if(!this.exiting){
           this.exiting = true;
           //Restore previous appearance
-          CharGenManager.selectedCreature.appearance = this.appearance;
-          CharGenManager.selectedCreature.portraidId = this.portraidId;
-          CharGenManager.selectedCreature.loadModel().then( (model: OdysseyModel3D) => {
+          creature.appearance = this.appearance;
+          creature.portraidId = this.portraidId;
+          creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+          creature.loadModel().then( (model: OdysseyModel3D) => {
             model.rotation.z = -Math.PI/2;
             this.exiting = false;
             this.close();
@@ -139,10 +145,11 @@ export class CharGenPortCust extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        const creature = CharGenManager.selectedCreature;
         
         //Save appearance choice
-        CharGenManager.selectedCreature.template.getFieldByLabel('Appearance_Type').setValue(CharGenManager.selectedCreature.appearance);
-        CharGenManager.selectedCreature.template.getFieldByLabel('PortraitId').setValue(CharGenManager.selectedCreature.portraidId);
+        creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
+        creature.template.getFieldByLabel('PortraitId').setValue(creature.portraidId);
         this.manager.CharGenQuickPanel.step1 = true;
 
         this.close();
@@ -163,22 +170,23 @@ export class CharGenPortCust extends GameMenu {
 
   Init3D() {
     let control = this.LBL_HEAD;
-    if(CharGenManager.selectedCreature.model){
-      CharGenManager.selectedCreature.model.removeFromParent();
+    const creature = CharGenManager.selectedCreature;
+    if(creature.model){
+      creature.model.removeFromParent();
     }
     OdysseyModel3D.FromMDL(CharGenManager.cghead_light, {
-      onComplete: (model: OdysseyModel3D) => {
+      onComplete: (sceneModel3D: OdysseyModel3D) => {
         try{
-          this._3dViewModel = model;
-          this._3dView.addModel(this._3dViewModel);
-          if(CharGenManager.selectedCreature.getGender()){
-            this._3dView.camera.position.copy(this._3dViewModel.camerahookf.position);
-            this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookf.quaternion);
+          this.sceneModel3D = sceneModel3D;
+          this._3dView.addModel(this.sceneModel3D);
+          if(creature.getGender()){
+            this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
+            this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
           }else{
-            this._3dView.camera.position.copy(this._3dViewModel.camerahookm.position);
-            this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookm.quaternion);
+            this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
+            this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
           }
-          this._3dViewModel.playAnimation(0, true);
+          this.sceneModel3D.playAnimation(0, true);
         }catch(e){
           console.error(e);
         }
@@ -196,8 +204,9 @@ export class CharGenPortCust extends GameMenu {
     if (!this.bVisible)
       return;
     try {
+      const creature = CharGenManager.selectedCreature;
       let modelControl = this.LBL_HEAD;
-      CharGenManager.selectedCreature.update(delta);
+      creature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
@@ -206,7 +215,8 @@ export class CharGenPortCust extends GameMenu {
   }
 
   UpdatePortrait() {
-    let portraitId = CharGenManager.selectedCreature.getPortraitId();
+    const creature = CharGenManager.selectedCreature;
+    let portraitId = creature.getPortraitId();
     let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
     this.LBL_PORTRAIT.show();
     if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
@@ -219,29 +229,31 @@ export class CharGenPortCust extends GameMenu {
 
   show() {
     super.show();
-    this.appearance = CharGenManager.selectedCreature.appearance;
-    this.portraidId = CharGenManager.selectedCreature.portraidId;
+    const creature = CharGenManager.selectedCreature;
+    this.appearance = creature.appearance;
+    this.portraidId = creature.portraidId;
     try {
-      CharGenManager.selectedCreature.model.removeFromParent();
+      creature.model.removeFromParent();
     } catch (e: any) {
       console.error(e);
     }
-    this._3dView.addModel(CharGenManager.selectedCreature.model);
+    this._3dView.addModel(creature.model);
     (this.LBL_PORTRAIT.getFill().material as THREE.ShaderMaterial).blending = 1;
     this.updateCamera();
     this.UpdatePortrait();
   }
 
   updateCamera() {
-    if (CharGenManager.selectedCreature.getGender() == 0) {
-      this._3dView.camera.position.copy(this._3dViewModel.camerahookm.position);
-      this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookm.quaternion);
+    const creature = CharGenManager.selectedCreature;
+    if (creature.getGender() == 0) {
+      this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
+      this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
     } else {
-      this._3dView.camera.position.copy(this._3dViewModel.camerahookf.position);
-      this._3dView.camera.quaternion.copy(this._3dViewModel.camerahookf.quaternion);
+      this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
+      this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
     }
     let v3 = new THREE.Vector3();
-    CharGenManager.selectedCreature.model.camerahook.getWorldPosition(v3)
+    creature.model.camerahook.getWorldPosition(v3)
     this._3dView.camera.position.z = v3.z;
   }
     
