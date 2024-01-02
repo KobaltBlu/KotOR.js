@@ -4,9 +4,10 @@
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, TwoDAManager } from "../../../managers";
+import { CharGenManager, TLKManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
+import { CharGenClasses } from "../../CharGenClasses";
 
 /* @file
 * The CharGenMain menu class.
@@ -140,6 +141,10 @@ export class CharGenMain extends GameMenu {
         this.PORTRAIT_LBL.setFillTexture(texture);
       });
     }
+    this.LBL_NAME.setText(CharGenManager.selectedCreature.firstName);
+    this.LBL_CLASS.setText(
+      TLKManager.TLKStrings[CharGenClasses[CharGenManager.selectedClass].strings.name].Value
+    )
   }
 
   updateAttributes() {

@@ -14,6 +14,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
 import { MenuManager } from ".";
 import { AudioEngine } from "../audio/AudioEngine";
+import { LTRObject, ResourceLoader, ResourceTypes } from "../KotOR";
 
 export class CharGenManager {
 
@@ -59,6 +60,10 @@ export class CharGenManager {
   static step5_complete: boolean = false;
   static step6_complete: boolean = false;
 
+  static ltrMaleName: LTRObject;
+  static ltrFemaleName: LTRObject;
+  static ltrLastName: LTRObject;
+
   static async Start(){
     await MenuManager.LoadScreen.setLoadBackground('load_chargen');
     MenuManager.LoadScreen.open();
@@ -83,12 +88,11 @@ export class CharGenManager {
   }
 
   static async Init(){
-    return new Promise<void>( async (resolve, reject) => {
-      CharGenManager.InitializeCreatureTemplate();
-      CharGenManager.InitCharBackgroundModel().then( () => {
-        resolve();
-      });
-    });
+    CharGenManager.ltrMaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanm'));
+    CharGenManager.ltrFemaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanf'));
+    CharGenManager.ltrLastName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanl'));
+    CharGenManager.InitializeCreatureTemplate();
+    await CharGenManager.InitCharBackgroundModel();
   }
 
   static InitCharBackgroundModel(){
@@ -186,6 +190,7 @@ export class CharGenManager {
         }
       }
     }
+    const gender = nth < 3 ? 0 : 1;
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'AIState')).setValue(appearanceIdx);
     template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ActionList'));
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'Age')).setValue(0);
@@ -197,14 +202,14 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'BodyBag')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'FactionID')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'PortraitId')).setValue(portraitId);
-    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setValue('New Player');
+    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setValue(CharGenManager.generateRandomName(gender));
     template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName'));
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'HitPoints')).setValue(8);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentHitPoints')).setValue(8);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'MaxHitPoints')).setValue(20);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'ForcePoints')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
-    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(nth < 3 ? 0 : 1);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
     let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_hen_damage01');
@@ -321,6 +326,22 @@ export class CharGenManager {
       }
     }
     return skillOrder;
+  }
+
+  static generateRandomName(gender: number = 0){
+    const creature = CharGenManager.selectedCreature;
+    if(creature && !gender){
+      gender = creature.getGender();
+    }
+
+    let firstName = '';
+    if(gender == 0){
+      firstName = CharGenManager.ltrMaleName.getName();
+    }else{
+      firstName = CharGenManager.ltrFemaleName.getName();
+    }
+    
+    return firstName + ' ' + CharGenManager.ltrLastName.getName();
   }
 
 }

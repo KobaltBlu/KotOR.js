@@ -42,13 +42,17 @@ export class CharGenName extends GameMenu {
         this.manager.CharGenQuickPanel.step2 = true;
         this.close();
       });
+
+      this.BTN_RANDOM.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.NAME_BOX_EDIT.setText(CharGenManager.generateRandomName());
+      });
       resolve();
     });
   }
 
   show() {
     super.show();
-    this.BTN_RANDOM.hide();
     this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
   }
   

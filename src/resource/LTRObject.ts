@@ -1,11 +1,13 @@
-
-
-//Some helpful info can be found at
-//http://web.archive.org/web/20160801205623/https://forum.bioware.com/topic/134653-ltr-file-format/#entry3901817
-
 import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 
+const LTR_HEADER_LENGTH = 9;
+
+/**
+ * uses Markov Chains to generate random names for character generation ingame
+ * @see https://nwn.wiki/display/NWN1/LTR
+ * @see http://web.archive.org/web/20160801205623/https://forum.bioware.com/topic/134653-ltr-file-format/#entry3901817
+ */
 export class LTRObject {
 
   static CharacterArrays: any = {
@@ -13,68 +15,58 @@ export class LTRObject {
     28: 'abcdefghijklmnopqrstuvwxyz\'-'
   };
 
-  data: Buffer;
+  buffer: Buffer;
   file: string;
   fileType: string;
   fileVersion: string;
   charCount: number;
-  singleArray: any[][];
-  doubleArray: any[];
-  tripleArray: any[];
+  singleArray: number[][] = [];
+  doubleArray: number[][][] = [];
+  tripleArray: number[][][][] = [];
 
-  constructor( data: string|Buffer, onLoad?: Function, onError?: Function){
+  constructor( data: string|Buffer){
 
     if(typeof data === 'string'){
       this.file = data;
-      this.openFile(this.file, onLoad, onError);
+      this.openFile(this.file);
     }else if(isBuffer(data)){
-      this.data = data;
-      this.readData(this.data, onLoad, onError);
+      this.buffer = data;
+      this.readBuffer(this.buffer);
     }
 
   }
 
-  openFile(file: string, onLoad?: Function, onError?: Function){
+  openFile(file: string){
 
   }
 
-  readData(data: Buffer, onLoad?: Function, onError?: Function){
-
-    //273168
-
-    //28 * 4 = 112
-
-    //2439
-
+  readBuffer(data: Buffer){
     if(isBuffer(data)){
-      let br = new BinaryReader(data);
-
-      let header_len = 9;
+      const br = new BinaryReader(data);
 
       this.fileType = br.readChars(4);
       this.fileVersion = br.readChars(4);
       this.charCount = br.readByte();
 
-      this.singleArray = [
-        [], [], []
-      ];
-      this.doubleArray = [];
-      this.tripleArray = [];
+      br.seek(LTR_HEADER_LENGTH);
 
-      //Single Array
+      //Single Markov Chains
+      this.singleArray[0] = [];
       for(let i = 0; i < this.charCount; i++){
         this.singleArray[0][i] = br.readSingle();
       }
 
+      this.singleArray[1] = [];
       for(let i = 0; i < this.charCount; i++){
         this.singleArray[1][i] = br.readSingle();
       }
 
+      this.singleArray[2] = [];
       for(let i = 0; i < this.charCount; i++){
         this.singleArray[2][i] = br.readSingle();
       }
 
-      //Double Array
+      //Double Markov Chains
       for(let i = 0; i < this.charCount; i++){
         this.doubleArray[i] = [
           [], [], []
@@ -94,7 +86,7 @@ export class LTRObject {
 
       }
 
-      //Tripple Array
+      //Tripple Markov Chains
       for(let i = 0; i < this.charCount; i++){
         this.tripleArray[i] = [];
         for(let j = 0; j < this.charCount; j++){
@@ -116,11 +108,95 @@ export class LTRObject {
         }
       }
 
-      this.data = Buffer.allocUnsafe(0);
+      this.buffer = Buffer.allocUnsafe(0);
       br.dispose();
+    }
+  }
 
+  /**
+   * generates a single name from the Markov Chains found the this LTRObject
+   * @see https://github.com/mtijanic/nwn-misc/blob/master/nwnltr.c
+   */
+  public getName(): string {
+    const letters = LTRObject.CharacterArrays[this.charCount];
+    if(!letters){
+      throw new Error('Invalid letter count');
     }
 
+    let prob: number = 0;
+    let i = 0;
+    let wordIndex = 0;
+    let chars = [];
+    
+    let attempts = 0;
+    let bGetFirstThree = true;
+    let bGenerating = false;
+    let bDone = false;
+
+    while(bGetFirstThree && !bDone){
+      for (i = 0, prob = Math.random(); i < this.charCount; i++)
+        if (prob < this.singleArray[0][i])
+          break;
+        
+      if (i == this.charCount){
+        continue;
+      }
+      chars[wordIndex++] = i;
+
+      for (i = 0, prob = Math.random(); i < this.charCount; i++)
+        if (prob < this.doubleArray[chars[wordIndex-1]][0][i])
+          break;
+
+      if (i == this.charCount){
+        continue;
+      }
+      chars[wordIndex++] = i;
+
+      for (i = 0, prob = Math.random(); i < this.charCount; i++)
+        if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][0][i])
+          break;
+
+      if (i == this.charCount){
+        continue;
+      }
+      chars[wordIndex++] = i;
+      
+      bGenerating = true;
+      while(bGenerating && !bDone){
+        prob = Math.random();
+        if ((Math.floor(Math.random() * 2147483647) % 12) <= chars.length) {
+          for (i = 0; i < this.charCount; i++) {
+            if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][2][i]) {
+              chars[wordIndex++] = i;
+              bGenerating = false;
+              break;
+            }
+          }
+        }
+  
+        if(!bGenerating){ 
+          bDone = true;
+          break; 
+        }
+  
+        for (i = 0; i < this.charCount; i++) {
+          if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][1][i]) {
+            chars[wordIndex++] = i;
+            break;
+          }
+        }
+  
+        if (i == this.charCount) {
+          if (chars.length < 3 || ++attempts > 100){
+            bGenerating = false;
+          }
+        }
+      }
+    }
+    
+    return chars.map((value: number, index: number) => {
+      return index == 0 ? letters[value].toUpperCase() : letters[value];
+    }).join('') as string;
   }
 
 }
