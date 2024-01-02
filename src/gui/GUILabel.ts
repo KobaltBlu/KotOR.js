@@ -16,8 +16,8 @@ export class GUILabel extends GUIControl {
     this.objectType |= GUIControlTypeMask.GUILabel;
 
     this.onKeyDown = (e: any) => {
-      //e.stopPropagation();
-      console.log(e);
+      // e.stopPropagation();
+      // console.log('onKeyDown', e);
 
       switch(e.which){
         case 8: //Backspace

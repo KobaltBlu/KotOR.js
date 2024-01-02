@@ -217,47 +217,45 @@ export class Keyboard {
   }
 
   init(){
-
     for (let key in this.action) {
       (this.action as any)[key] = new KeyInput(key);
     }
+  }
 
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      // console.log('keydown', e);
-      const code = e.code as KeyboardAction;
+  onKeyDown(e: KeyboardEvent) {
+    console.log('keydown', e);
+    const code = e.code as KeyboardAction;
 
-      if(code == KeyboardAction.Tab){
-        e.preventDefault();
+    const input = this.action[code];
+    if(code == KeyboardAction.Tab){
+      e.preventDefault();
+    }
+
+    if(input){
+      input.keyDown();
+    }
+
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      if(typeof MenuManager.activeGUIElement.onKeyDown === 'function'){
+        MenuManager.activeGUIElement.onKeyDown(e);
       }
+    }
+  }
 
-      const input = this.action[code];
-      if(input){
-        input.keyDown();
+  onKeyUp(e: KeyboardEvent){
+    console.log('keyup', e);
+    const code = e.code as KeyboardAction;
+
+    const input = this.action[code];
+    if(input){
+      input.keyUp();
+    }
+
+    if(MenuManager.activeGUIElement instanceof GUIControl){
+      if(typeof MenuManager.activeGUIElement.onKeyUp === 'function'){
+        MenuManager.activeGUIElement.onKeyUp(e);
       }
-
-      if(MenuManager.activeGUIElement instanceof GUIControl){
-        if(typeof MenuManager.activeGUIElement.onKeyDown === 'function'){
-          MenuManager.activeGUIElement.onKeyDown(e);
-        }
-      }
-    });
-
-    window.addEventListener('keyup', (e: KeyboardEvent) => {
-      // console.log('keyup', e);
-
-      const code = e.code as KeyboardAction;
-      const input = this.action[code];
-      if(input){
-        input.keyUp();
-      }
-
-      if(MenuManager.activeGUIElement instanceof GUIControl){
-        if(typeof MenuManager.activeGUIElement.onKeyUp === 'function'){
-          MenuManager.activeGUIElement.onKeyUp(e);
-        }
-      }
-    });
-
+    }
   }
 
   onFrameBegin(delta: number = 0){

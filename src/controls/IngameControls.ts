@@ -50,11 +50,17 @@ export class IngameControls {
 
     this.element.requestPointerLock = this.element.requestPointerLock;
 
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      this.keyboard.onKeyDown(e);
+    });
+
+    window.addEventListener('keyup', (e: KeyboardEvent) => {
+      this.keyboard.onKeyUp(e);
+    });
+
     // Ask the browser to release the pointer
     document.exitPointerLock = document.exitPointerLock;
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
-
-    this.keyboard.init();
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
       Mouse.Update(event.clientX, event.clientY);
