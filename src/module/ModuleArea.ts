@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameState } from "../GameState";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -32,25 +29,22 @@ import { AudioEngine } from "../audio";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AmbientSource } from "../interface/area/AmbientSource";
-
-/* @file
- * The ModuleArea class.
- */
-
-interface Grass {
-  ambient: number;
-  density: number;
-  diffuse: number;
-  probabilityLowerLeft: number;
-  probabilityLowerRight:  number;
-  probabilityUpperLeft:  number;
-  probabilityUpperRight:  number;
-  quadSize: number;
-  textureName: string;
-}
+import { GrassProperties } from "../interface/area/GrassProperties";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
+/**
+ * ModuleArea class.
+ * 
+ * Class representing an ingame area.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ModuleArea.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class ModuleArea extends ModuleObject {
 
   module: Module;
@@ -136,7 +130,7 @@ export class ModuleArea extends ModuleObject {
   expansionList: any[] = [];
 
   /**
-   * @remarks Set of bit flags specifying area terrain type:
+   * Set of bit flags specifying area terrain type:
    * 0x0001: INTERIOR     (exterior if unset)
    * 0x0002: UNDERGROUND  (aboveground if unset)
    * 0x0004: NATURAL      (urban if unset)
@@ -145,7 +139,7 @@ export class ModuleArea extends ModuleObject {
    */
   flags = 1;
 
-  grass: Grass = {
+  grass: GrassProperties = {
     ambient: 0,
     density: 0,
     diffuse: 0,
@@ -167,7 +161,7 @@ export class ModuleArea extends ModuleObject {
   /**
    * Index into loadscreens.2da. Default loading screen to use when loading this area. 
    * @remarks Note that a Door or Trigger that has an area transition can override the loading screen of the destination area
-   * @remarks not supported by KotOR or TSL. not sure if we will add support for this in the engine
+   * not supported by KotOR or TSL. not sure if we will add support for this in the engine
    */
   loadScreenId = 0;
 
