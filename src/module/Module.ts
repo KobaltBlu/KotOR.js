@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import * as path from "path";
 import { AudioEmitter } from "../audio/AudioEmitter";
@@ -12,7 +9,6 @@ import { GFFObject } from "../resource/GFFObject";
 import { ModuleArea, ModuleTimeManager } from ".";
 import { CombatEngine } from "../combat";
 import { ModuleObject, ModulePlayer } from ".";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -27,34 +23,23 @@ import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager, 
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AudioEngine } from "../audio/AudioEngine";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-
-/* @file
- * The Module class.
- */
-
-interface ModuleScripts {
-  onAcquireItem: NWScriptInstance,
-  onActivateItem: NWScriptInstance
-  onClientEnter: NWScriptInstance
-  onClientLeave: NWScriptInstance
-  onHeartbeat: NWScriptInstance
-  onModuleLoad: NWScriptInstance
-  onModuleStart: NWScriptInstance
-  onPlayerDeath: NWScriptInstance
-  onPlayerDying: NWScriptInstance
-  onPlayerLevelUp: NWScriptInstance
-  onPlayerRest: NWScriptInstance
-  onSpawnButtonDown: NWScriptInstance
-  onUnAcquireItem: NWScriptInstance
-  onUserDefined: NWScriptInstance
-}
+import { ModuleScripts } from "../interface/module/ModuleScripts";
+import { AreaListItem } from "../interface/area/AreaListItem";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
-interface areaListItem { 
-  areaName: number, objectId: number 
-}
-
+/**
+ * Module class.
+ * 
+ * Class representing an ingame module.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file Module.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class Module {
   ifo: GFFObject;
 
@@ -83,7 +68,7 @@ export class Module {
   /**
    * List of Areas in the module
    */
-  areaList: areaListItem[] = [];
+  areaList: AreaListItem[] = [];
 
   /**
    * Description of module
@@ -265,7 +250,7 @@ export class Module {
       //KOTOR modules should only ever have one area. But just incase lets loop through the list
       for(let i = 0; i < areaCount; i++){
         let Mod_Area = areaList.childStructs[0];
-        const area: areaListItem = {} as any;
+        const area: AreaListItem = {} as any;
 
         if(Mod_Area.hasField('Area_Name'))
           area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue()
