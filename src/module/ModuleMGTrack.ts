@@ -1,18 +1,22 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
-import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { LayoutTrack } from "../interface/resource/LayoutTrack";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleMGTrack class.
- */
-
+/**
+* ModuleMGTrack class.
+* 
+* Class representing the rails that an enemy or player are attached to in minigame modules.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMGTrack.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMGTrack extends ModuleObject {
   index: number;
   track: any;

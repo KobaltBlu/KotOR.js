@@ -5,9 +5,21 @@ import { ModuleArea } from "./ModuleArea";
 import { WeatherCondition } from "../enums/module/WeatherCondition";
 import * as THREE from "three";
 
+/**
+* AreaWeather class.
+* 
+* Class representing the logic that powers area weather.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file AreaWeather.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class AreaWeather {
   area: ModuleArea;
-  
+
   model: OdysseyModel3D;
   chanceSnow: number = 0;
   chanceRain: number = 0;

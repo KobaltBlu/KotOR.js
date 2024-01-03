@@ -4,7 +4,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 
 
-export class SpawnPointEntry{
+export class EncounterSpawnPointEntry{
 
   position = new THREE.Vector3();
   orientation = 0.0;
@@ -22,7 +22,7 @@ export class SpawnPointEntry{
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let entry = new SpawnPointEntry();
+      let entry = new EncounterSpawnPointEntry();
       if(struct.hasField('X'))
         entry.position.x = struct.getFieldByLabel('X').getValue();
 

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject, ModuleItem } from ".";
 import type { ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
@@ -30,10 +27,6 @@ import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 
-/* @file
- * The ModulePlaceable class.
- */
-
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
   currentAnimState: ModulePlaceableAnimState;
@@ -41,6 +34,18 @@ interface AnimStateInfo {
   started: boolean;
 };
 
+/**
+* ModulePlaceable class.
+* 
+* Class representing placeable objects found in modules areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModulePlaceable.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModulePlaceable extends ModuleObject {
   openState: boolean;
   _state: ModulePlaceableState;

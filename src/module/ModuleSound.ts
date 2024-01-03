@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { AudioEngine } from "../audio/AudioEngine";
@@ -15,10 +12,18 @@ import { ModuleObjectManager } from "../managers";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 
-/* @file
- * The ModuleSound class.
- */
-
+/**
+* ModuleSound class.
+* 
+* Class representing sound emitters found in modules areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleSound.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleSound extends ModuleObject {
   audioEngine: AudioEngine;
   active: number;

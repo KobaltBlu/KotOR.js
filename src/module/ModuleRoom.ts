@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import type { ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
 import * as THREE from "three";
@@ -20,10 +17,18 @@ import { KEYManager, ShaderManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 
-/* @file
- * The ModuleRoom class.
- */
-
+/**
+* ModuleRoom class.
+* 
+* Class representing rooms found in modules areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleRoom.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleRoom extends ModuleObject {
   ambientScale: any;
   envAudio: any;

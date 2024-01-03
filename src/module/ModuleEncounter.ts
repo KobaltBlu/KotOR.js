@@ -1,8 +1,5 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
-import { EncounterCreatureEntry, ModuleObject, SpawnEntry, SpawnPointEntry } from ".";
+import { EncounterCreatureEntry, ModuleObject, EncounterSpawnEntry, EncounterSpawnPointEntry } from ".";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
 import { NWScript } from "../nwscript/NWScript";
@@ -18,14 +15,22 @@ import { FactionManager } from "../FactionManager";
 import { ModuleObjectManager, PartyManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleEncounter class.
- */
-
+/**
+* ModuleEncounter class.
+* 
+* Class representing an encounter found in module areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleEncounter.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleEncounter extends ModuleObject {
   creatureList: EncounterCreatureEntry[];
-  spawnPointList: SpawnPointEntry[];
-  spawnList: SpawnEntry[];
+  spawnPointList: EncounterSpawnPointEntry[];
+  spawnList: EncounterSpawnEntry[];
   active: number;
   difficulty: number;
   difficultyIndex: number;
@@ -319,8 +324,8 @@ export class ModuleEncounter extends ModuleObject {
         let spawnPoints = this.template.RootNode.getFieldByLabel('SpawnPointList').getChildStructs();
         let entry = undefined;
         for(let i = 0, len = spawnPoints.length; i < len; i++){
-          entry = SpawnPointEntry.FromStruct(spawnPoints[i]);
-          if(entry instanceof SpawnPointEntry){
+          entry = EncounterSpawnPointEntry.FromStruct(spawnPoints[i]);
+          if(entry instanceof EncounterSpawnPointEntry){
             this.spawnPointList.push(entry);
           }
         }
@@ -330,8 +335,8 @@ export class ModuleEncounter extends ModuleObject {
         let spawns = this.template.RootNode.getFieldByLabel('SpawnList').getChildStructs();
         let entry = undefined;
         for(let i = 0, len = spawns.length; i < len; i++){
-          entry = SpawnEntry.FromStruct(spawns[i]);
-          if(entry instanceof SpawnEntry){
+          entry = EncounterSpawnEntry.FromStruct(spawns[i]);
+          if(entry instanceof EncounterSpawnEntry){
             this.spawnList.push(entry);
           }
         }

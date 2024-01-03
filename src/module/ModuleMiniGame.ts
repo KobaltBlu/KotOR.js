@@ -7,6 +7,18 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 
+/**
+* ModuleMiniGame class.
+* 
+* Class representing the minigame instance in a minigame module.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMiniGame.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMiniGame {
   type: MiniGameType;
 

@@ -1,17 +1,13 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../CollisionData";
 import { CombatData } from "../combat/CombatData";
 import { CombatEngine } from "../combat/CombatEngine";
-import { EffectLink, EffectRacialType } from "../effects";
+import { EffectLink } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
@@ -31,8 +27,8 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { ComputedPath, Module } from ".";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModulePlaceable, ModuleRoom, ModuleTrigger } from ".";
+import { ComputedPath } from ".";
+import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
 import { CombatAction } from "../interface/combat/CombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
@@ -48,10 +44,18 @@ import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import type { PerceptionInfo } from "../interface/engine/PerceptionInfo";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
 
-/* @file
- * The ModuleObject class.
- */
-
+/**
+* ModuleObject class.
+* 
+* Class representing is the base class for all objects found in an area.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleObject.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleObject {
   helperColor: THREE.Color = new THREE.Color(0xFFFFFF);
 

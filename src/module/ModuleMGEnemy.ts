@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleMGGunBank, ModuleObject } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
@@ -13,10 +10,18 @@ import { NWScript } from "../nwscript/NWScript";
 import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModulMGEnemy class.
- */
-
+/**
+* ModuleMGEnemy class.
+* 
+* Class representing an enemy object found in minigame modules.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMGEnemy.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMGEnemy extends ModuleObject {
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];

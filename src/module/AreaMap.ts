@@ -5,6 +5,18 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { ModuleWaypoint } from ".";
 
+/**
+* AreaMap class.
+* 
+* Class representing the logic that powers mini and large game maps ingame.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file AreaMap.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class AreaMap {
   data: Buffer;
   mapResX: number;

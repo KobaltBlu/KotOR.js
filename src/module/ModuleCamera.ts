@@ -1,8 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import { ModuleObject } from ".";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ResolutionManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
@@ -10,10 +5,18 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 
-/* @file
- * The ModuleCamera class.
- */
-
+/**
+* ModuleCamera class.
+* 
+* Class representing a static camera found in module areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleCamera.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleCamera {
   cameraID: number;
   fov: number;

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
@@ -9,10 +6,18 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleMGGunBullet class.
- */
-
+/**
+* ModuleMGGunBullet class.
+* 
+* Class representing a bullet that was spawned from gun banks found in minigame modules.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMGGunBullet.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMGGunBullet extends ModuleObject {
   owner: ModuleObject;
   life: number;

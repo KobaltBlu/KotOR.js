@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { Action, ActionCastSpell, ActionFollowLeader, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
@@ -55,10 +52,18 @@ import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { PerceptionType } from "../enums/engine/PerceptionType";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 
-/* @file
- * The ModuleCreature class.
- */
-
+/**
+* ModuleCreature class.
+* 
+* Class representing a creature found in module areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleCreature.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleCreature extends ModuleObject {
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance

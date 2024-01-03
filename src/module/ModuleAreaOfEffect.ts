@@ -9,10 +9,18 @@ import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 
-/* @file
- * The ModuleCreature class.
+/**
+ * ModuleAreaOfEffect class.
+ * 
+ * Class representing an area of effect.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ModuleAreaOfEffect.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
  */
-
 export class ModuleAreaOfEffect extends ModuleObject {
 
   areaEffectId: any;

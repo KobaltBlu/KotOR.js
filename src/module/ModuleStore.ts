@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleItem, ModuleObject } from ".";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -12,12 +9,18 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectManager } from "../managers";
 
-/* @file
- * The ModuleStore class.
- */
-
-
-
+/**
+* ModuleStore class.
+* 
+* Class representing merchant stores found in modules areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleStore.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleStore extends ModuleObject {
   buySellFlag: number;
   markDown: number;

@@ -3,7 +3,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
 
-export class SpawnEntry{
+export class EncounterSpawnEntry {
 
   spawnResref = '';
   spawnCR = 0;
@@ -19,7 +19,7 @@ export class SpawnEntry{
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let entry = new SpawnEntry();
+      let entry = new EncounterSpawnEntry();
 
       if(struct.hasField('SpawnResRef'))
         entry.spawnResref = struct.getFieldByLabel('SpawnResRef').getValue();

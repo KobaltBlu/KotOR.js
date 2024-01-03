@@ -15,10 +15,18 @@ import { ModelListItem } from "../interface/module/minigame/ModelListItem";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleMGPlayer class.
- */
-
+/**
+* ModuleMGPlayer class.
+* 
+* Class representing the player in minigame modules.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMGPlayer.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMGPlayer extends ModuleObject {
 
   camera: OdysseyModel3D;

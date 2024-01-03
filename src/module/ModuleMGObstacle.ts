@@ -1,18 +1,22 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { LayoutObstacle } from "../interface/resource/LayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
-import { AsyncLoop } from "../utility/AsyncLoop";
 
-/* @file
- * The ModuleMGObstacle class.
- */
-
+/**
+* ModuleMGObstacle class.
+* 
+* Class representing a obstacle found in minigame modules.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleMGObstacle.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleMGObstacle extends ModuleObject {
   invince: number;
   hit_points: number;

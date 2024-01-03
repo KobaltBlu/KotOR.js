@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
@@ -20,10 +17,18 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { FactionManager } from "../FactionManager";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleTrigger class.
- */
-
+/**
+* ModuleTrigger class.
+* 
+* Class representing a trigger object found in modules areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleTrigger.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleTrigger extends ModuleObject {
   objectsInsideIdx: number;
   lastObjectEntered: any;

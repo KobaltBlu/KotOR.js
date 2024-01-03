@@ -1,8 +1,5 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
-import type { ModuleCreature, ModuleItem, ModuleRoom } from ".";
+import type { ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFObjectType } from "../interface/resource/SSFType";
@@ -35,10 +32,6 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 
-/* @file
- * The ModuleDoor class.
- */
-
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
   currentAnimState: ModuleDoorAnimState;
@@ -46,6 +39,18 @@ interface AnimStateInfo {
   started: boolean;
 };
 
+/**
+* ModuleDoor class.
+* 
+* Class representing a door found in module areas.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleDoor.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleDoor extends ModuleObject {
   openState: ModuleDoorOpenState = ModuleDoorOpenState.DEFAULT;
   objectInteractSide: ModuleDoorInteractSide = ModuleDoorInteractSide.SIDE_1;

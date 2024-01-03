@@ -1,7 +1,18 @@
 import { ModuleCalendar } from ".";
 import { GFFObject } from "../resource/GFFObject";
 
-
+/**
+* ModuleTimeManager class.
+* 
+* Class representing the time manager for a game module.
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleTimeManager.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleTimeManager {
 
   //minutesPerHour = 2;

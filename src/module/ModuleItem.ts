@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleObject } from ".";
 import type { ModuleCreature } from ".";
 import { BaseItem } from "../engine/BaseItem";
@@ -24,10 +21,18 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { TwoDAManager, PartyManager, InventoryManager, TLKManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The ModuleItem class.
- */
-
+/**
+* ModuleItem class.
+* 
+* Class representing an item found in module areas, placeable, creatures, etc...
+* 
+* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+* 
+* @file ModuleItem.ts
+* @author KobaltBlu <https://github.com/KobaltBlu>
+* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+* @memberof KotOR
+*/
 export class ModuleItem extends ModuleObject {
   equippedRes: any;
   baseItem: number;
