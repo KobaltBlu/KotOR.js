@@ -31,6 +31,6 @@ export * from "./ModuleMGObstacle";
 export * from "./ModuleMGPlayer";
 export * from "./ModuleMGTrack";
 
-export * from "./SpawnEntry";
-export * from "./SpawnPointEntry";
+export * from "./EncounterSpawnEntry";
+export * from "./EncounterSpawnPointEntry";
 export * from "./EncounterCreatureEntry";
