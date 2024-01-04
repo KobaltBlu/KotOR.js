@@ -6,7 +6,7 @@ import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControl
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModel, OdysseyModelAnimationNode } from ".";
 import { OdysseyController } from "./controllers";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNode
@@ -31,9 +31,9 @@ export class OdysseyModelNode {
   padding: number;
   offsetToRoot: number;
   offsetToParent: number;
-  childArrayDefinition: OdysseyArrayDefinition;
-  controllerArrayDefinition: OdysseyArrayDefinition;
-  controllerDataArrayDefinition: OdysseyArrayDefinition;
+  childArrayDefinition: IOdysseyArrayDefinition;
+  controllerArrayDefinition: IOdysseyArrayDefinition;
+  controllerDataArrayDefinition: IOdysseyArrayDefinition;
 
   constructor(parent: OdysseyModelNode){
     this.parent = parent;

@@ -1,19 +1,19 @@
 import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from ".";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
+import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 
 export class OrientationController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Orientation;
 
-  constructor( controller: OdysseyControllerGeneric){
+  constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     //Cache the orientation controller
     if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
       let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
@@ -52,7 +52,7 @@ export class OrientationController extends OdysseyController {
     manager.modelNode.updateMatrix();
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
 
       // if(manager.trans && manager.lastFrame == 0){

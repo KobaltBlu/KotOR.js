@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly, OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin, OdysseyWalkMesh } from "../../odyssey";
 import { GameState } from "../../GameState";
 import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyTexture } from "./OdysseyTexture";
 import { ResourceLoader, TextureLoader } from "../../loaders";
 import { TextureType } from "../../enums/loaders/TextureType";
@@ -15,9 +15,9 @@ import { OdysseyModelMDXFlag } from "../../enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
 import { OdysseyController } from "../../odyssey/controllers";
-import { OdysseyModelHeader } from "../../interface/odyssey/OdysseyModelHeader";
+import { IOdysseyModelHeader } from "../../interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
-import { TwoDAAnimation } from "../../interface/twoDA/TwoDAAnimation";
+import { ITwoDAAnimation } from "../../interface/twoDA/ITwoDAAnimation";
 import { PartyManager, TwoDAManager } from "../../managers";
 import { BitWise } from "../../utility/BitWise";
 import { ModuleObjectType } from "../../enums/module/ModuleObjectType";
@@ -122,7 +122,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   moduleObject: any = undefined;
   bonesInitialized = false;
   Scale: number;
-  modelHeader: OdysseyModelHeader = {} as OdysseyModelHeader;
+  modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
   affectedByFog: boolean;
   options: any = {};
   oldAnim: OdysseyModelAnimation;
@@ -447,7 +447,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return undefined;
   }
 
-  playOverlayAnimation(anim: OdysseyModelAnimation|string|number, data: TwoDAAnimation){
+  playOverlayAnimation(anim: OdysseyModelAnimation|string|number, data: ITwoDAAnimation){
     const state: any = {
       loop: data.looping == '1',
       blend: true,
@@ -532,7 +532,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(node){
       try{
         if((node as any).Controllers){
-          (node as any).controllers.forEach( (controller: OdysseyControllerGeneric) => {
+          (node as any).controllers.forEach( (controller: IOdysseyControllerGeneric) => {
             if(controller.data.length){
               switch(controller.type){
                 case OdysseyModelControllerType.Position:

@@ -3,9 +3,9 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
-import type { PerceptionInfo } from "../interface/engine/PerceptionInfo";
-import type { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
-import type { NWScriptStoreState } from "../interface/nwscript/NWScriptStoreState";
+import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
+import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
+import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 import { ModuleObjectManager } from "../managers";
 import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
@@ -22,7 +22,7 @@ import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 export class NWScriptInstance {
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
-  actionsMap: { [key: number]: NWScriptDefAction; };
+  actionsMap: { [key: number]: INWScriptDefAction; };
   globalCache: any = null;
   _disposed: boolean = false;
   isStoreState: boolean = false;
@@ -33,7 +33,7 @@ export class NWScriptInstance {
   subRoutine: NWScriptSubroutine;
   debugging: boolean;
   debug: any = {};
-  state: NWScriptStoreState[] = [];
+  state: INWScriptStoreState[] = [];
   var1: any;
   var2: any;
   var3: any;
@@ -48,7 +48,7 @@ export class NWScriptInstance {
   address: number;
   offset: number;
   
-  lastPerceived: PerceptionInfo;
+  lastPerceived: IPerceptionInfo;
 
   lastSpeaker: ModuleObject;
   object: ModuleObject;

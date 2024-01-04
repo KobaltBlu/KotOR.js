@@ -7,7 +7,7 @@ import { GameState } from '../GameState';
 import { AsyncLoop } from '../utility/AsyncLoop';
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { TextureType } from '../enums/loaders/TextureType';
-import { TextureLoaderQueuedRef } from '../interface/loaders/TextureLoaderQueuedRef';
+import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueuedRef';
 import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
 import { TPCLoader } from './TPCLoader';
 import { TGALoader } from './TGALoader';
@@ -19,7 +19,7 @@ import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
  * The TextureLoader class.
  */
 
-type onProgressCallback = (ref: TextureLoaderQueuedRef, index: number, total: number) => void;
+type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
 export class TextureLoader {
 
@@ -29,7 +29,7 @@ export class TextureLoader {
   static guiTextures = new Map();
   static lightmaps: any = {};
   static particles: any = {};
-  static queue: TextureLoaderQueuedRef[] = [];
+  static queue: ITextureLoaderQueuedRef[] = [];
   static Anisotropy = 8;
   static TextureQuality = 2;
   
@@ -175,7 +175,7 @@ export class TextureLoader {
   static enQueue(name: string|string[], material: THREE.Material, type = TextureType.TEXTURE, onLoad?: Function, fallback?: string){
     if(typeof name == 'string' && name.length){
       name = name.toLowerCase();
-      const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
+      const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
       if(TextureLoader.textures.has(name)){
         TextureLoader.UpdateMaterial(obj);
         if(typeof onLoad == 'function')
@@ -186,7 +186,7 @@ export class TextureLoader {
     }else if(Array.isArray(name)){
       for(let i = 0, len = name.length; i < len; i++){
         const texName = name[i].toLowerCase();
-        const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as TextureLoaderQueuedRef;
+        const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
         if(TextureLoader.textures.has(texName)){
           TextureLoader.UpdateMaterial(obj);
           if(typeof onLoad == 'function')
@@ -211,7 +211,7 @@ export class TextureLoader {
     TextureLoader.queue = [];
     let loop = new AsyncLoop({
       array: queue,
-      onLoop: async (tex: TextureLoaderQueuedRef, asyncLoop: AsyncLoop, index: number, count: number) => {
+      onLoop: async (tex: ITextureLoaderQueuedRef, asyncLoop: AsyncLoop, index: number, count: number) => {
         await TextureLoader.UpdateMaterial(tex);
         if(typeof onProgress == 'function'){
           onProgress(tex, index, count);
@@ -225,7 +225,7 @@ export class TextureLoader {
     });
   }
 
-  static async UpdateMaterial(tex: TextureLoaderQueuedRef){
+  static async UpdateMaterial(tex: ITextureLoaderQueuedRef){
     switch(tex.type){
       case TextureType.TEXTURE:
         let texture: OdysseyTexture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
@@ -399,7 +399,7 @@ export class TextureLoader {
     }
   }
 
-  static ParseTXI(texture: OdysseyTexture, tex: TextureLoaderQueuedRef){
+  static ParseTXI(texture: OdysseyTexture, tex: ITextureLoaderQueuedRef){
     //console.log('ParseTXI', texture.txi);
     if(!texture.txi) return;
 

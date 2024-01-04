@@ -3,7 +3,7 @@ import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
 import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
 import { OdysseyController } from "./controllers";
-import { OdysseyControllerFrameGeneric } from "../interface/odyssey/controller/OdysseyControllerFrameGeneric";
+import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 
 export class OdysseyModelAnimationManager {
@@ -341,8 +341,8 @@ export class OdysseyModelAnimationManager {
       anim._quaternion.x = anim._quaternion.y = anim._quaternion.z = 0;
       anim._quaternion.w = 1;
 
-      let last: OdysseyControllerFrameGeneric;
-      let next: OdysseyControllerFrameGeneric;
+      let last: IOdysseyControllerFrameGeneric;
+      let next: IOdysseyControllerFrameGeneric;
       let fl: number = 0;
       let lastFrame: number = 0;
       

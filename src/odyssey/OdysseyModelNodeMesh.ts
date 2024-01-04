@@ -6,7 +6,7 @@ import { OdysseyModel, OdysseyModelNode, OdysseyWalkMesh } from ".";
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelMDXFlag } from "../enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 import { OdysseyFace3 } from "../three/odyssey";
 
 /* @file
@@ -36,10 +36,10 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   textureMap2: string;
   textureMap3: string;
   textureMap4: string;
-  indexCountArrayDef: OdysseyArrayDefinition;
-  vertexLocArrayDef: OdysseyArrayDefinition;
-  InvertedCountArrayDef: OdysseyArrayDefinition;
-  InvertedCountArrayDefDuplicate: OdysseyArrayDefinition;
+  indexCountArrayDef: IOdysseyArrayDefinition;
+  vertexLocArrayDef: IOdysseyArrayDefinition;
+  InvertedCountArrayDef: IOdysseyArrayDefinition;
+  InvertedCountArrayDefDuplicate: IOdysseyArrayDefinition;
   saberBytes: number[];
   nAnimateUV: boolean;
   fUVDirectionX: number;
@@ -67,7 +67,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   tangent2: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
   tangent3: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
   tangent4: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  faceArrayDefinition: OdysseyArrayDefinition;
+  faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
 
   //MDX

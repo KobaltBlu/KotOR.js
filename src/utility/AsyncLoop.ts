@@ -1,4 +1,4 @@
-import { AsyncLoopOptions } from "../interface/utility/AsyncLoopOptions";
+import { IAsyncLoopOptions } from "../interface/utility/IAsyncLoopOptions";
 
 
 export class AsyncLoop {
@@ -8,7 +8,7 @@ export class AsyncLoop {
   onLoop: Function|undefined;
   onComplete: Function|undefined;
 
-  constructor(args: AsyncLoopOptions = {}){
+  constructor(args: IAsyncLoopOptions = {}){
 
     args = Object.assign({
       array: [],        //The array to iterate over

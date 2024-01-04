@@ -1,7 +1,7 @@
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
-import { TGAHeader } from "../interface/graphics/tga/TGAHeader";
+import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
@@ -19,7 +19,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 export class TGAObject {
 
   file: Buffer;
-  header: TGAHeader;
+  header: ITGAHeader;
   pixelData: Buffer;
   txi: any;
   filename: string;
@@ -48,7 +48,7 @@ export class TGAObject {
 
   }
 
-  readHeader(): TGAHeader {
+  readHeader(): ITGAHeader {
     const Header = {
       ID: 0,
       ColorMapType: 0,
@@ -60,7 +60,7 @@ export class TGAObject {
       height: 1,
       bitsPerPixel: 32,
       imageDescriptor: 0
-    } as TGAHeader;
+    } as ITGAHeader;
 
     if(isBuffer(this.file)){
       let reader = new BinaryReader(this.file);

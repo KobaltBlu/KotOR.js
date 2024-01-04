@@ -15,7 +15,7 @@ import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
-import { EffectIconListItem } from "../interface/module/EffectIconListItem";
+import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
 import { SSFType } from "../enums/resource/SSFType";
 import { NWScriptEvent } from "../nwscript/events";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -29,19 +29,19 @@ import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { ComputedPath } from ".";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
-import { CombatAction } from "../interface/combat/CombatAction";
+import { ICombatAction } from "../interface/combat/ICombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
-import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
-import { DialogAnimationState } from "../interface/animation/DialogAnimationState";
+import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
 import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import type { PerceptionInfo } from "../interface/engine/PerceptionInfo";
+import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
 
 /**
@@ -68,7 +68,7 @@ export class ModuleObject {
   name: string;
   objectType: number = ModuleObjectType.ModuleObject;
 
-  effectIconList: EffectIconListItem[] = [];
+  effectIconList: IEffectIconListItem[] = [];
 
   container: OdysseyObject3D;
   AxisFront: THREE.Vector3;
@@ -114,11 +114,11 @@ export class ModuleObject {
 
   dialogAnimation: {
     animation: OdysseyModelAnimation,
-    data: TwoDAAnimation,
+    data: ITwoDAAnimation,
     started: boolean,
   };
 
-  dialogAnimationState: DialogAnimationState = {
+  dialogAnimationState: IDialogAnimationState = {
     animationIndex: -1,
     animation: undefined,
     data: undefined,
@@ -158,7 +158,7 @@ export class ModuleObject {
 
   //Perception
   heardStrings: any[];
-  perceptionList: PerceptionInfo[] = [];
+  perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
   perceptionRange: any;
@@ -518,7 +518,7 @@ export class ModuleObject {
     //this.clearTarget();
   }
 
-  clearCombatAction(combatAction: CombatAction = undefined){
+  clearCombatAction(combatAction: ICombatAction = undefined){
     return this.combatData.clearCombatAction(combatAction);
   }
 
@@ -1752,7 +1752,7 @@ export class ModuleObject {
     this.animState = animState;
   }
 
-  dialogPlayAnimation(anim: TwoDAAnimation = {} as TwoDAAnimation){
+  dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
     if(this.model){
       const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
       if(odysseyAnimation){
@@ -2053,7 +2053,7 @@ export class ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation{
+  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation{
 
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){

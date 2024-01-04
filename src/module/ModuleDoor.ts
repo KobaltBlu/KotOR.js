@@ -25,7 +25,7 @@ import { ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { FactionManager } from "../FactionManager";
-import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
@@ -1327,7 +1327,7 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation {
+  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){

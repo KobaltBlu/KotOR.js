@@ -1,7 +1,7 @@
 import { ActionMenuPanel } from "./ActionMenuPanel";
 import { ActionMenuItem } from "./ActionMenuItem";
 import { GameState } from "./GameState";
-import { ActionPanelLists } from "./interface/gui/ActionPanelLists";
+import { IActionPanelLists } from "./interface/gui/IActionPanelLists";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "./module";
 import { ActionType } from "./enums/actions/ActionType";
@@ -14,7 +14,7 @@ export class ActionMenuManager {
   static oPC: ModuleCreature;
   static oTarget: ModuleObject;
 
-  static ActionPanels: ActionPanelLists = {
+  static ActionPanels: IActionPanelLists = {
     targetPanels: [],
     selfPanels: [],
   };

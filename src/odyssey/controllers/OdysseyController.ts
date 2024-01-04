@@ -14,8 +14,8 @@ import {
 
 import * as THREE from "three";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
 export class OdysseyController {
@@ -26,20 +26,20 @@ export class OdysseyController {
   vec3;
   quaternion;
   frameCount: number;
-  data: OdysseyControllerFrameGeneric[] = [];
+  data: IOdysseyControllerFrameGeneric[] = [];
 
-  constructor( controller: OdysseyControllerGeneric ){
+  constructor( controller: IOdysseyControllerGeneric ){
     Object.assign(this, controller);
 
     this.vec3 = new THREE.Vector3(0, 0, 0);
     this.quaternion = new THREE.Quaternion(0, 0, 0, 1);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     
   }
 
@@ -47,7 +47,7 @@ export class OdysseyController {
 
   }
 
-  static From( controller: OdysseyControllerGeneric ){
+  static From( controller: IOdysseyControllerGeneric ){
 
     if(!(typeof controller === 'object'))
       return;

@@ -1,7 +1,7 @@
 import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyController } from "./OdysseyController";
 import * as THREE from "three";
 
@@ -9,11 +9,11 @@ export class SelfIllumColorController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.SelfIllumColor;
 
-  constructor( controller: OdysseyControllerGeneric){
+  constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.userData.mesh){
       if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
         manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
@@ -28,7 +28,7 @@ export class SelfIllumColorController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     let lerpIllumColorR = last.x + fl * (next.x - last.x);
       let lerpIllumColorG = last.y + fl * (next.y - last.y);
       let lerpIllumColorB = last.z + fl * (next.z - last.z);

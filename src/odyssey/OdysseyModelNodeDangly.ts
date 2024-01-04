@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNodeDangly
@@ -17,7 +17,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   danglyMDLOffset: number;
   constraints: number[];
   danglyVec4: number[];
-  contraintArrayDefinition: OdysseyArrayDefinition;
+  contraintArrayDefinition: IOdysseyArrayDefinition;
 
   constructor(parent: OdysseyModelNode){
     super(parent);

@@ -4,21 +4,21 @@
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNodeSkin
  */
 
  export class OdysseyModelNodeSkin extends OdysseyModelNodeMesh {
-  weights_def: OdysseyArrayDefinition;
+  weights_def: IOdysseyArrayDefinition;
   MDXBoneWeightOffset: number;
   MDXBoneIndexOffset: number;
   boneMapOffset: number;
   boneMapCount: number;
-  boneQuaternionDefinition: OdysseyArrayDefinition;
-  bonePositionDefinition: OdysseyArrayDefinition;
-  boneConstantsDefinition: OdysseyArrayDefinition;
+  boneQuaternionDefinition: IOdysseyArrayDefinition;
+  bonePositionDefinition: IOdysseyArrayDefinition;
+  boneConstantsDefinition: IOdysseyArrayDefinition;
   bone_parts: number[];
   weights: number[];
   boneIdx: number[];

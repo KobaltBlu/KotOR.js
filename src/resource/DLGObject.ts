@@ -7,7 +7,7 @@ import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
 import { ModuleObjectManager } from "../managers";
-import { DLGStuntActor } from "../interface/dialog/DLGStuntActor";
+import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
@@ -36,7 +36,7 @@ export class DLGObject {
   entryList: DLGNode[] = [];
   replyList: DLGNode[] = [];
   startingList: DLGNode[] = [];
-  stuntActors: Map<string, DLGStuntActor> = new Map();
+  stuntActors: Map<string, IDLGStuntActor> = new Map();
   owner: ModuleObject;
   listener: ModuleObject;
 
@@ -157,7 +157,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('StuntList')){
       const stunts = this.gff.RootNode.getFieldByLabel('StuntList').getChildStructs();
       for(let i = 0; i < stunts.length; i++){
-        const stunt: DLGStuntActor = {
+        const stunt: IDLGStuntActor = {
           participant: '',
           resref: ''
         };
@@ -343,7 +343,7 @@ export class DLGObject {
     });
   }
 
-  async loadStuntActor( actor: DLGStuntActor ){
+  async loadStuntActor( actor: IDLGStuntActor ){
     return new Promise<void>( (resolve, reject) => {
       let model: any;
       if(actor.participant == 'PLAYER'){

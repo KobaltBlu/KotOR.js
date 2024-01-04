@@ -4,7 +4,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
-import { CombatAction } from "../interface/combat/CombatAction";
+import { ICombatAction } from "../interface/combat/ICombatAction";
 import { ModuleObjectManager, PartyManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -21,7 +21,7 @@ export class Action {
   path: any;
   openSpot: any;
   clearable: boolean = true;
-  combatAction: CombatAction;
+  combatAction: ICombatAction;
   isCutsceneAttack: Action;
   queue: ActionQueue;
 

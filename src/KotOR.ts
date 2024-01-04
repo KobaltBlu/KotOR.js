@@ -29,8 +29,6 @@ export * from "./enums/odyssey/OdysseyModelNodeType";
 export * from "./enums/resource/GFFDataType";
 
 export * from "./interface";
-export * from "./interface/odyssey/OdysseyModelAABBNode";
-export * from "./interface/loaders/TextureLoaderQueuedRef";
 
 export * from "./FactionManager";
 

@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { WalkmeshEdge } from ".";
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
-import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode";
+import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
 import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey";
@@ -41,7 +41,7 @@ export class OdysseyWalkMesh {
   normals: THREE.Vector3[] = [];
   _normals: THREE.Vector3[] = [];
   facePlaneCoefficients: number[] = [];
-  aabbNodes: OdysseyModelAABBNode[] = [];
+  aabbNodes: IOdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
   edges: Map<number, WalkmeshEdge>;
   perimeters: Perimeter[] = [];
@@ -52,7 +52,7 @@ export class OdysseyWalkMesh {
   geometry: THREE.BufferGeometry;
   material: THREE.Material;
   aabbGroup: THREE.Object3D;
-  aabbRoot: OdysseyModelAABBNode;
+  aabbRoot: IOdysseyModelAABBNode;
   
   constructor( wokReader?: BinaryReader ){
 
@@ -433,7 +433,7 @@ export class OdysseyWalkMesh {
   }
 
   readAABB(){
-    let aabb: OdysseyModelAABBNode = {
+    let aabb: IOdysseyModelAABBNode = {
       type: '',
       box: new THREE.Box3(
         new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle() - 10),
@@ -534,7 +534,7 @@ export class OdysseyWalkMesh {
     return false;
   }
 
-  getAABBCollisionFaces(box = new THREE.Box3, node?: OdysseyModelAABBNode, collisions: any[] = []){
+  getAABBCollisionFaces(box = new THREE.Box3, node?: IOdysseyModelAABBNode, collisions: any[] = []){
 
     if(this.header.walkMeshType == OdysseyWalkMeshType.AABB){
 

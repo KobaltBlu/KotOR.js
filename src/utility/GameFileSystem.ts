@@ -7,7 +7,7 @@ import * as fs from "fs";
 import isBuffer from "is-buffer";
 import { ApplicationProfile } from "./ApplicationProfile";
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
-import { GameFileSystemReadDirOptions } from "../interface/filesystem/GameFileSystemReadDirOptions";
+import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
 
 /* @file
  * The FileSystem class.
@@ -169,7 +169,7 @@ export class GameFileSystem {
   }
 
   static async readdir(
-    dirpath: string, options: GameFileSystemReadDirOptions = {}, files: any[] = []
+    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: any[] = []
   ): Promise<string[]> {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return await this.readdir_fs(dirpath, options, files);
@@ -234,7 +234,7 @@ export class GameFileSystem {
     });
   }
 
-  private static async readdir_fs(resource_path: string = '', opts: GameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
+  private static async readdir_fs(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
     if(typeof depthState === 'undefined'){
       depthState = {
         'folder': resource_path,
@@ -303,7 +303,7 @@ export class GameFileSystem {
     });
   }
 
-  static async mkdir(dirPath: string, opts: GameFileSystemReadDirOptions = {}){
+  static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
@@ -348,7 +348,7 @@ export class GameFileSystem {
     });
   }
 
-  static async rmdir(dirPath: string, opts: GameFileSystemReadDirOptions = {}){
+  static async rmdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){

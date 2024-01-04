@@ -1,5 +1,5 @@
 import { OdysseyController } from ".";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { AlphaController } from "./AlphaController";
 import { AlphaEndController } from "./AlphaEndController";
@@ -26,7 +26,7 @@ import { SizeStartController } from "./SizeStartController";
 
 export class OdysseyControllerFactory {
 
-  static From( controller: OdysseyControllerGeneric ){
+  static From( controller: IOdysseyControllerGeneric ){
 
     if(!(typeof controller === 'object'))
       return;

@@ -20,16 +20,16 @@ import { AudioLoader } from "../audio/AudioLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
-import { TextureLoaderQueuedRef } from "../interface/loaders/TextureLoaderQueuedRef";
+import { ITextureLoaderQueuedRef } from "../interface/loaders/ITextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
 import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
-import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
+import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
 import { AudioEngine } from "../audio";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
-import { AmbientSource } from "../interface/area/AmbientSource";
-import { GrassProperties } from "../interface/area/GrassProperties";
+import { IAmbientSource } from "../interface/area/IAmbientSource";
+import { IGrassProperties } from "../interface/area/IGrassProperties";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -74,7 +74,7 @@ export class ModuleArea extends ModuleObject {
 
   scriptResRefs: Map<AreaScriptKeys, string> = new Map<AreaScriptKeys, string>();
 
-  audio: AreaAudioProperties = {
+  audio: IAreaAudioProperties = {
     ambient: {
       day: 0,
       dayVolume: 0,
@@ -138,7 +138,7 @@ export class ModuleArea extends ModuleObject {
    */
   flags = 1;
 
-  grass: GrassProperties = {
+  grass: IGrassProperties = {
     ambient: 0,
     density: 0,
     diffuse: 0,
@@ -179,7 +179,7 @@ export class ModuleArea extends ModuleObject {
   /**
    * Moon AmbientSource properties
    */
-  moon: AmbientSource = {
+  moon: IAmbientSource = {
     ambientColor: 0,
     diffuseColor: 0,
     fogColor: 0,
@@ -193,7 +193,7 @@ export class ModuleArea extends ModuleObject {
   /**
    * Sun AmbientSource properties
    */
-  sun: AmbientSource = {
+  sun: IAmbientSource = {
     ambientColor: 0,
     diffuseColor: 0,
     fogColor: 0,
@@ -572,7 +572,7 @@ export class ModuleArea extends ModuleObject {
               TextureLoader.LoadQueue(() => {
                 MenuManager.LoadScreen.close();
                 GameState.loadingTextures = false;
-              }, (ref: TextureLoaderQueuedRef, index: number, count: number) => {
+              }, (ref: ITextureLoaderQueuedRef, index: number, count: number) => {
                 MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
                 MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
                 //console.log('tex', textureName, index, count);

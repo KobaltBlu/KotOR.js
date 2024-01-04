@@ -4,7 +4,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { PathPoint } from "../engine/pathfinding/PathPoint";
-import { ClosestPathPointData } from "../interface/engine/pathfinding/ClosestPathPointData";
+import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
 
 /**
 * ModulePath class.
@@ -132,7 +132,7 @@ export class ModulePath {
     this.line.visible = state;
   }
 
-  getClosestPathPointData(target = new THREE.Vector3): ClosestPathPointData {
+  getClosestPathPointData(target = new THREE.Vector3): IClosestPathPointData {
     const targetPoint = new THREE.Vector3().copy(target);
     targetPoint.z = 0;
     const line3 = new THREE.Line3();

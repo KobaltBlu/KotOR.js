@@ -1,6 +1,6 @@
-import { GameStateGroups } from "../../interface/engine/GameStateGroups";
+import { IGameStateGroups } from "../../interface/engine/IGameStateGroups";
 
 
 export class EngineContext {
-  static groups: GameStateGroups = {} as GameStateGroups;
+  static groups: IGameStateGroups = {} as IGameStateGroups;
 }

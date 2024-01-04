@@ -1,13 +1,13 @@
 import * as THREE from "three";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { NWScriptDefAction } from "../interface/nwscript/NWScriptDefAction";
+import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 import { ModuleObjectManager } from "../managers/ModuleObjectManager";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
 import { NWScriptStack } from "./NWScriptStack";
 import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import type { NWScriptStoreState } from "../interface/nwscript/NWScriptStoreState";
+import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
 
 export const CALL_CPDOWNSP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
@@ -92,7 +92,7 @@ export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScrip
 
 //Constant Type is declared by the next byte x03, x04, x05, x06
 export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  const action_definition: NWScriptDefAction = this.actionsMap[instruction.action];
+  const action_definition: INWScriptDefAction = this.actionsMap[instruction.action];
   const args: any[] = [];
 
   for(let i = 0, len = action_definition.args.length; i < len; i++){
@@ -742,7 +742,7 @@ export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWS
 }
  
 export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let state: NWScriptStoreState = {
+  let state: INWScriptStoreState = {
     offset: instruction.nextInstr.nextInstr.address,
     base:   [], //this.stack.stack.slice(0, (instr.bpOffset/4)),
     local:  [], //this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)

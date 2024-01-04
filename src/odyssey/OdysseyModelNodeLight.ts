@@ -3,9 +3,9 @@
 
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode } from ".";
-import { OdysseyModelFlare } from "../interface/odyssey/OdysseyModelFlare";
+import { IOdysseyModelFlare } from "../interface/odyssey/IOdysseyModelFlare";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
 /* @file
  * The OdysseyModelNodeLight
@@ -19,7 +19,7 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
   shadowFlag: number;
   generateFlareFlag: number;
   fadingLightFlag: number;
-  flare: OdysseyModelFlare = {
+  flare: IOdysseyModelFlare = {
     radius: 0,
     sizes: [],
     positions: [],
@@ -32,10 +32,10 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
   multiplier: number = 1;
   // light: THREE.Light;
 
-  flareSizesArrayDefinition: OdysseyArrayDefinition;
-  flarePositionsArrayDefinition: OdysseyArrayDefinition;
-  flareColorShiftsArrayDefinition: OdysseyArrayDefinition;
-  flareTexturesArrayDefinition: OdysseyArrayDefinition;
+  flareSizesArrayDefinition: IOdysseyArrayDefinition;
+  flarePositionsArrayDefinition: IOdysseyArrayDefinition;
+  flareColorShiftsArrayDefinition: IOdysseyArrayDefinition;
+  flareTexturesArrayDefinition: IOdysseyArrayDefinition;
 
   constructor(parent: OdysseyModelNode){
     super(parent);

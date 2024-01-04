@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { EAXPresets } from "./EAXPresets";
 import type { AudioEmitter } from "./AudioEmitter";
 import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
-import { AreaAudioProperties } from "../interface/area/AreaAudioProperties";
+import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
 
 /* @file
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
@@ -32,7 +32,7 @@ export class AudioEngine {
   ambient: AudioBufferSourceNode;
 
   mode: AudioEngineMode = AudioEngine.Mode;
-  areaProperies: AreaAudioProperties;
+  areaProperies: IAreaAudioProperties;
 
   constructor () {
 
@@ -244,7 +244,7 @@ export class AudioEngine {
     }catch(e){}
   }
 
-  setAreaAudioProperties(props: AreaAudioProperties){
+  setAreaAudioProperties(props: IAreaAudioProperties){
     this.areaProperies = props;
   }
 

@@ -4,12 +4,12 @@
 import * as THREE from "three";
 import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { DPadTarget } from "../interface/gui/DPadTarget";
-import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
-import { GUIControlEventListeners } from "../interface/gui/GUIControlEventListeners";
-import { GUIControlExtent } from "../interface/gui/GUIControlExtent";
-import { GUIControlMoveTo } from "../interface/gui/GUIControlMoveTo";
-import { GUIControlText } from "../interface/gui/GUIControlText";
+import { IDPadTarget } from "../interface/gui/IDPadTarget";
+import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
+import { IGUIControlEventListeners } from "../interface/gui/IGUIControlEventListeners";
+import { IGUIControlExtent } from "../interface/gui/IGUIControlExtent";
+import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
+import { IGUIControlText } from "../interface/gui/IGUIControlText";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox, GUIProgressBar, GUISlider } from ".";
 
@@ -22,7 +22,7 @@ import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";
-import { GUIControlColors } from "../interface/gui/GUIControlColors";
+import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ShaderManager, MenuManager, TLKManager, ResolutionManager } from "../managers";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
@@ -43,7 +43,7 @@ export class GUIControl {
     return;
   }
   
-  static COLORS: GUIControlColors = {
+  static COLORS: IGUIControlColors = {
     BORDER: new THREE.Color(1, 1, 1),
     BORDER_HOVER: new THREE.Color(1, 1, 1),
     BORDER_HIGHLIGHT: new THREE.Color(1, 1, 1),
@@ -61,7 +61,7 @@ export class GUIControl {
   iniProperty: string = "";
   autoCalculatePosition: boolean = true;
 
-  dPadTarget: DPadTarget = {
+  dPadTarget: IDPadTarget = {
     up: undefined,
     down: undefined,
     left: undefined,
@@ -78,7 +78,7 @@ export class GUIControl {
   zOffset: number = 1;
   zIndex: number = 0;
 
-  eventListeners: GUIControlEventListeners = {
+  eventListeners: IGUIControlEventListeners = {
     click:      [],
     mouseIn:    [],
     mouseOut:   [],
@@ -112,23 +112,23 @@ export class GUIControl {
   opacity: number = 1;
   hover: boolean;
 
-  extent: GUIControlExtent = {
+  extent: IGUIControlExtent = {
     top: 0,
     left: 0,
     width: 0,
     height: 0
   };
 
-  moveTo: GUIControlMoveTo = {
+  moveTo: IGUIControlMoveTo = {
     up: 0,
     down: 0,
     left: 0,
     right: 0
   }
 
-  border: GUIControlBorder;
-  highlight: GUIControlBorder;
-  text: GUIControlText;
+  border: IGUIControlBorder;
+  highlight: IGUIControlBorder;
+  text: IGUIControlText;
   hasText: boolean;
   hasBorder: boolean;
   hasExtent: boolean;

@@ -1,6 +1,6 @@
 import { OdysseyModelAnimation } from "..";
-import { OdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/OdysseyControllerFrameGeneric";
-import { OdysseyControllerGeneric } from "../../interface/odyssey/controller/OdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
@@ -9,11 +9,11 @@ export class PositionController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Position;
 
-  constructor( controller: OdysseyControllerGeneric){
+  constructor( controller: IOdysseyControllerGeneric){
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: OdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Position) != 'undefined'){
 
       // if(manager.trans && this.frameCount > 1){
@@ -36,7 +36,7 @@ export class PositionController extends OdysseyController {
     manager.modelNode.updateMatrix();
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: OdysseyControllerFrameGeneric, next: OdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     //if(last.x == next.x && last.y == next.y && last.z == next.z)
     //  break;
 

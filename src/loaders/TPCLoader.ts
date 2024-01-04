@@ -10,7 +10,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { ERFManager } from "../managers/ERFManager";
 import { KEYManager } from "../managers/KEYManager";
 import { OdysseyCompressedTexture } from "../three/odyssey";
-import { FindTPCResult } from "../interface/graphics/FindTPCResult";
+import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
 
 /* @file
  * The THREE.TPCLoader class is used to decode the TPC image format found in the game archives.
@@ -18,7 +18,7 @@ import { FindTPCResult } from "../interface/graphics/FindTPCResult";
 
 export class TPCLoader {
   
-  async findTPC( resRef: string ): Promise<FindTPCResult> {
+  async findTPC( resRef: string ): Promise<IFindTPCResult> {
     resRef = resRef.toLocaleLowerCase();
   
     let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(resRef, ResourceTypes['tpc']);

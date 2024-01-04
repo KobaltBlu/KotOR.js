@@ -3,7 +3,7 @@
 
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
-import { OdysseyModelAABBNode } from "../interface/odyssey/OdysseyModelAABBNode";
+import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
 /* @file
@@ -13,7 +13,7 @@ import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
 
   grassFaces: any[] = [];
-  rootAABBNode: OdysseyModelAABBNode;
+  rootAABBNode: IOdysseyModelAABBNode;
 
   constructor(parent: OdysseyModelNode){
     super(parent);
@@ -45,7 +45,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
   readBinaryAABBNode(aabbNodeOffset: number){
     this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + aabbNodeOffset);
 
-    let aabb: OdysseyModelAABBNode = {
+    let aabb: IOdysseyModelAABBNode = {
       type: 'AABB',
       box: new THREE.Box3(
         new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle()),

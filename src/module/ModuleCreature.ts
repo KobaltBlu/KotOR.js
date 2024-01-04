@@ -35,13 +35,13 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
 import { AttackResult } from "../enums/combat/AttackResult";
-import { CombatAction } from "../interface/combat/CombatAction";
+import { ICombatAction } from "../interface/combat/ICombatAction";
 import { DLGObject } from "../resource/DLGObject";
-import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { AppearanceManager, AutoPauseManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager } from "../managers";
-import { CreatureAnimationState } from "../interface/animation/CreatureAnimationState";
-import { OverlayAnimationState } from "../interface/animation/OverlayAnimationState";
+import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
+import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
 import { AudioEngine } from "../audio/AudioEngine";
@@ -138,8 +138,8 @@ export class ModuleCreature extends ModuleObject {
   partyID: number;
   // appearance: any;
 
-  animationState: CreatureAnimationState;
-  overlayAnimationState: OverlayAnimationState;
+  animationState: ICreatureAnimationState;
+  overlayAnimationState: IOverlayAnimationState;
   
   equipment: { 
     HEAD: ModuleItem; 
@@ -1381,7 +1381,7 @@ export class ModuleCreature extends ModuleObject {
 
     const _animation = OdysseyModelAnimation.GetAnimation2DA(animation);
 
-    let combatAction: CombatAction = {
+    let combatAction: ICombatAction = {
       target: target,
       type: ActionType.ActionPhysicalAttacks,
       icon: icon,
@@ -1463,7 +1463,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  playTwoDAAnimation(animation: TwoDAAnimation){
+  playTwoDAAnimation(animation: ITwoDAAnimation){
     if(animation){
       this.resetAnimationState();
       this.animationState = {
@@ -1514,7 +1514,7 @@ export class ModuleCreature extends ModuleObject {
     };
   }
 
-  dialogPlayAnimation(data: TwoDAAnimation = {} as TwoDAAnimation){
+  dialogPlayAnimation(data: ITwoDAAnimation = {} as ITwoDAAnimation){
     this.dialogAnimation = { 
       animation: this.model.getAnimationByName(data.name),
       data: data,
@@ -1531,7 +1531,7 @@ export class ModuleCreature extends ModuleObject {
       this.setAnimationState(ModuleCreatureAnimState.PAUSE)
   }
 
-  getDamageAnimation( attackAnim: string ): TwoDAAnimation {
+  getDamageAnimation( attackAnim: string ): ITwoDAAnimation {
     
     let attackAnimIndex = -1;
 
@@ -1582,7 +1582,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  getDodgeAnimation( attackAnim: string ): TwoDAAnimation {
+  getDodgeAnimation( attackAnim: string ): ITwoDAAnimation {
 
     let attackAnimIndex = -1;
 
@@ -1643,7 +1643,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  getParryAnimation( attackAnim: string ): TwoDAAnimation {
+  getParryAnimation( attackAnim: string ): ITwoDAAnimation {
 
     let attackAnimIndex = -1;
 
@@ -1693,7 +1693,7 @@ export class ModuleCreature extends ModuleObject {
     
   }
 
-  getDeflectAnimation(): TwoDAAnimation {
+  getDeflectAnimation(): ITwoDAAnimation {
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     //console.log('getDamageAnimation', 'g'+weaponWield+'d1');

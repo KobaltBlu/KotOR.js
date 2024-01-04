@@ -9,7 +9,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { SSFType } from "../enums/resource/SSFType";
-import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
@@ -996,7 +996,7 @@ export class ModulePlaceable extends ModuleObject {
 
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): TwoDAAnimation {
+  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){

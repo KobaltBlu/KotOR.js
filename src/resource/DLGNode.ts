@@ -2,7 +2,7 @@ import { AudioEmitter } from "../audio";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
 import { GameState } from "../GameState";
-import { DLGNodeScriptParams } from "../interface/dialog/DLGNodeScriptParams";
+import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
 import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
 import { ModuleCreature, ModuleObject } from "../module";
 import { NWScript } from "../nwscript/NWScript";
@@ -30,13 +30,13 @@ export class DLGNode {
   replies: DLGNode[] = [];
   entries: DLGNode[] = [];
   script: NWScriptInstance;
-  scriptParams: DLGNodeScriptParams = {} as DLGNodeScriptParams;
+  scriptParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   script2: NWScriptInstance;
-  script2Params: DLGNodeScriptParams = {} as DLGNodeScriptParams;
+  script2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   isActive: NWScriptInstance;
-  isActiveParams: DLGNodeScriptParams = {} as DLGNodeScriptParams;
+  isActiveParams: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   isActive2: NWScriptInstance;
-  isActive2Params: DLGNodeScriptParams = {} as DLGNodeScriptParams;
+  isActive2Params: IDLGNodeScriptParams = {} as IDLGNodeScriptParams;
   Logic: boolean;
   index: number;
   isChild: number;
@@ -88,15 +88,15 @@ export class DLGNode {
 
     //Script Properties
     this.script = undefined;
-    this.scriptParams = {} as DLGNodeScriptParams;
+    this.scriptParams = {} as IDLGNodeScriptParams;
     this.script2 = undefined;
-    this.script2Params = {} as DLGNodeScriptParams;
+    this.script2Params = {} as IDLGNodeScriptParams;
 
     //Conditional Active Node Properties
     this.isActive = undefined;
     this.isActive2 = undefined;
-    this.isActiveParams = {} as DLGNodeScriptParams;
-    this.isActive2Params = {} as DLGNodeScriptParams;
+    this.isActiveParams = {} as IDLGNodeScriptParams;
+    this.isActive2Params = {} as IDLGNodeScriptParams;
     this.Logic = false;
     this.index = -1;
     this.isChild = 0;

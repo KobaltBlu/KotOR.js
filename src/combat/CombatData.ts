@@ -1,7 +1,7 @@
 import { CombatRoundData } from ".";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreature, ModuleObject } from "../module";
-import { CombatAction } from "../interface/combat/CombatAction";
+import { ICombatAction } from "../interface/combat/ICombatAction";
 import { Action, ActionCastSpell, ActionPhysicalAttacks } from "../actions";
 import { TalentFeat, TalentSpell } from "../talents";
 import { AttackResult } from "../enums/combat/AttackResult";
@@ -24,8 +24,8 @@ export class CombatData {
   lastCombatFeatUsed: TalentFeat;
   lastForcePowerUsed: TalentSpell;
   lastAttackResult: AttackResult;
-  combatQueue: CombatAction[];
-  combatAction: CombatAction;
+  combatQueue: ICombatAction[];
+  combatAction: ICombatAction;
   lastAttackObject: ModuleObject;
   lastForcePowerSuccess: boolean;
   initiative: number;
@@ -104,7 +104,7 @@ export class CombatData {
     }
   }
 
-  setCombatAction(combatAction: CombatAction){
+  setCombatAction(combatAction: ICombatAction){
     if(this.combatAction != combatAction){
       this.combatAction = combatAction;
     }
@@ -152,7 +152,7 @@ export class CombatData {
 
   }
 
-  clearCombatAction(combatAction: CombatAction = undefined, clearAll: boolean = false){
+  clearCombatAction(combatAction: ICombatAction = undefined, clearAll: boolean = false){
     if(this.combatAction == combatAction) this.combatAction = undefined;
     if(combatAction){
       this.object.actionQueue.clearAction(combatAction.action);

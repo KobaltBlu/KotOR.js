@@ -4,7 +4,7 @@
 import { OdysseyModel, OdysseyModelNode } from ".";
 import { OdysseyModelEmitterFlag } from "../enums/odyssey/OdysseyModelEmitterFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelEmitterFlags } from "../interface/odyssey/OdysseyModelEmitterFlags";
+import { IOdysseyModelEmitterFlags } from "../interface/odyssey/IOdysseyModelEmitterFlags";
 
 /* @file
  * The OdysseyModelNodeEmitter
@@ -30,7 +30,7 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
   branchCount: number;
   controlPTSmoothing: number;
 
-  flags: OdysseyModelEmitterFlags = {
+  flags: IOdysseyModelEmitterFlags = {
     isP2P: false,
     isP2PSel: false,
     affectedByWind: false,

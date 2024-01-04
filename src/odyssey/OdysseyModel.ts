@@ -8,10 +8,10 @@ import {
   OdysseyModelAnimation, OdysseyModelAnimationNode, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly,
   OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin 
 } from ".";
-import { OdysseyArrayDefinition } from "../interface/odyssey/OdysseyArrayDefinition";
-import { OdysseyFileHeader } from "../interface/odyssey/OdysseyFileHeader";
-import { OdysseyGeometryHeader } from "../interface/odyssey/OdysseyGeometryHeader";
-import { OdysseyModelHeader } from "../interface/odyssey/OdysseyModelHeader";
+import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+import { IOdysseyFileHeader } from "../interface/odyssey/IOdysseyFileHeader";
+import { IOdysseyGeometryHeader } from "../interface/odyssey/IOdysseyGeometryHeader";
+import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
 import * as THREE from 'three';
 import { BinaryWriter } from "../BinaryWriter";
 
@@ -24,9 +24,9 @@ export class OdysseyModel {
   mdlReader: BinaryReader;
   mdxReader: BinaryReader;
 
-  fileHeader: OdysseyFileHeader = {} as OdysseyFileHeader;
-  geometryHeader: OdysseyGeometryHeader = {} as OdysseyGeometryHeader;
-  modelHeader: OdysseyModelHeader = {} as OdysseyModelHeader;
+  fileHeader: IOdysseyFileHeader = {} as IOdysseyFileHeader;
+  geometryHeader: IOdysseyGeometryHeader = {} as IOdysseyGeometryHeader;
+  modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
 
   animations: OdysseyModelAnimation[] = [];
   rootNode: OdysseyModelNode;
@@ -35,7 +35,7 @@ export class OdysseyModel {
   names: string[];
   nodes: Map<string, OdysseyModelNode> = new Map();
 
-  namesArrayDefinition: OdysseyArrayDefinition;
+  namesArrayDefinition: IOdysseyArrayDefinition;
   nameOffsetsArray: number[] = [];
   
   constructor( mdlReader: BinaryReader, mdxReader: BinaryReader ){
@@ -239,7 +239,7 @@ export class OdysseyModel {
   }
 
   //Gets the Array Offset & Length
-  static ReadArrayDefinition(stream: BinaryReader): OdysseyArrayDefinition {
+  static ReadArrayDefinition(stream: BinaryReader): IOdysseyArrayDefinition {
     return {
       offset: stream.readUInt32() & 0xFFFFFFFF, 
       count: stream.readUInt32() & 0xFFFFFFFF, 

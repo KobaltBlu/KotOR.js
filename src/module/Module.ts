@@ -23,8 +23,8 @@ import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager, 
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AudioEngine } from "../audio/AudioEngine";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { ModuleScripts } from "../interface/module/ModuleScripts";
-import { AreaListItem } from "../interface/area/AreaListItem";
+import { IModuleScripts } from "../interface/module/IModuleScripts";
+import { IAreaListItem } from "../interface/area/IAreaListItem";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -52,7 +52,7 @@ export class Module {
   entryY: number;
   entryZ: number;
   
-  scripts: ModuleScripts = {} as ModuleScripts;
+  scripts: IModuleScripts = {} as IModuleScripts;
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
   timeManager: ModuleTimeManager;
@@ -67,7 +67,7 @@ export class Module {
   /**
    * List of Areas in the module
    */
-  areaList: AreaListItem[] = [];
+  areaList: IAreaListItem[] = [];
 
   /**
    * Description of module
@@ -182,7 +182,7 @@ export class Module {
   isSaveGame: boolean = false;
 
   constructor(){
-    this.scripts = {} as ModuleScripts;
+    this.scripts = {} as IModuleScripts;
     this.archives = [];
     this.effects = [];
     this.eventQueue = [];
@@ -249,7 +249,7 @@ export class Module {
       //KOTOR modules should only ever have one area. But just incase lets loop through the list
       for(let i = 0; i < areaCount; i++){
         let Mod_Area = areaList.childStructs[0];
-        const area: AreaListItem = {} as any;
+        const area: IAreaListItem = {} as any;
 
         if(Mod_Area.hasField('Area_Name'))
           area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue()

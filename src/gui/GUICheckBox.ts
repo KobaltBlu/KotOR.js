@@ -8,7 +8,7 @@ import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameState } from "../GameState";
-import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
+import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
 import { ShaderManager } from "../managers";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
@@ -20,8 +20,8 @@ export class GUICheckBox extends GUIControl{
   value: number;
   onValueChanged: Function;
 
-  borderSelected: GUIControlBorder;
-  highlightSelected: GUIControlBorder;
+  borderSelected: IGUIControlBorder;
+  highlightSelected: IGUIControlBorder;
   hasSelected: boolean;
   hashighlightSelected: boolean;
 

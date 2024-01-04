@@ -1,10 +1,10 @@
 import EngineLocation from "../engine/EngineLocation";
-import { EngineGlobals } from "../interface/engine/EngineGlobals";
+import { IEngineGlobals } from "../interface/engine/IEngineGlobals";
 import { TwoDAManager } from "./TwoDAManager";
 
 export class GlobalVariableManager {
 
-  static Globals: EngineGlobals = {
+  static Globals: IEngineGlobals = {
     Boolean   : new Map(), 
     Number    : new Map(), 
     String    : new Map(), 

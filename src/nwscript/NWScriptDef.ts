@@ -1,5 +1,5 @@
-import type {NWScriptDefAction} from "../interface/nwscript/NWScriptDefAction";
+import type {INWScriptDefAction} from "../interface/nwscript/INWScriptDefAction";
 
 export class NWScriptDef {
-  static Actions: {[key: number]: NWScriptDefAction} = {};
+  static Actions: {[key: number]: INWScriptDefAction} = {};
 }

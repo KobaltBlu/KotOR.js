@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PathPointOptions } from "../../interface/engine/pathfinding/PathPointOptions";
+import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPointOptions";
 import { GameState } from '../../GameState';
 import { Utility } from '../../utility/Utility';
 
@@ -21,7 +21,7 @@ export class PathPoint {
   parent?: PathPoint;
   end: boolean = false;
 
-  constructor(options: PathPointOptions){
+  constructor(options: IPathPointOptions){
     options = Object.assign({
       id: 0,
       connections: [],

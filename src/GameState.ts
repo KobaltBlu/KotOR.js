@@ -20,7 +20,7 @@ import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine, AudioEmitter } from "./audio";
 import { TGAObject } from "./resource/TGAObject";
 
-import { GameStateGroups } from "./interface/engine/GameStateGroups";
+import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
 import { EngineState } from "./enums/engine/EngineState";
@@ -31,7 +31,7 @@ import { EngineContext } from "./enums/engine/EngineContext";
 
 import { ConfigClient } from "./utility/ConfigClient";
 import { FollowerCamera } from "./engine/FollowerCamera";
-import { TextureLoaderQueuedRef } from "./interface/loaders/TextureLoaderQueuedRef";
+import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
 import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ResolutionManager, ShaderManager, TwoDAManager } from "./managers";
 import { ResourceLoader, TextureLoader } from "./loaders";
@@ -174,7 +174,7 @@ export class GameState implements EngineContext {
   static collisionList: any[];
   static walkmeshList: any[];
 
-  static group: GameStateGroups = {
+  static group: IGameStateGroups = {
     creatures: new THREE.Group,
     doors: new THREE.Group,
     placeables: new THREE.Group,
@@ -1003,7 +1003,7 @@ export class GameState implements EngineContext {
                               });
                             });
                           });
-                        }, (ref: TextureLoaderQueuedRef) => {
+                        }, (ref: ITextureLoaderQueuedRef) => {
                           const material = ref.material as any;
                           if(material?.map){
                             GameState.renderer.initTexture(material.map);

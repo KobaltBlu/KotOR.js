@@ -351,7 +351,7 @@ export class TabModelViewerState extends TabState {
             this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
           // this.tab.tabLoader.Hide();
           resolve();
-        }, (texObj: KotOR.TextureLoaderQueuedRef) => {
+        }, (texObj: KotOR.ITextureLoaderQueuedRef) => {
           if(texObj.material){
             if(texObj.material instanceof THREE.ShaderMaterial){
               if(texObj.material.uniforms.map.value){

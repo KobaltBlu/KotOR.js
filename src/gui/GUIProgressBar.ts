@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { GameMenu, GUIControl } from ".";
 import { TextureType } from "../enums/loaders/TextureType";
-import { GUIControlBorder } from "../interface/gui/GUIControlBorder";
+import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
 import { TextureLoader } from "../loaders";
 import { ShaderManager } from "../managers";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -20,7 +20,7 @@ export class GUIProgressBar extends GUIControl {
   startFromLeft: boolean;
   maxValue: number;
 
-  progress: GUIControlBorder;
+  progress: IGUIControlBorder;
   hasProgress: boolean;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){

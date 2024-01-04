@@ -9,7 +9,7 @@ import type { ModuleCreature, ModuleObject } from "../module";
 import * as THREE from "three";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { OdysseyModelAnimation } from "../odyssey";
-import { CombatAction } from "../interface/combat/CombatAction";
+import { ICombatAction } from "../interface/combat/ICombatAction";
 import { AttackResult } from "../enums/combat/AttackResult";
 import { TwoDAManager } from "../managers";
 import { BitWise } from "../utility/BitWise";
@@ -225,7 +225,7 @@ export class CombatEngine {
     
   }
 
-  static CalculateAttackDamage(combatAction: CombatAction, creature: ModuleObject){
+  static CalculateAttackDamage(combatAction: ICombatAction, creature: ModuleObject){
     if(!combatAction || combatAction.damageCalculated)
       return;
 

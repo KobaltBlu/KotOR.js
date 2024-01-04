@@ -11,7 +11,7 @@ import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
-import { ModelListItem } from "../interface/module/minigame/ModelListItem";
+import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
@@ -42,7 +42,7 @@ export class ModuleMGPlayer extends ModuleObject {
   //debug sphere
   sphere_geom: THREE.Mesh;
 
-  modelProps: ModelListItem[] = [];
+  modelProps: IModelListItem[] = [];
   no_rotate: THREE.Group;
   speed_min: number;
   speed_max: number;
@@ -729,7 +729,7 @@ export class ModuleMGPlayer extends ModuleObject {
   loadModel (onLoad?: Function){
     let loop = new AsyncLoop({
       array: this.modelProps,
-      onLoop: (item: ModelListItem, asyncLoop: AsyncLoop) => {
+      onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
         GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {

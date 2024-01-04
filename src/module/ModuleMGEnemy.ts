@@ -7,7 +7,7 @@ import { GameState } from "../GameState";
 import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScript } from "../nwscript/NWScript";
-import { ModelListItem } from "../interface/module/minigame/ModelListItem";
+import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**
@@ -29,7 +29,7 @@ export class ModuleMGEnemy extends ModuleObject {
   animationManagers: OdysseyModelAnimationManager[] = [];
   gun_hook: THREE.Object3D;
 
-  modelProps: ModelListItem[] = [];
+  modelProps: IModelListItem[] = [];
 
   gear: number;
   timer: number;
@@ -263,7 +263,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
     let loop = new AsyncLoop({
       array: this.modelProps,
-      onLoop: (item: ModelListItem, asyncLoop: AsyncLoop) => {
+      onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
         GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {

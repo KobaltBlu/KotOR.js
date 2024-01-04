@@ -1,7 +1,7 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { EffectIconListItem } from "../interface/module/EffectIconListItem";
+import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
 import { TextureLoader } from "../loaders";
 import { TwoDAManager } from "../managers";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
@@ -24,7 +24,7 @@ export class EffectIcon extends GameEffect {
 
     const featIconId = this.getInt(0);
     if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
-      const iconExists = this.object.effectIconList.find( (effectIcon: EffectIconListItem) => {
+      const iconExists = this.object.effectIconList.find( (effectIcon: IEffectIconListItem) => {
         return effectIcon.id == featIconId;
       });
       if(!iconExists){
@@ -37,7 +37,7 @@ export class EffectIcon extends GameEffect {
             // const description: string = featIconRow['description'];
             const priority: number = parseInt(featIconRow['priority']);
 
-            const icon: EffectIconListItem = {
+            const icon: IEffectIconListItem = {
               id: featIconId,
               resref: iconResRef,
               good: good,
@@ -57,7 +57,7 @@ export class EffectIcon extends GameEffect {
     super.onRemove();
     const featIconId = this.getInt(0);
     if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
-      const icon = this.object.effectIconList.find( (effectIcon: EffectIconListItem) => {
+      const icon = this.object.effectIconList.find( (effectIcon: IEffectIconListItem) => {
         return effectIcon.id == featIconId;
       });
       if(icon){
