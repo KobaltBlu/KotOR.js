@@ -1,8 +1,9 @@
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { BIFObject } from "../resource/BIFObject";
-import { BIF, KEYObject } from "../resource/KEYObject";
+import { KEYObject } from "../resource/KEYObject";
 import * as path from 'path';
 import { BIFManager } from "./BIFManager";
+import { IBIFEntry } from "../interface/resource/IBIFEntry";
 
 export class KEYManager {
 
@@ -18,7 +19,7 @@ export class KEYManager {
   static LoadBIFs(onComplete?: Function){
     new AsyncLoop({
       array: KEYManager.Key.bifs,
-      onLoop: async (bifRes: BIF, loop: AsyncLoop, index: number, count: number) => {
+      onLoop: async (bifRes: IBIFEntry, loop: AsyncLoop, index: number, count: number) => {
         const bifPath: string = bifRes.filename;
         const bif = new BIFObject(bifPath);
         await bif.load()

@@ -3,7 +3,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -34,7 +34,7 @@ export class ActionUnlockObject extends Action {
 
     if(!this.shouted){
       this.shouted = true;
-      this.owner.playSoundSet(SSFObjectType.UNLOCK);
+      this.owner.playSoundSet(SSFType.UNLOCK);
     }
 
     let distance = Utility.Distance2D(this.owner.position, this.target.position);

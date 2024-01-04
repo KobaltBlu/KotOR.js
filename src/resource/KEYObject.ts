@@ -1,33 +1,26 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
-import { BIFObject, BIFResource } from './BIFObject';
+import { BIFObject } from './BIFObject';
 import { BIFManager } from '../managers/BIFManager';
 import { GameFileSystem } from '../utility/GameFileSystem';
+import { IBIFResource } from '../interface/resource/IBIFResource';
+import { IBIFEntry } from '../interface/resource/IBIFEntry';
+import { IKEYEntry } from '../interface/resource/IKEYEntry';
 
-/* @file
- * The KEYObject class.
+/**
+ * KEYObject class.
+ * 
+ * Class representing a KEY file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file KEYObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-export interface BIF {
-  fileSize: number;
-  filenameOffset: number;
-  filenameSize: number;
-  drives: number;
-  filename: string;
-}
-
-export interface KEY {
-  resRef: string,
-  resType: number,
-  resId: number,
-}
-
 export class KEYObject {
-  bifs: BIF[] = [];
-  keys: KEY[] = [];
+  bifs: IBIFEntry[] = [];
+  keys: IKEYEntry[] = [];
 
   file: string = '';
   reader: BinaryReader;
@@ -70,7 +63,7 @@ export class KEYObject {
           filenameOffset: this.reader.readUInt32(),
           filenameSize: this.reader.readUInt16(),
           drives: this.reader.readUInt16()
-        } as BIF;
+        } as IBIFEntry;
       }
 
       for(let i = 0; i < this.bifCount; i++){
@@ -84,7 +77,7 @@ export class KEYObject {
           resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
           resType: this.reader.readUInt16(),
           resId: this.reader.readUInt32(),
-        } as KEY;
+        } as IKEYEntry;
       }
 
       if(typeof onComplete === 'function'){
@@ -120,7 +113,7 @@ export class KEYObject {
     return null;
   }
 
-  getFileKeyByRes(Res: BIFResource): KEY {
+  getFileKeyByRes(Res: IBIFResource): IKEYEntry {
     for(let i = 0; i < this.keys.length; i++){
       let key = this.keys[i];
       if ( key.resId == Res.Id && key.resType == Res.resType){
@@ -131,12 +124,12 @@ export class KEYObject {
   }
 
   getFilesByResType(ResType: number){
-    const bifResults: BIFResource[][] = [];
-    this.bifs.forEach( (bifRes: BIF, index: number) => {
+    const bifResults: IBIFResource[][] = [];
+    this.bifs.forEach( (bifRes: IBIFEntry, index: number) => {
       if(BIFManager.bifs.has(index)){
         const bif = BIFManager.bifs.get(index);
         if(bif){
-          bifResults[index] = bif.resources.filter( (res: BIFResource) => {
+          bifResults[index] = bif.resources.filter( (res: IBIFResource) => {
             return res.resType == ResType;
           });
         }
@@ -145,7 +138,7 @@ export class KEYObject {
     return bifResults.flat();
   }
 
-  async getFileBuffer(key: KEY): Promise<Buffer>{
+  async getFileBuffer(key: IKEYEntry): Promise<Buffer>{
     if(!key){ return Buffer.allocUnsafe(0); }
 
     const bif: BIFObject = BIFManager.bifs.get(KEYObject.getBIFIndex(key.resId));

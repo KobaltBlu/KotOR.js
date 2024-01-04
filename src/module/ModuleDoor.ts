@@ -2,7 +2,7 @@ import { ModuleObject } from ".";
 import type { ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
@@ -388,11 +388,11 @@ export class ModuleDoor extends ModuleObject {
         this.locked = false;
         
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-          object.playSoundSet(SSFObjectType.UNLOCK_SUCCESS);
+          object.playSoundSet(SSFType.UNLOCK_SUCCESS);
         }
       }else{
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-          object.playSoundSet(SSFObjectType.UNLOCK_FAIL);
+          object.playSoundSet(SSFType.UNLOCK_FAIL);
         }
       }
          

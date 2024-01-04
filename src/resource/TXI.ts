@@ -1,14 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { TXIBlending } from "../enums/graphics/txi/TXIBlending";
 import { TXIPROCEDURETYPE } from "../enums/graphics/txi/TXIPROCEDURETYPE";
 import { TXITexType } from "../enums/graphics/txi/TXITexType";
 
-/* @file
- * The TXI class.
+/**
+ * TXI class.
+ * 
+ * Class representing a Extra Texture Information file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TwoDAObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class TXI {
   blending: TXIBlending;
   textureType: TXITexType;

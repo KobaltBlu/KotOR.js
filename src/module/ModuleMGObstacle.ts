@@ -1,6 +1,6 @@
 import { ModuleObject } from ".";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { LayoutObstacle } from "../interface/resource/LayoutObstacle";
+import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
@@ -22,9 +22,9 @@ export class ModuleMGObstacle extends ModuleObject {
   hit_points: number;
   max_hps: number = 0;
   invince_period: number;
-  layout: LayoutObstacle;
+  layout: ILayoutObstacle;
 
-  constructor(template: GFFObject, layout: LayoutObstacle){
+  constructor(template: GFFObject, layout: ILayoutObstacle){
     super(template);
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';

@@ -28,8 +28,7 @@ export * from "./enums/odyssey/OdysseyModelControllerType";
 export * from "./enums/odyssey/OdysseyModelNodeType";
 export * from "./enums/resource/GFFDataType";
 
-export * from "./interface/resource/LIPHeader";
-export * from "./interface/resource/LIPKeyFrame";
+export * from "./interface";
 export * from "./interface/odyssey/OdysseyModelAABBNode";
 export * from "./interface/loaders/TextureLoaderQueuedRef";
 
@@ -81,4 +80,5 @@ export * from "./utility/Utility";
 
 // export * as THREE from "three";
 
+/** @ignore */
 export { Buffer } from "buffer";

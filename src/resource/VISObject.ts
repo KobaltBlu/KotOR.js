@@ -1,17 +1,21 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryWriter } from "../BinaryWriter";
 import { ModuleArea, ModuleRoom } from "../module";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
-/* @file
- * The VisObject class.
+/**
+ * VISObject class.
  * 
- * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not
+ * Class representing a Extra Texture Information file in memory.
+ * 
+ * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not 
  * render rooms that are not present in this list when you are standing in a parent room
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file VISObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class VISObject {
   rooms: any[] = [];
   area: ModuleArea;

@@ -1,63 +1,36 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import isBuffer from "is-buffer";
 import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ResourceTypes } from "./ResourceTypes";
-
-/* @file
- * The ERFObject class.
- */
-
-export interface ERFObjectHeader {
-  fileType: string;
-  fileVersion: string;
-  languageCount: number;
-  localizedStringSize: number;
-  entryCount: number;
-  offsetToLocalizedString: number;
-  offsetToKeyList: number;
-  offsetToResourceList: number;
-  buildYear: number;
-  buildDay: number;
-  DescriptionStrRef: number;
-  reserved: Buffer;
-}
-
-export interface ERFLanguage {
-  languageId: number;
-  stringSize: number;
-  value: string;
-}
-
-export interface ERFKeyEntry {
-  resRef: string;
-  resId: number;
-  resType: number;
-  unused: number;
-}
-
-export interface ERFResource {
-  offset: number;
-  size: number;
-  data: Buffer;
-}
+import { IERFLanguage } from "../interface/resource/IERFLanguage";
+import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
+import { IERFResource } from "../interface/resource/IERFResource";
+import { IERFObjectHeader } from "../interface/resource/IERFObjectHeader";
   
 const ERF_HEADER_SIZE = 160;
 
+/**
+ * ERFObject class.
+ * 
+ * Class representing a ERF archive file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ERFObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ERFObject {
   resource_path: string;
   buffer: Buffer;
   inMemory: boolean = false;
   
-  localizedStrings: ERFLanguage[] = [];
-  keyList: ERFKeyEntry[] = [];
-  resources: ERFResource[] = [];
-  header: ERFObjectHeader;
+  localizedStrings: IERFLanguage[] = [];
+  keyList: IERFKeyEntry[] = [];
+  resources: IERFResource[] = [];
+  header: IERFObjectHeader;
   pathInfo: path.ParsedPath;
   reader: BinaryReader;
   erfDataOffset: number;
@@ -71,7 +44,7 @@ export class ERFObject {
     this.header = {
       fileType: 'MOD ',
       fileVersion: 'V1.0'
-    } as ERFObjectHeader;
+    } as IERFObjectHeader;
 
     if(isBuffer(file)){
       this.inMemory = true;
@@ -125,7 +98,7 @@ export class ERFObject {
       this.reader.seek(this.header.offsetToLocalizedString);
 
       for (let i = 0; i < this.header.languageCount; i++) {
-        let language: ERFLanguage = {} as ERFLanguage;
+        let language: IERFLanguage = {} as IERFLanguage;
         language.languageId = this.reader.readUInt32();
         language.stringSize = this.reader.readUInt32();
         language.value = this.reader.readChars(language.stringSize);
@@ -135,7 +108,7 @@ export class ERFObject {
       this.reader.seek(this.header.offsetToKeyList);
 
       for (let i = 0; i < this.header.entryCount; i++) {
-        let key: ERFKeyEntry = {} as ERFKeyEntry;
+        let key: IERFKeyEntry = {} as IERFKeyEntry;
         key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
         key.resId = this.reader.readUInt32();
         key.resType = this.reader.readUInt16();
@@ -146,7 +119,7 @@ export class ERFObject {
       this.reader.seek(this.header.offsetToResourceList);
 
       for (let i = 0; i < this.header.entryCount; i++) {
-        let resource: ERFResource = {} as ERFResource;
+        let resource: IERFResource = {} as IERFResource;
         resource.offset = this.reader.readUInt32();
         resource.size = this.reader.readUInt32();
         this.resources.push(resource);
@@ -190,7 +163,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToLocalizedString);
 
     for (let i = 0; i < this.header.languageCount; i++) {
-      let language: ERFLanguage = {} as ERFLanguage;
+      let language: IERFLanguage = {} as IERFLanguage;
       language.languageId = this.reader.readUInt32();
       language.stringSize = this.reader.readUInt32();
       language.value = this.reader.readChars(language.stringSize);
@@ -200,7 +173,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToKeyList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let key: ERFKeyEntry = {} as ERFKeyEntry;
+      let key: IERFKeyEntry = {} as IERFKeyEntry;
       key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
       key.resId = this.reader.readUInt32();
       key.resType = this.reader.readUInt16();
@@ -211,7 +184,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToResourceList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let resource: ERFResource = {} as ERFResource;
+      let resource: IERFResource = {} as IERFResource;
       resource.offset = this.reader.readUInt32();
       resource.size = this.reader.readUInt32();
       this.resources.push(resource);
@@ -221,7 +194,7 @@ export class ERFObject {
     this.reader.dispose();
   }
 
-  getResource(resRef: string, resType: number): ERFResource{
+  getResource(resRef: string, resType: number): IERFResource{
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.keyList.length; i++){
       let key = this.keyList[i];
@@ -232,7 +205,7 @@ export class ERFObject {
     return undefined;
   }
 
-  async getResourceBuffer(resource: ERFResource): Promise<Buffer> {
+  async getResourceBuffer(resource: IERFResource): Promise<Buffer> {
     if (typeof resource == 'undefined') {
       return Buffer.allocUnsafe(0);
     }
@@ -266,8 +239,8 @@ export class ERFObject {
     return await this.getResourceBuffer(resource);
   }
 
-  getResourcesByType(resType: number): ERFResource[] {
-    const resources: ERFResource[] = [];
+  getResourcesByType(resType: number): IERFResource[] {
+    const resources: IERFResource[] = [];
     for(let i = 0; i < this.keyList.length; i++){
       const key = this.keyList[i];
       if (key.resType == resType) {

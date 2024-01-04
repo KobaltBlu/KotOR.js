@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from 'three';
 import { BinaryReader } from "../BinaryReader";
 import { TXI } from './TXI';
@@ -9,40 +6,26 @@ import * as dxtJs from "dxt-js";
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { ENCODING } from '../enums/graphics/tpc/Encoding';
 import { OdysseyCompressedTexture } from '../three/odyssey';
-
-/* @file
- * The TPCObject class.
- */
-
-export interface TPCHeader {
-  dataSize: number;
-  alphaTest: number;
-  width: number;
-  height: number;
-  encoding: number;
-  mipMapCount: number;
-  bytesPerPixel: number;
-  bitsPerPixel: number;
-  minDataSize: number;
-  compressed: boolean
-  hasAlpha: boolean
-  format: PixelFormat;
-  isCubemap: boolean;
-  faces: number;
-}
+import { ITPCHeader } from '../interface/resource/ITPCHeader';
+import { ITPCObjectOptions } from '../interface/resource/ITPCObjectOptions';
 
 const TPCHeaderLength = 128;
 
-export interface ITPCObjectOptions {
-  file?: Buffer,
-  filename?: string,
-  pack?: number;
-}
-
+/**
+ * TPCObject class.
+ * 
+ * Class representing a TPC compressed texture file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TPCObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class TPCObject {
   static worker: Worker;
 
-  header: TPCHeader;
+  header: ITPCHeader;
   txi: TXI = new TXI('');
   file: Buffer;
   filename: string;
@@ -304,10 +287,10 @@ export class TPCObject {
     return mips;
   }
 
-  readHeader(): TPCHeader {
+  readHeader(): ITPCHeader {
 
     // Parse header
-    let Header: TPCHeader = {} as TPCHeader;
+    let Header: ITPCHeader = {} as ITPCHeader;
     let Reader = new BinaryReader(Buffer.from(this.file, 0, TPCHeaderLength ));
     Reader.seek(0);
     Header.dataSize = Reader.readUInt32();

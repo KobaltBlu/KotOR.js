@@ -2,13 +2,14 @@
  */
 
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject, ERFResource } from "../resource/ERFObject";
-import { AsyncLoop } from "../utility/AsyncLoop";
-import { RIMObject, RIMResource } from "../resource/RIMObject";
+import { ERFObject } from "../resource/ERFObject";
+import { RIMObject } from "../resource/RIMObject";
 import { CacheScope } from "../enums/resource/CacheScope";
-import { ResourceCacheScopes } from "../interface/resource/ResourceCacheScopes";
+import { IResourceCacheScopes } from "../interface/resource/IResourceCacheScopes";
 import { KEYManager } from "../managers/KEYManager";
 import { RIMManager } from "../managers/RIMManager";
+import { IRIMResource } from "../interface/resource/IRIMResource";
+import { IERFResource } from "../interface/resource/IERFResource";
 
 /* @file
  * The ResourceLaoder class.
@@ -18,7 +19,7 @@ export class ResourceLoader {
 
   static Resources: any = {};
   static cache: any = {};
-  static CacheScopes: ResourceCacheScopes = {
+  static CacheScopes: IResourceCacheScopes = {
     override: new Map(),
     global:   new Map(),
     module:   new Map(),
@@ -259,7 +260,7 @@ export class ResourceLoader {
 
     let data: Buffer;
     let rim: RIMObject;
-    let res: RIMResource;
+    let res: IRIMResource;
     for(let i = 0; i < rimCount; i++){
       rim = rims[i];
       if(!rim){ continue; }

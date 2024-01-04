@@ -12,7 +12,7 @@ export const TabLIPEditorOptions = function(props: any){
   const tab: TabLIPEditorOptionsState = props.tab;
   const parentTab: TabLIPEditorState = props.parentTab;
   const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
-  const [selectedFrame, setSelectedFrame] = useState<KotOR.LIPKeyFrame>(parentTab.selected_frame);
+  const [selectedFrame, setSelectedFrame] = useState<KotOR.ILIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
   const [duration, setDuration] = useState<number>(parentTab.lip.duration);
 

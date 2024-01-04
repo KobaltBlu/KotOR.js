@@ -16,7 +16,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   const [selectedAnimation, setSelectedAnimation] = useState<number>(tab.selectedAnimationIndex);
   const [looping, setLooping] = useState<boolean>(tab.looping);
 
-  const [layouts, setLayouts] = useState<KotOR.KEY[]>([]);
+  const [layouts, setLayouts] = useState<KotOR.IKEYEntry[]>([]);
   const [selectedLayout, setSelectedLayout] = useState<number>(tab.selectedLayoutIndex);
 
   const [cameraSpeed, setCameraSpeed] = useState<number>(ModelViewerControls.CameraMoveSpeed);
@@ -35,7 +35,7 @@ export const ModelViewerSidebarComponent = function(props: any){
 
   useEffectOnce( () => { //constructor
 
-    let keys: KotOR.KEY[] = [];
+    let keys: KotOR.IKEYEntry[] = [];
     let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
       keys.push(

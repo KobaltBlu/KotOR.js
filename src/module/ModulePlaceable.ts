@@ -8,7 +8,7 @@ import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import { TwoDAAnimation } from "../interface/twoDA/TwoDAAnimation";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -453,9 +453,9 @@ export class ModulePlaceable extends ModuleObject {
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
         this.locked = false;
-        object.playSoundSet(SSFObjectType.UNLOCK_SUCCESS);
+        object.playSoundSet(SSFType.UNLOCK_SUCCESS);
       }else{
-        object.playSoundSet(SSFObjectType.UNLOCK_FAIL);
+        object.playSoundSet(SSFType.UNLOCK_FAIL);
       }
       this.use(object);
       return true;

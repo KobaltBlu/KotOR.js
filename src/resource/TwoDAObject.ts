@@ -1,16 +1,19 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import * as fs from 'fs';
 import isBuffer from 'is-buffer';
 import { BinaryReader } from "../BinaryReader";
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { BinaryWriter } from '../BinaryWriter';
 
-/* @file
- * The TwoDAObject class.
+/**
+ * TwoDAObject class.
+ * 
+ * Class representing a 2D Array file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TwoDAObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class TwoDAObject {
 
   file: Buffer|string|undefined = undefined;

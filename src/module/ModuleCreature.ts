@@ -30,7 +30,7 @@ import { LIPObject } from "../resource/LIPObject";
 import { Utility } from "../utility/Utility";
 import { FactionManager } from "../FactionManager";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
@@ -448,10 +448,10 @@ export class ModuleCreature extends ModuleObject {
             let painsound = THREE.MathUtils.randInt(0, 1);
             switch(painsound){
               case 1:
-                this.playSoundSet(SSFObjectType.PAIN_2);
+                this.playSoundSet(SSFType.PAIN_2);
               break;
               default:
-                this.playSoundSet(SSFObjectType.PAIN_1);
+                this.playSoundSet(SSFType.PAIN_1);
               break;
             }
       
@@ -517,7 +517,7 @@ export class ModuleCreature extends ModuleObject {
           this.deathStarted = true;
           this.clearAllActions();
           this.onDeath();
-          this.playSoundSet(SSFObjectType.DEAD);
+          this.playSoundSet(SSFType.DEAD);
           this.resetOverlayAnimationState();
           this.setAnimationState(ModuleCreatureAnimState.DIE);
         }

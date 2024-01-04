@@ -11,7 +11,7 @@ import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject, ModuleRoom } from "../../../module";
 import { Anchor } from "../../../enums/gui/Anchor";
-import { SSFObjectType } from "../../../interface/resource/SSFType";
+import { SSFType } from "../../../enums/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
@@ -276,13 +276,13 @@ export class InGameOverlay extends GameMenu {
         PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_2);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_3);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_1);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
           break;
         }
       });
@@ -291,13 +291,13 @@ export class InGameOverlay extends GameMenu {
         PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_2);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_3);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].playSoundSet(SSFObjectType.SELECT_1);
+            PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
           break;
         }
       });

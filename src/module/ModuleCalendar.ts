@@ -8,7 +8,6 @@
  * @file ModuleCalendar.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
- * @memberof KotOR
  */
 export class ModuleCalendar {
   minutesPerHour = 2;

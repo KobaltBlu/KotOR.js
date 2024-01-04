@@ -3,7 +3,7 @@
 
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import type { ModuleCreature, ModuleObject } from "../module";
 
 import * as THREE from "three";
@@ -339,13 +339,13 @@ export class CombatEngine {
     let attack_sound = THREE.MathUtils.randInt(0, 2);
     switch(attack_sound){
       case 1:
-        creature.playSoundSet(SSFObjectType.ATTACK_2);
+        creature.playSoundSet(SSFType.ATTACK_2);
       break;
       case 2:
-        creature.playSoundSet(SSFObjectType.ATTACK_3);
+        creature.playSoundSet(SSFType.ATTACK_3);
       break;
       default:
-        creature.playSoundSet(SSFObjectType.ATTACK_1);
+        creature.playSoundSet(SSFType.ATTACK_1);
       break;
     }
 

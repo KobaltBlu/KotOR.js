@@ -6,7 +6,7 @@ import { EditorFile } from "../../../EditorFile";
 import { EditorTabManager } from "../../../managers/EditorTabManager";
 import { UI3DRendererView } from "../../../components/UI3DRendererView";
 import { UI3DRenderer } from "../../../UI3DRenderer";
-import { LIPKeyFrame } from "../../../../../interface/resource/LIPKeyFrame";
+import { ILIPKeyFrame } from "../../../../../interface/resource/ILIPKeyFrame";
 import { TabLIPEditorOptionsState } from "./TabLIPEditorOptionsState";
 import { SceneGraphNode } from "../../../SceneGraphNode";
 import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
@@ -61,9 +61,9 @@ export class TabLIPEditorState extends TabState {
   scrubbingTimeout: NodeJS.Timeout|number;
   current_head: string;
   audio_name: string;
-  selected_frame: LIPKeyFrame;
-  dragging_frame: LIPKeyFrame|undefined;
-  dragging_frame_snapshot: LIPKeyFrame;
+  selected_frame: ILIPKeyFrame;
+  dragging_frame: ILIPKeyFrame|undefined;
+  dragging_frame_snapshot: ILIPKeyFrame;
   poseFrame: boolean;
   max_timeline_zoom: number = 1000;
   min_timeline_zoom: number = 50;
@@ -359,7 +359,7 @@ export class TabLIPEditorState extends TabState {
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameTrackZoomOut', [this]);
   }
 
-  selectKeyFrame(keyframe: LIPKeyFrame){
+  selectKeyFrame(keyframe: ILIPKeyFrame){
     if(this.lip.keyframes.indexOf(keyframe) == -1) return;
     this.selected_frame = keyframe;
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', [keyframe]);
@@ -411,7 +411,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   getKeyframesAsSceneGraphNodes(){
-    return this.lip.keyframes.map( (frame: LIPKeyFrame, index: number) => {
+    return this.lip.keyframes.map( (frame: ILIPKeyFrame, index: number) => {
       return new SceneGraphNode({
         name: `${index} - ${LIPShapeLabels[frame.shape]}`,
         data: frame,
@@ -423,7 +423,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   fitDurationToKeyFrames(){
-    const duration = this.lip.keyframes.reduce((a: number, b: LIPKeyFrame) => Math.max(a, b.time), -Infinity);
+    const duration = this.lip.keyframes.reduce((a: number, b: ILIPKeyFrame) => Math.max(a, b.time), -Infinity);
     this.setDuration(duration);
   }
 

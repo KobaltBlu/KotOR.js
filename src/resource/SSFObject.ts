@@ -2,6 +2,17 @@ import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { TLKManager } from "../managers";
 
+/**
+ * SSFObject class.
+ * 
+ * Class representing a Sound Set file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file SSFObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class SSFObject {
   data: Buffer;
   sound_refs: number[];

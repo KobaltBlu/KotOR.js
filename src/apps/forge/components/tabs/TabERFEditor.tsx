@@ -15,16 +15,16 @@ const MENU_ID = 'context-tab-erf-editor-entry';
 
 export const TabERFEditor = function(props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
-  const [entries, setEntries] = useState<KotOR.ERFKeyEntry[]>();
-  const [resources, setResources] = useState<KotOR.ERFResource[]>();
-  const [selectedEntry, setSelectedEntry] = useState<KotOR.ERFKeyEntry>();
+  const [entries, setEntries] = useState<KotOR.IERFKeyEntry[]>();
+  const [resources, setResources] = useState<KotOR.IERFResource[]>();
+  const [selectedEntry, setSelectedEntry] = useState<KotOR.IERFKeyEntry>();
 
   
   const { show } = useContextMenu({
     id: MENU_ID,
   });
 
-  const handleContextItemClick = async ({ id, event, props, data }: ItemParams<KotOR.ERFKeyEntry, any>) => {
+  const handleContextItemClick = async ({ id, event, props, data }: ItemParams<KotOR.IERFKeyEntry, any>) => {
     switch (id) {
       case "open-file":
         console.log(event, props)
@@ -99,16 +99,16 @@ export const TabERFEditor = function(props: BaseTabProps) {
     }
   });
 
-  const onResourceClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.ERFKeyEntry) => {
+  const onResourceClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
     setSelectedEntry(key);
   }
 
-  const onResourceDoubleClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.ERFKeyEntry) => {
+  const onResourceDoubleClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
     setSelectedEntry(key);
     openERFResource(key);
   }
 
-  const onContextMenu = (event: React.MouseEvent<HTMLLIElement>, key: KotOR.ERFKeyEntry) => {
+  const onContextMenu = (event: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
     console.log('handleContextMenu', event);
     setSelectedEntry(key);
     show({
@@ -117,7 +117,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
     })
   }
 
-  const openERFResource = async (key: KotOR.ERFKeyEntry) => {
+  const openERFResource = async (key: KotOR.IERFKeyEntry) => {
     let buffer: Buffer;
     let buffer2: Buffer;
     if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
@@ -149,7 +149,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
         </div>
         <ul className="file-browser-list">
           {
-            entries?.map( (key: KotOR.ERFKeyEntry) => {
+            entries?.map( (key: KotOR.IERFKeyEntry) => {
               const resource = tab.erf.getResource(key.resRef, key.resType);
               return (
                 <li className={`file-browser-item ${selectedEntry == key ? `selected` : ``}`} onClick={(e) => onResourceClick(e, key)} onDoubleClick={(e) => onResourceDoubleClick(e, key)} onContextMenu={(e) => onContextMenu(e, key)}>

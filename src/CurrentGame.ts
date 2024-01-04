@@ -1,10 +1,11 @@
 import * as path from "path";
-import { ERFKeyEntry, ERFObject } from "./resource/ERFObject";
+import { ERFObject } from "./resource/ERFObject";
 import { AsyncLoop } from "./utility/AsyncLoop";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { ApplicationEnvironment } from "./enums/ApplicationEnvironment";
+import { IERFKeyEntry } from "./interface/resource/IERFKeyEntry";
 
 export class CurrentGame {
   static gameinprogress_dir = 'gameinprogress';
@@ -118,7 +119,7 @@ export class CurrentGame {
       if(erf instanceof ERFObject){
         let loop = new AsyncLoop({
           array: erf.keyList,
-          onLoop: (erf_key: ERFKeyEntry, asyncLoop: AsyncLoop) => {
+          onLoop: (erf_key: IERFKeyEntry, asyncLoop: AsyncLoop) => {
             erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType).then(() => {
               asyncLoop.next();
             });

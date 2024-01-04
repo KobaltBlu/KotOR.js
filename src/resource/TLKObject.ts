@@ -1,16 +1,19 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
-import * as fs from 'fs';
 import { TLKString } from "./TLKString";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
-/* @file
- * The TLKObject class.
+/**
+ * TLKObject class.
+ * 
+ * Class representing a Talk Table file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TLKObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class TLKObject {
 
   file: Buffer|string;

@@ -4,7 +4,16 @@ import { BinaryReader } from "../BinaryReader";
 const LTR_HEADER_LENGTH = 9;
 
 /**
+ * LTRObject class
+ * 
+ * Class representing a LTR file in memory.
  * uses Markov Chains to generate random names for character generation ingame
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LTRObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @see https://nwn.wiki/display/NWN1/LTR
  * @see http://web.archive.org/web/20160801205623/https://forum.bioware.com/topic/134653-ltr-file-format/#entry3901817
  */

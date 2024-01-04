@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -8,16 +5,23 @@ import { CExoLocString } from "./CExoLocString";
 import { CExoLocSubString } from "./CExoLocSubString";
 import { GFFField } from "./GFFField";
 import { GFFStruct } from "./GFFStruct";
-
 import * as THREE from "three";
 import * as path from "path";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
-/* @file
- * The GFFObject class.
- */
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
+/**
+ * GFFObject class.
+ * 
+ * Class representing a "Generic File Format" file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GFFObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GFFObject {
   BWStructs: BinaryWriter;
   BWFields: BinaryWriter;

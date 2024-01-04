@@ -1,5 +1,6 @@
-import { BIFObject, BIFResource } from "../resource/BIFObject";
+import { BIFObject } from "../resource/BIFObject";
 import { KEYObject } from "../resource/KEYObject";
+import { IBIFResource } from "../interface/resource/IBIFResource";
 
 export class BIFManager {
 
@@ -10,7 +11,7 @@ export class BIFManager {
 
   }
 
-  static LoadBIFResource(resource: BIFResource, onComplete?: Function){
+  static LoadBIFResource(resource: IBIFResource, onComplete?: Function){
     if(resource){
       const bif: BIFObject = BIFManager.bifs.get( KEYObject.getBIFIndex(resource.Id) )
       if(bif){

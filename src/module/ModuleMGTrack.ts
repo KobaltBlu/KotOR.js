@@ -2,7 +2,7 @@ import { ModuleObject } from ".";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
-import { LayoutTrack } from "../interface/resource/LayoutTrack";
+import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**
@@ -20,9 +20,9 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 export class ModuleMGTrack extends ModuleObject {
   index: number;
   track: any;
-  layout: LayoutTrack;
+  layout: ILayoutTrack;
 
-  constructor(layout: LayoutTrack){
+  constructor(layout: ILayoutTrack){
     super();
     this.objectType |= ModuleObjectType.ModuleMGTrack;
 

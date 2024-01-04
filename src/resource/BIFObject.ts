@@ -1,34 +1,24 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
-import * as fs from 'fs';
 import * as path from 'path';
-import { Utility } from "../utility/Utility";
 import { KEYManager } from "../managers/KEYManager";
-import { ResourceTypes } from "./ResourceTypes";
 import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
-
-/* @file
- * The BIFObject class.
- */
-
-export interface IResourceDiskInfo {
-  pathInfo: path.ParsedPath;
-  path: string;
-  existsOnDisk: boolean;
-}
-
-export interface BIFResource {
-  Id: number;
-  offset: number;
-  size: number;
-  resType: number;
-}
+import { IResourceDiskInfo } from "../interface/resource/IResourceDiskInfo";
+import { IBIFResource } from "../interface/resource/IBIFResource";
 
 const BIF_HEADER_SIZE = 20;
 
+/**
+ * BIFObject class.
+ * 
+ * Class representing a BIF archive file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BIFObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class BIFObject {
   resource_path: string;
   buffer: Buffer;
@@ -44,7 +34,7 @@ export class BIFObject {
   reader: BinaryReader;
 
   resourceDiskInfo: IResourceDiskInfo;
-  resources: BIFResource[] = [];
+  resources: IBIFResource[] = [];
   file: string;
 
   constructor(file: Buffer|string){
@@ -113,7 +103,7 @@ export class BIFObject {
         offset: this.reader.readUInt32(),
         size: this.reader.readUInt32(),
         resType: this.reader.readUInt32()
-      } as BIFResource;
+      } as IBIFResource;
     }
 
     this.reader.dispose();
@@ -133,7 +123,7 @@ export class BIFObject {
   }
 
   getResourcesByType(ResType: number){
-    let arr: BIFResource[] = []
+    let arr: IBIFResource[] = []
     if(ResType != null){
       for(let i = 0; i < this.variableResourceCount; i++){
         if(this.resources[i].resType == ResType){
@@ -144,7 +134,7 @@ export class BIFObject {
     return arr;
   }
 
-  getResource(resRef: string, ResType: number): BIFResource|undefined {
+  getResource(resRef: string, ResType: number): IBIFResource|undefined {
     if(resRef == null){
       return undefined;
     }
@@ -163,7 +153,7 @@ export class BIFObject {
     }
   }
 
-  async getResourceBuffer(res?: BIFResource): Promise<Buffer> {
+  async getResourceBuffer(res?: IBIFResource): Promise<Buffer> {
     if(!res){ return Buffer.allocUnsafe(0); }
     if(!res.size){ return Buffer.allocUnsafe(0); }
 

@@ -1,22 +1,26 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { StringDecoder } from "string_decoder";
-import { LayoutRoom } from "../interface/resource/LayoutRoom";
-import { LayoutDoorHook } from "../interface/resource/LayoutDoorHook";
-import { LayoutObstacle } from "../interface/resource/LayoutObstacle";
-import { LayoutTrack } from "../interface/resource/LayoutTrack";
+import { ILayoutRoom } from "../interface/resource/ILayoutRoom";
+import { ILayoutDoorHook } from "../interface/resource/ILayoutDoorHook";
+import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
+import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
 import * as THREE from "three";
 
-/* @file
- * The LYTObject class.
+/**
+ * LYTObject class.
+ * 
+ * Class representing a LYT file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LYTObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class LYTObject {
-  rooms: LayoutRoom[];
-  doorhooks: LayoutDoorHook[];
-  tracks: LayoutTrack[];
-  obstacles: LayoutObstacle[];
+  rooms: ILayoutRoom[];
+  doorhooks: ILayoutDoorHook[];
+  tracks: ILayoutTrack[];
+  obstacles: ILayoutObstacle[];
   text: any;
 
   constructor( data?: Buffer ){

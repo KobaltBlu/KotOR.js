@@ -1,8 +1,5 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import { LIPHeader } from "../interface/resource/LIPHeader";
-import { LIPKeyFrame } from "../interface/resource/LIPKeyFrame";
+import { ILIPHeader } from "../interface/resource/ILIPHeader";
+import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "../loaders";
@@ -13,16 +10,24 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModelAnimation } from "../odyssey";
 
-/* @file
- * The LIPObject class.
+/**
+ * LIPObject class.
+ * 
+ * Class representing a Lip Sync file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LIPObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class LIPObject {
   static FILE_TYPE  = 'LIP ';
-  static FILE_VER   = 'V1.0'
+  static FILE_VER   = 'V1.0';
+
   file: string|Buffer;
   HeaderSize: number;
-  keyframes: LIPKeyFrame[];
+  keyframes: ILIPKeyFrame[];
   time: number;
   lastTime: number;
   duration: number;
@@ -122,11 +127,11 @@ export class LIPObject {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0){
-    let keyframe: LIPKeyFrame = {
+    let keyframe: ILIPKeyFrame = {
       uuid: crypto.randomUUID(),
       time: time,
       shape: shape,
-    } as LIPKeyFrame;
+    } as ILIPKeyFrame;
     this.keyframes.push(keyframe);
     this.reIndexKeyframes();
     return keyframe;

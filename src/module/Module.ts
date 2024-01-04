@@ -38,7 +38,6 @@ type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|
  * @file Module.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
- * @memberof KotOR
  */
 export class Module {
   ifo: GFFObject;

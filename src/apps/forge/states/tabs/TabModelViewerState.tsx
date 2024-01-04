@@ -314,7 +314,7 @@ export class TabModelViewerState extends TabState {
     super.destroy();
   }
 
-  loadLayout(key?: KotOR.KEY){
+  loadLayout(key?: KotOR.IKEYEntry){
     this.disposeLayout();
     if(key) {
       // this.layoutSceneGraphNode

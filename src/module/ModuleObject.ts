@@ -16,7 +16,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { EffectIconListItem } from "../interface/module/EffectIconListItem";
-import { SSFObjectType } from "../interface/resource/SSFType";
+import { SSFType } from "../enums/resource/SSFType";
 import { NWScriptEvent } from "../nwscript/events";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyWalkMesh } from "../odyssey";
@@ -1786,7 +1786,7 @@ export class ModuleObject {
     console.warn("Method not implemented.", this.tag);
   }
 
-  playSoundSet(ssfType: SSFObjectType){
+  playSoundSet(ssfType: SSFType){
     console.warn("Method not implemented.", this.tag);
   }
   

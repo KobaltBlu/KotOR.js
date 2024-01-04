@@ -12,13 +12,23 @@ import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { ResourceLoader } from "../loaders";
-import { GFFStruct } from "./GFFStruct";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
   onEndConversation: NWScriptInstance,
 }
 
+/**
+ * DLGObject class.
+ * 
+ * Class representing a DLG file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file DLGObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class DLGObject {
   resref: string;
   gff: GFFObject;

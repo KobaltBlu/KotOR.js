@@ -1,6 +1,14 @@
-
-
-export enum SSFObjectType {
+/**
+ * ISSFType enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ISSFType.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @enum
+ */
+export enum SSFType {
   BATTLE_CRY_1 = 0,
   BATTLE_CRY_2 = 1,
   BATTLE_CRY_3 = 2,

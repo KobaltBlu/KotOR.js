@@ -1,7 +1,6 @@
 /* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  */
 
-import * as path from 'path';
 import * as fs from 'fs';
 
 import { DeepObject } from "../DeepObject";

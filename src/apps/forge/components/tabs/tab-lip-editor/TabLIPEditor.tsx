@@ -50,8 +50,8 @@ export const UILIPKeyFramePanel = function(props: any){
   const [playing, setPlaying] = useState<boolean>(tab.playing);
   const [seekPositionLeft, setSeekPositionLeft] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(tab.timeline_zoom);
-  const [keyframes, setKeyFrames] = useState<KotOR.LIPKeyFrame[]>([]);
-  const [selectedFrame, setSelectedFrame] = useState<KotOR.LIPKeyFrame>(tab.selected_frame);
+  const [keyframes, setKeyFrames] = useState<KotOR.ILIPKeyFrame[]>([]);
+  const [selectedFrame, setSelectedFrame] = useState<KotOR.ILIPKeyFrame>(tab.selected_frame);
   const [duration, setDuration] = useState<number>(1);
   const [timestamps, setTimestamps] = useState<string[]>([]);
   // const [timelineWidth, setTimelineWidth] = useState<number>(250);
@@ -113,7 +113,7 @@ export const UILIPKeyFramePanel = function(props: any){
 
   };
 
-  const onKeyFrameSelect = (keyframe: KotOR.LIPKeyFrame) => {
+  const onKeyFrameSelect = (keyframe: KotOR.ILIPKeyFrame) => {
     setSelectedFrame(keyframe);
     tab.lip.elapsed = keyframe.time;
     updateSeekerPosition();
@@ -326,7 +326,7 @@ export const UILIPKeyFramePanel = function(props: any){
     updateScrollBoundsFocus(true);
   }
 
-  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.LIPKeyFrame) => {
+  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.ILIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.selectKeyFrame(keyframe);
@@ -334,7 +334,7 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.dragging_frame = keyframe;
   }
 
-  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.LIPKeyFrame) => {
+  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.ILIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.seek(keyframe.time);
@@ -460,7 +460,7 @@ export const UILIPKeyFramePanel = function(props: any){
           {
             (
               keyframes.length ? keyframes.map( 
-                (keyframe: KotOR.LIPKeyFrame, index: number) => {
+                (keyframe: KotOR.ILIPKeyFrame, index: number) => {
                   //onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }
                   return (
                     <div key={`${keyframe.uuid}`} className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}} 

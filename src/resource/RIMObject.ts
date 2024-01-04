@@ -1,43 +1,33 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import isBuffer from 'is-buffer';
 import * as path from 'path';
 import { BinaryReader } from '../BinaryReader';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { ResourceTypes } from './ResourceTypes';
-
-/* @file
- * The RIMObject class.
- */
-
-export interface RIMHeader {
-  fileType: string;
-  fileVersion: string;
-  resourceCount: number;
-  resourcesOffset: number;
-}
-
-export interface RIMResource {
-  resRef: string;
-  resType: number;
-  unused: number;
-  resId: number;
-  offset: number;
-  size: number;
-}
+import { IRIMResource } from '../interface/resource/IRIMResource';
+import { IRIMHeader } from '../interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
 
+/**
+ * RIMObject class.
+ * 
+ * Class representing a RIM archive file in memory.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file RIMObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class RIMObject {
   resource_path: string;
   buffer: Buffer;
   inMemory: boolean = false;
 
   group: string;
-  resources: RIMResource[] = [];
+  resources: IRIMResource[] = [];
   reader: BinaryReader;
-  header: RIMHeader;
+  header: IRIMHeader;
   rimDataOffset: number;
 
   constructor(file: Buffer|string){
@@ -70,7 +60,7 @@ export class RIMObject {
   }
 
   readHeaderFromBuffer(buffer: Buffer){
-    this.header = {} as RIMHeader;
+    this.header = {} as IRIMHeader;
 
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
@@ -104,7 +94,7 @@ export class RIMObject {
     await GameFileSystem.read(fd, header, 0, RIM_HEADER_LENGTH, 0);
     this.reader = new BinaryReader(header);
 
-    this.header = {} as RIMHeader;
+    this.header = {} as IRIMHeader;
 
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
@@ -122,14 +112,14 @@ export class RIMObject {
     this.reader.seek(this.header.resourcesOffset);
 
     for (let i = 0; i < this.header.resourceCount; i++) {
-      const res: RIMResource = {
+      const res: IRIMResource = {
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
         size: this.reader.readUInt32()
-      } as RIMResource;
+      } as IRIMResource;
       this.resources.push(res);
     }
 
@@ -154,7 +144,7 @@ export class RIMObject {
     await GameFileSystem.close(fd);
   }
 
-  getResource(resRef: string, resType: number): RIMResource {
+  getResource(resRef: string, resType: number): IRIMResource {
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.resources.length; i++){
       let key = this.resources[i];
@@ -165,7 +155,7 @@ export class RIMObject {
     return;
   }
 
-  async getResourceBuffer(resource?: RIMResource): Promise<Buffer> {
+  async getResourceBuffer(resource?: IRIMResource): Promise<Buffer> {
     if(!resource){
       return Buffer.allocUnsafe(0);
     }
