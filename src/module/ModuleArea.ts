@@ -142,10 +142,12 @@ export class ModuleArea extends ModuleObject {
     ambient: 0,
     density: 0,
     diffuse: 0,
-    probabilityLowerLeft: 0.25,
-    probabilityLowerRight: 0.25,
-    probabilityUpperLeft: 0.25,
-    probabilityUpperRight: 0.25,
+    probability: { 
+      lowerLeft: 0.25,
+      lowerRight: 0.25,
+      upperLeft: 0.25,
+      upperRight: 0.25
+    },
     quadSize: 0,
     textureName: ''
   };
@@ -612,10 +614,12 @@ export class ModuleArea extends ModuleObject {
       ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
       density: this.are.getFieldByLabel('Grass_Density').getValue(),
       diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
-      probabilityLowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
-      probabilityLowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
-      probabilityUpperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
-      probabilityUpperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue(),
+      probability: {
+        lowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
+        lowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
+        upperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
+        upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
+      },
       quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
       textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
     };
@@ -1835,16 +1839,16 @@ export class ModuleArea extends ModuleObject {
       new GFFField(GFFDataType.DWORD, 'Grass_Diffuse', this.grass.diffuse)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LL', this.grass.probabilityLowerLeft)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LL', this.grass.probability.lowerLeft)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LR', this.grass.probabilityLowerRight)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LR', this.grass.probability.lowerRight)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UL', this.grass.probabilityUpperLeft)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UL', this.grass.probability.upperLeft)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UR', this.grass.probabilityUpperRight)
+      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UR', this.grass.probability.upperRight)
     );
     are.RootNode.addField(
       new GFFField(GFFDataType.FLOAT, 'Grass_QuadSize', this.grass.quadSize)

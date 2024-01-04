@@ -464,11 +464,11 @@ export class ModuleRoom extends ModuleObject {
 
   getRandomGrassUVIndex(){
     let rnd = Math.random();
-    if(rnd < GameState.module.area.grass.probabilityUpperLeft){
+    if(rnd < GameState.module.area.grass.probability.upperLeft){
       return 0;
-    }else if(rnd < GameState.module.area.grass.probabilityUpperLeft + GameState.module.area.grass.probabilityUpperRight){
+    }else if(rnd < GameState.module.area.grass.probability.upperLeft + GameState.module.area.grass.probability.upperRight){
       return 1;
-    }else if(rnd < GameState.module.area.grass.probabilityUpperLeft + GameState.module.area.grass.probabilityUpperRight + GameState.module.area.grass.probabilityLowerLeft){
+    }else if(rnd < GameState.module.area.grass.probability.upperLeft + GameState.module.area.grass.probability.upperRight + GameState.module.area.grass.probability.lowerLeft){
       return 2;
     }else{
       return 3;
