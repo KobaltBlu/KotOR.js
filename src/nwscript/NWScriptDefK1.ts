@@ -25,7 +25,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { ModuleObjectType } from "../enums/nwscript/ModuleObjectType";
+import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
 import { EventTimedEvent, GameEvent } from "../events";
 import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
@@ -2391,7 +2391,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      return ModuleObjectManager.GetObjectByTag(args[0], 0, ModuleObjectType.WAYPOINT);
+      return ModuleObjectManager.GetObjectByTag(args[0], 0, NWModuleObjectType.WAYPOINT);
     }
   },
   198:{

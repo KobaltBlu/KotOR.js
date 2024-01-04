@@ -27,7 +27,7 @@ import { EngineState } from "./enums/engine/EngineState";
 import { EngineMode } from "./enums/engine/EngineMode";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
-import { EngineContext } from "./enums/engine/EngineContext";
+import { EngineContext } from "./engine/EngineContext";
 
 import { ConfigClient } from "./utility/ConfigClient";
 import { FollowerCamera } from "./engine/FollowerCamera";

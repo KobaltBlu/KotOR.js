@@ -1,4 +1,13 @@
-
+/**
+ * Perception enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file Perception.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @enum
+ */
 export enum Perception {
   SEEN_AND_HEARD           = 0,
   NOT_SEEN_AND_NOT_HEARD   = 1,

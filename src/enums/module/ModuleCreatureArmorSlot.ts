@@ -1,5 +1,13 @@
-
-
+/**
+ * ModuleCreatureArmorSlot enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ModuleCreatureArmorSlot.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @enum
+ */
 export enum ModuleCreatureArmorSlot {
   HEAD          = 0x1,
   ARMOR         = 0x2,

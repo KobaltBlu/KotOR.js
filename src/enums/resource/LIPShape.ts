@@ -1,3 +1,13 @@
+/**
+ * LIPShape enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LIPShape.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @enum
+ */
 export enum LIPShape {
   EE    = 0, /* LABEL: ee (teeth) */
   EH    = 1, /* LABEL: eh (bet, red) */

@@ -1,5 +1,14 @@
-
-//https=//bitbucket.org/bead-v/mdledit/src/678765df0b1369a4a86bc901188e5e3975b10e8a/MDL.h?at=master&fileviewer=file-view-default
+/**
+ * OdysseyModelEmitterFlag enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModelEmitterFlag.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @see https://bitbucket.org/bead-v/mdledit/src/678765df0b1369a4a86bc901188e5e3975b10e8a/MDL.h?at=master&fileviewer=file-view-default
+ * @enum
+ */
 export enum OdysseyModelEmitterFlag {
   P2P           =  0x0001,
   P2P_SEL       =  0x0002,

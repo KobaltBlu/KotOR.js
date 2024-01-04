@@ -1,4 +1,14 @@
-//https://nwnlexicon.com/index.php?title=Perception
+/**
+ * PerceptionMask enum.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file PerceptionMask.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @see https://nwnlexicon.com/index.php?title=Perception
+ * @enum
+ */
 export enum PerceptionType {
   PERCEPTION_SEEN_AND_HEARD         = 0x00, // Both seen and heard (Spot beats Hide, Listen beats Move Silently).
   PERCEPTION_NOT_SEEN_AND_NOT_HEARD = 0x01, // Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).

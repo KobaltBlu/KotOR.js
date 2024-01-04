@@ -1,6 +1,6 @@
 import EngineLocation from "../engine/EngineLocation";
 import { CreatureType } from "../enums/nwscript/CreatureType";
-import { ModuleObjectType as NWModuleObjectType } from "../enums/nwscript/ModuleObjectType";
+import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { ReputationType } from "../enums/nwscript/ReputationType";

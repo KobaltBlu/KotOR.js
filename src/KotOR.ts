@@ -13,20 +13,7 @@ export * from "./combat";
 
 export * from "./controls/Mouse";
 
-export * from "./enums/ApplicationEnvironment";
-export * from "./enums/ApplicationMode";
-export * from "./enums/engine/GameEngineType";
-export * from "./enums/engine/GameEngineEnv";
-export * from "./enums/engine/EngineMode";
-export * from "./enums/engine/EngineState";
-export * from "./enums/nwscript/NWScriptDataType";
-export * from "./enums/nwscript/NWScriptByteCode";
-export * from "./enums/nwscript/NWScriptDefTypes";
-export * from "./enums/nwscript/NWScriptTypes";
-export * from "./enums/odyssey/OdysseyWalkMeshType";
-export * from "./enums/odyssey/OdysseyModelControllerType";
-export * from "./enums/odyssey/OdysseyModelNodeType";
-export * from "./enums/resource/GFFDataType";
+export * from "./enums";
 
 export * from "./interface";
 

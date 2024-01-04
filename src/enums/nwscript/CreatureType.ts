@@ -1,5 +1,16 @@
-// the thing after CREATURE_TYPE_ should refer to the
-// actual "subtype" in the lists given above.
+/**
+ * CreatureType enum.
+ * 
+ * the thing after CREATURE_TYPE_ should refer to the
+ * actual "subtype" in the lists given above.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CreatureType.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @enum
+ */
 export enum CreatureType {
   RACIAL_TYPE     = 0,
   PLAYER_CHAR     = 1,
