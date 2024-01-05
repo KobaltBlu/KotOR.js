@@ -2,6 +2,15 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ModuleObject } from "../module";
 import { Action } from "./Action";
 
+/**
+ * ActionQueue class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionQueue.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionQueue extends Array {
   NEXT_GROUP_ID: number = 0;
   NEXT_ACTION_ID: number = 0;

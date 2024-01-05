@@ -8,6 +8,15 @@ import { ModuleCreature, ModuleObject } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
+/**
+ * ActionPhysicalAttacks class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionPhysicalAttacks.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionPhysicalAttacks extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){

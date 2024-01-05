@@ -4,6 +4,15 @@ import { PartyManager, InventoryManager } from "../managers";
 import { ModuleCreature, ModuleItem, ModulePlaceable, ModuleStore } from "../module";
 import { Action } from "./Action";
 
+/**
+ * ActionGiveItem class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionGiveItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionGiveItem extends Action {
   item: ModuleItem;
 

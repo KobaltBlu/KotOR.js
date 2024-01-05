@@ -13,6 +13,15 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
+/**
+ * ActionDialogObject class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionDialogObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionDialogObject extends Action {
   declare target: ModuleObject;
 

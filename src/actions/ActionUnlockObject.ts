@@ -9,6 +9,15 @@ import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
+/**
+ * ActionUnlockObject class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionUnlockObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionUnlockObject extends Action {
   timer: number;
   shouted: any;

@@ -10,6 +10,15 @@ import { ModuleCreature } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
+/**
+ * ActionFollowLeader class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionFollowLeader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionFollowLeader extends Action {
   path_realtime: boolean;
 

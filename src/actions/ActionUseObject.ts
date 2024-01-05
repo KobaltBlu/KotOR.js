@@ -8,6 +8,15 @@ import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
+/**
+ * ActionUseObject class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionUseObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionUseObject extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){

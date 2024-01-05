@@ -8,6 +8,15 @@ import { GameState } from "../GameState";
 import { ModuleCreature, ModuleObject } from "../module";
 import { TalentSpell } from "../talents";
 
+/**
+ * ActionCastSpell class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionCastSpell.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionCastSpell extends Action {
   
   spell: any = {}
