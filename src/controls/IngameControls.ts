@@ -1,7 +1,4 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import { GamePad, Mouse, MouseState, Keyboard, KeyMapper, AnalogInput } from ".";
+import { GamePad, Mouse, Keyboard, KeyMapper, AnalogInput } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
 import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
@@ -17,16 +14,17 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
+import { MouseState } from "../enums/controls/MouseState";
 
-/* @file
- * The IngameControls class.
+/**
+ * IngameControls class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file IngameControls.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-interface KeyboardKey {
-  down: boolean,
-  pressed: boolean
-}
-
 export class IngameControls {
   camera: THREE.Camera;
   element: HTMLElement;

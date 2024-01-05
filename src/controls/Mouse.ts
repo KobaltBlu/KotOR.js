@@ -1,28 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { GUIControl } from "../gui";
 import { ResolutionManager } from "../managers";
+import { MouseState } from "../enums/controls/MouseState";
+import { MouseAxis } from "../enums/controls/MouseAxis";
 
-/* @file
- * The Mouse class.
+/**
+ * Mouse class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file Mouse.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-export enum MouseAxis {
-  X = 1,
-  Y = 2,
-}
-
-
-export enum MouseState {
-  NONE = 0,
-  LEFT = 1,
-  MIDDLE = 2,
-  RIGHT = 3,
-  None
-}
-
 export class Mouse {
   static editor: any;
   static camera: any;

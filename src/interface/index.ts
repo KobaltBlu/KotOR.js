@@ -6,6 +6,7 @@ export * from './engine';
 export * from './filesystem';
 export * from './graphics';
 export * from './gui';
+export * from './input';
 export * from './loaders';
 export * from './module';
 export * from './nwscript';

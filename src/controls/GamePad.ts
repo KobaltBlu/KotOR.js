@@ -1,7 +1,15 @@
 import { AnalogInput } from "./AnalogInput";
 import { KeyInput } from "./KeyInput";
 
-
+/**
+ * GamePad class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GamePad.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GamePad {
 
   button_a = new KeyInput('A');
