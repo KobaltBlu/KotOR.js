@@ -1,9 +1,13 @@
-
-/*
-
-Preset definitions from: https://github.com/kcat/openal-soft/blob/dc3fa3e51f91096a22ba53faec5bd1146936bee3/include/AL/efx-presets.h
-*/
-
+/**
+ * EAXPresets class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EAXPresets.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @see https://github.com/kcat/openal-soft/blob/dc3fa3e51f91096a22ba53faec5bd1146936bee3/include/AL/efx-presets.h
+ */
 export class EAXPresets {
 
   static PresetFromIndex(index = 0): any{

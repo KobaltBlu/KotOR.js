@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
@@ -8,11 +5,6 @@ import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { Utility } from "../utility/Utility";
 import { ADPCMDecoder } from "./ADPCMDecoder";
-
-/* @file
- * The AudioFile class is a general purpose class used for retrieving and passing on useful audio bytes 
- * as some file have extra garbage in the headers.
- */
 
 //Header Tests
 const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
@@ -23,6 +15,17 @@ const lameHeaderTest = [0x4C, 0x41, 0x4D, 0x45];
 const id3HeaderTest = [0x49, 0x44, 0x33];
 const mp3HeaderTest = [0xFF, 0xFB];
 
+/**
+ * AudioFile class.
+ * 
+ * The AudioFile class is a general purpose class used for retrieving and passing on useful audio bytes as some file have extra garbage in the headers.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AudioFile.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class AudioFile {
   audioType: AudioFileAudioType;
   data: Buffer;

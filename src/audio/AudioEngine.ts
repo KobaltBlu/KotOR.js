@@ -1,16 +1,20 @@
-/* KotOR JS - A remake of the Odyssey Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { EAXPresets } from "./EAXPresets";
 import type { AudioEmitter } from "./AudioEmitter";
 import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
 import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
 
-/* @file
+/**
+ * AudioEngine class.
+ * 
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AudioEngine.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class AudioEngine {
   static _gainSfxVol: number;
   static _gainMusicVol: number;

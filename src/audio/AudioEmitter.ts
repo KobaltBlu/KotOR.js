@@ -1,15 +1,19 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 import { AudioEngine } from "./AudioEngine";
 import { AudioLoader } from "./AudioLoader";
 
-/* @file
+/**
+ * AudioEmitter class.
+ * 
  * The AudioEmitter class is used in conjunction with AudioEngine class manage global and positional audio emitters in the game.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AudioEmitter.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class AudioEmitter {
   isDestroyed: boolean;
   position: { x: number; y: number; z: number; } = {x: 0, y: 0, z: 0};
