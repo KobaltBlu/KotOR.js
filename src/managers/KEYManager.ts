@@ -5,6 +5,15 @@ import * as path from 'path';
 import { BIFManager } from "./BIFManager";
 import { IBIFEntry } from "../interface/resource/IBIFEntry";
 
+/**
+ * KEYManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file KEYManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class KEYManager {
 
   static Key: KEYObject = new KEYObject();

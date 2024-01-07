@@ -1,13 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
 
-/* @file
- * The DxtUtil class.
+/**
+ * DxtUtil class.
+ * 
  * Converted to typescript from https://github.com/FNA-XNA/FNA/blob/master/src/Graphics/DxtUtil.cs
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file DxtUtil.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class DxtUtil {
 
 	constructor(){

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as path from "path";
 import { GFFObject } from "./resource/GFFObject";
 import { TextureLoader } from "./loaders";
@@ -10,7 +7,6 @@ import { GFFField } from "./resource/GFFField";
 import { GameState } from "./GameState";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { GFFStruct } from "./resource/GFFStruct";
-import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { ERFObject } from "./resource/ERFObject";
 import { BinaryReader } from "./BinaryReader";
 import { Utility } from "./utility/Utility";
@@ -20,10 +16,15 @@ import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
 
-/* @file
- * The SaveGame class.
+/**
+ * SaveGame class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file SaveGame.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class SaveGame {
   folderName: string;
   isLoaded: boolean;

@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode } from ".";
 import { IOdysseyModelFlare } from "../interface/odyssey/IOdysseyModelFlare";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
-/* @file
- * The OdysseyModelNodeLight
+/**
+ * OdysseyModelNodeLight class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModelNodeLight.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class OdysseyModelNodeLight extends OdysseyModelNode {
   lightPriority: number;
   ambientFlag: number;

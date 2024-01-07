@@ -1,6 +1,7 @@
 import { ModuleMGGunBullet, ModuleObject } from ".";
 import { GameState } from "../GameState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
 import { OdysseyModel } from "../odyssey";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -113,7 +114,7 @@ export class ModuleMGGunBank extends ModuleObject {
   loadModel(){
     return new Promise<void>( (resolve, reject) => {
       const resref = this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
+      MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           onComplete: (model: OdysseyModel3D) => {
             this.model = model;

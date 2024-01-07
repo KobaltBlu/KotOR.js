@@ -1,14 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameMenu, GUIControl } from ".";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GFFStruct } from "../resource/GFFStruct";
 
-/* @file
- * The GUIButton class.
+/**
+ * GUIButton class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIButton.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUIButton extends GUIControl {
   
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){

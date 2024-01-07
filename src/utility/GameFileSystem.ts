@@ -1,16 +1,19 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as path from "path";
 import * as fs from "fs";
-
 import isBuffer from "is-buffer";
 import { ApplicationProfile } from "./ApplicationProfile";
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
 
-/* @file
- * The FileSystem class.
+const spleep = (time: number = 0) => {
+  return new Promise( (resolve, reject) => {
+    setTimeout(resolve, time);
+  });
+}
+
+/**
+ * GameFileSystem class.
+ * 
  * Handles file system access for the application.
  * It will use either the File System Access API or the fs module built into node
  * depending on the ENVIRONMENT ( BROWSER|ELECTRON ) the app was loaded under.
@@ -22,14 +25,13 @@ import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFile
  * 
  * File access outside of this usecase should be delagated to calling the open/save file dialogs
  * when the user requests them.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GameFileSystem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-const spleep = (time: number = 0) => {
-  return new Promise( (resolve, reject) => {
-    setTimeout(resolve, time);
-  });
-}
-
 export class GameFileSystem {
 
   private static normalizePath(filepath: string){

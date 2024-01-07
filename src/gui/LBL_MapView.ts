@@ -14,6 +14,15 @@ const FOG_SIZE_HALF = FOG_SIZE/2;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
+/**
+ * LBL_MapView class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LBL_MapView.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class LBL_MapView {
   LBL_MAPVIEW: GUILabel;
   control: GUIControl;

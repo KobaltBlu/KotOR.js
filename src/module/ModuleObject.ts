@@ -13,7 +13,6 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { NWScriptEventType } from "../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
 import { SSFType } from "../enums/resource/SSFType";
@@ -38,11 +37,12 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
-import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager } from "../managers";
+import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager, FactionManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
+import { MDLLoader } from "../loaders";
 
 /**
 * ModuleObject class.
@@ -1017,7 +1017,7 @@ export class ModuleObject {
 
   applyVisualEffect(resref = 'v_light'){
     if(this.model instanceof OdysseyModel3D){
-      GameState.ModelLoader.load(resref).then( (mdl: OdysseyModel) => {
+      MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, { 
           context: this.context,
           // manageLighting: false

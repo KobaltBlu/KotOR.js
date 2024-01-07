@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
 import type { ModuleObject } from "../module";
 import { ApplicationProfile } from "../KotOR";
 
-/* @file
- * The CursorManager class.
+/**
+ * CursorManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CursorManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class CursorManager {
   static default: THREE.SpriteMaterial;
   static defaultD: THREE.SpriteMaterial;

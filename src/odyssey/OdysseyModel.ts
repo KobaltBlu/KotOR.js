@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
@@ -12,14 +9,19 @@ import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefin
 import { IOdysseyFileHeader } from "../interface/odyssey/IOdysseyFileHeader";
 import { IOdysseyGeometryHeader } from "../interface/odyssey/IOdysseyGeometryHeader";
 import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
-import * as THREE from 'three';
-import { BinaryWriter } from "../BinaryWriter";
 
-/* @file
+/**
+ * OdysseyModel class.
+ * 
  * The OdysseyModel class takes an MDL & MDX file and decode the values to later be passed to a 
  * OdysseyModel3D class to be converted into an object that can be added to the scene graph.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModel.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class OdysseyModel {
   mdlReader: BinaryReader;
   mdxReader: BinaryReader;

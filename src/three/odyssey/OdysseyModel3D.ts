@@ -1,13 +1,9 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly, OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin, OdysseyWalkMesh } from "../../odyssey";
-import { GameState } from "../../GameState";
 import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyTexture } from "./OdysseyTexture";
-import { ResourceLoader, TextureLoader } from "../../loaders";
+import { MDLLoader, TextureLoader } from "../../loaders";
 import { TextureType } from "../../enums/loaders/TextureType";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
@@ -18,35 +14,22 @@ import { OdysseyController } from "../../odyssey/controllers";
 import { IOdysseyModelHeader } from "../../interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import { ITwoDAAnimation } from "../../interface/twoDA/ITwoDAAnimation";
-import { PartyManager, TwoDAManager } from "../../managers";
-import { BitWise } from "../../utility/BitWise";
-import { ModuleObjectType } from "../../enums/module/ModuleObjectType";
+import { TwoDAManager } from "../../managers";
+import { IOdysseyModelLoaderOptions } from "../../interface/odyssey";
 
-/* @file
+/**
+ * OdysseyModel3D class.
+ * 
+ * THREE.js representation of OdysseyModel
+ * 
  * The OdysseyModel3D class takes an OdysseyModel object and converts it into a THREE.js object
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModel3D.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-export interface OdysseyModelLoaderOptions {
-  textureVar?: string, //override texture
-  castShadow?: boolean, //force cast shadow on mesh nodes
-  receiveShadow?: boolean, //force recieve shadow on mesh nodes
-  manageLighting?: boolean, // true | light nodes are manages by the LightManager class, false | lights are created inline
-  // context: Game,
-  mergeStatic?: boolean, //Use on room models
-  static?: boolean, //Static placeable
-  lighting?: boolean,
-  useTweakColor?: boolean,
-  tweakColor?: number,
-  isForceShield?: boolean,
-  isChildrenDynamic?: boolean,
-  parseChildren?: boolean,
-  isHologram?: boolean,
-  context?: any,
-  onComplete?: Function,
-  editorMode?: boolean,
-}
-
-//THREE.js representation of OdysseyModel
 export class OdysseyModel3D extends OdysseyObject3D {
 
   type = 'OdysseyModel';
@@ -118,8 +101,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   gunhook2: OdysseyObject3D;
   gunhook3: OdysseyObject3D;
   modelhook: OdysseyObject3D;
-
-  moduleObject: any = undefined;
+  
   bonesInitialized = false;
   Scale: number;
   modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
@@ -272,8 +254,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
       this.headhook = null;
       this.lhand = null;
       this.rhand = null;
-    
-      this.moduleObject = undefined;
 
       if(this.parent instanceof OdysseyModel3D){
         this.parent.remove(this);
@@ -307,36 +287,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   update(delta: number = 0){
 
-    if((GameState.debug as any).disableAnimation) return;
-
-    //BEGIN: Animation Optimization
-    this.animateFrame = true;
-    if(BitWise.InstanceOf(this.userData?.moduleObject?.objectType, ModuleObjectType.ModuleCreature)){
-      //If the object is further than 50 meters, animate every other frame
-      if(this.userData.moduleObject.distanceToCamera > 50){
-        this.animateFrame = this.oddFrame;
-      }
-      
-      if(this.animateFrame){
-        //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-        if(PartyManager.party.indexOf(this.userData.moduleObject) == -1 && this.context.scene.fog){
-          if(this.userData.moduleObject.distanceToCamera >= this.context.scene.fog.far){
-            this.animateFrame = false;
-            //If the object is past the near point, and the near point is greater than zero, animate every other frame
-          }else if(this.context.scene.fog.near && this.userData.moduleObject.distanceToCamera >= this.context.scene.fog.near){
-            this.animateFrame = this.oddFrame;
-          }
-        }
-      }
-
-    }
-
-    if(!BitWise.InstanceOf(this.userData?.moduleObject?.objectType, ModuleObjectType.ModuleRoom)){
-      if(!this.visible){
-        this.animateFrame = false;
-      }
-    }
-    //END: Animation Optimization
+    // if((GameState.debug as any).disableAnimation) return;
 
     for(let i = 0, len = this.effects.length; i < len; i++){
       this.effects[i].update(delta);
@@ -578,10 +529,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       }
     }else{
-
-      if(typeof this.userData.moduleObject == 'object' && typeof this.userData.moduleObject.playEvent == 'function'){
-        this.userData.moduleObject.playEvent(event);
-      }
+      this.dispatchEvent({type: 'playEvent', event: event});
     }
 
   }
@@ -787,7 +735,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   }
 
   static async SuperModelLoader(resref: string, odysseyModel: OdysseyModel3D): Promise<OdysseyModel3D> {
-    const supermodel: OdysseyModel = await GameState.ModelLoader.load(resref);
+    const supermodel: OdysseyModel = await MDLLoader.loader.load(resref);
     if(!!supermodel){
       //--------------------------------------//
       // Supermodel: Animations Merge - Begin
@@ -822,10 +770,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return odysseyModel;
   }
 
-  static async FromMDL(model: OdysseyModel, _options: OdysseyModelLoaderOptions = {} as OdysseyModelLoaderOptions): Promise<OdysseyModel3D> {
+  static async FromMDL(model: OdysseyModel, _options: IOdysseyModelLoaderOptions = {} as IOdysseyModelLoaderOptions): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( async (resolve: Function, reject: Function) => {
 
-      const _default: OdysseyModelLoaderOptions = {
+      const _default: IOdysseyModelLoaderOptions = {
         textureVar: '****',
         castShadow: false,
         receiveShadow: false,
@@ -835,9 +783,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
         static: false, //Static placeable
         parseChildren: true,
         isChildrenDynamic: false,   
-      } as OdysseyModelLoaderOptions;
+      } as IOdysseyModelLoaderOptions;
 
-      const options: OdysseyModelLoaderOptions = { ..._default, ..._options };
+      const options: IOdysseyModelLoaderOptions = { ..._default, ..._options };
 
       if(model instanceof OdysseyModel){
 
@@ -940,7 +888,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   }
 
-  static NodeParser(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNode, options: OdysseyModelLoaderOptions){
+  static NodeParser(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNode, options: IOdysseyModelLoaderOptions){
 
     //Skip over LightMap Omnilight and Spotlight references because they are blank nodes
     //Don't know if this will have any side effects yet
@@ -1014,7 +962,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         parentNode.parent.emitter.setReferenceNode(node)
       }else{
         console.log('Loading child model: '+odysseyNode.modelName);
-        GameState.ModelLoader.load(odysseyNode.modelName).then( (childModel) => {
+        MDLLoader.loader.load(odysseyNode.modelName).then( (childModel) => {
           if(childModel){
             OdysseyModel3D.FromMDL(childModel, {context: odysseyModel.options.context, editorMode: odysseyModel.options.editorMode}).then( (childModel3D) => {
               if(childModel3D){
@@ -1139,7 +1087,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     odysseyModel: OdysseyModel3D, 
     parentNode: THREE.Object3D, 
     odysseyNode: OdysseyModelNodeMesh|OdysseyModelNodeDangly|OdysseyModelNodeSkin|OdysseyModelNodeAABB|OdysseyModelNodeSaber, 
-    options: OdysseyModelLoaderOptions
+    options: IOdysseyModelLoaderOptions
   ){
     try{
       //Create geometry only if the mesh is visible or it is a walkmesh
@@ -1377,7 +1325,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
-  static NodeMaterialBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh, options: OdysseyModelLoaderOptions){
+  static NodeMaterialBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh, options: IOdysseyModelLoaderOptions){
       
     let tMap1 = odysseyNode.textureMap1+'';
     let tMap2 = odysseyNode.textureMap2+'';
@@ -1535,7 +1483,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return material;
   };
 
-  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions): THREE.Light|OdysseyLight3D {
+  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions): THREE.Light|OdysseyLight3D {
 
     // odysseyNode.color = new THREE.Color(0xFFFFFF);
     // odysseyNode.radius = 5.0;
@@ -1632,7 +1580,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return lightNode;
   };
 
-  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Light|OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: OdysseyModelLoaderOptions){
+  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Light|OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions){
     if(odysseyNode.flare.radius){
       let lensFlare = new Lensflare();
 

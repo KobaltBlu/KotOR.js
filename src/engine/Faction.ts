@@ -1,4 +1,4 @@
-import { FactionManager } from "../FactionManager";
+import { FactionManager } from "../managers";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
 import { Reputation } from "./Reputation";
 import { GFFStruct } from "../resource/GFFStruct";

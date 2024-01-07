@@ -1,14 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyLight3D } from "../three/odyssey";
 import type { ModuleObject } from "../module";
 
-/* @file
+/**
+ * LightManager class.
+ * 
  * The LightManager class is currently used for dynamic lighting on objects like doors, placeables, creatures, and more. 
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LightManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class LightManager {
   static MAXLIGHTS = 8; //NumDynamicLights row in videoquality.2da
   static MAXSHADOWLIGHTS = 3; //NumShadowCastingLights row in videoquality.2da

@@ -9,6 +9,7 @@ import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScript } from "../nwscript/NWScript";
 import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
 
 /**
 * ModuleMGEnemy class.
@@ -265,7 +266,7 @@ export class ModuleMGEnemy extends ModuleObject {
       array: this.modelProps,
       onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
+        MDLLoader.loader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               try{

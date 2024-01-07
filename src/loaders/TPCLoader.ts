@@ -1,7 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import * as THREE from "three";
 import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
 import { TextureLoader } from "./TextureLoader";
@@ -12,10 +8,17 @@ import { KEYManager } from "../managers/KEYManager";
 import { OdysseyCompressedTexture } from "../three/odyssey";
 import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
 
-/* @file
- * The THREE.TPCLoader class is used to decode the TPC image format found in the game archives.
+/**
+ * TPCLoader class.
+ * 
+ * TPCLoader class is used to decode the TPC image format found in the game archives.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TPCLoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class TPCLoader {
   
   async findTPC( resRef: string ): Promise<IFindTPCResult> {

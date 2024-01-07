@@ -1,8 +1,0 @@
-
-export class OdysseyFile {
-
-  constructor(){
-
-  }
-
-}

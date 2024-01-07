@@ -1,12 +1,14 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import isBuffer from "is-buffer";
 
-/* @file
- * The BinaryWriter class.
+/**
+ * BinaryWriter class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BinaryWriter.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class BinaryWriter {
 
   position: number = 0;

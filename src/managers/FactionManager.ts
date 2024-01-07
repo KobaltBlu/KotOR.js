@@ -1,18 +1,18 @@
-import { CurrentGame } from "./CurrentGame";
-import type { ModuleCreature, ModuleObject, ModulePlayer } from "./module";
-import { GFFObject } from "./resource/GFFObject";
-import { GFFStruct } from "./resource/GFFStruct";
+import { CurrentGame } from "../CurrentGame";
+import type { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
 
 import * as path from "path";
-import { GFFField } from "./resource/GFFField";
-import { GFFDataType } from "./enums/resource/GFFDataType";
-import { GameFileSystem } from "./utility/GameFileSystem";
-import { Faction } from "./engine/Faction";
-import { Reputation } from "./engine/Reputation";
-import { ReputationConstant } from "./enums/engine/ReputationConstant";
-import { PartyManager, TwoDAManager } from "./managers";
-import { BitWise } from "./utility/BitWise";
-import { ModuleObjectType } from "./enums/module/ModuleObjectType";
+import { GFFField } from "../resource/GFFField";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { Faction } from "../engine/Faction";
+import { Reputation } from "../engine/Reputation";
+import { ReputationConstant } from "../enums/engine/ReputationConstant";
+import { PartyManager, TwoDAManager } from ".";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 
@@ -22,6 +22,15 @@ const REPUTATION_STATUS = {
   FRIENDLY: 2,
 };
 
+/**
+ * FactionManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file FactionManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class FactionManager {
 
   static FACTION_COUNT = 0;

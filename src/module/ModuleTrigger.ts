@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ModuleObjectManager, PartyManager } from "../managers";
+import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";
@@ -14,7 +14,6 @@ import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { FactionManager } from "../FactionManager";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**

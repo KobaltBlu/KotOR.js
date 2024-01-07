@@ -5,7 +5,7 @@ import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { CharGenManager } from "../../../managers";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
@@ -82,7 +82,7 @@ export class MainMenu extends K1_MainMenu {
       this._3dView.setControl(this.LBL_3DVIEW);
       (this.LBL_3DVIEW.getFill().material as any).visible = true;
       
-      GameState.ModelLoader.load('mainmenu01')
+      MDLLoader.loader.load('mainmenu01')
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,

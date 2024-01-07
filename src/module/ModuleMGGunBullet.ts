@@ -5,6 +5,7 @@ import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
 
 /**
 * ModuleMGGunBullet class.
@@ -107,7 +108,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   loadModel(){
     const resref = this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<void>( (resolve, reject) => {
-      GameState.ModelLoader.load(resref).then(
+      MDLLoader.loader.load(resref).then(
         (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.context,

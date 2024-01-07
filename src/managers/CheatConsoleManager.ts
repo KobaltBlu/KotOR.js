@@ -6,6 +6,15 @@ import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { KEYManager } from "./KEYManager";
 
+/**
+ * CheatConsoleManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CheatConsoleManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CheatConsoleManager {
 
   //Gives your character the amount of Dark Side points you want

@@ -1,4 +1,3 @@
-
 import * as Jison from "jison";
 import { grammar } from "./AST/nwscript.jison";
 
@@ -24,6 +23,15 @@ const NWCompileDataTypes: any = {
   'FV': 0x3C,
 };
 
+/**
+ * NWScriptParser class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file NWScriptParser.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class NWScriptParser {
 
   ast: any = null;

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameMenu, GUIControl } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
@@ -12,10 +9,15 @@ import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
 import { ShaderManager } from "../managers";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
-/* @file
- * The GUICheckbox class.
+/**
+ * GUICheckBox class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUICheckBox.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUICheckBox extends GUIControl{
   value: number;
   onValueChanged: Function;

@@ -1,11 +1,4 @@
-/*
- * @author Daosheng Mu / https://github.com/DaoshengMu/
- * @author mrdoob / http://mrdoob.com/
- * @author takahirox / https://github.com/takahirox/
- */
-
 import * as path from "path";
-import * as THREE from "three";
 import { ResourceLoader } from ".";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TXI } from "../resource/TXI";
@@ -13,13 +6,21 @@ import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { TextureLoader } from "./TextureLoader";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+/**
+ * TGALoader class.
+ * 
+ * This TGALoader class is a modified version of the standard one that comes with THREE.js.
+ * The modifications include KotOR related stuff like TXI support.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TGALoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @author Daosheng Mu / https://github.com/DaoshengMu/
+ * @author mrdoob / http://mrdoob.com/
+ * @author takahirox / https://github.com/takahirox/
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-/* @file
- * The THREE.TGALoader class is modified from the standard one that comes with THREE.js to include KotOR related stuff like TXI.
- */
-
 export class TGALoader {
 
 	async fetch( resRef: string ): Promise<OdysseyTexture> {

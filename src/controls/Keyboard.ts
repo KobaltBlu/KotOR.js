@@ -129,7 +129,6 @@ export class Keyboard {
   }
 
   onKeyDown(e: KeyboardEvent) {
-    console.log('keydown', e);
     const code = e.code as KeyboardAction;
 
     const input = this.action[code];
@@ -149,7 +148,6 @@ export class Keyboard {
   }
 
   onKeyUp(e: KeyboardEvent){
-    console.log('keyup', e);
     const code = e.code as KeyboardAction;
 
     const input = this.action[code];

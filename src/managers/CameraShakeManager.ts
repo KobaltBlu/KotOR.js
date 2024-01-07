@@ -4,6 +4,15 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { GameState } from "../GameState";
 import { TwoDAManager } from "./TwoDAManager";
 
+/**
+ * CameraShakeManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CameraShakeManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CameraShakeManager {
   static position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   static quaternion: THREE.Quaternion =  new THREE.Quaternion(0, 0, 0, 1);

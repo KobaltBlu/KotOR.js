@@ -11,10 +11,15 @@ import { RIMManager } from "../managers/RIMManager";
 import { IRIMResource } from "../interface/resource/IRIMResource";
 import { IERFResource } from "../interface/resource/IERFResource";
 
-/* @file
- * The ResourceLaoder class.
+/**
+ * ResourceLoader class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ResourceLoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class ResourceLoader {
 
   static Resources: any = {};

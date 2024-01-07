@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameMenu, GUIControl } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
@@ -13,10 +10,15 @@ import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { ResolutionManager } from "../managers";
 
-/* @file
- * The GUISlider class.
+/**
+ * GUISlider class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUISlider.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUISlider extends GUIControl{
 
   onValueChanged: Function;

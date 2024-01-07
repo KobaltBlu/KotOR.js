@@ -1,4 +1,6 @@
 export * from "./controller";
+export * from "./IAdjacentWalkableFaces";
+export * from "./IOdysseyModelLoaderOptions";
 export * from "./IOdysseyArrayDefinition";
 export * from "./IOdysseyFileHeader";
 export * from "./IOdysseyGeometryHeader";
@@ -7,3 +9,4 @@ export * from "./IOdysseyModelAnimationData";
 export * from "./IOdysseyModelEmitterFlags";
 export * from "./IOdysseyModelFlare";
 export * from "./IOdysseyModelHeader";
+export * from "./IPerimeter";

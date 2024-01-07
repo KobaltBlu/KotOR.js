@@ -8,6 +8,7 @@ export * from "./ConfigManager";
 export * from "./CursorManager";
 export * from "./DialogMessageManager";
 export * from "./ERFManager";
+export * from "./FactionManager";
 export * from "./FadeOverlayManager";
 export * from "./FeedbackMessageManager";
 export * from "./GlobalVariableManager";

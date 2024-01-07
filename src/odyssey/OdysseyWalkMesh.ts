@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { WalkmeshEdge } from ".";
 import { BinaryReader } from "../BinaryReader";
@@ -12,15 +9,17 @@ import { OdysseyFace3 } from "../three/odyssey";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";
 import { TileColor } from "../engine/TileColor";
 import { BinaryWriter } from "../BinaryWriter";
+import { IPerimeter } from "../interface/odyssey";
 
-/* @file
- * The OdysseyWalkMesh is used for reading and handling the various walkmesh filetypes found in the game
+/**
+ * OdysseyWalkMesh class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyWalkMesh.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-interface Perimeter {
-  edge: number;
-}
-
 export class OdysseyWalkMesh {
   static SURFACEMATERIALS: SurfaceMaterial[] = [];
   static TILECOLORS: TileColor[] = [];
@@ -44,7 +43,7 @@ export class OdysseyWalkMesh {
   aabbNodes: IOdysseyModelAABBNode[] = [];
   walkableFacesEdgesAdjacencyMatrix: number[][] = [];
   edges: Map<number, WalkmeshEdge>;
-  perimeters: Perimeter[] = [];
+  perimeters: IPerimeter[] = [];
   edgeLines: any[] = [];
   wokReader: BinaryReader;
   walkableFacesEdgesAdjacencyMatrixDiff: number[][];

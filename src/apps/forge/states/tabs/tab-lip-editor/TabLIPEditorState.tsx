@@ -163,7 +163,7 @@ export class TabLIPEditorState extends TabState {
 
   loadHead(model_name = 'p_bastilah'){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.GameState.ModelLoader.load(model_name)
+      KotOR.MDLLoader.loader.load(model_name)
       .then((mdl: KotOR.OdysseyModel) => {
         this.current_head = model_name;
         localStorage.setItem('lip_head', this.current_head);

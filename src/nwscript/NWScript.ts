@@ -1,11 +1,7 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { Endians } from "../enums/resource/Endians";
-import { GameState } from "../GameState";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameFileSystem } from "../utility/GameFileSystem";
@@ -28,12 +24,16 @@ import {
   CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
   CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
 } from './NWScriptInstructionSet';
-import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 
-/* @file
- * The NWScript class.
+/**
+ * NWScript class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file NWScript.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class NWScript {
   
   name: string;

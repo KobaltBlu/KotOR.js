@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { OdysseyModel, OdysseyModelNode } from ".";
 import { OdysseyModelEmitterFlag } from "../enums/odyssey/OdysseyModelEmitterFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyModelEmitterFlags } from "../interface/odyssey/IOdysseyModelEmitterFlags";
 
-/* @file
- * The OdysseyModelNodeEmitter
+/**
+ * OdysseyModelNodeEmitter class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModelNodeEmitter.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class OdysseyModelNodeEmitter extends OdysseyModelNode {
   deadSpace: number;
   blastRadius: number;

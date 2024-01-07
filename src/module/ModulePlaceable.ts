@@ -6,7 +6,6 @@ import { GameEffect } from "../effects";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { SSFType } from "../enums/resource/SSFType";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
@@ -18,11 +17,11 @@ import { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
-import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager, ModuleObjectManager } from "../managers";
+import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
@@ -512,7 +511,7 @@ export class ModulePlaceable extends ModuleObject {
   loadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      GameState.ModelLoader.load(modelName)
+      MDLLoader.loader.load(modelName)
       .then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.context,

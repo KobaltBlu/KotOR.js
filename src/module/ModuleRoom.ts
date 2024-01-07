@@ -7,7 +7,7 @@ import { Utility } from "../utility/Utility";
 import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
 import { BinaryReader } from "../BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { TextureLoader } from "../loaders";
+import { MDLLoader, TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -120,8 +120,18 @@ export class ModuleRoom extends ModuleObject {
 
   update(delta: number = 0){
     if(this.model instanceof OdysseyModel3D){
+      //BEGIN: Animation Optimization
+      this.model.animateFrame = true;
+      if(!BitWise.InstanceOf(this.objectType, ModuleObjectType.ModuleRoom)){
+        if(!this.model.visible){
+          this.model.animateFrame = false;
+        }
+      }
+      //END: Animation Optimization
+
       this.model.update(delta);
     }
+
     if(this.grass){
       this.grass.material.uniforms.time.value += delta;
       let c_player = GameState.getCurrentPlayer();
@@ -192,7 +202,7 @@ export class ModuleRoom extends ModuleObject {
   loadModel(): Promise<OdysseyModel3D> {
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       if(!Utility.is2daNULL(this.roomName)){
-        GameState.ModelLoader.load(this.roomName).then( (roomFile) => {
+        MDLLoader.loader.load(this.roomName).then( (roomFile) => {
           OdysseyModel3D.FromMDL(roomFile, {
             context: this.context,
             castShadow: false,

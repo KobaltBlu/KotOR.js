@@ -14,8 +14,17 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
 import { MenuManager } from ".";
 import { AudioEngine } from "../audio/AudioEngine";
-import { LTRObject, ResourceLoader, ResourceTypes } from "../KotOR";
+import { LTRObject, MDLLoader, ResourceLoader, ResourceTypes } from "../KotOR";
 
+/**
+ * CharGenManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenManager {
 
   static availPoints = 30;
@@ -109,7 +118,7 @@ export class CharGenManager {
 
   static LoadCGMainLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load('cgmain_light')
+      MDLLoader.loader.load('cgmain_light')
       .then((mdl: OdysseyModel) => {
         CharGenManager.cgmain_light = mdl;
         resolve();
@@ -119,7 +128,7 @@ export class CharGenManager {
 
   static LoadCGBodyLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load('cgbody_light')
+      MDLLoader.loader.load('cgbody_light')
       .then((mdl: OdysseyModel) => {
         CharGenManager.cgbody_light = mdl;
         resolve();
@@ -129,7 +138,7 @@ export class CharGenManager {
 
   static LoadCGHeadLight(){
     return new Promise<void>((resolve, reject) => {
-      GameState.ModelLoader.load('cghead_light')
+      MDLLoader.loader.load('cghead_light')
       .then((mdl: OdysseyModel) => {
         CharGenManager.cghead_light = mdl;
         resolve();

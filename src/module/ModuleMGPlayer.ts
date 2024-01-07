@@ -14,6 +14,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
 
 /**
 * ModuleMGPlayer class.
@@ -697,7 +698,7 @@ export class ModuleMGPlayer extends ModuleObject {
   loadCamera( onLoad?: Function ){
     if(this.cameraName){
       const resref = this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      GameState.ModelLoader.load(resref).then(
+      MDLLoader.loader.load(resref).then(
         (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (camera: OdysseyModel3D) => {
@@ -731,7 +732,7 @@ export class ModuleMGPlayer extends ModuleObject {
       array: this.modelProps,
       onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        GameState.ModelLoader.load(resref).then((mdl: OdysseyModel) => {
+        MDLLoader.loader.load(resref).then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             onComplete: (model: OdysseyModel3D) => {
               try{

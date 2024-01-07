@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameMenu, GUIControl, GUIListBox } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 
@@ -9,14 +6,18 @@ import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";
-import { GameState } from "../GameState";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "../managers";
 
-/* @file
- * The GUIScrollBar class.
+/**
+ * GUIScrollBar class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIScrollBar.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUIScrollBar extends GUIControl{
   _dir: GFFStruct | undefined;
   arrowTex: THREE.Texture;

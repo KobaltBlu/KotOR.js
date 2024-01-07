@@ -8,13 +8,11 @@ import type { ModuleObject, ModuleCreature } from "./module";
 import { IngameControls, Mouse } from "./controls";
 
 import { INIConfig } from "./INIConfig";
-import { FactionManager } from "./FactionManager";
 import { LoadingScreen } from "./LoadingScreen";
 import { Planetary } from "./Planetary";
 import { SaveGame } from "./SaveGame";
 import { VideoPlayer } from "./VideoPlayer";
 
-import { MDLLoader } from "./three/MDLLoader";
 import { OdysseyObject3D } from "./three/odyssey";
 import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine, AudioEmitter } from "./audio";
@@ -33,7 +31,7 @@ import { ConfigClient } from "./utility/ConfigClient";
 import { FollowerCamera } from "./engine/FollowerCamera";
 import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ResolutionManager, ShaderManager, TwoDAManager } from "./managers";
+import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager } from "./managers";
 import { ResourceLoader, TextureLoader } from "./loaders";
 import { TextureType } from "./enums/loaders/TextureType";
 
@@ -73,7 +71,6 @@ export class GameState implements EngineContext {
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
   static AnimatedTextures: AnimatedTexture[] = [];
-  static ModelLoader: MDLLoader = new MDLLoader();
   
   static OpeningMoviesComplete = false;
   static Ready = false;

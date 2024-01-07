@@ -1,13 +1,17 @@
 import * as THREE from "three";
-import type { OdysseyWalkMesh, WalkmeshEdge } from "../../odyssey";
+import type { OdysseyWalkMesh } from "../../odyssey";
 import type { SurfaceMaterial } from "../../engine/SurfaceMaterial";
+import { IAdjacentWalkableFaces } from "../../interface/odyssey";
 
-interface AdjacentWalkableFaces {
-	a: OdysseyFace3|WalkmeshEdge;
-	b: OdysseyFace3|WalkmeshEdge;
-	c: OdysseyFace3|WalkmeshEdge;
-}
-
+/**
+ * OdysseyFace3 class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyFace3.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class OdysseyFace3 {
 
 	walkIndex:number = 0;
@@ -23,7 +27,7 @@ export class OdysseyFace3 {
 
 	triangle: THREE.Triangle;
 
-	adjacentWalkableFaces: AdjacentWalkableFaces = {
+	adjacentWalkableFaces: IAdjacentWalkableFaces = {
 		a: undefined,
 		b: undefined,
 		c: undefined,

@@ -1,10 +1,18 @@
-import { GameState } from "../../GameState";
 import { OdysseyObject3D } from ".";
 import * as THREE from "three";
 import type { OdysseyModelNodeLight } from "../../odyssey";
 
-
-//THREE.js representation of an OdysseyLight
+/**
+ * OdysseyLight3D class.
+ * 
+ * THREE.js representation of an OdysseyLight
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyLight3D.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class OdysseyLight3D extends OdysseyObject3D {
 
   worldPosition: THREE.Vector3 = new THREE.Vector3();
@@ -57,7 +65,9 @@ export class OdysseyLight3D extends OdysseyObject3D {
     return this.shadowRadius;
   }
 
-  isOnScreen( frustum = GameState.viewportFrustum ){
+  isOnScreen( frustum: THREE.Frustum ){
+    if(!frustum) return true;
+
     if(!this.odysseyModel.visible)
       return false;
 

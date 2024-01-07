@@ -1,5 +1,3 @@
-
-//const util = require('util');
 import {
   OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
   OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
@@ -31,6 +29,15 @@ const NWCompileDataTypes = {
   'FV': 0x3C,
 };
 
+/**
+ * NWScriptCompiler class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file NWScriptCompiler.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class NWScriptCompiler {
 
   ast: any = null;
@@ -154,7 +161,7 @@ export class NWScriptCompiler {
     const bpCache = this.basePointer;
     const spCache = this.stackPointer;
     this._silent = true;
-    const buffer = this.compileStatement( statement );
+    const buffer = this.compileStatement( statement ) as Buffer;
     this._silent = false;
     this.basePointer = bpCache;
     this.spCache = spCache;
@@ -203,7 +210,7 @@ export class NWScriptCompiler {
       if(globalStatements.length){
         this.basePointerWriting = true;
         for(let i = 0; i < globalStatements.length; i++){
-          buffers.push( this.compileStatement( globalStatements[i]) );
+          buffers.push( this.compileStatement( globalStatements[i]) as any );
         }
 
         this.basePointerWriting = false;
@@ -326,7 +333,7 @@ export class NWScriptCompiler {
         let globalStatementsLength = 0;
         for(let i = 0; i < globalStatements.length; i++){
           //globalStatementsLength += this.getStatementLength(globalStatements[i]);
-          buffers.push( this.compileStatement( globalStatements[i]) );
+          buffers.push( this.compileStatement( globalStatements[i]) as Buffer );
         }
       
         buffers.push( this.writeSAVEBP() );
@@ -517,7 +524,7 @@ export class NWScriptCompiler {
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'variableList'){
       for(let i = 0; i < statement.variables.length; i++){
-        buffers.push( this.compileStatement( statement.variables[i] ) );
+        buffers.push( this.compileStatement( statement.variables[i] ) as Buffer );
       }
     }
     return Buffer.concat(buffers);
@@ -546,7 +553,7 @@ export class NWScriptCompiler {
           if(statement.struct_reference && statement.variable_reference){
             if(statement.value){ //assigning
               //console.log('struct.assign', statement);
-              buffers.push( this.compileStatement(statement.value) );
+              buffers.push( this.compileStatement(statement.value) as Buffer );
               const propertyStackPointer = (statement.struct_reference.stackPointer + statement.variable_reference.offsetPointer);
               if(statement.struct_reference.is_global){
                 buffers.push( this.writeCPDOWNBP( (propertyStackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
@@ -583,13 +590,13 @@ export class NWScriptCompiler {
             buffers.push( this.writeRSADD( statement.datatype.unary ) );
           }
           if(statement.value){
-            buffers.push( this.compileStatement(statement.value) );
+            buffers.push( this.compileStatement(statement.value) as Buffer );
             buffers.push( this.writeCPDOWNSP( (statement.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
             buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
           }
         }else{
           if(statement.value){ //assigning
-            buffers.push( this.compileStatement(statement.value) );
+            buffers.push( this.compileStatement(statement.value) as Buffer );
             if(statement.variable_reference.is_global){
               buffers.push( this.writeCPDOWNBP( (statement.variable_reference.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
             }else if(statement.variable_reference.type == 'argument'){
@@ -667,7 +674,7 @@ export class NWScriptCompiler {
     const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
     //Push the return value to the stack if we have one
     if(statement.value){
-      buffers.push( this.compileStatement( statement.value ) );
+      buffers.push( this.compileStatement( statement.value ) as Buffer );
       const returnStackOffset = this.scope.block.returnStackPointer;
       const blockStackOffset = (this.stackPointer - this.scope.block.preStatementsStackPointer);
       const returnStackPointer = returnStackOffset - blockStackOffset;
@@ -735,7 +742,7 @@ export class NWScriptCompiler {
     block.block_start_jmp = this.scope.bytes_written;
 
     for(let i = 0; i < block.statements.length; i++){
-      buffers.push( this.compileStatement( block.statements[i] ) );
+      buffers.push( this.compileStatement( block.statements[i] ) as Buffer );
     }
 
     block.postStatementsStackPointer = this.stackPointer;
@@ -814,10 +821,10 @@ export class NWScriptCompiler {
               this.getInstructionLength(OP_RETN) 
             ) 
           );
-          buffers.push( this.compileStatement(arg) );
+          buffers.push( this.compileStatement(arg) as Buffer );
           buffers.push( this.writeRETN() );
         }else{
-          buffers.push( this.compileStatement(arg) );
+          buffers.push( this.compileStatement(arg) as Buffer );
         }
         argumentsDataSize += (this.getStatementDataTypeSize(arg));
       }
@@ -844,7 +851,7 @@ export class NWScriptCompiler {
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -860,8 +867,8 @@ export class NWScriptCompiler {
   compileAdd( statement: any ){
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'add'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeADD( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -884,8 +891,8 @@ export class NWScriptCompiler {
   compileSub( statement: any ){
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'sub'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeSUB( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -908,8 +915,8 @@ export class NWScriptCompiler {
   compileMul( statement: any ){
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'mul'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeMUL( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -932,8 +939,8 @@ export class NWScriptCompiler {
   compileDiv( statement: any ){
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'div'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeDIV( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -956,7 +963,7 @@ export class NWScriptCompiler {
   compileCompare( statement: any ){
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'compare'){
-      buffers.push( this.compileStatement(statement.left) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
 
       console.log('right', statement.right);
       if(statement.type == 'compare'){
@@ -972,7 +979,7 @@ export class NWScriptCompiler {
         }
       }
 
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(statement.operator.value == '=='){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
@@ -1073,7 +1080,7 @@ export class NWScriptCompiler {
     const buffers: Buffer[] = [];
 
     if(statement && statement.type == 'if'){
-      const ifelses = [].concat([statement], statement.else);
+      const ifelses: any[] = ([] as any[]).concat([statement], statement.else);
       console.log('ifelses', ifelses);
 
       for(let i = 0; i < ifelses.length; i++){
@@ -1082,7 +1089,7 @@ export class NWScriptCompiler {
         //Compile the condition statements
         if(ifelse.condition && ifelse.condition.length){
           for(let j = 0; j < ifelse.condition.length; j++){
-            buffers.push( this.compileStatement( ifelse.condition[j] ) );
+            buffers.push( this.compileStatement( ifelse.condition[j] ) as Buffer );
           }
         }
         
@@ -1101,7 +1108,7 @@ export class NWScriptCompiler {
 
         //Compile if statements
         for(let j = 0; j < ifelse.statements.length; j++){
-          buffers.push( this.compileStatement( ifelse.statements[j] ) );
+          buffers.push( this.compileStatement( ifelse.statements[j] ) as Buffer );
         }
 
         const sp_offset = this.stackPointer - sp_cache;
@@ -1154,12 +1161,12 @@ export class NWScriptCompiler {
       //save the pointer to the switch varaible location on the stack
       const switch_condition_sp = this.stackPointer;
       //push the switch variable onto the stack
-      buffers.push( this.compileStatement(switchCondition) );
+      buffers.push( this.compileStatement(switchCondition) as Buffer );
       
       for(let i = 0; i < statement.cases.length; i++){
         const _case = statement.cases[i];
         buffers.push( this.writeCPTOPSP( (switch_condition_sp - this.stackPointer), 0x04) );
-        buffers.push( this.compileStatement( _case.condition ) );
+        buffers.push( this.compileStatement( _case.condition ) as Buffer );
         buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
         buffers.push( this.writeJNZ( _case.block_start ? _case.block_start - this.scope.bytes_written : 0x7FFFFFFF ) );
       }
@@ -1176,7 +1183,7 @@ export class NWScriptCompiler {
         _case.block_start = this.scope.bytes_written;
 
         for(let j = 0; j < _case.statements.length; j++){
-          buffers.push( this.compileStatement( _case.statements[j] ) );
+          buffers.push( this.compileStatement( _case.statements[j] ) as Buffer );
         }
 
         if(!_case.fallthrough){
@@ -1192,7 +1199,7 @@ export class NWScriptCompiler {
         _default.block_start = this.scope.bytes_written;
 
         for(let i = 0; i < _default.statements.length; i++){
-          buffers.push( this.compileStatement( _default.statements[i] ) );
+          buffers.push( this.compileStatement( _default.statements[i] ) as Buffer );
         }
 
         buffers.push( this.writeJMP( statement.block_end - this.scope.bytes_written ) );
@@ -1222,7 +1229,7 @@ export class NWScriptCompiler {
 
       statement.statements_start = this.scope.bytes_written;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -1235,7 +1242,7 @@ export class NWScriptCompiler {
 
       statement.condition_start = this.scope.bytes_written;
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
       }
 
       //If the condition is false Jump out of the loop
@@ -1276,7 +1283,7 @@ export class NWScriptCompiler {
 
       //Compile the while condition statements
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
 
@@ -1290,7 +1297,7 @@ export class NWScriptCompiler {
 
       //Compile the block statements
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
       }
 
       //Get stack elements that should be removed from this scope
@@ -1326,7 +1333,7 @@ export class NWScriptCompiler {
       //Begin initializer
       statement.initializer_start = this.scope.bytes_written;
 
-      buffers.push( this.compileStatement( statement.initializer ) );
+      buffers.push( this.compileStatement( statement.initializer ) as Buffer );
 
       statement.initializer_end = this.scope.bytes_written;
       //End initializer
@@ -1338,7 +1345,7 @@ export class NWScriptCompiler {
       statement.continue_start = this.scope.bytes_written;
 
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
       buffers.push( 
@@ -1357,7 +1364,7 @@ export class NWScriptCompiler {
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
       }
       const stackOffset = this.stackPointer - statement.preStatementsSPCache;
       if(stackOffset) buffers.push( this.writeMOVSP( -stackOffset ) );
@@ -1370,7 +1377,7 @@ export class NWScriptCompiler {
       //Begin incrementor
       statement.incrementor_start = this.scope.bytes_written;
 
-      buffers.push( this.compileStatement( statement.incrementor ) );
+      buffers.push( this.compileStatement( statement.incrementor ) as Buffer );
 
       statement.incrementor_end = this.scope.bytes_written;
       //End incrementor
@@ -1463,7 +1470,7 @@ export class NWScriptCompiler {
   //Not the value
   compileNOT( statement: any ): Buffer {
     const buffers: Buffer[] = [];
-    buffers.push( this.compileStatement( statement.value ) );
+    buffers.push( this.compileStatement( statement.value ) as Buffer );
     buffers.push( this.writeNOTI( ) );
     return Buffer.concat(buffers);
   }
@@ -1531,7 +1538,7 @@ export class NWScriptCompiler {
   compileNEG( statement: any ): Buffer {
     const buffers: Buffer[] = [];
 
-    buffers.push( this.compileStatement( statement.value ) );
+    buffers.push( this.compileStatement( statement.value ) as Buffer );
     buffers.push( this.writeNEG( this.getDataType( statement.value ).unary ) );
     
     return Buffer.concat(buffers);
@@ -1541,7 +1548,7 @@ export class NWScriptCompiler {
   compileComp( statement: any ): Buffer {
     const buffers: Buffer[] = [];
 
-    buffers.push( this.compileStatement( statement.value ) );
+    buffers.push( this.compileStatement( statement.value ) as Buffer );
     buffers.push( this.writeCOMPI( ) );
     
     return Buffer.concat(buffers);
@@ -1551,8 +1558,8 @@ export class NWScriptCompiler {
   compileINCOR( statement: any ): Buffer {
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'incor'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeINCORII( ) );
       }
@@ -1564,8 +1571,8 @@ export class NWScriptCompiler {
   compileEXCOR( statement: any ): Buffer {
     const buffers: Buffer[] = [];
     if(statement && statement.type == 'xor'){
-      buffers.push( this.compileStatement(statement.left) );
-      buffers.push( this.compileStatement(statement.right) );
+      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Buffer );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeEXCORII( ) );
       }

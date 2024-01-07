@@ -11,7 +11,7 @@ import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { NWScript } from "../../../nwscript/NWScript";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 
 /* @file
 * The MenuGalaxyMap menu class.
@@ -75,7 +75,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
       this.script = NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
-      GameState.ModelLoader.load('galaxy')
+      MDLLoader.loader.load('galaxy')
       .then((mdl: OdysseyModel) => {
 
         this._3dView = new LBL_3DView();

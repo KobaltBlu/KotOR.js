@@ -2,12 +2,19 @@ import * as THREE from "three";
 import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import type { OdysseyController } from "../../odyssey/controllers/OdysseyController";
 import type { OdysseyEmitter3D, OdysseyLight3D, OdysseyModel3D } from ".";
-import type { ModuleObject } from "../../module";
 
+/**
+ * OdysseyObject3D class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyObject3D.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class OdysseyObject3D extends THREE.Object3D {
   odysseyModel: OdysseyModel3D;
   odysseyModelNode: OdysseyModelNode;
-  moduleObject: ModuleObject;
   NodeType: number;
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;

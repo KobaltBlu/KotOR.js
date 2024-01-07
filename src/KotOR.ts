@@ -17,8 +17,6 @@ export * from "./enums";
 
 export * from "./interface";
 
-export * from "./FactionManager";
-
 export * from "./LoadingScreen";
 export * from "./SaveGame";
 export * from "./utility/ConfigClient";
@@ -57,7 +55,6 @@ export * from "./resource/ResourceTypes";
 export * from "./resource/ResourceTypeInfo";
 
 export * from "./three/odyssey";
-export * from "./three/MDLLoader";
 
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";

@@ -4,7 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { ModuleCreature, ModuleItem } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
 
@@ -118,7 +118,7 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_y = this.BTN_AUTO;
 
-      GameState.ModelLoader.load('charrec_light').then((mdl: OdysseyModel) => {
+      MDLLoader.loader.load('charrec_light').then((mdl: OdysseyModel) => {
           
         //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
         this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);

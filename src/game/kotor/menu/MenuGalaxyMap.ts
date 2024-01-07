@@ -4,7 +4,7 @@
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
@@ -94,7 +94,7 @@ export class MenuGalaxyMap extends GameMenu {
       this.script = NWScript.Load('k_sup_galaxymap');
       NWScript.SetGlobalScript('k_sup_galaxymap', true);
 
-      GameState.ModelLoader.load('galaxy')
+      MDLLoader.loader.load('galaxy')
       .then((mdl: OdysseyModel) => {
         this.tGuiPanel.widget.userData.fill.visible = false;
 

@@ -4,6 +4,7 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";
 import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { MDLLoader } from "../loaders";
 
 /**
 * ModuleMGTrack class.
@@ -47,7 +48,7 @@ export class ModuleMGTrack extends ModuleObject {
   }
 
   loadModel (onLoad?: Function){
-    GameState.ModelLoader.load(this.track).then((mdl: OdysseyModel) => {
+    MDLLoader.loader.load(this.track).then((mdl: OdysseyModel) => {
       OdysseyModel3D.FromMDL(mdl, {
         onComplete: (model: OdysseyModel3D) => {
           try{

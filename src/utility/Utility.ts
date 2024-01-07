@@ -1,16 +1,9 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as path from 'path';
 import * as THREE from 'three';
 import { GameFileSystem } from './GameFileSystem';
 
 const PI: number = Math.PI;
 const TWO_PI: number = Math.PI * 2;
-
-/* @file
- * The Utility class.
- */
 
 export enum OdysseyPathLocation {
   archive = "archive",
@@ -35,9 +28,16 @@ export interface OdysseyFileInfo {
   ext: string;
 }
 
+/**
+ * Utility class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file Utility.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class Utility {
-
-  
 
   static bytesToSize(bytes: any) {
     var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];

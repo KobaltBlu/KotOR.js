@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -9,10 +6,15 @@ import { CurrentGame } from "../CurrentGame";
 import { ModuleCreature, ModuleItem } from "../module";
 import { PartyManager } from "./PartyManager";
 
-/* @file
- * The InventoryManager class.
+/**
+ * InventoryManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InventoryManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class InventoryManager {
   static inventory: any[] = [];
 

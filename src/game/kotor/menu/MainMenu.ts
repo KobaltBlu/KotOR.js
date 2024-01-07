@@ -7,7 +7,7 @@ import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenManager } from "../../../managers";
@@ -86,7 +86,7 @@ export class MainMenu extends GameMenu {
         window.close();
       });
 
-      GameState.ModelLoader.load('mainmenu').then((mdl: OdysseyModel) => {
+      MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
         this.tGuiPanel.widget.userData.fill.visible = false;
         this._3dView = new LBL_3DView();
         this._3dView.setControl(this.LBL_3DVIEW);

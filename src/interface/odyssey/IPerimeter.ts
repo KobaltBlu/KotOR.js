@@ -1,18 +1,13 @@
 /**
- * GUIControlEvent class.
+ * IPerimeter interface.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * @file GUIControlEvent.ts
+ * @file IPerimeter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @interface
  */
-export class GUIControlEvent {
-  propagate: boolean = true;
-  
-  constructor(){}
-
-  stopPropagation(){
-    this.propagate = false;
-  }
+export interface IPerimeter {
+  edge: number;
 }

@@ -3,6 +3,15 @@ import { DoorAppearance } from "../engine/DoorAppearance";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { TwoDAManager } from "./TwoDAManager"
 
+/**
+ * AppearanceManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AppearanceManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class AppearanceManager {
 
   static appearances: Map<number, CreatureAppearance> = new Map();

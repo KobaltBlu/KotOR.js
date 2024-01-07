@@ -6,6 +6,15 @@ import { GameEngineType } from "./enums/engine/GameEngineType";
 import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "./module";
 import { ActionType } from "./enums/actions/ActionType";
 
+/**
+ * ActionMenuManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ActionMenuManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ActionMenuManager {
 
   static TARGET_MENU_COUNT = 3;

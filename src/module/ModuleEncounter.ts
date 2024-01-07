@@ -11,8 +11,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
-import { FactionManager } from "../FactionManager";
-import { ModuleObjectManager, PartyManager } from "../managers";
+import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**

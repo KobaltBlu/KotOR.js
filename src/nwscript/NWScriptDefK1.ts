@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { ActionPauseDialog, ActionPlayAnimation, ActionResumeDialog } from "../actions";
 import { CombatEngine } from "../combat/CombatEngine";
@@ -27,7 +24,6 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
 import { EventTimedEvent, GameEvent } from "../events";
-import { FactionManager } from "../FactionManager";
 import { GameState } from "../GameState";
 import { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
 import { OdysseyWalkMesh } from "../odyssey";
@@ -38,7 +34,6 @@ import { TalentFeat, TalentObject, TalentSkill, TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
 import { ConfigClient } from "../utility/ConfigClient";
 import { Dice } from "../utility/Dice";
-import { NWScriptSlotToArmorSlot } from "../utility/NWScriptSlotToArmorSlot";
 import { Utility } from "../utility/Utility";
 import { VideoPlayer } from "../VideoPlayer";
 import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "./events";
@@ -51,14 +46,19 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { ResourceLoader } from "../loaders";
 import { WeaponWield } from "../enums/combat/WeaponWield";
-import { ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
+import { FactionManager, ModuleObjectManager, AutoPauseManager, GlobalVariableManager, JournalManager, DialogMessageManager, CameraShakeManager, FadeOverlayManager, InventoryManager, PartyManager, TLKManager, TwoDAManager, MenuManager } from "../managers";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
 import { NW_FALSE } from "./NWScriptConstants";
 
-/* @file
- * The NWScriptDefK1 class. This class holds all of the important NWScript declarations for KotOR I
+/**
+ * NWScriptDefK1 class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file NWScriptDefK1.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class NWScriptDefK1 extends NWScriptDef { }
 NWScriptDefK1.Actions = {
   0:{
@@ -435,7 +435,40 @@ NWScriptDefK1.Actions = {
       if(args[0] instanceof ModuleItem && this.caller instanceof ModuleCreature){
         //args0 = item, args1 = slot, args2 = wether to do this instantly
         //We don't support this in the actionQueue yet so just do it instantly for now
-        this.caller.equipItem(NWScriptSlotToArmorSlot(args[1]), args[0]);
+        let slot = args[1];
+        switch(args[1]){
+          case 0:
+            slot = ModuleCreatureArmorSlot.HEAD;
+          case 1:
+            slot = ModuleCreatureArmorSlot.ARMOR;
+          case 2:
+            slot = ModuleCreatureArmorSlot.ARMS;
+          case 3:
+            slot = ModuleCreatureArmorSlot.RIGHTHAND;
+          case 4:
+            slot = ModuleCreatureArmorSlot.LEFTHAND;
+          case 5:
+            slot = ModuleCreatureArmorSlot.LEFTARMBAND;
+          case 6:
+            slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
+          case 7:
+            slot = ModuleCreatureArmorSlot.IMPLANT;
+          case 8:
+            slot = ModuleCreatureArmorSlot.BELT;
+          case 9:
+            slot = ModuleCreatureArmorSlot.CLAW1;
+          case 10:
+            slot = ModuleCreatureArmorSlot.CLAW2;
+          case 14:
+            slot = ModuleCreatureArmorSlot.CLAW3;
+          case 15:
+            slot = ModuleCreatureArmorSlot.HIDE;
+          case 16:
+            slot = ModuleCreatureArmorSlot.HEAD;
+          case 17:
+            slot = ModuleCreatureArmorSlot.ARMOR; //Creature Armor
+        }
+        this.caller.equipItem(slot, args[0]);
       }
     }
   },

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
@@ -10,10 +7,15 @@ import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
 
-/* @file
- * The NWScriptDefK2 class. This class holds all of the important NWScript declarations for KotOR II
+/**
+ * NWScriptDefK2 class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file NWScriptDefK2.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class NWScriptDefK2 extends NWScriptDef { }
 NWScriptDefK2.Actions = {
   0: {

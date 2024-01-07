@@ -11,7 +11,7 @@ import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -328,7 +328,7 @@ export class DLGObject {
   async loadStuntCamera(){
     return new Promise<void>( (resolve, reject) => {
       if(!!this.animatedCameraResRef){
-        GameState.ModelLoader.load(this.animatedCameraResRef)
+        MDLLoader.loader.load(this.animatedCameraResRef)
         .then((model: OdysseyModel) => {
           OdysseyModel3D.FromMDL(model)
           .then((model: OdysseyModel3D) => {
@@ -349,7 +349,7 @@ export class DLGObject {
       if(actor.participant == 'PLAYER'){
         model = GameState.player.model;
         //Load the actor's supermodel
-        GameState.ModelLoader.load(actor.resref)
+        MDLLoader.loader.load(actor.resref)
         .then((actorModel: OdysseyModel) => {
           OdysseyModel3D.FromMDL(actorModel)
           .then((actorSuperModel: OdysseyModel3D) => {
@@ -388,7 +388,7 @@ export class DLGObject {
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
-          GameState.ModelLoader.load(actor.resref)
+          MDLLoader.loader.load(actor.resref)
           .then((actorModel: OdysseyModel) => {
             OdysseyModel3D.FromMDL(actorModel)
             .then((actorSuperModel: OdysseyModel3D) => {

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
@@ -12,8 +9,6 @@ import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
 import { IGUIControlText } from "../interface/gui/IGUIControlText";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox, GUIProgressBar, GUISlider } from ".";
-
-
 import { createQuadElements as createIndicies } from "../utility/QuadIndices";
 import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
@@ -30,10 +25,15 @@ import { GUIControlEventFactory } from "./GUIControlEventFactory";
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
 
-/* @file
- * The GUIControl class.
+/**
+ * GUIControl class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIControl.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUIControl {
   objectType: number = GUIControlTypeMask.GUIControl;
   position: THREE.Vector3 = new THREE.Vector3();

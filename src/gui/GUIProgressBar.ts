@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { GameMenu, GUIControl } from ".";
 import { TextureType } from "../enums/loaders/TextureType";
@@ -11,10 +8,15 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
-/* @file
- * The GUIProgressBar class.
+/**
+ * GUIProgressBar class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIProgressBar.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUIProgressBar extends GUIControl {
   curValue: number;
   startFromLeft: boolean;

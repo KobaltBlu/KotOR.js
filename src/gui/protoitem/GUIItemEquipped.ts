@@ -3,6 +3,15 @@ import { ModuleItem } from "../../module";
 
 const STR_EQUIPPED = 32346;
 
+/**
+ * GUIItemEquipped class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIItemEquipped.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GUIItemEquipped {
   node: ModuleItem;
   equipped: boolean = true;

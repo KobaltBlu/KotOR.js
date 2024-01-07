@@ -1,10 +1,17 @@
-
 import { DeepObject } from "./DeepObject";
-
 import * as swKotOR from "./game/kotor/swkotor-config";
 import * as swKotOR2 from "./game/tsl/swkotor2-config";
 import { GameFileSystem } from "./utility/GameFileSystem";
 
+/**
+ * INIConfig class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file INIConfig.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class INIConfig {
   ini_path: string;
   defaults: any;

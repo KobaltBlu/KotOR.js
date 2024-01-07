@@ -1,6 +1,15 @@
 import * as THREE from "three";
 import { Shader } from "./Shader";
 
+/**
+ * ShaderGrass class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ShaderGrass.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ShaderGrass extends Shader {
 
   constructor(){

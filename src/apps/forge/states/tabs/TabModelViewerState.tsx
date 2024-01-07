@@ -327,7 +327,7 @@ export class TabModelViewerState extends TabState {
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
           let room = this.layout.rooms[i];
           // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-          let mdl = await KotOR.GameState.ModelLoader.load(room.name);
+          let mdl = await KotOR.MDLLoader.loader.load(room.name);
           if(mdl){
             let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,

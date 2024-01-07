@@ -6,6 +6,15 @@ import { GFFStruct } from "../../resource/GFFStruct";
 import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
 
+/**
+ * GUIInventoryItem class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIInventoryItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GUIInventoryItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){

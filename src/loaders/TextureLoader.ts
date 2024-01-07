@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from 'three';
 import * as path from "path";
 import { GameState } from '../GameState';
@@ -15,12 +12,17 @@ import { OdysseyCompressedTexture, OdysseyEmitter3D, OdysseyTexture } from '../t
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
 
-/* @file
- * The TextureLoader class.
- */
-
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
+/**
+ * TextureLoader class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TextureLoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class TextureLoader {
 
   static tpcLoader = new TPCLoader();

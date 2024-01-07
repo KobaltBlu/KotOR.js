@@ -20,11 +20,10 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
 import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-import { AppearanceManager, InventoryManager, KEYManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager } from "../managers";
-import { ResourceLoader } from "../loaders";
+import { AppearanceManager, InventoryManager, KEYManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
-import { FactionManager } from "../FactionManager";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
@@ -848,7 +847,7 @@ export class ModuleDoor extends ModuleObject {
   loadModel(): Promise<OdysseyModel3D> {
     let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      GameState.ModelLoader.load(modelName).then((mdl: OdysseyModel) => {
+      MDLLoader.loader.load(modelName).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.context,
           //lighting: false,

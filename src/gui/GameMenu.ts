@@ -1,23 +1,24 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GUIControl, GUIProtoItem } from ".";
 import * as THREE from "three";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
-import { OdysseyObject3D } from "../three/odyssey";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ResolutionManager, ShaderManager } from "../managers";
 import type { MenuManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 
-/* @file
- * The base GameMenu class.
+/**
+ * GameMenu class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GameMenu.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GameMenu {
   gui_resref: string;
   menuGFF: GFFObject;

@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 
-/* @file
- * The OdysseyModelNodeAABB
+/**
+ * OdysseyModelNodeAABB class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModelNodeAABB.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
 
   grassFaces: any[] = [];

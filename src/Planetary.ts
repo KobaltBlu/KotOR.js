@@ -1,7 +1,4 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import { GameState } from "./GameState";
+import { MDLLoader } from "./loaders";
 import { GFFDataType } from "./enums/resource/GFFDataType";
 import { TLKManager, TwoDAManager } from "./managers";
 import { OdysseyModel } from "./odyssey";
@@ -9,10 +6,15 @@ import { GFFField } from "./resource/GFFField";
 import { GFFStruct } from "./resource/GFFStruct";
 import { TwoDAObject } from "./resource/TwoDAObject";
 
-/* @file
- * The Planetary class.
+/**
+ * Planetary class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file Planetary.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class Planetary {
   static planets: Planet[];
   static selectedIndex: number;
@@ -32,7 +34,7 @@ export class Planetary {
       Planetary.planets.push(planet);
       if(planet.model != '****' && planet.model){
         try{
-          const mdl = await GameState.ModelLoader.load(planet.model);
+          const mdl = await MDLLoader.loader.load(planet.model);
           if(mdl){
             Planetary.models.set(planet.model, mdl);
           }

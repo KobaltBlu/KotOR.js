@@ -13,7 +13,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { SSFObject } from "../resource/SSFObject";
 import { TalentFeat } from "../talents/TalentFeat";
@@ -28,7 +28,6 @@ import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "../resource/LIPObject";
 import { Utility } from "../utility/Utility";
-import { FactionManager } from "../FactionManager";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { SSFType } from "../enums/resource/SSFType";
 import { ActionType } from "../enums/actions/ActionType";
@@ -39,7 +38,7 @@ import { ICombatAction } from "../interface/combat/ICombatAction";
 import { DLGObject } from "../resource/DLGObject";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
-import { AppearanceManager, AutoPauseManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager } from "../managers";
+import { AppearanceManager, AutoPauseManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
 import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
@@ -609,6 +608,27 @@ export class ModuleCreature extends ModuleObject {
       this.updateItems(delta);
       
       if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
+
+        //BEGIN: Animation Optimization
+        this.model.animateFrame = true;
+        //If the object is further than 50 meters, animate every other frame
+        if(this.distanceToCamera > 50){
+          this.model.animateFrame = this.model.oddFrame;
+        }
+        
+        if(this.model.animateFrame){
+          //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
+          if(PartyManager.party.indexOf(this) == -1 && this.context.scene.fog){
+            if(this.distanceToCamera >= this.context.scene.fog.far){
+              this.model.animateFrame = false;
+              //If the object is past the near point, and the near point is greater than zero, animate every other frame
+            }else if(this.context.scene.fog.near && this.distanceToCamera >= this.context.scene.fog.near){
+              this.model.animateFrame = this.model.oddFrame;
+            }
+          }
+        }
+        //END: Animation Optimization
+
         if(GameState.Mode != EngineMode.DIALOG){
           this.model.update( this.movementSpeed * delta );
           if(this.lipObject instanceof LIPObject){
@@ -1876,7 +1896,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  playEvent(event: any){
+  playEvent(event: THREE.Event){
     this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     let appearance = this.creatureAppearance;
@@ -1892,7 +1912,7 @@ export class ModuleCreature extends ModuleObject {
 
     let sndIdx = Math.round(Math.random()*2);
     let sndIdx2 = Math.round(Math.random()*1);
-    switch(event){
+    switch(event.event){
       case 'snd_footstep':
         let sndTable = TwoDAManager.datatables.get('footstepsounds').rows[appearance.footsteptype];
         if(sndTable){
@@ -3424,7 +3444,7 @@ export class ModuleCreature extends ModuleObject {
         this.model = new OdysseyModel3D();
         resolve(this.model);
       }else{
-        GameState.ModelLoader.load(this.bodyModel).then( 
+        MDLLoader.loader.load(this.bodyModel).then( 
           (mdl: OdysseyModel) => {
             OdysseyModel3D.FromMDL(mdl, {
               castShadow: true,
@@ -3437,6 +3457,8 @@ export class ModuleCreature extends ModuleObject {
                 this.model.removeFromParent();
                 try{ this.model.dispose(); }catch(e){}
               }
+              
+              model.addEventListener('playEvent', this.playEvent.bind(this));
 
               this.model = model;
               this.model.userData.moduleObject = this;
@@ -3488,7 +3510,7 @@ export class ModuleCreature extends ModuleObject {
         if(heads2DA){
           let head = heads2DA.rows[headId];
           this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
-          GameState.ModelLoader.load(this.headModel).then(
+          MDLLoader.loader.load(this.headModel).then(
             (mdl: OdysseyModel) => {
               OdysseyModel3D.FromMDL(mdl, {
                 context: this.context,

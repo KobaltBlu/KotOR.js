@@ -1,16 +1,8 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
-import { GameState } from "../GameState";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceLoader } from ".";
-import { Utility } from "../utility/Utility";
-import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
 
-/* @file
- * The TemplateLoader class.
+/**
+ * TemplateLoader class.
  * 
  * This should be used for loading game templates like UTC, UTP, UTD, etc.
  * These assets can be found in the current module, in the games' override
@@ -18,8 +10,14 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  *
  * The order for searching should be just that unless the override search has
  * been disabled by the user. ("look_in_override" == false in ConfigManager)
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file TemplateLoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @deprecated
  */
-
 export class TemplateLoader {
 
   static cache: any = {};

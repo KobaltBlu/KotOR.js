@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GameMenu, GUIControl, GUIListBox } from ".";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
@@ -8,10 +5,15 @@ import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "../managers";
 
-/* @file
- * The GUIProtoItem class.
+/**
+ * GUIProtoItem class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GUIProtoItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class GUIProtoItem extends GUIControl{
   isProtoItem: boolean;
   list: GUIListBox;

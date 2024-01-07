@@ -1,13 +1,9 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import * as path from "path";
 import { GameState } from "./GameState";
 import { LoadingScreen } from "./LoadingScreen";
 import { ERFObject } from "./resource/ERFObject";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { RIMObject } from "./resource/RIMObject";
-import { ApplicationProfile } from "./utility/ApplicationProfile";
 import { AsyncLoop } from "./utility/AsyncLoop";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { GamePad, KeyMapper } from "./controls";
@@ -16,10 +12,17 @@ import { ConfigClient } from "./utility/ConfigClient";
 import { KEYManager, JournalManager, TLKManager, RIMManager, ERFManager, TwoDAManager, AppearanceManager } from "./managers";
 import { ResourceLoader } from "./loaders";
 
-/* @file
-* The GameInitializer class. Handles the loading of game archives for use later during runtime
-*/
-
+/**
+ * GameInitializer class.
+ * 
+ * Handles the loading of game archives for use later during runtime
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GameInitializer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GameInitializer {
 
   static currentGame: any;

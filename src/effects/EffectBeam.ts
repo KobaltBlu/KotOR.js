@@ -2,6 +2,7 @@ import { GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GameState } from "../GameState";
+import { MDLLoader } from "../loaders";
 import { TwoDAManager } from "../managers";
 import { ModuleObject } from "../module";
 import { OdysseyModel } from "../odyssey";
@@ -90,7 +91,7 @@ export class EffectBeam extends GameEffect {
 
   loadModel(): Promise<void> {
     return new Promise<void>( ( resolve, reject) => {
-      GameState.ModelLoader.load(this.modelName)
+      MDLLoader.loader.load(this.modelName)
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.object.context,

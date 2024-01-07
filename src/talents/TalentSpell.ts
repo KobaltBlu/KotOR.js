@@ -13,6 +13,7 @@ import { TwoDAManager } from "../managers";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionCastSpell } from "../actions";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { MDLLoader } from "../loaders";
 
 export class TalentSpell extends TalentObject {
   conjtime: string;
@@ -155,7 +156,7 @@ export class TalentSpell extends TalentObject {
 
       if(this.projmodel != '****'){
         console.log('projectile', this.projmodel);
-        GameState.ModelLoader.load(this.projmodel.toLowerCase())
+        MDLLoader.loader.load(this.projmodel.toLowerCase())
         .then((mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: oCaster.context
@@ -274,7 +275,7 @@ export class TalentSpell extends TalentObject {
     }
 
     if(this.casthandvisual != '****'){
-      GameState.ModelLoader.load(this.casthandvisual)
+      MDLLoader.loader.load(this.casthandvisual)
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: oCaster.context

@@ -14,7 +14,7 @@ import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -401,7 +401,7 @@ export class ModuleItem extends ModuleObject {
       }
     }
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      GameState.ModelLoader.load(DefaultModel).then(
+      MDLLoader.loader.load(DefaultModel).then(
         (mdl: OdysseyModel) => {
           OdysseyModel3D.FromMDL(mdl, {
             context: this.context,

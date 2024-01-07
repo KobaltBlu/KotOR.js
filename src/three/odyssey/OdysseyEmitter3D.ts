@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { TextureLoader } from "../../loaders";
@@ -8,13 +5,19 @@ import { OdysseyModelNode, OdysseyModelNodeEmitter } from "../../odyssey";
 import type { OdysseyController } from "../../odyssey/controllers";
 import { OdysseyObject3D } from ".";
 
-/* @file
+/**
+ * OdysseyEmitter3D class.
+ * 
+ * THREE.js representation of OdysseyEmitter
  * The OdysseyEmitter3D class will handle emitter nodes.
  * It only handles Billboard_to_World_Z and Billboard_to_Local_Z emitters
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyEmitter3D.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
-
-//THREE.js representation of OdysseyEmitter
 export class OdysseyEmitter3D extends OdysseyObject3D {
   
   static BirthTime: number = 1;

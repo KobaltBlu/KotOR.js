@@ -10,6 +10,14 @@ import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
 
+/**
+ * CALL_CPDOWNSP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_CPDOWNSP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   //Replace the target stack element with the appropriate element relative to the top of the stack
   this.stack.stack.copyWithin(
@@ -18,7 +26,17 @@ export const CALL_CPDOWNSP = function( this: NWScriptInstance, instruction: NWSc
     (this.stack.pointer)/4,
   );
 }
-  
+
+/**
+ * CALL_RSADD
+ * 
+ * Reserve Space On Stack
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_RSADD = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   switch(instruction.type){
     case 3:
@@ -51,8 +69,15 @@ export const CALL_RSADD = function( this: NWScriptInstance, instruction: NWScrip
     break;
   }
 }
-//Reserve Space On Stack
 
+/**
+ * CALL_CPTOPSP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_CPTOPSP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   const elements = this.stack.copyAtPointer( instruction.pointer, instruction.size );
   if(elements.length == (instruction.size / 4)){
@@ -63,6 +88,14 @@ export const CALL_CPTOPSP = function( this: NWScriptInstance, instruction: NWScr
   }
 }
 
+/**
+ * CALL_CONST
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   switch(instruction.type){
     case 3:
@@ -90,7 +123,16 @@ export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScrip
   }
 }
 
-//Constant Type is declared by the next byte x03, x04, x05, x06
+/**
+ * CALL_ACTION
+ * 
+ * Constant Type is declared by the next byte x03, x04, x05, x06
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   const action_definition: INWScriptDefAction = this.actionsMap[instruction.action];
   const args: any[] = [];
@@ -140,6 +182,14 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
 
 }
 
+/**
+ * CALL_LOGANDII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_LOGANDII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -150,6 +200,14 @@ export const CALL_LOGANDII = function( this: NWScriptInstance, instruction: NWSc
     this.stack.push( NW_FALSE, NWScriptDataType.INTEGER )//FALSE
 }
 
+/**
+ * CALL_LOGORII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_LOGORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -160,6 +218,14 @@ export const CALL_LOGORII = function( this: NWScriptInstance, instruction: NWScr
     this.stack.push( NW_FALSE, NWScriptDataType.INTEGER )//FALSE
 }
 
+/**
+ * CALL_INCORII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_INCORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -167,19 +233,43 @@ export const CALL_INCORII = function( this: NWScriptInstance, instruction: NWScr
   this.stack.push( this.var1 | this.var2, NWScriptDataType.INTEGER );
 }
 
+/**
+ * CALL_EXCORII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_EXCORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 ^ this.var2, NWScriptDataType.INTEGER );
 }
 
+/**
+ * CALL_BOOLANDII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_BOOLANDII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
 
   this.stack.push( this.var1 & this.var2, NWScriptDataType.INTEGER );
 }
-  
+
+/**
+ * CALL_EQUAL
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_EQUAL= function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   if(instruction.type == NWScriptDataType.STRUCTURE){
     this.struct2 = [];
@@ -253,7 +343,16 @@ export const CALL_EQUAL= function( this: NWScriptInstance, instruction: NWScript
   }
 }
 
-//Constant Type is declared by the next byte x03, x04, x05, x06
+/**
+ * CALL_NEQUAL
+ * 
+ * Constant Type is declared by the next byte x03, x04, x05, x06
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_NEQUAL = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   if(instruction.type == NWScriptDataType.STRUCTURE){
     this.struct2 = [];
@@ -328,7 +427,16 @@ export const CALL_NEQUAL = function( this: NWScriptInstance, instruction: NWScri
   }
 }
 
-//Constant Type is declared by the next byte x03, x04, x05, x06
+/**
+ * CALL_GEQ
+ * 
+ * Constant Type is declared by the next byte x03, x04, x05, x06
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_GEQ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -352,7 +460,16 @@ export const CALL_GEQ = function( this: NWScriptInstance, instruction: NWScriptI
   }
 }
 
-//Constant Type is declared by the next byte x03, x04
+/**
+ * CALL_GT
+ * 
+ * Constant Type is declared by the next byte x03, x04
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_GT = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -376,7 +493,16 @@ export const CALL_GT = function( this: NWScriptInstance, instruction: NWScriptIn
   }
 }
 
-//Constant Type is declared by the next byte x03, x04
+/**
+ * CALL_LT
+ * 
+ * Constant Type is declared by the next byte 0x03, 0x04
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_LT = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -400,7 +526,16 @@ export const CALL_LT = function( this: NWScriptInstance, instruction: NWScriptIn
   }
 }
 
-//Constant Type is declared by the next byte x03, x04
+/**
+ * CALL_LEQ
+ * 
+ * Constant Type is declared by the next byte 0x03, 0x04
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_LEQ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -424,25 +559,58 @@ export const CALL_LEQ = function( this: NWScriptInstance, instruction: NWScriptI
   }
 }
 
-//Constant Type is declared by the next byte x03, x04
+/**
+ * CALL_SHLEFTII
+ * 
+ * Constant Type is declared by the next byte 0x03, 0x04
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_SHLEFTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 << this.var2, NWScriptDataType.INTEGER );
 }
 
+/**
+ * CALL_SHRIGHTII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_SHRIGHTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 >> this.var2, NWScriptDataType.INTEGER );
 }
 
+/**
+ * CALL_USHRIGHTII
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_USHRIGHTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 >>> this.var2, NWScriptDataType.INTEGER );
 }
 
+/**
+ * CALL_ADD
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_ADD = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = (this.stack.pop()?.value);
   this.var1 = (this.stack.pop()?.value);
@@ -474,7 +642,15 @@ export const CALL_ADD = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_SUB
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_SUB = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -503,7 +679,15 @@ export const CALL_SUB = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_MUL
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_MUL = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -536,7 +720,15 @@ export const CALL_MUL = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_DIV
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_DIV = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -561,7 +753,15 @@ export const CALL_DIV = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_MOD
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_MOD = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
@@ -586,7 +786,15 @@ export const CALL_MOD = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_NEG
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_NEG = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   switch(instruction.type){
     case NWScriptTypes.I:
@@ -597,26 +805,67 @@ export const CALL_NEG = function( this: NWScriptInstance, instruction: NWScriptI
     break;
   }
 }
- 
+
+/**
+ * CALL_COMPI
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_COMPI = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.stack.push( ~this.stack.pop()?.value, NWScriptDataType.INTEGER );
 }
- 
+
+/**
+ * CALL_MOVSP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_MOVSP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.stack.stack.splice(
     (this.stack.pointer += instruction.offset) / 4, 
     (Math.abs(instruction.offset)/4)
   );
 }
- 
+
+/**
+ * CALL_STORE_STATEALL
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @deprecated
+ */
 export const CALL_STORE_STATEALL = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   //OBSOLETE NOT SURE IF USED IN KOTOR
 }
- 
+
+/**
+ * CALL_JMP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_JMP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.seek = instruction.address + instruction.offset;
 }
- 
+
+/**
+ * CALL_JSR
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_JSR = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   let pos = instruction.address;
   this.seek = pos + instruction.offset;
@@ -626,14 +875,30 @@ export const CALL_JSR = function( this: NWScriptInstance, instruction: NWScriptI
   if(this.subRoutines.length > 1000)
     throw 'JSR seems to be looping endlessly';
 }
- 
+
+/**
+ * CALL_JZ
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   let popped = this.stack.pop()?.value;
   if(popped == 0){
     this.seek = instruction.address + instruction.offset;
   }
 }
- 
+
+/**
+ * CALL_RETN
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   if(this.subRoutines.length){
     const subRoutine = this.subRoutines.pop();
@@ -653,7 +918,15 @@ export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScript
     this.running = false;
   }
 }
- 
+
+/**
+ * CALL_DESTRUCT
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   //retrieve the elements to save from the stack by popping them off of the stack
   const elements = this.stack.stack.splice(
@@ -680,39 +953,88 @@ export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWSc
   //Adjust the stack pointer accoringly
   this.stack.pointer -= (instruction.sizeToDestroy - instruction.sizeOfElementToSave);
 }
- 
+
+/**
+ * CALL_NOTI
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_NOTI = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   if(!this.stack.pop()?.value)
     this.stack.push(NW_TRUE, NWScriptDataType.INTEGER);//TRUE
   else
     this.stack.push(NW_FALSE, NWScriptDataType.INTEGER)//FALSE
 }
- 
+
+/**
+ * CALL_DECISP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_DECISP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var1 = (this.stack.getAtPointer( instruction.offset));
   this.var1.value -= 1;
 }
- 
+
+/**
+ * CALL_INCISP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_INCISP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var1 = (this.stack.getAtPointer( instruction.offset));
   this.var1.value += 1;
 }
- 
-//I believe this is used in SWITCH statements
+
+/**
+ * CALL_JNZ
+ * 
+ * I believe this is used in SWITCH statements
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_JNZ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   let jnzTOS = this.stack.pop()?.value
   if(jnzTOS != 0){
     this.seek = instruction.address + instruction.offset;
   }
 }
- 
+
+/**
+ * CALL_CPDOWNBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_CPDOWNBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.stack.stack.copyWithin(
     (this.stack.basePointer + instruction.offset)/4,
     (this.stack.pointer     - instruction.size)/4,
   );
 }
- 
+
+/**
+ * CALL_CPTOPBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_CPTOPBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   const elements = this.stack.copyAtBasePointer( instruction.pointer, instruction.size );
   if(elements.length == (instruction.size / 4)){
@@ -722,25 +1044,65 @@ export const CALL_CPTOPBP = function( this: NWScriptInstance, instruction: NWScr
     throw new Error(`CPTOPBP: copy size miss-match, expected: ${instruction.size} | received: ${elements.length*4}`);
   }
 }
- 
+
+/**
+ * CALL_DECIBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_DECIBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var1 = (this.stack.getAtBasePointer( instruction.offset));
   this.var1.value -= 1;
 }
- 
+
+/**
+ * CALL_INCIBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_INCIBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.var1 = (this.stack.getAtBasePointer( instruction.offset));
   this.var1.value += 1;
 }
- 
+
+/**
+ * CALL_SAVEBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_SAVEBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.stack.saveBP();
 }
- 
+
+/**
+ * CALL_RESTOREBP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   this.stack.restoreBP();
 }
- 
+
+/**
+ * CALL_STORE_STATE
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   let state: INWScriptStoreState = {
     offset: instruction.nextInstr.nextInstr.address,
@@ -776,6 +1138,14 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
 
 }
 
+/**
+ * CALL_NOP
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export const CALL_NOP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   //NO Operation
 }

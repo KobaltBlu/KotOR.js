@@ -4,13 +4,18 @@ import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../ActionMenuManager";
-import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
-import { CharGenManager, CursorManager, ModuleObjectManager } from ".";
-import { Mouse } from "../controls/Mouse";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { CharGenManager, CursorManager } from ".";
 
-
+/**
+ * MenuManager class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuManager {
   static pulseOpacity: number;
   static activeMenus: GameMenu[];

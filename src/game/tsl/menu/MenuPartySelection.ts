@@ -4,7 +4,7 @@
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { ModuleCreature } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
@@ -254,7 +254,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.LBL_3D_VIEW = new LBL_3DView(this.LBL_3D.extent.width, this.LBL_3D.extent.height);
       this.LBL_3D_VIEW.setControl(this.LBL_3D);
 
-      GameState.ModelLoader.load('cgmain_light')
+      MDLLoader.loader.load('cgmain_light')
       .then((mdl: OdysseyModel) => {
         this.cgmain_light = mdl;
 

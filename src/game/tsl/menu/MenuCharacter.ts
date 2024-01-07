@@ -4,7 +4,7 @@
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
@@ -98,7 +98,7 @@ export class MenuCharacter extends K1_MenuCharacter {
       });
       this._button_y = this.BTN_AUTO;
 
-      GameState.ModelLoader.load('charmain_light').then((mdl: OdysseyModel) => {
+      MDLLoader.loader.load('charmain_light').then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView,
           // manageLighting: false,

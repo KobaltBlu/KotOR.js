@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
@@ -8,10 +5,15 @@ import { OdysseyModel, OdysseyModelAnimationNode } from ".";
 import { OdysseyController } from "./controllers";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 
-/* @file
- * The OdysseyModelNode
+/**
+ * OdysseyModelNode class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyModelNode.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class OdysseyModelNode {
   uuid: string = crypto.randomUUID();
   parent: OdysseyModelNode;

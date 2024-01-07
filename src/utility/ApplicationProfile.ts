@@ -2,6 +2,15 @@ import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ApplicationMode } from "../enums/ApplicationMode";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 
+/**
+ * ApplicationProfile class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file ApplicationProfile.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class ApplicationProfile {
 
   static MODE: ApplicationMode = ApplicationMode.GAME;

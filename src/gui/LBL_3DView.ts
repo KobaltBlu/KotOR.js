@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import * as THREE from "three";
 import { GameState } from "../GameState";
 import { LightManager } from "../managers";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GUIControl } from "./GUIControl";
 
-/* @file
- * The LBL_3DView class.
+/**
+ * LBL_3DView class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LBL_3DView.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class LBL_3DView {
   width: number;
   height: number;

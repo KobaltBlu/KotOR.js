@@ -1,14 +1,7 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModel } from "../odyssey";
-import { ResourceLoader } from "../loaders";
+import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
-
-/* @file
- * The MDLLoader is used for loading MDL/MDX files from the game archives
- */
 
 export interface ModelCacheReference {
   model: OdysseyModel;
@@ -24,7 +17,18 @@ const ModelCache: ModelCacheInterface = {
   models: new Map<string, ModelCacheReference>()
 };
 
+/**
+ * MDLLoader class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MDLLoader.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MDLLoader {
+  static loader = new MDLLoader();
+  
 	load (resref: string = ''): Promise<OdysseyModel> {
     resref = resref.toLocaleLowerCase();
     return new Promise<OdysseyModel>( (resolve, reject) => {
