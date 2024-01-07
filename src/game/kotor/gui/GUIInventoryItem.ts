@@ -5,6 +5,7 @@ import { GFFStruct } from "../../../resource/GFFStruct";
 import { TextureLoader } from "../../../loaders";
 import { GameState } from "../../../GameState";
 import { TextureType } from "../../../enums/loaders/TextureType";
+import { GameEngineType } from "../../../enums/engine";
 
 export class GUIInventoryItem extends GUIProtoItem {
 
@@ -82,7 +83,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 52;
     this.widget.userData.hexSprite.position.z = 1;
 
-    if(GameState.GameKey != 'TSL')
+    if(GameState.GameKey != GameEngineType.TSL)
       this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
       
     this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);

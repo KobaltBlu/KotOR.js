@@ -5,7 +5,15 @@ import { ModuleObject } from "../module";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 
-
+/**
+ * GameEvent class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GameEvent.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class GameEvent {
 
   id: number = 0;

@@ -5,6 +5,15 @@ import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
+/**
+ * EventDestroyObject class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EventDestroyObject.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EventDestroyObject extends GameEvent {
 
   constructor(){

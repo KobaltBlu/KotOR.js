@@ -21,10 +21,7 @@ import { TGAObject } from "./resource/TGAObject";
 import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { EngineState } from "./enums/engine/EngineState";
-import { EngineMode } from "./enums/engine/EngineMode";
-import { GameEngineType } from "./enums/engine/GameEngineType";
-import { GameEngineEnv } from "./enums/engine/GameEngineEnv";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv } from "./enums/engine";
 import { EngineContext } from "./engine/EngineContext";
 
 import { ConfigClient } from "./utility/ConfigClient";
@@ -491,7 +488,7 @@ export class GameState implements EngineContext {
       GameState.EventOnResize();
     });
 
-    if(GameState.GameKey == 'TSL'){
+    if(GameState.GameKey == GameEngineType.TSL){
       GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
     }else{
       GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);

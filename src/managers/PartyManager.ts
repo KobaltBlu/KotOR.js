@@ -16,6 +16,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../loaders";
 import { ModuleObjectManager } from "./ModuleObjectManager";
+import { GameEngineType } from "../enums/engine";
 
 /* @file
  * The PartyManager class.
@@ -641,14 +642,14 @@ export class PartyManager {
     let pTPL = new GFFObject();
 
     pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
-    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(GameState.GameKey == 'TSL' ? 134 : 177);
-    pTPL.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(GameState.GameKey == 'TSL' ? 'Leia Organa' : 'Luke Skywalker');
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(GameState.GameKey == GameEngineType.TSL ? 134 : 177);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(GameState.GameKey == GameEngineType.TSL ? 'Leia Organa' : 'Luke Skywalker');
     pTPL.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);
     pTPL.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(10);
     pTPL.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(0);
     pTPL.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(0);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(0);
-    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(GameState.GameKey == 'TSL' ? 10 : 26);
+    pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(GameState.GameKey == GameEngineType.TSL ? 10 : 26);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'HitPoints') ).setValue(100);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'MaxHitPoints') ).setValue(100);
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'CurrentHitPoints') ).setValue(70);

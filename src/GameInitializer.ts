@@ -11,6 +11,7 @@ import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
 import { KEYManager, JournalManager, TLKManager, RIMManager, ERFManager, TwoDAManager, AppearanceManager } from "./managers";
 import { ResourceLoader } from "./loaders";
+import { GameEngineType } from "./enums/engine";
 
 /**
  * GameInitializer class.
@@ -97,7 +98,7 @@ export class GameInitializer {
                   folder: 'streamsounds',
                   name: 'StreamSounds',
                   onSuccess: () => {
-                    if(GameState.GameKey != 'TSL'){
+                    if(GameState.GameKey != GameEngineType.TSL){
                       GameInitializer.LoadGameAudioResources( {
                         folder: 'streamwaves',
                         name: 'StreamWaves',
@@ -133,7 +134,7 @@ export class GameInitializer {
   }
 
   static LoadRIMs(onSuccess?: Function){
-    if(GameState.GameKey != 'TSL'){
+    if(GameState.GameKey != GameEngineType.TSL){
       LoadingScreen.main.SetMessage('Loading: RIM Archives');
 
       RIMManager.Load().then( () => {

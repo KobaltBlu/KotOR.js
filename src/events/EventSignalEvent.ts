@@ -6,6 +6,15 @@ import { NWScriptEvent } from "../nwscript/events";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
+/**
+ * EventSignalEvent class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EventSignalEvent.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EventSignalEvent extends GameEvent {
   event: NWScriptEvent;
   constructor(){

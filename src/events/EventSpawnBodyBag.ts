@@ -5,6 +5,15 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { GameEvent } from "./GameEvent";
 import * as THREE from "three";
 
+/**
+ * EventSpawnBodyBag class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EventSpawnBodyBag.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EventSpawnBodyBag extends GameEvent {
 
   bodyBagId = 0;

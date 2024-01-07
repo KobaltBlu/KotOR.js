@@ -2,7 +2,7 @@
 */
 
 import { GameState } from "../../../GameState";
-import { GameEngineType } from "../../../enums/engine/GameEngineType";
+import { GameEngineType } from "../../../enums/engine";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUIButton } from "../../../gui";
 import { TLKManager, TwoDAManager } from "../../../managers";

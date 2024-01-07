@@ -5,7 +5,7 @@ import { GUIControl, GUILabel } from ".";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import { TextureLoader } from "../loaders";
 import { ShaderManager, MenuManager, PartyManager } from "../managers";
 

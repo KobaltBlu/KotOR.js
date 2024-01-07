@@ -11,6 +11,7 @@ import { TGALoader } from './TGALoader';
 import { OdysseyCompressedTexture, OdysseyEmitter3D, OdysseyTexture } from '../three/odyssey';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
+import { GameEngineType } from '../enums/engine';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
@@ -153,7 +154,7 @@ export class TextureLoader {
       return TextureLoader.lightmaps[resRef];
     }
     
-    if(GameState.GameKey == 'TSL'){
+    if(GameState.GameKey == GameEngineType.TSL){
       const lightmap = await TextureLoader.tpcLoader.fetch(resRef);
       if(!lightmap){ return undefined; }
 

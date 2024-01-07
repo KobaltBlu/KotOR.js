@@ -4,6 +4,15 @@ import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { WeaponSize } from "../enums/combat/WeaponSize";
 
+/**
+ * BaseItem class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file BaseItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class BaseItem {
 
   id: number = 0;

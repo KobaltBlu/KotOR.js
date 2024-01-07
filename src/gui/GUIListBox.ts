@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import { Mouse } from "../controls";
 import { GUIControlType } from "../enums/gui/GUIControlType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";

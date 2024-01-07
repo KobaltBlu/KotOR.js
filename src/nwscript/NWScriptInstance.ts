@@ -1,4 +1,4 @@
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import type { EventTimedEvent } from "../events";

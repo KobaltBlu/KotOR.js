@@ -1,5 +1,5 @@
 import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "..";
-import { GameEngineType } from "../../enums/engine/GameEngineType";
+import { GameEngineType } from "../../enums/engine";
 import { GameState } from "../../GameState";
 import { TextureLoader } from "../../loaders";
 import { GFFStruct } from "../../resource/GFFStruct";

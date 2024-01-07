@@ -1,5 +1,6 @@
 import { GUIButton, GUIListBox, GUIProtoItem } from "..";
 import { GameState } from "../../GameState";
+import { GameEngineType } from "../../enums/engine";
 import { TextureType } from "../../enums/loaders/TextureType";
 import { TextureLoader } from "../../loaders";
 import { GFFStruct } from "../../resource/GFFStruct";
@@ -95,7 +96,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = 64;
       this.widget.userData.hexSprite.position.z = 1;
 
-      if(GameState.GameKey != 'TSL')
+      if(GameState.GameKey != GameEngineType.TSL)
         this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
         
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);

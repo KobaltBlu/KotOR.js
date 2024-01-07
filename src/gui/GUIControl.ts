@@ -14,7 +14,7 @@ import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { Mouse } from "../controls";
 import { IGUIControlColors } from "../interface/gui/IGUIControlColors";

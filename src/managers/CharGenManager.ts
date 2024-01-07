@@ -1,6 +1,6 @@
 import { TwoDAManager } from ".";
 import { AudioLoader } from "../audio/AudioLoader";
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CharGenClasses } from "../game/CharGenClasses";

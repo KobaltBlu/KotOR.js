@@ -11,7 +11,7 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
  */
 export class NWScriptStackVariable {
   value: any;
-  type: any;
+  type: NWScriptDataType;
 
   constructor(args: any = {}){
     const {value, type} = args;

@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
 import type { ModuleObject } from "../module";
-import { ApplicationProfile } from "../KotOR";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { GameEngineType } from "../enums/engine";
 
 /**
  * CursorManager class.
@@ -88,7 +89,7 @@ export class CursorManager {
     TextureLoader.enQueue('gui_mp_talkD', CursorManager.talkD);
     TextureLoader.enQueue('gui_mp_useU', CursorManager.use);
     TextureLoader.enQueue('gui_mp_useD', CursorManager.useD);
-    if(ApplicationProfile.GameKey == 'TSL'){
+    if(ApplicationProfile.GameKey == GameEngineType.TSL){
       TextureLoader.enQueue('gui_mp_killU', CursorManager.attack);
       TextureLoader.enQueue('gui_mp_killD', CursorManager.attackD);
     }else{

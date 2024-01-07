@@ -1,7 +1,7 @@
 import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import { GameEngineType } from "../enums/engine";
 import { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineState } from "../enums/engine/EngineState";

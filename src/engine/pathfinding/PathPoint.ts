@@ -3,6 +3,15 @@ import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPoint
 import { GameState } from '../../GameState';
 import { Utility } from '../../utility/Utility';
 
+/**
+ * PathPoint class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file PathPoint.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class PathPoint {
   id: number;
   connections: PathPoint[];

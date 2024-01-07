@@ -28,8 +28,8 @@ export class NWScriptStack {
     globalStack: any; //globalStack.reverse(),
     pointer: any; basePointer: any;
   };
-  oldBP: any;
-  stackSize: any;
+  oldBP: number;
+  stackSize: number;
 
 
   constructor(){
