@@ -1,6 +1,15 @@
 import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 
+/**
+ * EffectForceResistanceDecrease class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EffectForceResistanceDecrease.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EffectForceResistanceDecrease extends GameEffect {
   constructor(){
     super();

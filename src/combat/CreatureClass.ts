@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { TwoDAManager, TLKManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentFeat, TalentSpell } from "../talents";
 
-/* @file
- * The CreatureClass class.
+/**
+ * CreatureClass class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CreatureClass.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class CreatureClass {
 
   id: number;

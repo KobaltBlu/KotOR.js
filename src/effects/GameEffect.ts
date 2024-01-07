@@ -8,8 +8,16 @@ import type { Module, ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
-//https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
-
+/**
+ * GameEffect class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file GameEffect.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @see https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
+ */
 export class GameEffect {
   creator: any;
   duration: number;

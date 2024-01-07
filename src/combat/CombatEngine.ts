@@ -1,11 +1,7 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ActionType } from "../enums/actions/ActionType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { SSFType } from "../enums/resource/SSFType";
 import type { ModuleCreature, ModuleObject } from "../module";
-
 import * as THREE from "three";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { OdysseyModelAnimation } from "../odyssey";
@@ -15,13 +11,16 @@ import { TwoDAManager } from "../managers";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
-/* @file
- * The CombatEngine class.
+/**
+ * CombatEngine class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CombatEngine.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class CombatEngine {
-
-  
 
   static active = true;
   static timer = 0;

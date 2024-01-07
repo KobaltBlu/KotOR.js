@@ -7,6 +7,15 @@ import { TwoDAManager } from "../managers";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { BitWise } from "../utility/BitWise";
 
+/**
+ * EffectIcon class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EffectIcon.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EffectIcon extends GameEffect {
   constructor(){
     super();

@@ -5,6 +5,15 @@ import { AppearanceManager } from "../managers";
 import type { ModuleCreature } from "../module";
 import { BitWise } from "../utility/BitWise";
 
+/**
+ * EffectDisguise class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EffectDisguise.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EffectDisguise extends GameEffect {
   appearance: any;
   constructor(){

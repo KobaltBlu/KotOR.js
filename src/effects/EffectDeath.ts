@@ -2,6 +2,15 @@ import { GameEffect } from ".";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 // import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 
+/**
+ * EffectDeath class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EffectDeath.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EffectDeath extends GameEffect {
   constructor(){
     super();

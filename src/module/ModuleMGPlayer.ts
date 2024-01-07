@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { ModuleMGEnemy, ModuleMGGunBank, ModuleMGGunBullet, ModuleMGObstacle, ModuleObject, ModuleRoom } from ".";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";

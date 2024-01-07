@@ -3,6 +3,15 @@ import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType"
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GameState } from "../GameState";
 
+/**
+ * EffectRegenerate class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EffectRegenerate.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EffectRegenerate extends GameEffect {
   constructor(){
     super();
