@@ -13,3 +13,4 @@ tests/
 # src/**/*.js
 dist/
 debug.log
+docs/
