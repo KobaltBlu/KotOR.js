@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
 import { TwoDAManager, TLKManager } from "../../../managers";
 
-/* @file
-* The MenuGraphicsAdvanced menu class.
-*/
-
+/**
+ * MenuGraphicsAdvanced class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuGraphicsAdvanced.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
 
   declare LBL_BAR4: GUILabel;

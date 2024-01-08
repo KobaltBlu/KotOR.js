@@ -4,6 +4,15 @@ import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controll
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyController } from "./OdysseyController";
 
+/**
+ * AlphaEndController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AlphaEndController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class AlphaEndController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.AlphaEnd;

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { CurrentGame } from "../../../CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
@@ -13,10 +10,15 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
-/* @file
-* The MainMenu menu class.
-*/
-
+/**
+ * MainMenu class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MainMenu.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MainMenu extends GameMenu {
 
   LB_MODULES: GUIListBox;

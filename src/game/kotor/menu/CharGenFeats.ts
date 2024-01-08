@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { GUIFeatItem } from "../gui/GUIFeatItem";
@@ -9,10 +6,15 @@ import { TextureLoader } from "../../../loaders";
 import { TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
 
-/* @file
-* The CharGenFeats menu class.
-*/
-
+/**
+ * CharGenFeats class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenFeats.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenFeats extends GameMenu {
 
   MAIN_TITLE_LBL: GUILabel;

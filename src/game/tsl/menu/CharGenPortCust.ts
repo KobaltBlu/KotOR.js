@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIButton } from "../../../gui";
 import { AppearanceManager, CharGenManager, TwoDAManager } from "../../../managers";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "../../kotor/KOTOR";
 
-/* @file
-* The CharGenPortCust menu class.
-*/
-
+/**
+ * CharGenPortCust class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenPortCust.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenPortCust extends K1_CharGenPortCust {
 
   declare LBL_HEAD: GUILabel;

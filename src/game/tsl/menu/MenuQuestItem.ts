@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuQuestItem as K1_MenuQuestItem } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuQuestItem menu class.
-*/
-
+/**
+ * MenuQuestItem class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuQuestItem.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuQuestItem extends K1_MenuQuestItem {
 
   declare LB_ITEM_DESCRIPTION: GUIListBox;

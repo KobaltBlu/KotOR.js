@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 import { ModuleDoor, ModuleObject, ModuleTrigger } from "../../../module";
 
-/* @file
-* The InGameAreaTransition menu class.
-*/
-
+/**
+ * InGameAreaTransition class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameAreaTransition.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameAreaTransition extends GameMenu {
 
   engineMode: EngineMode = EngineMode.INGAME;

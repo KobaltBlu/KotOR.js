@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUIButton } from "../../../gui";
 
-/* @file
-* The MenuDatapad menu class.
-*/
-
+/**
+ * MenuDatapad class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuDatapad.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuDatapad extends GameMenu {
 
   declare LB_MESSAGE: GUIListBox;

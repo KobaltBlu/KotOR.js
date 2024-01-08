@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
@@ -12,10 +9,15 @@ import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
 import { TLKManager } from "../../../managers";
 
-/* @file
-* The MenuSaveLoad menu class.
-*/
-
+/**
+ * MenuSaveLoad class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuSaveLoad.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuSaveLoad extends GameMenu {
 
   LB_GAMES: GUIListBox;

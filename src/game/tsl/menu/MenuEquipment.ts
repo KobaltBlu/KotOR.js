@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import type { ModuleItem } from "../../../module";
@@ -9,10 +6,15 @@ import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { PartyManager } from "../../../managers";
 
-/* @file
-* The MenuEquipment menu class.
-*/
-
+/**
+ * MenuEquipment class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuEquipment.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuEquipment extends K1_MenuEquipment {
 
   declare LBL_BACK1: GUILabel;

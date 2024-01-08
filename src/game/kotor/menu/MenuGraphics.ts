@@ -1,14 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider, GUICheckBox } from "../../../gui";
 
-/* @file
-* The MenuGraphics menu class.
-*/
-
+/**
+ * MenuGraphics class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuGraphics.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuGraphics extends GameMenu {
 
   LBL_TITLE: GUILabel;

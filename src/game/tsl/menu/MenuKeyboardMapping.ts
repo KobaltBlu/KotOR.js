@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuKeyboardMapping menu class.
-*/
-
+/**
+ * MenuKeyboardMapping class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuKeyboardMapping.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
 
   declare LBL_BAR1: GUILabel;

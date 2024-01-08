@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { Module } from "../../../module";
@@ -8,10 +5,15 @@ import { SaveGame } from "../../../SaveGame";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 
-/* @file
-* The MenuSaveLoad menu class.
-*/
-
+/**
+ * MenuSaveLoad class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuSaveLoad.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuSaveLoad extends K1_MenuSaveLoad {
 
   declare LBL_BAR4: GUILabel;

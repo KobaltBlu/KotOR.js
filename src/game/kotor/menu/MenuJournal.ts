@@ -1,14 +1,6 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
-
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { JournalEntry, TLKManager, JournalManager } from "../../../managers";
-
-/* @file
-* The MenuJournal menu class.
-*/
 
 enum JournalSort {
   RECIEVED = 0,
@@ -32,6 +24,15 @@ const STRREF_BY_PLANET    = 32176;
 const STRREF_MODE_ACTIVE    = 32177;
 const STRREF_MODE_COMPLETED = 32178;
 
+/**
+ * MenuJournal class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuJournal.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuJournal extends GameMenu {
 
   LB_ITEMS: GUIListBox;

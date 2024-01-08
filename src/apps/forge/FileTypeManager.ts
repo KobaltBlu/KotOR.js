@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { EditorFile } from "./EditorFile";
 import { Project } from "./Project";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
@@ -9,10 +6,17 @@ import { ForgeState } from "./states/ForgeState";
 import { TabERFEditorState, TabGFFEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabWOKEditorState } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
 
-/* @file
- * The FileTypeManage class. This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine
+/**
+ * FileTypeManager class.
+ * 
+ * This class was oringially designed to handle file loading inside KotOR Forge and isn't suitable for use inside the game engine
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file FileTypeManager.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-
 export class FileTypeManager {
 
   static onOpenFile(options: EditorFileOptions){

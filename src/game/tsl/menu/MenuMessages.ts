@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuMessages as K1_MenuMessages } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuMessages menu class.
-*/
-
+/**
+ * MenuMessages class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuMessages.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuMessages extends K1_MenuMessages {
 
   declare LBL_BAR6: GUILabel;

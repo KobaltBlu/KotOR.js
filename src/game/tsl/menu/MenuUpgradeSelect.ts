@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuUpgradeSelect menu class.
-*/
-
+/**
+ * MenuUpgradeSelect class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuUpgradeSelect.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
 
   declare BTN_RANGED: GUIButton;

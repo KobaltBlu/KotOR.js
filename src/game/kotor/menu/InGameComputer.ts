@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
@@ -13,10 +10,15 @@ import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
-/* @file
-* The InGameComputer menu class.
-*/
-
+/**
+ * InGameComputer class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameComputer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameComputer extends GameMenu {
 
   engineMode: EngineMode = EngineMode.DIALOG;

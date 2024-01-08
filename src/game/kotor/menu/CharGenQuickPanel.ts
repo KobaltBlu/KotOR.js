@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
-/* @file
-* The CharGenQuickPanel menu class.
-*/
-
+/**
+ * CharGenQuickPanel class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenQuickPanel.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenQuickPanel extends GameMenu {
 
   LBL_DECORATION: GUILabel;

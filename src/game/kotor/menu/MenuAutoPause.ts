@@ -1,15 +1,8 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";;
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { AutoPauseManager, TLKManager } from "../../../managers";
-
-/* @file
-* The MenuAutoPause menu class.
-*/
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;
@@ -18,6 +11,15 @@ const PARTY_KILLED_DESC = 42447;
 const ACTION_MENU_DESC = 48216;
 const NEW_TARGET_DESC = 48214;
 
+/**
+ * MenuAutoPause class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuAutoPause.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuAutoPause extends GameMenu {
 
   LBL_TITLE: GUILabel;

@@ -1,9 +1,5 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- */
-
 import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
 import { EventListenerModel } from "./EventListenerModel";
-
 import * as KotOR from "./KotOR";
 import * as THREE from 'three';
 import { ModelViewerControls } from "./ModelViewerControls";
@@ -12,12 +8,6 @@ import { FlyControls } from 'three/examples/jsm/controls/FlyControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-
-/* @file
- * The UI3DRenderer class.
- * This class is used to create and manage 3d rendering instances in the KotOR Forge application.
- * The main use is for the model previews in the template editors for UTC, UTD, and UTP files
- */
 
 export type UI3DRendererEventListenerTypes =
   'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached';
@@ -31,6 +21,18 @@ export interface UI3DRendererEventListeners {
   onCanvasAttached: Function[],
 }
 
+/**
+ * UI3DRenderer class.
+ * 
+ * This class is used to create and manage 3d rendering instances in the KotOR Forge application.
+ * The main use is for the model previews in the template editors for UTC, UTD, and UTP files
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file UI3DRenderer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class UI3DRenderer extends EventListenerModel {
 
   uuid: string;

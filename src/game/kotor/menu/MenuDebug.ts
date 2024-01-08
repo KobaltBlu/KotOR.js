@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel } from "../../../gui";
 
-/* @file
-* The MenuDebug menu class.
-*/
-
+/**
+ * MenuDebug class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuDebug.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuDebug extends GameMenu {
 
   LB_OPTIONS: GUIListBox;

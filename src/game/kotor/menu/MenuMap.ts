@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_MapView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
@@ -13,10 +10,15 @@ import { Mouse } from "../../../controls";
 import type { ModuleWaypoint } from "../../../module";
 import { CExoLocString } from "../../../resource/CExoLocString";
 
-/* @file
-* The MenuMap menu class.
-*/
-
+/**
+ * MenuMap class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuMap.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuMap extends GameMenu {
 
   LBL_Map: GUILabel;

@@ -6,6 +6,15 @@ import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
+/**
+ * AlphaController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file AlphaController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class AlphaController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Alpha;

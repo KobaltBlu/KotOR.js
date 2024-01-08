@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
@@ -9,10 +6,15 @@ import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
 
-/* @file
-* The CharGenMain menu class.
-*/
-
+/**
+ * CharGenMain class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenMain.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenMain extends GameMenu {
 
   LBL_VIT: GUILabel;

@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { GameState } from "../../../GameState";
@@ -13,10 +10,15 @@ import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { AutoPauseManager, PartyManager } from "../../../managers";
 
-/* @file
-* The InGameOverlay menu class.
-*/
-
+/**
+ * InGameOverlay class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameOverlay.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameOverlay extends K1_InGameOverlay {
 
   declare LBL_MAPBORDER: GUILabel;

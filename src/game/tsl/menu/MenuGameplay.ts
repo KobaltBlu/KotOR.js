@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "../../../gui";
 import { MenuGameplay as K1_MenuGameplay } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuGameplay menu class.
-*/
-
+/**
+ * MenuGameplay class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuGameplay.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuGameplay extends K1_MenuGameplay {
 
   declare LBL_BAR4: GUILabel;

@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
 
-/* @file
-* The MainMovies menu class.
-*/
-
+/**
+ * MainMovies class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MainMovies.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MainMovies extends K1_MainMovies {
 
   declare LBL_TITLE: GUILabel;

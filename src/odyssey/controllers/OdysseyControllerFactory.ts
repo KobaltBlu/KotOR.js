@@ -24,6 +24,15 @@ import { SizeEndController } from "./SizeEndController";
 import { SizeMidController } from "./SizeMidController";
 import { SizeStartController } from "./SizeStartController";
 
+/**
+ * OdysseyControllerFactory class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyControllerFactory.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class OdysseyControllerFactory {
 
   static From( controller: IOdysseyControllerGeneric ){

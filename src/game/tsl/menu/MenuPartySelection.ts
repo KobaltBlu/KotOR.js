@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUICheckBox, GUIButton } from "../../../gui";
@@ -14,10 +11,15 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuPartySelection as K1_MenuPartySelection } from "../../kotor/KOTOR";
 import { PartyManager } from "../../../managers";
 
-/* @file
-* The MenuPartySelection menu class.
-*/
-
+/**
+ * MenuPartySelection class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuPartySelection.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuPartySelection extends K1_MenuPartySelection {
 
   declare LBL_NAMEBACK: GUILabel;

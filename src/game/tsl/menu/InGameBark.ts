@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel } from "../../../gui";
 import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 import * as THREE from "three";
@@ -8,10 +5,15 @@ import { LIPObject } from "../../../resource/LIPObject";
 import { ModuleCreature } from "../../../module";
 import { ResolutionManager } from "../../../managers";
 
-/* @file
-* The InGameBark menu class.
-*/
-
+/**
+ * InGameBark class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameBark.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameBark extends K1_InGameBark {
 
   declare LBL_BARKTEXT: GUILabel;

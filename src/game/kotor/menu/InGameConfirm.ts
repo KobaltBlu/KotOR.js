@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GameEngineType } from "../../../enums/engine";
 import { GameMenu } from "../../../gui";
@@ -8,10 +5,15 @@ import type { GUIListBox, GUIButton } from "../../../gui";
 import { TLKManager, TwoDAManager } from "../../../managers";
 import { TwoDAObject } from "../../../resource/TwoDAObject";
 
-/* @file
-* The InGameConfirm menu class.
-*/
-
+/**
+ * InGameConfirm class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameConfirm.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameConfirm extends GameMenu {
 
   LB_MESSAGE: GUIListBox;

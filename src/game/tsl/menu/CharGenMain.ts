@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { LBL_3DView, type GUILabel } from "../../../gui";
 import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
 
-/* @file
-* The CharGenMain menu class.
-*/
-
+/**
+ * CharGenMain class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenMain.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenMain extends K1_CharGenMain {
 
   declare LBL_BAR1: GUILabel;

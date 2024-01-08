@@ -5,6 +5,15 @@ import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelCont
 import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 
+/**
+ * PositionController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file PositionController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class PositionController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.Position;

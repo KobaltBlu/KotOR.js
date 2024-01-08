@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
@@ -10,14 +7,19 @@ import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
 import { TLKManager } from "../../../managers";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 
-/* @file
-* The MenuContainer menu class.
-*/
-
 const STR_SWITCH_TO = 47884;
 const STR_GET_ITEMS = 38542;
 const STR_GIVE_ITEMS = 38543;
 
+/**
+ * MenuContainer class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuContainer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuContainer extends GameMenu {
 
   engineMode: EngineMode = EngineMode.INGAME;

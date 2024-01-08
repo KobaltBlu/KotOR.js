@@ -1,11 +1,7 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "../../../gui";
-
+import type { GUIListBox, GUILabel } from "../../../gui";
 import * as THREE from "three";
 import { ModuleCreature, ModuleObject } from "../../../module";
 import { DLGObject } from "../../../resource/DLGObject";
@@ -19,10 +15,15 @@ import { OdysseyModelAnimation } from "../../../odyssey";
 import { FadeOverlayManager, ModuleObjectManager, ResolutionManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
-/* @file
-* The InGameDialog menu class.
-*/
-
+/**
+ * InGameDialog class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameDialog.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameDialog extends GameMenu {
 
   engineMode: EngineMode = EngineMode.DIALOG;

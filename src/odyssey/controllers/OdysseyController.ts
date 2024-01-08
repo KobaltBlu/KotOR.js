@@ -18,6 +18,15 @@ import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controll
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
+/**
+ * OdysseyController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file OdysseyController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;

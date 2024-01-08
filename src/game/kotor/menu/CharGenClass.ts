@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey GameState.Engine that powered KotOR I & II
-*/
-
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
@@ -10,10 +7,15 @@ import * as THREE from "three";
 import { CharGenClasses } from "../../CharGenClasses";
 import { CharGenManager, TLKManager } from "../../../managers";
 
-/* @file
-* The CharGenClass menu class.
-*/
-
+/**
+ * CharGenClass class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenClass.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenClass extends GameMenu {
 
   _3D_MODEL2: GUILabel;

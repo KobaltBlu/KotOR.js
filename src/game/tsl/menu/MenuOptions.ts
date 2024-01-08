@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { EngineState } from "../../../enums/engine/EngineState";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
@@ -9,10 +6,15 @@ import { Module } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 import { MenuOptions as K1_MenuOptions } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuOptions menu class.
-*/
-
+/**
+ * MenuOptions class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuOptions.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuOptions extends K1_MenuOptions {
 
   declare BTN_SAVEGAME: GUIButton;

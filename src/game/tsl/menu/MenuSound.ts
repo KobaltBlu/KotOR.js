@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
 import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuSound menu class.
-*/
-
+/**
+ * MenuSound class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuSound.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuSound extends K1_MenuSound {
 
   declare LBL_BAR4: GUILabel;

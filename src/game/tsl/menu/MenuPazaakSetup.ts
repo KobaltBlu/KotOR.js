@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIButton } from "../../../gui";
 import { MenuPazaakSetup as K1_MenuPazaakSetup } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuPazaakSetup menu class.
-*/
-
+/**
+ * MenuPazaakSetup class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuPazaakSetup.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuPazaakSetup extends K1_MenuPazaakSetup {
 
   declare LBL_TITLE: GUILabel;

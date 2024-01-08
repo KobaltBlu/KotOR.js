@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { CharGenAbilities as K1_CharGenAbilities } from "../../kotor/KOTOR";
 import { CharGenManager } from "../../../managers";
 import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
 
-/* @file
-* The CharGenAbilities menu class.
-*/
-
+/**
+ * CharGenAbilities class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenAbilities.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenAbilities extends K1_CharGenAbilities {
 
   declare LBL_BONUS_CHA: GUILabel;

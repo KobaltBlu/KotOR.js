@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuFeedback as K1_MenuFeedback } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuFeedback menu class.
-*/
-
+/**
+ * MenuFeedback class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuFeedback.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuFeedback extends K1_MenuFeedback {
 
   declare LBL_TITLE: GUILabel;

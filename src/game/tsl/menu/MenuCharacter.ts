@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider } from "../../../gui";
@@ -10,10 +7,15 @@ import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 import { PartyManager, TwoDAManager } from "../../../managers";
 
-/* @file
-* The MenuCharacter menu class.
-*/
-
+/**
+ * MenuCharacter class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuCharacter.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuCharacter extends K1_MenuCharacter {
 
   declare LBL_BAR6: GUILabel;

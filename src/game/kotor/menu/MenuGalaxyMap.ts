@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
@@ -12,16 +9,21 @@ import { Planet, Planetary } from "../../../Planetary";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { GlobalVariableManager } from "../../../managers";
 
-/* @file
-* The MenuGalaxyMap menu class.
-*/
-
 interface PlanetAnimStateInfo {
   lastAnimState: 'zoomin'|'rotate';
   currentAnimState: 'zoomin'|'rotate';
   started: boolean;
 };
 
+/**
+ * MenuGalaxyMap class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuGalaxyMap.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuGalaxyMap extends GameMenu {
 
   _3D_PlanetDisplay: GUILabel;

@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { CharGenFeats as K1_CharGenFeats } from "../../kotor/KOTOR";
 
-/* @file
-* The CharGenFeats menu class.
-*/
-
+/**
+ * CharGenFeats class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenFeats.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenFeats extends K1_CharGenFeats {
 
   declare MAIN_TITLE_LBL: GUILabel;

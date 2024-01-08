@@ -1,14 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 
-/* @file
-* The InGameComputerCam menu class.
-*/
-
+/**
+ * InGameComputerCam class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameComputerCam.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameComputerCam extends GameMenu {
 
   engineMode: EngineMode = EngineMode.DIALOG;

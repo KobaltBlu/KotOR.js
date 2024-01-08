@@ -1,16 +1,18 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { PartyManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuTop menu class.
-*/
-
+/**
+ * MenuTop class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuTop.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuTop extends K1_MenuTop {
 
   declare LBLH_EQU: GUIControl;

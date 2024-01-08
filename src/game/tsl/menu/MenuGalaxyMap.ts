@@ -1,6 +1,3 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
@@ -13,10 +10,15 @@ import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 
-/* @file
-* The MenuGalaxyMap menu class.
-*/
-
+/**
+ * MenuGalaxyMap class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuGalaxyMap.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuGalaxyMap extends K1_MenuGalaxyMap {
 
   declare LBL_BAR2: GUILabel;

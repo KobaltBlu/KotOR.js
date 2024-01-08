@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { CharGenCustomPanel as K1_CharGenCustomPanel } from "../../kotor/KOTOR";
 
-/* @file
-* The CharGenCustomPanel menu class.
-*/
-
+/**
+ * CharGenCustomPanel class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenCustomPanel.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenCustomPanel extends K1_CharGenCustomPanel {
 
   declare LBL_6: GUIControl;

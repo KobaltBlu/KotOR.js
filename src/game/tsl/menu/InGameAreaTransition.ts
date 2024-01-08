@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel } from "../../../gui";
 import { InGameAreaTransition as K1_InGameAreaTransition } from "../../kotor/KOTOR";
 
-/* @file
-* The InGameAreaTransition menu class.
-*/
-
+/**
+ * InGameAreaTransition class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameAreaTransition.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameAreaTransition extends K1_InGameAreaTransition {
 
   declare LBL_ICON: GUILabel;

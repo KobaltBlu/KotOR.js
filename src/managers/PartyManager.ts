@@ -18,10 +18,6 @@ import { ResourceLoader } from "../loaders";
 import { ModuleObjectManager } from "./ModuleObjectManager";
 import { GameEngineType } from "../enums/engine";
 
-/* @file
- * The PartyManager class.
- */
-
 export interface CurrentMember {
   isLeader: boolean,
   memberID: number

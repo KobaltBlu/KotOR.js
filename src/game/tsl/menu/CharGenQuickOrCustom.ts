@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIListBox, GUIButton } from "../../../gui";
 import { CharGenManager, TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
 
-/* @file
-* The CharGenQuickOrCustom menu class.
-*/
-
+/**
+ * CharGenQuickOrCustom class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CharGenQuickOrCustom.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
 
   declare BTN_BACK: GUIButton;

@@ -5,6 +5,15 @@ import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IO
 import { OdysseyController } from "./OdysseyController";
 import * as THREE from "three";
 
+/**
+ * SelfIllumColorController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file SelfIllumColorController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class SelfIllumColorController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.SelfIllumColor;

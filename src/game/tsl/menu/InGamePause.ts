@@ -1,14 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIButton } from "../../../gui";
 import { AutoPauseManager, ResolutionManager } from "../../../managers";
 import { InGamePause as K1_InGamePause } from "../../kotor/KOTOR";
 
-/* @file
-* The InGamePause menu class.
-*/
-
+/**
+ * InGamePause class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGamePause.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGamePause extends K1_InGamePause {
 
   declare LBL_PAUSEREASON: GUILabel;

@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIListBox, GUISlider, GUICheckBox, GUIButton } from "../../../gui";
 import { MenuMouse as K1_MenuMouse } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuMouse menu class.
-*/
-
+/**
+ * MenuMouse class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuMouse.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuMouse extends K1_MenuMouse {
 
   declare LBL_BAR4: GUILabel;

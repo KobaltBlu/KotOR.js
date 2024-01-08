@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIButton, GUIListBox, GUILabel } from "../../../gui";
 import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
 import { ResolutionManager } from "../../../managers";
 import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuResolutions menu class.
-*/
-
+/**
+ * MenuResolutions class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuResolutions.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuResolutions extends K1_MenuResolutions {
 
   declare BTN_OK: GUIButton;

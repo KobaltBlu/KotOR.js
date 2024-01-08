@@ -4,6 +4,15 @@ import { OdysseyController } from ".";
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 
+/**
+ * LightningScaleController class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LightningScaleController.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class LightningScaleController extends OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.LightningScale;

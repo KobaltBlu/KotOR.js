@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 import { MainOptions as K1_MainOptions } from "../../kotor/KOTOR";
 
-/* @file
-* The MainOptions menu class.
-*/
-
+/**
+ * MainOptions class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MainOptions.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MainOptions extends K1_MainOptions {
 
   declare BTN_AUTOPAUSE: GUIButton;

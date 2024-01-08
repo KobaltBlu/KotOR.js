@@ -1,14 +1,16 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIProgressBar, GUILabel } from "../../../gui";
 import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 
-/* @file
-* The LoadScreen menu class.
-*/
-
+/**
+ * LoadScreen class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file LoadScreen.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class LoadScreen extends K1_LoadScreen {
 
   engineMode: EngineMode = EngineMode.LOADING;

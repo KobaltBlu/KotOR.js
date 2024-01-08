@@ -1,15 +1,17 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import { GameState } from "../../../GameState";
 import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { ModuleCreature, ModulePlaceable } from "../../../module";
 import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuContainer menu class.
-*/
-
+/**
+ * MenuContainer class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuContainer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuContainer extends K1_MenuContainer {
 
   declare LBL_MESSAGE: GUILabel;

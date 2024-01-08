@@ -3,7 +3,15 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 
-
+/**
+ * EncounterSpawnPointEntry class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file EncounterSpawnPointEntry.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class EncounterSpawnPointEntry{
 
   position = new THREE.Vector3();

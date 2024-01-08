@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUILabel, GUIListBox } from "../../../gui";
 import { InGameComputer as K1_InGameComputer } from "../../kotor/KOTOR";
 
-/* @file
-* The InGameComputer menu class.
-*/
-
+/**
+ * InGameComputer class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file InGameComputer.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class InGameComputer extends K1_InGameComputer {
 
   declare LBL_REP_UNITS: GUILabel;

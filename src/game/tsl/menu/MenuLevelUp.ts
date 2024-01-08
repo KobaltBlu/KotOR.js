@@ -1,13 +1,15 @@
-/* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-*/
-
 import type { GUIButton, GUIControl, GUILabel } from "../../../gui";
 import { MenuLevelUp as K1_MenuLevelUp } from "../../kotor/KOTOR";
 
-/* @file
-* The MenuLevelUp menu class.
-*/
-
+/**
+ * MenuLevelUp class.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file MenuLevelUp.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class MenuLevelUp extends K1_MenuLevelUp {
 
   declare BTN_BACK: GUIButton;
