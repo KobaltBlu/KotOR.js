@@ -40,7 +40,7 @@ export class ActionLockObject extends Action {
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
-        (this.owner as any).openSpot = undefined;
+        // (this.owner as any).openSpot = undefined;
         let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);

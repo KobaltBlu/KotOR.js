@@ -64,15 +64,15 @@ export class ActionPhysicalAttacks extends Action {
       let distance = Utility.Distance2D(owner.position, target.position);
       if( distance > range ){
 
-        owner.openSpot = undefined;
+        // owner.openSpot = undefined;
         let target_position = target.position.clone();
         
-        if(!owner.isRangedEquipped()){ //MELEE
+        /*if(!owner.isRangedEquipped()){ //MELEE
           owner.openSpot = target.getClosesetOpenSpot(owner);
           if(typeof owner.openSpot != 'undefined'){
             target_position.copy(owner.openSpot.targetVector);
           }
-        }
+        }*/
 
         let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
@@ -90,7 +90,7 @@ export class ActionPhysicalAttacks extends Action {
       }else{
         owner.force = 0;
         owner.speed = 0;
-        (owner as any).openSpot = undefined;
+        // (owner as any).openSpot = undefined;
 
         if(owner.combatRound){
           const combatRound = owner.combatRound;

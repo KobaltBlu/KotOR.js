@@ -43,7 +43,7 @@ export class ActionFollowLeader extends Action {
       const distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
       if(distance > 5){
         this.path_realtime = true;
-        (this.owner as any).openSpot = undefined;
+        // (this.owner as any).openSpot = undefined;
         let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, follow_destination.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, follow_destination.y);

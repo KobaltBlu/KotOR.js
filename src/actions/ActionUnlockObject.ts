@@ -49,7 +49,7 @@ export class ActionUnlockObject extends Action {
     let distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 1.5){
         
-      this.owner.openSpot = undefined;
+      // this.owner.openSpot = undefined;
       let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);

@@ -77,11 +77,11 @@ export class ActionMoveToPoint extends Action {
         this.owner.collisionTimer = 0;
       }
 
-      let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
+      // let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
 
-      if(this.owner.openSpot){
-        distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
-      }
+      // if(this.owner.openSpot){
+        // distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
+      // }
   
       let point = this.owner.computedPath.points[0];
       if(point){
@@ -95,10 +95,10 @@ export class ActionMoveToPoint extends Action {
     
           this.runCreatureAvoidance(delta);
     
-          let arrivalDistance = range;
-          if( this.openSpot ){
-            arrivalDistance = 1.5;
-          }
+          // let arrivalDistance = range;
+          // if( this.openSpot ){
+          //   arrivalDistance = 1.5;
+          // }
 
           this.owner.AxisFront.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
@@ -154,15 +154,15 @@ export class ActionMoveToPoint extends Action {
 
   calculatePath(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
-    if(this.owner.openSpot){
+    /*if(this.owner.openSpot){
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
       this.owner.computedPath.realtime = true;
-    }else{
+    }else{*/
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
       if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
         this.owner.computedPath.realtime = true;
       }
-    }
+    // }
     // distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
     this.owner.computedPath.timer = 20;
     if(this.owner.computedPath){

@@ -999,11 +999,11 @@ export class ModuleCreature extends ModuleObject {
         const target: ModuleObject = action.getParameter(1);
         if(target instanceof ModuleObject){
           let distance = Infinity;
-            if(this.openSpot){
+            /*if(this.openSpot){
               distance = this.position.distanceTo(this.openSpot.targetVector);
-            }else{
+            }else{*/
               distance = this.position.distanceTo(target.position);
-            }
+            // }
           return distance < ( (this.combatData.getEquippedWeaponType() == 1 || this.combatData.getEquippedWeaponType() == 3) ? 2.0 : 15.0 );
         }else{
           return true;
@@ -1052,11 +1052,11 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     if(this.animationState.animation){
-      if(currentAnimation != this.animationState.animation.name.toLowerCase()){
+      if(currentAnimation != this.animationState.animation.name?.toLowerCase()){
         if(!this.animationState.started){
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
-          this.model.playAnimation(this.animationState.animation.name.toLowerCase(), aLooping);
+          this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
@@ -1111,7 +1111,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(target instanceof ModuleObject){
         
-      this.openSpot = undefined;
+      // this.openSpot = undefined;
       let action = new ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
@@ -1195,7 +1195,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
         
-      this.openSpot = undefined;
+      // this.openSpot = undefined;
       let action = new ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);

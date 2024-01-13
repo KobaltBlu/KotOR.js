@@ -643,7 +643,7 @@ export class ModuleDoor extends ModuleObject {
     if(this.animStateInfo.currentAnimState){
       let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
-        if(currentAnimation != animation.name.toLowerCase()){
+        if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
             if(
               this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 || 
@@ -653,7 +653,7 @@ export class ModuleDoor extends ModuleObject {
             }
             this.animStateInfo.started = true;
             const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
-            this.getModel().playAnimation(animation.name.toLowerCase(), aLooping);
+            this.getModel().playAnimation(animation.name?.toLowerCase(), aLooping);
           }else{
             //Animation completed
             switch(this.animStateInfo.currentAnimState){
