@@ -1,7 +1,7 @@
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { CharGenAbilities as K1_CharGenAbilities } from "../../kotor/KOTOR";
-import { CharGenManager } from "../../../managers";
 import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
+import { GameState } from "../../../GameState";
 
 /**
  * CharGenAbilities class.
@@ -78,12 +78,12 @@ export class CharGenAbilities extends K1_CharGenAbilities {
         e.stopPropagation();
 
         if(this.creature){
-          this.creature.str = CharGenManager.str;
-          this.creature.dex = CharGenManager.dex;
-          this.creature.con = CharGenManager.con;
-          this.creature.wis = CharGenManager.wis;
-          this.creature.int = CharGenManager.int;
-          this.creature.cha = CharGenManager.cha;
+          this.creature.str = GameState.CharGenManager.str;
+          this.creature.dex = GameState.CharGenManager.dex;
+          this.creature.con = GameState.CharGenManager.con;
+          this.creature.wis = GameState.CharGenManager.wis;
+          this.creature.int = GameState.CharGenManager.int;
+          this.creature.cha = GameState.CharGenManager.cha;
         }
 
         this.manager.CharGenMain.updateAttributes();
@@ -92,14 +92,14 @@ export class CharGenAbilities extends K1_CharGenAbilities {
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
-        CharGenManager.availPoints = 0;
+        GameState.CharGenManager.availPoints = 0;
         if(this.creature){
-          CharGenManager.str = parseInt(this.creature.classes[0].str);
-          CharGenManager.dex = parseInt(this.creature.classes[0].dex);
-          CharGenManager.con = parseInt(this.creature.classes[0].con);
-          CharGenManager.wis = parseInt(this.creature.classes[0].wis);
-          CharGenManager.int = parseInt(this.creature.classes[0].int);
-          CharGenManager.cha = parseInt(this.creature.classes[0].cha);
+          GameState.CharGenManager.str = parseInt(this.creature.classes[0].str);
+          GameState.CharGenManager.dex = parseInt(this.creature.classes[0].dex);
+          GameState.CharGenManager.con = parseInt(this.creature.classes[0].con);
+          GameState.CharGenManager.wis = parseInt(this.creature.classes[0].wis);
+          GameState.CharGenManager.int = parseInt(this.creature.classes[0].int);
+          GameState.CharGenManager.cha = parseInt(this.creature.classes[0].cha);
         }
 
         this.updateButtonStates();
@@ -109,60 +109,60 @@ export class CharGenAbilities extends K1_CharGenAbilities {
       this.STR_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
 
-        if(this.creature && CharGenManager.str > this.creature.str && CharGenManager.str > 8){
+        if(this.creature && GameState.CharGenManager.str > this.creature.str && GameState.CharGenManager.str > 8){
           let cost = this.getAttributeCost(CharGenAttribute.STR);
-          CharGenManager.str -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.str -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
 
       this.DEX_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && CharGenManager.dex > this.creature.dex && CharGenManager.dex > 8){
+        if(this.creature && GameState.CharGenManager.dex > this.creature.dex && GameState.CharGenManager.dex > 8){
           let cost = this.getAttributeCost(CharGenAttribute.DEX);
-          CharGenManager.dex -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.dex -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
       
       this.CON_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && CharGenManager.con > this.creature.con && CharGenManager.con > 8){
+        if(this.creature && GameState.CharGenManager.con > this.creature.con && GameState.CharGenManager.con > 8){
           let cost = this.getAttributeCost(CharGenAttribute.CON);
-          CharGenManager.con -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.con -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
 
       this.WIS_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && CharGenManager.wis > this.creature.wis && CharGenManager.wis > 8){
+        if(this.creature && GameState.CharGenManager.wis > this.creature.wis && GameState.CharGenManager.wis > 8){
           let cost = this.getAttributeCost(CharGenAttribute.WIS);
-          CharGenManager.wis -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.wis -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
 
       this.INT_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && CharGenManager.int > this.creature.int && CharGenManager.int > 8){
+        if(this.creature && GameState.CharGenManager.int > this.creature.int && GameState.CharGenManager.int > 8){
           let cost = this.getAttributeCost(CharGenAttribute.INT);
-          CharGenManager.int -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.int -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
 
       this.CHA_MINUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && CharGenManager.cha > this.creature.cha && CharGenManager.cha > 8){
+        if(this.creature && GameState.CharGenManager.cha > this.creature.cha && GameState.CharGenManager.cha > 8){
           let cost = this.getAttributeCost(CharGenAttribute.CHA);
-          CharGenManager.cha -= 1;
-          CharGenManager.availPoints += cost;
+          GameState.CharGenManager.cha -= 1;
+          GameState.CharGenManager.availPoints += cost;
         }
         this.updateButtonStates();
       });
@@ -170,60 +170,60 @@ export class CharGenAbilities extends K1_CharGenAbilities {
       //PLUS Buttons
       this.STR_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.STR) <= CharGenManager.availPoints){
-          CharGenManager.str += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.STR) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.str += 1;
           let cost = this.getAttributeCost(CharGenAttribute.STR);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });
 
       this.DEX_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.DEX) <= CharGenManager.availPoints){
-          CharGenManager.dex += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.DEX) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.dex += 1;
           let cost = this.getAttributeCost(CharGenAttribute.DEX);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });
 
       this.CON_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.CON) <= CharGenManager.availPoints){
-          CharGenManager.con += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.CON) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.con += 1;
           let cost = this.getAttributeCost(CharGenAttribute.CON);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });
 
       this.WIS_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.WIS) <= CharGenManager.availPoints){
-          CharGenManager.wis += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.WIS) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.wis += 1;
           let cost = this.getAttributeCost(CharGenAttribute.WIS);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });
 
       this.INT_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.INT) <= CharGenManager.availPoints){
-          CharGenManager.int += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.INT) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.int += 1;
           let cost = this.getAttributeCost(CharGenAttribute.INT);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });
 
       this.CHA_PLUS_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(this.creature && this.getAttributeCost(CharGenAttribute.CHA) <= CharGenManager.availPoints){
-          CharGenManager.cha += 1;
+        if(this.creature && this.getAttributeCost(CharGenAttribute.CHA) <= GameState.CharGenManager.availPoints){
+          GameState.CharGenManager.cha += 1;
           let cost = this.getAttributeCost(CharGenAttribute.CHA);
-          CharGenManager.availPoints -= cost;
+          GameState.CharGenManager.availPoints -= cost;
         }
         this.updateButtonStates();
       });

@@ -1,11 +1,14 @@
+import { ModuleObjectType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { ModuleDoor, ModuleCreature } from "../module";
+import { ModuleDoor } from "../module";
+import { BitWise } from "../utility/BitWise";
+// import { ModuleDoor, ModuleCreature } from "../module";
 import { Utility } from "../utility/Utility";
-import { Action, ActionMoveToPoint } from ".";
+import { Action } from "./Action";
 
 /**
  * ActionCloseDoor class.
@@ -32,19 +35,19 @@ export class ActionCloseDoor extends Action {
 
     this.target = this.getParameter(0);
 
-    if(!(this.target instanceof ModuleDoor))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
       return ActionStatus.FAILED;
 
-    if(!this.target.isOpen())
+    if(!(this.target as ModuleDoor).isOpen())
       return ActionStatus.FAILED;
 
-    if(this.owner instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       let distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
         this.owner.openSpot = undefined;
-        let actionMoveToTarget = new ActionMoveToPoint();
+        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -73,12 +76,12 @@ export class ActionCloseDoor extends Action {
           return ActionStatus.COMPLETE;
         }*/
         
-        this.target.closeDoor(this.owner);
+        (this.target as ModuleDoor).closeDoor(this.owner);
         return ActionStatus.COMPLETE;
         
       }
     }else{
-      this.target.closeDoor(this.owner);
+      (this.target as ModuleDoor).closeDoor(this.owner);
       return ActionStatus.COMPLETE;
     }
 

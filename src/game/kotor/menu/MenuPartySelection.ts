@@ -2,7 +2,6 @@ import { GameState } from "../../../GameState";
 import { GameMenu, GUIControl } from "../../../gui";
 import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { PartyManager, TLKManager } from "../../../managers";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
@@ -91,63 +90,63 @@ export class MenuPartySelection extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.BTN_NPC0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(0)){
+        if(GameState.PartyManager.IsAvailable(0)){
           this.selectNPC(0)
         }
       });
 
       this.BTN_NPC1.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(1)){
+        if(GameState.PartyManager.IsAvailable(1)){
           this.selectNPC(1);
         }
       });
 
       this.BTN_NPC2.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(2)){
+        if(GameState.PartyManager.IsAvailable(2)){
           this.selectNPC(2);
         }
       });
 
       this.BTN_NPC3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(3)){
+        if(GameState.PartyManager.IsAvailable(3)){
           this.selectNPC(3);
         }
       });
 
       this.BTN_NPC4.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(4)){
+        if(GameState.PartyManager.IsAvailable(4)){
           this.selectNPC(4);
         }
       });
 
       this.BTN_NPC5.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(5)){
+        if(GameState.PartyManager.IsAvailable(5)){
           this.selectNPC(5);
         }
       });
 
       this.BTN_NPC6.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(6)){
+        if(GameState.PartyManager.IsAvailable(6)){
           this.selectNPC(6);
         }
       });
 
       this.BTN_NPC7.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(7)){
+        if(GameState.PartyManager.IsAvailable(7)){
           this.selectNPC(7);
         }
       });
 
       this.BTN_NPC8.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        if(PartyManager.IsAvailable(8)){
+        if(GameState.PartyManager.IsAvailable(8)){
           this.selectNPC(8);
         }
       });
@@ -184,9 +183,9 @@ export class MenuPartySelection extends GameMenu {
         //Area Unescapable disables party selection as well as transit
         if(!GameState.module.area.unescapable || this.ignoreUnescapable){
           if(this.npcInParty(this.selectedNPC)){
-            PartyManager.RemoveNPCById(this.selectedNPC);
+            GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.UpdateSelection();
-          }else if(this.isSelectable(this.selectedNPC) && PartyManager.CurrentMembers.length < PartyManager.MaxSize){
+          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxSize){
             this.addToParty(this.selectedNPC);
           }
           this.UpdateCount();
@@ -198,7 +197,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   selectNPC(npc: number = -1){
-    if(npc < 0 || npc >= PartyManager.MaxSize) return;
+    if(npc < 0 || npc >= GameState.PartyManager.MaxSize) return;
     // if(PartyManager.CurrentMembers.length >= 2) return;
     this.selectedNPC = npc;
     this.UpdateSelection();
@@ -210,14 +209,14 @@ export class MenuPartySelection extends GameMenu {
   }
 
   addToParty(selected: number) {
-    let idx = PartyManager.CurrentMembers.push({
+    let idx = GameState.PartyManager.CurrentMembers.push({
       isLeader: false,
       memberID: selected
     }) - 1;
-    PartyManager.LoadPartyMember(idx).then(() => {
+    GameState.PartyManager.LoadPartyMember(idx).then(() => {
       this.UpdateSelection();
       if (!this.npcInParty(selected)) {
-        PartyManager.RemoveNPCById(selected);
+        GameState.PartyManager.RemoveNPCById(selected);
       }
       this.UpdateCount();
     });
@@ -225,8 +224,8 @@ export class MenuPartySelection extends GameMenu {
   }
 
   npcInParty(nID: number) {
-    for (let i = 0; i < PartyManager.CurrentMembers.length; i++) {
-      let cpm = PartyManager.CurrentMembers[i];
+    for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
+      let cpm = GameState.PartyManager.CurrentMembers[i];
       if (cpm.memberID == nID) {
         return true;
       }
@@ -235,8 +234,8 @@ export class MenuPartySelection extends GameMenu {
   }
 
   indexOfSelectedNPC(nID: number) {
-    for (let i = 0; i < PartyManager.CurrentMembers.length; i++) {
-      let cpm = PartyManager.CurrentMembers[i];
+    for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
+      let cpm = GameState.PartyManager.CurrentMembers[i];
       if (cpm.memberID == nID) {
         return i;
       }
@@ -264,18 +263,18 @@ export class MenuPartySelection extends GameMenu {
       btn.pulsing = true;
     }
     if (this.npcInParty(this.selectedNPC)) {
-      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38456).Value);
+      this.BTN_ACCEPT.setText(GameState.TLKManager.GetStringById(38456).Value);
     } else {
-      this.BTN_ACCEPT.setText(TLKManager.GetStringById(38455).Value);
+      this.BTN_ACCEPT.setText(GameState.TLKManager.GetStringById(38455).Value);
     }
   }
 
   GetCurrentMemberCount() {
-    return PartyManager.CurrentMembers.length;
+    return GameState.PartyManager.CurrentMembers.length;
   }
 
   UpdateCount() {
-    this.LBL_COUNT.setText((PartyManager.MaxSize - PartyManager.CurrentMembers.length).toString());
+    this.LBL_COUNT.setText((GameState.PartyManager.MaxSize - GameState.PartyManager.CurrentMembers.length).toString());
   }
 
   hide() {
@@ -304,9 +303,9 @@ export class MenuPartySelection extends GameMenu {
       LBL_NA = this.getControlByName('LBL_NA' + i);
       LBL_CHAR.hide();
       LBL_NA.show();
-      if (PartyManager.IsAvailable(i)) {
+      if (GameState.PartyManager.IsAvailable(i)) {
         LBL_NA.hide();
-        let portrait = PartyManager.GetPortraitByIndex(i);
+        let portrait = GameState.PartyManager.GetPortraitByIndex(i);
         if (LBL_NA.getFillTextureName() != portrait) {
           LBL_CHAR.setFillTextureName(portrait).then( (texture: OdysseyTexture) => {
             LBL_CHAR.setFillTexture(texture);
@@ -340,8 +339,8 @@ export class MenuPartySelection extends GameMenu {
 
   canClose() {
     if (this.forceNPC1 > -1 || this.forceNPC2 > -1) {
-      const force1 = this.forceNPC1 == -1 || ( !!PartyManager.CurrentMembers.find( (cm) => cm.memberID == this.forceNPC1 ) );
-      const force2 = this.forceNPC2 == -1 || ( !!PartyManager.CurrentMembers.find( (cm) => cm.memberID == this.forceNPC2 ) );
+      const force1 = this.forceNPC1 == -1 || ( !!GameState.PartyManager.CurrentMembers.find( (cm) => cm.memberID == this.forceNPC1 ) );
+      const force2 = this.forceNPC2 == -1 || ( !!GameState.PartyManager.CurrentMembers.find( (cm) => cm.memberID == this.forceNPC2 ) );
       return (force1 && force2);
     }
     return true;
@@ -357,7 +356,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   isSelectable(index: number = 0) {
-    return PartyManager.IsSelectable(index);
+    return GameState.PartyManager.IsSelectable(index);
   }
 
   triggerControllerDUpPress() {

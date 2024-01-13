@@ -1,7 +1,10 @@
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
+import type { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeSkin class.
@@ -38,16 +41,16 @@ import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefin
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.weights_def = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.weights_def = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.MDXBoneWeightOffset = this.odysseyModel.mdlReader.readUInt32();
     this.MDXBoneIndexOffset = this.odysseyModel.mdlReader.readUInt32();
     this.boneMapOffset = this.odysseyModel.mdlReader.readUInt32();
     this.boneMapCount = this.odysseyModel.mdlReader.readUInt32();
 
-    this.boneQuaternionDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.bonePositionDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.boneConstantsDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.boneQuaternionDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.bonePositionDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.boneConstantsDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.bone_parts = [];
 

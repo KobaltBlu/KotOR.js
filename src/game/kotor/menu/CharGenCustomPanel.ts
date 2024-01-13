@@ -2,7 +2,6 @@ import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
-import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
 /**
  * CharGenCustomPanel class.
@@ -83,11 +82,11 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME6.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenManager.selectedCreature.equipment.ARMOR = undefined;
-        CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
-        GlobalVariableManager.Init();
-        PartyManager.PlayerTemplate = CharGenManager.selectedCreature.save();
-        PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
+        GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
+        GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
+        GameState.GlobalVariableManager.Init();
+        GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
+        GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder(true).then( () => {
           GameState.LoadModule('end_m01aa');
         });

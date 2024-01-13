@@ -7,7 +7,6 @@ import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenManager } from "../../../managers";
 import { AudioEngine } from "../../../audio/AudioEngine";
 
 /**
@@ -60,7 +59,7 @@ export class MainMenu extends GameMenu {
 
       this.BTN_NEWGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenManager.Start();
+        GameState.CharGenManager.Start();
       });
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {

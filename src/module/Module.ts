@@ -6,10 +6,7 @@ import EngineLocation from "../engine/EngineLocation";
 import { GameState } from "../GameState";
 import { CExoLocString } from "../resource/CExoLocString";
 import { GFFObject } from "../resource/GFFObject";
-import { ModuleArea, ModuleTimeManager } from ".";
-import { CombatEngine } from "../combat";
-import { ModuleObject, ModulePlayer } from ".";
-import { NWScript } from "../nwscript/NWScript";
+// import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ResourceTypes } from "../resource/ResourceTypes";
@@ -17,13 +14,15 @@ import { ERFObject } from "../resource/ERFObject";
 import { CurrentGame } from "../CurrentGame";
 import { RIMObject } from "../resource/RIMObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { GameEvent } from "../events";
-import { PartyManager, MenuManager, TLKManager, InventoryManager, TwoDAManager, ModuleObjectManager, FactionManager } from "../managers";
+import { GameEventFactory } from "../events/GameEventFactory";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { AudioEngine } from "../audio/AudioEngine";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { IModuleScripts } from "../interface/module/IModuleScripts";
 import { IAreaListItem } from "../interface/area/IAreaListItem";
+import type { GameEvent } from "../events/GameEvent";
+import { ModuleArea } from "./ModuleArea";
+import { ModuleTimeManager } from "./ModuleTimeManager";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -39,6 +38,9 @@ type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Module {
+
+  static ModuleArea: typeof ModuleArea = ModuleArea;
+
   ifo: GFFObject;
 
   areaName: string;
@@ -298,7 +300,7 @@ export class Module {
       if(ifo.RootNode.hasField('Mod_PlayerList') && isLoadingSave){
         let playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
         if(playerList.length){
-          PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
+          GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
         }
       }
 
@@ -386,8 +388,6 @@ export class Module {
   tick(delta = 0){
 
     if(this.readyToProcessEvents){
-      
-      CombatEngine.Update(delta);
 
       //Process EventQueue
       let eqLen = this.eventQueue.length - 1;
@@ -425,14 +425,14 @@ export class Module {
   }
 
   setReturnStrRef(enabled = false, str1 = -1, str2 = -1){
-    MenuManager.MenuMap.BTN_RETURN.setText(TLKManager.GetStringById(str1).Value);
+    GameState.MenuManager.MenuMap.BTN_RETURN.setText(GameState.TLKManager.GetStringById(str1).Value);
   }
 
   async loadScene(){
     try{
-      PartyManager.party = [];
+      GameState.PartyManager.party = [];
       
-      ModuleObjectManager.ResetPlayerId();
+      GameState.ModuleObjectManager.ResetPlayerId();
 
       if(this.area.sun.fogOn && this.area.sun.fogColor){
         GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
@@ -464,7 +464,7 @@ export class Module {
       if (GameState.camera.userData.pitch < -89.0)
         GameState.camera.userData.pitch = -89.0;
 
-      MenuManager.LoadScreen.setProgress(0);
+      GameState.MenuManager.LoadScreen.setProgress(0);
 
       await this.area.loadScene();
       this.transWP = null;
@@ -481,7 +481,7 @@ export class Module {
       if(!resRef){ continue; }
 
       const key = scriptKeys[i];
-      const script = NWScript.Load(resRef);
+      const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
 
       if(key == 'Mod_OnAcquirItem'){
@@ -540,9 +540,9 @@ export class Module {
       let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
       for(let i = 0; i < eventQueue.length; i++){
         let event_struct = eventQueue[i];
-        let event = GameEvent.EventFromStruct(event_struct);
+        let event = GameEventFactory.EventFromStruct(event_struct);
         console.log(event_struct, event);
-        if(event instanceof GameEvent){
+        if(event){
           this.eventQueue.push(event);
         }
       }
@@ -573,7 +573,7 @@ export class Module {
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
-    if(GameState.player instanceof ModuleObject){
+    if(GameState.player){
       GameState.player.destroy();
       GameState.player = undefined;
     }
@@ -589,7 +589,7 @@ export class Module {
   }
 
   async save( isSaveGame = false ){
-    PartyManager.Save();
+    GameState.PartyManager.Save();
 
     const ifo = new GFFObject();
     ifo.FileType = 'IFO ';
@@ -598,7 +598,7 @@ export class Module {
     const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
     for(let i = 0; i < this.eventQueue.length; i++){
       let event = this.eventQueue[i];
-      if(event instanceof GameEvent){
+      if(event){
         eventQueue.addChildStruct( event.export() );
       }
     }
@@ -651,7 +651,7 @@ export class Module {
 
     //Player
     const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
-    if(GameState.player instanceof ModulePlayer){
+    if(GameState.player){
       playerList.addChildStruct( GameState.player.save().RootNode );
     }
 
@@ -686,13 +686,13 @@ export class Module {
     
     console.log('Current Module Exported', this.filename);
 
-    await InventoryManager.Save();
-    await PartyManager.ExportPartyMemberTemplates();
-    await FactionManager.Export( path.join(CurrentGame.gameinprogress_dir, 'repute.fac') );
+    await GameState.InventoryManager.Save();
+    await GameState.PartyManager.ExportPartyMemberTemplates();
+    await GameState.FactionManager.Export( path.join(CurrentGame.gameinprogress_dir, 'repute.fac') );
   }
 
   includeInSave(){
-    const modulesave2DA = TwoDAManager.datatables.get('modulesave');
+    const modulesave2DA = GameState.TwoDAManager.datatables.get('modulesave');
     if(modulesave2DA){
       const moduleSave = modulesave2DA.getRowByColumnAndValue('modulename', this.filename);
       if(moduleSave){
@@ -891,7 +891,7 @@ export class Module {
     module.transWP = waypoint;
     if(!modName){ return module; }
     try{
-      ModuleObjectManager.Reset();
+      GameState.ModuleObjectManager.Reset();
       const archives = await Module.GetModuleArchives(modName);
       await ResourceLoader.InitModuleCache(archives);
       const ifo_data = await ResourceLoader.loadResource(ResourceTypes['ifo'], 'module');
@@ -911,9 +911,9 @@ export class Module {
       await module.area.load();
 
       if(module.nextObjId0)
-        ModuleObjectManager.COUNT = module.nextObjId0;
+        GameState.ModuleObjectManager.COUNT = module.nextObjId0;
 
-      ModuleObjectManager.module = module;
+      GameState.ModuleObjectManager.module = module;
       return module;
     }catch(e){
       console.log(`Module.Load: failed to load module.`);

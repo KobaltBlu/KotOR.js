@@ -1,7 +1,9 @@
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
+import type { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModel } from "./OdysseyModel";
 
 /**
  * OdysseyModelNodeAABB class.

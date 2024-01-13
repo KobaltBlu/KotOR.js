@@ -4,7 +4,6 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
-import { Module, ModuleAreaOfEffect, ModuleCamera, ModuleCreature, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleMGTrack, ModuleMiniGame, ModuleObject, ModulePath, ModulePlaceable, ModulePlayer, ModuleRoom, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from ".";
 import { AsyncLoop } from "../utility/AsyncLoop";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -22,7 +21,7 @@ import { CExoLocString } from "../resource/CExoLocString";
 import { VISObject } from "../resource/VISObject";
 import { ITextureLoaderQueuedRef } from "../interface/loaders/ITextureLoaderQueuedRef";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "../managers";
+// import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "../managers";
 import { ResourceLoader, TextureLoader } from "../loaders";
 import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
 import { AudioEngine } from "../audio";
@@ -30,6 +29,29 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { IAmbientSource } from "../interface/area/IAmbientSource";
 import { IGrassProperties } from "../interface/area/IGrassProperties";
+import { SpellCastInstance } from "../combat/SpellCastInstance";
+import { TextSprite3D } from "../engine/TextSprite3D";
+import { ModuleObject } from "./ModuleObject";
+import { ModuleAreaOfEffect } from "./ModuleAreaOfEffect";
+import { ModuleCamera } from "./ModuleCamera";
+import { ModuleCreature } from "./ModuleCreature";
+import { ModuleDoor } from "./ModuleDoor";
+import { ModuleEncounter } from "./ModuleEncounter";
+import { ModuleItem } from "./ModuleItem";
+import { ModuleMGEnemy } from "./ModuleMGEnemy";
+import { ModuleMGObstacle } from "./ModuleMGObstacle";
+import { ModuleWaypoint } from "./ModuleWaypoint";
+import { ModuleTrigger } from "./ModuleTrigger";
+import { ModuleStore } from "./ModuleStore";
+import { ModuleSound } from "./ModuleSound";
+import { ModuleRoom } from "./ModuleRoom";
+import { ModulePlayer } from "./ModulePlayer";
+import { ModulePlaceable } from "./ModulePlaceable";
+import { ModulePath } from "./ModulePath";
+import { ModuleMiniGame } from "./ModuleMiniGame";
+import { ModuleMGTrack } from "./ModuleMGTrack";
+import { ModuleMGPlayer } from "./ModuleMGPlayer";
+import type { Module } from "./Module";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -45,6 +67,27 @@ type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ModuleArea extends ModuleObject {
+
+  static ModuleObject: typeof ModuleObject = ModuleObject;
+  static ModuleAreaOfEffect: typeof ModuleAreaOfEffect = ModuleAreaOfEffect;
+  static ModuleCamera: typeof ModuleCamera = ModuleCamera;
+  static ModuleCreature: typeof ModuleCreature = ModuleCreature;
+  static ModuleDoor: typeof ModuleDoor = ModuleDoor;
+  static ModuleEncounter: typeof ModuleEncounter = ModuleEncounter;
+  static ModuleItem: typeof ModuleItem = ModuleItem;
+  static ModuleMGEnemy: typeof ModuleMGEnemy = ModuleMGEnemy;
+  static ModuleMGObstacle: typeof ModuleMGObstacle = ModuleMGObstacle;
+  static ModuleMGPlayer: typeof ModuleMGPlayer = ModuleMGPlayer;
+  static ModuleMGTrack: typeof ModuleMGTrack = ModuleMGTrack;
+  static ModuleMiniGame: typeof ModuleMiniGame = ModuleMiniGame;
+  static ModulePath: typeof ModulePath = ModulePath;
+  static ModulePlaceable: typeof ModulePlaceable = ModulePlaceable;
+  static ModulePlayer: typeof ModulePlayer = ModulePlayer;
+  static ModuleRoom: typeof ModuleRoom = ModuleRoom;
+  static ModuleSound: typeof ModuleSound = ModuleSound;
+  static ModuleStore: typeof ModuleStore = ModuleStore;
+  static ModuleTrigger: typeof ModuleTrigger = ModuleTrigger;
+  static ModuleWaypoint: typeof ModuleWaypoint = ModuleWaypoint;
 
   module: Module;
   are: GFFObject;
@@ -270,6 +313,9 @@ export class ModuleArea extends ModuleObject {
 
   restrictMode: number;
 
+  spellInstances: SpellCastInstance[] = [];
+  textSprites: TextSprite3D[] = [];
+
   constructor(resRef = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
     this.objectType |= ModuleObjectType.ModuleArea;
@@ -327,8 +373,8 @@ export class ModuleArea extends ModuleObject {
       this.sounds[0].destroy();
     }
 
-    while (PartyManager.party.length){
-      const pm = PartyManager.party.shift();
+    while (GameState.PartyManager.party.length){
+      const pm = GameState.PartyManager.party.shift();
       pm.destroy();
     }
 
@@ -343,7 +389,7 @@ export class ModuleArea extends ModuleObject {
     let creatureCount = this.creatures.length;
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
-    let partyCount = PartyManager.party.length;
+    let partyCount = GameState.PartyManager.party.length;
     let animTexCount = GameState.AnimatedTextures.length;
 
     //update triggers
@@ -363,7 +409,7 @@ export class ModuleArea extends ModuleObject {
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      PartyManager.party[i].update(delta);
+      GameState.PartyManager.party[i].update(delta);
     }
     
     //update creatures
@@ -388,7 +434,7 @@ export class ModuleArea extends ModuleObject {
 
     //unset party controlled
     for(let i = 0; i < partyCount; i++){
-      PartyManager.party[i].controlled = false;
+      GameState.PartyManager.party[i].controlled = false;
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
@@ -399,6 +445,45 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < roomCount; i++){
       this.rooms[i].update(delta);
       this.rooms[i].hide();
+    }
+
+    for(let i = 0, spellCount = this.spellInstances.length; i < spellCount; i++){
+      this.spellInstances[i].update(delta);
+    }
+
+    let spellIndex = this.spellInstances.length;
+    while(spellIndex--){
+      const spellInstance = this.spellInstances[spellIndex];
+      if(spellInstance && spellInstance.completed){
+        spellInstance.dispose();
+        this.spellInstances.splice(spellIndex, 1);
+      }
+    }
+
+    const textSpriteIndexer = new Map();
+    for(let i = 0, textSpriteCount = this.textSprites.length; i < textSpriteCount; i++){
+      const sprite = this.textSprites[i];
+      if(!sprite) continue;
+
+      if(!textSpriteIndexer.has(sprite.owner.id)){
+        textSpriteIndexer.set(sprite.owner.id, 0);
+      }
+      const index = textSpriteIndexer.get(sprite.owner.id);
+
+      sprite.container.position.copy(sprite.position);
+      sprite.container.position.z = sprite.position.z + (0.1 * index);
+
+      sprite.update(delta);
+      textSpriteIndexer.set(sprite.owner.id, index + 1);
+    }
+
+    let textSpriteIndex = this.textSprites.length;
+    while(textSpriteIndex--){
+      const textSprite = this.textSprites[textSpriteIndex];
+      if(textSprite && textSprite.expired){
+        textSprite.dispose();
+        this.textSprites.splice(textSpriteIndex, 1);
+      }
     }
 
     this.updateRoomVisibility(delta);
@@ -415,7 +500,7 @@ export class ModuleArea extends ModuleObject {
     let creatureCount = this.creatures.length;
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
-    let partyCount = PartyManager.party.length;
+    let partyCount = GameState.PartyManager.party.length;
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -434,7 +519,7 @@ export class ModuleArea extends ModuleObject {
 
     //update party
     for(let i = 0; i < partyCount; i++){
-      PartyManager.party[i].updatePaused(delta);
+      GameState.PartyManager.party[i].updatePaused(delta);
     }
     
     //update creatures
@@ -463,6 +548,18 @@ export class ModuleArea extends ModuleObject {
 
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
+  }
+
+  attachSpellInstance(spellInstance: SpellCastInstance){
+    if(!spellInstance) return;
+    GameState.group.spell_instances.add(spellInstance.container);
+    this.spellInstances.push(spellInstance);
+  }
+
+  attachTextSprite3D(sprite: TextSprite3D){
+    if(!sprite) return;
+    GameState.group.effects.add(sprite.container);
+    this.textSprites.push(sprite);
   }
 
   updateRoomVisibility(delta: number = 0){
@@ -514,8 +611,8 @@ export class ModuleArea extends ModuleObject {
   }
 
   reloadTextures(){
-    MenuManager.LoadScreen.open();
-    MenuManager.LoadScreen.LBL_HINT.setText('');
+    GameState.MenuManager.LoadScreen.open();
+    GameState.MenuManager.LoadScreen.LBL_HINT.setText('');
     GameState.loadingTextures = true;
     //Cleanup texture cache
     Array.from(TextureLoader.textures.keys()).forEach( (key) => {
@@ -538,7 +635,7 @@ export class ModuleArea extends ModuleObject {
       }
     }).iterate(() => {
       new AsyncLoop({
-        array: PartyManager.party,
+        array: GameState.PartyManager.party,
         onLoop: (partyMember: ModuleCreature, asyncLoop: AsyncLoop) => {
           partyMember.loadModel().then(() => {
             asyncLoop.next();
@@ -570,11 +667,11 @@ export class ModuleArea extends ModuleObject {
               }
             }).iterate(() => {
               TextureLoader.LoadQueue(() => {
-                MenuManager.LoadScreen.close();
+                GameState.MenuManager.LoadScreen.close();
                 GameState.loadingTextures = false;
               }, (ref: ITextureLoaderQueuedRef, index: number, count: number) => {
-                MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
-                MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
+                GameState.MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
+                GameState.MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
                 //console.log('tex', textureName, index, count);
               });
             });
@@ -874,7 +971,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   getCameraStyle(){
-    const cameraStyle2DA = TwoDAManager.datatables.get('camerastyle');
+    const cameraStyle2DA = GameState.TwoDAManager.datatables.get('camerastyle');
     if(cameraStyle2DA){
       return cameraStyle2DA.rows[this.cameraStyle];
     }
@@ -1010,17 +1107,17 @@ export class ModuleArea extends ModuleObject {
   async loadScene(){
     try{
       try{
-        MenuManager.InGameOverlay.miniMap.setAreaMap(this.areaMap);
-        MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.name);
-        MenuManager.MenuMap.miniMap.setAreaMap(this.areaMap);
-        MenuManager.MenuMap.SetMapTexture('lbl_map'+this.name);
+        GameState.MenuManager.InGameOverlay.miniMap.setAreaMap(this.areaMap);
+        GameState.MenuManager.InGameOverlay.SetMapTexture('lbl_map'+this.name);
+        GameState.MenuManager.MenuMap.miniMap.setAreaMap(this.areaMap);
+        GameState.MenuManager.MenuMap.SetMapTexture('lbl_map'+this.name);
       }catch(e){
         console.error(e);
       }
 
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(10);
+      GameState.MenuManager.LoadScreen.setProgress(10);
       
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
 
@@ -1028,46 +1125,46 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadPlaceables(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(20);
+      GameState.MenuManager.LoadScreen.setProgress(20);
 
       try { await this.loadWaypoints(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(30);
+      GameState.MenuManager.LoadScreen.setProgress(30);
 
       try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
       try { await this.loadCreatures(); } catch(e){ console.error(e); }
       try { await this.loadParty(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(40);
+      GameState.MenuManager.LoadScreen.setProgress(40);
 
       try { await this.loadsounds(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(50);
+      GameState.MenuManager.LoadScreen.setProgress(50);
 
       try { await this.loadTriggers(); } catch(e){ console.error(e); }
 
       try { await this.loadEncounters(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(60);
+      GameState.MenuManager.LoadScreen.setProgress(60);
 
       if(this.miniGame){
         try { await this.miniGame.load(); } catch(e){ console.error(e); }
       }
 
-      MenuManager.LoadScreen.setProgress(70);
+      GameState.MenuManager.LoadScreen.setProgress(70);
 
       try { await this.loadDoors(); } catch(e){ console.error(e); }
 
       try { await this.loadStores(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(80);
+      GameState.MenuManager.LoadScreen.setProgress(80);
 
-      MenuManager.LoadScreen.setProgress(90);
+      GameState.MenuManager.LoadScreen.setProgress(90);
 
       try { await this.loadAmbientAudio(); } catch(e){ console.error(e); }
       try { await this.loadBackgroundMusic(); } catch(e){ console.error(e); }
 
-      MenuManager.LoadScreen.setProgress(100);
+      GameState.MenuManager.LoadScreen.setProgress(100);
 
       FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.getFacing() - Math.PI/2);
 
@@ -1085,11 +1182,11 @@ export class ModuleArea extends ModuleObject {
   getSpawnLocation(): EngineLocation {
     if(GameState.isLoadingSave){
       return new EngineLocation(
-        PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),
-        PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YPosition').getValue(),
-        PartyManager.PlayerTemplate.RootNode.getFieldByLabel('ZPosition').getValue(),
-        PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XOrientation').getValue(),
-        PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YOrientation').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YPosition').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('ZPosition').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XOrientation').getValue(),
+        GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('YOrientation').getValue(),
         0
       );
     }else if(this.transWP instanceof GFFObject){
@@ -1116,11 +1213,11 @@ export class ModuleArea extends ModuleObject {
   }
 
   getPlayerTemplate(): GFFObject {
-    if(PartyManager.PlayerTemplate){
-      PartyManager.PlayerTemplate.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
-      return PartyManager.PlayerTemplate;
+    if(GameState.PartyManager.PlayerTemplate){
+      GameState.PartyManager.PlayerTemplate.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
+      return GameState.PartyManager.PlayerTemplate;
     }else{
-      return PartyManager.ResetPlayerTemplate();
+      return GameState.PartyManager.ResetPlayerTemplate();
     }
   }
 
@@ -1232,7 +1329,7 @@ export class ModuleArea extends ModuleObject {
         GameState.player.partyID = -1;
 
         if(!this.miniGame){
-          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
+          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
           GameState.group.party.add( GameState.player.container );
         }
 
@@ -1247,7 +1344,7 @@ export class ModuleArea extends ModuleObject {
           GameState.player.model = model;
           GameState.player.model.hasCollision = true;
           //let spawnLoc = this.getSpawnLocation();
-          let spawnLoc = PartyManager.GetSpawnLocation(GameState.player);
+          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.player);
           GameState.player.position.copy(spawnLoc.position);
           GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
@@ -1264,7 +1361,7 @@ export class ModuleArea extends ModuleObject {
         GameState.player = player;
       
         if(!this.miniGame){
-          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
+          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
           GameState.group.party.add( player.container );
         }
 
@@ -1295,8 +1392,8 @@ export class ModuleArea extends ModuleObject {
    */
   async loadParty(): Promise<void> {
     console.log('Loading Party Member');
-    for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      await PartyManager.LoadPartyMember(i);
+    for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
+      await GameState.PartyManager.LoadPartyMember(i);
     }
   }
 
@@ -1631,7 +1728,7 @@ export class ModuleArea extends ModuleObject {
    * Load the area's ambient audio
    */
   async loadAmbientAudio(): Promise<void> {
-    const ambientsound2DA = TwoDAManager.datatables.get('ambientsound');
+    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
     if(!ambientsound2DA){ return; }
 
     const ambientDay = ambientsound2DA.rows[this.audio.ambient.day].resource;
@@ -1648,7 +1745,7 @@ export class ModuleArea extends ModuleObject {
    * Load the area's background music
    */
   async loadBackgroundMusic(): Promise<void> {
-    const ambientmusic2DA = TwoDAManager.datatables.get('ambientmusic');
+    const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     if(!ambientmusic2DA){ return; }
 
     const bgMusic = ambientmusic2DA.rows[this.audio.music.day].resource;
@@ -1721,9 +1818,9 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    for(let i = 0; i < PartyManager.party.length; i++){
-      if(PartyManager.party[i] instanceof ModuleObject){
-        PartyManager.party[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      if(GameState.PartyManager.party[i] instanceof ModuleObject){
+        GameState.PartyManager.party[i].onSpawn(runSpawnScripts);
       }
     }
 

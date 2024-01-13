@@ -8,7 +8,6 @@ import { ActionMenuManager } from "../../../ActionMenuManager";
 import { TalentObject } from "../../../talents";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { AutoPauseManager, PartyManager } from "../../../managers";
 
 /**
  * InGameOverlay class.
@@ -258,9 +257,9 @@ export class InGameOverlay extends K1_InGameOverlay {
         e.stopPropagation();
         
         if(GameState.State == EngineState.PAUSED){
-          AutoPauseManager.Unpause();
+          GameState.AutoPauseManager.Unpause();
         }else{
-          AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
       });
@@ -278,11 +277,11 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
       });
 
       this.BTN_CHAR3.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
       });
 
       this.BTN_CLEARALL.addEventListener('click', (e: any) => {

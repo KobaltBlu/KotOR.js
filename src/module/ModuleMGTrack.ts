@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModel } from "../odyssey";

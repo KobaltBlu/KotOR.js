@@ -4,7 +4,7 @@ import type { ModuleItem } from "../../../module";
 import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { PartyManager } from "../../../managers";
+import { GameState } from "../../../GameState";
 
 /**
  * MenuEquipment class.
@@ -200,7 +200,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         e.stopPropagation();
         if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
-          let currentPC = PartyManager.party[0];
+          let currentPC = GameState.PartyManager.party[0];
           currentPC.equipItem(this.slot, this.selectedItem, () => {
             this.UpdateSlotIcons();
           });
@@ -216,7 +216,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       }
 
       this.BTN_SWAPWEAPONS.addEventListener('click', (e: any) => {
-        let currentPC = PartyManager.party[0];
+        let currentPC = GameState.PartyManager.party[0];
         if(currentPC){
           const right_1 = currentPC.equipment.RIGHTHAND;
           const right_2 = currentPC.equipment.RIGHTHAND2;
@@ -296,11 +296,11 @@ export class MenuEquipment extends K1_MenuEquipment {
 
   UpdateSlotIcons(force: boolean = false) {
     super.UpdateSlotIcons(force);
-    let currentPC = PartyManager.party[0];
+    let currentPC = GameState.PartyManager.party[0];
     if (currentPC.getRace() == 6) {
       let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
       if (l_weap2) {
-        let icon = 'i' + l_weap2._baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
+        let icon = 'i' + l_weap2.baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L2.setFillTextureName(icon);
 
@@ -310,7 +310,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       }
       let r_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
       if (r_weap2) {
-        let icon = 'i' + r_weap2._baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
+        let icon = 'i' + r_weap2.baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_R2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R2.setFillTextureName(icon);
         }

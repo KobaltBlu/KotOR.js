@@ -1,6 +1,6 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { DialogMessageManager, FeedbackMessageManager, TLKManager } from "../../../managers";
 
 /**
  * MenuMessages class.
@@ -56,13 +56,13 @@ export class MenuMessages extends GameMenu {
     this.LB_MESSAGES.clearItems();
     this.LB_DIALOG.clearItems();
 
-    const dlg_entries = DialogMessageManager.Entries.slice(0).reverse();
+    const dlg_entries = GameState.DialogMessageManager.Entries.slice(0).reverse();
     for(let i = 0; i < dlg_entries.length; i++){
       const entry = dlg_entries[i];
       this.LB_DIALOG.addItem( `${entry.speaker}: ${entry.message}` );
     }
 
-    const fb_entries = FeedbackMessageManager.Entries.slice(0).reverse();
+    const fb_entries = GameState.FeedbackMessageManager.Entries.slice(0).reverse();
     for(let i = 0; i < fb_entries.length; i++){
       const entry = fb_entries[i];
       this.LB_MESSAGES.addItem( `${entry.message}` );
@@ -77,10 +77,10 @@ export class MenuMessages extends GameMenu {
     this.LB_DIALOG.hide();
     if(this.mode == 0){
       this.LB_DIALOG.show();
-      this.BTN_SHOW.setText( TLKManager.GetStringById(42142).Value );
+      this.BTN_SHOW.setText( GameState.TLKManager.GetStringById(42142).Value );
     }else{
       this.LB_MESSAGES.show();
-      this.BTN_SHOW.setText( TLKManager.GetStringById(42143).Value );
+      this.BTN_SHOW.setText( GameState.TLKManager.GetStringById(42143).Value );
     }
   }
 

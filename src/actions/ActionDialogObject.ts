@@ -1,15 +1,12 @@
-import { ActionMoveToPoint } from ".";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
-import { MenuManager } from "../managers";
-import { ModuleCreature, ModuleObject } from "../module";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { DLGObject } from "../resource/DLGObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
+import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
@@ -23,8 +20,6 @@ import { Action } from "./Action";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionDialogObject extends Action {
-  declare target: ModuleObject;
-
   validate_conversation_resref: boolean = false;
   conversation: DLGObject;
 
@@ -57,13 +52,13 @@ export class ActionDialogObject extends Action {
       }
     }
 
-    if(this.owner instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       if(GameState.Mode != EngineMode.DIALOG){
         let distance = Utility.Distance2D(this.owner.position, this.target.position);
         if(distance > 4.5 && !ignoreStartRange){
 
           this.owner.openSpot = undefined;
-          let actionMoveToTarget = new ActionMoveToPoint();
+          let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
           actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
           actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
           actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -85,10 +80,10 @@ export class ActionDialogObject extends Action {
 
           this.owner.heardStrings = [];
           this.target.heardStrings = [];
-          if(this.target.scripts.onDialog instanceof NWScriptInstance){
+          if(this.target.scripts.onDialog){
             this.target.onDialog(this.owner, -1);
           }else{
-            MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
+            GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
           }
           return ActionStatus.COMPLETE;
         }
@@ -97,7 +92,7 @@ export class ActionDialogObject extends Action {
         return ActionStatus.FAILED;
       }
     }else{
-      MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
+      GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
       return ActionStatus.COMPLETE;
     }
     

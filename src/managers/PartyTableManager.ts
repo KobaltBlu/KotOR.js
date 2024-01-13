@@ -7,12 +7,12 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { PartyManager } from "./PartyManager";
 import * as path from "path";
 import { TwoDAManager } from "./TwoDAManager";
 import { GameFileSystem } from "../utility/GameFileSystem";
-import { JournalManager, JournalEntry } from "./JournalManager";
-import { DialogMessageManager, DialogMessageEntry, FeedbackMessageManager, FeedbackMessageEntry } from ".";
+import { JournalEntry } from "../engine/JournalEntry";
+import { DialogMessageEntry } from "../engine/DialogMessageEntry";
+import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 
 /**
  * PartyTableManager class.
@@ -67,21 +67,21 @@ export class PartyTableManager {
         let avail = gff.getFieldByLabel('PT_AVAIL_NPCS').getChildStructs();
         for(let i = 0; i < avail.length; i++){
           //console.log(PartyManager.NPCS[i]);
-          PartyManager.NPCS[i].available = avail[i].getFieldByLabel('PT_NPC_AVAIL').getValue();
-          PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
+          GameState.PartyManager.NPCS[i].available = avail[i].getFieldByLabel('PT_NPC_AVAIL').getValue();
+          GameState.PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
         }
       }
 
-      PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
+      GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
 
       //console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
 
       if(gff.RootNode.hasField('PT_MEMBERS')){
         let pms = gff.getFieldByLabel('PT_MEMBERS').getChildStructs();
         let currentPartyInfo = [];
-        PartyManager.CurrentMembers = [];
+        GameState.PartyManager.CurrentMembers = [];
         for(let i = 0; i < pms.length; i++){
-          PartyManager.CurrentMembers.push({
+          GameState.PartyManager.CurrentMembers.push({
             isLeader: pms[i].getFieldByLabel('PT_IS_LEADER').getValue() ? true : false,
             memberID: pms[i].getFieldByLabel('PT_MEMBER_ID').getValue()
           })
@@ -91,9 +91,9 @@ export class PartyTableManager {
           array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
           onLoop: (id: number, asyncLoop: AsyncLoop) => {
             GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc') ).then( (buffer) => {
-              PartyManager.NPCS[id].template = null;
+              GameState.PartyManager.NPCS[id].template = null;
               if(buffer.length){
-                PartyManager.NPCS[id].template = new GFFObject(buffer);
+                GameState.PartyManager.NPCS[id].template = new GFFObject(buffer);
               }
               asyncLoop.next();
             }).catch( (err) => {
@@ -112,21 +112,21 @@ export class PartyTableManager {
       if(gff.RootNode.hasField('JNL_Entries')){
         const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
         for(let i = 0; i < entries.length; i++){
-          JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
+          GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
         }
       }
 
       if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
         const entries = gff.RootNode.getFieldByLabel('PT_DLG_MSG_LIST').getChildStructs();
         for(let i = 0; i < entries.length; i++){
-          DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
+          GameState.DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
         }
       }
 
       if(gff.RootNode.hasField('PT_FB_MSG_LIST')){
         const entries = gff.RootNode.getFieldByLabel('PT_FB_MSG_LIST').getChildStructs();
         for(let i = 0; i < entries.length; i++){
-          FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
+          GameState.FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
         }
       }
     }else{
@@ -144,9 +144,9 @@ export class PartyTableManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'GlxyMap')).addChildStruct( Planetary.SaveStruct() );
       const jnl_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'JNL_Entries'));
 
-      for(let i = 0; i <  JournalManager.Entries.length; i++){
+      for(let i = 0; i <  GameState.JournalManager.Entries.length; i++){
         jnl_list.addChildStruct(
-          JournalManager.Entries[i].toStruct()
+          GameState.JournalManager.Entries[i].toStruct()
         );
       }
 
@@ -157,7 +157,7 @@ export class PartyTableManager {
       //TODO: Party Available NPCS
       let maxPartyMembers = (ApplicationProfile.key == 'kotor') ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
-        let pm = PartyManager.NPCS[i];
+        let pm = GameState.PartyManager.NPCS[i];
         let availStruct = new GFFStruct();
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_AVAIL') ).setValue(pm.available ? 1 : 0);
         availStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_NPC_SELECT') ).setValue(pm.canSelect ? 1 : 0);
@@ -165,35 +165,35 @@ export class PartyTableManager {
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.player ? -1 : PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
       partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
 
       //TODO: COST MULT LIST
 
       const dlg_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
 
-      for(let i = 0; i <  DialogMessageManager.Entries.length; i++){
+      for(let i = 0; i <  GameState.DialogMessageManager.Entries.length; i++){
         dlg_list.addChildStruct(
-          DialogMessageManager.Entries[i].toStruct()
+          GameState.DialogMessageManager.Entries[i].toStruct()
         );
       }
 
       const fb_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_FB_MSG_LIST'));
 
-      for(let i = 0; i <  FeedbackMessageManager.Entries.length; i++){
+      for(let i = 0; i <  GameState.FeedbackMessageManager.Entries.length; i++){
         fb_list.addChildStruct(
-          FeedbackMessageManager.Entries[i].toStruct()
+          GameState.FeedbackMessageManager.Entries[i].toStruct()
         );
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).setValue(PartyManager.Gold);
+      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).setValue(GameState.PartyManager.Gold);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_LAST_GUI_PNL')).setValue(0);
       let ptMembersList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
 
       let numMembers = 0;
-      for(let i = 0; i < PartyManager.party.length; i++){
-        let member = PartyManager.party[i];
+      for(let i = 0; i < GameState.PartyManager.party.length; i++){
+        let member = GameState.PartyManager.party[i];
         if(member != GameState.player){
           let memberStruct = new GFFStruct();
           memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );

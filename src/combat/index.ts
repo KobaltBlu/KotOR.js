@@ -1,7 +1,8 @@
 
 export * from "./CombatAttackDamage";
 export * from "./CombatAttackData";
-export * from "./CombatEngine";
+export * from "./CombatData";
+export * from "./CombatRound";
 export * from "./CombatRoundAction";
-export * from "./CombatRoundData";
 export * from "./CreatureClass";
+export * from "./SpellCastInstance";

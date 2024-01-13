@@ -3,7 +3,6 @@ import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { TLKManager } from "../../../managers";
 import { Module } from "../../../module";
 import { NWScript } from "../../../nwscript/NWScript";
 
@@ -78,42 +77,42 @@ export class MenuOptions extends GameMenu {
 
       this.BTN_LOADGAME.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[42300].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42300].Value)
       });
 
       this.BTN_SAVEGAME.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[42301].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42301].Value)
       });
 
       this.BTN_GAMEPLAY.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[48006].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48006].Value)
       });
 
       this.BTN_FEEDBACK.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[42274].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42274].Value)
       });
 
       this.BTN_AUTOPAUSE.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[48572].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48572].Value)
       });
 
       this.BTN_GRAPHICS.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[48010].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48010].Value)
       });
 
       this.BTN_SOUND.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[48012].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48012].Value)
       });
 
       this.BTN_QUIT.addEventListener( 'hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(TLKManager.TLKStrings[42302].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42302].Value)
       });
 
       this.BTN_QUIT.addEventListener('click', () => {

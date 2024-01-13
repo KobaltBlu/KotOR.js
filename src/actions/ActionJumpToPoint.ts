@@ -1,6 +1,7 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreature } from "../module";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 import * as THREE from "three";
 
@@ -56,7 +57,7 @@ export class ActionJumpToPoint extends Action {
       this.getParameter(7)
     );
 
-    if(this.owner instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       this.owner.setPosition(new THREE.Vector3(this.x, this.y, this.z));
       this.owner.setFacing(this.facing, false);
       this.owner.collisionData.groundFace = undefined;

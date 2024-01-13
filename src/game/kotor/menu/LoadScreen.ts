@@ -1,7 +1,7 @@
+import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIProgressBar } from "../../../gui";
-import { TLKManager, TwoDAManager, FadeOverlayManager } from "../../../managers";
 
 /**
  * LoadScreen class.
@@ -69,19 +69,19 @@ export class LoadScreen extends GameMenu {
   }
 
   showRandomHint() {
-    this.LBL_LOADING.setText(TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
-    let hint = TwoDAManager.datatables.get('loadscreenhints').rows[id];
+    this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
+    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
+    let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
     if (!hint) {
       console.log('showRandomHint', id);
-      hint = TwoDAManager.datatables.get('loadscreenhints').rows[0];
+      hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[0];
     }
-    this.LBL_HINT.setText(TLKManager.TLKStrings[hint.gameplayhint].Value);
+    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[hint.gameplayhint].Value);
   }
 
   showSavingMessage() {
-    this.LBL_LOADING.setText(TLKManager.TLKStrings[42528].Value);
-    this.LBL_HINT.setText(TLKManager.TLKStrings[41926].Value);
+    this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42528].Value);
+    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[41926].Value);
     this.setProgress(0);
   }
 
@@ -92,12 +92,12 @@ export class LoadScreen extends GameMenu {
   show() {
     super.show();
     this.setProgress(0);
-    FadeOverlayManager.plane.visible = false;
+    GameState.FadeOverlayManager.plane.visible = false;
   }
 
   hide() {
     super.hide();
-    FadeOverlayManager.plane.visible = true;
+    GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }
   

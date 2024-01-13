@@ -9,9 +9,27 @@ import { GameFileSystem } from "./utility/GameFileSystem";
 import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
-import { KEYManager, JournalManager, TLKManager, RIMManager, ERFManager, TwoDAManager, AppearanceManager } from "./managers";
+import { 
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
+  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager,   
+  KEYManager,
+  RIMManager,
+  ERFManager
+} from "./managers";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
+import { SaveGame } from "./SaveGame";
+import { Planetary } from "./Planetary";
+import { Module } from "./module/Module";
+import { NWScript } from "./nwscript/NWScript";
+
+import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
+import { ActionMenuManager } from "./ActionMenuManager";
+import { ActionFactory } from "./actions/ActionFactory";
+import { GameEffectFactory } from "./effects/GameEffectFactory";
+import { GameEventFactory } from "./events/GameEventFactory";
+import { INIConfig } from "./INIConfig";
 
 /**
  * GameInitializer class.
@@ -39,6 +57,43 @@ export class GameInitializer {
 
     ResourceLoader.InitCache();
 
+    GameState.AppearanceManager = AppearanceManager;
+    GameState.AutoPauseManager = AutoPauseManager;
+    GameState.CameraShakeManager = CameraShakeManager;
+    GameState.CharGenManager = CharGenManager;
+    GameState.CheatConsoleManager = CheatConsoleManager;
+    GameState.ConfigManager = ConfigManager;
+    GameState.CursorManager = CursorManager;
+    GameState.DialogMessageManager = DialogMessageManager;
+    GameState.FactionManager = FactionManager;
+    GameState.FadeOverlayManager = FadeOverlayManager;
+    GameState.FeedbackMessageManager = FeedbackMessageManager;
+    GameState.GlobalVariableManager = GlobalVariableManager;
+    GameState.InventoryManager = InventoryManager;
+    GameState.JournalManager = JournalManager;
+    GameState.LightManager = LightManager;
+    GameState.MenuManager = MenuManager;
+    GameState.ModuleObjectManager = ModuleObjectManager;
+    GameState.PartyManager = PartyManager;
+    GameState.PartyTableManager = PartyTableManager;
+    GameState.ResolutionManager = ResolutionManager;
+    GameState.ShaderManager = ShaderManager;
+    GameState.TLKManager = TLKManager;
+    GameState.TwoDAManager = TwoDAManager;
+
+    GameState.Module = Module;
+    GameState.NWScript = NWScript;
+
+    GameState.TalentObject = TalentObject;
+    GameState.TalentFeat = TalentFeat;
+    GameState.TalentSkill = TalentSkill;
+    GameState.TalentSpell = TalentSpell;
+
+    GameState.ActionMenuManager = ActionMenuManager;
+    GameState.ActionFactory = ActionFactory;
+    GameState.GameEffectFactory = GameEffectFactory;
+    GameState.GameEventFactory = GameEventFactory;
+
     CurrentGame.CleanGameInProgressFolder().then( () => {
       if(GameInitializer.currentGame != props.game){
         GameInitializer.currentGame = props.game;
@@ -58,9 +113,31 @@ export class GameInitializer {
                 TLKManager.LoadTalkTable().then( () => {
                   KeyMapper.Init();
                   GamePad.Init();
-                  if(typeof props.onLoad === 'function'){
-                    props.onLoad();
+                  if(GameState.GameKey == GameEngineType.TSL){
+                    GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
+                  }else{
+                    GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
                   }
+                  GameState.iniConfig.load().then( () => {
+                    AutoPauseManager.INIConfig = GameState.iniConfig;
+                    AutoPauseManager.Init();
+
+                    
+                    GameState.GlobalVariableManager.Init();
+
+                    
+                    console.log('Planetary: Loading');
+                    Planetary.Init().then( () => {
+                    
+                      console.log('SaveGames: Loading');
+                      SaveGame.GetSaveGames().then( () => {
+                        console.log('SaveGames: Complete');
+                        if(typeof props.onLoad === 'function'){
+                          props.onLoad();
+                        }
+                      });
+                    });
+                  });
                 })
               });
             });

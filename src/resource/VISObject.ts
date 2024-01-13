@@ -1,5 +1,7 @@
 import { BinaryWriter } from "../BinaryWriter";
-import { ModuleArea, ModuleRoom } from "../module";
+import { ModuleObjectType } from "../enums";
+import type { ModuleArea, ModuleRoom } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
@@ -84,7 +86,7 @@ export class VISObject {
         const visRoom = this.rooms[i];
         for(let j = 0; j < this.area.rooms.length; j++){
           const room = this.area.rooms[j];
-          if( room instanceof ModuleRoom && (room.roomName.toLowerCase() == visRoom.name.toLowerCase()) ){
+          if( BitWise.InstanceOfObject(room, ModuleObjectType.ModuleRoom) && (room.roomName.toLowerCase() == visRoom.name.toLowerCase()) ){
             room.hasVISObject = true;
           }
         }

@@ -1,7 +1,9 @@
-import { OdysseyModel, OdysseyModelAnimationNode } from ".";
 import * as THREE from 'three';
-import { TwoDAManager } from "../managers";
+import { TwoDAManager } from "../managers/TwoDAManager";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
+import { OdysseyModelAnimationNode } from './OdysseyModelAnimationNode';
+import type { OdysseyModel } from './OdysseyModel';
+import { OdysseyModelUtility } from './OdysseyModelUtility';
 
 /**
  * OdysseyModelAnimation class.
@@ -108,8 +110,8 @@ export class OdysseyModelAnimation {
     this.transition = this.odysseyModel.mdlReader.readSingle();
     this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-    let _eventsDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    //anim.events = OdysseyModel.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
+    let _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    //anim.events = OdysseyModelUtility.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
     this.events = new Array(_eventsDef.count);
     this.odysseyModel.mdlReader.movePointerForward(4); //Unknown uint32
 

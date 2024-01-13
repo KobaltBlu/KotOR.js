@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";

@@ -1,4 +1,5 @@
-import { ModuleObject } from "../module";
+import { TalentObjectType } from "../enums/engine/TalentObjectType";
+import type { ModuleObject } from "../module";
 
 /**
  * TalentObject class.
@@ -11,7 +12,7 @@ import { ModuleObject } from "../module";
  */
 export class TalentObject {
   id: number;
-  type: number;
+  objectType: number = TalentObjectType.TalentObject;
   category: number;
   item: ModuleObject;
   itemPropertyIndex: number;

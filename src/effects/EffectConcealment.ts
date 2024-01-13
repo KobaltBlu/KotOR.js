@@ -1,6 +1,5 @@
-import { GameEffect } from ".";
+import { GameEffect } from "./GameEffect";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObject } from "../module";
 
 /**
  * EffectConcealment class.

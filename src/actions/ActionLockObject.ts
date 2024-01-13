@@ -2,11 +2,12 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
-import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
+// import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
-import { ActionMoveToPoint } from "./ActionMoveToPoint";
 
 /**
  * ActionLockObject class.
@@ -29,18 +30,18 @@ export class ActionLockObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!(this.target instanceof ModuleDoor) && !(this.target instanceof ModulePlaceable))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
 
     this.target = this.getParameter(0);
 
-    if(this.owner instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       let distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
-        this.owner.openSpot = undefined;
-        let actionMoveToTarget = new ActionMoveToPoint();
+        (this.owner as any).openSpot = undefined;
+        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -60,24 +61,24 @@ export class ActionLockObject extends Action {
 
         this.owner.setFacingObject( this.target );
 
-        if(this.target instanceof ModuleDoor){
-          this.target.closeDoor(this.owner);
-        }else if(this.target instanceof ModulePlaceable){
-          this.target.close(this.owner);
+        if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
+          (this.target as any).closeDoor(this.owner);
+        }else if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+          (this.target as any).close(this.owner);
         }
 
-        this.target.setLocked(true);
+        (this.target as any).setLocked(true);
         return ActionStatus.COMPLETE;
         
       }
     }else{
-      if(this.target instanceof ModuleDoor){
-        this.target.closeDoor(this.owner);
-      }else if(this.target instanceof ModulePlaceable){
-        this.target.close(this.owner);
+      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
+        (this.target as any).closeDoor(this.owner);
+      }else if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+        (this.target as any).close(this.owner);
       }
 
-      this.target.setLocked(true);
+      (this.target as any).setLocked(true);
       return ActionStatus.COMPLETE;
     }
 

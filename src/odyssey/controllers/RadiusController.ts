@@ -2,12 +2,11 @@ import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controll
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyModelNodeLight } from "../OdysseyModelNodeLight";
+import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 import * as THREE from "three";
-import { OdysseyLight3D } from "../../three/odyssey";
+import type { OdysseyLight3D } from "../../three/odyssey/OdysseyLight3D";
 
 /**
  * RadiusController class.
@@ -32,8 +31,8 @@ export class RadiusController extends OdysseyController {
         manager.modelNode.light.distance = data.value || 0.000000001;
       }else if (manager.modelNode.light instanceof THREE.AmbientLight){
         // manager.modelNode.light.distance = data.value || 0.000000001;
-      }else if (manager.modelNode.light instanceof OdysseyLight3D){
-        manager.modelNode.light.radius = data.value || 0.000000001;
+      }else if (manager.modelNode.light?.type == 'OdysseyLight'){
+        (manager.modelNode.light as OdysseyLight3D).radius = data.value || 0.000000001;
       }
     }
   }
@@ -44,8 +43,8 @@ export class RadiusController extends OdysseyController {
         manager.modelNode.light.distance = ((next.value - last.value) * fl + last.value) || 0.000000001;
       }else if (manager.modelNode.light instanceof THREE.AmbientLight){
         // manager.modelNode.light.distance = ((next.value - last.value) * fl + last.value) || 0.000000001;
-      }else if (manager.modelNode.light instanceof OdysseyLight3D){
-        manager.modelNode.light.radius = ((next.value - last.value) * fl + last.value) || 0.000000001;
+      }else if (manager.modelNode.light?.type == 'OdysseyLight'){
+        (manager.modelNode.light as OdysseyLight3D).radius = ((next.value - last.value) * fl + last.value) || 0.000000001;
       }
     }
   }

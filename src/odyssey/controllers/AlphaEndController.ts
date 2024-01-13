@@ -1,4 +1,4 @@
-import { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";

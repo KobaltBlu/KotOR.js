@@ -1,6 +1,7 @@
-import { EffectDamageResistance, EffectVisualEffect, GameEffect } from ".";
+import { GameState } from "../GameState";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { TwoDAManager } from "../managers";
+import { GameEffect } from "./GameEffect";
+// import { TwoDAManager } from "../managers";
 
 /**
  * EffectForceShield class.
@@ -24,7 +25,7 @@ export class EffectForceShield extends GameEffect {
   initialize(){
     super.initialize();
 
-    const forceShield2DA = TwoDAManager.datatables.get('forceshields');
+    const forceShield2DA = GameState.TwoDAManager.datatables.get('forceshields');
     if(forceShield2DA){
       this.forceShield = forceShield2DA.rows[this.getInt(0)];
     }
@@ -38,7 +39,7 @@ export class EffectForceShield extends GameEffect {
 
     super.onApply();
     
-    let eVisualEffect = new EffectVisualEffect();
+    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
@@ -50,7 +51,7 @@ export class EffectForceShield extends GameEffect {
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
-    let eDamageResistEffect = new EffectDamageResistance();
+    let eDamageResistEffect = new GameState.GameEffectFactory.EffectDamageResistance();
     eDamageResistEffect.setCreator(this.getCreator());
     eDamageResistEffect.setSpellId(this.getSpellId());
     eDamageResistEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());

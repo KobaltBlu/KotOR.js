@@ -1,6 +1,6 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton } from "../../../gui";
 import { CharGenName as K1_CharGenName } from "../../kotor/KOTOR";
-import { CharGenManager } from "../../../managers";
 
 /**
  * CharGenName class.
@@ -40,14 +40,14 @@ export class CharGenName extends K1_CharGenName {
 
       this.END_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
+        GameState.CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
         this.manager.CharGenQuickPanel.step2 = true;
         this.close();
       });
 
       this.BTN_RANDOM.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.NAME_BOX_EDIT.setText(CharGenManager.generateRandomName());
+        this.NAME_BOX_EDIT.setText(GameState.CharGenManager.generateRandomName());
       });
       resolve();
     });
@@ -55,7 +55,7 @@ export class CharGenName extends K1_CharGenName {
 
   show() {
     super.show();
-    this.NAME_BOX_EDIT.setText(CharGenManager.selectedCreature.firstName);
+    this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.firstName);
   }
   
 }

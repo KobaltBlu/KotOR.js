@@ -7,7 +7,6 @@ import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { SaveGame } from "../../../SaveGame";
-import { TLKManager } from "../../../managers";
 
 /**
  * MenuSaveLoad class.
@@ -55,7 +54,7 @@ export class MenuSaveLoad extends GameMenu {
         e.stopPropagation();
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
-          if(savegame instanceof SaveGame){
+          if(savegame){
             this.manager.ClearMenus();
             if(GameState.module instanceof Module){
               GameState.module.dispose();
@@ -103,11 +102,11 @@ export class MenuSaveLoad extends GameMenu {
       saves = SaveGame.saves.filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
-      this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1587].Value);
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
       saves.unshift(new NewSaveItem());
     } else {
       saves = SaveGame.saves;
-      this.BTN_SAVELOAD.setText(TLKManager.TLKStrings[1589].Value);
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
     }
     for (let i = 0; i < saves.length; i++) {
       let save = saves[i];
@@ -178,6 +177,6 @@ export class NewSaveItem extends SaveGame {
   }
 
   getFullName(){
-    return TLKManager.TLKStrings[1586].Value;
+    return GameState.TLKManager.TLKStrings[1586].Value;
   }
 }

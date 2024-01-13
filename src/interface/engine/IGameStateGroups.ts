@@ -29,4 +29,5 @@ export interface IGameStateGroups {
   stunt: THREE.Group;
   weather_effects: THREE.Group;
   room_walkmeshes: THREE.Group;
+  spell_instances: THREE.Group;
 };

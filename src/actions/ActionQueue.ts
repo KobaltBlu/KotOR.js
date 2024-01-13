@@ -1,6 +1,7 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ModuleObject } from "../module";
-import { Action } from "./Action";
+import { ActionType } from "../enums/actions/ActionType";
+import type { ModuleObject } from "../module";
+import type { Action } from "./Action";
 
 /**
  * ActionQueue class.
@@ -12,15 +13,26 @@ import { Action } from "./Action";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionQueue extends Array {
+
+  static AUTO_INCREMENT_GROUP_ID = 0xFFFF;
+  static MAX_GROUP_ID = 0xFFFE;
+  
   NEXT_GROUP_ID: number = 0;
-  NEXT_ACTION_ID: number = 0;
-  groupId: number;
+  nextGroupId: number;
   lastGroupId: number;
   owner: any;
 
+  /**
+   * ActionQueue
+   * initializes a new ActionQueue object
+   *
+   * @param ...items - an array of actions to initialize the queue with
+   * @returns void
+   *
+   */
   constructor(...items: any[]){
     super(...items);
-    this.groupId = 1;
+    this.nextGroupId = 1;
     this.lastGroupId = 0;
     this.owner = undefined;
   }
@@ -44,10 +56,9 @@ export class ActionQueue extends Array {
    *
    */
   add( actionNode: Action ){
-    if(actionNode instanceof Action){
-      actionNode.owner = this.owner;
-      super.push( actionNode );
-    }
+    if(!actionNode){ return; }
+    actionNode.owner = this.owner;
+    super.push( actionNode );
   }
 
   /**
@@ -58,9 +69,39 @@ export class ActionQueue extends Array {
    *
    */
   addFront( actionNode: Action ){
-    if(actionNode instanceof Action){
-      actionNode.owner = this.owner;
-      super.unshift( actionNode );
+    if(!actionNode){ return; }
+    actionNode.owner = this.owner;
+    super.unshift( actionNode );
+  }
+
+  /**
+   * handles the groupId parameter.
+   * It can either be set to auto increment or use the value passed as it's groupId
+   *
+   * @param actionNode - the action node to push
+   * @returns void
+   *
+   */
+  #processGroupId(actionNode: Action){
+    let newGroupId = actionNode.groupId;
+    if(newGroupId < 0 || newGroupId > 0xFFFF){
+      console.warn('Invalid GroupID', newGroupId);
+      newGroupId = 0xFFFF;
+    }
+    if(newGroupId == ActionQueue.AUTO_INCREMENT_GROUP_ID){
+      newGroupId = this.nextGroupId;
+      if(newGroupId >= ActionQueue.MAX_GROUP_ID){
+        newGroupId = this.lastGroupId = 0;
+        this.nextGroupId = 1;
+      }else{
+        this.lastGroupId = newGroupId;
+        this.nextGroupId++;
+      }
+      actionNode.groupId = newGroupId;
+    }else if(actionNode.groupId == ActionQueue.MAX_GROUP_ID){
+      actionNode.groupId = this.lastGroupId;
+    }else{
+      actionNode.groupId = newGroupId;
     }
   }
 
@@ -76,12 +117,7 @@ export class ActionQueue extends Array {
   push( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = this;
-    if(actionNode.actionId == -1){
-      actionNode.actionId = this.NEXT_ACTION_ID++;
-    }
-    if(actionNode.groupId == -1){
-      actionNode.groupId = this.NEXT_GROUP_ID++;
-    }
+    this.#processGroupId(actionNode);
     this.add( actionNode );
   }
 
@@ -96,6 +132,7 @@ export class ActionQueue extends Array {
   unshift( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = undefined;
+    this.#processGroupId(actionNode);
     this.addFront( actionNode );
   }
 
@@ -108,12 +145,11 @@ export class ActionQueue extends Array {
    */
   process( delta: number = 0 ){
     let action = this[0];
-    if(action instanceof Action){
-      action.owner = this.owner;
-      let status = action.update( delta );
-      if(status != ActionStatus.IN_PROGRESS){
-        this.shift();
-      }
+    if(!action){ return; }
+    action.owner = this.owner;
+    let status = action.update( delta );
+    if(status != ActionStatus.IN_PROGRESS){
+      this.shift();
     }
   }
 
@@ -160,6 +196,10 @@ export class ActionQueue extends Array {
         this.splice(index, 1);
       }
     }
+  }
+
+  actionTypeExists(actionType: ActionType){
+    return this.findIndex( (a: Action) => a.type == actionType ) >= 0;
   }
 
 }

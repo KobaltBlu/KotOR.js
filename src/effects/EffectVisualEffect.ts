@@ -4,7 +4,7 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import { MDLLoader, TextureLoader } from "../loaders";
-import { TwoDAManager } from "../managers";
+// import { TwoDAManager } from "../managers";
 import type { ModuleCreature } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -42,7 +42,7 @@ export class EffectVisualEffect extends GameEffect {
   initialize(){
     super.initialize();
 
-    const visualeffects2DA = TwoDAManager.datatables.get('visualeffects');
+    const visualeffects2DA = GameState.TwoDAManager.datatables.get('visualeffects');
     if(visualeffects2DA){
       this.visualEffect = visualeffects2DA.getByID(this.getInt(0));
     }

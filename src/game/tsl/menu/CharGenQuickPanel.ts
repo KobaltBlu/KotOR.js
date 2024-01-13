@@ -2,7 +2,6 @@ import { CurrentGame } from "../../../CurrentGame";
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
-import { CharGenManager, GlobalVariableManager, PartyManager } from "../../../managers";
 
 /**
  * CharGenQuickPanel class.
@@ -50,11 +49,11 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenManager.selectedCreature.equipment.ARMOR = undefined;
-        CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
-        GlobalVariableManager.Init();
-        PartyManager.PlayerTemplate = CharGenManager.selectedCreature.save();
-        PartyManager.AddPortraitToOrder(CharGenManager.selectedCreature.getPortraitResRef());
+        GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
+        GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
+        GameState.GlobalVariableManager.Init();
+        GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
+        GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
         CurrentGame.InitGameInProgressFolder(true).then( () => {
           GameState.LoadModule('001EBO');
         });

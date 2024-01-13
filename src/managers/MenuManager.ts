@@ -2,10 +2,9 @@ import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine";
-import { GUIControl, GameMenu } from "../gui";
+import type { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../ActionMenuManager";
 import { EngineState } from "../enums/engine/EngineState";
-import { CharGenManager, CursorManager } from ".";
 
 /**
  * MenuManager class.
@@ -91,7 +90,7 @@ export class MenuManager {
       if(MenuManager.activeMenus.length)
         MenuManager.activeMenus[MenuManager.activeMenus.length-1].hide();
 
-      if(menu instanceof GameMenu)
+      if(menu)
         MenuManager.activeMenus.push(menu);
   
       MenuManager.Resize();
@@ -142,9 +141,9 @@ export class MenuManager {
 
   static Update(delta = 0){
     GameState.updateCursor();
-    CursorManager.cursor.material.depthTest = false;
-    CursorManager.cursor.material.depthWrite = false;
-    CursorManager.cursor.renderOrder = 9999999;
+    GameState.CursorManager.cursor.material.depthTest = false;
+    GameState.CursorManager.cursor.material.depthWrite = false;
+    GameState.CursorManager.cursor.renderOrder = 9999999;
     MenuManager.pulse += delta;
     if(MenuManager.pulse > 2){
       MenuManager.pulse = 0;
@@ -299,7 +298,7 @@ export class MenuManager {
 
   static async LoadGameMenus(){
     ActionMenuManager.InitActionMenuPanels();
-    await CharGenManager.Init();
+    await GameState.CharGenManager.Init();
     try{
       if(GameState.GameKey == GameEngineType.KOTOR){
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(KOTOR.CharGenAbilities) as KOTOR.CharGenAbilities;

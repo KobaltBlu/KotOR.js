@@ -1,7 +1,7 @@
-import { GameEffect } from ".";
+import { GameEffect } from "./GameEffect";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AppearanceManager } from "../managers";
+import { AppearanceManager } from "../managers/AppearanceManager";
 import type { ModuleCreature } from "../module";
 import { BitWise } from "../utility/BitWise";
 

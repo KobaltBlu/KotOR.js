@@ -1,9 +1,11 @@
-import { ActionUnlockObject } from "../actions";
+import { GameState } from "../GameState";
+import { ActionUnlockObject } from "../actions/ActionUnlockObject";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { TalentObjectType } from "../enums/engine/TalentObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager } from "../managers";
-import { ModuleObject } from "../module";
+// import { TwoDAManager } from "../managers";
+import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
@@ -21,12 +23,12 @@ export class TalentSkill extends TalentObject {
   rank: number;
   constructor( id = 0, rank = 0 ){
     super( id );
-    this.type = 2;
+    this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentSkill;
     this.rank = rank;
 
     //Merge the skill properties from the skills.2da row with this skill
-    if(TwoDAManager.datatables.get('skills').rows[this.id]){
-      Object.assign(this, TwoDAManager.datatables.get('skills').rows[this.id]);
+    if(GameState.TwoDAManager.datatables.get('skills').rows[this.id]){
+      Object.assign(this, GameState.TwoDAManager.datatables.get('skills').rows[this.id]);
     }
   }
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
@@ -41,8 +43,8 @@ export class TalentSkill extends TalentObject {
 
   setId( value = 0 ){
     this.id = value;
-    if(TwoDAManager.datatables.get('skills').rows[this.id]){
-      Object.assign(this, TwoDAManager.datatables.get('skills').rows[this.id]);
+    if(GameState.TwoDAManager.datatables.get('skills').rows[this.id]){
+      Object.assign(this, GameState.TwoDAManager.datatables.get('skills').rows[this.id]);
     }
   }
 

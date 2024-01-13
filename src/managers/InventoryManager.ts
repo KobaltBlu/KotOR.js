@@ -3,8 +3,9 @@ import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
 import { CurrentGame } from "../CurrentGame";
-import { ModuleCreature, ModuleItem } from "../module";
-import { PartyManager } from "./PartyManager";
+import type { ModuleCreature, ModuleItem } from "../module";
+import { GameState } from "../GameState";
+// import { PartyManager } from "./PartyManager";
 
 /**
  * InventoryManager class.
@@ -82,10 +83,10 @@ export class InventoryManager {
   }
 
   static isItemUsableBy( item?: ModuleItem, creature?: ModuleCreature): boolean {
-    if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
-      return false;
+    // if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
+      // return false;
 
-    let droidorhuman = item._baseItem.droidOrHuman;
+    let droidorhuman = item.baseItem.droidOrHuman;
     
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
@@ -95,7 +96,7 @@ export class InventoryManager {
   }
 
   static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
-    let baseItem = item._baseItem;
+    let baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
@@ -103,15 +104,14 @@ export class InventoryManager {
 
     let item: ModuleItem;
     if(template instanceof GFFObject){
-      item = new ModuleItem(template);
-    }else if(template instanceof ModuleItem){
+      item = new GameState.Module.ModuleArea.ModuleItem(template);
+    }else if(template instanceof GameState.Module.ModuleArea.ModuleItem){
       item = template;
     }
 
-    if(item instanceof ModuleItem){
-
+    if(item instanceof GameState.Module.ModuleArea.ModuleItem){
       if(item.getBaseItemId() == 57){ //Credits
-        PartyManager.Gold += item.getStackSize();
+        GameState.PartyManager.Gold += item.getStackSize();
       }else{
         item.load();
         let hasItem = InventoryManager.getItem(item.getTag());
@@ -188,7 +188,7 @@ export class InventoryManager {
   static removeItem(item?: string|ModuleItem, nCount = 1){
     if(typeof item === 'string'){
       InventoryManager.removeItemByResRef(item, nCount);
-    }else if(item instanceof ModuleItem){
+    }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
       let idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         if(nCount >= item.getStackSize()){

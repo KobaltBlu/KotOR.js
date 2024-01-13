@@ -1,13 +1,13 @@
 import { GameState } from "../GameState";
 import { AreaMap, ModuleWaypoint } from "../module";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControl, GUILabel } from ".";
+import type { GUIControl, GUILabel } from ".";
 import { MapNorthAxis } from "../enums/engine/MapNorthAxis";
 import { MapMode } from "../enums/engine/MapMode";
 import * as THREE from "three";
 import { GameEngineType } from "../enums/engine";
 import { TextureLoader } from "../loaders";
-import { ShaderManager, MenuManager, PartyManager } from "../managers";
+// import { ShaderManager, MenuManager, PartyManager } from "../managers";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
@@ -118,10 +118,10 @@ export class LBL_MapView {
     //FOG
     const fogPlaneMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-fow').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-fow').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-fow').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-fow').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getFragment(),
     });
     fogPlaneMaterial.defines.USE_MAP = '';
     fogPlaneMaterial.defines.USE_UV = '';
@@ -355,12 +355,12 @@ export class LBL_MapView {
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
       if(this.mode == MapMode.FULLMAP){
-        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - (0.5 *MenuManager.pulseOpacity);
+        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
     }
 
     for(let i = 0; i < 2; i++){
-      const pm = PartyManager.party[i+1];
+      const pm = GameState.PartyManager.party[i+1];
       const mesh = this.partyGroup.children[i];
       if(this.mode == MapMode.MINIMAP){
         mesh.visible = false;
@@ -416,7 +416,7 @@ export class LBL_MapView {
     GameState.renderer.setRenderTarget(null);
     GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control instanceof GUIControl){
+    if(this.control){
       let material = this.control.getFill().material;
       if(material instanceof THREE.Material){
         if(material instanceof THREE.ShaderMaterial){

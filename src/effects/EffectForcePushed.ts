@@ -1,10 +1,10 @@
-import { EffectSetState, GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import * as THREE from 'three';
 import { GameState } from "../GameState";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectForcePushed class.
@@ -79,7 +79,7 @@ export class EffectForcePushed extends GameEffect {
       this.object.fp_land_played = false;
       this.object.fp_getup_played = false;
 
-      const eSetState = new EffectSetState();
+      const eSetState = new GameState.GameEffectFactory.EffectSetState();
       eSetState.setDurationType(GameEffectDurationType.TEMPORARY);
       const eFutureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
       eSetState.setExpireDay(eFutureTime.day);

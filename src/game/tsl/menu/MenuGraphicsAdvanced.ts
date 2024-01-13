@@ -1,8 +1,7 @@
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
+import { TextureLoaderState } from "../../../loaders/TextureLoaderState";
 import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "../../kotor/KOTOR";
-import { TwoDAManager, TLKManager } from "../../../managers";
 
 /**
  * MenuGraphicsAdvanced class.
@@ -49,7 +48,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      const texPacks = TwoDAManager.datatables.get('texpacks') || {} as any;
+      const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || {} as any;
 
       this.BTN_ANTIALIASLEFT.border.dimension = 0;
       this.BTN_ANISOTROPYLEFT.border.dimension = 0;
@@ -106,19 +105,19 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   close() {
     super.close();
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    if (quality != TextureLoader.TextureQuality) {
-      TextureLoader.TextureQuality = quality;
+    if (quality != TextureLoaderState.TextureQuality) {
+      TextureLoaderState.TextureQuality = quality;
       GameState.ReloadTextureCache();
       GameState.iniConfig.save();
     }
   }
 
   updateTextureQualityLabel() {
-    const texPacks = TwoDAManager.datatables.get('texpacks') || {} as any;
+    const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || {} as any;
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     const _2darow = texPacks.rows[quality];
     if (_2darow) {
-      this.BTN_TEXQUAL.setText(TLKManager.GetStringById(_2darow.strrefname).Value);
+      this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(_2darow.strrefname).Value);
     }
     if (quality <= 0) {
       this.BTN_TEXQUALLEFT.hide();

@@ -3,12 +3,15 @@ import { DLGNodeType } from "../enums/dialog/DLGNodeType";
 import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
 import { GameState } from "../GameState";
 import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
-import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
-import { ModuleCreature, ModuleObject } from "../module";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+// import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
+import type { ModuleCreature, ModuleObject } from "../module";
+// import { NWScript } from "../nwscript/NWScript";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { LIPObject } from "./LIPObject";
 import { GFFStruct } from "./GFFStruct";
+import { DialogMessageEntry } from "../engine/DialogMessageEntry";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**
  * DLGNode class.
@@ -127,7 +130,7 @@ export class DLGNode {
 
   initProperties(){
     if(this.speakerTag != ''){
-      this.speaker = ModuleObjectManager.GetObjectByTag(this.speakerTag);
+      this.speaker = GameState.ModuleObjectManager.GetObjectByTag(this.speakerTag);
     }else{
       this.speaker = this.dialog.owner;
     }
@@ -140,7 +143,7 @@ export class DLGNode {
       if(this.listenerTag == 'PLAYER'){
         this.listener = GameState.player;
       }else{
-        this.listener = ModuleObjectManager.GetObjectByTag(this.listenerTag);
+        this.listener = GameState.ModuleObjectManager.GetObjectByTag(this.listenerTag);
       }
     }else{
       this.listener = GameState.player;
@@ -155,7 +158,7 @@ export class DLGNode {
   }
 
   runScript1(){
-    if(this.script instanceof NWScriptInstance){
+    if(this.script){
       this.script.setScriptParam(1, this.scriptParams.Param1);
       this.script.setScriptParam(2, this.scriptParams.Param2);
       this.script.setScriptParam(3, this.scriptParams.Param3);
@@ -167,7 +170,7 @@ export class DLGNode {
   }
 
   runScript2(){
-    if(this.script2 instanceof NWScriptInstance){
+    if(this.script2){
       this.script2.setScriptParam(1, this.script2Params.Param1);
       this.script2.setScriptParam(2, this.script2Params.Param2);
       this.script2.setScriptParam(3, this.script2Params.Param3);
@@ -184,7 +187,7 @@ export class DLGNode {
   }
 
   runActiveScript1(){
-    if(this.isActive instanceof NWScriptInstance){
+    if(this.isActive){
       this.isActive.setScriptParam(1, this.isActiveParams.Param1);
       this.isActive.setScriptParam(2, this.isActiveParams.Param2);
       this.isActive.setScriptParam(3, this.isActiveParams.Param3);
@@ -203,7 +206,7 @@ export class DLGNode {
   }
 
   runActiveScript2(){
-    if(this.isActive2 instanceof NWScriptInstance){
+    if(this.isActive2){
       this.isActive2.setScriptParam(1, this.isActive2Params.Param1);
       this.isActive2.setScriptParam(2, this.isActive2Params.Param2);
       this.isActive2.setScriptParam(3, this.isActive2Params.Param3);
@@ -240,12 +243,12 @@ export class DLGNode {
   updateJournal(){
     if(this.quest){
       const allowOverrideHigher = false;
-      JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
+      GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
     try{
       console.log('saving', this.speaker.getName(), this.text);
       if(this.nodeType == DLGNodeType.ENTRY){
-        DialogMessageManager.AddEntry(
+        GameState.DialogMessageManager.AddEntry(
           new DialogMessageEntry(
             this.speaker.getName(), this.text
           )
@@ -285,10 +288,10 @@ export class DLGNode {
       this.fade.started = true;
       switch(this.fade.type){
         case 3:
-          FadeOverlayManager.FadeIn(this.fade.length, 0, 0, 0);
+          GameState.FadeOverlayManager.FadeIn(this.fade.length, 0, 0, 0);
         break;
         case 4:
-          FadeOverlayManager.FadeOut(this.fade.length, 0, 0, 0);
+          GameState.FadeOverlayManager.FadeOut(this.fade.length, 0, 0, 0);
         break;
       }
     }
@@ -307,8 +310,8 @@ export class DLGNode {
     const resref = this.getVoiceResRef();
     if(resref){
       const lip = await LIPObject.Load(resref);
-      if (this.speaker instanceof ModuleCreature) {
-        this.speaker.setLIP(lip);
+      if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
+        (this.speaker as ModuleCreature).setLIP(lip);
       }
       return true;
     }else{
@@ -435,8 +438,8 @@ export class DLGNode {
     if(struct.hasField('Script')){
       const resref = struct.getFieldByLabel('Script').getValue();
       if(resref){
-        const instance = NWScript.Load(resref);
-        if(instance instanceof NWScriptInstance){
+        const instance = GameState.NWScript.Load(resref);
+        if(instance){
           node.script = instance;
           node.script.name = resref;
         }
@@ -447,8 +450,8 @@ export class DLGNode {
       node.nodeEngineType = DLGNodeEngineType.K2;
       const resref = struct.getFieldByLabel('Script2').getValue();
       if(resref){
-        const instance = NWScript.Load(resref);
-        if(instance instanceof NWScriptInstance){
+        const instance = GameState.NWScript.Load(resref);
+        if(instance){
           node.script2 = instance;
           node.script2.name = resref;
         }
@@ -581,8 +584,8 @@ export class DLGNode {
         if(replyStruct.hasField('Active')){
           const resref = replyStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = NWScript.Load(resref);
-            if(linkNode.isActive instanceof NWScriptInstance){
+            linkNode.isActive = GameState.NWScript.Load(resref);
+            if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
           }
@@ -591,8 +594,8 @@ export class DLGNode {
         if(replyStruct.hasField('Active2')){
           const resref = replyStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = NWScript.Load(resref);
-            if(linkNode.isActive2 instanceof NWScriptInstance){
+            linkNode.isActive2 = GameState.NWScript.Load(resref);
+            if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
           }
@@ -677,8 +680,8 @@ export class DLGNode {
         if(entryStruct.hasField('Active')){
           const resref = entryStruct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = NWScript.Load(resref);
-            if(linkNode.isActive instanceof NWScriptInstance){
+            linkNode.isActive = GameState.NWScript.Load(resref);
+            if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
           }
@@ -687,8 +690,8 @@ export class DLGNode {
         if(entryStruct.hasField('Active2')){
           const resref = entryStruct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = NWScript.Load(resref);
-            if(linkNode.isActive2 instanceof NWScriptInstance){
+            linkNode.isActive2 = GameState.NWScript.Load(resref);
+            if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
           }

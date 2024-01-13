@@ -1,17 +1,18 @@
 import { GameState } from "../GameState";
-import { ModuleCreature, ModuleObject } from "../module";
+import type { ModuleCreature, ModuleObject } from "../module";
 import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
 import { DLGNode } from "./DLGNode";
 import { GFFObject } from "./GFFObject";
 import { ResourceTypes } from "./ResourceTypes";
 import * as THREE from "three";
-import { ModuleObjectManager } from "../managers";
 import { IDLGStuntActor } from "../interface/dialog/IDLGStuntActor";
 import { DLGNodeType } from "../enums/dialog/DLGNodeType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { NWScript } from "../nwscript/NWScript";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+// import { NWScript } from "../nwscript/NWScript";
 import { MDLLoader, ResourceLoader } from "../loaders";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -88,7 +89,7 @@ export class DLGObject {
 
     if(this.gff.RootNode.hasField('EndConverAbort')){
       const scriptName = this.gff.RootNode.getFieldByLabel('EndConverAbort').getValue();
-      this.scripts.onEndConversationAbort = NWScript.Load(scriptName);
+      this.scripts.onEndConversationAbort = GameState.NWScript.Load(scriptName);
       if(this.scripts.onEndConversationAbort){
         this.scripts.onEndConversationAbort.name = scriptName;
       }
@@ -96,7 +97,7 @@ export class DLGObject {
 
     if(this.gff.RootNode.hasField('EndConversation')){
       const scriptName = this.gff.RootNode.getFieldByLabel('EndConversation').getValue();
-      this.scripts.onEndConversation = NWScript.Load(scriptName);
+      this.scripts.onEndConversation = GameState.NWScript.Load(scriptName);
       if(this.scripts.onEndConversation){
         this.scripts.onEndConversation.name = scriptName;
       }
@@ -251,8 +252,8 @@ export class DLGObject {
         if(struct.hasField('Active')){
           const resref = struct.getFieldByLabel('Active').getValue();
           if(resref){
-            linkNode.isActive = NWScript.Load(resref);
-            if(linkNode.isActive instanceof NWScriptInstance){
+            linkNode.isActive = GameState.NWScript.Load(resref);
+            if(linkNode.isActive){
               linkNode.isActive.name = resref;
             }
           }
@@ -261,8 +262,8 @@ export class DLGObject {
         if(struct.hasField('Active2')){
           const resref = struct.getFieldByLabel('Active2').getValue();
           if(resref){
-            linkNode.isActive2 = NWScript.Load(resref);
-            if(linkNode.isActive2 instanceof NWScriptInstance){
+            linkNode.isActive2 = GameState.NWScript.Load(resref);
+            if(linkNode.isActive2){
               linkNode.isActive2.name = resref;
             }
           }
@@ -384,7 +385,7 @@ export class DLGObject {
         resolve();
 
       }else{
-        let creature = ModuleObjectManager.GetObjectByTag(actor.participant);
+        let creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
         if(creature){
           model = creature.model;
           //Load the actor's supermodel
@@ -399,11 +400,11 @@ export class DLGObject {
 
               model.box = new THREE.Box3().setFromObject(model);
 
-              if(this.unequipItems && creature instanceof ModuleCreature)
-                creature.UnequipItems();
+              if(this.unequipItems && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
+                (creature as ModuleCreature).UnequipItems();
 
-              if(this.unequipHeadItem && creature instanceof ModuleCreature)
-                creature.UnequipHeadItem();
+              if(this.unequipHeadItem && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
+                (creature as ModuleCreature).UnequipHeadItem();
 
               actor.moduleObject = creature;
               if(actor.moduleObject){

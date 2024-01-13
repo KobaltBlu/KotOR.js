@@ -1,4 +1,4 @@
-import { ActionMenuManager } from "./ActionMenuManager";
+import { GameState } from "./GameState";
 
 /**
  * ActionMenuItem class.
@@ -20,7 +20,7 @@ export class ActionMenuItem {
     props = Object.assign({
       action: undefined,
       talent: undefined,
-      target: ActionMenuManager.oTarget,
+      target: GameState.ActionMenuManager.oTarget,
       icon: '',
     }, props);
     this.action = props.action;

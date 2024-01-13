@@ -1,6 +1,6 @@
 import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
-import { TLKManager } from "../managers";
+import { TLKManager } from "../managers/TLKManager";
 
 /**
  * SSFObject class.

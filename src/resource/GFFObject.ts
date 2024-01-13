@@ -219,55 +219,7 @@ export class GFFObject {
   }
 
   toJSON(){
-    return GFFObject.StructToJSON(this.RootNode);
-  }
-
-  static StructToJSON(s: GFFStruct){
-    
-    let struct: any = {
-      type: s.getType(),
-      fields: {}
-    };
-
-    for(let i = 0; i < s.fields.length; i++){
-      let f = s.fields[i];
-      struct.fields[f.label] = GFFObject.FieldToJSON(f);
-    }
-
-    return struct;
-
-  }
-
-  static FieldToJSON(f: GFFField){
-
-    let field = {
-      type: f.getType(),
-      value: f.getValue(),
-      structs: [] as any[]
-    };
-
-    switch (f.getType()) {
-      case GFFDataType.CEXOLOCSTRING:
-        field.value = f.getCExoLocString();
-      break;
-      case GFFDataType.VOID:
-        field.value = f.getVoid();
-      break;
-      case GFFDataType.ORIENTATION:
-        field.value = f.getOrientation();
-      break;
-      case GFFDataType.VECTOR:
-        field.value = f.getVector();
-      break;
-    }
-
-    let children = f.getChildStructs();
-    for(let i = 0; i < children.length; i++){
-      field.structs[i] = GFFObject.StructToJSON(children[i]);
-    }
-
-    return field;
-
+    return this.RootNode.toJSON();
   }
 
   buildStruct(struct: any){

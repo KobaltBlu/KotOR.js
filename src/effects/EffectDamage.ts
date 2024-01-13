@@ -1,4 +1,4 @@
-import { GameEffect } from ".";
+import { GameEffect } from "./GameEffect";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";

@@ -2,9 +2,8 @@ import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
+import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "../../../module";
 import { MenuContainerMode } from "../../../enums/gui/MenuContainerMode";
-import { TLKManager } from "../../../managers";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 
 const STR_SWITCH_TO = 47884;
@@ -47,7 +46,7 @@ export class MenuContainer extends GameMenu {
       this.BTN_CANCEL.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.LB_ITEMS.clearItems();
-        if(this.container instanceof ModulePlaceable){
+        if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
           this.container.close(GameState.player);
         }
         this.close();
@@ -58,10 +57,10 @@ export class MenuContainer extends GameMenu {
         e.stopPropagation();
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
           this.LB_ITEMS.clearItems();
-          if(this.container instanceof ModulePlaceable){
+          if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
             this.container.retrieveInventory();
             this.container.close(GameState.player);
-          }else if(this.container instanceof ModuleCreature){
+          }else if(this.container instanceof GameState.Module.ModuleArea.ModuleCreature){
             this.container.retrieveInventory();
             //this.container.close(Game.player);
           }
@@ -100,7 +99,7 @@ export class MenuContainer extends GameMenu {
 
   hide(onClosed = false) {
     super.hide();
-    if (onClosed && this.container instanceof ModulePlaceable) {
+    if (onClosed && this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
       } catch (e: any) {
@@ -127,17 +126,17 @@ export class MenuContainer extends GameMenu {
 
     switch(this.mode){
       case MenuContainerMode.TAKE_ITEMS:
-        this.BTN_OK.setText(TLKManager.GetStringById(STR_GET_ITEMS).Value);
+        this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
-          TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
-          TLKManager.GetStringById(STR_GIVE_ITEMS).Value
+          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
+          GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value
         )
       break;
       case MenuContainerMode.GIVE_ITEMS:
-        this.BTN_OK.setText(TLKManager.GetStringById(STR_GIVE_ITEMS).Value);
+        this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
-          TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
-          TLKManager.GetStringById(STR_GET_ITEMS).Value
+          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
+          GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value
         )
       break;
     }
@@ -145,7 +144,7 @@ export class MenuContainer extends GameMenu {
     //Update list items
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
-    if (this.container instanceof ModuleCreature || this.container instanceof ModulePlaceable) {
+    if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       let inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
         let item = inventory[i];

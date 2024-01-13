@@ -3,7 +3,7 @@ import { InGameBark as K1_InGameBark } from "../../kotor/KOTOR";
 import * as THREE from "three";
 import { LIPObject } from "../../../resource/LIPObject";
 import { ModuleCreature } from "../../../module";
-import { ResolutionManager } from "../../../managers";
+import { GameState } from "../../../GameState";
 
 /**
  * InGameBark class.
@@ -45,8 +45,8 @@ export class InGameBark extends K1_InGameBark {
       this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
       this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
       this.tGuiPanel.resizeControl();
-      this.tGuiPanel.widget.position.x = -ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
-      this.tGuiPanel.widget.position.y = ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
+      this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
+      this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
       this.LBL_BARKTEXT.setText(entry.text);
       if (entry.sound != '') {
         console.log('lip', entry.sound);

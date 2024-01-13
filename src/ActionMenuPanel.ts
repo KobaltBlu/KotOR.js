@@ -1,4 +1,4 @@
-import { ActionMenuItem } from "./ActionMenuItem";
+import type { ActionMenuItem } from "./ActionMenuItem";
 
 /**
  * ActionMenuPanel class.
@@ -37,10 +37,9 @@ export class ActionMenuPanel {
     }
   }
 
-  addAction(action: any){
-    if(action instanceof ActionMenuItem){
-      this.actions.push(action);
-    }
+  addAction(action: ActionMenuItem){
+    if(!action){ return; }
+    this.actions.push(action);
   }
 
   getSelectedAction(){

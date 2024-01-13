@@ -1,8 +1,10 @@
+import { GameState } from "../GameState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager, TLKManager } from "../managers";
+// import { TwoDAManager, TLKManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { TalentFeat, TalentSpell } from "../talents";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import type { TalentSpell } from "../talents/TalentSpell";
 
 /**
  * CreatureClass class.
@@ -15,30 +17,75 @@ import { TalentFeat, TalentSpell } from "../talents";
  */
 export class CreatureClass {
 
-  id: number;
+  id: number = -1;
+  label: string = '';
+  name: number = -1;
+  plural: number = -1;
+  lower: number = -1;
+  description: number = -1;
+  icon: string = '';
+  hitdie: number = 8;
+  attackbonustable: 'CLS_ATK_1'|'CLS_ATK_2' = 'CLS_ATK_1';
+  featstable: string = '';
+  savingthrowtable: string = '';
+  skillstable: string = '';
+  skillpointbase: number = 0;
+  spellgaintable: string = '';
+  spellknowntable: string ='';
+  playerclass: boolean = false;
+  spellcaster: boolean = false;
+  str: number = 10;
+  dex: number = 10;
+  con: number = 10;
+  wis: number = 10;
+  int: number = 10;
+  cha: number = 10;
+  primaryabil: 'STR'|'DEX'|'WIS'|'CON'|'INT'|'CHA' = 'STR';
+  alignrestrict: number = 0;
+  alignrstrcttype: number = 0;
+  constant: string = '';
+
+  effectiveCRLevel_1: number = 1;
+  effectiveCRLevel_2: number = 1;
+  effectiveCRLevel_3: number = 1;
+  effectiveCRLevel_4: number = 1;
+  effectiveCRLevel_5: number = 1;
+  effectiveCRLevel_6: number = 1;
+  effectiveCRLevel_7: number = 1;
+  effectiveCRLevel_8: number = 1;
+  effectiveCRLevel_9: number = 1;
+  effectiveCRLevel_10: number = 1;
+  effectiveCRLevel_11: number = 1;
+  effectiveCRLevel_12: number = 1;
+  effectiveCRLevel_13: number = 1;
+  effectiveCRLevel_14: number = 1;
+  effectiveCRLevel_15: number = 1;
+  effectiveCRLevel_16: number = 1;
+  effectiveCRLevel_17: number = 1;
+  effectiveCRLevel_18: number = 1;
+  effectiveCRLevel_19: number = 1;
+  effectiveCRLevel_20: number = 1;
+
+  forcedie: number = 0;
+  armorclasscolumn: string = '';
+  featgain: string = '';
+
   level: number;
-  spells: any[] = [];
-  name: number;
-  description: number;
+  spells: TalentSpell[] = [];
 
-  spellcaster: number;
-  attackbonustable: any;
-  armorclasscolumn: any;
-  featstable: any;
-
-  constructor(id = 0){
+  constructor(id = -1){
     this.id = id;
     this.level = 0;
     this.spells = [];
-    Object.assign(this, TwoDAManager.datatables.get('classes').rows[this.id]);
+    if(id >= 0) Object.assign(this, GameState.TwoDAManager.datatables.get('classes').rows[this.id]);
   }
 
   getName(){
-    return TLKManager.GetStringById(this.name).Value;
+    return GameState.TLKManager.GetStringById(this.name).Value;
   }
 
   getDescription(){
-    return TLKManager.GetStringById(this.description).Value;
+    return GameState.TLKManager.GetStringById(this.description).Value;
   }
 
   setLevel(nLevel = 0){
@@ -46,9 +93,8 @@ export class CreatureClass {
   }
 
   addSpell(tSpell: TalentSpell){
-    if(tSpell instanceof TalentSpell){
-      this.spells.push(tSpell);
-    }
+    if(!tSpell){ return; }
+    this.spells.push(tSpell);
   }
 
   getSpells(){
@@ -56,11 +102,11 @@ export class CreatureClass {
   }
 
   getBaseAttackBonus(){
-    return parseInt(TwoDAManager.datatables.get(this.attackbonustable.toLowerCase()).rows[this.level].bab)
+    return parseInt(GameState.TwoDAManager.datatables.get(this.attackbonustable.toLowerCase()).rows[this.level].bab)
   }
 
   getACBonus(){
-    return parseInt(TwoDAManager.datatables.get('acbonus').rows[this.level][this.armorclasscolumn.toLowerCase()]);
+    return parseInt(GameState.TwoDAManager.datatables.get('acbonus').rows[this.level][this.armorclasscolumn.toLowerCase()]);
   }
 
   isFeatAvailable( feat: any ){
@@ -114,7 +160,7 @@ export class CreatureClass {
           let spell = undefined;
 
           if(known_spell_struct.hasField('Spell')){
-            spell = new TalentSpell(
+            spell = new GameState.TalentSpell(
               known_spell_struct.getFieldByLabel('Spell').getValue()
             );
           }
@@ -136,13 +182,24 @@ export class CreatureClass {
     return undefined;
   }
 
+  static From2DA(row: any){
+    const cls = new CreatureClass();
+
+    cls.id = parseInt(row.__index);
+
+    if(row.hasOwnProperty('label'))
+      cls.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+
+    return cls;
+  }
+
   save(){
     let _class = new GFFStruct(2);
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
     //Spell Caster specific data
-    if(this.spellcaster == 1){
+    if(this.spellcaster){
       //Not sure what this is or if it is used in KOTOR
       let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
       let spellsPerDayStruct = new GFFStruct(17767);

@@ -1,5 +1,5 @@
-import { TLKManager } from "../../managers";
-import { ModuleItem } from "../../module";
+import { GameState } from "../../GameState";
+import type { ModuleItem } from "../../module";
 
 const STR_EQUIPPED = 32346;
 
@@ -28,7 +28,7 @@ export class GUIItemEquipped {
   }
 
   getName(){
-    return `${this.node.getName()} (${TLKManager.GetStringById(STR_EQUIPPED).Value})`;
+    return `${this.node.getName()} (${GameState.TLKManager.GetStringById(STR_EQUIPPED).Value})`;
   }
 
 }

@@ -1,6 +1,9 @@
-import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+import type { OdysseyModel } from "./OdysseyModel";
+import type { OdysseyModelNode } from "./OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeDangly class.
@@ -28,7 +31,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.contraintArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.contraintArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.danglyDisplacement = this.odysseyModel.mdlReader.readSingle();
     this.danglyTightness = this.odysseyModel.mdlReader.readSingle();
@@ -36,7 +39,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
 
     this.danglyMDLOffset = this.odysseyModel.mdlReader.readUInt32();
     
-    this.constraints = OdysseyModel.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.contraintArrayDefinition.offset, this.contraintArrayDefinition.count);
+    this.constraints = OdysseyModelUtility.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.contraintArrayDefinition.offset, this.contraintArrayDefinition.count);
     this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.danglyMDLOffset);
     this.danglyVec4 = [];
     for(let i = 0; i < this.contraintArrayDefinition.count; i++){

@@ -1,4 +1,4 @@
-import { ModuleMGGunBank, ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";
@@ -10,6 +10,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { MDLLoader } from "../loaders";
+import { ModuleMGGunBank } from "./ModuleMGGunBank";
 
 /**
 * ModuleMGEnemy class.

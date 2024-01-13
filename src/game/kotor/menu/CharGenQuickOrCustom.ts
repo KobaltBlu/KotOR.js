@@ -1,6 +1,6 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { CharGenManager, TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
 
 /**
@@ -35,29 +35,29 @@ export class CharGenQuickOrCustom extends GameMenu {
       this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
         e.stopPropagation();
         try{
-          let class_data = TwoDAManager.datatables.get('classes').rows[CharGenManager.selectedClass];
+          let class_data = GameState.TwoDAManager.datatables.get('classes').rows[GameState.CharGenManager.selectedClass];
           let saving_throw_label = class_data['savingthrowtable'].toLowerCase();
-          let saving_throw_data = TwoDAManager.datatables.get(saving_throw_label).rows[0];
-          let feats_table = TwoDAManager.datatables.get('feat');
+          let saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
+          let feats_table = GameState.TwoDAManager.datatables.get('feat');
 
-          CharGenManager.selectedCreature.str = parseInt(class_data.str);
-          CharGenManager.selectedCreature.dex = parseInt(class_data.dex);
-          CharGenManager.selectedCreature.con = parseInt(class_data.con);
-          CharGenManager.selectedCreature.wis = parseInt(class_data.wis);
-          CharGenManager.selectedCreature.int = parseInt(class_data.int);
-          CharGenManager.selectedCreature.cha = parseInt(class_data.cha);
-          CharGenManager.selectedCreature.str = parseInt(class_data.str);
+          GameState.CharGenManager.selectedCreature.str = parseInt(class_data.str);
+          GameState.CharGenManager.selectedCreature.dex = parseInt(class_data.dex);
+          GameState.CharGenManager.selectedCreature.con = parseInt(class_data.con);
+          GameState.CharGenManager.selectedCreature.wis = parseInt(class_data.wis);
+          GameState.CharGenManager.selectedCreature.int = parseInt(class_data.int);
+          GameState.CharGenManager.selectedCreature.cha = parseInt(class_data.cha);
+          GameState.CharGenManager.selectedCreature.str = parseInt(class_data.str);
 
-          CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
+          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
+          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
+          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
 
           let featstable_key = class_data['featstable'].toLowerCase();
 
           for(let i = 0, len = feats_table.rows.length; i < len; i++){
             let feat_data = feats_table.rows[i];
             if(feat_data[featstable_key+'_granted'] == 1){
-              CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
+              GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
           this.manager.CharGenMain.close();
@@ -92,11 +92,11 @@ export class CharGenQuickOrCustom extends GameMenu {
         //Game.CharGenMain.Hide();
 
         try{
-          CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
+          GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
         }catch(e){}
 
-        // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
-        //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
+        // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(GameState.CharGenManager.selectedClass+1))
+        //  .userData._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
         this.manager.CharGenMain.close();
       });
 

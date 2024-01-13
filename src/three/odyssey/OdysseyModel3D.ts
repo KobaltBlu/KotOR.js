@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelAnimation, OdysseyModelAnimationManager, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly, OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin, OdysseyWalkMesh } from "../../odyssey";
-import { OdysseyEmitter3D, OdysseyLight3D, OdysseyObject3D } from ".";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyTexture } from "./OdysseyTexture";
 import { MDLLoader, TextureLoader } from "../../loaders";
@@ -14,8 +12,22 @@ import { OdysseyController } from "../../odyssey/controllers";
 import { IOdysseyModelHeader } from "../../interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import { ITwoDAAnimation } from "../../interface/twoDA/ITwoDAAnimation";
-import { TwoDAManager } from "../../managers";
+import { TwoDAManager } from "../../managers/TwoDAManager";
 import { IOdysseyModelLoaderOptions } from "../../interface/odyssey";
+import { OdysseyModelAnimation } from "../../odyssey/OdysseyModelAnimation";
+import { OdysseyModelAnimationManager } from "../../odyssey/OdysseyModelAnimationManager";
+import { type OdysseyWalkMesh } from "../../odyssey/OdysseyWalkMesh";
+import { type OdysseyModelNodeLight } from "../../odyssey/OdysseyModelNodeLight";
+import { type OdysseyModel } from "../../odyssey/OdysseyModel";
+import { type OdysseyModelNodeMesh } from "../../odyssey/OdysseyModelNodeMesh";
+import { type OdysseyModelNodeDangly } from "../../odyssey/OdysseyModelNodeDangly";
+import { type OdysseyModelNodeSkin } from "../../odyssey/OdysseyModelNodeSkin";
+import { type OdysseyModelNodeAABB } from "../../odyssey/OdysseyModelNodeAABB";
+import { type OdysseyModelNodeSaber } from "../../odyssey/OdysseyModelNodeSaber";
+import { type OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
+import { OdysseyObject3D } from "./OdysseyObject3D";
+import { OdysseyEmitter3D } from "./OdysseyEmitter3D";
+import { OdysseyLight3D } from "./OdysseyLight3D";
 
 /**
  * OdysseyModel3D class.
@@ -787,7 +799,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       const options: IOdysseyModelLoaderOptions = { ..._default, ..._options };
 
-      if(model instanceof OdysseyModel){
+      if(model){
 
         let odysseyModel = new OdysseyModel3D();
         odysseyModel.context = options.context;
@@ -937,18 +949,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
     //-----------//
     // MESH NODE
     //-----------//
-    if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh && odysseyNode instanceof OdysseyModelNodeMesh) {
-      OdysseyModel3D.NodeMeshBuilder(odysseyModel, node, odysseyNode, options);  
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh && odysseyNode) {
+      OdysseyModel3D.NodeMeshBuilder(odysseyModel, node, odysseyNode as any, options);  
     }
 
     //------------//
     // LIGHT NODE
     //------------//
-    if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode instanceof OdysseyModelNodeLight) {
-      node.light = OdysseyModel3D.NodeLightBuilder(odysseyModel, node, odysseyNode, options);      
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light && odysseyNode) {
+      node.light = OdysseyModel3D.NodeLightBuilder(odysseyModel, node, odysseyNode as any, options);      
     }
 
-    if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode instanceof OdysseyModelNodeEmitter) {
+    if ((odysseyNode.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter && odysseyNode) {
       node.emitter = new OdysseyEmitter3D(odysseyNode);
       node.emitter.context = odysseyModel.context;
       node.emitter.name = odysseyNode.name + '_em'
@@ -956,13 +968,13 @@ export class OdysseyModel3D extends OdysseyObject3D {
       odysseyModel.emitters.push(node.emitter);
     }
 
-    if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode instanceof OdysseyModelNodeReference){
+    if((odysseyNode.nodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference && odysseyNode){
       //console.log('OdysseyModel', 'Reference Node', options.parent);
       if(parentNode.parent instanceof OdysseyEmitter3D){
         parentNode.parent.emitter.setReferenceNode(node)
       }else{
-        console.log('Loading child model: '+odysseyNode.modelName);
-        MDLLoader.loader.load(odysseyNode.modelName).then( (childModel) => {
+        console.log('Loading child model: '+(odysseyNode as any).modelName);
+        MDLLoader.loader.load((odysseyNode as any).modelName).then( (childModel) => {
           if(childModel){
             OdysseyModel3D.FromMDL(childModel, {context: odysseyModel.options.context, editorMode: odysseyModel.options.editorMode}).then( (childModel3D) => {
               if(childModel3D){
@@ -1432,10 +1444,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
       if(material instanceof THREE.ShaderMaterial){
         //Set dangly uniforms
-        if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly && odysseyNode instanceof OdysseyModelNodeDangly) {
-          material.uniforms.danglyDisplacement.value = odysseyNode.danglyDisplacement;
-          material.uniforms.danglyTightness.value = odysseyNode.danglyTightness;
-          material.uniforms.danglyPeriod.value = odysseyNode.danglyPeriod;
+        if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly && odysseyNode) {
+          const node: OdysseyModelNodeDangly = odysseyNode as any;
+          material.uniforms.danglyDisplacement.value = node.danglyDisplacement;
+          material.uniforms.danglyTightness.value = node.danglyTightness;
+          material.uniforms.danglyPeriod.value = node.danglyPeriod;
           material.defines.DANGLY = '';
         }
 

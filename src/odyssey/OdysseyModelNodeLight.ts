@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelNode } from ".";
 import { IOdysseyModelFlare } from "../interface/odyssey/IOdysseyModelFlare";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeLight class.
@@ -51,10 +53,10 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
 
     this.odysseyModel.mdlReader.skip(0x0C); //Unknown UInt32 array
 
-    this.flareSizesArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.flarePositionsArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.flareColorShiftsArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.flareTexturesArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.flareSizesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.flarePositionsArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.flareColorShiftsArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.flareTexturesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.lightPriority = this.odysseyModel.mdlReader.readUInt32();
     this.ambientFlag = this.odysseyModel.mdlReader.readUInt32(); //Flag

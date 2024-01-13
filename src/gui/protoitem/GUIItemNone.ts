@@ -1,4 +1,4 @@
-import { TLKManager } from "../../managers";
+import { GameState } from "../../GameState";
 
 const STR_NONE = 363;
 
@@ -26,7 +26,7 @@ export class GUIItemNone {
 
   getName(){
     //None String
-    return TLKManager.GetStringById(STR_NONE).Value;
+    return GameState.TLKManager.GetStringById(STR_NONE).Value;
   }
 
 }

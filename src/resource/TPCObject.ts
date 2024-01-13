@@ -5,7 +5,7 @@ import { TXI } from './TXI';
 import * as dxtJs from "dxt-js";
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { ENCODING } from '../enums/graphics/tpc/Encoding';
-import { OdysseyCompressedTexture } from '../three/odyssey';
+import { OdysseyCompressedTexture } from '../three/odyssey/OdysseyCompressedTexture';
 import { ITPCHeader } from '../interface/resource/ITPCHeader';
 import { ITPCObjectOptions } from '../interface/resource/ITPCObjectOptions';
 

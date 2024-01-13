@@ -1,15 +1,16 @@
 import * as THREE from "three";
-import { WalkmeshEdge } from ".";
+import { WalkmeshEdge } from "./WalkmeshEdge";
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
-import { TwoDAManager } from "../managers";
+import { TwoDAManager } from "../managers/TwoDAManager";
 import { ModuleObject } from "../module";
-import { OdysseyFace3 } from "../three/odyssey";
+import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";
 import { TileColor } from "../engine/TileColor";
 import { BinaryWriter } from "../BinaryWriter";
 import { IPerimeter } from "../interface/odyssey";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyWalkMesh class.
@@ -21,7 +22,7 @@ import { IPerimeter } from "../interface/odyssey";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyWalkMesh {
-  static SURFACEMATERIALS: SurfaceMaterial[] = [];
+  // static SURFACEMATERIALS: SurfaceMaterial[] = [];
   static TILECOLORS: TileColor[] = [];
   name: string;
   moduleObject: ModuleObject;
@@ -75,7 +76,7 @@ export class OdysseyWalkMesh {
       face.materialIndex = this.walkTypes[i];
       face.walkIndex = face.materialIndex;
       face.color = (OdysseyWalkMesh.TILECOLORS[this.walkTypes[i]] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
-      face.surfacemat = OdysseyWalkMesh.SURFACEMATERIALS[face.walkIndex];
+      face.surfacemat = OdysseyModelUtility.SURFACEMATERIALS[face.walkIndex];
       face.triangle = new THREE.Triangle(
         this.vertices[face.a],
         this.vertices[face.b],
@@ -83,7 +84,7 @@ export class OdysseyWalkMesh {
       );
 
       if(face.surfacemat == undefined){
-        console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyWalkMesh.SURFACEMATERIALS);
+        console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
       }
 
       face.blocksLineOfSight = face.surfacemat.lineOfSight;
@@ -614,9 +615,9 @@ export class OdysseyWalkMesh {
     
     const surfacemat2DA = TwoDAManager.datatables.get('surfacemat');
     if(surfacemat2DA){
-      OdysseyWalkMesh.SURFACEMATERIALS = [];
+      OdysseyModelUtility.SURFACEMATERIALS = [];
       for(let i = 0, len = surfacemat2DA.RowCount; i < len; i++){
-        OdysseyWalkMesh.SURFACEMATERIALS[i] = SurfaceMaterial.From2DA(surfacemat2DA.rows[i]);
+        OdysseyModelUtility.SURFACEMATERIALS[i] = SurfaceMaterial.From2DA(surfacemat2DA.rows[i]);
       }
     }
   }

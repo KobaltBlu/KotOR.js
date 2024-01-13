@@ -11,10 +11,9 @@ import { ERFObject } from "./resource/ERFObject";
 import { BinaryReader } from "./BinaryReader";
 import { Utility } from "./utility/Utility";
 import { TGAObject } from "./resource/TGAObject";
-import { Module } from "./module";
 import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
-import { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
+import type { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
 
 /**
  * SaveGame class.
@@ -92,7 +91,7 @@ export class SaveGame {
               if(pifo.RootNode.hasField('Mod_PlayerList')){
                 let playerList = pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
                 if(playerList.length){
-                  PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
+                  GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
                 }
               }
               resolve();
@@ -286,16 +285,16 @@ export class SaveGame {
 
     GameState.SaveGame = this;
 
-    PartyManager.PortraitOrder = [];
+    GameState.PartyManager.PortraitOrder = [];
 
     if(this.PORTRAIT0)
-      PartyManager.PortraitOrder[0] = this.PORTRAIT0;
+      GameState.PartyManager.PortraitOrder[0] = this.PORTRAIT0;
 
     if(this.PORTRAIT1)
-      PartyManager.PortraitOrder[1] = this.PORTRAIT1;
+      GameState.PartyManager.PortraitOrder[1] = this.PORTRAIT1;
 
     if(this.PORTRAIT2)
-      PartyManager.PortraitOrder[2] = this.PORTRAIT2;
+      GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
 
     //Init SAVEGAME.sav
     this.InitSaveGameResourceLoader( ()=> {
@@ -352,10 +351,10 @@ export class SaveGame {
         let numCat = catNumbers[i];
         let numLabel = numCat.getFieldByLabel('Name').getValue();
         let value = numBytes.readByte();
-        if(GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
-          GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
+        if(GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
+          GameState.GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
         }else{
-          GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
+          GameState.GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
           console.warn('Global Number: missing', numLabel.toLowerCase(), value);
         }
       }
@@ -366,7 +365,7 @@ export class SaveGame {
         let locCat = catLocations[i];
         let locLabel = locCat.getFieldByLabel('Name').getValue();
 
-        GlobalVariableManager.Globals.Location.set(
+        GameState.GlobalVariableManager.Globals.Location.set(
           locLabel.toLowerCase(), { 
             name: locLabel, 
             value: new EngineLocation(
@@ -393,10 +392,10 @@ export class SaveGame {
           if(boolCat){
             let boolLabel = boolCat.getFieldByLabel('Name').getValue();
             let value = !!bit;
-            if(GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
-              GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
+            if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+              GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
             }else{
-              GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+              GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
               console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
             }
           }
@@ -410,10 +409,10 @@ export class SaveGame {
         if(strCat){
           let strLabel = strCat.getFieldByLabel('Name').getValue();
           let strValue = stringValues[i].getFieldByLabel('String').getValue();
-          if(GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
-            GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
+          if(GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
+            GameState.GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
           }else{
-            GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
+            GameState.GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
             console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
           }
         }
@@ -429,7 +428,7 @@ export class SaveGame {
     console.log('SaveGame', 'Loading Partytable...');
     try{
       new GFFObject(path.join(this.directory, 'PARTYTABLE.res'), (gff) => {
-        this.partytable = new PartyTableManager(gff, () => {
+        this.partytable = new GameState.PartyTableManager(gff, () => {
           if(typeof onLoad === 'function')
             onLoad();
         });
@@ -446,7 +445,7 @@ export class SaveGame {
       this.inventory = new GFFObject(buffer);
       let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
       for(let i = 0; i < invArr.length; i++){
-        InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
+        GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
       if(typeof onLoad === 'function')
         onLoad();
@@ -465,7 +464,7 @@ export class SaveGame {
 
   Save(){
     //TODO
-    if(GameState.module instanceof Module){
+    if(GameState.module){
       //Go ahead and run mkdir. It will silently fail if it already exists
       GameFileSystem.mkdir(this.directory, { recursive: false }).then( () => {
         this.savenfo = new GFFObject();
@@ -483,8 +482,8 @@ export class SaveGame {
         this.savenfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).value = 0;
 
         //Save the portraits of the current party
-        for(let i = 0; i < PartyManager.party.length; i++){
-          this.savenfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = PartyManager.party[i].getPortraitResRef();
+        for(let i = 0; i < GameState.PartyManager.party.length; i++){
+          this.savenfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = GameState.PartyManager.party[i].getPortraitResRef();
         }
 
         this.savenfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = '';
@@ -555,10 +554,10 @@ export class SaveGame {
   static SaveCurrentGame( name = '', replace_id = 0 ){
     return new Promise<void>( async (resolve, reject ) => {
 
-      if(GameState.module instanceof Module){
+      if(GameState.module){
 
-        MenuManager.LoadScreen.open();
-        MenuManager.LoadScreen.showSavingMessage();
+        GameState.MenuManager.LoadScreen.open();
+        GameState.MenuManager.LoadScreen.showSavingMessage();
 
         let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
@@ -573,22 +572,22 @@ export class SaveGame {
           await GameFileSystem.mkdir(save_dir);
         }
 
-        MenuManager.LoadScreen.setProgress(25);
+        GameState.MenuManager.LoadScreen.setProgress(25);
 
         await GameState.module.save();
-        MenuManager.LoadScreen.setProgress(50);
+        GameState.MenuManager.LoadScreen.setProgress(50);
 
         await CurrentGame.ExportToSaveFolder( save_dir );
-        MenuManager.LoadScreen.setProgress(75);
+        GameState.MenuManager.LoadScreen.setProgress(75);
 
         await SaveGame.ExportSaveNFO(save_dir, name);
         await SaveGame.ExportGlobalVars( save_dir );
-        await PartyTableManager.export( save_dir );
+        await GameState.PartyTableManager.export( save_dir );
 
         GameState.onScreenShot = (tga: TGAObject) => {
           tga.export( path.join( save_dir, 'Screen.tga')).then( (d) => {
-            MenuManager.LoadScreen.setProgress(100);
-            MenuManager.LoadScreen.close();
+            GameState.MenuManager.LoadScreen.setProgress(100);
+            GameState.MenuManager.LoadScreen.close();
             resolve();
           });
         };
@@ -619,8 +618,8 @@ export class SaveGame {
       nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'LIVECONTENT')).value = 0;
 
       //Save the portraits of the current party
-      for(let i = 0; i < PartyManager.party.length; i++){
-        nfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = PartyManager.party[i].getPortraitResRef();
+      for(let i = 0; i < GameState.PartyManager.party.length; i++){
+        nfo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'PORTRAIT'+i)).value = GameState.PartyManager.party[i].getPortraitResRef();
       }
 
       nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
@@ -641,9 +640,9 @@ export class SaveGame {
 
       //Global Booleans
       let catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-      let boolBuffer = Buffer.alloc( ( GlobalVariableManager.Globals.Boolean.size / 8 ) );
+      let boolBuffer = Buffer.alloc( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
       let i = 0;
-      GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
+      GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
         let boolean = globBool;
         let byte_offset = Math.floor( i / 8 );
         let bit_index = (i % 8);
@@ -663,7 +662,7 @@ export class SaveGame {
       let locationBuffer = Buffer.alloc(24 * 100);
 
       i = 0;
-      GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
+      GameState.GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
         locationBuffer.writeFloatLE( location.value.position.x, (24 * i) + 0  );
         locationBuffer.writeFloatLE( location.value.position.y, (24 * i) + 4  );
         locationBuffer.writeFloatLE( location.value.position.z, (24 * i) + 8  );
@@ -679,10 +678,10 @@ export class SaveGame {
 
       //Global Numbers
       let catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
-      let numberBuffer = Buffer.alloc(GlobalVariableManager.Globals.Number.size);
+      let numberBuffer = Buffer.alloc(GameState.GlobalVariableManager.Globals.Number.size);
 
       i = 0;
-      GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
+      GameState.GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
         numberBuffer[i] = (numberObj.value & 0xFF);
 
         let numberStruct = new GFFStruct();
@@ -700,7 +699,7 @@ export class SaveGame {
 
       let valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
       i = 0;
-      GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
+      GameState.GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
         let stringCatStruct = new GFFStruct();
         stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj.name);
         catStringList.addChildStruct(stringCatStruct);

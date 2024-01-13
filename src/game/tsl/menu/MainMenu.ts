@@ -3,7 +3,6 @@ import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
-import { CharGenManager } from "../../../managers";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
@@ -52,7 +51,7 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_NEWGAME.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        CharGenManager.Start();
+        GameState.CharGenManager.Start();
       });
 
       this.BTN_LOADGAME.addEventListener('click', (e: any) => {

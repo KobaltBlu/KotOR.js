@@ -5,7 +5,7 @@ import { GamePad } from "./GamePad";
 import { KeyInput } from "./KeyInput";
 import { Keyboard } from "./Keyboard";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
-import { TwoDAManager } from "../managers";
+import { TwoDAManager } from "../managers/TwoDAManager";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 

@@ -1,6 +1,7 @@
-import { GameMenu, GUIControl } from ".";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { GFFStruct } from "../resource/GFFStruct";
+import type { GFFStruct } from "../resource/GFFStruct";
 
 /**
  * GUIButton class.

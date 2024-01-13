@@ -2,11 +2,10 @@ import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
-import { ModuleCreature, ModuleItem } from "../../../module";
+import type { ModuleCreature, ModuleItem } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import * as THREE from "three";
 import { OdysseyModel } from "../../../odyssey";
-import { TwoDAManager, PartyManager, AppearanceManager } from "../../../managers";
 
 /**
  * MenuCharacter class.
@@ -222,7 +221,7 @@ export class MenuCharacter extends GameMenu {
     this.LBL_WIS_MOD?.setText(Math.floor((character.getWIS() - 10) / 2));
     this.LBL_CHA_MOD?.setText(Math.floor((character.getCHA() - 10) / 2));
     this.LBL_EXPERIENCE_STAT?.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    this.LBL_NEEDED_XP?.setText(TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+    this.LBL_NEEDED_XP?.setText(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
     if (character.canLevelUp()) {
       this.BTN_AUTO?.show();
     } else {
@@ -235,17 +234,17 @@ export class MenuCharacter extends GameMenu {
     this.manager.MenuTop.LBLH_CHA.onHoverIn();
     this.recalculatePosition();
     this.SLD_ALIGN?.setValue(0.5);
-    this.updateCharacterPortrait(PartyManager.party[0]);
-    this.updateCharacterStats(PartyManager.party[0]);
+    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+    this.updateCharacterStats(GameState.PartyManager.party[0]);
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     let btn_change: GUIControl;
-    for (let i = 0; i < PartyManager.party.length; i++) {
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(btn_change){
-        let partyMember = PartyManager.party[i];
+        let partyMember = GameState.PartyManager.party[i];
         let portraitId = partyMember.getPortraitId();
-        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
         if (i) {
           btn_change.show();
           if (btn_change.getFillTextureName() != portrait.baseresref) {
@@ -266,12 +265,12 @@ export class MenuCharacter extends GameMenu {
     }
     if(creature){
       this._3dView.camera.position.z = 1;
-      let objectCreature = new ModuleCreature();
+      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
       let clone = creature;
       objectCreature.appearance = clone.appearance;
-      objectCreature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
+      objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
       if (clone.equipment.ARMOR) {
-        objectCreature.equipment.ARMOR = new ModuleItem(clone.equipment.ARMOR.template);
+        objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);
       }
       if (clone.goodEvil >= 95) {
         this._3dViewModel.playAnimation('good');

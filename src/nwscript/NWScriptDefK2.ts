@@ -1,8 +1,10 @@
+import { ModuleObjectType } from "../enums";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
-import { MenuManager, FadeOverlayManager, GlobalVariableManager, PartyManager } from "../managers";
-import { ModuleCreature, ModuleObject } from "../module";
+// import { MenuManager, FadeOverlayManager, GlobalVariableManager, PartyManager } from "../managers";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
@@ -3643,7 +3645,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
+      GameState.MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
     }
   },
     518: {
@@ -5411,7 +5413,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      FadeOverlayManager.holdForScript = true;
+      GameState.FadeOverlayManager.holdForScript = true;
       //console.log('SetFadeUntilScript', FadeOverlayManager.holdForScript);
     }	
   },
@@ -5627,8 +5629,8 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
       
-      if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1] as any);
+      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value += parseInt(args[1] as any);
     }	
   },
     800: {
@@ -5637,8 +5639,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [string, number]){
-      if(typeof GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
-      GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1] as any);
+      if(typeof GameState.GlobalVariableManager.Globals.Number.has(args[0].toLowerCase()) !== 'undefined')
+      GameState.GlobalVariableManager.Globals.Number.get(args[0].toLowerCase()).value -= parseInt(args[1] as any);
     }	
   },
     801: {
@@ -5733,7 +5735,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      if(args[0] instanceof ModuleObject){
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
         args[0]._healTarget = args[1];
       }
     }	
@@ -5816,7 +5818,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleCreature){
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
         return args[0].animState == ModuleCreatureAnimState.RUNNING;
       }
       return 0;
@@ -5879,8 +5881,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleCreature){
-        return args[0].getPersonalSpace()
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).getPersonalSpace()
       }else{
         return 0.0;
       }
@@ -5969,8 +5971,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleCreature){
-        if(args[0] == PartyManager.party[0]){
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
+        if(args[0] == GameState.PartyManager.party[0]){
           return 1;
         }else{
           return 0;
@@ -5986,7 +5988,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return PartyManager.party[0];
+      return GameState.PartyManager.party[0];
     }	
   },
     846: {
@@ -5995,7 +5997,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      PartyManager.RemoveNPCById(args[0], true);
+      GameState.PartyManager.RemoveNPCById(args[0], true);
       return 1;
     }	
   },
@@ -6005,8 +6007,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleCreature){
-        args[0].flourish();
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).flourish();
       }
     }	
   },
@@ -6060,8 +6062,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(args[0] instanceof ModuleCreature){
-        args[0].playOverlayAnimation(args[1]);
+      if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).playOverlayAnimation(args[1]);
       }
     }	
   },
@@ -6148,7 +6150,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(args[0] instanceof ModuleObject){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].scripts.onHeartbeat = undefined;
       }
     }	

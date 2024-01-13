@@ -3,8 +3,8 @@ import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { GUIFeatItem } from "../gui/GUIFeatItem";
 import type { ModuleCreature } from "../../../module";
 import { TextureLoader } from "../../../loaders";
-import { TwoDAManager } from "../../../managers";
 import { TalentFeat } from "../../../talents";
+import { GameState } from "../../../GameState";
 
 /**
  * CharGenFeats class.
@@ -61,8 +61,8 @@ export class CharGenFeats extends GameMenu {
   }
 
   addGrantedFeats() {
-    let feats = TwoDAManager.datatables.get('feat').rows;
-    let featCount = TwoDAManager.datatables.get('feat').RowCount;
+    let feats = GameState.TwoDAManager.datatables.get('feat').rows;
+    let featCount = GameState.TwoDAManager.datatables.get('feat').RowCount;
     let granted = [];
     for (let i = 0; i < featCount; i++) {
       let feat = feats[i];
@@ -85,8 +85,8 @@ export class CharGenFeats extends GameMenu {
   }
 
   buildFeatList() {
-    let feats = TwoDAManager.datatables.get('feat').rows;
-    let featCount = TwoDAManager.datatables.get('feat').RowCount;
+    let feats = GameState.TwoDAManager.datatables.get('feat').rows;
+    let featCount = GameState.TwoDAManager.datatables.get('feat').RowCount;
     let list = [];
     if(this.creature){
       let mainClass = this.creature.getMainClass();
@@ -106,8 +106,8 @@ export class CharGenFeats extends GameMenu {
     for (let i = 0; i < list.length; i++) {
       let feat = list[i];
       let group = [];
-      let prereqfeat1 = TwoDAManager.datatables.get('feat').rows[feat.prereqfeat1];
-      let prereqfeat2 = TwoDAManager.datatables.get('feat').rows[feat.prereqfeat2];
+      let prereqfeat1 = GameState.TwoDAManager.datatables.get('feat').rows[feat.prereqfeat1];
+      let prereqfeat2 = GameState.TwoDAManager.datatables.get('feat').rows[feat.prereqfeat2];
       if (!prereqfeat1 && !prereqfeat2) {
         group.push(feat);
         for (let j = 0; j < featCount; j++) {

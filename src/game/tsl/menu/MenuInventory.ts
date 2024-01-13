@@ -1,5 +1,5 @@
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import type { ModuleItem } from "../../../module";
+import type { ModuleItem } from "../../../module/ModuleItem";
 import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
 
 /**

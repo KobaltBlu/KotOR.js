@@ -1,12 +1,12 @@
 import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
-import { TextureLoader } from "./TextureLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ERFManager } from "../managers/ERFManager";
 import { KEYManager } from "../managers/KEYManager";
 import { OdysseyCompressedTexture } from "../three/odyssey";
 import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "./TextureLoaderState";
 
 /**
  * TPCLoader class.
@@ -31,7 +31,7 @@ export class TPCLoader {
     }
   
     let activeTexturePack;
-    switch(TextureLoader.TextureQuality){
+    switch(TextureLoaderState.TextureQuality){
       case 2:
         activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
       break;
@@ -49,14 +49,14 @@ export class TPCLoader {
     erfResource = activeTexturePack.getResource(resRef, ResourceTypes['tpc']);
     if(erfResource){
       const buffer = await activeTexturePack.getResourceBuffer(erfResource);
-      return { pack: TextureLoader.TextureQuality || 2, buffer: buffer };
+      return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
   
     //Check in BIF files
     const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['tpc']);
     if(resKey){
       const buffer = await KEYManager.Key.getFileBuffer( resKey);
-      return { pack: TextureLoader.TextureQuality || 2, buffer: buffer };
+      return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
   
     throw new Error('TPC not found in game resources!');

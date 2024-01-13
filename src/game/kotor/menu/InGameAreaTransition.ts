@@ -1,7 +1,9 @@
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
 import { GameMenu } from "../../../gui";
 import type { GUILabel } from "../../../gui";
-import { ModuleDoor, ModuleObject, ModuleTrigger } from "../../../module";
+import type { ModuleObject } from "../../../module";
+import { BitWise } from "../../../utility/BitWise";
 
 /**
  * InGameAreaTransition class.
@@ -41,7 +43,9 @@ export class InGameAreaTransition extends GameMenu {
   }
 
   setTransitionObject(object: ModuleObject){
-    if((object instanceof ModuleDoor) || (object instanceof ModuleTrigger)){
+    if(!object) return;
+
+    if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
       this.transitionObject = object;
       this.SetDescription(object.getTransitionDestin());
     }

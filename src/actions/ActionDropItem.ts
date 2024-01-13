@@ -1,4 +1,4 @@
-import { Action } from ".";
+import { Action } from "./Action";
 import { ActionType } from "../enums/actions/ActionType";
 
 /**

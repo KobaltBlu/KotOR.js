@@ -1,9 +1,10 @@
+import { GameState } from "./GameState";
 import { ActionMenuPanel } from "./ActionMenuPanel";
 import { ActionMenuItem } from "./ActionMenuItem";
-import { GameState } from "./GameState";
+import type { ModuleObject } from "./module/ModuleObject";
+import type { ModuleCreature } from "./module/ModuleCreature";
 import { IActionPanelLists } from "./interface/gui/IActionPanelLists";
 import { GameEngineType } from "./enums/engine/GameEngineType";
-import { ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable } from "./module";
 import { ActionType } from "./enums/actions/ActionType";
 
 /**
@@ -16,6 +17,9 @@ import { ActionType } from "./enums/actions/ActionType";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionMenuManager {
+
+  static ActionMenuPanel: typeof ActionMenuPanel = ActionMenuPanel;
+  static ActionMenuItem: typeof ActionMenuItem = ActionMenuItem;
 
   static TARGET_MENU_COUNT = 3;
   static SELF_MENU_COUNT = 4;
@@ -45,11 +49,11 @@ export class ActionMenuManager {
     };
     
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
-      ActionMenuManager.ActionPanels.targetPanels[i] = new ActionMenuPanel();
+      ActionMenuManager.ActionPanels.targetPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
     
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
-      ActionMenuManager.ActionPanels.selfPanels[i] = new ActionMenuPanel();
+      ActionMenuManager.ActionPanels.selfPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
   }
 
@@ -62,18 +66,18 @@ export class ActionMenuManager {
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
 
-    if(ActionMenuManager.oTarget instanceof ModuleObject){
+    if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleObject){
 
-      if(ActionMenuManager.oTarget instanceof ModulePlaceable){
+      if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModulePlaceable){
         if(ActionMenuManager.oTarget.isLocked() && !ActionMenuManager.oTarget.requiresKey()){
           const securityTalent = ActionMenuManager.oPC.getSkillList()[6];
-          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new ActionMenuItem({
+          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             talent: securityTalent,
             target: ActionMenuManager.oTarget,
             icon: securityTalent.icon
           }));
 
-          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new ActionMenuItem({
+          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: {
               type: ActionType.ActionPhysicalAttacks,
               object: ActionMenuManager.oTarget,
@@ -82,16 +86,16 @@ export class ActionMenuManager {
             icon: 'i_attack'
           }));
         }
-      }else if(ActionMenuManager.oTarget instanceof ModuleDoor){
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
         if(ActionMenuManager.oTarget.isLocked() && !ActionMenuManager.oTarget.requiresKey()){
           const securityTalent = ActionMenuManager.oPC.getSkillList()[6];
-          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new ActionMenuItem({
+          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             talent: securityTalent,
             target: ActionMenuManager.oTarget,
             icon: securityTalent.icon
           }));
 
-          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new ActionMenuItem({
+          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: {
               type: ActionType.ActionPhysicalAttacks,
               object: ActionMenuManager.oTarget,
@@ -100,8 +104,8 @@ export class ActionMenuManager {
             icon: 'i_attack'
           }));
         }
-      }else if(ActionMenuManager.oTarget instanceof ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.player)){
-        ActionMenuManager.ActionPanels.targetPanels[0].addAction(new ActionMenuItem({
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.player)){
+        ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
           action: {
             type: ActionType.ActionPhysicalAttacks,
             object: ActionMenuManager.oTarget,
@@ -121,7 +125,7 @@ export class ActionMenuManager {
 
           for(let i = 0, len = feats.length; i < len; i++){
             const feat = feats[i];
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new ActionMenuItem({
+            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               talent: feat,
               icon: feat.icon
             }));
@@ -140,7 +144,7 @@ export class ActionMenuManager {
 
           for(let i = 0, len = feats.length; i < len; i++){
             const feat = feats[i];
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new ActionMenuItem({
+            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               talent: feat,
               icon: feat.icon
             }));
@@ -153,7 +157,7 @@ export class ActionMenuManager {
         });
 
         for(let i = 0; i < hostileSpells.length; i++){
-          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new ActionMenuItem({
+          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             talent: hostileSpells[i],
             target: ActionMenuManager.oTarget,
             icon: hostileSpells[i].iconresref
@@ -169,7 +173,7 @@ export class ActionMenuManager {
     });
 
     for(let i = 0; i < friendlySpells.length; i++){
-      ActionMenuManager.ActionPanels.selfPanels[1].addAction(new ActionMenuItem({
+      ActionMenuManager.ActionPanels.selfPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
         talent: friendlySpells[i],
         target: ActionMenuManager.oPC,
         icon: friendlySpells[i].iconresref

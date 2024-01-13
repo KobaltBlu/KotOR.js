@@ -1,10 +1,10 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
+// import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";
@@ -204,9 +204,9 @@ export class ModuleTrigger extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = PartyManager.party.length;
+      let partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = PartyManager.party[i];
+        let partymember = GameState.PartyManager.party[i];
         if(this.box.containsPoint(partymember.position)){
           if(this.objectsInside.indexOf(partymember) == -1){
             this.objectsInside.push(partymember);
@@ -290,9 +290,9 @@ export class ModuleTrigger extends ModuleObject {
     }
 
     //Check Party Members
-    let partyLen = PartyManager.party.length;
+    let partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++){
-      let partymember = PartyManager.party[i];
+      let partymember = GameState.PartyManager.party[i];
       let pos = partymember.position.clone();
       
       if(this.box.containsPoint(pos)){
@@ -408,7 +408,7 @@ export class ModuleTrigger extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AutoRemoveKey'))
@@ -426,7 +426,7 @@ export class ModuleTrigger extends ModuleObject {
         this.factionId = 0;
       }
     }
-    this.faction = FactionManager.factions.get(this.factionId);
+    this.faction = GameState.FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.hasField('Geometry')){
       this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();

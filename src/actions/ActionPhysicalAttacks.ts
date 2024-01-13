@@ -1,12 +1,15 @@
-import { ActionMoveToPoint } from ".";
+import { CombatRound } from "../combat/CombatRound";
+import { ModuleObjectType, SSFType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import { ModuleCreature, ModuleObject } from "../module";
+import type { ModuleCreature } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
+import * as THREE from 'three';
 
 /**
  * ActionPhysicalAttacks class.
@@ -40,59 +43,122 @@ export class ActionPhysicalAttacks extends Action {
     
     this.target = this.getParameter(1);
 
-    if(!(this.target instanceof ModuleObject)){
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
       return ActionStatus.FAILED;
     }
 
-    if(!(this.owner instanceof ModuleCreature)){
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       return ActionStatus.FAILED;
     }
 
-    this.owner.resetExcitedDuration();
-    let range = ( this.owner.getEquippedWeaponType() == 4 ? 15.0 : 2.0 );
+    const owner: ModuleCreature = this.owner as any;
+    const target: ModuleCreature = this.target as any;
 
-    //if(!this.combatAction.isCutsceneAttack){
-      if(this.target.isDead()){
-        return ActionStatus.FAILED;
-      }else{
-        let distance = Utility.Distance2D(this.owner.position, this.target.position);
-        if( distance > range ){
+    owner.resetExcitedDuration();
+    let range = ( owner.isRangedEquipped() ? 15.0 : 2.0 );
 
-          this.owner.openSpot = undefined;
-          let target_position = this.target.position.clone();
+    if(target.isDead()){
+      //todo: we may need to end combatround early here if it has already started
+      return ActionStatus.FAILED;
+    }else{
+      let distance = Utility.Distance2D(owner.position, target.position);
+      if( distance > range ){
 
-          if(this.target instanceof ModuleCreature){
-            if(this.owner.getEquippedWeaponType() != 4){ //RANGED
-              this.owner.openSpot = this.target.getClosesetOpenSpot(this.owner);
-              if(typeof this.owner.openSpot != 'undefined'){
-                target_position.copy(this.owner.openSpot.targetVector);
-              }
-            }
+        owner.openSpot = undefined;
+        let target_position = target.position.clone();
+        
+        if(!owner.isRangedEquipped()){ //MELEE
+          owner.openSpot = target.getClosesetOpenSpot(owner);
+          if(typeof owner.openSpot != 'undefined'){
+            target_position.copy(owner.openSpot.targetVector);
           }
+        }
 
+        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
+        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
+        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
+        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, target.area.id);
+        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, target.id);
+        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, range );
+        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
+        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
+        owner.actionQueue.addFront(actionMoveToTarget);
 
+        return ActionStatus.IN_PROGRESS;
+      }else{
+        owner.force = 0;
+        owner.speed = 0;
+        (owner as any).openSpot = undefined;
 
-          let actionMoveToTarget = new ActionMoveToPoint(undefined, this.groupId);
-          actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
-          actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
-          actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);
-          actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-          actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-          actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-          actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, range );
-          actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-          actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-          this.owner.actionQueue.addFront(actionMoveToTarget);
+        if(owner.combatRound){
+          const combatRound = owner.combatRound;
+          if(!combatRound.roundPaused) {
 
+            if( !combatRound.engaged ){ //non dueling round
+              combatRound.beginCombatRound();
+              combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+              if(combatRound.action){
+                combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
+              }
+
+            }else{ //dueling round
+              combatRound.beginCombatRound();
+              if(combatRound.action){
+                combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
+              }
+              combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+
+              if(combatRound.master){
+                target.combatRound.beginCombatRound();
+                target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH/2);
+                if(target.combatRound.action){
+                  target.combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
+                }
+              }
+
+            }
+
+            if(combatRound.roundStarted){
+
+              if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
+                combatRound.setAttackTarget(combatRound.newAttackTarget);
+              }
+
+              combatRound.calculateAttackDamage(owner as any, combatRound.action);
+
+              owner.setFacing(
+                Math.atan2(
+                  owner.position.y - target.position.y,
+                  owner.position.x - target.position.x
+                ) + Math.PI/2,
+                false
+              );
+
+              let attack_sound = THREE.MathUtils.randInt(0, 2);
+              switch(attack_sound){
+                case 1:
+                  owner.playSoundSet(SSFType.ATTACK_2);
+                break;
+                case 2:
+                  owner.playSoundSet(SSFType.ATTACK_3);
+                break;
+                default:
+                  owner.playSoundSet(SSFType.ATTACK_1);
+                break;
+              }
+
+              return ActionStatus.COMPLETE;
+            }
+
+          }
           return ActionStatus.IN_PROGRESS;
         }else{
-          this.owner.force = 0;
-          this.owner.speed = 0;
-          this.owner.openSpot = undefined;
-          return ActionStatus.COMPLETE;
+          return ActionStatus.FAILED;
         }
       }
-    //}
+    }
   }
 
 }

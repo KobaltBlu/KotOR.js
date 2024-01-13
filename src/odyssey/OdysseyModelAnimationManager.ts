@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { OdysseyController } from "./controllers";
+import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
+import { OdysseyController } from "./controllers/OdysseyController";
 import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
 

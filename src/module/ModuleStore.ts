@@ -1,4 +1,5 @@
-import { ModuleItem, ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
+import { ModuleItem } from "./ModuleItem";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
@@ -7,7 +8,8 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectManager } from "../managers";
+import { GameState } from "../GameState";
+// import { ModuleObjectManager } from "../managers";
 
 /**
 * ModuleStore class.
@@ -83,7 +85,7 @@ export class ModuleStore extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('BuySellFlag'))

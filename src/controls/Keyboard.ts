@@ -1,7 +1,5 @@
 import { KeyInput } from "./KeyInput";
 import { KeyboardAction } from "../enums/controls/KeyboardAction";
-import { GUIControl } from "../gui";
-import { MenuManager } from "../managers";
 import { KeyboardKeyActions } from "../interface/input/KeyboardKeyActions";
 
 /**
@@ -139,12 +137,6 @@ export class Keyboard {
     if(input){
       input.keyDown();
     }
-
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      if(typeof MenuManager.activeGUIElement.onKeyDown === 'function'){
-        MenuManager.activeGUIElement.onKeyDown(e);
-      }
-    }
   }
 
   onKeyUp(e: KeyboardEvent){
@@ -153,12 +145,6 @@ export class Keyboard {
     const input = this.action[code];
     if(input){
       input.keyUp();
-    }
-
-    if(MenuManager.activeGUIElement instanceof GUIControl){
-      if(typeof MenuManager.activeGUIElement.onKeyUp === 'function'){
-        MenuManager.activeGUIElement.onKeyUp(e);
-      }
     }
   }
 

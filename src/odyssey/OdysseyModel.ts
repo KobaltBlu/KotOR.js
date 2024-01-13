@@ -1,14 +1,14 @@
 import { BinaryReader } from "../BinaryReader";
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { 
-  OdysseyModelAnimation, OdysseyModelAnimationNode, OdysseyModelNode, OdysseyModelNodeAABB, OdysseyModelNodeDangly,
-  OdysseyModelNodeEmitter, OdysseyModelNodeLight, OdysseyModelNodeMesh, OdysseyModelNodeReference, OdysseyModelNodeSaber, OdysseyModelNodeSkin 
-} from ".";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 import { IOdysseyFileHeader } from "../interface/odyssey/IOdysseyFileHeader";
 import { IOdysseyGeometryHeader } from "../interface/odyssey/IOdysseyGeometryHeader";
 import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
+import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
+import { OdysseyModelFactory } from "./OdysseyModelFactory";
+import { OdysseyModelNode } from "./OdysseyModelNode";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModel class.
@@ -23,6 +23,7 @@ import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyModel {
+
   mdlReader: BinaryReader;
   mdxReader: BinaryReader;
 
@@ -85,8 +86,8 @@ export class OdysseyModel {
     this.geometryHeader.rootNodeOffset = this.mdlReader.readUInt32();
     this.geometryHeader.nodeCount = this.mdlReader.readUInt32();
 
-    this.geometryHeader.unknown1ArrayDefinition = OdysseyModel.ReadArrayDefinition(mdlReader);
-    this.geometryHeader.unknown2ArrayDefinition = OdysseyModel.ReadArrayDefinition(mdlReader);
+    this.geometryHeader.unknown1ArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
+    this.geometryHeader.unknown2ArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
 
     this.geometryHeader.refCount = this.mdlReader.readUInt32();
     this.geometryHeader.geometryType = this.mdlReader.readByte(); //Model Type
@@ -102,7 +103,7 @@ export class OdysseyModel {
     this.modelHeader.fogged = !!this.mdlReader.readByte();
     this.modelHeader.childModelCount = this.mdlReader.readUInt32(); //Unkown
 
-    this.modelHeader.animationArrayDefinition = OdysseyModel.ReadArrayDefinition(mdlReader);
+    this.modelHeader.animationArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(mdlReader);
 
     this.modelHeader.parentModelPointer = this.mdlReader.readUInt32(); // Parent model pointer
 
@@ -126,10 +127,10 @@ export class OdysseyModel {
     this.geometryHeader.mdxLength = this.mdlReader.readUInt32();
     this.geometryHeader.mdxOffset = this.mdlReader.readUInt32();
 
-    this.namesArrayDefinition = OdysseyModel.ReadArrayDefinition(this.mdlReader);
-    this.nameOffsetsArray = OdysseyModel.ReadArray(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
+    this.namesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.mdlReader);
+    this.nameOffsetsArray = OdysseyModelUtility.ReadArray(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
 
-    this.names = OdysseyModel.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
+    this.names = OdysseyModelUtility.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
     for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
       this.names[i] = this.names[i].replace(/\0[\s\S]*$/g,'').toLowerCase();
     }
@@ -144,7 +145,7 @@ export class OdysseyModel {
      * Animations
      */
 
-    let animOffsets = OdysseyModel.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
+    let animOffsets = OdysseyModelUtility.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
     for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++){
       this.readAnimation( this.fileHeader.modelDataOffset + animOffsets[i] );
     }
@@ -157,35 +158,11 @@ export class OdysseyModel {
   readNode(offset: number, parent = this.rootNode){
 
     this.mdlReader.position = this.fileHeader.modelDataOffset + offset;  
-    let node: OdysseyModelNode;
+    // let node: OdysseyModelNode;
 
-    //Read the node type so we can know what type of node we are dealing with
-    const NodeType = this.mdlReader.readUInt16();
-    this.mdlReader.position -= 2;
+    let node = OdysseyModelFactory.ReadNode(parent, this.mdlReader);
 
-    if ((NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
-      node = new OdysseyModelNodeEmitter(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      node = new OdysseyModelNodeLight(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
-      node = new OdysseyModelNodeSkin(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
-      node = new OdysseyModelNodeDangly(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
-      node = new OdysseyModelNodeSaber(parent);
-    }else if ((NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
-      node = new OdysseyModelNodeAABB(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Anim) == OdysseyModelNodeType.Anim) {
-      this.mdlReader.position += 0x38;
-    }else if ((NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
-      node = new OdysseyModelNodeMesh(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
-      node = new OdysseyModelNodeReference(parent);
-    }else{
-      node = new OdysseyModelNode(parent);
-    }
-
-    if(node instanceof OdysseyModelNode){
+    if(node){
       node.readBinary(this);
       node.odysseyModel = undefined;
 
@@ -195,7 +172,7 @@ export class OdysseyModel {
   
       return node;
     }else{
-      console.error('OdysseyModel.ReadNode', 'Unhandled Node', NodeType);
+      console.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
     }
 
     return node;
@@ -212,61 +189,6 @@ export class OdysseyModel {
     this.mdlReader.seek(pos);
 
     return anim;
-  }
-
-  static ReadArray(stream: BinaryReader, offset: number, count: number){
-    let posCache = stream.position;
-    stream.position = offset;
-
-    let values: number[] = new Array(count);
-    for (let i = 0; i < count; i++) {
-      values[i] = stream.readUInt32();
-    }
-
-    stream.position = posCache;
-    return values;
-  }
-
-  static ReadArrayFloats(stream: BinaryReader, offset: number, count: number){
-    let posCache = stream.position;
-    stream.position = offset;
-
-    let values: number[] = new Array(count);
-    for (let i = 0; i < count; i++) {
-      values[i] = stream.readSingle();
-    }
-
-    stream.position = posCache;
-    return values;
-  }
-
-  //Gets the Array Offset & Length
-  static ReadArrayDefinition(stream: BinaryReader): IOdysseyArrayDefinition {
-    return {
-      offset: stream.readUInt32() & 0xFFFFFFFF, 
-      count: stream.readUInt32() & 0xFFFFFFFF, 
-      count2: stream.readUInt32() & 0xFFFFFFFF
-    };
-  }
-
-  static ReadStrings(stream: BinaryReader, offsets: number[], offset: number) {
-    let posCache = stream.position;
-    let strings = [];
-
-    for (let i = 0; i < offsets.length; i++){
-      stream.position = offset + offsets[i];
-
-      let str = "";
-      let char;
-
-      while ((char = stream.readChar()).charCodeAt(0) != 0)
-        str = str + char;
-
-      strings[i] = str;
-    }
-
-    stream.position = posCache;
-    return strings;
   }
 
 }

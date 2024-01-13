@@ -4,7 +4,7 @@ import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { ModuleItem } from "../../../module";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { InventoryManager, PartyManager, TwoDAManager } from "../../../managers";
+import { GameState } from "../../../GameState";
 
 /**
  * MenuInventory class.
@@ -76,27 +76,27 @@ export class MenuInventory extends GameMenu {
     this.manager.MenuTop.LBLH_INV.onHoverIn();
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
-    let inv = InventoryManager.getNonQuestInventory();
+    let inv = GameState.InventoryManager.getNonQuestInventory();
     for (let i = 0; i < inv.length; i++) {
       this.LB_ITEMS.addItem(inv[i]);
     }
     TextureLoader.LoadQueue();
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
-    let currentPC = PartyManager.party[0];
+    let currentPC = GameState.PartyManager.party[0];
     if (currentPC) {
       this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
       this.LBL_DEF?.setText(currentPC.getAC());
     }
-    this.LBL_CREDITS_VALUE.setText(PartyManager.Gold);
+    this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold);
 
     let btn_change: GUIControl;
-    for (let i = 0; i < PartyManager.party.length; i++) {
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(btn_change){
-        let partyMember = PartyManager.party[i];
+        let partyMember = GameState.PartyManager.party[i];
         let portraitId = partyMember.getPortraitId();
-        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
         if (!i) {
           if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
             this.LBL_PORT.setFillTextureName(portrait.baseresref);

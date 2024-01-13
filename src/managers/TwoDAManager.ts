@@ -1,4 +1,4 @@
-import { ResourceLoader } from "../loaders";
+import { ResourceLoader } from "../loaders/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { AsyncLoop } from "../utility/AsyncLoop";

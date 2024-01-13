@@ -1,8 +1,7 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { TLKManager, TwoDAManager } from "../../../managers";
+import { TextureLoaderState } from "../../../loaders/TextureLoaderState";
 
 /**
  * MenuGraphicsAdvanced class.
@@ -61,7 +60,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
       this.BTN_TEXQUALRIGHT.addEventListener('click', (e: any) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
-        if(quality >= TwoDAManager.datatables.get('texpacks').RowCount) quality = TwoDAManager.datatables.get('texpacks').RowCount-1;
+        if(quality >= GameState.TwoDAManager.datatables.get('texpacks').RowCount) quality = GameState.TwoDAManager.datatables.get('texpacks').RowCount-1;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
@@ -100,8 +99,8 @@ export class MenuGraphicsAdvanced extends GameMenu {
   close() {
     super.close();
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    if (quality != TextureLoader.TextureQuality) {
-      TextureLoader.TextureQuality = quality;
+    if (quality != TextureLoaderState.TextureQuality) {
+      TextureLoaderState.TextureQuality = quality;
       GameState.ReloadTextureCache();
       GameState.iniConfig.save();
     }
@@ -110,16 +109,16 @@ export class MenuGraphicsAdvanced extends GameMenu {
   updateTextureQualityLabel() {
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
     
-    const _2darow = TwoDAManager.datatables.get('texpacks').rows[quality];
+    const _2darow = GameState.TwoDAManager.datatables.get('texpacks').rows[quality];
     if (_2darow) {
-      this.BTN_TEXQUAL.setText(TLKManager.GetStringById(_2darow.strrefname).Value);
+      this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(_2darow.strrefname).Value);
     }
     if (quality <= 0) {
       this.BTN_TEXQUALLEFT.hide();
     } else {
       this.BTN_TEXQUALLEFT.show();
     }
-    if (quality >= TwoDAManager.datatables.get('texpacks').RowCount - 1) {
+    if (quality >= GameState.TwoDAManager.datatables.get('texpacks').RowCount - 1) {
       this.BTN_TEXQUALRIGHT.hide();
     } else {
       this.BTN_TEXQUALRIGHT.show();

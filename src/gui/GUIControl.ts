@@ -8,7 +8,6 @@ import { IGUIControlExtent } from "../interface/gui/IGUIControlExtent";
 import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
 import { IGUIControlText } from "../interface/gui/IGUIControlText";
 import { GFFStruct } from "../resource/GFFStruct";
-import { GameMenu, GUIButton, GUICheckBox, GUIControlEvent, GUILabel, GUIListBox, GUIProgressBar, GUISlider } from ".";
 import { createQuadElements as createIndicies } from "../utility/QuadIndices";
 import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
@@ -19,8 +18,10 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { Mouse } from "../controls";
 import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ShaderManager, MenuManager, TLKManager, ResolutionManager } from "../managers";
+// import { ShaderManager, MenuManager, TLKManager, ResolutionManager } from "../managers";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
+import type { GameMenu } from "./GameMenu";
+import { BitWise } from "../utility/BitWise";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -248,10 +249,10 @@ export class GUIControl {
     
     this.border.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -262,10 +263,10 @@ export class GUIControl {
 
     this.border.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -283,10 +284,10 @@ export class GUIControl {
     
     this.border.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -328,10 +329,10 @@ export class GUIControl {
 
     this.highlight.edge_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -341,10 +342,10 @@ export class GUIControl {
 
     this.highlight.corner_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -361,10 +362,10 @@ export class GUIControl {
     
     this.highlight.fill.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
       visible: true
@@ -407,10 +408,10 @@ export class GUIControl {
 
     this.text.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
-        ShaderManager.Shaders.get('odyssey-gui').getUniforms()
+        GameState.ShaderManager.Shaders.get('odyssey-gui').getUniforms()
       ]),
-      vertexShader: ShaderManager.Shaders.get('odyssey-gui').getVertex(),
-      fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
+      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
@@ -944,7 +945,7 @@ export class GUIControl {
 
   buildChildren(){
 
-    if(!(this.menu instanceof GameMenu))
+    if(!(this.menu))
       return false;
 
     if(!(this.menu.tGuiPanel.control instanceof GFFStruct))
@@ -957,7 +958,7 @@ export class GUIControl {
         let childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
         if(childParent == this.name){
 
-          const control: GUIControl = GUIControl.FromStruct(children[i], this.menu, this, this.scale);
+          const control: GUIControl = this.menu.factory.FromStruct(children[i], this.menu, this, this.scale);
 
           control.zIndex = this.zIndex+1;
 
@@ -1000,27 +1001,27 @@ export class GUIControl {
   update(delta: number){
     if(this.pulsing){
       if(this.border.edge_material){
-        this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
 
       if(this.border.corner_material){
-        this.border.corner_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.border.corner_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
 
       if(this.highlight.edge_material){
-        this.highlight.edge_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.highlight.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
 
       if(this.highlight.corner_material){
-        this.highlight.corner_material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.highlight.corner_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
 
       if(this.text.material){
-        this.text.material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.text.material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
   
       if(this.border.fill.material)
-        this.border.fill.material.uniforms.opacity.value = 1 - (0.5 *MenuManager.pulseOpacity);
+        this.border.fill.material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
     }else{
       this.resetPulse();
     }
@@ -1349,34 +1350,34 @@ export class GUIControl {
 
     switch(this.anchor){
       case Anchor.TopLeft:
-        this.anchorOffset.x = -((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
       break;
       case Anchor.TopCenter:
         if(this.extent.left < halfX){
-          this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
         }else{
-          this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
         }
       break;
       case Anchor.TopRight:
-        this.anchorOffset.x = ((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = ((ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
       break;
       case Anchor.BottomLeft:
-        this.anchorOffset.x = -((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
+        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
       break;
       case Anchor.BottomCenter:
         if(this.extent.left < (halfX)){
-          this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
         }else{
-          this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
+          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
         }
       break;
       case Anchor.BottomRight:
-        this.anchorOffset.x = ((ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = -(((ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
+        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
       break;
       default:
         this.anchorOffset = new THREE.Vector2(posX, posY);
@@ -1436,8 +1437,8 @@ export class GUIControl {
   getControlExtent(){
     let renderSize = this.getRendererSize();
 
-    let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
+    let wRatio = GameState.ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    let hRatio = GameState.ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     let parentExtent = { width: this.menu.width, height: this.menu.height };
     //if(!(this.parent instanceof THREE.Scene)){
@@ -1485,8 +1486,8 @@ export class GUIControl {
     //console.log('size', extent, inner);
 
     let shrinkWidth = 0;
-    if(this instanceof GUIListBox){
-      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
+      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
     }
 
     let width = inner.width - this.border.dimension - shrinkWidth;
@@ -1531,8 +1532,8 @@ export class GUIControl {
     let top = 0, left = 0, width = 0, height = 0;
 
     let shrinkWidth = 0;
-    if(this instanceof GUIListBox){
-      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
+      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
     }
 
     switch(side){
@@ -1608,8 +1609,8 @@ export class GUIControl {
     let inner = this.getInnerSize();
 
     let shrinkWidth = 0;
-    if(this instanceof GUIListBox){
-      shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
+      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
     }
 
     switch(side){
@@ -1689,8 +1690,8 @@ export class GUIControl {
       this.border.fill.mesh.position.z = this.zOffset;
 
       let shrinkWidth = 0;
-      if(this instanceof GUIListBox){
-        shrinkWidth = (this.scrollbar.extent.width) + (this.scrollbar.border.dimension * 2);
+      if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
+        shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
       }
       this.border.fill.mesh.position.x = -shrinkWidth/2;
     }
@@ -1894,8 +1895,8 @@ export class GUIControl {
     texture.magFilter = THREE.LinearFilter;
     texture.needsUpdate = true;
 
-    if(this.text.text != '' || (this.text.strref != 0 && typeof TLKManager.TLKStrings[this.text.strref] != 'undefined'))
-      this.updateTextGeometry(this.text.text != '' ? this.text.text : TLKManager.TLKStrings[this.text.strref].Value);
+    if(this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
+      this.updateTextGeometry(this.text.text != '' ? this.text.text : GameState.TLKManager.TLKStrings[this.text.strref].Value);
     
     this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
@@ -2107,7 +2108,7 @@ export class GUIControl {
       break;
     }
 
-    if(this.parent instanceof GUIListBox){
+    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox)){
       // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
     }
     
@@ -2151,7 +2152,7 @@ export class GUIControl {
 
   getRendererSize(){
     //window.renderer;
-    return {width: ResolutionManager.getViewportWidth(), height: ResolutionManager.getViewportHeight()};
+    return {width: GameState.ResolutionManager.getViewportWidth(), height: GameState.ResolutionManager.getViewportHeight()};
   }
 
   setText(str: any = '', renderOrder = 5){
@@ -2186,8 +2187,8 @@ export class GUIControl {
   }
 
   getHintText(){
-    if(this.text.strref != 0 && typeof TLKManager.TLKStrings[this.text.strref+1] != 'undefined'){
-      return TLKManager.TLKStrings[this.text.strref+1].Value;
+    if(this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref+1] != 'undefined'){
+      return GameState.TLKManager.TLKStrings[this.text.strref+1].Value;
     }else{
       return '';
     }
@@ -2513,27 +2514,6 @@ export class GUIControl {
     let length = Math.sqrt(width * width + height * height)
     output.center.set(minX + width / 2, minY + height / 2, 0)
     output.radius = length / 2
-  }
-
-  static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {
-    const type = ( struct.hasField('CONTROLTYPE') ? struct.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
-
-    switch(type){
-      case 4:
-        return new GUILabel(menu, struct, parent, scale);
-      case 6:
-        return new GUIButton(menu, struct, parent, scale);
-      case 7:
-        return new GUICheckBox(menu, struct, parent, scale);
-      case 8:
-        return new GUISlider(menu, struct, parent, scale);
-      case 10:
-        return new GUIProgressBar(menu, struct, parent, scale);
-      case 11:
-        return new GUIListBox(menu, struct, parent, scale);
-      default: 
-        return new GUIControl(menu, struct, parent, scale);
-    }
   }
 
 }

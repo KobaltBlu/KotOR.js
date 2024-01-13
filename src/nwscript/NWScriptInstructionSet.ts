@@ -1,14 +1,15 @@
 import * as THREE from "three";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
-import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import { NWScriptInstance } from "./NWScriptInstance";
+// import { ModuleObjectManager } from "../managers/ModuleObjectManager";
+import type { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
 import { NWScriptStack } from "./NWScriptStack";
 import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
+import { GameState } from "../GameState";
 
 /**
  * CALL_CPDOWNSP
@@ -142,7 +143,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
       case NWScriptDataType.OBJECT:
         args.push( this.stack.pop()?.value );
         //Test for and fix instances where an object id is pushed instead of an object reference
-        if(typeof args[i] == 'number') args[i] = ModuleObjectManager.GetObjectById(args[i]);
+        if(typeof args[i] == 'number') args[i] = GameState.ModuleObjectManager.GetObjectById(args[i]);
       break;
       case NWScriptDataType.STRING:
       case NWScriptDataType.INTEGER:
@@ -1109,7 +1110,7 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
     base:   [], //this.stack.stack.slice(0, (instr.bpOffset/4)),
     local:  [], //this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)
     instr:  instruction,
-    script: new NWScriptInstance( this.instructions )
+    script: new GameState.NWScript.NWScriptInstance( this.instructions )
   };
 
   //console.log('STORE_STATE', this.stack.stack.length, this.stack.basePointer);

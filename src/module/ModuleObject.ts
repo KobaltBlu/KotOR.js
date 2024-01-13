@@ -3,7 +3,6 @@ import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpe
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../CollisionData";
 import { CombatData } from "../combat/CombatData";
-import { CombatEngine } from "../combat/CombatEngine";
 import { EffectLink } from "../effects";
 import { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
@@ -37,12 +36,15 @@ import { PlaceableAppearance } from "../engine/PlaceableAppearance";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
 import { DoorAppearance } from "../engine/DoorAppearance";
 import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
-import { PartyManager, MenuManager, InventoryManager, TwoDAManager, ModuleObjectManager, FactionManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
 import { PerceptionMask } from "../enums/engine/PerceptionMask";
 import { MDLLoader } from "../loaders";
+import { CombatRound, CombatRoundAction } from "../combat";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
+import { BitWise } from "../utility/BitWise";
 
 /**
 * ModuleObject class.
@@ -82,6 +84,7 @@ export class ModuleObject {
   v20: THREE.Vector2;
   v21: THREE.Vector2;
   tmpPos: THREE.Vector3;
+  openSpot: any;
 
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
@@ -89,6 +92,7 @@ export class ModuleObject {
   collisionData: CollisionData = new CollisionData(this);
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
+  combatRound = new CombatRound(this);
 
   facing: number;
   wasFacing: number;
@@ -494,7 +498,7 @@ export class ModuleObject {
   }
 
   clearAllActions(skipUnclearable = false){
-    this.combatData.combatQueue = [];
+    this.combatRound.clearActions();
     //Reset the anim state
     //this.animState = 0;
     //this.actionQueue.clear();
@@ -518,12 +522,13 @@ export class ModuleObject {
     //this.clearTarget();
   }
 
-  clearCombatAction(combatAction: ICombatAction = undefined){
-    return this.combatData.clearCombatAction(combatAction);
+  clearCombatAction(combatAction: CombatRoundAction = undefined){
+    return this.combatRound.clearAction(combatAction);
   }
 
   clearCombatActionAtIndex(index: number = 0): boolean {
-    return this.combatData.clearCombatActionAtIndex(index);
+    if(index <= 0) return;
+    return !!this.combatRound.scheduledActionList.splice(index, 1).length;
   }
 
   //Queue an animation to the actionQueue array
@@ -805,7 +810,7 @@ export class ModuleObject {
         if(this.scripts.onHeartbeat instanceof NWScriptInstance){
           //console.log('heartbeat', this.getName());
           let instance = this.scripts.onHeartbeat.nwscript.newInstance();
-          if(PartyManager.party.indexOf(this as any) > -1){
+          if(GameState.PartyManager.party.indexOf(this as any) > -1){
             instance.run(this, 2001);
           }else{
             instance.run(this, 1001);
@@ -1002,7 +1007,7 @@ export class ModuleObject {
   }
 
   isInConversation(){
-    return (GameState.Mode == EngineMode.DIALOG) && (MenuManager.InGameDialog.owner == this || MenuManager.InGameDialog.listener == this);
+    return (GameState.Mode == EngineMode.DIALOG) && (GameState.MenuManager.InGameDialog.owner == this || GameState.MenuManager.InGameDialog.listener == this);
   }
 
   setCutsceneMode(state: boolean = false){
@@ -1070,7 +1075,7 @@ export class ModuleObject {
         this.mesh = undefined;
       }
 
-      ModuleObjectManager.RemoveObject(this);
+      GameState.ModuleObjectManager.RemoveObject(this);
     }catch(e){
       console.error('ModuleObject.destory', e);
     }
@@ -1177,8 +1182,8 @@ export class ModuleObject {
   }
 
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
-    let bonus = CombatEngine.GetMod(this.getCON());
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getCON());
     
     if((roll + this.getFortitudeSave() + bonus) > nDC){
       return 1
@@ -1192,8 +1197,8 @@ export class ModuleObject {
   }
 
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
-    let bonus = CombatEngine.GetMod(this.getDEX());
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getDEX());
     
     if((roll + this.getReflexSave() + bonus) > nDC){
       return 1
@@ -1211,8 +1216,8 @@ export class ModuleObject {
   }
 
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = CombatEngine.DiceRoll(1, 'd20');
-    let bonus = CombatEngine.GetMod(this.getWIS());
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getWIS());
 
     if((roll + this.getWillSave() + bonus) > nDC){
       return 1
@@ -1228,9 +1233,15 @@ export class ModuleObject {
   getSkillLevel(value: number = 0): number {
     return 0;
   }
-
+  
   resistForce(oCaster: ModuleObject){
-    return false;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
+      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //1d20 + their level vs. a DC of your level plus 10
+      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
+      return (roll > 10 + (oCaster as any).getTotalClassLevel());
+    }
+    return 0;
   }
 
   addEffect(effect: GameEffect, type = 0, duration = 0){
@@ -1453,14 +1464,18 @@ export class ModuleObject {
 
   subtractFP(nAmount = 0){}
 
+  getAC(){
+    return 10;
+  }
+
   isPartyMember(){
-    return PartyManager.party.indexOf(this as any) >= 0;
+    return GameState.PartyManager.party.indexOf(this as any) >= 0;
   }
 
   hasItem(sTag=''){
     sTag = sTag.toLowerCase();
     if(this.isPartyMember()){
-      return InventoryManager.getItem(sTag);
+      return GameState.InventoryManager.getItem(sTag);
     }else{
       return undefined;
     }
@@ -1559,23 +1574,23 @@ export class ModuleObject {
   }
 
   isHostile(target: ModuleObject){
-    return FactionManager.IsHostile(this, target);
+    return GameState.FactionManager.IsHostile(this, target);
   }
 
   isNeutral(target: ModuleObject){
-    return FactionManager.IsNeutral(this, target);
+    return GameState.FactionManager.IsNeutral(this, target);
   }
 
   isFriendly(target: ModuleObject){
-    return FactionManager.IsFriendly(this, target);
+    return GameState.FactionManager.IsFriendly(this, target);
   }
 
   getReputation(target: ModuleObject){
-    return FactionManager.GetReputation(this, target);
+    return GameState.FactionManager.GetReputation(this, target);
   }
 
   getPerceptionRangePrimary(){
-    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
     if(ranges2DA){
       let range = ranges2DA.rows[this.perceptionRange];
       if(range){
@@ -1586,7 +1601,7 @@ export class ModuleObject {
   }
 
   getPerceptionRangeSecondary(){
-    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
     if(ranges2DA){
       let range = ranges2DA.rows[this.perceptionRange];
       if(range){
@@ -1602,7 +1617,7 @@ export class ModuleObject {
       let perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          perceptionObject.object = ModuleObjectManager.GetObjectById(perceptionObject.objectId);
+          perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
           if(!(perceptionObject.object instanceof ModuleObject)){
             this.perceptionList.splice(length, 1);
           }
@@ -1799,7 +1814,7 @@ export class ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
     
     if(this.template.RootNode.hasField('Animation'))
@@ -1829,7 +1844,7 @@ export class ModuleObject {
       if((this.factionId & 0xFFFFFFFF) == -1){
         this.factionId = 0;
       }
-      this.faction = FactionManager.factions.get(this.factionId);
+      this.faction = GameState.FactionManager.factions.get(this.factionId);
     }
 
     if(this.template.RootNode.hasField('Geometry')){
@@ -2055,7 +2070,7 @@ export class ModuleObject {
 
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation{
 
-    const animations2DA = TwoDAManager.datatables.get('animations');
+    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
 
       const debilitatedEffect = this.effects.find( e => e.type == GameEffectType.EffectSetState );

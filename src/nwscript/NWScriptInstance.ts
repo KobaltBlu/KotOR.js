@@ -6,11 +6,11 @@ import { GameState } from "../GameState";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
 import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-import { ModuleObjectManager } from "../managers";
+// import { ModuleObjectManager } from "../managers";
 import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { TalentObject, TalentSpell } from "../talents";
+import type { TalentObject, TalentSpell } from "../talents";
 import type { NWScript } from "./NWScript";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptDefK2 } from "./NWScriptDefK2";
@@ -169,16 +169,14 @@ export class NWScriptInstance {
   setCaller(obj: any){
     this.caller = obj;
     if(typeof this.caller == 'number'){
-      this.caller = ModuleObjectManager.GetObjectById(this.caller);
+      this.caller = GameState.ModuleObjectManager.GetObjectById(this.caller);
     }
   }
 
   getSpellId(){
-    if(this.talent instanceof TalentObject){
-      return this.talent.id;
-    }else{
-      return -1;
-    }
+    if(!this.talent){ return -1; }
+
+    return this.talent.id;
   }
 
   run(caller: any = null, scriptVar = 0){

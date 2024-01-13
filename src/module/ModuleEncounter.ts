@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { EncounterCreatureEntry, ModuleObject, EncounterSpawnEntry, EncounterSpawnPointEntry } from ".";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
 import { NWScript } from "../nwscript/NWScript";
@@ -11,8 +10,12 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyFace3 } from "../three/odyssey";
 import { ConfigClient } from "../utility/ConfigClient";
 import { ResourceLoader } from "../loaders";
-import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
+// import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleObject } from "./ModuleObject";
+import { EncounterCreatureEntry } from "./EncounterCreatureEntry";
+import { EncounterSpawnPointEntry } from "./EncounterSpawnPointEntry";
+import { EncounterSpawnEntry } from "./EncounterSpawnEntry";
 
 /**
 * ModuleEncounter class.
@@ -135,9 +138,9 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     //Check Party Members
-    let partyLen = PartyManager.party.length;
+    let partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++){
-      let partymember = PartyManager.party[i];
+      let partymember = GameState.PartyManager.party[i];
       let pos = partymember.position.clone();
       
       if(this.box.containsPoint(pos)){
@@ -281,7 +284,7 @@ export class ModuleEncounter extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
 
       if(this.template.RootNode.hasField('Geometry')){
         this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
@@ -359,7 +362,7 @@ export class ModuleEncounter extends ModuleObject {
           this.factionId = 0;
         }
       }
-      this.faction = FactionManager.factions.get(this.factionId);
+      this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('LocalizedName'))
         this.localizedName = this.template.getFieldByLabel('LocalizedName').getValue();

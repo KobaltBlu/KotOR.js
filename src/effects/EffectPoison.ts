@@ -1,6 +1,6 @@
-import { EffectVisualEffect, GameEffect } from ".";
+import { GameState } from "../GameState";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { TwoDAManager } from "../managers";
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectPoison class.
@@ -34,7 +34,7 @@ export class EffectPoison extends GameEffect {
 
   initialize(){
     super.initialize();
-    const poison2DA = TwoDAManager.datatables.get('poison');
+    const poison2DA = GameState.TwoDAManager.datatables.get('poison');
     if(poison2DA){
       this.poison = poison2DA.rows[this.getPoisionId()];
     }
@@ -47,7 +47,7 @@ export class EffectPoison extends GameEffect {
       return;
 
     //Poison Visual Effect
-    let eVisualEffect = new EffectVisualEffect();
+    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());

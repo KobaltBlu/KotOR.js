@@ -1,36 +1,45 @@
 import * as THREE from "three";
+import type { 
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
+  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager 
+} from "./managers";
+
+import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
+import type { ModuleObject, ModuleCreature, Module } from "./module";
+import type { NWScript } from "./nwscript/NWScript";
+import type { SaveGame } from "./SaveGame";
+import type { GameEffectFactory } from "./effects/GameEffectFactory";
+import type { GameEventFactory } from "./events/GameEventFactory";
+
+import type { ActionMenuManager } from "./ActionMenuManager";
+import type { ActionFactory } from "./actions/ActionFactory";
 
 import { AnimatedTexture } from "./AnimatedTexture";
-import { CombatEngine } from "./combat";
-import { GUIListBox } from "./gui";
-import { Module } from "./module";
-import type { ModuleObject, ModuleCreature } from "./module";
-import { IngameControls, Mouse } from "./controls";
+import { IngameControls } from "./controls/IngameControls";
+import { Mouse } from "./controls/Mouse";
 
 import { INIConfig } from "./INIConfig";
 import { LoadingScreen } from "./LoadingScreen";
-import { Planetary } from "./Planetary";
-import { SaveGame } from "./SaveGame";
 import { VideoPlayer } from "./VideoPlayer";
 
 import { OdysseyObject3D } from "./three/odyssey";
-import { NWScript } from "./nwscript/NWScript";
 import { AudioEngine, AudioEmitter } from "./audio";
 import { TGAObject } from "./resource/TGAObject";
 
 import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
+import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv } from "./enums/engine";
+import { TextureType } from "./enums/loaders/TextureType";
+
 import { EngineContext } from "./engine/EngineContext";
 
 import { ConfigClient } from "./utility/ConfigClient";
 import { FollowerCamera } from "./engine/FollowerCamera";
-import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 import { OdysseyShaderPass } from "./shaders/pass/OdysseyShaderPass";
-import { AutoPauseManager, CameraShakeManager, CursorManager, FadeOverlayManager, GlobalVariableManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager } from "./managers";
 import { ResourceLoader, TextureLoader } from "./loaders";
-import { TextureType } from "./enums/loaders/TextureType";
 
 //THREE.js imports
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer";
@@ -45,6 +54,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { BitWise } from "./utility/BitWise";
 import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
+import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -62,6 +72,43 @@ export class GameState implements EngineContext {
     "beforeRender": [],
     "afterRender": [],
   };
+
+  static AppearanceManager: typeof AppearanceManager;
+  static AutoPauseManager: typeof AutoPauseManager;
+  static CameraShakeManager: typeof CameraShakeManager;
+  static CharGenManager: typeof CharGenManager;
+  static CheatConsoleManager: typeof CheatConsoleManager;
+  static ConfigManager: typeof ConfigManager;
+  static CursorManager: typeof CursorManager;
+  static DialogMessageManager: typeof DialogMessageManager;
+  static FactionManager: typeof FactionManager;
+  static FadeOverlayManager: typeof FadeOverlayManager;
+  static FeedbackMessageManager: typeof FeedbackMessageManager;
+  static GlobalVariableManager: typeof GlobalVariableManager;
+  static InventoryManager: typeof InventoryManager;
+  static JournalManager: typeof JournalManager;
+  static LightManager: typeof LightManager;
+  static MenuManager: typeof MenuManager;
+  static ModuleObjectManager: typeof ModuleObjectManager;
+  static PartyManager: typeof PartyManager;
+  static PartyTableManager: typeof PartyTableManager;
+  static ResolutionManager: typeof ResolutionManager;
+  static ShaderManager: typeof ShaderManager;
+  static TLKManager: typeof TLKManager;
+  static TwoDAManager: typeof TwoDAManager;
+
+  static Module: typeof Module;
+  static NWScript: typeof NWScript;
+
+  static TalentObject: typeof TalentObject;
+  static TalentFeat: typeof TalentFeat;
+  static TalentSkill: typeof TalentSkill;
+  static TalentSpell: typeof TalentSpell;
+  static ActionMenuManager: typeof ActionMenuManager;
+
+  static ActionFactory: typeof ActionFactory;
+  static GameEffectFactory: typeof GameEffectFactory;
+  static GameEventFactory: typeof GameEventFactory;
 
   static Location: any;
 
@@ -127,7 +174,7 @@ export class GameState implements EngineContext {
   static clock: THREE.Clock;
   static stats: Stats;
 
-  static lightManager: LightManager = new LightManager();
+  static lightManager: LightManager;
 
   static limiter: { 
     fps: number; 
@@ -187,6 +234,7 @@ export class GameState implements EngineContext {
     stunt: new THREE.Group,
     weather_effects: new THREE.Group,
     room_walkmeshes: new THREE.Group,
+    spell_instances: new THREE.Group,
   };
   static weather_effects: any[];
   static interactableObjects: any[];
@@ -239,6 +287,7 @@ export class GameState implements EngineContext {
   }
 
   static Init(){
+    GameState.lightManager = new GameState.LightManager();
     GameState.processEventListener('init');
     
     GameState.models = [];
@@ -276,15 +325,15 @@ export class GameState implements EngineContext {
 
     
     GameState.renderer.autoClear = false;
-    GameState.renderer.setSize( ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight() );
+    GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
 
     let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
-		GameState.depthTarget = new THREE.WebGLRenderTarget( ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), pars );
+		GameState.depthTarget = new THREE.WebGLRenderTarget( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight(), pars );
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
     GameState.depthTarget.depthBuffer = true;
-    GameState.depthTarget.depthTexture = new THREE.DepthTexture(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
+    GameState.depthTarget.depthTexture = new THREE.DepthTexture(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
 
     (window as any).renderer = GameState.renderer;
@@ -309,27 +358,27 @@ export class GameState implements EngineContext {
 
     GameState.visible = true;
 
-    CursorManager.selected = undefined;
-    CursorManager.hovered = undefined;
+    GameState.CursorManager.selected = undefined;
+    GameState.CursorManager.hovered = undefined;
 
     GameState.scene = new THREE.Scene();
     GameState.scene_gui = new THREE.Scene();
     GameState.frustumMat4 = new THREE.Matrix4();
     GameState.camera = FollowerCamera.camera;
 
-    GameState.camera_dialog = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
+    GameState.camera_dialog = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    GameState.camera_animated = new THREE.PerspectiveCamera( 55, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.01, 15000 );
+    GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     GameState.camera.up = new THREE.Vector3( 0, 0, 1 );
     GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     GameState.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
     GameState.camera_gui = new THREE.OrthographicCamera(
-      ResolutionManager.getViewportWidth() / -2,
-      ResolutionManager.getViewportWidth() / 2,
-      ResolutionManager.getViewportHeight() / 2,
-      ResolutionManager.getViewportHeight() / -2,
+      GameState.ResolutionManager.getViewportWidth() / -2,
+      GameState.ResolutionManager.getViewportWidth() / 2,
+      GameState.ResolutionManager.getViewportHeight() / 2,
+      GameState.ResolutionManager.getViewportHeight() / -2,
       1, 1000
     );
     GameState.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -391,6 +440,7 @@ export class GameState implements EngineContext {
       stunt: namedGroup('stunt'),
       weather_effects: namedGroup('weather_effects'),
       room_walkmeshes: namedGroup('room_walkmeshes'),
+      spell_instances: namedGroup('spell_instances'),
     };
 
     GameState.weather_effects = [];
@@ -415,6 +465,7 @@ export class GameState implements EngineContext {
 
     GameState.scene.add(GameState.group.party);
     // GameState.scene.add(GameState.group.room_walkmeshes);
+    GameState.scene.add(GameState.group.spell_instances);
 
     GameState.group.light_helpers.visible = false;
 
@@ -482,28 +533,19 @@ export class GameState implements EngineContext {
     GameState.renderPass.needsSwap = false;
     GameState.renderPassGUI.needsSwap = false;
 
-    FadeOverlayManager.Initialize();
+    GameState.FadeOverlayManager.Initialize();
 
     window.addEventListener('resize', () => {
       GameState.EventOnResize();
     });
 
-    if(GameState.GameKey == GameEngineType.TSL){
-      GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
-    }else{
-      GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
+    console.log('Game: Start');
+    try{
+      GameState.ShaderManager.Init();
+      GameState.Start();
+    }catch(e){
+      console.error(e);
     }
-
-    GameState.iniConfig.load().then( () => {
-      AutoPauseManager.Init();
-      console.log('Game: Start')
-      try{
-        ShaderManager.Init();
-        GameState.Start();
-      }catch(e){
-        console.error(e);
-      }
-    })
   }
 
   static Start(){
@@ -524,59 +566,46 @@ export class GameState implements EngineContext {
     GameState.Mode = EngineMode.GUI;
     GameState.State = EngineState.RUNNING;
     GameState.inMenu = false;
-    GlobalVariableManager.Init();
-
-    
-    console.log('Planetary: Loading');
-    Planetary.Init().then( () => {
-    
-      console.log('SaveGames: Loading');
-      SaveGame.GetSaveGames().then( () => {
-        console.log('SaveGames: Complete');
         
-        console.log('CursorManager: Init');
-        CursorManager.init( () => {
-          GameState.scene_cursor_holder.add( CursorManager.cursor );
-          GameState.scene.add( CursorManager.reticle );
-          GameState.scene.add( CursorManager.reticle2 );
-          GameState.scene_gui.add( CursorManager.arrow );
-          console.log('CursorManager: Complete');
+    console.log('CursorManager: Init');
+    GameState.CursorManager.init( () => {
+      GameState.scene_cursor_holder.add( GameState.CursorManager.cursor );
+      GameState.scene.add( GameState.CursorManager.reticle );
+      GameState.scene.add( GameState.CursorManager.reticle2 );
+      GameState.scene_gui.add( GameState.CursorManager.arrow );
+      console.log('CursorManager: Complete');
 
-          console.log('MenuLoader: Init');
-          MenuManager.Init();
-          MenuManager.LoadGameMenus().then( () => {
-            console.log('MenuLoader: Complete');
+      console.log('MenuLoader: Init');
+      GameState.MenuManager.Init();
+      GameState.MenuManager.LoadGameMenus().then( () => {
+        console.log('MenuLoader: Complete');
 
-            MenuManager.MenuJournal.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuInventory.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuEquipment.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuCharacter.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuMessages.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuOptions.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuMap.childMenu = MenuManager.MenuTop;
-            MenuManager.MenuAbilities.childMenu = MenuManager.MenuTop;
+        GameState.MenuManager.MenuJournal.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuInventory.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuEquipment.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuCharacter.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuMessages.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuOptions.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
+        GameState.MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
 
-            //Preload fx textures
-            TextureLoader.enQueue(
-              ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
-              'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
-              'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
-              'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
-              undefined,
-              TextureType.TEXTURE
-            );
+        //Preload fx textures
+        TextureLoader.enQueue(
+          ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
+          'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
+          'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
+          'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'],
+          undefined,
+          TextureType.TEXTURE
+        );
 
-            TextureLoader.LoadQueue(() => {
-              GameState.Ready = true;
-              LoadingScreen.main.Hide();
-              if(GameState.OpeningMoviesComplete){
-                GameState.OnReady();
-              }
-            });
-          });
-
+        TextureLoader.LoadQueue(() => {
+          GameState.Ready = true;
+          LoadingScreen.main.Hide();
+          if(GameState.OpeningMoviesComplete){
+            GameState.OnReady();
+          }
         });
-
       });
 
     });
@@ -587,7 +616,7 @@ export class GameState implements EngineContext {
     if(GameState.Ready && !GameState.OnReadyCalled){
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
-      MenuManager.MainMenu.Start();
+      GameState.MenuManager.MainMenu.Start();
       window.dispatchEvent(new Event('resize'));
       // this.setTestingGlobals();
       //GameState.Update = GameState.Update.bind(this);
@@ -597,13 +626,13 @@ export class GameState implements EngineContext {
   }
 
   static EventOnResize(){
-    ResolutionManager.recalculate();
-    let width = ResolutionManager.getViewportWidth();
-    let height = ResolutionManager.getViewportHeight();
+    GameState.ResolutionManager.recalculate();
+    let width = GameState.ResolutionManager.getViewportWidth();
+    let height = GameState.ResolutionManager.getViewportHeight();
 
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
-    FadeOverlayManager.plane.scale.set(width, height, 1);
+    GameState.FadeOverlayManager.plane.scale.set(width, height, 1);
     
     GameState.camera_gui.left = width / -2;
     GameState.camera_gui.right = width / 2;
@@ -630,15 +659,15 @@ export class GameState implements EngineContext {
 
     //GameState.bokehPass.renderTargetColor.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
-    GameState.screenCenter.x = ( (ResolutionManager.getViewportWidth()/2) / ResolutionManager.getViewportWidth() ) * 2 - 1;
-    GameState.screenCenter.y = - ( (ResolutionManager.getViewportHeight()/2) / ResolutionManager.getViewportHeight() ) * 2 + 1; 
+    GameState.screenCenter.x = ( (GameState.ResolutionManager.getViewportWidth()/2) / GameState.ResolutionManager.getViewportWidth() ) * 2 - 1;
+    GameState.screenCenter.y = - ( (GameState.ResolutionManager.getViewportHeight()/2) / GameState.ResolutionManager.getViewportHeight() ) * 2 + 1; 
 
-    MenuManager.Resize();
+    GameState.MenuManager.Resize();
 
-    GameState.depthTarget.setSize(ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
+    GameState.depthTarget.setSize(GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
 
-    if(ResolutionManager.vpScaleFactor){
-      GameState.canvas.style.transform = 'scale('+ResolutionManager.vpScaleFactor+')';
+    if(GameState.ResolutionManager.vpScaleFactor){
+      GameState.canvas.style.transform = 'scale('+GameState.ResolutionManager.vpScaleFactor+')';
     }else{
       GameState.canvas.style.transform = '';
     }
@@ -664,7 +693,7 @@ export class GameState implements EngineContext {
     if(GameState.Mode == EngineMode.MINIGAME){
       return GameState.module.area.miniGame.player as any;
     }
-    let p = PartyManager.party[0];
+    let p = GameState.PartyManager.party[0];
     return p ? p : GameState.player;
   }
 
@@ -713,24 +742,24 @@ export class GameState implements EngineContext {
 
   public static setReticleSelectedObject( object: ModuleObject ){
     if(object){
-      CursorManager.selected = object.getReticleNode();
-      if(CursorManager.selected){
-        CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
-        CursorManager.selectedObject = object;
+      GameState.CursorManager.selected = object.getReticleNode();
+      if(GameState.CursorManager.selected){
+        GameState.CursorManager.selected.getWorldPosition(GameState.CursorManager.reticle2.position);
+        GameState.CursorManager.selectedObject = object;
       }
 
       if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){      
-        CursorManager.setReticle2('reticleF2');
+        GameState.CursorManager.setReticle2('reticleF2');
       }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }      
-        CursorManager.setReticle2('reticleF2');
+        GameState.CursorManager.setReticle2('reticleF2');
       }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
         if(object.isHostile(GameState.getCurrentPlayer())){
-          CursorManager.setReticle2('reticleH2');
+          GameState.CursorManager.setReticle2('reticleH2');
         }else{
-          CursorManager.setReticle2('reticleF2');
+          GameState.CursorManager.setReticle2('reticleF2');
         }
       }
     }
@@ -739,56 +768,56 @@ export class GameState implements EngineContext {
   public static setReticleHoveredObject( object: ModuleObject ){
     if(object){
       let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
-      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (CursorManager.hoveredObject == CursorManager.selectedObject);
+      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (GameState.CursorManager.hoveredObject == GameState.CursorManager.selectedObject);
 
-      CursorManager.hovered = object.getReticleNode();
-      if(CursorManager.hovered){
-        CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
-        CursorManager.hoveredObject = object;
+      GameState.CursorManager.hovered = object.getReticleNode();
+      if(GameState.CursorManager.hovered){
+        GameState.CursorManager.hovered.getWorldPosition(GameState.CursorManager.reticle.position);
+        GameState.CursorManager.hoveredObject = object;
       }
 
       if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
         if(canChangeCursor)
-          CursorManager.setCursor('door');
+          GameState.CursorManager.setCursor('door');
         else
-          CursorManager.setCursor('select');
+          GameState.CursorManager.setCursor('select');
 
-        CursorManager.setReticle('reticleF');
+          GameState.CursorManager.setReticle('reticleF');
       }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
         if(!object.isUseable()){
           return;
         }
         if(canChangeCursor)
-          CursorManager.setCursor('use');
+          GameState.CursorManager.setCursor('use');
         else
-          CursorManager.setCursor('select');
+          GameState.CursorManager.setCursor('select');
 
-        CursorManager.setReticle('reticleF');
+          GameState.CursorManager.setReticle('reticleF');
       }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 
         if(object.isHostile(GameState.getCurrentPlayer())){
           if(!object.isDead()){
             if(canChangeCursor)
-              CursorManager.setCursor('attack');
+              GameState.CursorManager.setCursor('attack');
             else
-              CursorManager.setCursor('select');
+              GameState.CursorManager.setCursor('select');
 
-            CursorManager.setReticle('reticleH');
+            GameState.CursorManager.setReticle('reticleH');
           }else{
             if(canChangeCursor)
-              CursorManager.setCursor('use');
+              GameState.CursorManager.setCursor('use');
             else
-              CursorManager.setCursor('select');
+              GameState.CursorManager.setCursor('select');
 
-            CursorManager.setReticle('reticleF');
+            GameState.CursorManager.setReticle('reticleF');
           }
         }else{
           if(canChangeCursor)
-            CursorManager.setCursor('talk');
+            GameState.CursorManager.setCursor('talk');
           else
-            CursorManager.setCursor('select');
+            GameState.CursorManager.setCursor('select');
 
-          CursorManager.setReticle('reticleF');
+          GameState.CursorManager.setReticle('reticleF');
         }
 
       }
@@ -796,16 +825,16 @@ export class GameState implements EngineContext {
   }
 
   static updateCursorPosition(){
-    CursorManager.setCursor('default');
-    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (ResolutionManager.getViewportWidth()/2) + (32/2);
-    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (ResolutionManager.getViewportHeight()/2) - (32/2);
+    GameState.CursorManager.setCursor('default');
+    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
+    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
   }
 
   static updateCursor(){
     let cursorCaptured = false;
     let guiHoverCaptured = false;
 
-    MenuManager.hoveredGUIElement = undefined;
+    GameState.MenuManager.hoveredGUIElement = undefined;
 
     let uiControls = GameState.controls.MenuGetActiveUIElements();
     let controlCount = uiControls.length;
@@ -815,8 +844,8 @@ export class GameState implements EngineContext {
         continue;
 
       //if(control === GameState.mouse.clickItem){
-      if(control instanceof GUIListBox && MenuManager.hoveredGUIElement == undefined){
-        MenuManager.hoveredGUIElement = control;
+      if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIListBox) && GameState.MenuManager.hoveredGUIElement == undefined){
+        GameState.MenuManager.hoveredGUIElement = control;
       }
 
       if(!(control.widget.parent.type === 'Scene')){
@@ -828,7 +857,7 @@ export class GameState implements EngineContext {
 
         if(typeof control.isClickable == 'function'){
           if(control.isClickable()){
-            CursorManager.setCursor('select');
+            GameState.CursorManager.setCursor('select');
             cursorCaptured = true;
           }
         }
@@ -836,15 +865,15 @@ export class GameState implements EngineContext {
       //}
     }
 
-    CursorManager.arrow.visible = false;
-    if(CursorManager.selectedObject){
-      if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
-        CursorManager.selectedObject = undefined;
+    GameState.CursorManager.arrow.visible = false;
+    if(GameState.CursorManager.selectedObject){
+      if(GameState.CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+        GameState.CursorManager.selectedObject = undefined;
       }
     }
 
     if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
-      if(MenuManager.GetCurrentMenu() == MenuManager.InGameOverlay){
+      if(GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
         if(GameState.scene_cursor_holder.visible){
           //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
@@ -854,12 +883,12 @@ export class GameState implements EngineContext {
                 GameState.setReticleHoveredObject(moduleObject);
               }
             }else{
-              CursorManager.hovered = CursorManager.hoveredObject = undefined;
+              GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = undefined;
             }
           });
         }else{
-          if(!CursorManager.selectedObject){
-            let closest = ModuleObjectManager.GetNearestInteractableObject();
+          if(!GameState.CursorManager.selectedObject){
+            let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
             GameState.setReticleSelectedObject(closest);
             GameState.setReticleHoveredObject(closest);
           }
@@ -867,39 +896,39 @@ export class GameState implements EngineContext {
       }
     }
 
-    if(GameState.Mode == EngineMode.INGAME && CursorManager.hovered instanceof OdysseyObject3D){
-      CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
-      CursorManager.reticle.visible = true;
+    if(GameState.Mode == EngineMode.INGAME && GameState.CursorManager.hovered instanceof OdysseyObject3D){
+      GameState.CursorManager.hovered.getWorldPosition(GameState.CursorManager.reticle.position);
+      GameState.CursorManager.reticle.visible = true;
     }else{
-      CursorManager.reticle.visible = false;
+      GameState.CursorManager.reticle.visible = false;
     }
 
-    if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !MenuManager.MenuContainer.bVisible){
-      CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
-      CursorManager.reticle2.visible = true;
-      if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleDoor)){      
-        CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModulePlaceable)){
-        if(!CursorManager.selectedObject.isUseable()){
+    if(GameState.Mode == EngineMode.INGAME && GameState.CursorManager.selected instanceof OdysseyObject3D && !GameState.MenuManager.MenuContainer.bVisible){
+      GameState.CursorManager.selected.getWorldPosition(GameState.CursorManager.reticle2.position);
+      GameState.CursorManager.reticle2.visible = true;
+      if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleDoor)){      
+        GameState.CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModulePlaceable)){
+        if(!GameState.CursorManager.selectedObject.isUseable()){
           return;
         }      
-        CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleCreature)){
-        if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
-          CursorManager.setReticle2('reticleH2');
+        GameState.CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleCreature)){
+        if(GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
+          GameState.CursorManager.setReticle2('reticleH2');
         }else{
-          CursorManager.setReticle2('reticleF2');
+          GameState.CursorManager.setReticle2('reticleF2');
         }
       }
     }else{
-      CursorManager.reticle2.visible = false;
+      GameState.CursorManager.reticle2.visible = false;
     }
 
   }
 
   static ResetModuleAudio(){                        
-    MenuManager.InGameComputer.audioEmitter = 
-    MenuManager.InGameDialog.audioEmitter = 
+    GameState.MenuManager.InGameComputer.audioEmitter = 
+    GameState.MenuManager.InGameDialog.audioEmitter = 
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
     this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
@@ -908,7 +937,7 @@ export class GameState implements EngineContext {
 
   static LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
     GameState.Mode = EngineMode.LOADING;
-    MenuManager.ClearMenus();
+    GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();
     VideoPlayer.Load(sMovie1).then( () => {
       VideoPlayer.Load(sMovie2).then( () => {
@@ -928,21 +957,21 @@ export class GameState implements EngineContext {
                 }
 
                 //Remove all cached scripts and kill all running instances
-                NWScript.Reload();
+                GameState.NWScript.Reload();
 
                 //Resets all keys to their default state
                 GameState.controls.initKeys();
 
-                FactionManager.Load().then( () => {
-                  Module.Load(name, waypoint).then((module: Module) => {
+                GameState.FactionManager.Load().then( () => {
+                  GameState.Module.Load(name, waypoint).then((module: Module) => {
                     GameState.module = module;
                     GameState.scene.visible = false;
 
-                    MenuManager.LoadScreen.setProgress(0);
-                    MenuManager.LoadScreen.setLoadBackground('load_'+name).then( () => {
-                      MenuManager.LoadScreen.showRandomHint();
-                      MenuManager.LoadScreen.open();
-                      FadeOverlayManager.FadeOut(0, 0, 0, 0);
+                    GameState.MenuManager.LoadScreen.setProgress(0);
+                    GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name).then( () => {
+                      GameState.MenuManager.LoadScreen.showRandomHint();
+                      GameState.MenuManager.LoadScreen.open();
+                      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
                       console.log('Module.loadScene');
                       module.loadScene().then((d: any) => {
@@ -950,7 +979,7 @@ export class GameState implements EngineContext {
                           module.initEventQueue();
                           console.log('Module.initScripts');
                           module.initScripts().then(() => {
-                            MenuManager.LoadScreen.close();
+                            GameState.MenuManager.LoadScreen.close();
                             window.setTimeout( ()=> {
                               //GameState.scene_gui.background = null;
                               GameState.scene.visible = true;
@@ -962,8 +991,8 @@ export class GameState implements EngineContext {
 
                               GameState.ResetModuleAudio();
 
-                              MenuManager.InGameOverlay.recalculatePosition();
-                              MenuManager.InGameOverlay.open();
+                              GameState.MenuManager.InGameOverlay.recalculatePosition();
+                              GameState.MenuManager.InGameOverlay.open();
 
                               GameState.renderer.compile(GameState.scene, GameState.currentCamera);
                               GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
@@ -978,13 +1007,13 @@ export class GameState implements EngineContext {
                                 GameState.module.readyToProcessEvents = true;
 
                                 if(!GameState.holdWorldFadeInForDialog)
-                                  FadeOverlayManager.FadeIn(1, 0, 0, 0);
+                                  GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0);
 
                                 if(GameState.Mode == EngineMode.INGAME){
                 
                                   let anyCanLevel = false;
-                                  for(let i = 0; i < PartyManager.party.length; i++){
-                                    if(PartyManager.party[i].canLevelUp()){
+                                  for(let i = 0; i < GameState.PartyManager.party.length; i++){
+                                    if(GameState.PartyManager.party[i].canLevelUp()){
                                       anyCanLevel = true;
                                     }
                                   }
@@ -1028,27 +1057,26 @@ export class GameState implements EngineContext {
   }
 
   static UnloadModule(){
-    MenuManager.ClearMenus();
+    GameState.MenuManager.ClearMenus();
     GameState.deltaTime = 0;
     // GameState.initTimers();
     ResourceLoader.clearCache();
 
     GameState.scene.visible = false;
     GameState.Mode = EngineMode.LOADING;
-    ModuleObjectManager.Reset();
+    GameState.ModuleObjectManager.Reset();
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
     AudioEngine.GetAudioEngine().stopBackgroundMusic();
     AudioEngine.GetAudioEngine().reset();
-    CombatEngine.Reset();
 
     GameState.lightManager.clearLights();
 
-    CursorManager.selected = undefined;
-    CursorManager.selectedObject = undefined;
-    CursorManager.hovered = undefined;
-    CursorManager.hoveredObject = undefined;
+    GameState.CursorManager.selected = undefined;
+    GameState.CursorManager.selectedObject = undefined;
+    GameState.CursorManager.hovered = undefined;
+    GameState.CursorManager.hoveredObject = undefined;
 
     GameState.staticCameras = [];
     GameState.ConversationPaused = false;
@@ -1058,7 +1086,7 @@ export class GameState implements EngineContext {
   }
 
   static UpdateVideoEffect(){
-    const videoEffects = TwoDAManager.datatables.get('videoeffects');
+    const videoEffects = GameState.TwoDAManager.datatables.get('videoeffects');
     if(GameState.videoEffect >= 0 && GameState.videoEffect < videoEffects.RowCount){
       let effect = videoEffects.rows[GameState.videoEffect];
       GameState.odysseyShaderPass.setOdysseyVideoEffect(effect);
@@ -1102,8 +1130,8 @@ export class GameState implements EngineContext {
 
     GameState.controls.Update(delta);
     GameState.UpdateVideoEffect();
-    MenuManager.Update(delta);
-    MenuManager.InGameAreaTransition.hide();
+    GameState.MenuManager.Update(delta);
+    GameState.MenuManager.InGameAreaTransition.hide();
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
@@ -1113,7 +1141,7 @@ export class GameState implements EngineContext {
     } 
 
     GameState.scene_cursor_holder.visible = true;
-    MenuManager.InGamePause.hide();
+    GameState.MenuManager.InGamePause.hide();
 
     if(
       GameState.Mode == EngineMode.MINIGAME || 
@@ -1151,7 +1179,7 @@ export class GameState implements EngineContext {
       //Handle Module Tick
       if(
         GameState.State == EngineState.PAUSED ||
-        MenuManager.activeModals.length
+        GameState.MenuManager.activeModals.length
       ){
         GameState.module.tickPaused(delta);
       }else{
@@ -1161,8 +1189,8 @@ export class GameState implements EngineContext {
       //TODO: Move Cursor Logic Into Global Cursor Manager
       if(GameState.Mode == EngineMode.DIALOG){
         if(
-          MenuManager.InGameDialog.isVisible() && 
-          !MenuManager.InGameDialog.LB_REPLIES.isVisible() && 
+          GameState.MenuManager.InGameDialog.isVisible() && 
+          !GameState.MenuManager.InGameDialog.LB_REPLIES.isVisible() && 
           GameState.scene_cursor_holder.visible
         ){
           GameState.scene_cursor_holder.visible = false;
@@ -1173,7 +1201,7 @@ export class GameState implements EngineContext {
         GameState.Mode == EngineMode.INGAME || 
         GameState.Mode == EngineMode.DIALOG
       ){
-        FadeOverlayManager.Update(delta);
+        GameState.FadeOverlayManager.Update(delta);
         GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
         GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
         if(GameState.Mode == EngineMode.DIALOG){
@@ -1184,21 +1212,21 @@ export class GameState implements EngineContext {
         }
         
         //Handle the visibility of the PAUSE overlay
-        if(GameState.State == EngineState.PAUSED && MenuManager.InGameOverlay.isVisible()){
-          if(!MenuManager.InGamePause.isVisible())
-            MenuManager.InGamePause.show();
+        if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
+          if(!GameState.MenuManager.InGamePause.isVisible())
+            GameState.MenuManager.InGamePause.show();
         }else{
-          if(MenuManager.InGamePause.isVisible())
-            MenuManager.InGamePause.hide();
+          if(GameState.MenuManager.InGamePause.isVisible())
+            GameState.MenuManager.InGamePause.hide();
         }
       }else if(GameState.Mode == EngineMode.MINIGAME){
-        FadeOverlayManager.Update(delta);
+        GameState.FadeOverlayManager.Update(delta);
         GameState.lightManager.update(delta, GameState.getCurrentPlayer());
       }
 
       if(GameState.Mode == EngineMode.INGAME){
-        if(MenuManager.InGameAreaTransition.transitionObject){
-          MenuManager.InGameAreaTransition.show();
+        if(GameState.MenuManager.InGameAreaTransition.transitionObject){
+          GameState.MenuManager.InGameAreaTransition.show();
         }
       }
 
@@ -1237,7 +1265,7 @@ export class GameState implements EngineContext {
     }
 
     AudioEngine.GetAudioEngine().update(GameState.currentCamera.position, GameState.currentCamera.rotation);
-    CameraShakeManager.update(delta, GameState.currentCamera);
+    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.updateCursorPosition();
     GameState.renderPass.camera = GameState.currentCamera;
@@ -1271,7 +1299,7 @@ export class GameState implements EngineContext {
     }
 
     //CameraShake: After Render
-    CameraShakeManager.afterRender();
+    GameState.CameraShakeManager.afterRender();
 
     //NoClickTimer: Update
     if( ((GameState.Mode == EngineMode.MINIGAME) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){

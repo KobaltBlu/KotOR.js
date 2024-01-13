@@ -1,6 +1,8 @@
+import { ModuleObjectType } from "../enums";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { ModuleCreature, ModuleObject } from "../module";
+import { BitWise } from "../utility/BitWise";
+// import { ModuleCreature, ModuleObject } from "../module";
 import { Action } from "./Action";
 
 /**
@@ -28,10 +30,10 @@ export class ActionJumpToObject extends Action {
 
     this.target = this.getParameter(0);
 
-    if(!(this.target instanceof ModuleObject))
+    if(!this.target)
       return ActionStatus.FAILED;
 
-    if(this.owner instanceof ModuleCreature){
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       this.owner.setPosition(this.target.position);
       this.owner.setFacing(this.target.rotation.z, false);
       this.owner.collisionData.groundFace = undefined;

@@ -1,10 +1,13 @@
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { Action, ActionCastSpell, ActionFollowLeader, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionPhysicalAttacks, ActionUnlockObject } from "../actions";
+import { ModuleObject } from "./ModuleObject";
+import type { ModuleItem } from "./ModuleItem";
+import type { ModuleRoom } from "./ModuleRoom";
+
+import { Action, ActionCombat, ActionFollowLeader, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { CombatEngine } from "../combat/CombatEngine";
 import { CreatureClass } from "../combat/CreatureClass";
-import { EffectRacialType, GameEffect } from "../effects";
+import { EffectRacialType } from "../effects";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -22,8 +25,6 @@ import { TalentSkill } from "../talents/TalentSkill";
 import { TalentSpell } from "../talents/TalentSpell";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
-import { ModuleObject, ModuleItem } from ".";
-import type { ModuleRoom } from ".";
 import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "../resource/LIPObject";
@@ -34,11 +35,10 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import EngineLocation from "../engine/EngineLocation";
 import { AttackResult } from "../enums/combat/AttackResult";
-import { ICombatAction } from "../interface/combat/ICombatAction";
+// import { ICombatAction } from "../interface/combat/ICombatAction";
 import { DLGObject } from "../resource/DLGObject";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { CreatureAppearance } from "../engine/CreatureAppearance";
-import { AppearanceManager, AutoPauseManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
 import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
@@ -50,6 +50,9 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { PerceptionType } from "../enums/engine/PerceptionType";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { CombatActionType } from "../enums/combat/CombatActionType";
+import { CombatRoundAction } from "../combat";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
 
 /**
 * ModuleCreature class.
@@ -162,7 +165,6 @@ export class ModuleCreature extends ModuleObject {
   excitedDuration: number;
   turning: number;
   deathAnimationPlayed: boolean;
-  openSpot: any;
   deathStarted: boolean;
   getUpAnimationPlayed: boolean;
   animSpeed: number;
@@ -330,9 +332,7 @@ export class ModuleCreature extends ModuleObject {
 
     this.setAnimationState(ModuleCreatureAnimState.IDLE);
     this.combatData.combatActionTimer = 3; 
-    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.combatState = false;
-    this.combatData.combatQueue = [];
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.collisionData.blockingTimer = 0;
 
@@ -618,7 +618,7 @@ export class ModuleCreature extends ModuleObject {
         
         if(this.model.animateFrame){
           //If we can animate and there is fog, make sure the distance isn't greater than the far point of the fog effect
-          if(PartyManager.party.indexOf(this) == -1 && this.context.scene.fog){
+          if(GameState.PartyManager.party.indexOf(this) == -1 && this.context.scene.fog){
             if(this.distanceToCamera >= this.context.scene.fog.far){
               this.model.animateFrame = false;
               //If the object is past the near point, and the near point is greater than zero, animate every other frame
@@ -662,7 +662,7 @@ export class ModuleCreature extends ModuleObject {
 
       //If a non controlled party member is stuck, warp them to their follow position
       if(this.partyID != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 1){
-        this.setPosition(PartyManager.GetFollowPosition(this));
+        this.setPosition(GameState.PartyManager.GetFollowPosition(this));
         this.collisionTimer = 0;
       }
 
@@ -755,7 +755,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.regenTimer <= 0){
       this.regenTimer = this.regenTimerMax;
 
-      const regen2DA = TwoDAManager.datatables.get('regeneration').rows[this.combatData.combatState ? 0 : 1];
+      const regen2DA = GameState.TwoDAManager.datatables.get('regeneration').rows[this.combatData.combatState ? 0 : 1];
       if(regen2DA){
         const regen_force = parseFloat(regen2DA.forceregen);
         if(!isNaN(regen_force)){
@@ -862,13 +862,12 @@ export class ModuleCreature extends ModuleObject {
         if(!creature.isDead()){
           let distance = this.position.distanceTo(creature.position);
           if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-            if(PartyManager.party.indexOf(this) == -1){
+            if(GameState.PartyManager.party.indexOf(this) == -1){
               if(this.isHostile(creature)){
                 this.resetExcitedDuration();
                 if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
-                  AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
+                  GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
                 }
-                CombatEngine.AddCombatant(this);
               }
             }
             
@@ -883,14 +882,14 @@ export class ModuleCreature extends ModuleObject {
     }
 
     //Check party creatures
-    let partyLen = PartyManager.party.length;
+    let partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++ ){
-      let creature = PartyManager.party[i];
+      let creature = GameState.PartyManager.party[i];
       if(this != creature){
         if(!creature.isDead()){
           let distance = this.position.distanceTo(creature.position);
           if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-            if(PartyManager.party.indexOf(this) == -1){
+            if(GameState.PartyManager.party.indexOf(this) == -1){
 
               if(this.isHostile(creature)){
                 this.resetExcitedDuration();
@@ -910,7 +909,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateCombat(delta = 0){
-    this.combatData.update(delta);
+    // this.combatData.update(delta);
+    this.combatRound.update(delta);
 
     if(this.combatData.lastAttackTarget instanceof ModuleObject && this.combatData.lastAttackTarget.isDead()){
       this.combatData.clearTarget(this.combatData.lastAttackTarget);
@@ -933,15 +933,13 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.isDead()){
       this.clearTarget();
-      if(CombatEngine.combatants.indexOf(this) >= 0){
-        CombatEngine.RemoveCombatant(this);
-      }
+      this.combatRound.clearActions();
     }
 
     if(this.combatData.combatState){
       //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
       if(GameState.getCurrentPlayer() == this){
-        if(!this.combatData.combatQueue.length && !this.combatData.combatAction){
+        if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
           if( this.combatData.lastAttackTarget ){
             this.attackCreature(this.combatData.lastAttackTarget, undefined);
           }else if( this.combatData.lastAttacker ){
@@ -951,7 +949,6 @@ export class ModuleCreature extends ModuleObject {
           }
         }
       }
-      CombatEngine.AddCombatant(this);
     }else{
       if(this.animationState.index == ModuleCreatureAnimState.READY){
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -976,13 +973,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   clearTarget(){
-    //console.log('clearTarget');
-    this.combatData.combatQueue = [];
-    this.combatData.clearCombatAction(this.combatData.combatAction);
     this.combatData.lastAttackTarget = undefined;
     this.combatData.lastDamager = undefined;
-    //this.combatActionTimer = 0;
-    //CombatEngine.RemoveCombatant(this);
   }
 
   actionInRange(action: Action): boolean {
@@ -1110,16 +1102,6 @@ export class ModuleCreature extends ModuleObject {
     return 65535;
   }
 
-  resistForce(oCaster: ModuleCreature): boolean {
-    if(oCaster){
-      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
-      //1d20 + their level vs. a DC of your level plus 10
-      let roll = CombatEngine.DiceRoll(1, 'd20', this.getTotalClassLevel());
-      return (roll > 10 + oCaster.getTotalClassLevel());
-    }
-    return false;
-  }
-
   JumpToLocation(lLocation: EngineLocation): void {
     super.JumpToLocation(lLocation);
     this.updateCollision();
@@ -1201,8 +1183,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       //Check if party are too close to location
-      for(let i = 0; i < PartyManager.party.length; i++){
-        let creature = PartyManager.party[i];
+      for(let i = 0; i < GameState.PartyManager.party.length; i++){
+        let creature = GameState.PartyManager.party[i];
         if(this == creature)
           continue;
 
@@ -1297,7 +1279,7 @@ export class ModuleCreature extends ModuleObject {
   isDuelingWeaponEquipped(){
     if(!this.equipment.RIGHTHAND) return false;
     return (
-      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.DAGGER ||
+      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.STUN_BATON ||
       this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
       this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD
     );
@@ -1321,122 +1303,45 @@ export class ModuleCreature extends ModuleObject {
     if(target.isDead())
       return;
 
-    this.resetExcitedDuration();
+    let combatAction = new CombatRoundAction();
+    combatAction.actionType = CombatActionType.ATTACK;
+    combatAction.target = target;
+    combatAction.animation = ModuleCreatureAnimState.ATTACK;
+    combatAction.animationTime = 1500;
+    combatAction.isCutsceneAttack = isCutsceneAttack;
 
-    CombatEngine.AddCombatant(this);
-
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
-    let attackType = 1;
-    let icon = 'i_attack';
-    let isMelee = true;
-    let isRanged = false;
-
-    if(attackKey == 'b'){
-      isMelee = false;
-      isRanged = true;
+    if(feat){
+      combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
+      combatAction.setFeat(feat);
     }
 
-    if(typeof feat != 'undefined'){
-      icon = feat.icon;
-      //console.log('Attacking with feat', feat);
-      if(attackKey == 'm'){
-        attackKey = 'f';
-        switch(feat.id){
-          case 81:
-          case 19:
-          case 8:
-            attackType = 1;
-          break;
-          case 83:
-          case 17:
-          case 28:
-            attackType = 3;
-          break;
-          case 53:
-          case 91:
-          case 11:
-            attackType = 2;
-          break;
-        }
-      }else if(attackKey == 'b'){
-        switch(feat.id){
-          case 77:
-          case 20:
-          case 31:
-            attackType = 3;
-          break;
-          case 82:
-          case 18:
-          case 29:
-            attackType = 4;
-          break;
-          case 26:
-          case 92:
-          case 30:
-            attackType = 2;
-          break;
-        }
-      }
-    }
+    combatAction.attackResult = attackResult;
+    combatAction.attackDamage = attackDamage;
 
-    this.weaponPowered(true);
-
-    this.combatData.lastAttackAction = ActionType.ActionPhysicalAttacks;
-    this.combatData.lastAttackTarget = target;
-    this.combatData.lastAttemptedAttackTarget = target;
-
-    //Get random basic melee attack in combat with another melee creature that is targeting you
-    if(attackKey == 'm'){
-      if(this.combatData.lastAttackTarget?.combatData.lastAttackTarget == this && this.combatData.lastAttackTarget?.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1){
-        attackKey = 'c';
-        attackType = Math.round(Math.random()*4)+1;
-      }
-    }
-    
-    let animation = attackKey+weaponWield+'a'+attackType;
     if(isCutsceneAttack){
-      animation = attackAnimation;
+      combatAction.animationName = attackAnimation;
+      combatAction.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(attackAnimation);
     }
 
-    const _animation = OdysseyModelAnimation.GetAnimation2DA(animation);
+    this.combatRound.addAction(combatAction);
 
-    let combatAction: ICombatAction = {
-      target: target,
-      type: ActionType.ActionPhysicalAttacks,
-      icon: icon,
-      animation: _animation,
-      feat: feat,
-      spell: undefined,
-      isMelee: isMelee,
-      isRanged: isRanged,
-      ready: false,
-      isCutsceneAttack: isCutsceneAttack,
-      attackResult: attackResult,
-      damage: attackDamage
-    };
-
-    this.combatData.combatQueue.push(combatAction);
+    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+      const action = new ActionCombat(0xFFFF);
+      this.actionQueue.add(action);
+    }
 
   }
 
-  useTalent(talent: any, oTarget: ModuleObject): Action {
+  useTalent(talent: TalentObject, oTarget: ModuleObject): Action {
     let action: Action;
     if(talent instanceof TalentObject){
-      switch(talent.type){
+      const combatAction = new CombatRoundAction();
+      switch(talent.objectType){
         case 1: //FEAT
-          action = new ActionPhysicalAttacks();
-          action.setParameter(0, ActionParameterType.INT, 0);
-          action.setParameter(1, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
-          action.setParameter(2, ActionParameterType.INT, 1);
-          action.setParameter(3, ActionParameterType.INT, 25);
-          action.setParameter(4, ActionParameterType.INT, -36);
-          action.setParameter(5, ActionParameterType.INT, 1);
-          action.setParameter(6, ActionParameterType.INT, talent.id);
-          action.setParameter(7, ActionParameterType.INT, 0);
-          action.setParameter(8, ActionParameterType.INT, 4);
-          action.setParameter(9, ActionParameterType.INT, 0);
-          this.actionQueue.add(action);
+          combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
+          combatAction.target = oTarget;
+          combatAction.setFeat(talent as TalentFeat);
+          this.combatRound.addAction(combatAction);
         break;
         case 2: //SKILL
           if(talent.id == 6){ //Security
@@ -1446,20 +1351,10 @@ export class ModuleCreature extends ModuleObject {
           }
         break;
         case 0: //SPELL
-          action = new ActionCastSpell();
-          action.setParameter(0, ActionParameterType.INT, talent.id); //Spell Id
-          action.setParameter(1, ActionParameterType.INT, -1); //
-          action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel
-          action.setParameter(3, ActionParameterType.INT, 0);
-          action.setParameter(4, ActionParameterType.INT, 0);
-          action.setParameter(5, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID); //Target Object
-          action.setParameter(6, ActionParameterType.FLOAT, oTarget.position.x); //Target X
-          action.setParameter(7, ActionParameterType.FLOAT, oTarget.position.y); //Target Y
-          action.setParameter(8, ActionParameterType.FLOAT, oTarget.position.z); //Target Z
-          action.setParameter(9, ActionParameterType.INT, 0); //ProjectilePath
-          action.setParameter(10, ActionParameterType.INT, -1);
-          action.setParameter(11, ActionParameterType.INT, -1);
-          this.actionQueue.add(action);
+          combatAction.actionType = CombatActionType.CAST_SPELL;
+          combatAction.setSpell(talent as TalentSpell);
+          combatAction.target = oTarget;
+          this.combatRound.addAction(combatAction);
         break;
       }
     }
@@ -1559,7 +1454,7 @@ export class ModuleCreature extends ModuleObject {
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = TwoDAManager.datatables.get('animations');
+    let anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1567,7 +1462,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    let combatAnimation = TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     //console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
     if(combatAnimation){
       let damageAnimIndex = combatAnimation['damage'+weaponWield];
@@ -1610,7 +1505,7 @@ export class ModuleCreature extends ModuleObject {
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = TwoDAManager.datatables.get('animations');
+    let anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1620,7 +1515,7 @@ export class ModuleCreature extends ModuleObject {
 
     //console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
 
-    let combatAnimation = TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     if(combatAnimation){
       if(combatAnimation.hits == 1 && [4, 2, 3].indexOf(weaponWield) >= 0){
         let damageAnimIndex = combatAnimation['parry'+weaponWield];
@@ -1671,7 +1566,7 @@ export class ModuleCreature extends ModuleObject {
     let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = TwoDAManager.datatables.get('animations');
+    let anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1680,7 +1575,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     //console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
-    let combatAnimation = TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     if(combatAnimation){
       let damageAnimIndex = combatAnimation['parry'+weaponWield];
       let damageAnim = anims.getByID(damageAnimIndex);
@@ -1904,17 +1799,17 @@ export class ModuleCreature extends ModuleObject {
     let rhSounds, lhSounds;
 
     if(this.equipment.RIGHTHAND)
-      rhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.RIGHTHAND._baseItem.poweredItem];
+      rhSounds = GameState.TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.RIGHTHAND.baseItem.poweredItem];
 
     if(this.equipment.LEFTHAND)
-      lhSounds = TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.LEFTHAND._baseItem.poweredItem];
+      lhSounds = GameState.TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.LEFTHAND.baseItem.poweredItem];
 
 
     let sndIdx = Math.round(Math.random()*2);
     let sndIdx2 = Math.round(Math.random()*1);
     switch(event.event){
       case 'snd_footstep':
-        let sndTable = TwoDAManager.datatables.get('footstepsounds').rows[appearance.footsteptype];
+        let sndTable = GameState.TwoDAManager.datatables.get('footstepsounds').rows[appearance.footsteptype];
         if(sndTable){
           let sound = '****';
           switch(this.collisionData.surfaceId){
@@ -2220,8 +2115,8 @@ export class ModuleCreature extends ModuleObject {
           GameState.module.area.creatures[i].removeObjectFromTargetPositions(oObject);
         }
 
-        for(let i = 0, len = PartyManager.party.length; i < len; i++){
-          PartyManager.party[i].removeObjectFromTargetPositions(oObject);
+        for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
+          GameState.PartyManager.party[i].removeObjectFromTargetPositions(oObject);
         }
         closest.object = oObject;
       }
@@ -2310,13 +2205,6 @@ export class ModuleCreature extends ModuleObject {
   //---------------//
 
   onCombatRoundEnd(){
-    //Check to see if the current combatAction is running a TalentObject
-    if(this.combatData.combatAction && (this.combatData.combatAction.spell instanceof TalentObject)){
-      //this.combatAction.spell.talentCombatRoundEnd(this.combatAction.target, this);
-    }
-    
-    this.combatData.clearCombatAction(this.combatData.combatAction);
-
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
@@ -2348,10 +2236,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(){
-    CombatEngine.AddCombatant(this);
     if(this.scripts.onAttacked instanceof NWScriptInstance){
       let instance = this.scripts.onAttacked.nwscript.newInstance();
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
+      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
       instance.run(this, script_num);
     }
   }
@@ -2361,11 +2248,10 @@ export class ModuleCreature extends ModuleObject {
       return true;
 
     this.resetExcitedDuration();
-    CombatEngine.AddCombatant(this);
     
     if(this.scripts.onDamaged instanceof NWScriptInstance){
       let instance = this.scripts.onDamaged.nwscript.newInstance();
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
       instance.run(this, script_num);
     }
   }
@@ -2376,15 +2262,15 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.scripts.onBlocked instanceof NWScriptInstance){
       let instance = this.scripts.onBlocked.nwscript.newInstance();
-      let script_num = (PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
+      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
       instance.run(this, script_num);
     }
   }
 
   use(object: ModuleObject){
     if(this.hasInventory()){
-      MenuManager.MenuContainer.AttachContainer(this);
-      MenuManager.MenuContainer.open();
+      GameState.MenuManager.MenuContainer.AttachContainer(this);
+      GameState.MenuManager.MenuContainer.open();
     }
   }
 
@@ -2394,7 +2280,7 @@ export class ModuleCreature extends ModuleObject {
 
   retrieveInventory(){
     while(this.inventory.length){
-      InventoryManager.addItem(this.inventory.pop())
+      GameState.InventoryManager.addItem(this.inventory.pop())
     }
   }
 
@@ -2544,7 +2430,7 @@ export class ModuleCreature extends ModuleObject {
 
   getInventory(): ModuleItem[] {
     if(this.isPartyMember()){
-      return InventoryManager.getInventory();
+      return GameState.InventoryManager.getInventory();
     }else{
       return this.inventory;
     }
@@ -2861,7 +2747,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPortraitResRef(){
-    const _2DA = TwoDAManager.datatables.get('portraits');
+    const _2DA = GameState.TwoDAManager.datatables.get('portraits');
     if(_2DA){
       let portrait = _2DA.rows[this.getPortraitId()];
       if(portrait){
@@ -2891,7 +2777,7 @@ export class ModuleCreature extends ModuleObject {
 
   getWalkRateId(){
 
-    if(PartyManager.party.indexOf(this) >= 0){
+    if(GameState.PartyManager.party.indexOf(this) >= 0){
       return 0;
     }
 
@@ -2926,7 +2812,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.getWalkRateId() == 7){
       return this.creatureAppearance.rundist
     }
-    const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
+    const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
       return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].runrate);
     }
@@ -2936,7 +2822,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.getWalkRateId() == 7){
       return this.creatureAppearance.walkdist
     }
-    const creaturespeed2DA = TwoDAManager.datatables.get('creaturespeed');
+    const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
       return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].walkrate);
     }
@@ -2977,7 +2863,7 @@ export class ModuleCreature extends ModuleObject {
   //Does the creature have enough EXP to level up
   canLevelUp(){
     let level = this.getTotalClassLevel();
-    const exptable2DA = TwoDAManager.datatables.get('exptable');
+    const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
     if(exptable2DA){
       let nextLevelEXP = exptable2DA.rows[level];
       if(this.getXP() >= parseInt(nextLevelEXP.xp)){
@@ -2992,7 +2878,7 @@ export class ModuleCreature extends ModuleObject {
   getEffectiveLevel(){
     let level = 0;
 
-    const exptable2DA = TwoDAManager.datatables.get('exptable');
+    const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
     if(exptable2DA){
       let totalLevels = exptable2DA.RowCount;
       let expLevels = exptable2DA.rows;
@@ -3149,7 +3035,7 @@ export class ModuleCreature extends ModuleObject {
   hasTalent(talent: TalentObject){
     //console.log('hasTalent', talent);
     if(typeof talent != 'undefined'){
-      switch(talent.type){
+      switch(talent.objectType){
         case 0: //Force / Spell
           return this.getHasSpell(talent.id) ? true : false;
         case 1: //Feat
@@ -3217,14 +3103,14 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPerceptionRange(){
-    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
     if(ranges2DA){
       return parseInt(ranges2DA.rows[this.perceptionRange].primaryrange);
     }
   }
 
   getPerceptionRangeSecondary(){
-    const ranges2DA = TwoDAManager.datatables.get('ranges');
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
     if(ranges2DA){
       return parseInt(ranges2DA.rows[this.perceptionRange].secondaryrange);
     }
@@ -3276,7 +3162,7 @@ export class ModuleCreature extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
         this.loadScripts();
-        FactionManager.AddCreatureToFaction(this);
+        GameState.FactionManager.AddCreatureToFaction(this);
       }else{
         console.error('Failed to load character template');
         if(this.template instanceof GFFObject){
@@ -3288,7 +3174,7 @@ export class ModuleCreature extends ModuleObject {
       //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadScripts();
-      FactionManager.AddCreatureToFaction(this);
+      GameState.FactionManager.AddCreatureToFaction(this);
     }
   }
 
@@ -3506,7 +3392,7 @@ export class ModuleCreature extends ModuleObject {
       let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
       this.headModel = undefined;
       if(headId >= 0 && appearance.modeltype == 'B'){
-        const heads2DA = TwoDAManager.datatables.get('heads');
+        const heads2DA = GameState.TwoDAManager.datatables.get('heads');
         if(heads2DA){
           let head = heads2DA.rows[headId];
           this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -3849,7 +3735,7 @@ export class ModuleCreature extends ModuleObject {
     let uti: ModuleItem = args.item;
 
     if(uti instanceof GFFObject)
-      uti = new ModuleItem(uti);
+      uti = new GameState.Module.ModuleArea.ModuleItem(uti);
 
     switch(args.Slot){
       case ModuleCreatureArmorSlot.IMPLANT:
@@ -3917,12 +3803,12 @@ export class ModuleCreature extends ModuleObject {
           this.id = this.template.getFieldByLabel('ID').getValue();
         }
         
-        ModuleObjectManager.AddObjectById(this);
+        GameState.ModuleObjectManager.AddObjectById(this);
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
         this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
-        this.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(this.appearance);
+        this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
       }
 
       if(this.template.RootNode.hasField('Animation')){
@@ -3991,7 +3877,7 @@ export class ModuleCreature extends ModuleObject {
           this.factionId = 0;
         }
       }
-      this.faction = FactionManager.factions.get(this.factionId);
+      this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('FeatList')){
         let feats = this.template.RootNode.getFieldByLabel('FeatList').getChildStructs();
@@ -4171,8 +4057,8 @@ export class ModuleCreature extends ModuleObject {
         if(this.template.RootNode.hasField('EffectList')){
           let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
           for(let i = 0; i < effects.length; i++){
-            let effect = GameEffect.EffectFromStruct(effects[i]);
-            if(effect instanceof GameEffect){
+            let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+            if(effect){
               effect.setAttachedObject(this);
               effect.loadModel();
               //console.log('attached');
@@ -4193,9 +4079,9 @@ export class ModuleCreature extends ModuleObject {
             let equipped_item = undefined;
             let slot_type = strt.type;
             if(strt.hasField('EquippedRes')){
-              equipped_item = new ModuleItem(strt.getFieldByLabel('EquippedRes').getValue());
+              equipped_item = new GameState.Module.ModuleArea.ModuleItem(strt.getFieldByLabel('EquippedRes').getValue());
             }else{
-              equipped_item = new ModuleItem(GFFObject.FromStruct(strt));
+              equipped_item = new GameState.Module.ModuleArea.ModuleItem(GFFObject.FromStruct(strt));
             }
             
             switch(slot_type){
@@ -4271,7 +4157,7 @@ export class ModuleCreature extends ModuleObject {
         if(this.template.RootNode.hasField('ActionList')){
           let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
           for(let i = 0, len = actionStructs.length; i < len; i++){
-            let action = Action.FromStruct(actionStructs[i]);
+            let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
             if(action instanceof Action){
               this.actionQueue.add(action);
             }
@@ -4349,7 +4235,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   loadSoundSet(){
-    const soundset2DA = TwoDAManager.datatables.get('soundset');
+    const soundset2DA = GameState.TwoDAManager.datatables.get('soundset');
     if(soundset2DA){
       let ss_row = soundset2DA.rows[this.soundSetFile];
       if(ss_row){
@@ -4361,7 +4247,7 @@ export class ModuleCreature extends ModuleObject {
 
   loadItem( template: GFFObject ){
 
-    let item = new ModuleItem(template);
+    let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
     let hasItem = this.getItem(item.getTag());
@@ -4483,7 +4369,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     if(this.area) this.area.detachObject(this);
-    FactionManager.RemoveCreatureFromFaction(this);
+    GameState.FactionManager.RemoveCreatureFromFaction(this);
   }
 
   save(){
@@ -4769,7 +4655,7 @@ export class ModuleCreature extends ModuleObject {
     this.template = gff;
 
     if(this.partyID >= 0){
-      PartyManager.NPCS[this.partyID].template = this.template;
+      GameState.PartyManager.NPCS[this.partyID].template = this.template;
     }
 
     return gff;

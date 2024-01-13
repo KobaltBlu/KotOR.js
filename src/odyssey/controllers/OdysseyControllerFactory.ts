@@ -1,4 +1,4 @@
-import { OdysseyController } from ".";
+import { OdysseyController } from "./OdysseyController";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { AlphaController } from "./AlphaController";

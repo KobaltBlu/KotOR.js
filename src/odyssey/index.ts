@@ -13,3 +13,5 @@ export * from "./OdysseyModelNodeSaber";
 export * from "./OdysseyModelNodeSkin";
 export * from "./OdysseyWalkMesh";
 export * from "./WalkmeshEdge";
+export * from "./OdysseyModelUtility";
+export * from "./OdysseyModelFactory";

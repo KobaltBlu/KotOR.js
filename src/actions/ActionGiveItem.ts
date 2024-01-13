@@ -1,7 +1,9 @@
+import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { PartyManager, InventoryManager } from "../managers";
-import { ModuleCreature, ModuleItem, ModulePlaceable, ModuleStore } from "../module";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleItem } from "../module/ModuleItem";
+import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 
 /**
@@ -23,16 +25,16 @@ export class ActionGiveItem extends Action {
 
   update(delta: number = 0): ActionStatus {
 
-    if(!(this.item instanceof ModuleItem))
+    if(!BitWise.InstanceOfObject(this.item, ModuleObjectType.ModuleItem))
       return ActionStatus.FAILED;
 
-    if(PartyManager.party.indexOf(this.target) >= 0){
-      InventoryManager.addItem( this.item );
+    if(GameState.PartyManager.party.indexOf(this.target as any) >= 0){
+      GameState.InventoryManager.addItem( this.item );
       return ActionStatus.COMPLETE;
     }else if(
-      (this.target instanceof ModuleCreature) ||
-      (this.target instanceof ModulePlaceable) ||
-      (this.target instanceof ModuleStore)
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) ||
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable) ||
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleStore)
     ){
       this.target.addItem( this.item );
       return ActionStatus.COMPLETE;

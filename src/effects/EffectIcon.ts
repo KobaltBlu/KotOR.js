@@ -1,9 +1,10 @@
-import { GameEffect } from ".";
+import { GameEffect } from "./GameEffect";
+import { GameState } from "../GameState";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
 import { TextureLoader } from "../loaders";
-import { TwoDAManager } from "../managers";
+// import { TwoDAManager } from "../managers";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { BitWise } from "../utility/BitWise";
 
@@ -37,7 +38,7 @@ export class EffectIcon extends GameEffect {
         return effectIcon.id == featIconId;
       });
       if(!iconExists){
-        const featIcon2DA = TwoDAManager.datatables.get('featicon');
+        const featIcon2DA = GameState.TwoDAManager.datatables.get('featicon');
         if(featIcon2DA){
           const featIconRow = featIcon2DA.rows[featIconId];
           if(featIconRow){

@@ -1,10 +1,10 @@
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { CharGenManager, TLKManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { CharGenClasses } from "../../CharGenClasses";
+import { GameState } from "../../../GameState";
 
 /**
  * CharGenMain class.
@@ -91,7 +91,7 @@ export class CharGenMain extends GameMenu {
   }
 
   Init3D() {
-    OdysseyModel3D.FromMDL(CharGenManager.cgbody_light, {
+    OdysseyModel3D.FromMDL(GameState.CharGenManager.cgbody_light, {
       onComplete: (model: OdysseyModel3D) => {
         this._3dViewModel = model;
         this._3dView.addModel(this._3dViewModel);
@@ -110,7 +110,7 @@ export class CharGenMain extends GameMenu {
       return;
     try {
       let modelControl = this.MODEL_LBL;
-      CharGenManager.selectedCreature.update(delta);
+      GameState.CharGenManager.selectedCreature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
@@ -129,13 +129,13 @@ export class CharGenMain extends GameMenu {
     this.OLD_LBL?.hide();
     this.NEW_LBL?.hide();
     try {
-      CharGenManager.selectedCreature.model.parent.remove(CharGenManager.selectedCreature.model);
+      GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
     } catch (e: any) {
     }
-    this._3dView.scene.add(CharGenManager.selectedCreature.model);
-    CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
-    let portraitId = CharGenManager.selectedCreature.getPortraitId();
-    let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+    this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
+    GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
+    let portraitId = GameState.CharGenManager.selectedCreature.getPortraitId();
+    let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
     this.PORTRAIT_LBL.show();
     if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
       this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);
@@ -143,9 +143,9 @@ export class CharGenMain extends GameMenu {
         this.PORTRAIT_LBL.setFillTexture(texture);
       });
     }
-    this.LBL_NAME.setText(CharGenManager.selectedCreature.firstName);
+    this.LBL_NAME.setText(GameState.CharGenManager.selectedCreature.firstName);
     this.LBL_CLASS.setText(
-      TLKManager.TLKStrings[CharGenClasses[CharGenManager.selectedClass].strings.name].Value
+      GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
     )
   }
 

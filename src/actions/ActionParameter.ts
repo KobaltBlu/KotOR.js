@@ -1,6 +1,7 @@
+import { GameState } from "../GameState";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptStack } from "../nwscript/NWScriptStack";
+// import { NWScript } from "../nwscript/NWScript";
+// import { NWScriptStack } from "../nwscript/NWScriptStack";
 import { GFFStruct } from "../resource/GFFStruct";
 
 /**
@@ -42,7 +43,7 @@ export class ActionParameter {
         break;
         case ActionParameterType.SCRIPT_SITUATION:
           let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-          let script = new NWScript();
+          let script = new GameState.NWScript();
           script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
           script.init(
             scriptParamStructs.getFieldByLabel('Code').getVoid(),
@@ -54,7 +55,7 @@ export class ActionParameter {
           scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
       
           let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
-          scriptInstance.stack = NWScriptStack.FromActionStruct(stackStruct);
+          scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
 
           value = scriptInstance;
         break;

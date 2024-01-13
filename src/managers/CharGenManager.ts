@@ -1,4 +1,4 @@
-import { TwoDAManager } from ".";
+import { TwoDAManager } from "./TwoDAManager";
 import { AudioLoader } from "../audio/AudioLoader";
 import { GameEngineType } from "../enums/engine";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
@@ -6,15 +6,16 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CharGenClasses } from "../game/CharGenClasses";
 import { GameState } from "../GameState";
 import { LBL_3DView } from "../gui";
-import { ModulePlayer } from "../module";
+import type { ModulePlayer } from "../module/ModulePlayer";
 import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
-import { MenuManager } from ".";
 import { AudioEngine } from "../audio/AudioEngine";
-import { LTRObject, MDLLoader, ResourceLoader, ResourceTypes } from "../KotOR";
+import { LTRObject } from "../resource/LTRObject";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { ResourceTypes } from "../resource/ResourceTypes";
 
 /**
  * CharGenManager class.
@@ -74,14 +75,14 @@ export class CharGenManager {
   static ltrLastName: LTRObject;
 
   static async Start(){
-    await MenuManager.LoadScreen.setLoadBackground('load_chargen');
-    MenuManager.LoadScreen.open();
-    MenuManager.LoadScreen.setHintMessage('');
+    await GameState.MenuManager.LoadScreen.setLoadBackground('load_chargen');
+    GameState.MenuManager.LoadScreen.open();
+    GameState.MenuManager.LoadScreen.setHintMessage('');
     await CharGenManager.StartBackgroundMusic();
     await CharGenManager.Init();
-    await MenuManager.CharGenClass.Init();
-    MenuManager.LoadScreen.close();
-    MenuManager.CharGenClass.open();
+    await GameState.MenuManager.CharGenClass.Init();
+    GameState.MenuManager.LoadScreen.close();
+    GameState.MenuManager.CharGenClass.open();
   }
 
   static StartBackgroundMusic(){
@@ -151,10 +152,10 @@ export class CharGenManager {
       CharGenManager.lbl_3d_views.set(i, new LBL_3DView());
       let template = CharGenManager.GetPlayerTemplate(i);
       CharGenManager.templates.set(i, template);
-      CharGenManager.creatures.set(i, new ModulePlayer(template));
+      CharGenManager.creatures.set(i, new GameState.Module.ModuleArea.ModulePlayer(template));
     }
     let template = CharGenManager.templates.get(CharGenManager.selectedClass);
-    CharGenManager.selectedCreature = new ModulePlayer(template);
+    CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
   }
 
   static GetPlayerTemplate(nth = 0) {

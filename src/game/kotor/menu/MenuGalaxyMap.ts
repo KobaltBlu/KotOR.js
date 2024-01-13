@@ -7,7 +7,6 @@ import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { OdysseyModel } from "../../../odyssey";
 import { Planet, Planetary } from "../../../Planetary";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { GlobalVariableManager } from "../../../managers";
 
 interface PlanetAnimStateInfo {
   lastAnimState: 'zoomin'|'rotate';
@@ -75,7 +74,7 @@ export class MenuGalaxyMap extends GameMenu {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close();
-        Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
+        Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
@@ -225,7 +224,7 @@ export class MenuGalaxyMap extends GameMenu {
 
   show() {
     super.show();
-    Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
+    Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
     this.changePlanet(Planetary.selected);
     this.UpdateScale();
     const planets = Planetary.planets;

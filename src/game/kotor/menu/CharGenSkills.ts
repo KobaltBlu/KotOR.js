@@ -1,6 +1,6 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { CharGenManager } from "../../../managers";
 
 /**
  * CharGenSkills class.
@@ -78,59 +78,59 @@ export class CharGenSkills extends GameMenu {
       this.BTN_ACCEPT.addEventListener('click', (e: any) => {
         e.stopPropagation();
         console.log('CharGenSkills', 'Assigning skillpoints')
-        CharGenManager.selectedCreature.skills[0].rank = CharGenManager.computerUse;
-        CharGenManager.selectedCreature.skills[1].rank = CharGenManager.demolitions;
-        CharGenManager.selectedCreature.skills[2].rank = CharGenManager.stealth;
-        CharGenManager.selectedCreature.skills[3].rank = CharGenManager.awareness;
-        CharGenManager.selectedCreature.skills[4].rank = CharGenManager.persuade;
-        CharGenManager.selectedCreature.skills[5].rank = CharGenManager.repair;
-        CharGenManager.selectedCreature.skills[6].rank = CharGenManager.security;
-        CharGenManager.selectedCreature.skills[7].rank = CharGenManager.treatInjury;
+        GameState.CharGenManager.selectedCreature.skills[0].rank = GameState.CharGenManager.computerUse;
+        GameState.CharGenManager.selectedCreature.skills[1].rank = GameState.CharGenManager.demolitions;
+        GameState.CharGenManager.selectedCreature.skills[2].rank = GameState.CharGenManager.stealth;
+        GameState.CharGenManager.selectedCreature.skills[3].rank = GameState.CharGenManager.awareness;
+        GameState.CharGenManager.selectedCreature.skills[4].rank = GameState.CharGenManager.persuade;
+        GameState.CharGenManager.selectedCreature.skills[5].rank = GameState.CharGenManager.repair;
+        GameState.CharGenManager.selectedCreature.skills[6].rank = GameState.CharGenManager.security;
+        GameState.CharGenManager.selectedCreature.skills[7].rank = GameState.CharGenManager.treatInjury;
         this.close();
       });
 
       this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
 
-        CharGenManager.resetSkillPoints();
-        CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
-        let skillOrder = CharGenManager.getRecommendedOrder();
+        GameState.CharGenManager.resetSkillPoints();
+        GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
+        let skillOrder = GameState.CharGenManager.getRecommendedOrder();
         
-        while(CharGenManager.availSkillPoints > 0){
+        while(GameState.CharGenManager.availSkillPoints > 0){
           for(let i = 0; i < 8; i++){
             let skillIndex = skillOrder[i];
 
-            if(!CharGenManager.availSkillPoints)
+            if(!GameState.CharGenManager.availSkillPoints)
               break;
 
             switch(skillIndex){
               case 0:
-                CharGenManager.computerUse++;
+                GameState.CharGenManager.computerUse++;
               break;
               case 1:
-                CharGenManager.demolitions++;
+                GameState.CharGenManager.demolitions++;
               break;
               case 2:
-                CharGenManager.stealth++;
+                GameState.CharGenManager.stealth++;
               break;
               case 3:
-                CharGenManager.awareness++;
+                GameState.CharGenManager.awareness++;
               break;
               case 4:
-                CharGenManager.persuade++;
+                GameState.CharGenManager.persuade++;
               break;
               case 5:
-                CharGenManager.repair++;
+                GameState.CharGenManager.repair++;
               break;
               case 6:
-                CharGenManager.security++;
+                GameState.CharGenManager.security++;
               break;
               case 7:
-                CharGenManager.treatInjury++;
+                GameState.CharGenManager.treatInjury++;
               break;
             }
             
             if(skillIndex >= 0){
-              CharGenManager.availSkillPoints -= 1;
+              GameState.CharGenManager.availSkillPoints -= 1;
             }
           }
         }
@@ -148,20 +148,20 @@ export class CharGenSkills extends GameMenu {
   }
 
   updateButtonStates() {
-    this.COMPUTER_USE_POINTS_BTN.setText(CharGenManager.computerUse);
-    this.DEMOLITIONS_POINTS_BTN.setText(CharGenManager.demolitions);
-    this.STEALTH_POINTS_BTN.setText(CharGenManager.stealth);
-    this.AWARENESS_POINTS_BTN.setText(CharGenManager.awareness);
-    this.PERSUADE_POINTS_BTN.setText(CharGenManager.persuade);
-    this.REPAIR_POINTS_BTN.setText(CharGenManager.repair);
-    this.SECURITY_POINTS_BTN.setText(CharGenManager.security);
-    this.TREAT_INJURY_POINTS_BTN.setText(CharGenManager.treatInjury);
-    this.REMAINING_SELECTIONS_LBL.setText(CharGenManager.availSkillPoints);
+    this.COMPUTER_USE_POINTS_BTN.setText(GameState.CharGenManager.computerUse);
+    this.DEMOLITIONS_POINTS_BTN.setText(GameState.CharGenManager.demolitions);
+    this.STEALTH_POINTS_BTN.setText(GameState.CharGenManager.stealth);
+    this.AWARENESS_POINTS_BTN.setText(GameState.CharGenManager.awareness);
+    this.PERSUADE_POINTS_BTN.setText(GameState.CharGenManager.persuade);
+    this.REPAIR_POINTS_BTN.setText(GameState.CharGenManager.repair);
+    this.SECURITY_POINTS_BTN.setText(GameState.CharGenManager.security);
+    this.TREAT_INJURY_POINTS_BTN.setText(GameState.CharGenManager.treatInjury);
+    this.REMAINING_SELECTIONS_LBL.setText(GameState.CharGenManager.availSkillPoints);
   }
 
   reset() {
-    CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
-    CharGenManager.resetSkillPoints();
+    GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();
+    GameState.CharGenManager.resetSkillPoints();
   }
   
 }

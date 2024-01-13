@@ -1,7 +1,7 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
-import { ResolutionManager } from "../../../managers";
 
 /**
  * MenuResolutions class.
@@ -42,7 +42,7 @@ export class MenuResolutions extends GameMenu {
 
       this.BTN_OK.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        ResolutionManager.screenResolution = this.activeResolution;
+        GameState.ResolutionManager.screenResolution = this.activeResolution;
         window.dispatchEvent(new Event('resize'));
         this.close();
       });
@@ -57,7 +57,7 @@ export class MenuResolutions extends GameMenu {
 
   show() {
     super.show();
-    this.supportedResolutions = ResolutionManager.getSupportedResolutions();
+    this.supportedResolutions = GameState.ResolutionManager.getSupportedResolutions();
     this.activeResolution = this.supportedResolutions[0];
     this.LB_RESOLUTIONS.clearItems();
 

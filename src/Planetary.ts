@@ -1,10 +1,11 @@
-import { MDLLoader } from "./loaders";
+import { MDLLoader } from "./loaders/MDLLoader";
 import { GFFDataType } from "./enums/resource/GFFDataType";
-import { TLKManager, TwoDAManager } from "./managers";
 import { OdysseyModel } from "./odyssey";
 import { GFFField } from "./resource/GFFField";
 import { GFFStruct } from "./resource/GFFStruct";
 import { TwoDAObject } from "./resource/TwoDAObject";
+import { GameState } from "./GameState";
+
 
 /**
  * Planetary class.
@@ -26,7 +27,7 @@ export class Planetary {
 
     Planetary.planets = [];
     Planetary.selectedIndex = -1;
-    const planetary2DA = TwoDAManager.datatables.get('planetary');
+    const planetary2DA = GameState.TwoDAManager.datatables.get('planetary');
     Planetary.selected = undefined;
     let planetList = planetary2DA.rows;
     for(let i = 0; i < planetary2DA.RowCount; i++){
@@ -128,12 +129,12 @@ export class Planet {
   }
 
   getName(): string {
-    return TLKManager.TLKStrings[this.name].Value;
+    return GameState.TLKManager.TLKStrings[this.name].Value;
   }
 
   getDescription(): string {
     if(this.description)
-      return TLKManager.TLKStrings[this.description].Value;
+      return GameState.TLKManager.TLKStrings[this.description].Value;
     else
       return '';
   }

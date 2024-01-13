@@ -1,7 +1,7 @@
+import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
-import { AutoPauseManager, ResolutionManager } from "../../../managers";
 
 /**
  * InGamePause class.
@@ -32,7 +32,7 @@ export class InGamePause extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
-        AutoPauseManager.Unpause();
+        GameState.AutoPauseManager.Unpause();
       });
       resolve();
     });
@@ -47,8 +47,8 @@ export class InGamePause extends GameMenu {
 
   update(delta: number = 0) {
     super.update(delta);
-    this.tGuiPanel.extent.left = (ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 0;
-    this.tGuiPanel.extent.top = (-ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 36;
+    this.tGuiPanel.extent.left = (GameState.ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 0;
+    this.tGuiPanel.extent.top = (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 36;
     this.recalculatePosition();
   }
   

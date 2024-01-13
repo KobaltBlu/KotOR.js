@@ -4,10 +4,10 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import { SSFType } from "../enums/resource/SSFType";
-import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
-import { ActionMoveToPoint } from "./ActionMoveToPoint";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**
  * ActionUnlockObject class.
@@ -33,12 +33,12 @@ export class ActionUnlockObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!(this.owner instanceof ModuleCreature))
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
       return ActionStatus.FAILED;
 
     this.target = this.getParameter(0);
 
-    if(!(this.target instanceof ModuleDoor) && !(this.target instanceof ModulePlaceable))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
 
     if(!this.shouted){
@@ -50,7 +50,7 @@ export class ActionUnlockObject extends Action {
     if(distance > 1.5){
         
       this.owner.openSpot = undefined;
-      let actionMoveToTarget = new ActionMoveToPoint();
+      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -68,7 +68,7 @@ export class ActionUnlockObject extends Action {
       this.owner.force = 0;
       this.owner.speed = 0;
                         
-      if(this.owner instanceof ModuleCreature)
+      if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
         this.owner.setFacingObject( this.target );
 
       if(this.timer == undefined){
@@ -77,7 +77,7 @@ export class ActionUnlockObject extends Action {
       }
 
       if(!this.owner.isSimpleCreature()){
-        if(this.target instanceof ModuleDoor){
+        if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_DOOR);
         }else{
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_CONTAINER);
@@ -87,7 +87,7 @@ export class ActionUnlockObject extends Action {
       this.timer -= delta;
 
       if(this.timer <= 0){
-        this.target.attemptUnlock(this.owner);
+        (this.target as any).attemptUnlock(this.owner);
         return ActionStatus.COMPLETE;
       }
 

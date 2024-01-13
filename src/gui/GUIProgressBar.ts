@@ -1,10 +1,11 @@
 import * as THREE from "three";
-import { GameMenu, GUIControl } from ".";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
 import { TextureType } from "../enums/loaders/TextureType";
 import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
 import { TextureLoader } from "../loaders";
-import { ShaderManager } from "../managers";
-import { GFFStruct } from "../resource/GFFStruct";
+import { ShaderManager } from "../managers/ShaderManager";
+import type { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
@@ -114,7 +115,7 @@ export class GUIProgressBar extends GUIControl {
 
     this.widget.userData.progress.add( this.progress.fill.mesh );
 
-    if(this.control instanceof GFFStruct){
+    if(this.control){
       
       //Progress
       this.hasProgress = control.hasField('PROGRESS');

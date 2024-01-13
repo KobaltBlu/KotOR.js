@@ -1,4 +1,3 @@
-import { ModuleMGTrack, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModuleObject } from ".";
 import { GameState } from "../GameState";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
@@ -6,6 +5,10 @@ import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyModel3D } from "../three/odyssey";
 import { AsyncLoop } from "../utility/AsyncLoop";
+import { ModuleMGEnemy } from "./ModuleMGEnemy";
+import type { ModuleMGObstacle } from "./ModuleMGObstacle";
+import type { ModuleMGPlayer } from "./ModuleMGPlayer";
+import type { ModuleMGTrack } from "./ModuleMGTrack";
 
 /**
 * ModuleMiniGame class.
@@ -52,7 +55,7 @@ export class ModuleMiniGame {
     this.type = struct.getFieldByLabel('Type').getValue();
     this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
 
-    this.player = new ModuleMGPlayer(
+    this.player = new GameState.Module.ModuleArea.ModuleMGPlayer(
       GFFObject.FromStruct(struct.getFieldByLabel('Player').getChildStructs()[0])
     );
 
@@ -98,13 +101,13 @@ export class ModuleMiniGame {
 
   initMiniGameObjects(){
     for(let i = 0; i < this.enemies.length; i++){
-      if(this.enemies[i] instanceof ModuleObject){
+      if(this.enemies[i]){
         this.enemies[i].onCreate();
       }
     }
 
     for(let i = 0; i < this.obstacles.length; i++){
-      if(this.obstacles[i] instanceof ModuleObject){
+      if(this.obstacles[i]){
         this.obstacles[i].onCreate();
       }
     }

@@ -1,6 +1,6 @@
+import { GameState } from "../../../GameState";
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { PartyManager, TwoDAManager } from "../../../managers";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
@@ -125,12 +125,12 @@ export class MenuTop extends K1_MenuTop {
       });
 
       this.BTN_CHANGE2.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
         this.UpdatePartyUI();
       });
 
       this.BTN_CHANGE3.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
         this.UpdatePartyUI();
       });
 
@@ -184,11 +184,11 @@ export class MenuTop extends K1_MenuTop {
   }
 
   UpdatePartyUI() {
-    for (let i = 0; i < PartyManager.party.length; i++) {
-      let partyMember = PartyManager.party[i];
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      let partyMember = GameState.PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
       
-      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
+      let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       this.TogglePartyMember(i, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portrait.baseresref) {

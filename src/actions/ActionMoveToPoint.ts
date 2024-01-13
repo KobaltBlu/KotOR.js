@@ -2,12 +2,12 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { Action } from "./Action";
 import * as THREE from "three";
-import { ModuleCreature, ModuleObject } from "../module";
 import { Utility } from "../utility/Utility";
 import { GameState } from "../GameState";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { ActionJumpToPoint } from "./ActionJumpToPoint";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 
 /**
  * ActionMoveToPoint class.
@@ -41,7 +41,7 @@ export class ActionMoveToPoint extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!(this.owner instanceof ModuleCreature))
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
       return ActionStatus.FAILED;
 
     this.target_position.set(
@@ -53,9 +53,9 @@ export class ActionMoveToPoint extends Action {
     this.real_target_position.copy(this.target_position);
 
     this.target = this.getParameter(4);
-    if(this.target instanceof ModuleObject){
+    if(this.target){
       this.real_target_position.copy(this.target.position);
-      if( this.target instanceof ModuleCreature && this.target.isDead() ){
+      if( BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) && this.target.isDead() ){
         if(this.owner.computedPath) this.owner.computedPath.dispose();
         this.owner.computedPath = undefined;
         return ActionStatus.FAILED;
@@ -72,8 +72,8 @@ export class ActionMoveToPoint extends Action {
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
     if(distance > (this.owner.computedPath.points.length > 1 ? 0.5 : range)){
   
-      if(this.owner.blockingTimer >= 5 || this.owner.collisionTimer >= 1){
-        this.owner.blockingTimer = 0;
+      if((this.owner as any).blockingTimer >= 5 || this.owner.collisionTimer >= 1){
+        (this.owner as any).blockingTimer = 0;
         this.owner.collisionTimer = 0;
       }
 
@@ -123,7 +123,7 @@ export class ActionMoveToPoint extends Action {
 
       let timeout = this.getParameter(8) - delta;
       if(timeout <= 0){
-        let fallback_action = new ActionJumpToPoint(undefined, this.groupId);
+        let fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
         fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
         fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
@@ -153,13 +153,13 @@ export class ActionMoveToPoint extends Action {
   }
 
   calculatePath(){
-    if(!(this.owner instanceof ModuleCreature)) return;
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     if(this.owner.openSpot){
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
       this.owner.computedPath.realtime = true;
     }else{
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
-      if(this.target instanceof ModuleCreature){
+      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
         this.owner.computedPath.realtime = true;
       }
     }

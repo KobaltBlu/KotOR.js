@@ -1,8 +1,6 @@
-import { ModuleObject, ModuleItem } from ".";
-import type { ModuleRoom } from ".";
+import type { ModuleRoom } from "./ModuleRoom";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { BinaryReader } from "../BinaryReader";
-import { GameEffect } from "../effects";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -21,10 +19,13 @@ import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
 import { PlaceableAppearance } from "../engine/PlaceableAppearance";
-import { TwoDAManager, InventoryManager, KEYManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "../managers";
+// import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
+import { ModuleObject } from "./ModuleObject";
+import type { ModuleItem } from "./ModuleItem";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -383,7 +384,7 @@ export class ModulePlaceable extends ModuleObject {
 
     const soundIdx = apppearance.soundapptype;
     if(!isNaN(soundIdx) && soundIdx >= 0){
-      const table = TwoDAManager.datatables.get('placeableobjsnds');
+      const table = GameState.TwoDAManager.datatables.get('placeableobjsnds');
       if(table && typeof table.rows[soundIdx] !== 'undefined'){
         result = table.rows[soundIdx];
       }
@@ -393,7 +394,7 @@ export class ModulePlaceable extends ModuleObject {
 
   retrieveInventory(){
     while(this.inventory.length){
-      InventoryManager.addItem(this.inventory.pop())
+      GameState.InventoryManager.addItem(this.inventory.pop())
     }
 
     if(this.scripts.onInvDisturbed instanceof NWScriptInstance){
@@ -434,10 +435,10 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.hasInventory){
-      MenuManager.MenuContainer.AttachContainer(this);
-      MenuManager.MenuContainer.open();
+      GameState.MenuManager.MenuContainer.AttachContainer(this);
+      GameState.MenuManager.MenuContainer.open();
     }else if(this.getConversation() && this.getConversation().resref){
-      MenuManager.InGameDialog.StartConversation(this.getConversation(), object);
+      GameState.MenuManager.InGameDialog.StartConversation(this.getConversation(), object);
     }
 
     if(this.scripts.onUsed instanceof NWScriptInstance){
@@ -635,7 +636,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadItem( template: GFFObject){
-    let item = new ModuleItem(template);
+    let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
     let hasItem = this.getItem(item.getTag());
@@ -648,25 +649,23 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  async loadWalkmesh(ResRef = ''): Promise<OdysseyWalkMesh> {
-    const wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['pwk']);
-    if(!wokKey){
-      console.warn('ModulePlaceable', 'PWK Missing', ResRef);
+  async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['pwk'], resRef);
+      this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+      this.collisionData.walkmesh.name = resRef;
+      this.collisionData.walkmesh.moduleObject = this;
+      this.model.add(this.collisionData.walkmesh.mesh);
+
+      return this.collisionData.walkmesh;
+    }catch(e){
+      console.error(e);
       this.collisionData.walkmesh = new OdysseyWalkMesh();
-      this.collisionData.walkmesh.name = ResRef;
+      this.collisionData.walkmesh.name = resRef;
       this.collisionData.walkmesh.moduleObject = this;
 
       return this.collisionData.walkmesh;
     }
-
-    const buffer = await KEYManager.Key.getFileBuffer(wokKey);
-
-    this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-    this.collisionData.walkmesh.name = ResRef;
-    this.collisionData.walkmesh.moduleObject = this;
-    this.model.add(this.collisionData.walkmesh.mesh);
-
-    return this.collisionData.walkmesh;
   }
 
   initProperties(){
@@ -678,7 +677,7 @@ export class ModulePlaceable extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('LocName'))
@@ -690,7 +689,7 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('Appearance')){
       this.appearance = this.template.getFieldByLabel('Appearance').getValue();
       try{
-        this.placeableAppearance = AppearanceManager.GetPlaceableAppearanceById(this.appearance);
+        this.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(this.appearance);
       }catch(e){
         console.error(e);
       }
@@ -721,7 +720,7 @@ export class ModulePlaceable extends ModuleObject {
         this.factionId = 0;
       }
     }
-    this.faction = FactionManager.factions.get(this.factionId);
+    this.faction = GameState.FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.hasField('Fort'))
       this.fort = this.template.getFieldByLabel('Fort').getValue();
@@ -836,8 +835,8 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('EffectList')){
       let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffect.EffectFromStruct(effects[i]);
-        if(effect instanceof GameEffect){
+        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        if(effect){
           effect.setAttachedObject(this);
           this.effects.push(effect);
           //this.addEffect(effect);
@@ -996,7 +995,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
-    const animations2DA = TwoDAManager.datatables.get('animations');
+    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){
         case ModulePlaceableAnimState.DEFAULT:        //10000, //304 - 

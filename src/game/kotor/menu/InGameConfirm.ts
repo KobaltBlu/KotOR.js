@@ -2,7 +2,6 @@ import { GameState } from "../../../GameState";
 import { GameEngineType } from "../../../enums/engine";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUIButton } from "../../../gui";
-import { TLKManager, TwoDAManager } from "../../../managers";
 import { TwoDAObject } from "../../../resource/TwoDAObject";
 
 /**
@@ -82,13 +81,13 @@ export class InGameConfirm extends GameMenu {
   ShowTutorialMessage(id = 0, nth = 0) {
     console.log('ShowTutorialMessage', id, nth);
     if (!GameState.TutorialWindowTracker[id]) {
-      const row = TwoDAManager.datatables.get('tutorial').rows[id];
+      const row = GameState.TwoDAManager.datatables.get('tutorial').rows[id];
       if(row){
         this.LB_MESSAGE.extent.top = 0;
         let tlkId = TwoDAObject.normalizeValue(row[(GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth], 'number', 0);
         if(tlkId > 0){
           this.LB_MESSAGE.clearItems();
-          this.LB_MESSAGE.addItem(TLKManager.GetStringById(tlkId).Value);
+          this.LB_MESSAGE.addItem(GameState.TLKManager.GetStringById(tlkId).Value);
           let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
           console.log(messageHeight);
           this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = messageHeight;

@@ -1,5 +1,6 @@
+import { GameState } from "../GameState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { ResolutionManager } from "../managers";
+// import { ResolutionManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -43,7 +44,7 @@ export class ModuleCamera {
       this.perspectiveCamera.removeFromParent();
       this.perspectiveCamera = undefined;
     }
-    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight(), 0.1, 1500);
+    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 1500);
     this.perspectiveCamera.up = new THREE.Vector3( 0, 1, 0 );
     this.perspectiveCamera.position.set(0, 0, this.height);
     this.perspectiveCamera.position.add(this.position);

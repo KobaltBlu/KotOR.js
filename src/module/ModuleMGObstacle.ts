@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";

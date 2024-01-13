@@ -1,12 +1,11 @@
 import { GameState } from "./GameState";
-import { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "./module";
+import type { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "./module";
 import { OdysseyWalkMesh } from "./odyssey";
 import * as THREE from "three";
 import { Utility } from "./utility/Utility";
 import { ConfigClient } from "./utility/ConfigClient";
 import { OdysseyFace3 } from "./three/odyssey";
 import { ModuleDoorAnimState } from "./enums/module/ModuleDoorAnimState";
-import { PartyManager } from "./managers";
 
 interface AABBFaceData {
   object: ModuleObject,
@@ -55,7 +54,7 @@ export class CollisionData {
 
     //this.object.getCurrentRoom();
     let hitdist = 1;
-    if(this.object instanceof ModuleCreature) this.object.getAppearance().hitdist;
+    if(this.object instanceof GameState.Module.ModuleArea.ModuleCreature) this.object.getAppearance().hitdist;
     let hitdist_half = hitdist/2;
     
     let box = new THREE.Box3()
@@ -120,8 +119,8 @@ export class CollisionData {
 
     //Check party collision
     if(true || ConfigClient.options?.Game?.debug?.creature_collision){
-      for(let i = 0, len = PartyManager.party.length; i < len; i++){
-        creature = PartyManager.party[i];
+      for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
+        creature = GameState.PartyManager.party[i];
         if(creature){
           let position = this.object.position.clone().add(this.object.AxisFront);
 
@@ -175,7 +174,7 @@ export class CollisionData {
       let intersect: THREE.Intersection;
       let dot = 0;
       for(let i = 0; i < 12; i++){
-        GameState.raycaster.ray.direction.set(ModuleObject.DX_LIST[i], ModuleObject.DY_LIST[i], 0);
+        GameState.raycaster.ray.direction.set(GameState.Module.ModuleArea.ModuleObject.DX_LIST[i], GameState.Module.ModuleArea.ModuleObject.DY_LIST[i], 0);
         for(let k = 0, kl = aabbFaces.length; k < kl; k++){
           castableFaces = aabbFaces[k];
           if(!castableFaces.object?.collisionData?.walkmesh) continue;
@@ -190,7 +189,7 @@ export class CollisionData {
               if(intersect.distance < hitdist_half){
                 if(intersect.face.materialIndex == 7 || intersect.face.materialIndex == 2){
 
-                  if(intersect.object.userData.moduleObject instanceof ModuleDoor){
+                  if(intersect.object.userData.moduleObject instanceof GameState.Module.ModuleArea.ModuleDoor){
                     this.blockingObject = intersect.object.userData.moduleObject;
                   }
 

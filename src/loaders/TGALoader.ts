@@ -1,9 +1,9 @@
 import * as path from "path";
-import { ResourceLoader } from ".";
+import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TXI } from "../resource/TXI";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { TextureLoader } from "./TextureLoader";
+import type { TextureLoader } from "./TextureLoader";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
@@ -22,6 +22,8 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TGALoader {
+
+	static TextureLoader: typeof TextureLoader;
 
 	async fetch( resRef: string ): Promise<OdysseyTexture> {
 		const texture = new OdysseyTexture();
@@ -76,7 +78,7 @@ export class TGALoader {
 
 			const txiBuffer = await GameFileSystem.readFile(path.join(dir, name)+'.txi');
 
-			const tpcCheck = await TextureLoader.tpcLoader.fetch(name);
+			const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(name);
 
 			if(tpcCheck){
 				texture.txi = tpcCheck.txi;
@@ -107,7 +109,7 @@ export class TGALoader {
 				//if(err){
 			
 				try{
-					const tpcCheck = await TextureLoader.tpcLoader.fetch(resRef);
+					const tpcCheck = await TGALoader.TextureLoader.tpcLoader.fetch(resRef);
 	
 					/*if(tpcCheck){
 						texture.txi = tpcCheck.txi;

@@ -1,10 +1,12 @@
 import * as THREE from "three";
-import { OdysseyModel, OdysseyModelNode, OdysseyWalkMesh } from ".";
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelMDXFlag } from "../enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyFace3 } from "../three/odyssey";
+import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
+import { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeMesh class.
@@ -110,7 +112,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.functionPointer0 = this.odysseyModel.mdlReader.readUInt32();
     this.functionPointer1 = this.odysseyModel.mdlReader.readUInt32();
 
-    this.faceArrayDefinition = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    this.faceArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
 
     this.boundingBox = {
       min: new THREE.Vector3(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle()),
@@ -130,14 +132,14 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     this.textureMap3 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
     this.textureMap4 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 4th texture filename (?)
 
-    this.indexCountArrayDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //IndexCounterArray
-    this.vertexLocArrayDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //vertex_indices_offset
+    this.indexCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //IndexCounterArray
+    this.vertexLocArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //vertex_indices_offset
 
     if (this.vertexLocArrayDef.count > 1)
       throw ("Face offsets offsets count wrong "+ this.vertexLocArrayDef.count);
 
-    this.InvertedCountArrayDef = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
-    this.InvertedCountArrayDefDuplicate = OdysseyModel.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
+    this.InvertedCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
+    this.InvertedCountArrayDefDuplicate = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //MeshInvertedCounterArray
 
     this.saberBytes = [
       this.odysseyModel.mdlReader.readByte(),
@@ -357,7 +359,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
         this.faces[i].a = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].surfacemat = OdysseyWalkMesh.SURFACEMATERIALS[this.faces[i].materialId];
+        this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialId];
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 

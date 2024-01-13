@@ -1,7 +1,5 @@
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { Module } from "../../../module";
-import { SaveGame } from "../../../SaveGame";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 
@@ -51,9 +49,9 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         e.stopPropagation();
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
-          if(savegame instanceof SaveGame){
+          if(savegame){
             this.manager.ClearMenus();
-            if(GameState.module instanceof Module){
+            if(GameState.module){
               GameState.module.dispose();
               GameState.module = undefined;
             }
@@ -78,7 +76,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       });
       this._button_b = this.BTN_BACK;
 
-      this.LB_GAMES.onSelected = (save: SaveGame) => {
+      this.LB_GAMES.onSelected = (save: any) => {
         this.selected = save;
         this.UpdateSelected();
       }

@@ -1,15 +1,14 @@
-import { ModuleObject } from ".";
-import type { ModuleCreature } from ".";
+import { ModuleObject } from "./ModuleObject";
+import type { ModuleCreature } from "./ModuleCreature";
 import { BaseItem } from "../engine/BaseItem";
-import { CombatEngine } from "../combat/CombatEngine";
 import { EffectDisguise } from "../effects/EffectDisguise";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { WeaponType } from "../enums/combat/WeaponType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
+// import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
+// import { GameState } from "../GameState";
 import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
@@ -18,8 +17,13 @@ import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TalentSpell } from "../talents";
 import { OdysseyModel3D } from "../three/odyssey";
-import { TwoDAManager, PartyManager, InventoryManager, TLKManager, ModuleObjectManager } from "../managers";
+// import { TwoDAManager, PartyManager, InventoryManager, TLKManager, ModuleObjectManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { CombatFeatType } from "../enums/combat/CombatFeatType";
+import { BitWise } from "../utility/BitWise";
+import { Dice } from "../utility/Dice";
+import { ItemProperty } from "../engine/ItemProperty";
+import { GameState } from "../GameState";
 
 /**
 * ModuleItem class.
@@ -35,8 +39,8 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 */
 export class ModuleItem extends ModuleObject {
   equippedRes: any;
-  baseItem: number;
-  _baseItem: BaseItem;
+  baseItemId: number;
+  baseItem: BaseItem;
   addCost: number;
   cost: number;
   modelVariation: number;
@@ -83,7 +87,7 @@ export class ModuleItem extends ModuleObject {
 
     //this.id = -1;
 
-    this.baseItem = 0;
+    this.baseItemId = 0;
     this.addCost = 0;
     this.cost = 0;
     this.modelVariation = 0;
@@ -108,12 +112,16 @@ export class ModuleItem extends ModuleObject {
     return this.descIdentified;
   }
 
-  getBaseItemId(){
+  getBaseItemId(): number {
+    return this.baseItemId;
+  }
+
+  getBaseItem(): BaseItem {
     return this.baseItem;
   }
 
   getBodyVariation(){
-    return this._baseItem.bodyVar;
+    return this.baseItem.bodyVar;
   }
 
   getModelVariation(){
@@ -125,19 +133,19 @@ export class ModuleItem extends ModuleObject {
   }
 
   getIcon(){
-    return 'i'+this._baseItem.itemClass+'_'+("000" + this.getModelVariation()).slice(-3);
+    return 'i'+this.baseItem.itemClass+'_'+("000" + this.getModelVariation()).slice(-3);
   }
 
   getWeaponWield(): WeaponWield{
-    return this._baseItem.weaponWield;
+    return this.baseItem.weaponWield;
   }
 
   getWeaponType(): WeaponType {
-    return this._baseItem.weaponType;
+    return this.baseItem.weaponType;
   }
 
   isRangedWeapon(){
-    return this._baseItem.rangedWeapon;
+    return this.baseItem.rangedWeapon;
   }
 
   isStolen(){
@@ -225,29 +233,70 @@ export class ModuleItem extends ModuleObject {
         bonus += property.getValue();
       }
     }
-    return this._baseItem.baseAC + bonus;
+    return this.baseItem.baseAC + bonus;
   }
 
   getDexBonus(){
-    if(this.baseItem){
-      return this._baseItem.dexBonus || 0;
+    if(this.baseItemId){
+      return this.baseItem.dexBonus || 0;
     }
     return 0;
   }
 
-  getAttackBonus(){
+  getAttackBonus(): number {
+    let bonus = 0;
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.AttackBonus)){
-        return property.getValue();
+        bonus += property.getValue();
+        break;
       }
+    }
+
+    if(BitWise.InstanceOfObject(this.possessor, ModuleObjectType.ModuleCreature)){
+      switch(this.getWeaponWield()){
+        case WeaponWield.BLASTER_PISTOL:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_BLASTER)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.BLASTER_RIFLE:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_BLASTER_RIFLE)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.BLASTER_HEAVY:
+          if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_HEAVY_WEAPONS)){
+            bonus += 1;
+          }
+        break;
+        case WeaponWield.ONE_HANDED_SWORD:
+        case WeaponWield.TWO_HANDED_SWORD:
+        case WeaponWield.STUN_BATON:
+          if(this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10){
+            if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_LIGHTSABER)){
+              bonus += 1;
+            }
+          }else if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_MELEE_WEAPONS)){
+            bonus += 1;
+          }
+        break;
+      }
+    }
+
+    return bonus;
+  }
+
+  getBaseDamage(){
+    if(this.baseItem.numDice){
+      return Dice.roll(this.baseItem.numDice, this.baseItem.die);
     }
     return 0;
   }
 
-  getBaseDamage(){
-    if(this._baseItem.numDice){
-      return CombatEngine.DiceRoll(this._baseItem.numDice, 'd'+this._baseItem.dieToRoll);
+  getBaseDamageType(): number {
+    if(this.baseItem){
+      return Math.log2(this.baseItem.damageFlags) & 0xFF;
     }
     return 0;
   }
@@ -262,7 +311,17 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDamageBonus(){
+  hasDamageBonus(): boolean {
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  getDamageBonus(): number {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
@@ -272,8 +331,26 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
-  getDamageType(){
-    return this._baseItem.damageFlags;
+  getDamageBonusType(): number {
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
+        return property.getSubType();
+      }
+    }
+    return 0;
+  }
+
+  getDamageFlags(): number {
+    return this.baseItem.damageFlags;
+  }
+
+  getCriticalThreatRangeMin(){
+    return 20 - this.baseItem.criticalThreat;
+  }
+
+  getCriticalThreatRangeMax(){
+    return 20;
   }
 
   getSTRBonus(){
@@ -338,9 +415,9 @@ export class ModuleItem extends ModuleObject {
 
   castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
-      let ammunitiontype = this._baseItem.ammunitionType;
+      let ammunitiontype = this.baseItem.ammunitionType;
       if( ammunitiontype >= 1 ){
-        const _2DA = TwoDAManager.datatables.get('ammunitiontypes');
+        const _2DA = GameState.TwoDAManager.datatables.get('ammunitiontypes');
         if(_2DA){
           let ammunition = _2DA.rows[ammunitiontype];
           if(typeof ammunition != 'undefined'){
@@ -389,8 +466,8 @@ export class ModuleItem extends ModuleObject {
   }
 
   loadModel(): Promise<OdysseyModel3D> {
-    let itemclass = this._baseItem.itemClass;
-    let DefaultModel = this._baseItem.defaultModel;
+    let itemclass = this.baseItem.itemClass;
+    let DefaultModel = this.baseItem.defaultModel;
     itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
     DefaultModel = DefaultModel.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
 
@@ -439,33 +516,6 @@ export class ModuleItem extends ModuleObject {
     return undefined;
   }
 
-  /*getIcon(onLoad = null){
-
-    let baseClass = Global.kotor2DA.baseitems.rows[this.template.getFieldByLabel('BaseItem').Value]['itemclass'].toLowerCase();
-    let texVariantNode = this.template.getFieldByLabel('TextureVar');
-    let modelVariantNode = this.template.getFieldByLabel('ModelVariation');
-
-    let variant = 1;
-
-    if(texVariantNode != null)
-      variant = texVariantNode.Value;
-    else if(modelVariantNode != null)
-      variant = modelVariantNode.Value;
-
-    let file = 'erf.swpc_tex_gui://i'+baseClass+'_'+Utility.PadInt(variant, 3)+'.tpc';
-
-    let loader = new FileLoader({
-      file: file,
-      onLoad: (buffer) => {
-
-        let icon = new TPCObject({file: buffer});
-        if(typeof onLoad == 'function')
-          onLoad(icon);
-        
-      }
-    })
-  }*/
-
   getSpells(){
     let spells = [];
 
@@ -494,15 +544,15 @@ export class ModuleItem extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AddCost'))
       this.addCost = parseInt(this.template.getFieldByLabel('AddCost').getValue());
 
     if(this.template.RootNode.hasField('BaseItem')){
-      this.baseItem = this.template.getFieldByLabel('BaseItem').getValue();
-      this._baseItem = BaseItem.From2DA(this.baseItem);
+      this.baseItemId = this.template.getFieldByLabel('BaseItem').getValue();
+      this.baseItem = BaseItem.From2DA(this.baseItemId);
     }
 
     if(this.template.RootNode.hasField('Charges'))
@@ -627,8 +677,8 @@ export class ModuleItem extends ModuleObject {
       eDisguise.setAttachedObject(oCreature);
       oCreature.addEffect( eDisguise );
     }
-    if(PartyManager.party.indexOf(oCreature) >= 0){
-      InventoryManager.removeItem(this);
+    if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
+      GameState.InventoryManager.removeItem(this);
     }else{
       //oCreature.inventory.push(this);
     }
@@ -638,8 +688,8 @@ export class ModuleItem extends ModuleObject {
   onUnEquip(oCreature: ModuleCreature){
     console.log('ModuleItem.onUnEquip', oCreature, this);
     oCreature.removeEffectsByCreator(this);
-    if(PartyManager.party.indexOf(oCreature) >= 0){
-      InventoryManager.addItem(this);
+    if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
+      GameState.InventoryManager.addItem(this);
     }else{
       //oCreature.inventory.push(this);
     }
@@ -693,241 +743,6 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(0);
 
     return itemStruct;
-  }
-
-}
-
-export class ItemProperty {
-  template: any;
-  item: any;
-  propertyName: any;
-  subType: any;
-  costTable: any;
-  costValue: any;
-  upgradeType: number;
-  param1: any;
-  param1Value: any;
-  chanceAppear: any;
-  usesPerDay: any;
-  useable: any;
-
-  constructor(template: any, item: any){
-    this.template = template;
-    this.item = item;
-    this.initProperties();
-  }
-
-  getProperty(){
-    const _2DA = TwoDAManager.datatables.get('itempropdef');
-    if(_2DA){
-      return _2DA.rows[this.propertyName];
-    }
-  }
-
-  getPropertyName(){
-    const property = this.getProperty();
-    if(property){
-      if(property.name != '****'){
-        return TLKManager.GetStringById(property.name).Value;
-      }else{
-        return TLKManager.GetStringById(0).Value;
-      }
-    }
-    return new Error(`Invalid Item Property`);
-  }
-
-  getSubType(){
-    const property = this.getProperty();
-    if(property && property.subtyperesref != '****'){
-      const _2DA = TwoDAManager.datatables.get(property.subtyperesref.toLowerCase());
-      if(_2DA){
-        return _2DA.rows[this.subType];
-      }
-    }
-  }
-
-  getSubtypeName(){
-    const subType = this.getSubType();
-    if(subType){
-      if(subType.name != '****'){
-        return TLKManager.GetStringById(subType.name).Value;
-      }else{
-        return TLKManager.GetStringById(0).Value;
-      }
-    }
-    return new Error(`Invalid Item Property Sub Type`);
-  }
-
-  getCostTable(){
-    const iprp_costtable2DA = TwoDAManager.datatables.get('iprp_costtable');
-    if(iprp_costtable2DA){
-      const costTableName = iprp_costtable2DA.rows[this.costTable].name.toLowerCase();
-      if(costTableName){
-        const costtable2DA = TwoDAManager.datatables.get(costTableName);
-        if(costtable2DA){
-          return costtable2DA;
-        }
-      }
-    }
-  }
-
-  getCostTableRow(){
-    const costTable = this.getCostTable();
-    if(costTable){
-      return costTable.rows[this.costValue];
-    }
-    return undefined;
-  }
-
-  //Determine if the property requires an upgrade to use, or if it is always useable
-  isUseable(){
-    const upgrade_flag = (1 << this.upgradeType);
-    //If no upgrade is required or the upgrade is present on the item
-    if(this.upgradeType == -1 || ((this.item.upgrades & upgrade_flag) == upgrade_flag)){
-      return true;
-    }
-    return false;
-  }
-
-  is(property: any, subType: any){
-    if(typeof property != 'undefined' && typeof subType != 'undefined'){
-      return this.propertyName == property && this.subType == subType;
-    }else{
-      return this.propertyName == property;
-    }
-  }
-
-  costTableRandomCheck(){
-    let costTable = this.getCostTable();
-    //Random Cost Check
-    if(this.costValue == 0){
-      let rowCount = costTable.rows.length - 1;
-      let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
-      return costTable.rows[randomCostValue];
-    }
-    return this.getCostTableRow();
-  }
-
-  getValue(){
-    let costTable = this.getCostTable();
-    let costTableRow = this.getCostTableRow();
-    if(costTableRow){
-      switch(this.costTable){
-        case ModuleItemCostTable.Base1:
-
-        break;
-        case ModuleItemCostTable.Bonus:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.Melee:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.SpellUse:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-        break;
-        case ModuleItemCostTable.Damage:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-          }else{
-            return parseInt(costTableRow.label);
-          }
-        break;
-        case ModuleItemCostTable.Immune:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.value);
-        break;
-        case ModuleItemCostTable.DamageSoak:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.amount);
-        break;
-        case ModuleItemCostTable.DamageResist:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-          return parseInt(costTableRow.amount);
-        break;
-        case ModuleItemCostTable.DancingScimitar:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-        break;
-        case ModuleItemCostTable.Slots:
-          
-        break;
-        case ModuleItemCostTable.Monster_Cost:
-          //Random Cost Check
-          costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-            return CombatEngine.DiceRoll(parseInt(costTableRow.numdice), 'd'+costTableRow.die);
-          }
-        break;
-
-      }
-    }
-
-    return 0;
-  }
-
-  initProperties(){
-    if(this.template.RootNode.hasField('PropertyName'))
-      this.propertyName = this.template.RootNode.getFieldByLabel('PropertyName').getValue();
-    
-    if(this.template.RootNode.hasField('Subtype'))
-      this.subType = this.template.RootNode.getFieldByLabel('Subtype').getValue();
-
-    if(this.template.RootNode.hasField('CostTable'))
-      this.costTable = this.template.RootNode.getFieldByLabel('CostTable').getValue();
-
-    if(this.template.RootNode.hasField('CostValue'))
-      this.costValue = this.template.RootNode.getFieldByLabel('CostValue').getValue();
-
-    if(this.template.RootNode.hasField('Param1'))
-      this.param1 = this.template.RootNode.getFieldByLabel('Param1').getValue();
-
-    if(this.template.RootNode.hasField('Param1Value'))
-      this.param1Value = this.template.RootNode.getFieldByLabel('Param1Value').getValue();
-
-    if(this.template.RootNode.hasField('ChanceAppear'))
-      this.chanceAppear = this.template.RootNode.getFieldByLabel('ChanceAppear').getValue();
-
-    if(this.template.RootNode.hasField('UsesPerDay'))
-      this.usesPerDay = this.template.RootNode.getFieldByLabel('UsesPerDay').getValue();
-
-    if(this.template.RootNode.hasField('Useable'))
-      this.useable = this.template.RootNode.getFieldByLabel('Useable').getValue();
-
-    if(this.template.RootNode.hasField('UpgradeType'))
-      this.upgradeType = this.template.RootNode.getFieldByLabel('UpgradeType').getValue();
-  }
-
-  save(){
-    let propStruct = new GFFStruct(0);
-
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') ).setValue( this.propertyName == -1 ? 255 : this.propertyName);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue( this.subType == -1 ? 255 : this.subType);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') ).setValue( this.costTable == -1 ? 255 : this.costTable);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') ).setValue( this.costValue == -1 ? 255 : this.costValue);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') ).setValue( this.param1 == -1 ? 255 : this.param1);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') ).setValue( this.param1Value == -1 ? 255 : this.param1Value);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') ).setValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') ).setValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Usable') ).setValue( this.useable == -1 ? 255 : this.useable);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') ).setValue( this.upgradeType == -1 ? 255 : this.upgradeType);
-
-    return propStruct;
   }
 
 }

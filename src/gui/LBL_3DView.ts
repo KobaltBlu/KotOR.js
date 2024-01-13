@@ -1,8 +1,8 @@
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { LightManager } from "../managers";
+import type { LightManager } from "../managers";
 import { OdysseyModel3D } from "../three/odyssey";
-import { GUIControl } from "./GUIControl";
+import type { GUIControl } from "./GUIControl";
 
 /**
  * LBL_3DView class.
@@ -24,7 +24,7 @@ export class LBL_3DView {
   clearColor: THREE.Color;
   currentCamera: THREE.Camera;
   globalLight: THREE.AmbientLight;
-  lightManager: LightManager = new LightManager();
+  lightManager: LightManager = new GameState.LightManager();
   emitters: any = {};
   _emitters: any = {};
   group: { 
@@ -159,7 +159,7 @@ export class LBL_3DView {
     GameState.renderer.setRenderTarget(null);
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control instanceof GUIControl){
+    if(this.control){
       let material = this.control.getFill().material;
       if(material instanceof THREE.ShaderMaterial){
         material.uniforms.map.value = this.texture.texture;

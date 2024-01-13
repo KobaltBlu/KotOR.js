@@ -1,5 +1,5 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton } from "../../../gui";
-import { AutoPauseManager, ResolutionManager } from "../../../managers";
 import { InGamePause as K1_InGamePause } from "../../kotor/KOTOR";
 
 /**
@@ -31,15 +31,15 @@ export class InGamePause extends K1_InGamePause {
     return new Promise<void>((resolve, reject) => {
       resolve();
       this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
-        AutoPauseManager.Unpause();
+        GameState.AutoPauseManager.Unpause();
       });
     });
   }
 
   update(delta: number = 0) {
     super.update(delta);
-    this.tGuiPanel.extent.left = (ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 5;
-    this.tGuiPanel.extent.top = (-ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 45;
+    this.tGuiPanel.extent.left = (GameState.ResolutionManager.getViewportWidth() / 2) - (this.tGuiPanel.extent.width / 2) - 5;
+    this.tGuiPanel.extent.top = (-GameState.ResolutionManager.getViewportHeight() / 2) + (this.tGuiPanel.extent.height / 2) + 45;
     this.recalculatePosition();
   }
   

@@ -3,7 +3,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { AudioFile } from "./AudioFile";
 import * as path from "path";
 import { GameFileSystem } from "../utility/GameFileSystem";
-import { KEYManager } from "../managers";
+import { KEYManager } from "../managers/KEYManager";
 
 /**
  * AudioLoader class.

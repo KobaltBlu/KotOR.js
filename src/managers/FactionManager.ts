@@ -1,5 +1,5 @@
 import { CurrentGame } from "../CurrentGame";
-import type { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
+import type { ModuleCreature, ModuleObject } from "../module";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
 
@@ -10,9 +10,10 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { Faction } from "../engine/Faction";
 import { Reputation } from "../engine/Reputation";
 import { ReputationConstant } from "../enums/engine/ReputationConstant";
-import { PartyManager, TwoDAManager } from ".";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+import { TwoDAManager } from "./TwoDAManager";
 
 const blacklist = ['(Row Label)', '__index', 'label'];
 
@@ -44,7 +45,7 @@ export class FactionManager {
   static AddCreatureToFaction( creature: ModuleObject ){
     if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       FactionManager.RemoveCreatureFromFaction(creature);
-      if(creature.faction instanceof Faction){
+      if(creature.faction){
         creature.faction.addMember(creature as ModuleCreature);
       }
     }
@@ -53,7 +54,7 @@ export class FactionManager {
   static RemoveCreatureFromFaction( creature: ModuleObject){
     if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       let faction = creature.faction;
-      if(faction instanceof Faction){
+      if(faction){
         faction.removeMember(creature as ModuleCreature);
       }
     }
@@ -62,10 +63,10 @@ export class FactionManager {
   static GetFactionLeader( creature: ModuleObject ){
     if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
       if(creature.faction.id == 0){
-        return PartyManager.party[0];
+        return GameState.PartyManager.party[0];
       }else{
         let faction = FactionManager.GetCreatureFaction(creature);
-        if(faction instanceof Faction){
+        if(faction){
           return faction.getStrongestMember();
         }
       }
@@ -102,7 +103,7 @@ export class FactionManager {
       return false;
 
     value = Math.max(0, Math.min(value, ReputationConstant.FRIENDLY));
-    if(oSource.faction instanceof Faction && oTarget.faction instanceof Faction){
+    if(oSource.faction && oTarget.faction){
       oSource.faction.setReputation(oTarget.faction.id, value);
       return true;
     }
@@ -120,7 +121,7 @@ export class FactionManager {
     value = Math.max(-100, Math.min(value, 100));
     let fac1 = oSource.faction;
     let fac2 = oTarget.faction;
-    if(fac1 instanceof Faction && fac2 instanceof Faction){
+    if(fac1 && fac2){
       fac1.adjustReputation(oTarget.faction.id, value);
       return true;
     }
@@ -147,7 +148,7 @@ export class FactionManager {
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
-    if(oSource.faction instanceof Faction){
+    if(oSource.faction){
       let reputation = oSource.faction.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
@@ -169,7 +170,7 @@ export class FactionManager {
       let twoDA_factions = repute2DA.rows;
       for(let i = 0, len = repute2DA.RowCount; i < len; i++){
         let faction = Faction.From2DARow(twoDA_factions[i]);
-        if(faction instanceof Faction){
+        if(faction){
           FactionManager.factions.set(faction.id, faction);
           faction.initReputations(ReputationConstant.FRIENDLY);
         }
@@ -226,7 +227,7 @@ export class FactionManager {
       for(let i = 0, len = factionList.length; i < len; i++){
         let factionStruct = factionList[i];
         let faction = Faction.FromStruct(factionStruct);
-        if(faction instanceof Faction){
+        if(faction){
           FactionManager.factions.set(faction.id, faction);
         }
       }
@@ -243,7 +244,7 @@ export class FactionManager {
           let reputation = Reputation.FromStruct(repStruct);
           if(reputation instanceof Reputation){
             let faction = FactionManager.factions.get(reputation.id1);
-            if(faction instanceof Faction){
+            if(faction){
               faction.setReputation(reputation.id2, reputation.reputation);
             }
           }

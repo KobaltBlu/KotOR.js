@@ -1,7 +1,6 @@
 export * from "./Action";
 export * from "./ActionQueue";
 export * from "./ActionParameter";
-
 export * from "./ActionCastSpell";
 export * from "./ActionCloseDoor";
 export * from "./ActionDialogObject";
@@ -22,7 +21,9 @@ export * from "./ActionPlayAnimation";
 export * from "./ActionResumeDialog";
 export * from "./ActionSetCommandable";
 export * from "./ActionTakeItem";
+export * from "./ActionUnequipItem";
 export * from "./ActionUnlockObject";
 export * from "./ActionUseObject";
 export * from "./ActionWait";
 export * from "./ActionCombat";
+export * from "./ActionFactory";

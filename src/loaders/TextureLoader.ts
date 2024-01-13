@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import * as path from "path";
-import { GameState } from '../GameState';
 import { AsyncLoop } from '../utility/AsyncLoop';
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { TextureType } from '../enums/loaders/TextureType';
@@ -8,7 +7,7 @@ import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueu
 import { TXIBlending } from '../enums/graphics/txi/TXIBlending';
 import { TPCLoader } from './TPCLoader';
 import { TGALoader } from './TGALoader';
-import { OdysseyCompressedTexture, OdysseyEmitter3D, OdysseyTexture } from '../three/odyssey';
+import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
 import { GameEngineType } from '../enums/engine';
@@ -34,7 +33,8 @@ export class TextureLoader {
   static particles: any = {};
   static queue: ITextureLoaderQueuedRef[] = [];
   static Anisotropy = 8;
-  static TextureQuality = 2;
+
+  static GameKey: GameEngineType;
   
   static onAnisotropyChanged = () => {
     TextureLoader.textures.forEach( tex => {
@@ -88,10 +88,10 @@ export class TextureLoader {
   static async LoadOverride(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
     const dir = 'Override';
 
-    if(!GameState.Flags.EnableOverride){
+    /*if(!GameState.Flags.EnableOverride){
       //Skip the override check and pass back a null value
       return undefined;
-    }
+    }*/
 
     const tpc_exists = await GameFileSystem.exists(path.join(dir, resRef+'.tpc'));
     if (tpc_exists) {
@@ -154,7 +154,7 @@ export class TextureLoader {
       return TextureLoader.lightmaps[resRef];
     }
     
-    if(GameState.GameKey == GameEngineType.TSL){
+    if(TextureLoader.GameKey == GameEngineType.TSL){
       const lightmap = await TextureLoader.tpcLoader.fetch(resRef);
       if(!lightmap){ return undefined; }
 
@@ -380,7 +380,7 @@ export class TextureLoader {
       case TextureType.PARTICLE:
         let particle_texture = await TextureLoader.Load(tex.name, TextureLoader.CACHE);
         if(!!particle_texture){
-          if(tex.partGroup instanceof OdysseyEmitter3D){
+          if(tex.partGroup?.type == 'OdysseyEmitter'){
             tex.partGroup.material.uniforms.map.value = particle_texture;
             (tex.partGroup.material as any).map = particle_texture;
             tex.partGroup.material.depthWrite = false;
@@ -662,3 +662,5 @@ export class TextureLoader {
 
 
 }
+
+TGALoader.TextureLoader = TextureLoader;

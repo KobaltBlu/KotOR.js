@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { OdysseyModelAnimation, OdysseyModelNode, OdysseyModel } from ".";
 import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModelNode } from "./OdysseyModelNode";
+import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
+import type { OdysseyModel } from "./OdysseyModel";
 
 /**
  * OdysseyModelAnimationNode class.

@@ -5,7 +5,6 @@ import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
 import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
-import { PartyManager, TwoDAManager } from "../../../managers";
 
 /**
  * MenuCharacter class.
@@ -153,15 +152,15 @@ export class MenuCharacter extends K1_MenuCharacter {
   show() {
     super.show();
     this.recalculatePosition();
-    this.updateCharacterPortrait(PartyManager.party[0]);
-    this.updateCharacterStats(PartyManager.party[0]);
+    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+    this.updateCharacterStats(GameState.PartyManager.party[0]);
     
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
-    for (let i = 0; i < PartyManager.party.length; i++) {
-      let partyMember = PartyManager.party[i];
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      let partyMember = GameState.PartyManager.party[i];
       let portraitId = partyMember.getPortraitId();
-      let portrait = TwoDAManager.datatables.get('portraits')?.rows[portraitId];
+      let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       if (!i) {
         
       } else {

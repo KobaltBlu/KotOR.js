@@ -1,6 +1,6 @@
+import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { Action } from "./Action";
 
 /**
@@ -25,7 +25,7 @@ export class ActionDoCommand extends Action {
 
   update(delta: number = 0): ActionStatus {
     let script = this.getParameter(0);
-    if(script instanceof NWScriptInstance){
+    if(script){
       script.setCaller(this.owner);
       script.runScript({
         seek: script.offset

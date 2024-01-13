@@ -35,6 +35,9 @@ import {
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScript {
+
+  static NWScriptInstance: typeof NWScriptInstance = NWScriptInstance;
+  static NWScriptStack: typeof NWScriptStack = NWScriptStack;
   
   name: string;
 

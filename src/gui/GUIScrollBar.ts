@@ -1,5 +1,4 @@
-import { GameMenu, GUIControl, GUIListBox } from ".";
-import { GFFStruct } from "../resource/GFFStruct";
+import type { GFFStruct } from "../resource/GFFStruct";
 
 import * as THREE from "three";
 import { TextureLoader } from "../loaders";
@@ -7,7 +6,10 @@ import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { TextureType } from "../enums/loaders/TextureType";
 import { Mouse } from "../controls/Mouse";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers";
+import { ResolutionManager } from "../managers/ResolutionManager";
+import { GUIControl } from "./GUIControl";
+import type { GUIListBox } from "./GUIListBox";
+import type { GameMenu } from "./GameMenu";
 
 /**
  * GUIScrollBar class.
@@ -426,7 +428,7 @@ export class GUIScrollBar extends GUIControl{
   }
 
   directionalNavigate(direction = ''){
-    if(this.list instanceof GUIListBox){
+    if(this.list){
       this.list.directionalNavigate(direction);
     }
   }

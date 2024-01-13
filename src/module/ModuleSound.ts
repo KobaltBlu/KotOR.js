@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { AudioEngine } from "../audio/AudioEngine";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -8,9 +8,10 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleObjectManager } from "../managers";
+// import { ModuleObjectManager } from "../managers";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { GameState } from "../GameState";
 
 /**
 * ModuleSound class.
@@ -230,7 +231,7 @@ export class ModuleSound extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('Active'))

@@ -5,17 +5,16 @@ import * as path from "path";
 import * as THREE from "three";
 import EngineLocation from "../engine/EngineLocation";
 import { CurrentGame } from "../CurrentGame";
-import { TwoDAManager } from "./TwoDAManager";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { ModuleCreature, ModuleObject } from "../module";
+import { ModuleObject } from "../module/ModuleObject";
+import { ModuleCreature } from "../module/ModuleCreature";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../loaders";
-import { ModuleObjectManager } from "./ModuleObjectManager";
 import { GameEngineType } from "../enums/engine";
 
 export interface CurrentMember {
@@ -159,10 +158,10 @@ export class PartyManager {
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
       let pm = PartyManager.NPCS[nID].template;
       if(pm.RootNode.hasField('PortraitId')){
-        const portrait2DA = TwoDAManager.datatables.get('portraits');
+        const portrait2DA = GameState.TwoDAManager.datatables.get('portraits');
         const portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
         if(portrait2DA.rows[portraitId]){
-          return TwoDAManager.datatables.get('portraits').rows[portraitId].baseresref;
+          return GameState.TwoDAManager.datatables.get('portraits').rows[portraitId].baseresref;
         }
       }
     }
@@ -179,7 +178,7 @@ export class PartyManager {
   }
 
   static GetPortraitByResRef( resref = '' ){
-    const portrait2DA = TwoDAManager.datatables.get('portraits');
+    const portrait2DA = GameState.TwoDAManager.datatables.get('portraits');
     if(portrait2DA instanceof TwoDAObject){
       for(let i = 0, len = portrait2DA.RowCount; i < len; i++){
         if(portrait2DA.rows[i].baseresref.toLowerCase() == resref.toLowerCase()){
@@ -378,7 +377,7 @@ export class PartyManager {
   static async LoadPartyMember(nIdx = 0){
     let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     const template = npc.template;
-    template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
+    template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     let partyMember = new ModuleCreature(template);
 
     let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
@@ -637,7 +636,7 @@ export class PartyManager {
   public static ResetPlayerTemplate(): GFFObject {
     let pTPL = new GFFObject();
 
-    pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( ModuleObjectManager.GetNextPlayerId() );
+    pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     pTPL.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(GameState.GameKey == GameEngineType.TSL ? 134 : 177);
     pTPL.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(GameState.GameKey == GameEngineType.TSL ? 'Leia Organa' : 'Luke Skywalker');
     pTPL.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);

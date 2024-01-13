@@ -2,8 +2,12 @@ import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "../../enums/resource/GFFDataType";
 import { GFFField } from "../../resource/GFFField";
 import { GFFStruct } from "../../resource/GFFStruct";
-import { EventActivateItem, EventConversation, EventSpellCastAt, EventUserDefined } from ".";
-import { ModuleObjectManager } from "../../managers";
+import { GameState } from "../../GameState";
+import { EventConversation } from "./EventConversation";
+import { EventSpellCastAt } from "./EventSpellCastAt";
+import { EventUserDefined } from "./EventUserDefined";
+import { EventActivateItem } from "./EventActivateItem";
+// import { ModuleObjectManager } from "../../managers";
 
 /**
  * NWScriptEvent class.
@@ -87,70 +91,7 @@ export class NWScriptEvent {
   }
 
   getObject(nOffset = 0){
-    return (typeof this.objectList[nOffset] === 'object') ? this.objectList[nOffset] : ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
-  }
-
-  static EventFromStruct( struct: GFFStruct ){
-    if(struct instanceof GFFStruct){
-      let event = undefined;
-
-      let eType = struct.getFieldByLabel('EventType').getValue();
-
-      let intList = [];
-      let floatList = [];
-      let stringList = [];
-      let objectList = [];
-
-      let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
-        intList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
-      }
-
-      tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
-        floatList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
-      }
-
-      tmpList = struct.getFieldByLabel('StringList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
-        stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
-      }
-
-      tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
-        objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
-      }
-
-      //Initialize the event object based on the type
-      switch(eType){
-        case NWScriptEventType.EventConversation: //EventConversation
-          event = new EventConversation();
-        break;
-        case NWScriptEventType.EventSpellCastAt: //EventSpellCastAt
-          event = new EventSpellCastAt();
-        break;
-        case NWScriptEventType.EventUserDefined: //EventUserDefined
-          event = new EventUserDefined();
-        break;
-        case NWScriptEventType.EventActivateItem: //EventActivateItem
-          event = new EventActivateItem();
-        break;
-      }
-
-      if(event instanceof NWScriptEvent){
-        event.setIntList(intList);
-        event.setFloatList(floatList);
-        event.setStringList(stringList);
-        event.setObjectList(objectList);
-        console.log('NWScriptEvent', event, struct);
-      }else{
-        console.log('NWScriptEvent', event, struct);
-      }
-
-      return event;
-
-    }
-
+    return (typeof this.objectList[nOffset] === 'object') ? this.objectList[nOffset] : GameState.ModuleObjectManager.GetObjectById(this.objectList[nOffset]);
   }
 
   save(){

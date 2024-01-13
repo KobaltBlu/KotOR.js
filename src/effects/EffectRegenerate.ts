@@ -1,7 +1,7 @@
-import { EffectHeal, EffectHealForcePoints, GameEffect } from ".";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { GameState } from "../GameState";
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectRegenerate class.
@@ -44,7 +44,7 @@ export class EffectRegenerate extends GameEffect {
       //tick regen
       if(this.getInt(4) == 54){
         //apply force heal
-        const eHealFP = new EffectHealForcePoints();
+        const eHealFP = new GameState.GameEffectFactory.EffectHealForcePoints();
         eHealFP.setCreator(this.getCreator());
         eHealFP.setSpellId(this.getSpellId());
         eHealFP.setSubTypeUnMasked(GameEffectDurationType.INSTANT | this.getSubTypeUnMasked() & GameEffectDurationType.MASK);
@@ -57,7 +57,7 @@ export class EffectRegenerate extends GameEffect {
         eHealFP.setSkipOnLoad(true);
       }else{
         //apply heal
-        const eHeal = new EffectHeal();
+        const eHeal = new GameState.GameEffectFactory.EffectHeal();
         eHeal.setCreator(this.getCreator());
         eHeal.setSpellId(this.getSpellId());
         eHeal.setSubTypeUnMasked(GameEffectDurationType.INSTANT | this.getSubTypeUnMasked() & GameEffectDurationType.MASK);

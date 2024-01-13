@@ -1,5 +1,6 @@
-import { GFFStruct } from "../resource/GFFStruct";
-import { GameMenu, GUIControl } from ".";
+import type { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /**

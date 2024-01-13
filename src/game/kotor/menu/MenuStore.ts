@@ -1,8 +1,10 @@
+import { GameState } from "../../../GameState";
+import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
-import { InventoryManager, PartyManager, TLKManager } from "../../../managers";
-import { ModuleCreature, ModuleItem, ModuleStore } from "../../../module";
+import type { ModuleCreature, ModuleItem, ModuleStore } from "../../../module";
+import { BitWise } from "../../../utility/BitWise";
 
 /**
  * MenuStore class.
@@ -75,18 +77,18 @@ export class MenuStore extends GameMenu {
 
   show() {
     super.show();
-    if (this.storeObject instanceof ModuleStore) {
+    if (BitWise.InstanceOfObject(this.storeObject, ModuleObjectType.ModuleStore)) {
       this.LB_DESCRIPTION.clearItems();
       this.LB_DESCRIPTION.hide();
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
       if (this.sellMode) {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41937).Value);
-        this.LBL_COST.setText(TLKManager.GetStringById(41945).Value);
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32130).Value);
-        this.BTN_Accept.setText(TLKManager.GetStringById(32130).Value);
+        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41937).Value);
+        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41945).Value);
+        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
+        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        let inv = InventoryManager.getSellableInventory();
+        let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], (item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
@@ -99,10 +101,10 @@ export class MenuStore extends GameMenu {
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
         this.LB_INVITEMS.show();
       } else {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41938).Value);
-        this.LBL_COST.setText(TLKManager.GetStringById(41943).Value);
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32132).Value);
-        this.BTN_Accept.setText(TLKManager.GetStringById(32132).Value);
+        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41938).Value);
+        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41943).Value);
+        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
+        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
@@ -117,7 +119,7 @@ export class MenuStore extends GameMenu {
         this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
         this.LB_SHOPITEMS.show();
       }
-      this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
+      this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
       TextureLoader.LoadQueue();
     } else {
       this.close();

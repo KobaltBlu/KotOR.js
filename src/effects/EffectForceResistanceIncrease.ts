@@ -1,4 +1,4 @@
-import { GameEffect } from ".";
+import { GameEffect } from "./GameEffect";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 
 /**
@@ -10,7 +10,7 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class EffectForceResistanceInecrease extends GameEffect {
+export class EffectForceResistanceIncrease extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectForceResistanceIncrease;

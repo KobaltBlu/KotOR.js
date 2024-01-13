@@ -25,3 +25,4 @@ export * from "./EventSpellImpact";
 export * from "./EventSummonCreature";
 export * from "./EventTimedEvent";
 export * from "./EventUnlockObject";
+export * from "./GameEventFactory";

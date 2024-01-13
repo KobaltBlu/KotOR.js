@@ -58,3 +58,4 @@ export * from "./EffectSpellImmunity";
 export * from "./EffectTemporaryForce";
 export * from "./EffectTemporaryHitPoints";
 export * from "./EffectVisualEffect";
+export * from "./GameEffectFactory";

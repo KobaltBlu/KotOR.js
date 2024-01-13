@@ -1,7 +1,8 @@
-import { OdysseyModel, OdysseyModelNode } from ".";
 import { OdysseyModelEmitterFlag } from "../enums/odyssey/OdysseyModelEmitterFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyModelEmitterFlags } from "../interface/odyssey/IOdysseyModelEmitterFlags";
+import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelNode } from "./OdysseyModelNode";
 
 /**
  * OdysseyModelNodeEmitter class.

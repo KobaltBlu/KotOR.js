@@ -1,5 +1,5 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox } from "../../../gui";
-import { ResolutionManager, TwoDAManager } from "../../../managers";
 import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
 import * as THREE from "three";
 
@@ -31,8 +31,8 @@ export class InGameDialog extends K1_InGameDialog {
 
       this.LBL_MESSAGE.setText('');
 
-      this.LB_REPLIES.extent.left = -(ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
-      this.LB_REPLIES.extent.top = (ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
+      this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
+      this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
       this.LB_REPLIES.padding = 5;
@@ -111,7 +111,7 @@ export class InGameDialog extends K1_InGameDialog {
         };
       }
     } else if (index >= 10000) {
-      const animations2DA = TwoDAManager.datatables.get('animations');
+      const animations2DA = GameState.TwoDAManager.datatables.get('animations');
       switch (index) {
       case 30:
         return animations2DA?.rows[18];

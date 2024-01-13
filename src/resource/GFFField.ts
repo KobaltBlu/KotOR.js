@@ -1,6 +1,5 @@
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CExoLocString } from "./CExoLocString";
-import { GFFObject } from "./GFFObject";
 import { GFFStruct } from "./GFFStruct";
 import * as THREE from "three";
 import isBuffer from "is-buffer";
@@ -307,7 +306,33 @@ export class GFFField {
   }
 
   toJSON(){
-    return GFFObject.FieldToJSON(this);
+    const field = {
+      type: this.getType(),
+      value: this.getValue(),
+      structs: [] as any[]
+    };
+
+    switch (this.getType()) {
+      case GFFDataType.CEXOLOCSTRING:
+        field.value = this.getCExoLocString();
+      break;
+      case GFFDataType.VOID:
+        field.value = this.getVoid();
+      break;
+      case GFFDataType.ORIENTATION:
+        field.value = this.getOrientation();
+      break;
+      case GFFDataType.VECTOR:
+        field.value = this.getVector();
+      break;
+    }
+
+    const children = this.getChildStructs();
+    for(let i = 0; i < children.length; i++){
+      field.structs[i] = children[i].toJSON();
+    }
+
+    return field;
   }
 
 }

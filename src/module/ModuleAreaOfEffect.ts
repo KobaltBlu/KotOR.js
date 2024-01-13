@@ -1,13 +1,13 @@
-import { Action } from "../actions";
-import { GameEffect } from "../effects";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import { AreaOfEffectShape } from "../enums/module/AreaOfEffectShape";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
+import { GameState } from "../GameState";
 
 /**
  * ModuleAreaOfEffect class.
@@ -147,7 +147,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
       if(this.template.RootNode.hasField('ActionList')){
         let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
         for(let i = 0, len = actionStructs.length; i < len; i++){
-          let action = Action.FromStruct(actionStructs[i]);
+          let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
           if(action){
             this.actionQueue.add(action);
           }
@@ -176,7 +176,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     if(this.template.RootNode.hasField('EffectList')){
       let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0, len = effects.length; i < len; i++){
-        let effect = GameEffect.EffectFromStruct(effects[i]);
+        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();

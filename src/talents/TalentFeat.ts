@@ -1,9 +1,12 @@
-import { ActionType } from "../enums/actions/ActionType";
+import { EffectACDecrease, EffectAttackDecrease } from "../effects";
+import { ModuleObjectType, TalentObjectType } from "../enums";
+import { GameEffectDurationType } from "../enums/effects";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { TwoDAManager } from "../managers";
-import { ModuleObject } from "../module";
+import { TwoDAManager } from "../managers/TwoDAManager";
+import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import { BitWise } from "../utility/BitWise";
 import { TalentObject } from "./TalentObject";
 
 /**
@@ -79,7 +82,7 @@ export class TalentFeat extends TalentObject {
 
   constructor( id = 0){
     super(id);
-    this.type = 1;
+    this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentFeat;
 
     //Merge the feat properties from the feat.2da row with this feat
     if(TwoDAManager.datatables.get('feat').rows[this.id]){
@@ -157,6 +160,78 @@ export class TalentFeat extends TalentObject {
     }
 
     return 1;
+  }
+  
+  impactCaster(object: ModuleObject){
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+
+    let armorClassPenalty = 0;
+    let armorClassPenaltyDuration = 3000;
+    let attackPenalty = 0;
+    let attackPenatlyDuration = 3000;
+
+    switch(this.id){
+      case 11: //FLURRY
+      case 30: //RAPID SHOT
+        armorClassPenalty = 4;
+        attackPenalty = 4;
+      break;
+      case 91: //IMPROVED FLURRY
+      case 92: //IMPROVED RAPID SHOT
+        armorClassPenalty = 2;
+        attackPenalty = 2;
+      break;
+      case 51: //MASTER FLURRY
+      case 21: //MASTER RAPID SHOT
+        armorClassPenalty = 1;
+        attackPenalty = 1;
+      break;
+      case 28: //CRITICAL STRIKE
+      case 19: //IMPROVED CRITICAL STRIKE
+      case 81: //MASTER CRITICAL STRIKE
+        armorClassPenalty = 5;
+      break;
+      case 8: //POWER ATTACK
+        attackPenalty = 3;
+      break;
+      case 17: //IMPROVED POWER ATTACK
+        attackPenalty = 3;
+      break;
+      case 83: //MASTER POWER ATTACK
+        attackPenalty = 3;
+      break;
+      case 29: //POWER BLAST
+        attackPenalty = 3;
+      break;
+      case 18: //IMPROVED POWER BLAST
+        attackPenalty = 3;
+      break;
+      case 82: //MASTER POWER BLAST
+        attackPenalty = 3;
+      break;
+    }
+
+    if(armorClassPenalty > 0){
+      const acDecreaseEffect = new EffectACDecrease();
+      acDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
+      acDecreaseEffect.setDuration(armorClassPenaltyDuration);
+      acDecreaseEffect.setInt(1, armorClassPenalty);
+      object.addEffect(acDecreaseEffect);
+    }
+
+    if(attackPenalty > 0){
+      const attackDecreaseEffect = new EffectAttackDecrease();
+      attackDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
+      attackDecreaseEffect.setDuration(attackPenatlyDuration);
+      attackDecreaseEffect.setInt(0, attackPenalty);
+      object.addEffect(attackDecreaseEffect);
+    }
+
+  }
+
+  impactTarget(object: ModuleObject){
+    // if(!(object instanceof ModuleCreature)) return;
+
   }
 
   static From2DA( object: any ){

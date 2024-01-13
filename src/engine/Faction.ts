@@ -1,10 +1,11 @@
-import { FactionManager } from "../managers";
+// import { FactionManager } from "../managers";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "../module";
 import { Reputation } from "./Reputation";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ReputationConstant } from "../enums/engine/ReputationConstant";
+import { GameState } from "../GameState";
 
 /**
  * Faction class.
@@ -44,7 +45,7 @@ export class Faction {
 
   initReputations( value = ReputationConstant.FRIENDLY ){
     this.reputations = [];
-    for(let i = 0; i < FactionManager.FACTION_COUNT; i++){
+    for(let i = 0; i < GameState.FactionManager.FACTION_COUNT; i++){
       this.reputations[i] = new Reputation(this.id, i, value);
     }
   }

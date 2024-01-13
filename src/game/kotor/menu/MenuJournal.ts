@@ -1,6 +1,7 @@
+import { GameState } from "../../../GameState";
+import { JournalEntry } from "../../../engine/JournalEntry";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { JournalEntry, TLKManager, JournalManager } from "../../../managers";
 
 enum JournalSort {
   RECIEVED = 0,
@@ -114,36 +115,36 @@ export class MenuJournal extends GameMenu {
   GetQuestModeBTNLabel(): string {
     switch(this.mode){
       case JournalQuestMode.ACTIVE:
-        return TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value;
+        return GameState.TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value;
       case JournalQuestMode.COMPLETED:
-        return TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value;
+        return GameState.TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value;
     }
   }
 
   GetSortModeBTNLabel(): string {
     switch(this.sort){
       case JournalSort.RECIEVED:
-        return TLKManager.GetStringById(STRREF_BY_NAME).Value;
+        return GameState.TLKManager.GetStringById(STRREF_BY_NAME).Value;
       case JournalSort.NAME:
-        return TLKManager.GetStringById(STRREF_BY_PRIORITY).Value;
+        return GameState.TLKManager.GetStringById(STRREF_BY_PRIORITY).Value;
       case JournalSort.PRIORITY:
-        return TLKManager.GetStringById(STRREF_BY_PLANET).Value;
+        return GameState.TLKManager.GetStringById(STRREF_BY_PLANET).Value;
       case JournalSort.PLANET:
-        return TLKManager.GetStringById(STRREF_BY_RECIEVED).Value;
+        return GameState.TLKManager.GetStringById(STRREF_BY_RECIEVED).Value;
       break;
     }
   }
 
   GetMenuTitle(): string {
     let questModeLabel = (
-      this.mode == JournalQuestMode.ACTIVE ? TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value :
-      this.mode == JournalQuestMode.COMPLETED ? TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value : ''
+      this.mode == JournalQuestMode.ACTIVE ? GameState.TLKManager.GetStringById(STRREF_MODE_ACTIVE).Value :
+      this.mode == JournalQuestMode.COMPLETED ? GameState.TLKManager.GetStringById(STRREF_MODE_COMPLETED).Value : ''
     );
     let sortModeLabel = (
-      this.sort == JournalSort.RECIEVED ? TLKManager.GetStringById(STRREF_BY_RECIEVED).Value :
-      this.sort == JournalSort.NAME ? TLKManager.GetStringById(STRREF_BY_NAME).Value :
-      this.sort == JournalSort.PRIORITY ? TLKManager.GetStringById(STRREF_BY_PRIORITY).Value :
-      this.sort == JournalSort.PLANET ? TLKManager.GetStringById(STRREF_BY_PLANET).Value : ''
+      this.sort == JournalSort.RECIEVED ? GameState.TLKManager.GetStringById(STRREF_BY_RECIEVED).Value :
+      this.sort == JournalSort.NAME ? GameState.TLKManager.GetStringById(STRREF_BY_NAME).Value :
+      this.sort == JournalSort.PRIORITY ? GameState.TLKManager.GetStringById(STRREF_BY_PRIORITY).Value :
+      this.sort == JournalSort.PLANET ? GameState.TLKManager.GetStringById(STRREF_BY_PLANET).Value : ''
     );
 
     return `${questModeLabel} - ${sortModeLabel}`;
@@ -161,7 +162,7 @@ export class MenuJournal extends GameMenu {
 
     this.LB_ITEMS.clearItems();
     this.LBL_ITEM_DESCRIPTION.clearItems();
-    const entries = JournalManager.Entries;
+    const entries = GameState.JournalManager.Entries;
     for(let i = 0; i < entries.length; i++){
       this.LB_ITEMS.addItem(entries[i]);
     }

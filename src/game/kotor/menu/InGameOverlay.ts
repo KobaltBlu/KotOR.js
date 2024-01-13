@@ -6,13 +6,13 @@ import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../
 import { TextureLoader } from "../../../loaders";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
-import { ModuleCreature, ModuleObject, ModuleRoom } from "../../../module";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { SSFType } from "../../../enums/resource/SSFType";
 import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
-import { AutoPauseManager, PartyManager, CursorManager, TwoDAManager, ResolutionManager } from "../../../managers";
+import { BitWise } from "../../../utility/BitWise";
+import { ModuleObjectType } from "../../../enums";
 
 /**
  * InGameOverlay class.
@@ -250,9 +250,9 @@ export class InGameOverlay extends GameMenu {
         e.stopPropagation();
 
         if(GameState.State == EngineState.PAUSED){
-          AutoPauseManager.Unpause();
+          GameState.AutoPauseManager.Unpause();
         }else{
-          AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
       });
@@ -267,7 +267,7 @@ export class InGameOverlay extends GameMenu {
       });
 
       this.BTN_CHAR1.addEventListener('click', (e: any) => {
-        if(PartyManager.party[0].canLevelUp()){
+        if(GameState.PartyManager.party[0].canLevelUp()){
           this.manager.MenuCharacter.open();
         }else{
           this.manager.MenuEquipment.open();
@@ -275,31 +275,31 @@ export class InGameOverlay extends GameMenu {
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
           break;
         }
       });
 
       this.BTN_CHAR3.addEventListener('click', (e: any) => {
-        PartyManager.party.unshift(PartyManager.party.splice(1, 1)[0]);
+        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
           break;
           case 3:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
           break;
           default:
-            PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
+            GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
           break;
         }
       });
@@ -313,7 +313,7 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_QUEUE0.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
+        // GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e: any) => {
@@ -443,10 +443,10 @@ export class InGameOverlay extends GameMenu {
       this.getControlByName('LBL_BACK' + (nth + 1))?.show();
       this.getControlByName('PB_FORCE' + (nth + 1))?.show();
       this.getControlByName('PB_VIT' + (nth + 1))?.show();
-      if (!GameState.module.area.miniGame && PartyManager.party[nth]) {
+      if (!GameState.module.area.miniGame && GameState.PartyManager.party[nth]) {
         switch (nth) {
         case 0:
-          if (PartyManager.party[nth].canLevelUp()) {
+          if (GameState.PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP1').pulsing = true;
             this.getControlByName('LBL_LEVELUP1')?.show();
           } else {
@@ -454,7 +454,7 @@ export class InGameOverlay extends GameMenu {
           }
           break;
         case 1:
-          if (PartyManager.party[nth].canLevelUp()) {
+          if (GameState.PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP3').pulsing = true;
             this.getControlByName('LBL_LEVELUP3')?.show();
           } else {
@@ -462,7 +462,7 @@ export class InGameOverlay extends GameMenu {
           }
           break;
         case 2:
-          if (PartyManager.party[nth].canLevelUp()) {
+          if (GameState.PartyManager.party[nth].canLevelUp()) {
             this.getControlByName('LBL_LEVELUP2').pulsing = true;
             this.getControlByName('LBL_LEVELUP2')?.show();
           } else {
@@ -485,13 +485,13 @@ export class InGameOverlay extends GameMenu {
   }
 
   _canShowTargetUI() {
-    if (CursorManager.selectedObject instanceof ModuleCreature && CursorManager.selectedObject.isDead())
+    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
     return (
       !this.manager.MenuContainer.bVisible && 
-      CursorManager.reticle2.visible && 
-      CursorManager.selectedObject instanceof ModuleObject && 
-      !(CursorManager.selectedObject instanceof ModuleRoom)
+      GameState.CursorManager.reticle2.visible && 
+      BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
+      !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
   }
 
@@ -543,13 +543,13 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIPanels() {
     if (this._canShowTargetUI()) {
-      if (CursorManager.selectedObject instanceof ModuleCreature) {
-        if (CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+      if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
+        if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
           this.PB_HEALTH.setFillTextureName('enemy_bar');
           TextureLoader.Load('enemy_bar').then((map: OdysseyTexture) => {
             this.PB_HEALTH.setFillTexture(map);
           });
-        } else if (!CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
+        } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
           this.PB_HEALTH.setFillTextureName('friend_bar');
           TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
             this.PB_HEALTH.setFillTexture(map);
@@ -563,26 +563,26 @@ export class InGameOverlay extends GameMenu {
           });
         }
       }
-      if (this.manager.InGameOverlay.LBL_NAME.text.text != CursorManager.selectedObject.getName()) {
-        this.LBL_NAME.setText(CursorManager.selectedObject.getName(), 25);
+      if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
+        this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
       }
-      let health = 100 * Math.min(Math.max(CursorManager.selectedObject.getHP() / CursorManager.selectedObject.getMaxHP(), 0), 1);
+      let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
       if (health > 100)
         health = 100;
       this.PB_HEALTH.setProgress(health);
-      let maxBoundsX = ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
-      let maxBoundsX2 = ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
+      let maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
+      let maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
       let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
       let pos = new THREE.Vector3();
-      if (CursorManager.selectedObject instanceof ModuleCreature) {
-        pos.copy(CursorManager.selectedObject.position);
+      if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
+        pos.copy(GameState.CursorManager.selectedObject.position);
         pos.z += 2;
       } else {
-        pos = pos.setFromMatrixPosition(CursorManager.reticle2.matrixWorld);
+        pos = pos.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
       }
       pos.project(GameState.currentCamera);
-      const widthHalf = ResolutionManager.getViewportWidth() / 2;
-      const heightHalf = ResolutionManager.getViewportHeight() / 2;
+      const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
+      const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
       pos.x = pos.x * widthHalf;
       pos.y = -(pos.y * heightHalf);
       pos.z = 0;
@@ -687,7 +687,7 @@ export class InGameOverlay extends GameMenu {
     if (!GameState.module.area.miniGame) {
       const oPC = GameState.getCurrentPlayer();
       ActionMenuManager.SetPC(oPC);
-      ActionMenuManager.SetTarget(CursorManager.selectedObject);
+      ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
       ActionMenuManager.UpdateMenuActions();
       this.UpdateTargetUIPanels();
       this.UpdateSelfUIPanels();
@@ -701,10 +701,10 @@ export class InGameOverlay extends GameMenu {
       this.TogglePartyMember(1, false);
       this.TogglePartyMember(2, false);
       
-      for (let i = 0; i < PartyManager.party.length; i++) {
-        let partyMember = PartyManager.party[i];
+      for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+        let partyMember = GameState.PartyManager.party[i];
         let portraitId = partyMember.getPortraitId();
-        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
         let id = i;
         switch (i) {
         case 1:
@@ -803,16 +803,16 @@ export class InGameOverlay extends GameMenu {
   }
 
   triggerControllerAPress() {
-    if (CursorManager.selectedObject) {
-      if (typeof CursorManager.selectedObject.onClick === 'function') {
+    if (GameState.CursorManager.selectedObject) {
+      if (typeof GameState.CursorManager.selectedObject.onClick === 'function') {
         GameState.getCurrentPlayer().clearAllActions();
-        CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
+        GameState.CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(CursorManager.selectedObject.position);
+        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
           GameState.getCurrentPlayer().clearAllActions();
-          CursorManager.selectedObject.clearAllActions();
-          GameState.getCurrentPlayer().actionDialogObject(CursorManager.selectedObject);
+          GameState.CursorManager.selectedObject.clearAllActions();
+          GameState.getCurrentPlayer().actionDialogObject(GameState.CursorManager.selectedObject);
         }
       }
     }

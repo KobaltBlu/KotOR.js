@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import type { ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
@@ -7,13 +7,13 @@ import { Utility } from "../utility/Utility";
 import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
 import { BinaryReader } from "../BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { MDLLoader, TextureLoader } from "../loaders";
+import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-import { KEYManager, ShaderManager } from "../managers";
+// import { ShaderManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 
@@ -231,7 +231,7 @@ export class ModuleRoom extends ModuleObject {
             }
 
             if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
-              this.loadWalkmesh(this.roomName, (wok: OdysseyWalkMesh) => {
+              this.loadWalkmesh(this.roomName).then((wok: OdysseyWalkMesh) => {
                 if(wok){
                   this.collisionData.walkmesh = wok;
                   this.collisionData.walkmesh.mesh.position.z += 0.001;
@@ -261,27 +261,17 @@ export class ModuleRoom extends ModuleObject {
 
   }
 
-  loadWalkmesh(ResRef = '', onLoad?: Function ){
-    
-    let wokKey = KEYManager.Key.getFileKey(ResRef, ResourceTypes['wok']);
-    if(wokKey != null){
-      KEYManager.Key.getFileBuffer(wokKey).then( (buffer: Buffer) => {
-
-        let wok = new OdysseyWalkMesh(new BinaryReader(buffer));
-        wok.name = ResRef;
-        wok.moduleObject = this;
-        this.model.wok = wok;
-
-        if(typeof onLoad === 'function')
-          onLoad(wok);
-
-      });
-
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad(null);
+  async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
+    try {
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['wok'], resRef);
+      const wok = new OdysseyWalkMesh(new BinaryReader(buffer));
+      wok.name = resRef;
+      wok.moduleObject = this;
+      this.model.wok = wok;
+      return wok;
+    }catch(e){
+      console.error(e);
     }
-
   }
 
   buildGrass(){
@@ -353,8 +343,8 @@ export class ModuleRoom extends ModuleObject {
                   alphaTest: { value: GameState.module.area.alphaTest }
                 }
               ]),
-              vertexShader: ShaderManager.Shaders.get('grass').getVertex(),
-              fragmentShader: ShaderManager.Shaders.get('grass').getFragment(),
+              vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
+              fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
               //color: new THREE.Color( 1, 1, 1 ),
               side: THREE.DoubleSide,
               transparent: false,

@@ -1,4 +1,3 @@
-import { GamePad, Mouse, Keyboard, KeyMapper, AnalogInput } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
 import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
@@ -9,12 +8,17 @@ import type { ModuleObject } from "../module";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { FollowerCamera } from "../engine/FollowerCamera";
-import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
 import { MouseState } from "../enums/controls/MouseState";
+import { Keyboard } from "./Keyboard";
+import { GamePad } from "./GamePad";
+import { Mouse } from "./Mouse";
+import { KeyMapper } from "./KeyMapper";
+import { AnalogInput } from "./AnalogInput";
 
 /**
  * IngameControls class.
@@ -50,10 +54,22 @@ export class IngameControls {
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
+
+      if(GameState.MenuManager.activeGUIElement){
+        if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
+          GameState.MenuManager.activeGUIElement.onKeyDown(e);
+        }
+      }
     });
 
     window.addEventListener('keyup', (e: KeyboardEvent) => {
       this.keyboard.onKeyUp(e);
+
+      if(GameState.MenuManager.activeGUIElement){
+        if(typeof GameState.MenuManager.activeGUIElement.onKeyUp === 'function'){
+          GameState.MenuManager.activeGUIElement.onKeyUp(e);
+        }
+      }
     });
 
     // Ask the browser to release the pointer
@@ -63,7 +79,7 @@ export class IngameControls {
     window.addEventListener('mousedown', (event: MouseEvent) => {
       Mouse.Update(event.clientX, event.clientY);
       if(event.target == this.element){
-        MenuManager.activeGUIElement = undefined;
+        GameState.MenuManager.activeGUIElement = undefined;
         if(GameState.debug.controls)
           console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
@@ -224,7 +240,7 @@ export class IngameControls {
                 try{
                   Mouse.clickItem = null;
                   //control.onClick(customEvent);
-                  MenuManager.activeGUIElement = control;
+                  GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSound('gui_click');
                   if(GameState.debug.controls)
@@ -241,7 +257,7 @@ export class IngameControls {
         let selectedObject = clickCaptured;
   
         if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
-          if(GameState.Mode == EngineMode.INGAME && MenuManager.GetCurrentMenu() == MenuManager.InGameOverlay){
+          if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
             GameState.onMouseHitInteractive( (moduleObject: ModuleObject, intersection: any) => {
               if(GameState.debug.selectedObject)
                 console.log('Mesh', intersection)
@@ -253,7 +269,7 @@ export class IngameControls {
                   let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                   let distanceThreshold = 20;
 
-                  if(CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
+                  if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                     if(typeof moduleObject.onClick === 'function'){
                       GameState.getCurrentPlayer().clearAllActions();
                       moduleObject.onClick(GameState.getCurrentPlayer());
@@ -277,7 +293,7 @@ export class IngameControls {
               }
             });
             if(!selectedObject){
-              CursorManager.hovered = CursorManager.hoveredObject = CursorManager.selected = CursorManager.selectedObject = undefined;
+              GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
             }
           }
         }
@@ -289,16 +305,16 @@ export class IngameControls {
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
       if(e.deltaY < 0){
-        if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
-          (MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
-        }else if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
-          (MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
+        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
+        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
         }
       }else{
-        if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
-          (MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
-        }else if(BitWise.InstanceOf(MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
-          (MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
+        if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
+          (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
+        }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
+          (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
         }
       }
     });
@@ -314,7 +330,7 @@ export class IngameControls {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
 
@@ -330,7 +346,7 @@ export class IngameControls {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
       
@@ -345,7 +361,7 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
     });
@@ -354,7 +370,7 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
     });
@@ -400,7 +416,7 @@ export class IngameControls {
     //ChangeLeader
     KeyMapper.Actions[KeyMapAction.ChangeChar].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      PartyManager.ShiftLeader();
+      GameState.PartyManager.ShiftLeader();
     });
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
@@ -423,90 +439,90 @@ export class IngameControls {
     //Dialog1
     KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[0].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog2
     KeyMapper.Actions[KeyMapAction.Dialog2].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[1].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog3
     KeyMapper.Actions[KeyMapAction.Dialog3].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[2].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog4
     KeyMapper.Actions[KeyMapAction.Dialog4].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[3].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog5
     KeyMapper.Actions[KeyMapAction.Dialog5].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[4].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog6
     KeyMapper.Actions[KeyMapAction.Dialog6].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[5].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog7
     KeyMapper.Actions[KeyMapAction.Dialog7].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[6].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog8
     KeyMapper.Actions[KeyMapAction.Dialog8].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[7].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
     //Dialog9
     KeyMapper.Actions[KeyMapAction.Dialog9].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.state == 1){
-        try{ MenuManager.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
-      }else if(MenuManager.InGameComputer.bVisible){
-        try{ MenuManager.InGameComputer.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.state == 1){
+        try{ GameState.MenuManager.InGameDialog.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        try{ GameState.MenuManager.InGameComputer.LB_REPLIES.children[8].processEventListener('click', [{stopPropagation: () => {}}]); }catch(e){ console.error(e); }
       }
     });
 
@@ -515,20 +531,20 @@ export class IngameControls {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !Mouse.leftClick) return;
 
       //Dialog
-      if(MenuManager.InGameDialog.bVisible && MenuManager.InGameDialog.isListening){
+      if(GameState.MenuManager.InGameDialog.bVisible && GameState.MenuManager.InGameDialog.isListening){
         if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
-          MenuManager.InGameDialog.playerSkipEntry(MenuManager.InGameDialog.currentEntry);
+          GameState.MenuManager.InGameDialog.playerSkipEntry(GameState.MenuManager.InGameDialog.currentEntry);
         }else if(Mouse.leftClick){
-          MenuManager.InGameDialog.playerSkipEntry(MenuManager.InGameDialog.currentEntry);
+          GameState.MenuManager.InGameDialog.playerSkipEntry(GameState.MenuManager.InGameDialog.currentEntry);
         }
       }
       
       //Computer
-      else if( (MenuManager.InGameComputer.bVisible || MenuManager.InGameComputerCam.bVisible) && MenuManager.InGameComputer.isListening){
+      else if( (GameState.MenuManager.InGameComputer.bVisible || GameState.MenuManager.InGameComputerCam.bVisible) && GameState.MenuManager.InGameComputer.isListening){
         if(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed){
-          MenuManager.InGameComputer.playerSkipEntry(MenuManager.InGameComputer.currentEntry);
+          GameState.MenuManager.InGameComputer.playerSkipEntry(GameState.MenuManager.InGameComputer.currentEntry);
         }else if(Mouse.leftClick){
-          MenuManager.InGameComputer.playerSkipEntry(MenuManager.InGameComputer.currentEntry);
+          GameState.MenuManager.InGameComputer.playerSkipEntry(GameState.MenuManager.InGameComputer.currentEntry);
         }
       }
 
@@ -542,12 +558,12 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.DialogAbort].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
-      if(MenuManager.InGameDialog.bVisible){
-        MenuManager.InGameDialog.endConversation(true);
-      }else if(MenuManager.InGameComputer.bVisible){
-        MenuManager.InGameComputer.endConversation(true);
-      }else if(MenuManager.InGameComputerCam.bVisible){
-        MenuManager.InGameDialog.endConversation(true);
+      if(GameState.MenuManager.InGameDialog.bVisible){
+        GameState.MenuManager.InGameDialog.endConversation(true);
+      }else if(GameState.MenuManager.InGameComputer.bVisible){
+        GameState.MenuManager.InGameComputer.endConversation(true);
+      }else if(GameState.MenuManager.InGameComputerCam.bVisible){
+        GameState.MenuManager.InGameDialog.endConversation(true);
       }
     })
 
@@ -623,15 +639,15 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.GUI].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const currentMenu = MenuManager.GetCurrentMenu();
+      const currentMenu = GameState.MenuManager.GetCurrentMenu();
       switch(GameState.Mode){
         case EngineMode.GUI:
-          if(currentMenu != MenuManager.InGameOverlay){
+          if(currentMenu != GameState.MenuManager.InGameOverlay){
             currentMenu.close();
           }
         break;
         default:
-          MenuManager.MenuOptions.open();
+          GameState.MenuManager.MenuOptions.open();
         break;
       }
     });
@@ -639,15 +655,15 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.Pause1].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
-      const currentMenu = MenuManager.GetCurrentMenu();
-      if(currentMenu == MenuManager.InGameOverlay){
+      const currentMenu = GameState.MenuManager.GetCurrentMenu();
+      if(currentMenu == GameState.MenuManager.InGameOverlay){
         if(GameState.State == EngineState.RUNNING){
-          AutoPauseManager.SignalAutoPauseEvent(0);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(0);
         }else{
-          AutoPauseManager.Unpause();
+          GameState.AutoPauseManager.Unpause();
         }
-      }else if( currentMenu == MenuManager.InGameConfirm){
-        MenuManager.InGameConfirm.close();
+      }else if( currentMenu == GameState.MenuManager.InGameConfirm){
+        GameState.MenuManager.InGameConfirm.close();
       }
     });
 
@@ -658,14 +674,14 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z += 5 * delta;
     });
 
     KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      const followee = PartyManager.party[0];
+      const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z -= 5 * delta;
     });
@@ -695,24 +711,24 @@ export class IngameControls {
   MenuGetActiveUIElements(): GUIControl[] {
     let elements: GUIControl[] = [];
 
-    for(let i = 0, len = MenuManager.activeModals.length; i < len; i++){
-      const activeMenu = MenuManager.activeModals[i];
+    for(let i = 0, len = GameState.MenuManager.activeModals.length; i < len; i++){
+      const activeMenu = GameState.MenuManager.activeModals[i];
       if(!activeMenu.isVisible()) continue;
       
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
-    if(MenuManager.activeModals.length) return elements;
+    if(GameState.MenuManager.activeModals.length) return elements;
 
-    for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
-      const activeMenu = MenuManager.activeMenus[i];
+    for(let i = 0, len = GameState.MenuManager.activeMenus.length; i < len; i++){
+      const activeMenu = GameState.MenuManager.activeMenus[i];
       if(!activeMenu.isVisible()) continue;
 
       elements = elements.concat(activeMenu.getActiveControls());
     }
 
     if(GameState.State == EngineState.PAUSED){
-      elements = elements.concat(MenuManager.InGamePause.getActiveControls());
+      elements = elements.concat(GameState.MenuManager.InGamePause.getActiveControls());
     }
 
     return elements.reverse();
@@ -722,7 +738,7 @@ export class IngameControls {
 
     let xoffset = 0;
     let yoffset = 0;
-    let currentMenu = MenuManager.GetCurrentMenu();
+    let currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
 
@@ -777,10 +793,10 @@ export class IngameControls {
 
       if(
         (GameState.Mode == EngineMode.INGAME) && 
-        currentMenu != MenuManager.InGameConfirm && 
-        currentMenu != MenuManager.MenuContainer
+        currentMenu != GameState.MenuManager.InGameConfirm && 
+        currentMenu != GameState.MenuManager.MenuContainer
       ){
-        const followee = PartyManager.party[0];
+        const followee = GameState.PartyManager.party[0];
         if(followee){
           if(followee.canMove()){
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){

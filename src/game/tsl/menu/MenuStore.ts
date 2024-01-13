@@ -1,8 +1,8 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { ModuleItem, ModuleStore } from "../../../module";
 import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
-import { PartyManager, InventoryManager, TLKManager } from "../../../managers";
 
 /**
  * MenuStore class.
@@ -70,10 +70,10 @@ export class MenuStore extends K1_MenuStore {
             let item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
             let price = this.getItemBuyPrice(item);
-            if(PartyManager.Gold >= price){
-              PartyManager.Gold -= price;
-              this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
-              InventoryManager.addItem(item.template, true);
+            if(GameState.PartyManager.Gold >= price){
+              GameState.PartyManager.Gold -= price;
+              this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
+              GameState.InventoryManager.addItem(item.template, true);
               if(!item.isInfinite()){
                 item.setStackSize(item.getStackSize() - 1);
 
@@ -94,7 +94,7 @@ export class MenuStore extends K1_MenuStore {
 
         }else{
           //Sell Mode
-          this.LBL_CREDITS_VALUE.setText((PartyManager.Gold || 0).toString());
+          this.LBL_CREDITS_VALUE.setText((GameState.PartyManager.Gold || 0).toString());
         }
       });
       resolve();
@@ -125,12 +125,12 @@ export class MenuStore extends K1_MenuStore {
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
       if (this.sellMode) {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41937).Value);
-        this.LBL_COST.setText(TLKManager.GetStringById(41945).Value);
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32130).Value);
-        this.BTN_Accept.setText(TLKManager.GetStringById(32130).Value);
+        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41937).Value);
+        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41945).Value);
+        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
+        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        let inv = InventoryManager.getSellableInventory();
+        let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], (item: any) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
@@ -143,10 +143,10 @@ export class MenuStore extends K1_MenuStore {
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
         this.LB_INVITEMS.show();
       } else {
-        this.BTN_Examine.setText(TLKManager.GetStringById(41938).Value);
-        this.LBL_COST.setText(TLKManager.GetStringById(41943).Value);
-        this.LBL_BUYSELL.setText(TLKManager.GetStringById(32132).Value);
-        this.BTN_Accept.setText(TLKManager.GetStringById(32132).Value);
+        this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41938).Value);
+        this.LBL_COST.setText(GameState.TLKManager.GetStringById(41943).Value);
+        this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
+        this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
@@ -161,7 +161,7 @@ export class MenuStore extends K1_MenuStore {
         this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
         this.LB_SHOPITEMS.show();
       }
-      this.LBL_CREDITS_VALUE.setText(PartyManager.Gold || 0);
+      this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
       TextureLoader.LoadQueue();
     } else {
       this.close();

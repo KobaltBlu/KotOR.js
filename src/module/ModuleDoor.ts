@@ -1,4 +1,4 @@
-import { ModuleObject } from ".";
+import { ModuleObject } from "./ModuleObject";
 import type { ModuleRoom } from ".";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
@@ -13,14 +13,13 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { NWScript } from "../nwscript/NWScript";
 import { BinaryReader } from "../BinaryReader";
-import { GameEffect } from "../effects";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
 import { ModuleDoorOpenState } from "../enums/module/ModuleDoorOpenState";
 import { ModuleDoorInteractSide } from "../enums/module/ModuleDoorInteractSide";
-import { AppearanceManager, InventoryManager, KEYManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
+// import { AppearanceManager, InventoryManager, MenuManager, ModuleObjectManager, PartyManager, TwoDAManager, FactionManager } from "../managers";
 import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
@@ -30,6 +29,7 @@ import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -237,7 +237,7 @@ export class ModuleDoor extends ModuleObject {
 
     const soundIdx = appearance.soundapptype;
     if(!isNaN(soundIdx) && soundIdx >= 0){
-      const table = TwoDAManager.datatables.get('placeableobjsnds');
+      const table = GameState.TwoDAManager.datatables.get('placeableobjsnds');
       if(table && typeof table.rows[soundIdx] !== 'undefined'){
         return table.rows[soundIdx];
       }
@@ -338,7 +338,7 @@ export class ModuleDoor extends ModuleObject {
       
       if(this.isLocked()){
         if(this.keyRequired && this.keyName.length){
-          if(BitWise.InstanceOf(InventoryManager.getItem(this.keyName)?.objectType, ModuleObjectType.ModuleItem)){
+          if(BitWise.InstanceOf(GameState.InventoryManager.getItem(this.keyName)?.objectType, ModuleObjectType.ModuleItem)){
             this.locked = false;
           }
         }
@@ -503,9 +503,9 @@ export class ModuleDoor extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = PartyManager.party.length;
+      let partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = PartyManager.party[i];
+        let partymember = GameState.PartyManager.party[i];
         if(this.box.containsPoint(partymember.position)){
           if(this.objectsInside.indexOf(partymember) == -1){
             this.objectsInside.push(partymember);
@@ -600,17 +600,17 @@ export class ModuleDoor extends ModuleObject {
       this.openDoor(this);
     }
 
-    const partymember = PartyManager.party[0];
+    const partymember = GameState.PartyManager.party[0];
     if(partymember){
       const outer_distance = partymember.position.distanceTo(this.position);
       if(outer_distance < 10){
         this.testTransitionLine(partymember);
         if(this.transitionDistance < 5){
           if(this.getLinkedToModule() && this.isOpen()){
-            MenuManager.InGameAreaTransition.setTransitionObject(this);
+            GameState.MenuManager.InGameAreaTransition.setTransitionObject(this);
           }
         }else{
-          MenuManager.InGameAreaTransition.unsetTransitionObject(this);
+          GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
         }
         if(this.transitionDistance < 0.5){
           if(partymember.lastDoorEntered !== this){
@@ -624,7 +624,7 @@ export class ModuleDoor extends ModuleObject {
           }
         }
       }else{
-        MenuManager.InGameAreaTransition.unsetTransitionObject(this);
+        GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
         if(partymember.lastDoorEntered === this){
           partymember.lastDoorExited = this;
           this.onExit(partymember);
@@ -809,14 +809,14 @@ export class ModuleDoor extends ModuleObject {
   onEnter(object: ModuleObject){
     object.lastDoorEntered = this;
     if(this.getLinkedToModule() && this.isOpen()){
-      MenuManager.InGameAreaTransition.setTransitionObject(this);
+      GameState.MenuManager.InGameAreaTransition.setTransitionObject(this);
     }
   }
 
   onExit(object: ModuleObject){
     object.lastDoorEntered = undefined;
     if(this.getLinkedToModule()){
-      MenuManager.InGameAreaTransition.setTransitionObject(undefined);
+      GameState.MenuManager.InGameAreaTransition.setTransitionObject(undefined);
     }
   }
 
@@ -986,19 +986,19 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  async loadWalkmesh(resRef = ''){
-    const wokKey = KEYManager.Key.getFileKey(resRef+'0', ResourceTypes['dwk']);
-    if(!wokKey){ return undefined; }
-
-    const buffer = await KEYManager.Key.getFileBuffer(wokKey);
-
-    this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-    this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = resRef;
-    this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
-
-    this.updateCollisionState();
-
-    return this.collisionData.walkmesh;
+  async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['dwk'], resRef+'0');
+      this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+      this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = resRef;
+      this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
+  
+      this.updateCollisionState();
+  
+      return this.collisionData.walkmesh;
+    }catch(e){
+      console.error(e);
+    }
   }
 
   initProperties(){
@@ -1010,7 +1010,7 @@ export class ModuleDoor extends ModuleObject {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
       
-      ModuleObjectManager.AddObjectById(this);
+      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AnimationState'))
@@ -1041,14 +1041,14 @@ export class ModuleDoor extends ModuleObject {
         this.factionId = 0;
       }
     }
-    this.faction = FactionManager.factions.get(this.factionId);
+    this.faction = GameState.FactionManager.factions.get(this.factionId);
 
     if(this.template.RootNode.hasField('Fort'))
       this.fort = this.template.getFieldByLabel('Fort').getValue();
   
     if(this.template.RootNode.hasField('GenericType')){
       this.genericType = this.template.RootNode.getFieldByLabel('GenericType').getValue();
-      this.doorAppearance = AppearanceManager.GetDoorAppearanceById(this.genericType);
+      this.doorAppearance = GameState.AppearanceManager.GetDoorAppearanceById(this.genericType);
     }
         
     if(this.template.RootNode.hasField('HP'))
@@ -1155,8 +1155,8 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('EffectList')){
       let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffect.EffectFromStruct(effects[i]);
-        if(effect instanceof GameEffect){
+        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
           this.effects.push(effect);
@@ -1183,7 +1183,7 @@ export class ModuleDoor extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    MenuManager.InGameAreaTransition.unsetTransitionObject(this);
+    GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
     if(this.area) this.area.detachObject(this);
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
@@ -1327,7 +1327,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
-    const animations2DA = TwoDAManager.datatables.get('animations');
+    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){
         case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 

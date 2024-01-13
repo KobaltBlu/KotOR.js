@@ -1,5 +1,7 @@
-import { OdysseyModel, OdysseyModelNode, OdysseyModelNodeMesh } from ".";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+import type { OdysseyModel } from "./OdysseyModel";
+import type { OdysseyModelNode } from "./OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
 
 /**
  * OdysseyModelNodeSaber class.

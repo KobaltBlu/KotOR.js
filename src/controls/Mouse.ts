@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { GUIControl } from "../gui";
-import { ResolutionManager } from "../managers";
+import type { GUIControl } from "../gui";
+import { ResolutionManager } from "../managers/ResolutionManager";
 import { MouseState } from "../enums/controls/MouseState";
 import { MouseAxis } from "../enums/controls/MouseAxis";
 

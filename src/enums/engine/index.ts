@@ -12,3 +12,5 @@ export * from "./PerceptionMask";
 export * from "./PerceptionType";
 export * from "./ReputationConstant";
 export * from "./TutorialMessage";
+export * from "./TalentObjectType";
+export * from "./FeedbackMessageColor";

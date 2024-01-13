@@ -1,4 +1,3 @@
-import { GUIControl, GUIProtoItem } from ".";
 import * as THREE from "three";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
@@ -6,9 +5,14 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
-import { ResolutionManager, ShaderManager } from "../managers";
-import type { MenuManager } from "../managers";
+import type { MenuManager } from "../managers/MenuManager";
+import { ResolutionManager } from "../managers/ResolutionManager";
+import { ShaderManager } from "../managers/ShaderManager"
 import { ResourceLoader, TextureLoader } from "../loaders";
+import { GUIControl } from "./GUIControl";
+import { GUIControlFactory } from "./GUIControlFactory";
+import { BitWise } from "../utility/BitWise";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 
 /**
  * GameMenu class.
@@ -23,6 +27,7 @@ export class GameMenu {
   gui_resref: string;
   menuGFF: GFFObject;
   manager: typeof MenuManager;
+  factory: typeof GUIControlFactory = GUIControlFactory;
 
   //This is for MenuTop
   childMenu: GameMenu = undefined;
@@ -124,7 +129,7 @@ export class GameMenu {
   };
 
   assignChildControlsToMenu(object: GUIControl){
-    if(object instanceof GUIControl){
+    if(object){
       for(let i = 0, len = object.children.length; i < len; i++){
         let ctrl = object.children[i];
         if(!isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
@@ -274,7 +279,7 @@ export class GameMenu {
 
   setWidgetHoverActive(widget: GUIControl, bActive: boolean = false){
 
-    if(!(widget instanceof GUIControl) || (widget instanceof GUIProtoItem))
+    if(!BitWise.InstanceOfObject(widget, GUIControlTypeMask.GUIControl) || BitWise.InstanceOfObject(widget, GUIControlTypeMask.GUIProtoItem))
       return false;
 
     let idx = this.activeWidget.indexOf(widget);
@@ -282,13 +287,13 @@ export class GameMenu {
     if(bActive){
       if(idx == -1){
         this.activeWidget.push(widget);
-        if(widget instanceof GUIControl){
+        if(widget){
           widget.onHoverIn();
         }
       }
     }else{
       if(idx > -1){
-        if(widget instanceof GUIControl){
+        if(widget){
           widget.onHoverOut();
         }
         this.activeWidget.splice(idx, 1);
@@ -314,7 +319,7 @@ export class GameMenu {
     this.tGuiPanel.widget.scale.set(this.scale, this.scale, 1.0);
 
     for(let i = 0; i < this.tGuiPanel.children.length; i++){
-      if(this.tGuiPanel.children[i] instanceof GUIControl)
+      if(this.tGuiPanel.children[i])
         this.tGuiPanel.children[i].updateScale();
     }
 
@@ -325,63 +330,63 @@ export class GameMenu {
   }
 
   triggerControllerAPress(){
-    if(this._button_a instanceof GUIControl){
+    if(this._button_a){
       this._button_a.click();
-    }else if(this.manager.activeGUIElement instanceof GUIControl){
+    }else if(this.manager.activeGUIElement){
       this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerBPress(){
-    if(this._button_b instanceof GUIControl){
+    if(this._button_b){
       this._button_b.click();
     }
   }
 
   triggerControllerXPress(){
-    if(this._button_x instanceof GUIControl){
+    if(this._button_x){
       this._button_x.click();
     }
   }
 
   triggerControllerYPress(){
-    if(this._button_y instanceof GUIControl){
+    if(this._button_y){
       this._button_y.click();
     }
   }
 
   triggerControllerDUpPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDDownPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDLeftPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDRightPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperLPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerBumperRPress(){
-    if(this.manager.activeGUIElement instanceof GUIControl){
+    if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }

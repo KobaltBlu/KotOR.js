@@ -7,7 +7,6 @@ import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "../../../module";
-import { PartyManager, InventoryManager, TLKManager, TwoDAManager } from "../../../managers";
 
 /**
  * MenuEquipment class.
@@ -184,7 +183,7 @@ export class MenuEquipment extends GameMenu {
         e.stopPropagation();
         if(this.selectedItem instanceof ModuleItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
-          let currentPC = PartyManager.party[0];
+          let currentPC = GameState.PartyManager.party[0];
           if(this.selectedItem instanceof GUIItemNone){
             currentPC.unequipSlot(this.slot);
           }else if(this.selectedItem instanceof ModuleItem){
@@ -211,8 +210,8 @@ export class MenuEquipment extends GameMenu {
     if (slot) {
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.clearItems();
-      let inv = InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
-      let currentPC = PartyManager.party[0];
+      let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
+      let currentPC = GameState.PartyManager.party[0];
       this.LB_ITEMS.addItem(new GUIItemNone());
       if(currentPC.GetItemInSlot(slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
@@ -228,7 +227,7 @@ export class MenuEquipment extends GameMenu {
   UpdateList() {
     if (!this.equipmentSelectionActive) {
       this.BTN_EQUIP?.hide();
-      this.BTN_BACK?.setText(TLKManager.GetStringById(1582).Value);
+      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(1582).Value);
       this.LB_DESC?.hide();
       this.BTN_INV_IMPLANT?.show();
       this.BTN_INV_HEAD?.show();
@@ -255,8 +254,8 @@ export class MenuEquipment extends GameMenu {
       this.LBL_SELECTTITLE?.setText('');
     } else {
       this.BTN_EQUIP?.show();
-      this.BTN_EQUIP?.setText(TLKManager.GetStringById(31387).Value);
-      this.BTN_BACK?.setText(TLKManager.GetStringById(1581).Value);
+      this.BTN_EQUIP?.setText(GameState.TLKManager.GetStringById(31387).Value);
+      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(1581).Value);
       this.LB_DESC?.show();
       this.BTN_INV_IMPLANT?.hide();
       this.BTN_INV_HEAD?.hide();
@@ -286,9 +285,9 @@ export class MenuEquipment extends GameMenu {
     this.LB_ITEMS.clearItems();
     this.selectedItem = null;
     this.UpdateSelected(null);
-    let currentPC = PartyManager.party[0];
+    let currentPC = GameState.PartyManager.party[0];
     if (this.slot) {
-      let inv = InventoryManager.getInventory(this.slot, currentPC);
+      let inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
       this.LB_ITEMS.addItem(new GUIItemNone());
       if(currentPC.GetItemInSlot(this.slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
@@ -313,11 +312,11 @@ export class MenuEquipment extends GameMenu {
   }
 
   UpdateSlotIcons(force: boolean = false) {
-    let currentPC = PartyManager.party[0];
+    let currentPC = GameState.PartyManager.party[0];
     if (currentPC.getRace() == 6) {
       let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
       if (implant) {
-        let icon = 'i' + implant._baseItem.itemClass + '_' + ('000' + implant.getModelVariation()).slice(-3);
+        let icon = 'i' + implant.baseItem.itemClass + '_' + ('000' + implant.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
           this.LBL_INV_IMPLANT.setFillTextureName(icon);
 
@@ -327,7 +326,7 @@ export class MenuEquipment extends GameMenu {
       }
       let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
       if (head) {
-        let icon = 'i' + head._baseItem.itemClass + '_' + ('000' + head.getModelVariation()).slice(-3);
+        let icon = 'i' + head.baseItem.itemClass + '_' + ('000' + head.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_HEAD.getFillTextureName() != icon) {
           this.LBL_INV_HEAD.setFillTextureName(icon);
         }
@@ -336,7 +335,7 @@ export class MenuEquipment extends GameMenu {
       }
       let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
       if (hands) {
-        let icon = 'i' + hands._baseItem.itemClass + '_' + ('000' + hands.getModelVariation()).slice(-3);
+        let icon = 'i' + hands.baseItem.itemClass + '_' + ('000' + hands.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_HANDS.getFillTextureName() != icon) {
           this.LBL_INV_HANDS.setFillTextureName(icon);
         }
@@ -345,7 +344,7 @@ export class MenuEquipment extends GameMenu {
       }
       let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
       if (l_arm) {
-        let icon = 'i' + l_arm._baseItem.itemClass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
+        let icon = 'i' + l_arm.baseItem.itemClass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_ARM_L.getFillTextureName() != icon) {
           this.LBL_INV_ARM_L.setFillTextureName(icon);
         }
@@ -354,7 +353,7 @@ export class MenuEquipment extends GameMenu {
       }
       let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
       if (armor) {
-        let icon = 'i' + armor._baseItem.itemClass + '_' + ('000' + armor.getModelVariation()).slice(-3);
+        let icon = 'i' + armor.baseItem.itemClass + '_' + ('000' + armor.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_BODY.getFillTextureName() != icon) {
           this.LBL_INV_BODY.setFillTextureName(icon);
         }
@@ -363,7 +362,7 @@ export class MenuEquipment extends GameMenu {
       }
       let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
       if (r_arm) {
-        let icon = 'i' + r_arm._baseItem.itemClass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
+        let icon = 'i' + r_arm.baseItem.itemClass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_ARM_R.getFillTextureName() != icon) {
           this.LBL_INV_ARM_R.setFillTextureName(icon);
         }
@@ -372,7 +371,7 @@ export class MenuEquipment extends GameMenu {
       }
       let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
       if (l_weap) {
-        let icon = 'i' + l_weap._baseItem.itemClass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
+        let icon = 'i' + l_weap.baseItem.itemClass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L.setFillTextureName(icon);
         }
@@ -381,7 +380,7 @@ export class MenuEquipment extends GameMenu {
       }
       let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
       if (belt) {
-        let icon = 'i' + belt._baseItem.itemClass + '_' + ('000' + belt.getModelVariation()).slice(-3);
+        let icon = 'i' + belt.baseItem.itemClass + '_' + ('000' + belt.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_BELT.getFillTextureName() != icon) {
           this.LBL_INV_BELT.setFillTextureName(icon);
         }
@@ -390,7 +389,7 @@ export class MenuEquipment extends GameMenu {
       }
       let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
       if (r_weap) {
-        let icon = 'i' + r_weap._baseItem.itemClass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
+        let icon = 'i' + r_weap.baseItem.itemClass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R.setFillTextureName(icon);
         }
@@ -411,18 +410,18 @@ export class MenuEquipment extends GameMenu {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     this.UpdateSlotIcons(true);
-    let currentPC = PartyManager.party[0];
+    let currentPC = GameState.PartyManager.party[0];
     if (currentPC) {
       this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
       this.LBL_DEF?.setText(currentPC.getAC());
     }
     let btn_change: GUIControl;
-    for (let i = 0; i < PartyManager.party.length; i++) {
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(btn_change){
-        let partyMember = PartyManager.party[i];
+        let partyMember = GameState.PartyManager.party[i];
         let portraitId = partyMember.getPortraitId();
-        let portrait = TwoDAManager.datatables.get('portraits').rows[portraitId];
+        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
         if (!i) {
           if (this.LBL_PORTRAIT.getFillTextureName() != portrait.baseresref) {
             this.LBL_PORTRAIT.setFillTextureName(portrait.baseresref);

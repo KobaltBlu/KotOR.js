@@ -1,6 +1,6 @@
+import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObject } from "../module";
 import { Action } from "./Action";
 
 /**
@@ -13,7 +13,6 @@ import { Action } from "./Action";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionSetCommandable extends Action {
-  object: ModuleObject;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -25,7 +24,7 @@ export class ActionSetCommandable extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(this.owner instanceof ModuleObject){
+    if(this.owner){
       this.owner.setCommandable( this.getParameter(0) ? true : false );
       return ActionStatus.COMPLETE;
     }

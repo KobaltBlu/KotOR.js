@@ -1,5 +1,4 @@
-import { GFFField } from "./GFFField";
-import { GFFObject } from "./GFFObject";
+import type { GFFField } from "./GFFField";
 
 /**
  * GFFStruct class.
@@ -30,10 +29,9 @@ export class GFFStruct {
   }
 
   addField(field: GFFField){
-    if(field instanceof GFFField){
-      return this.fields[this.fields.length] = field;
-    }
-    return undefined;
+    if(!field) return;
+    
+    return this.fields[this.fields.length] = field;
   }
 
   removeFieldByLabel(label = ''){
@@ -97,7 +95,17 @@ export class GFFStruct {
   }
 
   toJSON(){
-    return GFFObject.StructToJSON(this);
+    const struct: any = {
+      type: this.getType(),
+      fields: {}
+    };
+
+    for(let i = 0; i < this.fields.length; i++){
+      let f = this.fields[i];
+      struct.fields[f.label] = f.toJSON();
+    }
+
+    return struct;
   }
 
 }

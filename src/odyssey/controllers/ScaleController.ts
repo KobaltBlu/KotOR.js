@@ -1,8 +1,8 @@
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
+import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyController } from "./OdysseyController";
 
 /**

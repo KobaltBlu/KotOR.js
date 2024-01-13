@@ -1,13 +1,14 @@
-import { GameEffect } from "../effects";
+import { GameEffectFactory } from "../effects/GameEffectFactory";
 import EngineLocation from "../engine/EngineLocation";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { ModuleObjectManager } from "../managers";
-import { ModuleObject } from "../module";
+import { GameState } from "../GameState";
+// import { ModuleObjectManager } from "../managers";
+// import { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { TalentFeat, TalentSkill, TalentSpell } from "../talents";
-import { NWScriptEvent } from "./events";
+// import { TalentFeat, TalentSkill, TalentSpell } from "../talents";
+import { NWScriptEventFactory } from "./events/NWScriptEventFactory";
 import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
 /**
@@ -226,7 +227,7 @@ export class NWScriptStack {
       elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
       switch(element.type){
         case NWScriptDataType.OBJECT:
-          elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( element.value instanceof ModuleObject ? element.value.id : 2130706432 );
+          elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( typeof element.value === 'object' ? element.value.id : 2130706432 );
         break;
         case NWScriptDataType.INTEGER:
           elementStruct.addField( new GFFField(GFFDataType.INT, 'Value') ).setValue( element.value );
@@ -269,7 +270,7 @@ export class NWScriptStack {
           let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case 4: //Object
-              let obj = ModuleObjectManager.GetObjectById(value);
+              let obj = GameState.ModuleObjectManager.GetObjectById(value);
               
               //0x7f000000 is 2130706432
               if(value == 0x7f000000) //I can confirm that this is INVALID_OBJECT_ID or OBJECT_INVALID as stated in the Bioware_Aurora_Store_Format.pdf on the old nwn.bioware.com site
@@ -322,17 +323,17 @@ export class NWScriptStack {
     let talent = undefined;
     switch(talentType){
       case 0:
-        talent = new TalentSpell(struct.getFieldByLabel('ID').getValue());
+        talent = new GameState.TalentSpell(struct.getFieldByLabel('ID').getValue());
       break;
       case 1:
-        talent = new TalentFeat(struct.getFieldByLabel('ID').getValue());
+        talent = new GameState.TalentFeat(struct.getFieldByLabel('ID').getValue());
       break;
       case 2:
-        talent = new TalentSkill(struct.getFieldByLabel('ID').getValue());
+        talent = new GameState.TalentSkill(struct.getFieldByLabel('ID').getValue());
       break;
     }
   
-    talent.setItem( ModuleObjectManager.GetObjectById( struct.getFieldByLabel('Item').getValue() ) );
+    talent.setItem( GameState.ModuleObjectManager.GetObjectById( struct.getFieldByLabel('Item').getValue() ) );
     talent.setItemPropertyIndex( struct.getFieldByLabel('ItemPropertyIndex').getValue() );
     talent.setCasterLevel( struct.getFieldByLabel('CasterLevel').getValue() );
     talent.setMetaType( struct.getFieldByLabel('MetaType').getValue() );
@@ -352,7 +353,7 @@ export class NWScriptStack {
   }
   
   static EventFromStruct = function( struct: GFFStruct ){
-    let event = NWScriptEvent.EventFromStruct(struct);
+    let event = NWScriptEventFactory.EventFromStruct(struct);
     console.log('EventFromStruct', event, struct);
     return event;
   }
@@ -360,7 +361,7 @@ export class NWScriptStack {
   static EffectFromStruct = function( struct: GFFStruct ){
   
     //https://github.com/nwnxee/unified/blob/master/NWNXLib/API/Constants/Effect.hpp
-    return GameEffect.EffectFromStruct( struct );
+    return GameEffectFactory.EffectFromStruct( struct );
   
   }
   
@@ -383,7 +384,7 @@ export class NWScriptStack {
           let value = stackElement.getFieldByLabel('Value').getValue();
           switch(type){
             case NWScriptDataType.OBJECT: //Object
-              let obj = ModuleObjectManager.GetObjectById(value);
+              let obj = GameState.ModuleObjectManager.GetObjectById(value);
   
               if(value == 2130706432) //this is either OBJECT_INVALID or OBJECT_SELF
                 obj = undefined;

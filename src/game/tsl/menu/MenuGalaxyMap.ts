@@ -3,7 +3,6 @@ import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
 import { MenuGalaxyMap as K1_MenuGalaxyMap } from "../../kotor/KOTOR";
 import { Planetary } from "../../../Planetary";
-import { GlobalVariableManager } from "../../../managers";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
 import { NWScript } from "../../../nwscript/NWScript";
 import { OdysseyModel } from "../../../odyssey";
@@ -56,7 +55,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close();
-        Planetary.SetSelectedPlanet(GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
+        Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 

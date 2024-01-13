@@ -1,13 +1,16 @@
-import { GameMenu, GUIControl, GUIProtoItem, GUIScrollBar } from ".";
-import { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
+import type { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
+import { TextureLoader } from "../loaders/TextureLoader";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine";
-import { Mouse } from "../controls";
+import { Mouse } from "../controls/Mouse";
 import { GUIControlType } from "../enums/gui/GUIControlType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import type { GUIProtoItem } from "./GUIProtoItem";
+import type { GUIScrollBar } from "./GUIScrollBar";
 
 /**
  * GUIListBox class.
@@ -61,7 +64,7 @@ export class GUIListBox extends GUIControl {
     this.hasProtoItem = control.hasField('PROTOITEM');
     if(this.hasProtoItem){
       //console.log(control.getFieldByLabel('PROTOITEM'))
-      this.protoItem = GUIControl.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
+      this.protoItem = this.menu.factory.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
     }
 
     //ScrollBar
@@ -79,7 +82,7 @@ export class GUIListBox extends GUIControl {
     this.scene = new THREE.Scene();
 
     if(this.hasScrollBar){
-      this.scrollbar = new GUIScrollBar(this.menu, this._scrollbar, this, this.scale);
+      this.scrollbar = new this.menu.factory.GUIScrollBar(this.menu, this._scrollbar, this, this.scale);
       this.scrollbar.setList( this );
       //this.widget.add(this.scrollbar.createControl());
       this.scrollWrapper = new THREE.Group();
@@ -171,7 +174,7 @@ export class GUIListBox extends GUIControl {
       this.children[i].calculatePosition();
     }
 
-    if(this.scrollbar instanceof GUIScrollBar){
+    if(this.scrollbar){
       this.scrollbar.calculatePosition();
       this.scrollbar.update();
     }
@@ -227,7 +230,7 @@ export class GUIListBox extends GUIControl {
         switch(type){
           case GUIControlType.Label:
           case GUIControlType.ProtoItem:
-            ctrl = new GUIProtoItem(this.menu, control.control, this, this.scale);
+            ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
             ctrl.text.texture = this.protoItem.text.texture;
             ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
             ctrl.text.text = node;
@@ -255,7 +258,7 @@ export class GUIListBox extends GUIControl {
           break;
           case GUIControlType.Button:
             try{
-              ctrl = new GUIProtoItem(this.menu, control.control, this, this.scale);
+              ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
               ctrl.isProtoItem = false;
               ctrl.offset = this.offset;
               ctrl.node = node;
@@ -591,7 +594,7 @@ export class GUIListBox extends GUIControl {
       this.children[i].calculateBox();
     }
 
-    if(this.scrollbar instanceof GUIScrollBar){
+    if(this.scrollbar){
       this.scrollbar.calculatePosition();
     }
 

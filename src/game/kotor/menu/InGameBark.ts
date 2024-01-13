@@ -4,9 +4,10 @@ import type { GUILabel } from "../../../gui";
 import * as THREE from "three";
 import { ResourceLoader } from "../../../loaders";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { ModuleCreature } from "../../../module";
 import { LIPObject } from "../../../resource/LIPObject";
-import { ResolutionManager } from "../../../managers";
+import { GameState } from "../../../GameState";
+import { ModuleObjectType } from "../../../enums";
+import { BitWise } from "../../../utility/BitWise";
 
 /**
  * InGameBark class.
@@ -45,12 +46,12 @@ export class InGameBark extends GameMenu {
       this.LBL_BARKTEXT.text.geometry.boundingBox.getSize(size);
       this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
       this.tGuiPanel.resizeControl();
-      this.tGuiPanel.widget.position.x = -ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
-      this.tGuiPanel.widget.position.y = ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
+      this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
+      this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
       if (entry.sound != '') {
         console.log('lip', entry.sound);
         ResourceLoader.loadResource(ResourceTypes['lip'], entry.sound).then((buffer: Buffer) => {
-          if (entry.speaker instanceof ModuleCreature) {
+          if (BitWise.InstanceOfObject(entry.speaker, ModuleObjectType.ModuleCreature)) {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         }).catch( (e) => {console.error(e)});
@@ -66,7 +67,7 @@ export class InGameBark extends GameMenu {
       } else if (entry.vo_resref != '') {
         console.log('lip', entry.vo_resref);
         ResourceLoader.loadResource(ResourceTypes['lip'], entry.vo_resref).then((buffer: Buffer) => {
-          if (entry.speaker instanceof ModuleCreature) {
+          if (BitWise.InstanceOfObject(entry.speaker, ModuleObjectType.ModuleCreature)) {
             entry.speaker.setLIP(new LIPObject(buffer));
           }
         }).catch( (e) => {console.error(e)});

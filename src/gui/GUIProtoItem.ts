@@ -1,9 +1,11 @@
-import { GameMenu, GUIControl, GUIListBox } from ".";
-import { GFFStruct } from "../resource/GFFStruct";
+import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
+import type { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
 import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "../managers";
+import { ResolutionManager } from "../managers/ResolutionManager";
+import type { GUIListBox } from "./GUIListBox";
 
 /**
  * GUIProtoItem class.
@@ -137,7 +139,7 @@ export class GUIProtoItem extends GUIControl{
   }
 
   directionalNavigate(direction = ''){
-    if(this.list instanceof GUIListBox){
+    if(this.list){
       this.list.directionalNavigate(direction);
     }
   }
