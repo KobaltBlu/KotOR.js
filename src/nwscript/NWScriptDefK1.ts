@@ -596,9 +596,15 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.actionPlayAnimation(args[0], args[1], args[2]);
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
       }
+
+      const action = new GameState.ActionFactory.ActionPlayAnimation();
+      action.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(args[0]));
+      action.setParameter(0, ActionParameterType.FLOAT, args[1] || 1.0);
+      action.setParameter(0, ActionParameterType.FLOAT, args[2]);
+      this.caller.actionQueue.add(action);
     }
   },
   41:{
