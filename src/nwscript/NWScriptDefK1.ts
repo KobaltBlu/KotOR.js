@@ -702,7 +702,28 @@ NWScriptDefK1.Actions = {
     comment: "48: This action casts a spell at oTarget.\n- nSpell: SPELL_*\n- oTarget: Target for the spell\n- nMetamagic: METAMAGIC_*\n- bCheat: If this is TRUE, then the executor of the action doesn't have to be\nable to cast the spell.\n- nDomainLevel: TBD - SS\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n- bInstantSpell: If this is TRUE, the spell is cast immediately. This allows\nthe end-user to simulate a high-level magic-user having lots of advance\nwarning of impending trouble\n",
     name: "ActionCastSpellAtObject",
     type: 0,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number, number, number, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionCastSpell();
+      action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
+      action.setParameter(1, ActionParameterType.INT, -1);
+      action.setParameter(2, ActionParameterType.INT, args[4]); //DomainLevel
+      action.setParameter(3, ActionParameterType.INT, 0);
+      action.setParameter(4, ActionParameterType.INT, 0);
+      action.setParameter(5, ActionParameterType.DWORD, args[1].id); //Target Object
+      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
+      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
+      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
+      action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
+      action.setParameter(10, ActionParameterType.INT, -1);
+      action.setParameter(11, ActionParameterType.INT, -1);
+      this.caller.actionQueue.add(action);
+
+    }
   },
   49:{
     comment: "49: Get the current hitpoints of oObject\n* Return value on error: 0\n",
