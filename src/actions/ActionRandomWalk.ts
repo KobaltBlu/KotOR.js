@@ -28,7 +28,7 @@ export class ActionRandomWalk extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       return ActionStatus.FAILED;
     }
 
