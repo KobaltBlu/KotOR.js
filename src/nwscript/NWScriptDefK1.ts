@@ -7675,7 +7675,8 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) {
-        (this.caller as ModuleCreature).actionFollowLeader();
+        const action = new GameState.ActionFactory.ActionFollowLeader();
+        this.caller.actionQueue.add( action );
       }
     }
   },

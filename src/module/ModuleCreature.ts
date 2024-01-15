@@ -4,7 +4,6 @@ import { ModuleObject } from "./ModuleObject";
 import type { ModuleItem } from "./ModuleItem";
 import type { ModuleRoom } from "./ModuleRoom";
 
-import { Action, ActionCombat, ActionFollowLeader, ActionJumpToObject, ActionJumpToPoint, ActionMoveToPoint, ActionUnlockObject } from "../actions";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CreatureClass } from "../combat/CreatureClass";
 import { EffectRacialType } from "../effects";
@@ -53,6 +52,7 @@ import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { CombatActionType } from "../enums/combat/CombatActionType";
 import { CombatRoundAction } from "../combat";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
+import type { Action } from "../actions/Action";
 
 /**
 * ModuleCreature class.
@@ -780,7 +780,7 @@ export class ModuleCreature extends ModuleObject {
       
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
-    if(!(this.action instanceof Action)){
+    if(!(this.action)){
       if(
         !this.combatData.combatState && 
         this.isPartyMember() && 
@@ -1112,7 +1112,7 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof ModuleObject){
         
       // this.openSpot = undefined;
-      let action = new ActionMoveToPoint();
+      let action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1146,7 +1146,7 @@ export class ModuleCreature extends ModuleObject {
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
-        let action = new ActionMoveToPoint();
+        let action = new GameState.ActionFactory.ActionMoveToPoint();
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
@@ -1196,7 +1196,7 @@ export class ModuleCreature extends ModuleObject {
 
         
       // this.openSpot = undefined;
-      let action = new ActionMoveToPoint();
+      let action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1216,7 +1216,7 @@ export class ModuleCreature extends ModuleObject {
     console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
 
-      let action = new ActionJumpToObject();
+      let action = new GameState.ActionFactory.ActionJumpToObject();
       action.setParameter(0, ActionParameterType.DWORD, target.id );
       action.setParameter(1, ActionParameterType.INT, 0);
       this.actionQueue.add(action);
@@ -1228,7 +1228,7 @@ export class ModuleCreature extends ModuleObject {
   jumpToLocation(target: EngineLocation){
     console.log('jumpToLocation', target, this);
     if(target instanceof EngineLocation){
-      let action = new ActionJumpToPoint();
+      let action = new GameState.ActionFactory.ActionJumpToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1326,7 +1326,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatRound.addAction(combatAction);
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
-      const action = new ActionCombat(0xFFFF);
+      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
       this.actionQueue.add(action);
     }
 
@@ -1345,7 +1345,7 @@ export class ModuleCreature extends ModuleObject {
         break;
         case 2: //SKILL
           if(talent.id == 6){ //Security
-            action = new ActionUnlockObject();
+            action = new GameState.ActionFactory.ActionUnlockObject();
             action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
             this.actionQueue.add(action);
           }
@@ -4145,7 +4145,7 @@ export class ModuleCreature extends ModuleObject {
       this.parseEquipmentSlots();
 
       if(this.template.RootNode.hasField('ItemList')){
-        let inventory = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
+        const inventory = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
         for(let i = 0; i < inventory.length; i++){
           this.loadItem(GFFObject.FromStruct(inventory[i]));
         }
@@ -4155,10 +4155,10 @@ export class ModuleCreature extends ModuleObject {
       //ActionList
       try{
         if(this.template.RootNode.hasField('ActionList')){
-          let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+          const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
           for(let i = 0, len = actionStructs.length; i < len; i++){
-            let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
-            if(action instanceof Action){
+            const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+            if(action){
               this.actionQueue.add(action);
             }
           }
@@ -4269,10 +4269,6 @@ export class ModuleCreature extends ModuleObject {
           this.audioEmitter.playSound(resref);
       }
     }
-  }
-
-  actionFollowLeader(){
-    this.actionQueue.add( new ActionFollowLeader() );
   }
 
   destroy(): void {
