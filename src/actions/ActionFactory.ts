@@ -26,6 +26,7 @@ import { ActionUnlockObject } from "./ActionUnlockObject";
 import { ActionUnequipItem } from "./ActionUnequipItem";
 import { ActionUseObject } from "./ActionUseObject";
 import { ActionWait } from "./ActionWait";
+import { ActionRandomWalk } from "./ActionRandomWalk";
 import type { Action } from "./Action";
 
 /**
@@ -64,6 +65,7 @@ export class ActionFactory {
   static ActionUnequipItem: typeof ActionUnequipItem = ActionUnequipItem;
   static ActionUseObject: typeof ActionUseObject = ActionUseObject;
   static ActionWait: typeof ActionWait = ActionWait;
+  static ActionRandomWalk: typeof ActionRandomWalk = ActionRandomWalk;
 
   static FromStruct( struct: GFFStruct ): Action {
     let action: Action = undefined as any;

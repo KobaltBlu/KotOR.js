@@ -295,7 +295,8 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).randomWalk();
+        const action = new GameState.ActionFactory.ActionRandomWalk();
+        this.caller.actionQueue.add(action);
       }
     }
   },
