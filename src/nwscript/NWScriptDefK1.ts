@@ -489,38 +489,15 @@ NWScriptDefK1.Actions = {
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
+      
       const obj = this.caller as ModuleCreature;
 
       const action = new GameState.ActionFactory.ActionUnequipItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
-
-      if(obj.equipment.HEAD == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.HEAD);
-      }else if(obj.equipment.ARMS == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.ARMS);
-      }else if(obj.equipment.IMPLANT == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.IMPLANT);
-      }else if(obj.equipment.LEFTARMBAND == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.LEFTARMBAND);
-      }else if(obj.equipment.RIGHTARMBAND == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.RIGHTARMBAND);
-      }else if(obj.equipment.LEFTHAND == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.LEFTHAND);
-      }else if(obj.equipment.BELT == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.BELT);
-      }else if(obj.equipment.RIGHTHAND == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.RIGHTHAND);
-      }else if(obj.equipment.CLAW1 == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.CLAW1);
-      }else if(obj.equipment.CLAW2 == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.CLAW2);
-      }else if(obj.equipment.CLAW3 == args[0]){
-        action.setParameter(1, ActionParameterType.DWORD, ModuleCreatureArmorSlot.CLAW3);
-      }
-
+      action.setParameter(1, ActionParameterType.DWORD, undefined);
       action.setParameter(2, ActionParameterType.INT, args[1] ? NW_TRUE : NW_FALSE);
 
-      obj.actionQueue.addFront(action);
+      obj.actionQueue.add(action);
     }
   },
   34:{

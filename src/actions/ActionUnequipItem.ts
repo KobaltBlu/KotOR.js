@@ -31,54 +31,37 @@ export class ActionUnequipItem extends Action {
 
   update(delta?: number): ActionStatus {
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       return ActionStatus.FAILED;
     }
+
     const item = this.getParameter(0) as ModuleItem;
     const obj = this.owner as ModuleCreature;
 
     if(obj.equipment.HEAD == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.HEAD);
-    }
-
-    if(obj.equipment.ARMS == item){
+    }else if(obj.equipment.ARMS == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.ARMS);
-    }
-
-    if(obj.equipment.IMPLANT == item){
+    }else if(obj.equipment.IMPLANT == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.IMPLANT);
-    }
-
-    if(obj.equipment.LEFTARMBAND == item){
+    }else if(obj.equipment.LEFTARMBAND == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-    }
-
-    if(obj.equipment.RIGHTARMBAND == item){
+    }else if(obj.equipment.RIGHTARMBAND == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-    }
-
-    if(obj.equipment.LEFTHAND == item){
+    }else if(obj.equipment.LEFTHAND == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
-    }
-
-    if(obj.equipment.BELT == item){
+    }else if(obj.equipment.BELT == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.BELT);
-    }
-
-    if(obj.equipment.RIGHTHAND == item){
+    }else if(obj.equipment.RIGHTHAND == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-    }
-
-    if(obj.equipment.CLAW1 == item){
+    }else if(obj.equipment.CLAW1 == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.CLAW1);
-    }
-
-    if(obj.equipment.CLAW2 == item){
+    }else if(obj.equipment.CLAW2 == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.CLAW2);
-    }
-
-    if(obj.equipment.CLAW3 == item){
+    }else if(obj.equipment.CLAW3 == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.CLAW3);
+    }else{
+      return ActionStatus.FAILED;
     }
     
     return ActionStatus.COMPLETE;
