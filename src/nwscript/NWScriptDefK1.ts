@@ -1718,7 +1718,21 @@ NWScriptDefK1.Actions = {
     comment: "136: Take oItem from oTakeFrom\nIf oItem is not a valid item, or oTakeFrom is not a valid object, nothing\nwill happen.\n",
     name: "ActionTakeItem",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return;
+      }
+
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionTakeItem();
+      action.setParameter(0, ActionParameterType.DWORD, args[0].id); //oItem
+      action.setParameter(1, ActionParameterType.DWORD, args[1].id); //oGiveTo
+      this.caller.actionQueue.add(action);
+    }
   },
   137:{
     comment: "137: Normalize vVector\n",
