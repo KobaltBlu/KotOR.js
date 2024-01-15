@@ -654,8 +654,18 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleDoor))
-        (this.caller as ModuleDoor).closeDoor(args[0]);
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionCloseDoor();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+      action.setParameter(0, ActionParameterType.INT, 0);
+      this.caller.actionQueue.add(action);
     }
   },
   45:{
