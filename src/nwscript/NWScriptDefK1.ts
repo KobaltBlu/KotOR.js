@@ -471,7 +471,7 @@ NWScriptDefK1.Actions = {
       }
       const action = new GameState.ActionFactory.ActionEquipItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
-      action.setParameter(1, ActionParameterType.DWORD, slot);
+      action.setParameter(1, ActionParameterType.INT, slot);
       action.setParameter(2, ActionParameterType.INT, args[2] ? NW_TRUE : NW_FALSE);
       obj.actionQueue.addFront(action);
     }
@@ -489,7 +489,7 @@ NWScriptDefK1.Actions = {
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
-      
+
       const obj = this.caller as ModuleCreature;
 
       const action = new GameState.ActionFactory.ActionUnequipItem();
