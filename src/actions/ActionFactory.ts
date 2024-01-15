@@ -27,6 +27,7 @@ import { ActionUnequipItem } from "./ActionUnequipItem";
 import { ActionUseObject } from "./ActionUseObject";
 import { ActionWait } from "./ActionWait";
 import { ActionRandomWalk } from "./ActionRandomWalk";
+import { ActionPickUpItem } from "./ActionPickUpItem";
 import type { Action } from "./Action";
 
 /**
@@ -57,6 +58,7 @@ export class ActionFactory {
   static ActionOpenDoor: typeof ActionOpenDoor = ActionOpenDoor;
   static ActionPauseDialog: typeof ActionPauseDialog = ActionPauseDialog;
   static ActionPhysicalAttacks: typeof ActionPhysicalAttacks = ActionPhysicalAttacks;
+  static ActionPickUpItem: typeof ActionPickUpItem = ActionPickUpItem;
   static ActionPlayAnimation: typeof ActionPlayAnimation = ActionPlayAnimation;
   static ActionResumeDialog: typeof ActionResumeDialog = ActionResumeDialog;
   static ActionSetCommandable: typeof ActionSetCommandable = ActionSetCommandable;

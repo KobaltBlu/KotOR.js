@@ -1,24 +1,24 @@
-import { Action } from "./Action";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ActionStatus, ActionType, ModuleObjectType } from "../enums";
 import type { ModuleCreature } from "../module/ModuleCreature";
+import { BitWise } from "../utility/BitWise";
+import { Action } from "./Action";
 
 /**
- * ActionDropItem class.
+ * ActionPickUpItem class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * @file ActionDropItem.ts
+ * @file ActionPickUpItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ActionDropItem extends Action {
+export class ActionPickUpItem extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
-    this.type = ActionType.ActionDropItem;
+    this.type = ActionType.ActionPickUpItem;
+
+    //PARAMS
   }
 
   update(delta?: number): ActionStatus {

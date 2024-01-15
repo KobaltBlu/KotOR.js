@@ -504,13 +504,45 @@ NWScriptDefK1.Actions = {
     comment: "34: Pick up oItem from the ground.\n* No return value, but if an error occurs the log file will contain\n'ActionPickUpItem failed.'\n",
     name: "ActionPickUpItem",
     type: 0,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(typeof args[0] !== 'object'){
+        return;
+      }
+
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+
+      const obj = this.caller as ModuleCreature;
+
+      const action = new GameState.ActionFactory.ActionPickUpItem();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+
+      obj.actionQueue.add(action);
+    }
   },
   35:{
     comment: "35: Put down oItem on the ground.\n* No return value, but if an error occurs the log file will contain\n'ActionPutDownItem failed.'\n",
     name: "ActionPutDownItem",
     type: 0,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(typeof args[0] !== 'object'){
+        return;
+      }
+
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+
+      const obj = this.caller as ModuleCreature;
+
+      const action = new GameState.ActionFactory.ActionDropItem();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+
+      obj.actionQueue.add(action);
+    }
   },
   36:{
     comment: "36: Get the last attacker of oAttackee.  This should only be used ONLY in the\nOnAttacked events for creatures, placeables and doors.\n* Return value on error: OBJECT_INVALID\n",

@@ -16,6 +16,7 @@ export * from "./ActionLockObject";
 export * from "./ActionMoveToPoint";
 export * from "./ActionOpenDoor";
 export * from "./ActionPauseDialog";
+export * from "./ActionPickUpItem";
 export * from "./ActionPhysicalAttacks";
 export * from "./ActionPlayAnimation";
 export * from "./ActionResumeDialog";
