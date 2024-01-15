@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import { Action, ActionCloseDoor, ActionDialogObject, ActionDoCommand, ActionOpenDoor, ActionPlayAnimation, ActionQueue, ActionUseObject, ActionWait } from "../actions";
+import type { Action } from "../actions/Action";
+import { ActionQueue } from "../actions/ActionQueue";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../CollisionData";
 import { CombatData } from "../combat/CombatData";
@@ -538,7 +539,7 @@ export class ModuleObject {
 
     const animConstant = this.getAnimationNameById(anim);
     if(animConstant >= 10000){
-      const action = new ActionPlayAnimation();
+      const action = new GameState.ActionFactory.ActionPlayAnimation();
       action.setParameter(0, ActionParameterType.INT, animConstant);
       action.setParameter(1, ActionParameterType.FLOAT, speed || 1);
       action.setParameter(2, ActionParameterType.FLOAT, time);
@@ -549,7 +550,7 @@ export class ModuleObject {
   }
 
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
-    const action = new ActionDialogObject();
+    const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
     action.setParameter(2, ActionParameterType.INT, unk1);
@@ -561,27 +562,27 @@ export class ModuleObject {
   }
 
   actionUseObject( object: ModuleObject ){
-    const action = new ActionUseObject();
+    const action = new GameState.ActionFactory.ActionUseObject();
     action.setParameter(0, ActionParameterType.DWORD, object.id);
     this.actionQueue.add(action);
   }
 
   actionOpenDoor( door: ModuleObject ){
-    const action = new ActionOpenDoor();
+    const action = new GameState.ActionFactory.ActionOpenDoor();
     action.setParameter(0, ActionParameterType.DWORD, door.id);
     action.setParameter(1, ActionParameterType.INT, 0);
     this.actionQueue.add(action);
   }
 
   actionCloseDoor( door: ModuleObject ){
-    const action = new ActionCloseDoor();
+    const action = new GameState.ActionFactory.ActionCloseDoor();
     action.setParameter(0, ActionParameterType.DWORD, door.id);
     action.setParameter(1, ActionParameterType.INT, 0);
     this.actionQueue.add(action);
   }
 
   actionWait( time = 0 ){
-    const action = new ActionWait();
+    const action = new GameState.ActionFactory.ActionWait();
     action.setParameter(0, ActionParameterType.FLOAT, time);
     this.actionQueue.add(action);
   }
@@ -896,7 +897,7 @@ export class ModuleObject {
 
   doCommand(script: NWScriptInstance){
     //console.log('doCommand', this.getTag(), script, action, instruction);
-    let action = new ActionDoCommand();
+    let action = new GameState.ActionFactory.ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
     this.actionQueue.add(action);
   }
