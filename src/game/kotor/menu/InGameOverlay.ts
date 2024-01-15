@@ -730,16 +730,16 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
         }
       }
-      if (oPC.combatData.combatAction || oPC.combatData.combatQueue.length) {
+      if (oPC.combatRound.scheduledActionList || oPC.combatRound.scheduledActionList.length) {
         this.showCombatUI();
-        let action0 = oPC.combatData.combatAction;
-        let action1 = oPC.combatData.combatQueue[0];
-        let action2 = oPC.combatData.combatQueue[1];
-        let action3 = oPC.combatData.combatQueue[2];
+        let action0 = oPC.combatRound.action;
+        let action1 = oPC.combatRound.scheduledActionList[0];
+        let action2 = oPC.combatRound.scheduledActionList[1];
+        let action3 = oPC.combatRound.scheduledActionList[2];
         if (action0 != undefined) {
-          if (this.LBL_QUEUE0.getFillTextureName() != action0.icon) {
-            this.LBL_QUEUE0.setFillTextureName(action0.icon);
-            TextureLoader.tpcLoader.fetch(action0.icon).then((texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
+            this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
+            TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
               this.LBL_QUEUE0.setFillTexture(texture);
               this.LBL_QUEUE0.border.fill.material.transparent = true;
             });
@@ -749,9 +749,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE0.setFillTexture(undefined);
         }
         if (action1 != undefined) {
-          if (this.LBL_QUEUE1.getFillTextureName() != action1.icon) {
-            this.LBL_QUEUE1.setFillTextureName(action1.icon);
-            TextureLoader.tpcLoader.fetch(action1.icon).then((texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE1.getFillTextureName() != action1.iconResRef) {
+            this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
+            TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
               this.LBL_QUEUE1.setFillTexture(texture);
               this.LBL_QUEUE1.border.fill.material.transparent = true;
             });
@@ -761,9 +761,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE1.setFillTexture(undefined);
         }
         if (action2 != undefined) {
-          if (this.LBL_QUEUE2.getFillTextureName() != action2.icon) {
-            this.LBL_QUEUE2.setFillTextureName(action2.icon);
-            TextureLoader.tpcLoader.fetch(action2.icon).then((texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE2.getFillTextureName() != action2.iconResRef) {
+            this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
+            TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
               this.LBL_QUEUE2.setFillTexture(texture);
               this.LBL_QUEUE2.border.fill.material.transparent = true;
             });
@@ -773,9 +773,9 @@ export class InGameOverlay extends GameMenu {
           this.LBL_QUEUE2.setFillTexture(undefined);
         }
         if (action3 != undefined) {
-          if (this.LBL_QUEUE3.getFillTextureName() != action3.icon) {
-            this.LBL_QUEUE3.setFillTextureName(action3.icon);
-            TextureLoader.tpcLoader.fetch(action3.icon).then((texture: OdysseyTexture) => {
+          if (this.LBL_QUEUE3.getFillTextureName() != action3.iconResRef) {
+            this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
+            TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
               this.LBL_QUEUE3.setFillTexture(texture);
               this.LBL_QUEUE3.border.fill.material.transparent = true;
             });
