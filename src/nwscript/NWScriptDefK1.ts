@@ -2103,7 +2103,17 @@ NWScriptDefK1.Actions = {
     comment: "167: The action subject will follow oFollow until a ClearAllActions() is called.\n- oFollow: this is the object to be followed\n- fFollowDistance: follow distance in metres\n* No return value\n",
     name: "ActionForceFollowObject",
     type: 0,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionForceFollowObject();
+      action.setParameter(0, ActionParameterType.DWORD, args[0].id); //oFollow
+      action.setParameter(1, ActionParameterType.FLOAT, args[1]); //fFollowDistance
+      this.caller.actionQueue.add(action);
+    }
   },
   168:{
     comment: "168: Get the Tag of oObject\n* Return value if oObject is not a valid object: ''\n",

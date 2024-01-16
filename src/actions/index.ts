@@ -27,4 +27,5 @@ export * from "./ActionUnlockObject";
 export * from "./ActionUseObject";
 export * from "./ActionWait";
 export * from "./ActionCombat";
+export * from "./ActionForceFollowObject";
 export * from "./ActionFactory";
