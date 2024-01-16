@@ -2675,9 +2675,21 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [EngineLocation]){
       console.log('ActionJumpToLocation', args, this.caller);
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
-      if(args[0] instanceof EngineLocation){
-        (this.caller as ModuleCreature).jumpToLocation( args[0] );
+      
+      if(!(args[0] instanceof EngineLocation)){
+        return;
       }
+
+      const action = new GameState.ActionFactory.ActionJumpToPoint();
+      action.setParameter(0, ActionParameterType.FLOAT, args[0].position.x);
+      action.setParameter(1, ActionParameterType.FLOAT, args[0].position.y);
+      action.setParameter(2, ActionParameterType.FLOAT, args[0].position.z);
+      action.setParameter(3, ActionParameterType.DWORD, args[0].area.id);
+      action.setParameter(4, ActionParameterType.INT, 0);
+      action.setParameter(5, ActionParameterType.FLOAT, 20.0);
+      action.setParameter(6, ActionParameterType.FLOAT, args[0].rotation.x);
+      action.setParameter(7, ActionParameterType.FLOAT, args[0].rotation.y);
+      this.caller.actionQueue.add(action);
     }
   },
   215:{
