@@ -2479,7 +2479,10 @@ NWScriptDefK1.Actions = {
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
 
-      (this.caller as ModuleCreature).jumpToObject( args[0] );
+      const action = new GameState.ActionFactory.ActionJumpToObject();
+      action.setParameter(0, ActionParameterType.DWORD, args[0].id );
+      action.setParameter(1, ActionParameterType.INT, 0);
+      this.caller.actionQueue.add(action);
     }
   },
   197:{
