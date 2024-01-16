@@ -4790,56 +4790,62 @@ NWScriptDefK1.Actions = {
       if(GameState.PartyManager.party.indexOf(args[0] as any) >= 0)
         return;
 
-      //console.log('ActionEquipMostDamagingMelee', args);
-
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let inventory = (args[0] as ModuleCreature).getInventory();
-        const equipped = args[1] ? (args[0] as ModuleCreature).equipment.LEFTHAND : (args[0] as ModuleCreature).equipment.RIGHTHAND;
-        let weapon: ModuleItem = equipped;
-        if(!args[0].isSimpleCreature()){
-
-          for(let i = 0, len = inventory.length; i < len; i++){
-            let item = inventory[i];
-            let baseItem = item.baseItem;
-            if(
-              baseItem.weaponWield == WeaponWield.STUN_BATON || 
-              baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
-              baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
-            ){
-              if(!weapon){
-                weapon = item;
-              }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-                weapon = item;
-              }
-            }
-          }
-
-          //If no melee found, equip ranged
-          if(!weapon){
-            for(let i = 0, len = inventory.length; i < len; i++){
-              let item = inventory[i];
-              let baseItem = item.baseItem;
-              if(
-                baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
-                baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
-                baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
-              ){
-                if(!weapon){
-                  weapon = item;
-                }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-                  weapon = item;
-                }
-              }
-            }
-          }
-
-          if(weapon != equipped){
-            (args[0] as ModuleCreature).equipItem(args[1] ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND, weapon);
-          }
-  
-        }
-
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return;
       }
+
+      let inventory = (args[0] as ModuleCreature).getInventory();
+      const equipped = args[1] ? (args[0] as ModuleCreature).equipment.LEFTHAND : (args[0] as ModuleCreature).equipment.RIGHTHAND;
+      let weapon: ModuleItem = equipped;
+      if(args[0].isSimpleCreature()){
+        return;
+      }
+
+      for(let i = 0, len = inventory.length; i < len; i++){
+        let item = inventory[i];
+        let baseItem = item.baseItem;
+        if(
+          baseItem.weaponWield == WeaponWield.STUN_BATON || 
+          baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
+          baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
+        ){
+          if(!weapon){
+            weapon = item;
+          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            weapon = item;
+          }
+        }
+      }
+
+      //If no melee found, equip ranged
+      if(!weapon){
+        for(let i = 0, len = inventory.length; i < len; i++){
+          let item = inventory[i];
+          let baseItem = item.baseItem;
+          if(
+            baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
+            baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
+            baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
+          ){
+            if(!weapon){
+              weapon = item;
+            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+              weapon = item;
+            }
+          }
+        }
+      }
+
+      if(weapon == equipped){
+        return false;
+      }
+      
+      const action = new GameState.ActionFactory.ActionEquipItem();
+      action.setParameter(0, ActionParameterType.DWORD, weapon);
+      action.setParameter(1, ActionParameterType.INT, args[1] ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND);
+      action.setParameter(2, ActionParameterType.INT, NW_FALSE);
+      this.caller.actionQueue.add(action);
+
     }
   },
   400:{
@@ -4849,59 +4855,67 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
 
-      if(args[0] == undefined)
+      if(args[0] == undefined){
         args[0] = this.caller;
-
-      //console.log('ActionEquipMostDamagingRanged', args);
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let inventory = (args[0] as ModuleCreature).getInventory();
-        const equipped = (args[0] as ModuleCreature).equipment.RIGHTHAND;
-        let weapon: ModuleItem = equipped;
-        if(!args[0].isSimpleCreature()){
-
-          for(let i = 0, len = inventory.length; i < len; i++){
-            let item = inventory[i];
-            let baseItem = item.baseItem;
-            if(
-              baseItem.weaponWield == WeaponWield.STUN_BATON || 
-              baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
-              baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
-            ){
-              if(!weapon){
-                weapon = item;
-              }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-                weapon = item;
-              }
-            }
-          }
-
-          //If no melee found, equip ranged
-          if(!weapon){
-            for(let i = 0, len = inventory.length; i < len; i++){
-              let item = inventory[i];
-              let baseItem = item.baseItem;
-              if(
-                baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
-                baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
-                baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
-              ){
-                if(!weapon){
-                  weapon = item;
-                }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-                  weapon = item;
-                }
-              }
-            }
-          }
-
-          //console.log('ActionEquipMostDamagingRanged', weapon);
-          if(weapon){
-            (args[0] as ModuleCreature).equipItem(ModuleCreatureArmorSlot.RIGHTHAND, weapon);
-          }
-  
-        }
-
       }
+      
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      
+      let inventory = (args[0] as ModuleCreature).getInventory();
+      const equipped = (args[0] as ModuleCreature).equipment.RIGHTHAND;
+      let weapon: ModuleItem = equipped;
+
+      if(args[0].isSimpleCreature()){
+        return;
+      }
+
+      for(let i = 0, len = inventory.length; i < len; i++){
+        const item = inventory[i];
+        const baseItem = item.baseItem;
+        if(
+          baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
+          baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
+          baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
+        ){
+          if(!weapon){
+            weapon = item;
+          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+            weapon = item;
+          }
+        }
+      }
+
+      //If no ranged found, equip melee
+      if(!weapon){
+        for(let i = 0, len = inventory.length; i < len; i++){
+          const item = inventory[i];
+          const baseItem = item.baseItem;
+          if(
+            baseItem.weaponWield == WeaponWield.STUN_BATON || 
+            baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
+            baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
+          ){
+            if(!weapon){
+              weapon = item;
+            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
+              weapon = item;
+            }
+          }
+        }
+      }
+      
+      if(!weapon){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionEquipItem();
+      action.setParameter(0, ActionParameterType.DWORD, weapon);
+      action.setParameter(1, ActionParameterType.INT, ModuleCreatureArmorSlot.RIGHTHAND);
+      action.setParameter(2, ActionParameterType.INT, NW_FALSE);
+      this.caller.actionQueue.add(action);
+      
     }
   },
   401:{
