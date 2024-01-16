@@ -427,11 +427,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
         return;
       }
 
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
       
@@ -2533,7 +2533,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return;
       }
       
