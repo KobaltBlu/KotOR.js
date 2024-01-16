@@ -2675,7 +2675,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [EngineLocation]){
       console.log('ActionJumpToLocation', args, this.caller);
       if(!(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature))) return;
-      
+
       if(!(args[0] instanceof EngineLocation)){
         return;
       }
@@ -2959,7 +2959,27 @@ NWScriptDefK1.Actions = {
     comment: "234: Cast spell nSpell at lTargetLocation.\n- nSpell: SPELL_*\n- lTargetLocation\n- nMetaMagic: METAMAGIC_*\n- bCheat: If this is TRUE, then the executor of the action doesn't have to be\nable to cast the spell.\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n- bInstantSpell: If this is TRUE, the spell is cast immediately; this allows\nthe end-user to simulate\na high-level magic user having lots of advance warning of impending trouble.\n",
     name: "ActionCastSpellAtLocation",
     type: 0,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number, number, number, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionCastSpell();
+      action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
+      action.setParameter(1, ActionParameterType.INT, -1);
+      action.setParameter(2, ActionParameterType.INT, args[4]); //DomainLevel
+      action.setParameter(3, ActionParameterType.INT, 0);
+      action.setParameter(4, ActionParameterType.INT, 0);
+      action.setParameter(5, ActionParameterType.DWORD, -1); //Target Object
+      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
+      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
+      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
+      action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
+      action.setParameter(10, ActionParameterType.INT, -1);
+      action.setParameter(11, ActionParameterType.INT, -1);
+      this.caller.actionQueue.add(action);
+    }
   },
   235:{
     comment: "235: * Returns TRUE if oSource considers oTarget as an enemy.\n",
@@ -3019,7 +3039,17 @@ NWScriptDefK1.Actions = {
     comment: "240: Causes the creature to speak a translated string.\n- nStrRef: Reference of the string in the talk table\n- nTalkVolume: TALKVOLUME_*\n",
     name: "ActionSpeakStringByStrRef",
     type: 0,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionSpeakStrRef();
+      action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
+      action.setParameter(1, ActionParameterType.INT, args[1]);
+      this.caller.actionQueue.add(action);
+    }
   },
   241:{
     comment: "241: Destroy oObject (irrevocably).\nThis will not work on modules and areas.\nThe bNoFade and fDelayUntilFade are for creatures and placeables only\n",

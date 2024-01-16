@@ -30,6 +30,7 @@ import { ActionRandomWalk } from "./ActionRandomWalk";
 import { ActionPickUpItem } from "./ActionPickUpItem";
 import type { Action } from "./Action";
 import { ActionForceFollowObject } from "./ActionForceFollowObject";
+import { ActionSpeakStrRef } from "./ActionSpeakStrRef";
 
 /**
  * ActionFactory class.
@@ -70,6 +71,7 @@ export class ActionFactory {
   static ActionWait: typeof ActionWait = ActionWait;
   static ActionRandomWalk: typeof ActionRandomWalk = ActionRandomWalk;
   static ActionForceFollowObject: typeof ActionForceFollowObject = ActionForceFollowObject;
+  static ActionSpeakStrRef: typeof ActionSpeakStrRef = ActionSpeakStrRef;
 
   static FromStruct( struct: GFFStruct ): Action {
     let action: Action = undefined as any;

@@ -28,4 +28,5 @@ export * from "./ActionUseObject";
 export * from "./ActionWait";
 export * from "./ActionCombat";
 export * from "./ActionForceFollowObject";
+export * from "./ActionSpeakStrRef";
 export * from "./ActionFactory";
