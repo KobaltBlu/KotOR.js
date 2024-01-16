@@ -2534,8 +2534,12 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.actionWait(args[0]);
+        return;
       }
+      
+      const action = new GameState.ActionFactory.ActionWait();
+      action.setParameter(0, ActionParameterType.FLOAT, args[0]);
+      this.caller.actionQueue.add(action);
     }
   },
   203:{
