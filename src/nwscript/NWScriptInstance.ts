@@ -89,12 +89,12 @@ export class NWScriptInstance {
   mgBullet: ModuleObject;
 
   //ITERATE POINTERS
-  objectsInShapeIdx: number = 0;
-  _effectPointer: number = 0;
-  persistentObjectIdx: number = 0;
-  creatureFactionIdx: number = 0;
-  attackerIndex: number = 0;
-  inventoryIndex: number = 0;
+  persistentObjectIndex: Map<number, number> = new Map<number, number>();
+  objectInventoryIndex: Map<number, number> = new Map<number, number>();
+  creatureEffectIndex: Map<number, number> = new Map<number, number>();
+  creatureAttackerIndex: Map<number, number> = new Map<number, number>();
+  factionMemberIndex: Map<number, number> = new Map<number, number>();
+  objectInSphapeIndex: Map<number, number> = new Map<number, number>();
 
   constructor( instructions: Map<number, NWScriptInstruction> ){
 
@@ -189,8 +189,14 @@ export class NWScriptInstance {
     this.delayCommands = [];
 
     this.lastSpeaker = undefined;
-    this.persistentObjectIdx = 0;
     this.firstLoop = true;
+
+    this.persistentObjectIndex = new Map<number, number>();
+    this.objectInventoryIndex = new Map<number, number>();
+    this.creatureEffectIndex = new Map<number, number>();
+    this.creatureAttackerIndex = new Map<number, number>();
+    this.factionMemberIndex = new Map<number, number>();
+    this.objectInSphapeIndex = new Map<number, number>();
 
     if(this.globalCache != null){
       //I'm trying to cache instructions from the global scope so they are not processed again when the script is run again.

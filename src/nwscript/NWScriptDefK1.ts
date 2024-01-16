@@ -37,13 +37,6 @@ import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import { CombatRound } from "../combat/CombatRound";
 import { BitWise } from "../utility/BitWise";
 
-const PersistentObjectIndex: Map<number, number> = new Map<number, number>();
-const ObjectInventoryIndex: Map<number, number> = new Map<number, number>();
-const CreatureEffectIndex: Map<number, number> = new Map<number, number>();
-const CreatureAttackerIndex: Map<number, number> = new Map<number, number>();
-const FactionMemberIndex: Map<number, number> = new Map<number, number>();
-const ObjectInSphapeIndex: Map<number, number> = new Map<number, number>();
-
 /**
  * NWScriptDefK1 class.
  * 
@@ -1158,7 +1151,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        CreatureEffectIndex.set(args[0].id, 0);
+        this.creatureEffectIndex.set(args[0].id, 0);
         return args[0].effects[0];
       }else{
         return undefined;
@@ -1172,8 +1165,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        const nextId = CreatureEffectIndex.get(args[0].id) + 1;
-        CreatureEffectIndex.set(args[0].id, nextId);
+        const nextId = this.creatureEffectIndex.get(args[0].id) + 1;
+        this.creatureEffectIndex.set(args[0].id, nextId);
         return args[0].effects[nextId];
       }else{
         return undefined;
@@ -1613,7 +1606,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      ObjectInSphapeIndex.set(0, 0);
+      this.objectInSphapeIndex.set(0, 0);
       return GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
     }
   },
@@ -1623,8 +1616,8 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      const nextId = ObjectInSphapeIndex.get(0) + 1;
-      ObjectInSphapeIndex.set(0, nextId);
+      const nextId = this.objectInSphapeIndex.get(0) + 1;
+      this.objectInSphapeIndex.set(0, nextId);
       return GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
     }
   },
@@ -3379,7 +3372,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
       //console.log('GetFirstInPersistentObject', args[0], args);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
-        PersistentObjectIndex.set(args[0].id, 0)
+        this.persistentObjectIndex.set(args[0].id, 0)
         return args[0].objectsInside[0];
       }else{
         return undefined;
@@ -3393,8 +3386,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
-        const nextId = PersistentObjectIndex.get(args[0].id) + 1;
-        PersistentObjectIndex.set(args[0].id, nextId)
+        const nextId = this.persistentObjectIndex.get(args[0].id) + 1;
+        this.persistentObjectIndex.set(args[0].id, nextId)
         return args[0].objectsInside[nextId];
       }else{
         return undefined;
@@ -4207,13 +4200,12 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      this.inventoryIndex = 0;
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          ObjectInventoryIndex.set(-1, 0);
+          this.objectInventoryIndex.set(-1, 0);
           return GameState.InventoryManager.inventory[0];
         }else{
-          ObjectInventoryIndex.set(args[0].id, 0);
+          this.objectInventoryIndex.set(args[0].id, 0);
           return args[0].inventory[0];
         }
       }else{
@@ -4229,12 +4221,12 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
-          const nextId = ObjectInventoryIndex.get(-1) + 1;
-          ObjectInventoryIndex.set(-1, nextId);
+          const nextId = this.objectInventoryIndex.get(-1) + 1;
+          this.objectInventoryIndex.set(-1, nextId);
           return GameState.InventoryManager.inventory[nextId];
         }else{
-          const nextId = ObjectInventoryIndex.get(args[0].id) + 1;
-          ObjectInventoryIndex.set(args[0].id, nextId);
+          const nextId = this.objectInventoryIndex.get(args[0].id) + 1;
+          this.objectInventoryIndex.set(args[0].id, nextId);
           return args[0].inventory[nextId];
         }
       }else{
@@ -4591,7 +4583,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          FactionMemberIndex.set(faction.id, 0);
+          this.factionMemberIndex.set(faction.id, 0);
           return faction.getFactionMemberByIndex(0, !!args[1]);
         }
       }
@@ -4607,8 +4599,8 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
-          const nextId = FactionMemberIndex.get(faction.id) + 1;
-          FactionMemberIndex.set(faction.id, nextId);
+          const nextId = this.factionMemberIndex.get(faction.id) + 1;
+          this.factionMemberIndex.set(faction.id, nextId);
           return faction.getFactionMemberByIndex(nextId, !!args[1]);
         }
       }
@@ -7816,10 +7808,9 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      this.attackerIndex = 0;
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
 
-      CreatureAttackerIndex.set(args[0].id, 0);
+      this.creatureAttackerIndex.set(args[0].id, 0);
       return GameState.ModuleObjectManager.GetAttackerByIndex(args[0], 0);
     }
   },
@@ -7831,8 +7822,8 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))) return;
 
-      const nextId = CreatureAttackerIndex.get(args[0].id) + 1;
-      CreatureAttackerIndex.set(args[0].id, nextId);
+      const nextId = this.creatureAttackerIndex.get(args[0].id) + 1;
+      this.creatureAttackerIndex.set(args[0].id, nextId);
       return GameState.ModuleObjectManager.GetAttackerByIndex(args[0], nextId);
     }
   },
@@ -7849,9 +7840,11 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) {
-        const action = new GameState.ActionFactory.ActionFollowLeader();
-        this.caller.actionQueue.add( action );
+        return;
       }
+
+      const action = new GameState.ActionFactory.ActionFollowLeader();
+      this.caller.actionQueue.add( action );
     }
   },
   731:{
