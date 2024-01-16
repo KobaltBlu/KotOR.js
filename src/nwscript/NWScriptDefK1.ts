@@ -4048,7 +4048,16 @@ NWScriptDefK1.Actions = {
     comment: "329: Use oPlaceable.\n",
     name: "ActionInteractObject",
     type: 0,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlaceable)){
+        return;
+      }
+      
+      const action = new GameState.ActionFactory.ActionUseObject();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+      this.caller.actionQueue.add(action);
+    }
   },
   330:{
     comment: "330: Get the last object that used the placeable object that is calling this function.\n* Returns OBJECT_INVALID if it is called by something other than a placeable or\na door.\n",
