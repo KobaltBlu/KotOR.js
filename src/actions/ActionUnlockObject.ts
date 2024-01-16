@@ -8,6 +8,8 @@ import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModulePlaceable } from "../module/ModulePlaceable";
+import type { ModuleDoor } from "../module/ModuleDoor";
 
 /**
  * ActionUnlockObject class.
@@ -33,14 +35,15 @@ export class ActionUnlockObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
-      return ActionStatus.FAILED;
-
     this.target = this.getParameter(0);
 
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
 
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)){
+      return ActionStatus.FAILED;
+    }
+    
     if(!this.shouted){
       this.shouted = true;
       this.owner.playSoundSet(SSFType.UNLOCK);

@@ -4915,7 +4915,7 @@ NWScriptDefK1.Actions = {
       action.setParameter(1, ActionParameterType.INT, ModuleCreatureArmorSlot.RIGHTHAND);
       action.setParameter(2, ActionParameterType.INT, NW_FALSE);
       this.caller.actionQueue.add(action);
-      
+
     }
   },
   401:{
@@ -5696,9 +5696,13 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
-        (args[0] as ModuleDoor|ModulePlaceable).setLocked(false);
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return;
       }
+
+      const action = new GameState.ActionFactory.ActionUnlockObject();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+      this.caller.actionQueue.add(action);
     }
   },
   484:{
@@ -5707,9 +5711,13 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
-        (args[0] as ModuleDoor|ModulePlaceable).setLocked(true);
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return;
       }
+
+      const action = new GameState.ActionFactory.ActionLockObject();
+      action.setParameter(0, ActionParameterType.DWORD, args[0]);
+      this.caller.actionQueue.add(action);
     }
   },
   485:{
