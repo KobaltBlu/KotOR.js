@@ -7787,7 +7787,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) {
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)) {
         return;
       }
 
