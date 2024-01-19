@@ -5734,7 +5734,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[0],ModuleObjectType.ModuleObject)){
-        args[0]._healTarget = args[1];
+        this.healTarget = args[1];
       }
     }	
   },
@@ -5744,7 +5744,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return args[0]._healTarget;
+      return this.healTarget;
     }	
   },
   815: {

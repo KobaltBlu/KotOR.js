@@ -159,8 +159,6 @@ export class ModuleObject {
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
 
-  _healTarget: ModuleObject;
-
   //Perception
   heardStrings: any[];
   perceptionList: IPerceptionInfo[] = [];
@@ -336,8 +334,6 @@ export class ModuleObject {
 
     //Combat Info
     this.combatData.initialize();
-
-    this._healTarget = undefined;
 
     //Always add the object to it's own perceptionList
     this.perceptionList = [
