@@ -82,6 +82,7 @@ export class NWScriptInstance {
   lastSpellAttacker: ModuleObject;
   lastSpell: TalentSpell;
   lastSpellHarmful: boolean;
+  healTarget: ModuleObject;
 
   //MiniGame
   mgFollower: ModuleObject;
