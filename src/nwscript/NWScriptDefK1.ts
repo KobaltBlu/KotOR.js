@@ -585,8 +585,8 @@ NWScriptDefK1.Actions = {
 
       const action = new GameState.ActionFactory.ActionPlayAnimation();
       action.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(args[0]));
-      action.setParameter(0, ActionParameterType.FLOAT, args[1] || 1.0);
-      action.setParameter(0, ActionParameterType.FLOAT, args[2]);
+      action.setParameter(1, ActionParameterType.FLOAT, args[1] || 1.0);
+      action.setParameter(2, ActionParameterType.FLOAT, args[2]);
       this.caller.actionQueue.add(action);
     }
   },
