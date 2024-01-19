@@ -32,6 +32,7 @@ export class TalentSpell extends TalentObject {
   impactscript: string;
   casthandvisual: string;
   flags: number;
+  formmask: number = 0;
 
   constructor( id = 0 ){
     super(id);
