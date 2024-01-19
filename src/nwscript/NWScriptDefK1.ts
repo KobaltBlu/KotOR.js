@@ -22,7 +22,6 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { ConfigClient } from "../utility/ConfigClient";
 import { Dice } from "../utility/Dice";
 import { Utility } from "../utility/Utility";
-// import { VideoPlayer } from "../VideoPlayer";
 import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } from "./events";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
@@ -64,9 +63,6 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
       console.log('PrintString', args[0]);
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'PrintString', args[0]);
-      }
     }
   },
   2:{
@@ -75,9 +71,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      //console.log(
-        args[0].toFixed(args[2])
-      //);
+      const output = args[0].toFixed(args[2]);
+      console.log(output);
     }
   },
   3:{
@@ -86,8 +81,8 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      //console.log('FloatToString', ('0000000000000000000'+parseInt(args[0])).substr(-args[1]) + ( ( ( args[0] % 1 ) + '00000000000').substr(1, args[2]) ))
-      return ('0000000000000000000'+parseInt(args[0].toString())).substr(-args[1]) + ( args[2] ? ( ( ( args[0] % 1 ) + '00000000000').substr(1, args[2]) ) : '' );
+      const output = ('0000000000000000000'+parseInt(args[0].toString())).substr(-args[1]) + ( args[2] ? ( ( ( args[0] % 1 ) + '00000000000').substr(1, args[2]) ) : '' );
+      return output;
     }
   },
   4:{
@@ -96,7 +91,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log(args[0]);
+      console.log(args[0]);
     }
   },
   5:{
@@ -105,7 +100,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //console.log(args[0]);
+      console.log(args[0]?.id);
     }
   },
   6:{
@@ -114,7 +109,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [ModuleObject, any]){
-      //console.log('AssignCommand', this.name, args);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(typeof args[1] === 'object'){
           args[1].script.caller = args[0];
@@ -136,8 +130,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [number, any]){
-      //console.log('NWScript: '+this.name, args);
-
+      
       let futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(args[0])
       let timedEvent = new GameState.GameEventFactory.EventTimedEvent();
       timedEvent.setCaller(this.caller);
@@ -336,7 +329,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      //console.log('GetEnteringObject', this, this.enteringObject);
       return this.enteringObject;
     }
   },
@@ -557,7 +549,6 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        //console.log('ActionAttack target', args[0], this.caller.tag, this.caller.firstName);
         this.caller.attackCreature(args[0]);
       }else{
         console.error('ActionAttack target undefined')
@@ -570,7 +561,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, ModuleObject, number, number, number, number, number]){
-      //console.log('GetNearestCreature', args);
       return GameState.ModuleObjectManager.GetNearestCreature(
         args[0], args[1], args[2], 
         args[3], args[4], args[5], args[6],
@@ -937,7 +927,6 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number, number]){
-      //console.log(args[0], args[1], args[2]);
       return args[0].substr( args[1], args[2] );
     }
   },
@@ -1235,7 +1224,6 @@ NWScriptDefK1.Actions = {
     type: 5,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('NWScript IntToString', this.name, args);
       return parseInt(args[0] as any)+'';
     }
   },
@@ -1633,7 +1621,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EVENT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
-      //console.log('SignalEvent', this.name, args[0], args[1]);
       //This needs to happen once the script has completed
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))){
         args[0] = GameState.module.area;
@@ -1912,8 +1899,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleObject]){
-      //console.log('GetItemInSlot', args[1]);
-  
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
         const obj = args[1] as ModuleCreature;
         switch(args[0]){
@@ -2554,7 +2539,6 @@ NWScriptDefK1.Actions = {
         this.caller.actionDialogObject( args[0], args[1], true );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
-        //console.log(args, this.caller);
       }
     }
   },
@@ -2653,7 +2637,6 @@ NWScriptDefK1.Actions = {
     type: 18,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //console.log('NWScript: '+this.name, 'GetLocation', args);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         return args[0].getLocation();
       }
@@ -2752,9 +2735,7 @@ NWScriptDefK1.Actions = {
             args[1].setExpireTime(future.pauseTime);
           }
           args[2].addEffect(args[1], args[0], args[3]);
-          //console.log('ApplyEffectToObject', args[2], this.caller);
         }else{
-          //console.log('ApplyEffectToObject'. args);
           console.error('ApplyEffectToObject', 'Expected a GameEffect', args);
         }
       }else{
@@ -2790,10 +2771,7 @@ NWScriptDefK1.Actions = {
         break;
       }
 
-      //console.log('SpeakString', args[1], args[0], this.caller);
-
       if(args[1] == 3){
-        //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
           if(GameState.module.area.creatures[i] != this.caller && !GameState.module.area.creatures[i].isDead()){
             let distance = this.caller.position.distanceTo(GameState.module.area.creatures[i].position);
@@ -2803,12 +2781,10 @@ NWScriptDefK1.Actions = {
                 string: args[0].toLowerCase(), 
                 volume: args[1]
               });
-              //console.log('SpeakStringTO ->', args[1], args[0], GameState.module.area.creatures[i]);
             }
           }
         }
       }else if(args[1] == 4){
-        //console.log('SpeakString', args[1], args[0].toLowerCase());
         for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
           if(GameState.PartyManager.party[i] != this.caller && !GameState.PartyManager.party[i].isDead()){
             let distance = this.caller.position.distanceTo(GameState.PartyManager.party[i].position);
@@ -2908,7 +2884,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
-      //console.log('GetNearestObjectByTag', args);
       return GameState.ModuleObjectManager.GetNearestObjectByTag(args[0], args[1], args[2]-1);
     }
   },
@@ -2993,7 +2968,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
-      //console.log('GetIsFriend', args[0], args[1]);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         if( ( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 ? NW_TRUE : NW_FALSE ) && ( GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ? NW_TRUE : NW_FALSE ) ){
           return 1;
@@ -3050,11 +3024,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      
-      if(this.isDebugging()){
-        //console.log('NWScript: '+this.name, 'DestroyObject', args);
-      }
-
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
         args[0].destroy();
     }
@@ -3261,8 +3230,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [string, ModuleObject]){
-      //console.log('BeginConversation', this.caller, this.listenPatternSpeaker, args)
-  
       if( !(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) ){
         args[1] = this.listenPatternSpeaker;
       }
@@ -3370,7 +3337,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      //console.log('GetFirstInPersistentObject', args[0], args);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
         this.persistentObjectIndex.set(args[0].id, 0)
         return args[0].objectsInside[0];
@@ -3680,7 +3646,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [any]){
-      //console.log('ActionDoCommand', args, this);
       this.caller.doCommand( args[0].script );
     }
   },
@@ -3837,7 +3802,6 @@ NWScriptDefK1.Actions = {
     type: 19,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, ModuleObject, number, number, number]){
-      //console.log('GetCreatureTalentBest', args);
       if(BitWise.InstanceOfObject(args[2], ModuleObjectType.ModuleCreature)){
         return (args[2] as ModuleCreature).getTalentBest(args[0], args[1], args[3], args[4], args[5]);
       }
@@ -3917,7 +3881,6 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         if(args[0].combatData.combatState){
-          //console.log('GetAttackTarget', this.caller, args[0]);
           return args[0].combatData.lastAttackTarget || args[0].combatData.lastAttacker;
         }else{
           return undefined;
@@ -4151,8 +4114,7 @@ NWScriptDefK1.Actions = {
     name: "GetIsDoorActionPossible",
     type: 3,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [ModuleDoor, number]){ //GetIsDoorActionPossible
-      //console.log('GetIsDoorActionPossible', args);
+    action: function(this: NWScriptInstance, args: [ModuleDoor, number]){
 
       /*
       int    DOOR_ACTION_OPEN                 = 0;
@@ -4176,8 +4138,7 @@ NWScriptDefK1.Actions = {
     name: "DoDoorAction",
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [ModuleDoor, number]){ //DoDoorAction
-      //console.log('DoDoorAction', args);
+    action: function(this: NWScriptInstance, args: [ModuleDoor, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
         switch(args[1]){
           //OPEN
@@ -4376,7 +4337,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.TALENT],
     action: function(this: NWScriptInstance, args: [TalentObject]){
-      //console.log('GetIsTalentValid', args[0]);
       return typeof args[0] != 'undefined' && typeof args[0] == 'object' && typeof args[0].objectType != 'undefined' ? NW_TRUE : NW_FALSE;
     }
   },
@@ -4402,7 +4362,6 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.TALENT],
     action: function(this: NWScriptInstance, args: [TalentObject]){
       if(typeof args[0] == 'object'){
-        //console.log('GetTypeFromTalent', args[0])
         return args[0].objectType || 0;
       }else{
         return 0;
@@ -5881,7 +5840,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('NWScript: '+this.name, 'EnableVideoEffect ', args);
       GameState.videoEffect = !isNaN(args[0]) ? args[0] : -1;
     }
   },
@@ -5900,7 +5858,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      //console.log('NWScript: '+this.name, 'DisableVideoEffect ', args);
       GameState.videoEffect = -1;
     }
   },
@@ -6457,7 +6414,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('RemovePartyMember', args);
       GameState.PartyManager.RemoveNPCById(args[0], true);
       return 0;
     }
@@ -6477,7 +6433,6 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('GetPartyMemberByIndex', PartyManager.party[args[0]], args);
       switch(args[0]){
         case 0:
           return GameState.PartyManager.party[0];
@@ -6495,7 +6450,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      //console.log('NWScript: '+this.name, 'GetGlobalBoolean ', args);
       return GameState.GlobalVariableManager.GetGlobalBoolean( args[0], ) ? NW_TRUE : NW_FALSE;
     }
   },
@@ -6505,7 +6459,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      //console.log('NWScript: '+this.name, 'SetGlobalBoolean ', args);
       GameState.GlobalVariableManager.SetGlobalBoolean( args[0], !!args[1] );
     }
   },
@@ -6515,7 +6468,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      //console.log('NWScript: '+this.name, 'GetGlobalNumber ', args);
       return GameState.GlobalVariableManager.GetGlobalNumber( args[0] );
     }
   },
@@ -6525,7 +6477,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      //console.log('NWScript: '+this.name, 'SetGlobalNumber ', args[0], args[1]); 
       GameState.GlobalVariableManager.SetGlobalNumber( args[0], args[1] );
     }
   },
@@ -7448,7 +7399,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('RemoveAvailableNPC', args);
       GameState.PartyManager.RemoveAvailableNPC(args[0]);
       return 1;
     }
@@ -7567,7 +7517,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //console.log('SetPartyAIStyle', args, this);
       GameState.PartyManager.aiStyle = args[0];
     }
   },
@@ -7577,7 +7526,6 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      //console.log('SetNPCAIStyle', args, this);
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature))
         (args[0] as any).aiStyle = args[1];
     }
@@ -7876,11 +7824,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING],
     action: async function(this: NWScriptInstance, args: [string]){
-      // return new Promise<void>( async ( resolve, reject) => {
-      //   VideoPlayer.Load(args[0], () => {
-      //     resolve();
-      //   });
-      // });
+      //todo
     }
   },
   734:{
@@ -7898,7 +7842,6 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.TALENT],
     action: function(this: NWScriptInstance, args: [TalentObject]){
-      //console.log(GetCategoryFromTalent, args);
       if(typeof args[0] != 'undefined'){
         let category = parseInt(args[0].category as any);
         if(isNaN(category))
