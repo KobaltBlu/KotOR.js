@@ -856,34 +856,74 @@ export class ModuleObject {
     return 0;
   }
 
+  //----------------------//
+  // INVENTORY MANAGEMENT
+  //----------------------//
+
   addItem(item: ModuleItem){
     item.load();
-    let hasItem = this.getItem(item.getTag());
-    if(hasItem){
-      hasItem.setStackSize(hasItem.getStackSize() + 1);
-      return hasItem;
+    
+    const eItem = this.getItemByTag(item.getTag());
+    if(eItem){
+      eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
+      return eItem;
     }else{
       this.inventory.push(item);
       return item;
     }
   }
 
-  removeItem(resRef = '', nCount = 1): void {
-    let item = this.getItem(resRef);
-    let idx = this.inventory.indexOf(item);
-    if(item){
-      if(nCount < item.getStackSize()){
-        item.setStackSize(item.getStackSize() - nCount);
-      }else{
-        this.inventory.splice(idx, 1);
-      }
+  removeItem(item: ModuleItem, nCount = 1): ModuleItem {
+    const eItem = this.getItemByTag(item.getTag());
+
+    if(!eItem){
+      return undefined;
     }
+
+    const idx = this.inventory.indexOf(eItem);
+
+    if(nCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - nCount);
+    }else{
+      this.inventory.splice(idx, 1);
+    }
+
+    return eItem.clone();
   }
 
-  getItem(resRef = ''): ModuleItem {
-    for(let i = 0; i<this.inventory.length; i++){
+  removeItemByTag(sTag = '', nCount = 1): ModuleItem {
+    const eItem = this.getItemByTag(sTag);
+
+    if(!eItem){
+      return undefined;
+    }
+
+    const idx = this.inventory.indexOf(eItem);
+
+    if(nCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - nCount);
+    }else{
+      this.inventory.splice(idx, 1);
+    }
+
+    return eItem.clone();
+  }
+
+  getItem(oItem: ModuleItem): ModuleItem {
+    if(!oItem){ return undefined; }
+
+    for(let i = 0; i < this.inventory.length; i++){
+      const cItem = this.inventory[i];
+      if(cItem == oItem)
+        return cItem;
+    }
+    return undefined;
+  }
+
+  getItemByTag(sTag = ''): ModuleItem {
+    for(let i = 0; i < this.inventory.length; i++){
       let item = this.inventory[i];
-      if(item.getTag() == resRef)
+      if(item.getTag() == sTag)
         return item;
     }
     return;
@@ -1472,7 +1512,7 @@ export class ModuleObject {
   hasItem(sTag=''){
     sTag = sTag.toLowerCase();
     if(this.isPartyMember()){
-      return GameState.InventoryManager.getItem(sTag);
+      return GameState.InventoryManager.getItemByTag(sTag);
     }else{
       return undefined;
     }

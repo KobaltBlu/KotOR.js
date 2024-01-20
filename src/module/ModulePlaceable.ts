@@ -359,14 +359,14 @@ export class ModulePlaceable extends ModuleObject {
     return [];
   }
 
-  getItem(resRef = ''): ModuleItem {
-    for(let i = 0; i<this.inventory.length; i++){
+  getItemByTag(sTag = ''): ModuleItem {
+    for(let i = 0; i < this.inventory.length; i++){
       let item = this.inventory[i];
-      if(item.getTag().toLowerCase() == resRef.toLowerCase()){
+      if(item.getTag().toLowerCase() == sTag.toLowerCase()){
         return item;
       }
     }
-    return;
+    return undefined;
   }
 
   getInventory(){
@@ -639,7 +639,7 @@ export class ModulePlaceable extends ModuleObject {
     let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
-    let hasItem = this.getItem(item.getTag());
+    let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;

@@ -1,5 +1,9 @@
+import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 
 /**
@@ -16,6 +20,45 @@ export class ActionTakeItem extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionTakeItem;
+
+    //PARAMS
+    // 0 - dword: oItem
+    // 1 - dword: oTakeFrom
+  }
+
+  update(delta?: number): ActionStatus {
+
+    if(
+      !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
+      !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable) &&
+      !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleStore)
+    ){
+      return ActionStatus.FAILED;
+    }
+
+    const oItem = this.getParameter(0) as ModuleItem;
+    if(!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
+      return ActionStatus.FAILED;
+    }
+
+    const oTarget = this.getParameter(1) as ModuleObject;
+    if(
+      !BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature) &&
+      !BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModulePlaceable) &&
+      !BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleStore)
+    ){
+      return ActionStatus.FAILED;
+    }
+
+    const removed = oTarget.removeItem(oItem, 1);
+
+    if(GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
+      GameState.InventoryManager.addItem( oItem );
+    }{
+      this.owner.addItem( oItem );
+    }
+
+    return ActionStatus.COMPLETE;
   }
 
 }

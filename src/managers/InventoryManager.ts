@@ -114,7 +114,7 @@ export class InventoryManager {
         GameState.PartyManager.Gold += item.getStackSize();
       }else{
         item.load();
-        let hasItem = InventoryManager.getItem(item.getTag());
+        let hasItem = InventoryManager.getItemByTag(item.getTag());
         if(hasItem){
 
           if(!limitOne){
@@ -174,7 +174,7 @@ export class InventoryManager {
   }
 
   static removeItemByResRef(resRef = '', nCount = 1){
-    let item = InventoryManager.getItem(resRef);
+    let item = InventoryManager.getItemByTag(resRef);
     if(item){
       let idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
@@ -204,10 +204,10 @@ export class InventoryManager {
     }
   }
 
-  static getItem(resRef = ''){
+  static getItemByTag(sTag = ''){
     for(let i = 0; i < InventoryManager.inventory.length; i++){
       let item = InventoryManager.inventory[i];
-      if(item.getTag().toLowerCase() == resRef.toLowerCase())
+      if(item.getTag().toLowerCase() == sTag.toLowerCase())
         return item;
     }
     return false;

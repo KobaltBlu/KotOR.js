@@ -103,6 +103,13 @@ export class ModuleItem extends ModuleObject {
 
   }
 
+  clone(): ModuleItem {
+    const nItem = new ModuleItem(this.template);
+    nItem.initProperties();
+    nItem.stackSize = 1;
+    return nItem;
+  }
+
   update(delta = 0){
     if(this.model instanceof OdysseyModel3D)
       this.model.update(delta);

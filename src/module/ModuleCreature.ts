@@ -4250,7 +4250,7 @@ export class ModuleCreature extends ModuleObject {
     let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
-    let hasItem = this.getItem(item.getTag());
+    let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;

@@ -338,7 +338,7 @@ export class ModuleDoor extends ModuleObject {
       
       if(this.isLocked()){
         if(this.keyRequired && this.keyName.length){
-          if(BitWise.InstanceOf(GameState.InventoryManager.getItem(this.keyName)?.objectType, ModuleObjectType.ModuleItem)){
+          if(BitWise.InstanceOf(GameState.InventoryManager.getItemByTag(this.keyName)?.objectType, ModuleObjectType.ModuleItem)){
             this.locked = false;
           }
         }

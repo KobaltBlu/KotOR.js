@@ -1710,7 +1710,7 @@ NWScriptDefK1.Actions = {
 
       const action = new GameState.ActionFactory.ActionTakeItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0].id); //oItem
-      action.setParameter(1, ActionParameterType.DWORD, args[1].id); //oGiveTo
+      action.setParameter(1, ActionParameterType.DWORD, args[1].id); //oTakeFrom
       this.caller.actionQueue.add(action);
     }
   },
