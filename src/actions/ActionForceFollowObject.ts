@@ -1,4 +1,5 @@
-import { ModuleObjectType } from "../enums";
+import { GameState } from "../GameState";
+import { ActionParameterType, ModuleObjectType } from "../enums";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { BitWise } from "../utility/BitWise";
@@ -20,16 +21,31 @@ export class ActionForceFollowObject extends Action {
     this.type = ActionType.ActionForceFollowObject;
 
     //PARAMS
-    // 0 - dword: door object id
+    // 0 - dword: object id
     // 1 - float: distance
 
   }
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter(0);
+    const fDistance = this.getParameter(1) || 0.00;
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature))
       return ActionStatus.FAILED;
+
+    const run = true;
+
+    const action = new GameState.ActionFactory.ActionMoveToPoint();
+    action.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
+    action.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
+    action.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
+    action.setParameter(3, ActionParameterType.DWORD, this.target.area);
+    action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
+    action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
+    action.setParameter(6, ActionParameterType.FLOAT, fDistance);
+    action.setParameter(7, ActionParameterType.INT, 0);
+    action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+    this.owner.actionQueue.addFront(action);
 
     return ActionStatus.FAILED;
   }
