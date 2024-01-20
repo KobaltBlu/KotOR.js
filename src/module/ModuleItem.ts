@@ -48,7 +48,6 @@ export class ModuleItem extends ModuleObject {
   palleteID: number;
   loaded: boolean;
   properties: any[];
-  upgradeItems: any = {};
   possessor: any;
   descIdentified: any;
   stolen: any;
@@ -63,7 +62,16 @@ export class ModuleItem extends ModuleObject {
   newItem: any;
   nonEquippable: any;
   pickpocketable: any;
-  upgrades: any;
+
+  upgradeItems: any = {};
+  upgrades: number = 0;
+  upgradeLevel: number = 0;
+  upgradeSlot0: number = -1;
+  upgradeSlot1: number = -1;
+  upgradeSlot2: number = -1;
+  upgradeSlot3: number = -1;
+  upgradeSlot4: number = -1;
+  upgradeSlot5: number = -1;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -639,6 +647,34 @@ export class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.hasField('Upgrades')){
       this.upgrades = this.template.getFieldByLabel('Upgrades').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeLevel')){
+      this.upgradeLevel = this.template.getFieldByLabel('UpgradeLevel').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot0')){
+      this.upgradeSlot0 = this.template.getFieldByLabel('UpgradeSlot0').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot1')){
+      this.upgradeSlot1 = this.template.getFieldByLabel('UpgradeSlot1').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot2')){
+      this.upgradeSlot2 = this.template.getFieldByLabel('UpgradeSlot2').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot3')){
+      this.upgradeSlot3 = this.template.getFieldByLabel('UpgradeSlot3').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot4')){
+      this.upgradeSlot4 = this.template.getFieldByLabel('UpgradeSlot4').getValue();
+    }
+
+    if(this.template.RootNode.hasField('UpgradeSlot5')){
+      this.upgradeSlot5 = this.template.getFieldByLabel('UpgradeSlot5').getValue();
     }
 
     if(this.template.RootNode.hasField('XPosition'))
