@@ -321,7 +321,7 @@ export class GameState implements EngineContext {
       antialias: false,
       canvas: GameState.canvas,
       context: GameState.context,
-      logarithmicDepthBuffer: false,
+      logarithmicDepthBuffer: true,
       alpha: true,
       preserveDrawingBuffer: false
     }) as THREE.WebGLRenderer;
