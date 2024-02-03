@@ -56,6 +56,8 @@ import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
+import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
+
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
   GameDirectory: string, //path to the local game install directory
@@ -314,14 +316,15 @@ export class GameState implements EngineContext {
     GameState.context = GameState.canvas.getContext( 'webgl' );
 
     GameState.rendererUpscaleFactor = 1;
-    GameState.renderer = new THREE.WebGLRenderer({
+    //@ts-expect-error
+    GameState.renderer = new OdysseyGLRenderer({
       antialias: false,
       canvas: GameState.canvas,
       context: GameState.context,
       logarithmicDepthBuffer: false,
       alpha: true,
       preserveDrawingBuffer: false
-    });
+    }) as THREE.WebGLRenderer;
 
     
     GameState.renderer.autoClear = false;
