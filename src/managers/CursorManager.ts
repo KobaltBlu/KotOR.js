@@ -62,7 +62,8 @@ export class CursorManager {
   static pointMaterial = new THREE.PointsMaterial({
     color: 0xff0000,
     sizeAttenuation: false,
-    fog: false
+    fog: false,
+    visible: false
   });
 
   static testPoints: THREE.Points;
@@ -226,8 +227,7 @@ export class CursorManager {
   public static setReticleHoveredObject( object: ModuleObject ){
     if(!object){ return; }
 
-    let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
-    let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (CursorManager.hoveredObject == CursorManager.selectedObject);
+    let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
     CursorManager.hovered = object.getReticleNode();
     if(CursorManager.hovered){
@@ -283,7 +283,7 @@ export class CursorManager {
   }
 
   static updateCursorPosition(){
-    CursorManager.setCursor('default');
+    // CursorManager.setCursor('default');
     GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
     GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
   }
@@ -292,6 +292,7 @@ export class CursorManager {
     let cursorCaptured = false;
     let guiHoverCaptured = false;
 
+    CursorManager.setCursor('default');
     GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
     GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
 
@@ -310,7 +311,7 @@ export class CursorManager {
         CursorManager.MenuManager.hoveredGUIElement = control;
       }
 
-      if(!(control.widget.parent.type === 'Scene')){
+      if((control.widget.parent.type === 'Scene')){
         continue;
       }
 
@@ -338,14 +339,13 @@ export class CursorManager {
     if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
       if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
         if(GameState.scene_cursor_holder.visible){
-          //console.log(GameState.scene_cursor_holder.position);
           let hoveredObject = false;
           const moduleObject = CursorManager.onMouseHitInteractive();
+          // console.log('moduleObject', moduleObject);
           if(moduleObject){
-            if(moduleObject != GameState.getCurrentPlayer()){
-              CursorManager.setReticleHoveredObject(moduleObject);
-            }
+            CursorManager.setReticleHoveredObject(moduleObject);
           }else{
+            CursorManager.setCursor('default');
             // CursorManager.hovered = CursorManager.hoveredObject = undefined;
           }
         }else{
@@ -402,6 +402,7 @@ export class CursorManager {
     let obj;
     let targetPosition = new THREE.Vector3();
     const losZ = 1;
+    
     for(let i = 0; i < objCount; i++){
       obj = objects[i];
 
@@ -415,6 +416,7 @@ export class CursorManager {
     CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
     CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
     CursorManager.pointGeomerty.computeBoundingBox();
+    CursorManager.pointGeomerty.computeBoundingSphere();
 
     const occluders = [
       CursorManager.testPoints,
@@ -426,7 +428,7 @@ export class CursorManager {
     CursorManager.raycaster.far = GameState.maxSelectableDistance;
     CursorManager.raycaster.params.Points.threshold = CursorManager.pointThreshold;
     CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
-    const intersectsT = CursorManager.raycaster.intersectObjects( occluders, true );
+    const intersectsT = CursorManager.raycaster.intersectObjects( occluders, false );
     if(intersectsT[0] && intersectsT[0].object?.uuid == CursorManager.testPoints.uuid){
       // console.log('intersects', intersectsT[0], objects2[intersectsT[0]?.index], intersectsT);
       return objects[intersectsT[0].index];
