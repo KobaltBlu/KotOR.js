@@ -327,6 +327,24 @@ export class CursorManager {
     if(CursorManager.selectedObject){
       if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
         CursorManager.selectedObject = undefined;
+        CursorManager.selected = undefined;
+      }
+
+      if(CursorManager.selectedObject && !CursorManager.selectedObject.isUseable()){
+        CursorManager.selectedObject = undefined;
+        CursorManager.selected = undefined;
+      }
+    }
+
+    if(CursorManager.hoveredObject){
+      if(CursorManager.hoveredObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+        CursorManager.hoveredObject = undefined;
+        CursorManager.hovered = undefined;
+      }
+
+      if(CursorManager.hoveredObject && !CursorManager.hoveredObject.isUseable()){
+        CursorManager.hoveredObject = undefined;
+        CursorManager.hovered = undefined;
       }
     }
 
