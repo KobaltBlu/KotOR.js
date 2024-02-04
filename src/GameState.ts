@@ -745,7 +745,7 @@ export class GameState implements EngineContext {
         continue;
       }
 
-      /*dir.copy(targetPosition);
+      dir.copy(targetPosition);
       dir.sub(playerPosition);
       // dir.negate();
       dir.normalize();
@@ -761,14 +761,13 @@ export class GameState implements EngineContext {
           los = los.filter( (intersect) => {
             intersect.object.uuid != obj.collisionData.walkmesh.mesh.uuid
           });
-          // console.log('los', los);
         }
 
         const intersect = los[0];
         if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
           continue;
         }
-      }*/
+      }
       
       selectableObjects.push(obj);
     }
