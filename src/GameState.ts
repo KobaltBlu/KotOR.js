@@ -769,9 +769,7 @@ export class GameState implements EngineContext {
           continue;
         }
       }*/
-
-      // points.push(...targetPosition.toArray());
-      // sizes.push(0.2);
+      
       selectableObjects.push(obj);
     }
 
