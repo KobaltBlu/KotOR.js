@@ -282,12 +282,6 @@ export class CursorManager {
     }
   }
 
-  static updateCursorPosition(){
-    // CursorManager.setCursor('default');
-    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
-    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
-  }
-
   static updateCursor(){
     let cursorCaptured = false;
     let guiHoverCaptured = false;

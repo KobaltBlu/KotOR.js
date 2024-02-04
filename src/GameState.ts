@@ -1131,7 +1131,6 @@ export class GameState implements EngineContext {
     AudioEngine.GetAudioEngine().update(GameState.currentCamera.position, GameState.currentCamera.rotation);
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
-    GameState.CursorManager.updateCursorPosition();
     GameState.renderPass.camera = GameState.currentCamera;
     //GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
