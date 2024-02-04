@@ -72,5 +72,19 @@ export class OdysseyObject3D extends THREE.Object3D {
   playAnimation(arg0: any, aLooping: boolean, arg2?: Function) {
     throw new Error("Method not implemented.");
   }
+
+  static getUUIDs(object: THREE.Object3D): string[] {
+    const uuids: string[] = [];
+
+    if(!object){ return uuids; }
+
+    uuids.push(object.uuid);
+
+    for(let i = 0, len = object.children.length; i < len; i++){
+      uuids.push(...OdysseyObject3D.getUUIDs(object.children[i]));
+    }
+
+    return uuids;
+  }
   
 }

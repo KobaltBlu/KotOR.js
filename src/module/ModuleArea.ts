@@ -316,6 +316,9 @@ export class ModuleArea extends ModuleObject {
   spellInstances: SpellCastInstance[] = [];
   textSprites: TextSprite3D[] = [];
 
+  roomWalkmeshes: OdysseyWalkMesh[] = [];
+  doorWalkmeshes: OdysseyWalkMesh[] = [];
+
   constructor(resRef = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
     this.objectType |= ModuleObjectType.ModuleArea;
@@ -1117,6 +1120,8 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
+      this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
+
       GameState.MenuManager.LoadScreen.setProgress(10);
       
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
@@ -1154,6 +1159,8 @@ export class ModuleArea extends ModuleObject {
       GameState.MenuManager.LoadScreen.setProgress(70);
 
       try { await this.loadDoors(); } catch(e){ console.error(e); }
+
+      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionData?.walkmesh}).map( (d) => { return d.collisionData.walkmesh; });
 
       try { await this.loadStores(); } catch(e){ console.error(e); }
 

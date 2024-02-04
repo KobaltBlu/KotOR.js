@@ -64,5 +64,6 @@ export { MenuTop } from "./menu/MenuTop";
 export { MenuUpgrade } from "./menu/MenuUpgrade";
 export { MenuUpgradeItems } from "./menu/MenuUpgradeItems";
 export { MenuUpgradeSelect } from "./menu/MenuUpgradeSelect";
+export { MenuSwoopUp } from "./menu/MenuSwoopUp";
 
 // export as namespace TSL;

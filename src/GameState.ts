@@ -1,12 +1,12 @@
 import * as THREE from "three";
-import type { 
+import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager 
 } from "./managers";
 
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import type { ModuleObject, ModuleCreature, Module } from "./module";
+import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "./module";
 import type { NWScript } from "./nwscript/NWScript";
 import type { SaveGame } from "./SaveGame";
 import type { GameEffectFactory } from "./effects/GameEffectFactory";
@@ -361,6 +361,7 @@ export class GameState implements EngineContext {
 
     GameState.visible = true;
 
+    GameState.CursorManager.MenuManager = GameState.MenuManager;
     GameState.CursorManager.selected = undefined;
     GameState.CursorManager.hovered = undefined;
 
@@ -576,6 +577,7 @@ export class GameState implements EngineContext {
       GameState.scene.add( GameState.CursorManager.reticle );
       GameState.scene.add( GameState.CursorManager.reticle2 );
       GameState.scene_gui.add( GameState.CursorManager.arrow );
+      GameState.scene.add( GameState.CursorManager.testPoints );
       console.log('CursorManager: Complete');
 
       console.log('MenuLoader: Init');
@@ -700,233 +702,82 @@ export class GameState implements EngineContext {
     return p ? p : GameState.player;
   }
 
-  public static onMouseHitInteractive( onSuccess?: Function){
+  static tUpdateSelectable = 0;
+
+  public static getSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
+
+    const objects = [
+      ...GameState.module.area.placeables, 
+      ...GameState.module.area.doors, 
+      ...GameState.module.area.creatures
+    ];
+
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      if(!i){ continue; }
+      objects.push(GameState.PartyManager.party[i]);
+    }
+
+    const selectableObjects: ModuleObject[] = [];
+
+    const objCount = objects.length;
+    let obj: ModuleObject;
+    let dir = new THREE.Vector3();
+    const losZ = 1;
+    const playerPosition = player.position.clone();
+    playerPosition.z += losZ;
+
+    const targetPosition = new THREE.Vector3();
     
-    GameState.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
-    let intersects = GameState.raycaster.intersectObjects( GameState.interactableObjects, true );
+    let distance = 0;
+    for(let i = 0; i < objCount; i++){
+      obj = objects[i];
 
-    const getNodeModuleObject = function (node: THREE.Object3D, isCurrentPlayerSelectable: boolean = false): ModuleObject|undefined {
-      const moduleObject: ModuleObject = node?.userData?.moduleObject;
-      if(moduleObject){
-        if(moduleObject != GameState.getCurrentPlayer() || isCurrentPlayerSelectable){
-          return moduleObject;
-        }
-      }
-      return;
-    }
+      if(!obj.isUseable()){ continue; }
 
-    if(intersects.length){
-      const intersection = intersects[0],
-          obj = intersection.object;
-      
-      let searching = true;
-
-      //Does this node contain a ModuleObject reference
-      const moduleObject = getNodeModuleObject(obj);
-      if(moduleObject){
-        if(typeof onSuccess === 'function')
-          onSuccess(moduleObject, intersection);
-        return;
-      }else{
-        //Bubble up to try and find a ModuleObject reference
-        obj.traverseAncestors( (parentNode: THREE.Object3D) => {
-          if(!searching) return;
-          const moduleObject = getNodeModuleObject(parentNode);
-          if(moduleObject){
-            searching = false;
-            if(typeof onSuccess === 'function')
-              onSuccess(moduleObject, intersection);
-            return;
-          }
-        });
-      }
-    }
-  }
-
-  public static setReticleSelectedObject( object: ModuleObject ){
-    if(object){
-      GameState.CursorManager.selected = object.getReticleNode();
-      if(GameState.CursorManager.selected){
-        GameState.CursorManager.selected.getWorldPosition(GameState.CursorManager.reticle2.position);
-        GameState.CursorManager.selectedObject = object;
+      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
+      if(isDoor){
+        if((obj as ModuleDoor).isOpen()){ continue; };
       }
 
-      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){      
-        GameState.CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
-        if(!object.isUseable()){
-          return;
-        }      
-        GameState.CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-        if(object.isHostile(GameState.getCurrentPlayer())){
-          GameState.CursorManager.setReticle2('reticleH2');
-        }else{
-          GameState.CursorManager.setReticle2('reticleF2');
-        }
-      }
-    }
-  }
+      targetPosition.copy(obj.position);
+      targetPosition.z += losZ;
 
-  public static setReticleHoveredObject( object: ModuleObject ){
-    if(object){
-      let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
-      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (GameState.CursorManager.hoveredObject == GameState.CursorManager.selectedObject);
-
-      GameState.CursorManager.hovered = object.getReticleNode();
-      if(GameState.CursorManager.hovered){
-        GameState.CursorManager.hovered.getWorldPosition(GameState.CursorManager.reticle.position);
-        GameState.CursorManager.hoveredObject = object;
-      }
-
-      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
-        if(canChangeCursor)
-          GameState.CursorManager.setCursor('door');
-        else
-          GameState.CursorManager.setCursor('select');
-
-          GameState.CursorManager.setReticle('reticleF');
-      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
-        if(!object.isUseable()){
-          return;
-        }
-        if(canChangeCursor)
-          GameState.CursorManager.setCursor('use');
-        else
-          GameState.CursorManager.setCursor('select');
-
-          GameState.CursorManager.setReticle('reticleF');
-      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-
-        if(object.isHostile(GameState.getCurrentPlayer())){
-          if(!object.isDead()){
-            if(canChangeCursor)
-              GameState.CursorManager.setCursor('attack');
-            else
-              GameState.CursorManager.setCursor('select');
-
-            GameState.CursorManager.setReticle('reticleH');
-          }else{
-            if(canChangeCursor)
-              GameState.CursorManager.setCursor('use');
-            else
-              GameState.CursorManager.setCursor('select');
-
-            GameState.CursorManager.setReticle('reticleF');
-          }
-        }else{
-          if(canChangeCursor)
-            GameState.CursorManager.setCursor('talk');
-          else
-            GameState.CursorManager.setCursor('select');
-
-          GameState.CursorManager.setReticle('reticleF');
-        }
-
-      }
-    }
-  }
-
-  static updateCursorPosition(){
-    GameState.CursorManager.setCursor('default');
-    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
-    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
-  }
-
-  static updateCursor(){
-    let cursorCaptured = false;
-    let guiHoverCaptured = false;
-
-    GameState.MenuManager.hoveredGUIElement = undefined;
-
-    let uiControls = GameState.controls.MenuGetActiveUIElements();
-    let controlCount = uiControls.length;
-    for(let i = 0; i < controlCount; i++){
-      let control = uiControls[i];
-      if(!control.isVisible())
+      distance = targetPosition.distanceTo(playerPosition);
+      if(distance > GameState.maxSelectableDistance){
         continue;
-
-      //if(control === GameState.mouse.clickItem){
-      if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIListBox) && GameState.MenuManager.hoveredGUIElement == undefined){
-        GameState.MenuManager.hoveredGUIElement = control;
       }
 
-      if(!(control.widget.parent.type === 'Scene')){
-        if(!guiHoverCaptured){
-          let cMenu = control.menu;
-          cMenu.setWidgetHoverActive(control, true);
-          guiHoverCaptured = false;
-        }
+      /*dir.copy(targetPosition);
+      dir.sub(playerPosition);
+      // dir.negate();
+      dir.normalize();
 
-        if(typeof control.isClickable == 'function'){
-          if(control.isClickable()){
-            GameState.CursorManager.setCursor('select');
-            cursorCaptured = true;
-          }
-        }
-      }
-      //}
-    }
+      if(obj.model){
+        GameState.raycaster.set(playerPosition, dir);
 
-    GameState.CursorManager.arrow.visible = false;
-    if(GameState.CursorManager.selectedObject){
-      if(GameState.CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
-        GameState.CursorManager.selectedObject = undefined;
-      }
-    }
+        //Check that we can see the object
+        let los = GameState.raycaster.intersectObjects([...GameState.group.room_walkmeshes.children, obj.model], true);
 
-    if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
-      if(GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
-        if(GameState.scene_cursor_holder.visible){
-          //console.log(GameState.scene_cursor_holder.position);
-          let hoveredObject = false;
-          GameState.onMouseHitInteractive( (moduleObject: ModuleObject) => {
-            if(moduleObject && moduleObject.isUseable()){
-              if(moduleObject != GameState.getCurrentPlayer()){
-                GameState.setReticleHoveredObject(moduleObject);
-              }
-            }else{
-              GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = undefined;
-            }
+        //If the object a door ignore it's walkmesh
+        if(isDoor && los.length){
+          los = los.filter( (intersect) => {
+            intersect.object.uuid != obj.collisionData.walkmesh.mesh.uuid
           });
-        }else{
-          if(!GameState.CursorManager.selectedObject){
-            let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-            GameState.setReticleSelectedObject(closest);
-            GameState.setReticleHoveredObject(closest);
-          }
+          // console.log('los', los);
         }
-      }
-    }
 
-    if(GameState.Mode == EngineMode.INGAME && GameState.CursorManager.hovered instanceof OdysseyObject3D){
-      GameState.CursorManager.hovered.getWorldPosition(GameState.CursorManager.reticle.position);
-      GameState.CursorManager.reticle.visible = true;
-    }else{
-      GameState.CursorManager.reticle.visible = false;
-    }
-
-    if(GameState.Mode == EngineMode.INGAME && GameState.CursorManager.selected instanceof OdysseyObject3D && !GameState.MenuManager.MenuContainer.bVisible){
-      GameState.CursorManager.selected.getWorldPosition(GameState.CursorManager.reticle2.position);
-      GameState.CursorManager.reticle2.visible = true;
-      if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleDoor)){      
-        GameState.CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModulePlaceable)){
-        if(!GameState.CursorManager.selectedObject.isUseable()){
-          return;
-        }      
-        GameState.CursorManager.setReticle2('reticleF2');
-      }else if(BitWise.InstanceOf(GameState.CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleCreature)){
-        if(GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
-          GameState.CursorManager.setReticle2('reticleH2');
-        }else{
-          GameState.CursorManager.setReticle2('reticleF2');
+        const intersect = los[0];
+        if(intersect && Array.isArray(obj.model.userData.uuids) && obj.model.userData.uuids.indexOf(intersect.object.uuid) == -1){
+          continue;
         }
-      }
-    }else{
-      GameState.CursorManager.reticle2.visible = false;
+      }*/
+
+      // points.push(...targetPosition.toArray());
+      // sizes.push(0.2);
+      selectableObjects.push(obj);
     }
 
+    return selectableObjects;
   }
 
   static ResetModuleAudio(){                        
@@ -942,6 +793,7 @@ export class GameState implements EngineContext {
     GameState.Mode = EngineMode.LOADING;
     GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();
+    CursorManager.selectableObjects = [];
     VideoPlayer.Load(sMovie1).then( () => {
       VideoPlayer.Load(sMovie2).then( () => {
         VideoPlayer.Load(sMovie3).then( () => {
@@ -1133,6 +985,7 @@ export class GameState implements EngineContext {
 
     GameState.controls.Update(delta);
     GameState.UpdateVideoEffect();
+
     GameState.MenuManager.Update(delta);
     GameState.MenuManager.InGameAreaTransition.hide();
 
@@ -1152,6 +1005,18 @@ export class GameState implements EngineContext {
       GameState.Mode == EngineMode.INGAME ||
       GameState.Mode == EngineMode.FREELOOK
     ){
+
+      
+
+      //Get Selectable Objects In Range
+      if(GameState.Mode == EngineMode.INGAME){
+        GameState.tUpdateSelectable -= delta || 0;
+        if(GameState.tUpdateSelectable <= 0){
+          //Update the cache of selectable objects
+          CursorManager.selectableObjects = GameState.getSelectableObjectsInRange(PartyManager.party[0]);
+          GameState.tUpdateSelectable = 0.5;
+        }
+      }
 
       //Update Mode Camera
       if(GameState.Mode == EngineMode.INGAME){
@@ -1270,7 +1135,7 @@ export class GameState implements EngineContext {
     AudioEngine.GetAudioEngine().update(GameState.currentCamera.position, GameState.currentCamera.rotation);
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
-    GameState.updateCursorPosition();
+    GameState.CursorManager.updateCursorPosition();
     GameState.renderPass.camera = GameState.currentCamera;
     //GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;

@@ -827,6 +827,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
         odysseyModel.add(OdysseyModel3D.NodeParser(odysseyModel, odysseyModel, model.rootNode, options));
 
+        odysseyModel.userData.uuids = OdysseyModel3D.getUUIDs(odysseyModel);
+
         if(options.mergeStatic){
           
           //Merge Basic Geometries

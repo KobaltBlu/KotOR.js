@@ -3,7 +3,13 @@ import { TextureLoader } from "../loaders";
 import { Mouse } from "../controls/Mouse";
 import type { ModuleObject } from "../module";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
-import { GameEngineType } from "../enums/engine";
+import { EngineMode, GameEngineType } from "../enums/engine";
+import type { MenuManager } from "./MenuManager";
+import { GameState } from "../GameState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
 
 /**
  * CursorManager class.
@@ -15,6 +21,8 @@ import { GameEngineType } from "../enums/engine";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CursorManager {
+  static MenuManager: typeof MenuManager;
+  
   static default: THREE.SpriteMaterial;
   static defaultD: THREE.SpriteMaterial;
   static select: THREE.SpriteMaterial;
@@ -47,6 +55,30 @@ export class CursorManager {
   static selectedObject: ModuleObject;
   static hovered: THREE.Object3D;
   static hoveredObject: ModuleObject;
+
+  static visibleObjects: ModuleObject[];
+
+  static pointGeomerty = new THREE.BufferGeometry();
+  static pointMaterial = new THREE.PointsMaterial({
+    color: 0xff0000,
+    sizeAttenuation: false,
+    fog: false
+  });
+
+  static testPoints: THREE.Points;
+
+  static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 ); 
+  static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
+  static sphere: THREE.Mesh;
+
+  static selectableObjects: ModuleObject[] = [];
+
+
+  static updateSelectable( objects: ModuleObject[] = [] ){
+
+
+
+  }
 
   static init( onLoad: Function ){
 
@@ -121,6 +153,13 @@ export class CursorManager {
     TextureLoader.enQueue('friendlyarrow', CursorManager.arrowF);
     TextureLoader.enQueue('hostilearrow', CursorManager.arrowH);
 
+    CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute([], 3);
+    CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute([], 1);
+    CursorManager.testPoints = new THREE.Points(CursorManager.pointGeomerty, CursorManager.pointMaterial);
+    CursorManager.testPoints.frustumCulled = false;
+
+    CursorManager.sphere = new THREE.Mesh( CursorManager.sphereGeometry, CursorManager.sphereMaterial );
+
     TextureLoader.LoadQueue(() => {
       CursorManager.reticleF.depthTest = false;
       CursorManager.reticleF2.depthTest = false;
@@ -157,6 +196,236 @@ export class CursorManager {
   static setReticle2(reticle = 'reticleF'){
     if(CursorManager.reticle2.material != (CursorManager as any)[reticle])
       CursorManager.reticle2.material = (CursorManager as any)[reticle];
+  }
+
+  public static setReticleSelectedObject( object: ModuleObject ){
+    if(object){
+      CursorManager.selected = object.getReticleNode();
+      if(CursorManager.selected){
+        CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
+        CursorManager.selectedObject = object;
+      }
+
+      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){      
+        CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+        if(!object.isUseable()){
+          return;
+        }      
+        CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+        if(object.isHostile(GameState.getCurrentPlayer())){
+          CursorManager.setReticle2('reticleH2');
+        }else{
+          CursorManager.setReticle2('reticleF2');
+        }
+      }
+    }
+  }
+
+  public static setReticleHoveredObject( object: ModuleObject ){
+    if(object){
+      let distance = GameState.getCurrentPlayer().position.distanceTo(object.position);
+      let canChangeCursor = (distance <= GameState.maxSelectableDistance) || (CursorManager.hoveredObject == CursorManager.selectedObject);
+
+      CursorManager.hovered = object.getReticleNode();
+      if(CursorManager.hovered){
+        CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
+        CursorManager.hoveredObject = object;
+      }
+
+      if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+        if(canChangeCursor)
+          CursorManager.setCursor('door');
+        else
+          CursorManager.setCursor('select');
+
+          CursorManager.setReticle('reticleF');
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+        if(!object.isUseable()){
+          return;
+        }
+        if(canChangeCursor)
+          CursorManager.setCursor('use');
+        else
+          CursorManager.setCursor('select');
+
+          CursorManager.setReticle('reticleF');
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+
+        if(object.isHostile(GameState.getCurrentPlayer())){
+          if(!object.isDead()){
+            if(canChangeCursor)
+              CursorManager.setCursor('attack');
+            else
+              CursorManager.setCursor('select');
+
+            CursorManager.setReticle('reticleH');
+          }else{
+            if(canChangeCursor)
+              CursorManager.setCursor('use');
+            else
+              CursorManager.setCursor('select');
+
+            CursorManager.setReticle('reticleF');
+          }
+        }else{
+          if(canChangeCursor)
+            CursorManager.setCursor('talk');
+          else
+            CursorManager.setCursor('select');
+
+          CursorManager.setReticle('reticleF');
+        }
+
+      }
+    }
+  }
+
+  static updateCursorPosition(){
+    CursorManager.setCursor('default');
+    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
+    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
+  }
+
+  static updateCursor(){
+    let cursorCaptured = false;
+    let guiHoverCaptured = false;
+
+    GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
+    GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
+
+    GameState.MenuManager.hoveredGUIElement = undefined;
+
+    let uiControls = GameState.controls.MenuGetActiveUIElements();
+    let controlCount = uiControls.length;
+    for(let i = 0; i < controlCount; i++){
+      let control = uiControls[i];
+      if(!control.isVisible())
+        continue;
+
+      //if(control === GameState.mouse.clickItem){
+      if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIListBox) && GameState.MenuManager.hoveredGUIElement == undefined){
+        GameState.MenuManager.hoveredGUIElement = control;
+      }
+
+      if(!(control.widget.parent.type === 'Scene')){
+        if(!guiHoverCaptured){
+          let cMenu = control.menu;
+          cMenu.setWidgetHoverActive(control, true);
+          guiHoverCaptured = false;
+        }
+
+        if(typeof control.isClickable == 'function'){
+          if(control.isClickable()){
+            CursorManager.setCursor('select');
+            cursorCaptured = true;
+          }
+        }
+      }
+      //}
+    }
+
+    CursorManager.arrow.visible = false;
+    if(CursorManager.selectedObject){
+      if(CursorManager.selectedObject.position.distanceTo(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+        CursorManager.selectedObject = undefined;
+      }
+    }
+
+    if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
+      if(GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
+        if(GameState.scene_cursor_holder.visible){
+          //console.log(GameState.scene_cursor_holder.position);
+          let hoveredObject = false;
+          const moduleObject = CursorManager.onMouseHitInteractive();
+          if(moduleObject && moduleObject.isUseable()){
+            if(moduleObject != GameState.getCurrentPlayer()){
+              CursorManager.setReticleHoveredObject(moduleObject);
+            }
+          }else{
+            // CursorManager.hovered = CursorManager.hoveredObject = undefined;
+          }
+        }else{
+          if(!CursorManager.selectedObject){
+            let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
+            CursorManager.setReticleSelectedObject(closest);
+            CursorManager.setReticleHoveredObject(closest);
+          }
+        }
+      }
+    }
+
+    if(GameState.Mode == EngineMode.INGAME && CursorManager.hovered instanceof OdysseyObject3D){
+      CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
+      CursorManager.reticle.visible = true;
+    }else{
+      CursorManager.reticle.visible = false;
+    }
+
+    if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !GameState.MenuManager.MenuContainer.bVisible){
+      CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
+      CursorManager.reticle2.visible = true;
+      if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleDoor)){      
+        CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModulePlaceable)){
+        if(!CursorManager.selectedObject.isUseable()){
+          return;
+        }      
+        CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOf(CursorManager.selectedObject?.objectType, ModuleObjectType.ModuleCreature)){
+        if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
+          CursorManager.setReticle2('reticleH2');
+        }else{
+          CursorManager.setReticle2('reticleF2');
+        }
+      }
+    }else{
+      CursorManager.reticle2.visible = false;
+    }
+
+  }
+
+  public static onMouseHitInteractive(){
+    
+    const objCount = CursorManager.selectableObjects.length;
+
+    const occluders = [
+      GameState.module.area.roomWalkmeshes.map( (r) => r.mesh),
+      CursorManager.testPoints
+    ].flat();
+
+    const points: number[] = [];
+    const sizes: number[] = [];
+    const pointSize = 0.2;
+    let obj;
+    let targetPosition = new THREE.Vector3();
+    const losZ = 1;
+    for(let i = 0; i < objCount; i++){
+      obj = CursorManager.selectableObjects[i];
+
+      targetPosition.copy(obj.position);
+      targetPosition.z += losZ;
+
+      points.push(...targetPosition.toArray());
+      sizes.push(pointSize);
+    }
+
+    CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
+    CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
+    CursorManager.pointGeomerty.computeBoundingBox();
+
+    const pThresholdCache = GameState.raycaster.params.Points.threshold;
+    GameState.raycaster.params.Points.threshold = 1;
+    GameState.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
+    const intersectsT = GameState.raycaster.intersectObjects( occluders, true );
+    if(intersectsT[0] && intersectsT[0].object == CursorManager.testPoints){
+      // console.log('intersects', intersectsT[0], objects2[intersectsT[0]?.index], intersectsT);
+      return CursorManager.selectableObjects[intersectsT[0].index];
+    }
+    GameState.raycaster.params.Points.threshold = pThresholdCache;
+    console.log('no hit');
+    return;
   }
 
 }

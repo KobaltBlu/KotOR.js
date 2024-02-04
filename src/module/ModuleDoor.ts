@@ -266,14 +266,21 @@ export class ModuleDoor extends ModuleObject {
   }
 
   updateCollisionState(): void {
+    // if(!this.collisionData?.walkmesh?.mesh){ return; }
+
+    let idx = -1;
     switch(this.openState){
       case ModuleDoorOpenState.DESTROYED:
       case ModuleDoorOpenState.OPEN1:
       case ModuleDoorOpenState.OPEN2:
         GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
+        if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
       break;
       default:
         GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
+        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionData.walkmesh); }
       break;
     }
   }
@@ -451,6 +458,16 @@ export class ModuleDoor extends ModuleObject {
           creature.notifyPerceptionHeardObject(object, true);
         }
       }
+    }
+
+    if(GameState.CursorManager.selectedObject == this){
+      GameState.CursorManager.selected = undefined;
+      GameState.CursorManager.selectedObject = undefined;
+    }
+
+    if(GameState.CursorManager.hoveredObject == this){
+      GameState.CursorManager.hovered = undefined;
+      GameState.CursorManager.hoveredObject = undefined;
     }
 
   }

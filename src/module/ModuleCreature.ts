@@ -2285,7 +2285,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   isUseable(){
-    return true;
+    return !this.isDead() || this.isDeadSelectable;
   }
 
   isDead(){
