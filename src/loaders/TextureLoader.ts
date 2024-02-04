@@ -646,11 +646,6 @@ export class TextureLoader {
           break;
         }
 
-        if(texture.txi.isAnimated){
-          //console.log('animated', numx, numy, numx * numy, fps);
-          // GameState.AnimatedTextures.push( new AnimatedTexture(texture, texture.txi.numx, texture.txi.numy, texture.txi.fps) );
-        }
-
         //tex.material.transparent = true;
         resolve();
       }catch(e){

@@ -393,7 +393,6 @@ export class ModuleArea extends ModuleObject {
     let placeableCount = this.placeables.length;
     let doorCount = this.doors.length;
     let partyCount = GameState.PartyManager.party.length;
-    let animTexCount = GameState.AnimatedTextures.length;
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -428,11 +427,6 @@ export class ModuleArea extends ModuleObject {
     //update doors
     for(let i = 0; i < doorCount; i++){
       this.doors[i].update(delta);
-    }
-
-    //update animated textures
-    for(let i = 0; i < animTexCount; i++){
-      GameState.AnimatedTextures[i].Update(delta);
     }
 
     //unset party controlled

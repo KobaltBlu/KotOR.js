@@ -15,15 +15,14 @@ import type { GameEventFactory } from "./events/GameEventFactory";
 import type { ActionMenuManager } from "./ActionMenuManager";
 import type { ActionFactory } from "./actions/ActionFactory";
 
-import { AnimatedTexture } from "./AnimatedTexture";
 import { IngameControls } from "./controls/IngameControls";
-import { Mouse } from "./controls/Mouse";
+// import { Mouse } from "./controls/Mouse";
 
 import { INIConfig } from "./INIConfig";
 import { LoadingScreen } from "./LoadingScreen";
 import { VideoPlayer } from "./VideoPlayer";
 
-import { OdysseyObject3D } from "./three/odyssey";
+// import { OdysseyObject3D } from "./three/odyssey";
 import { AudioEngine, AudioEmitter } from "./audio";
 import { TGAObject } from "./resource/TGAObject";
 
@@ -54,7 +53,7 @@ import Stats from 'three/examples/jsm/libs/stats.module'
 import { BitWise } from "./utility/BitWise";
 import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
-import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
+// import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
 import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 
@@ -116,7 +115,6 @@ export class GameState implements EngineContext {
 
   static GameKey: GameEngineType = GameEngineType.KOTOR;
   static iniConfig: INIConfig;
-  static AnimatedTextures: AnimatedTexture[] = [];
   
   static OpeningMoviesComplete = false;
   static Ready = false;
