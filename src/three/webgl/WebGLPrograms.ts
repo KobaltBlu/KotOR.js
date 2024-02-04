@@ -1,6 +1,7 @@
 // import { BackSide, DoubleSide, CubeUVReflectionMapping, ObjectSpaceNormalMap, TangentSpaceNormalMap, NoToneMapping, LinearEncoding, sRGBEncoding, NormalBlending } from '../../constants.js';
 import { Layers } from 'three/src/core/Layers.js';
 import { WebGLProgram } from './WebGLProgram';
+//@ts-expect-error
 import { WebGLShaderCache } from 'three/src/renderers/webgl/WebGLShaderCache.js';
 // import { ShaderLib } from '../shaders/ShaderLib.js';
 import { UniformsUtils } from 'three/src/renderers/shaders/UniformsUtils.js';

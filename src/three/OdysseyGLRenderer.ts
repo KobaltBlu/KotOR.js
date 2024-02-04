@@ -1,6 +1,8 @@
 import { floorPowerOfTwo } from 'three/src/math/MathUtils.js';
+//@ts-expect-error
 import { WebGLAnimation } from 'three/src/renderers/webgl/WebGLAnimation.js';
 import { WebGLAttributes } from 'three/src/renderers/webgl/WebGLAttributes.js';
+//@ts-expect-error
 import { WebGLBackground } from 'three/src/renderers/webgl/WebGLBackground.js';
 import { WebGLBindingStates } from 'three/src/renderers/webgl/WebGLBindingStates.js';
 import { WebGLBufferRenderer } from 'three/src/renderers/webgl/WebGLBufferRenderer.js';
@@ -12,6 +14,7 @@ import { WebGLExtensions } from 'three/src/renderers/webgl/WebGLExtensions.js';
 import { WebGLGeometries } from 'three/src/renderers/webgl/WebGLGeometries.js';
 import { WebGLIndexedBufferRenderer } from 'three/src/renderers/webgl/WebGLIndexedBufferRenderer.js';
 import { WebGLInfo } from 'three/src/renderers/webgl/WebGLInfo.js';
+//@ts-expect-error
 import { WebGLMorphtargets } from 'three/src/renderers/webgl/WebGLMorphtargets.js';
 import { WebGLObjects } from 'three/src/renderers/webgl/WebGLObjects.js';
 import { WebGLPrograms } from './webgl/WebGLPrograms';
@@ -25,6 +28,7 @@ import { WebGLTextures } from 'three/src/renderers/webgl/WebGLTextures.js';
 import { WebGLUniforms } from 'three/src/renderers/webgl/WebGLUniforms.js';
 import { WebGLUtils } from 'three/src/renderers/webgl/WebGLUtils.js';
 import { WebXRManager } from 'three/src/renderers/webxr/WebXRManager.js';
+//@ts-expect-error
 import { WebGLMaterials } from 'three/src/renderers/webgl/WebGLMaterials.js';
 import { WebGLUniformsGroups } from 'three/src/renderers/webgl/WebGLUniformsGroups.js';
 
