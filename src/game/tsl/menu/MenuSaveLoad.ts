@@ -55,7 +55,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
               GameState.module.dispose();
               GameState.module = undefined;
             }
-            savegame.Load()
+            savegame.load()
           }
         }else{
           if(savegame instanceof NewSaveItem){

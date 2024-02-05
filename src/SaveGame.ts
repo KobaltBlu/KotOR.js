@@ -66,7 +66,6 @@ export class SaveGame {
 
 
   constructor(name = ''){
-
     this.folderName = name.split('/').pop();
     this.directory = path.join(SaveGame.base_directory, this.folderName);
     this.isLoaded = false;
@@ -78,108 +77,258 @@ export class SaveGame {
     this.GAMEPLAYHINT = 0;
     this.STORYHINT = 0;
 
-    this.InitSaveNFO();
+    this.loadNFO();
     this.thumbnail = null;
   }
 
-  async InitSavePIFO(){
-    return new Promise<void>( (resolve, reject) => {
-      try{
-        GameFileSystem.exists(path.join(this.directory, 'pifo.ifo')).then( (exists) => {
-          if(exists){
-            this.pifo = new GFFObject(path.join(this.directory, 'pifo.ifo'), (pifo: GFFObject) => {
-              if(pifo.RootNode.hasField('Mod_PlayerList')){
-                let playerList = pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
-                if(playerList.length){
-                  GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
-                }
-              }
-              resolve();
-            }, () => {
-              resolve();
-            });
-          }else{
-            resolve();
-          }
-        })
-      }catch(e){
-        resolve();
+  /**
+   * SAVENFO contains the necessary metadata required to preview SaveGames in the Save/Load menu
+   */
+  async loadNFO(){
+    try{
+      const buffer = await GameFileSystem.readFile(path.join(this.directory, 'savenfo.res'));
+      this.savenfo = new GFFObject(buffer);
+      if(this.savenfo.RootNode.hasField('AREANAME')){
+        this.AREANAME = this.savenfo.getFieldByLabel('AREANAME').getValue()
       }
-    });
+
+      if(this.savenfo.RootNode.hasField('CHEATUSED')){
+        this.CHEATUSED = this.savenfo.getFieldByLabel('CHEATUSED').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('GAMEPLAYHINT')){
+        this.GAMEPLAYHINT = this.savenfo.getFieldByLabel('GAMEPLAYHINT').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LASTMODULE')){
+        this.LASTMODULE = this.savenfo.getFieldByLabel('LASTMODULE').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE1')){
+        this.LIVE1 = this.savenfo.getFieldByLabel('LIVE1').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE2')){
+        this.LIVE2 = this.savenfo.getFieldByLabel('LIVE2').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE3')){
+        this.LIVE3 = this.savenfo.getFieldByLabel('LIVE3').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE4')){
+        this.LIVE4 = this.savenfo.getFieldByLabel('LIVE4').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE5')){
+        this.LIVE5 = this.savenfo.getFieldByLabel('LIVE5').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVE6')){
+        this.LIVE6 = this.savenfo.getFieldByLabel('LIVE6').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('LIVECONTENT')){
+        this.LIVECONTENT = this.savenfo.getFieldByLabel('LIVECONTENT').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('PORTRAIT0')){
+        this.PORTRAIT0 = this.savenfo.getFieldByLabel('PORTRAIT0').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('PORTRAIT1')){
+        this.PORTRAIT1 = this.savenfo.getFieldByLabel('PORTRAIT1').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('PORTRAIT2')){
+        this.PORTRAIT2 = this.savenfo.getFieldByLabel('PORTRAIT2').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('SAVEGAMENAME')){
+        this.SAVEGAMENAME = this.savenfo.getFieldByLabel('SAVEGAMENAME').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('STORYHINT')){
+        this.STORYHINT = this.savenfo.getFieldByLabel('STORYHINT').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('TIMEPLAYED')){
+        this.TIMEPLAYED = this.savenfo.getFieldByLabel('TIMEPLAYED').getValue()
+      }
+    }catch(e){
+      console.error(e);
+    }
   }
 
-  InitSaveNFO(){
-    this.savenfo = new GFFObject(path.join(this.directory, 'savenfo.res'), (savenfo: GFFObject) => {
-
-      if(savenfo.RootNode.hasField('AREANAME')){
-        this.AREANAME = savenfo.getFieldByLabel('AREANAME').getValue()
+  async loadPIFO(){
+    try{
+      const buffer = await GameFileSystem.readFile(path.join(this.directory, 'pifo.ifo'));
+      this.pifo = new GFFObject(buffer);
+      if(this.pifo.RootNode.hasField('Mod_PlayerList')){
+        let playerList = this.pifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
+        if(playerList.length){
+          GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
+        }
       }
+    }catch(e){
+      console.error(e);
+    }
+  }
 
-      if(savenfo.RootNode.hasField('CHEATUSED')){
-        this.CHEATUSED = savenfo.getFieldByLabel('CHEATUSED').getValue()
+  async load(){
+    GameState.isLoadingSave = true;
+    GameState.TutorialWindowTracker = [];
+
+    try{
+      GameState.time = this.TIMEPLAYED;
+    }catch(e){}
+
+    GameState.SaveGame = this;
+
+    GameState.PartyManager.PortraitOrder = [];
+
+    if(this.PORTRAIT0)
+      GameState.PartyManager.PortraitOrder[0] = this.PORTRAIT0;
+
+    if(this.PORTRAIT1)
+      GameState.PartyManager.PortraitOrder[1] = this.PORTRAIT1;
+
+    if(this.PORTRAIT2)
+      GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
+
+    //Init SAVEGAME.sav
+    await this.initSaveGameResourceLoader();
+    //Create the gameinprogress folder
+    await this.initGameInProgressFolder();
+    //Load GlobalVars
+    await this.loadGlobalVARS();
+    //Load Inventory
+    await this.loadInventory();
+    //Load PartyTable
+    await this.loadPartyTable();
+    //Load PIFO if it exists
+    await this.loadPIFO();
+    //Load The Last Module
+    console.log('SaveGame', this.getLastModule(), 'Loading Module...');
+    GameState.LoadModule(this.getLastModule(), null);
+    console.log('SaveGame', 'Load Complete!');
+  }
+
+  async initGameInProgressFolder(){
+    await CurrentGame.InitGameInProgressFolder(true);
+    await CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME );
+  }
+
+  async initSaveGameResourceLoader(){
+    this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'));
+    await this.SAVEGAME.load();
+    this.isLoaded = true;
+  }
+
+  async loadGlobalVARS(){
+    console.log('SaveGame', 'Loading GlobalVARS...');
+    const data = await GameFileSystem.readFile(path.join(this.directory, 'GLOBALVARS.res'));
+    this.globalVars = new GFFObject(data);
+
+    let numBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
+    let catNumbers = this.globalVars.getFieldByLabel('CatNumber').getChildStructs();
+    for(let i = 0; i < catNumbers.length; i++){
+      let numCat = catNumbers[i];
+      let numLabel = numCat.getFieldByLabel('Name').getValue();
+      let value = numBytes.readByte();
+      if(GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
+        GameState.GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
+      }else{
+        GameState.GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
+        console.warn('Global Number: missing', numLabel.toLowerCase(), value);
       }
+    }
 
-      if(savenfo.RootNode.hasField('GAMEPLAYHINT')){
-        this.GAMEPLAYHINT = savenfo.getFieldByLabel('GAMEPLAYHINT').getValue()
+    let locBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
+    let catLocations = this.globalVars.getFieldByLabel('CatLocation').getChildStructs();
+    for(let i = 0; i < catLocations.length; i++){
+      let locCat = catLocations[i];
+      let locLabel = locCat.getFieldByLabel('Name').getValue();
+
+      GameState.GlobalVariableManager.Globals.Location.set(
+        locLabel.toLowerCase(), { 
+          name: locLabel, 
+          value: new EngineLocation(
+            locBytes.readSingle(),
+            locBytes.readSingle(),
+            locBytes.readSingle(),
+            locBytes.readSingle(),
+            locBytes.readSingle(),
+            locBytes.readSingle(),
+          )
+        }
+      );
+    }
+
+    let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
+    let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
+    let maxBits = boolBytes.length * 8;
+    for(let i = 0; i < maxBits; i++){
+      for(let j = 0; j < 8; j++){
+        let index = (i * 8) + j;
+        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+
+        let boolCat = catBooleans[index];
+        if(boolCat){
+          let boolLabel = boolCat.getFieldByLabel('Name').getValue();
+          let value = !!bit;
+          if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
+            GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
+          }else{
+            GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
+            console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
+          }
+        }
       }
+    }
 
-      if(savenfo.RootNode.hasField('LASTMODULE')){
-        this.LASTMODULE = savenfo.getFieldByLabel('LASTMODULE').getValue()
+    let stringValues = this.globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
+    let catStrings = this.globalVars.getFieldByLabel('CatString').getChildStructs();
+    for(let i = 0; i < catStrings.length; i++){
+      let strCat = catStrings[i];
+      if(strCat){
+        let strLabel = strCat.getFieldByLabel('Name').getValue();
+        let strValue = stringValues[i].getFieldByLabel('String').getValue();
+        if(GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
+          GameState.GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
+        }else{
+          GameState.GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
+          console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
+        }
       }
+    }
+  }
 
-      if(savenfo.RootNode.hasField('LIVE1')){
-        this.LIVE1 = savenfo.getFieldByLabel('LIVE1').getValue()
+  async loadPartyTable(){
+    console.log('SaveGame', 'Loading Partytable...');
+    try{
+      const data = await GameFileSystem.readFile(path.join(this.directory, 'PARTYTABLE.res'));
+      const gff = new GFFObject(data);
+      this.partytable = new GameState.PartyTableManager(gff);
+      await this.partytable.Load();
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  async loadInventory(){
+    console.log('SaveGame', 'Loading Inventory...');
+
+    try{
+      const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'));
+      this.inventory = new GFFObject(buffer);
+      let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
+      for(let i = 0; i < invArr.length; i++){
+        GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
-
-      if(savenfo.RootNode.hasField('LIVE2')){
-        this.LIVE2 = savenfo.getFieldByLabel('LIVE2').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('LIVE3')){
-        this.LIVE3 = savenfo.getFieldByLabel('LIVE3').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('LIVE4')){
-        this.LIVE4 = savenfo.getFieldByLabel('LIVE4').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('LIVE5')){
-        this.LIVE5 = savenfo.getFieldByLabel('LIVE5').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('LIVE6')){
-        this.LIVE6 = savenfo.getFieldByLabel('LIVE6').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('LIVECONTENT')){
-        this.LIVECONTENT = savenfo.getFieldByLabel('LIVECONTENT').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('PORTRAIT0')){
-        this.PORTRAIT0 = savenfo.getFieldByLabel('PORTRAIT0').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('PORTRAIT1')){
-        this.PORTRAIT1 = savenfo.getFieldByLabel('PORTRAIT1').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('PORTRAIT2')){
-        this.PORTRAIT2 = savenfo.getFieldByLabel('PORTRAIT2').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('SAVEGAMENAME')){
-        this.SAVEGAMENAME = savenfo.getFieldByLabel('SAVEGAMENAME').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('STORYHINT')){
-        this.STORYHINT = savenfo.getFieldByLabel('STORYHINT').getValue()
-      }
-
-      if(savenfo.RootNode.hasField('TIMEPLAYED')){
-        this.TIMEPLAYED = savenfo.getFieldByLabel('TIMEPLAYED').getValue()
-      }
-
-    });
+    }catch(e){
+      console.error(e);
+    }
   }
 
   getAreaName(){
@@ -214,252 +363,40 @@ export class SaveGame {
     return parseInt(this.folderName.split(' - ')[0]);
   }
 
-  GetThumbnail( onLoad?: Function ){
-
-    if(this.thumbnail == null){
-      TextureLoader.tgaLoader.fetchLocal(path.join(this.directory, 'Screen.tga')).then(
-        (texture: OdysseyTexture) => {
-          this.thumbnail = texture;
-          if(typeof onLoad === 'function'){
-            onLoad(this.thumbnail);
-          }
-        },
-        () => {
-          TextureLoader.Load('load_'+this.getLastModule()).then((texture: OdysseyTexture) => {
-            if(texture){
-              this.thumbnail = texture;
-              if(typeof onLoad === 'function'){
-                onLoad(this.thumbnail);
-              }
-            }else{
-              TextureLoader.Load('whitefill').then((texture: OdysseyTexture) => {
-                if(texture){
-                  this.thumbnail = texture;
-                  if(typeof onLoad === 'function'){
-                    onLoad(this.thumbnail);
-                  }
-                }else{
-
-                }
-              });
-            }
-          });
+  async getThumbnail(){
+    if(this.thumbnail){ return this.thumbnail; }
+    
+    try{
+      this.thumbnail = await TextureLoader.tgaLoader.fetchLocal(path.join(this.directory, 'Screen.tga'));
+    }catch(e){
+      console.error(e);
+      try{
+        this.thumbnail = await TextureLoader.Load('load_'+this.getLastModule());
+      }catch(e){
+        try{
+          this.thumbnail = await TextureLoader.Load('whitefill');
+        }catch(e){
+          console.error(e);
         }
-      );
-    }else{
-      if(typeof onLoad === 'function'){
-        onLoad(this.thumbnail);
       }
     }
 
+    return this.thumbnail;
   }
 
-  GetPortrait(nth = 0, onLoad?: Function){
+  async getPortrait(nth = 0){
 
     let name = undefined;
 
     if(typeof (this as any)['PORTRAIT'+nth] === 'string'){
       name = (this as any)['PORTRAIT'+nth];
     }
+
     if(typeof name === 'string'){
-      TextureLoader.Load(name).then((texture: OdysseyTexture) => {
-        if(typeof onLoad === 'function'){
-          onLoad(texture);
-        }
-      });
-    }else{
-      if(typeof onLoad === 'function'){
-        onLoad(null);
-      }
+      return await TextureLoader.Load(name);
     }
-
-  }
-
-  Load( onLoad?: Function ){
-    GameState.isLoadingSave = true;
-    GameState.TutorialWindowTracker = [];
-
-    try{
-      GameState.time = this.TIMEPLAYED;
-    }catch(e){}
-
-    GameState.SaveGame = this;
-
-    GameState.PartyManager.PortraitOrder = [];
-
-    if(this.PORTRAIT0)
-      GameState.PartyManager.PortraitOrder[0] = this.PORTRAIT0;
-
-    if(this.PORTRAIT1)
-      GameState.PartyManager.PortraitOrder[1] = this.PORTRAIT1;
-
-    if(this.PORTRAIT2)
-      GameState.PartyManager.PortraitOrder[2] = this.PORTRAIT2;
-
-    //Init SAVEGAME.sav
-    this.InitSaveGameResourceLoader( ()=> {
-      //Create the gameinprogress folder
-      this.InitGameInProgressFolder( () => {
-        //Load GlobalVars
-        this.GlobalVARSLoader( () => {
-          //Load Inventory
-          this.InventoryLoader( () => {
-            //Load PartyTable
-            this.PartyTableLoader( () => {
-              //Load PIFO if it exists
-              this.InitSavePIFO().then( () => {
-                //Load The Last Module
-                this.ModuleLoader( () => {
-                  console.log('SaveGame', 'Load Complete!');
-                  if(typeof onLoad === 'function')
-                    onLoad();
-                });
-              });
-            });
-          });
-        });
-      });
-    });
-
-  }
-
-  InitGameInProgressFolder( onLoad?: Function ){
-    CurrentGame.InitGameInProgressFolder(true).then( () => {
-      CurrentGame.ExtractERFToGameInProgress( this.SAVEGAME ).then( () => {
-        if(typeof onLoad === 'function')
-          onLoad();
-      });
-    });
-  }
-
-  InitSaveGameResourceLoader(onLoad?: Function){
-    this.SAVEGAME = new ERFObject(path.join(this.directory, 'SAVEGAME.sav'));
-    this.SAVEGAME.load().then((sav: ERFObject) => {
-      this.isLoaded = true;
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
-  }
-
-  GlobalVARSLoader(onLoad?: Function){
-    console.log('SaveGame', 'Loading GlobalVARS...');
-    this.globalVars = new GFFObject(path.join(this.directory, 'GLOBALVARS.res'), (globalVars) => {
-
-      let numBytes = new BinaryReader(globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
-      let catNumbers = globalVars.getFieldByLabel('CatNumber').getChildStructs();
-      for(let i = 0; i < catNumbers.length; i++){
-        let numCat = catNumbers[i];
-        let numLabel = numCat.getFieldByLabel('Name').getValue();
-        let value = numBytes.readByte();
-        if(GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
-          GameState.GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
-        }else{
-          GameState.GlobalVariableManager.Globals.Number.set(numLabel.toLowerCase(), {name: numLabel.toLowerCase(), value: value});
-          console.warn('Global Number: missing', numLabel.toLowerCase(), value);
-        }
-      }
-
-      let locBytes = new BinaryReader(globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
-      let catLocations = globalVars.getFieldByLabel('CatLocation').getChildStructs();
-      for(let i = 0; i < catLocations.length; i++){
-        let locCat = catLocations[i];
-        let locLabel = locCat.getFieldByLabel('Name').getValue();
-
-        GameState.GlobalVariableManager.Globals.Location.set(
-          locLabel.toLowerCase(), { 
-            name: locLabel, 
-            value: new EngineLocation(
-              locBytes.readSingle(),
-              locBytes.readSingle(),
-              locBytes.readSingle(),
-              locBytes.readSingle(),
-              locBytes.readSingle(),
-              locBytes.readSingle(),
-            )
-          }
-        );
-      }
-
-      let boolBytes = globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
-      let catBooleans = globalVars.getFieldByLabel('CatBoolean').getChildStructs();
-      let maxBits = boolBytes.length * 8;
-      for(let i = 0; i < maxBits; i++){
-        for(let j = 0; j < 8; j++){
-          let index = (i * 8) + j;
-          let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
-
-          let boolCat = catBooleans[index];
-          if(boolCat){
-            let boolLabel = boolCat.getFieldByLabel('Name').getValue();
-            let value = !!bit;
-            if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
-              GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
-            }else{
-              GameState.GlobalVariableManager.Globals.Boolean.set(boolLabel.toLowerCase(), {name: boolLabel.toLowerCase(), value: value});
-              console.warn('Global Boolean: missing', boolLabel.toLowerCase(), value);
-            }
-          }
-        }
-      }
-
-      let stringValues = globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
-      let catStrings = globalVars.getFieldByLabel('CatString').getChildStructs();
-      for(let i = 0; i < catStrings.length; i++){
-        let strCat = catStrings[i];
-        if(strCat){
-          let strLabel = strCat.getFieldByLabel('Name').getValue();
-          let strValue = stringValues[i].getFieldByLabel('String').getValue();
-          if(GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
-            GameState.GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
-          }else{
-            GameState.GlobalVariableManager.Globals.String.set(strLabel.toLowerCase(), {name: strLabel.toLowerCase(), value: strValue});
-            console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
-          }
-        }
-      }
-
-      if(typeof onLoad === 'function')
-        onLoad();
-
-    });
-  }
-
-  PartyTableLoader(onLoad?: Function){
-    console.log('SaveGame', 'Loading Partytable...');
-    try{
-      new GFFObject(path.join(this.directory, 'PARTYTABLE.res'), (gff) => {
-        this.partytable = new GameState.PartyTableManager(gff, () => {
-          if(typeof onLoad === 'function')
-            onLoad();
-        });
-      });
-    }catch(e){
-      console.error(e);
-    }
-  }
-
-  InventoryLoader(onLoad?: Function){
-    console.log('SaveGame', 'Loading Inventory...');
-
-    GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res')).then( (buffer: Buffer) => {
-      this.inventory = new GFFObject(buffer);
-      let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
-      for(let i = 0; i < invArr.length; i++){
-        GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
-      }
-      if(typeof onLoad === 'function')
-        onLoad();
-    }).catch((err) => {
-      console.error('InventoryLoader', err)
-      if(typeof onLoad === 'function')
-        onLoad();
-    })
-
-  }
-
-  ModuleLoader(onLoad?: Function){
-    console.log('SaveGame', this.getLastModule(), 'Loading Module...');
-    GameState.LoadModule(this.getLastModule(), null);
+    
+    return undefined
   }
 
   Save(){
