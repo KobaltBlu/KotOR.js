@@ -13,6 +13,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { JournalEntry } from "../engine/JournalEntry";
 import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import { GameEngineType } from "../enums";
 
 /**
  * PartyTableManager class.
@@ -25,7 +26,19 @@ import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
  */
 export class PartyTableManager {
 
-  constructor(gff: GFFObject, onLoad?: Function){
+  constructor(gff: GFFObject){
+
+    if(GameState.GameKey == GameEngineType.TSL){
+      const partyCount = 12;
+      for(let i = 0; i < partyCount; i++){
+        GameState.PartyManager.InfluenceMap.set(i, -1);
+      }
+    }else{
+      const partyCount = 9;
+      for(let i = 0; i < partyCount; i++){
+        GameState.PartyManager.InfluenceMap.set(i, -1);
+      }
+    }
 
     if(gff instanceof GFFObject){
       if(gff.RootNode.hasField('GlxyMap')){
@@ -71,10 +84,47 @@ export class PartyTableManager {
           GameState.PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
         }
       }
+    
+      //TSL: PT_AVAIL_PUPS
+      if(gff.RootNode.hasField('PT_AVAIL_PUPS')){
+        let avail = gff.getFieldByLabel('PT_AVAIL_PUPS').getChildStructs();
+        for(let i = 0; i < avail.length; i++){
+          GameState.PartyManager.Puppets[i].available = !!avail[i].getFieldByLabel('PT_PUP_AVAIL').getValue();
+          GameState.PartyManager.Puppets[i].select = !!avail[i].getFieldByLabel('PT_PUP_SELECT').getValue();
+        }
+      }
+
+      //TSL: PT_ITEM_CHEMICAL
+      if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
+        GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
+      }
+
+      //TSL: PT_ITEM_COMPONEN
+      if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
+        GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONEN').getValue();
+      }
+    
+      //TSL: PT_AVAIL_PUPS
+      if(gff.RootNode.hasField('PT_INFLUENCE')){
+        const list = gff.getFieldByLabel('PT_INFLUENCE').getChildStructs();
+        for(let i = 0; i < list.length; i++){
+          GameState.PartyManager.InfluenceMap.set(i, list[i].getFieldByLabel('PT_NPC_INFLUENCE').getValue());
+        }
+      }
+    
+      //TSL: PT_AVAIL_PUPS
+      if(gff.RootNode.hasField('PT_PUPPETS')){
+        const list = gff.getFieldByLabel('PT_PUPPETS').getChildStructs();
+        for(let i = 0; i < list.length; i++){
+          //todo
+        }
+      }
 
       GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
 
-      //console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
+      if(gff.RootNode.hasField('PT_CONTROLLED_NP')){
+        console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
+      }
 
       if(gff.RootNode.hasField('PT_MEMBERS')){
         let pms = gff.getFieldByLabel('PT_MEMBERS').getChildStructs();
@@ -86,27 +136,6 @@ export class PartyTableManager {
             memberID: pms[i].getFieldByLabel('PT_MEMBER_ID').getValue()
           })
         }
-        //console.log('PartyTableManager', 'Loading Party Templates')
-        let ptLoader = new AsyncLoop({
-          array: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-          onLoop: (id: number, asyncLoop: AsyncLoop) => {
-            GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc') ).then( (buffer) => {
-              GameState.PartyManager.NPCS[id].template = null;
-              if(buffer.length){
-                GameState.PartyManager.NPCS[id].template = new GFFObject(buffer);
-              }
-              asyncLoop.next();
-            }).catch( (err) => {
-              console.error(err);
-              asyncLoop.next();
-            });
-          }
-        });
-        ptLoader.iterate( () => {
-          if(typeof onLoad == 'function')
-            onLoad();
-        });
-
       }
 
       if(gff.RootNode.hasField('JNL_Entries')){
@@ -134,6 +163,23 @@ export class PartyTableManager {
       throw 'PartyTableManager expected gff to be of type GFFObject';
     }
 
+  }
+
+  async Load(){
+    //console.log('PartyTableManager', 'Loading Party Templates')
+    const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+    for(let i = 0; i < arr.length; i++){
+      const id = arr[i];
+      try{
+        const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc') );
+        GameState.PartyManager.NPCS[id].template = null;
+        if(buffer.length){
+          GameState.PartyManager.NPCS[id].template = new GFFObject(buffer);
+        }
+      }catch(e){
+        console.log(e);
+      }
+    }
   }
 
   static export(directory = '', onSave?: Function){
