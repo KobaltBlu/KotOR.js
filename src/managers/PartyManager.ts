@@ -34,6 +34,15 @@ export interface PartyNPCList {
   [key: string]: PartyNPC;
 }
 
+export interface PartyPuppet {
+  available: boolean;
+  select: boolean;
+}
+
+export interface PartyPuppetList {
+  [key: string]: PartyPuppet;
+}
+
 /**
  * PartyManager class.
  * 
@@ -114,8 +123,33 @@ export class PartyManager {
     }
   }
 
+  static Puppets: PartyPuppetList = {
+    0: {
+      available: false,
+      select: true
+    },
+    1: {
+      available: false,
+      select: true
+    },
+    2: {
+      available: false,
+      select: true
+    }
+  };
+
+  static PuppetCount: number = 0;
+
   static Gold = 0;
   static CurrentMembers: CurrentMember[] = [];
+
+  static InfluenceMap: Map<number, number> = new Map<number, number>();
+  static ChemicalCount: number = 0;
+  static ComponentCount: number = 0;
+
+  static SwoopUpgrade1: number = -1;
+  static SwoopUpgrade2: number = -1;
+  static SwoopUpgrade3: number = -1;
 
   static Init(){
 
