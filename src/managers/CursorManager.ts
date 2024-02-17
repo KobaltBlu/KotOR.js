@@ -351,14 +351,10 @@ export class CursorManager {
     if(!cursorCaptured && GameState.Mode == EngineMode.INGAME){
       if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
         if(GameState.scene_cursor_holder.visible){
-          let hoveredObject = false;
           const moduleObject = CursorManager.onMouseHitInteractive();
           // console.log('moduleObject', moduleObject);
           if(moduleObject){
             CursorManager.setReticleHoveredObject(moduleObject);
-          }else{
-            CursorManager.setCursor('default');
-            // CursorManager.hovered = CursorManager.hoveredObject = undefined;
           }
         }else{
           if(!CursorManager.selectedObject){
