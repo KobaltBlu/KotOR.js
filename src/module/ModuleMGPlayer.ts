@@ -202,7 +202,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
     //this.animationManagers
-    this.AxisFront.set(0, 0, 0);
+    this.forceVector.set(0, 0, 0);
 
     switch(GameState.module.area.miniGame.type){
       case 1:
@@ -219,7 +219,7 @@ export class ModuleMGPlayer extends ModuleObject {
             this.speed = this.speed_max;
           }
 
-          this.AxisFront.set( this.lateralForce * delta, this.speed * delta, 0 );
+          this.forceVector.set( this.lateralForce * delta, this.speed * delta, 0 );
 
           //this.track.position.y += ;
           //this.model.position.z = this.jumpVelcolity;
@@ -229,7 +229,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
         this.track.updateMatrixWorld();
         //this.updateCollision(delta);
-        this.track.position.add(this.AxisFront);
+        this.track.position.add(this.forceVector);
         //this.model.box.setFromObject(this.model);
 
         const enemies = GameState.module.area.miniGame.enemies;
@@ -430,7 +430,7 @@ export class ModuleMGPlayer extends ModuleObject {
     if(!GameState.module || !GameState.module.area)
       return;
 
-    let _axisFront = this.AxisFront.clone();
+    let _axisFront = this.forceVector.clone();
     let _oPosition = this.position.clone();
 
     //this.getCurrentRoom();
@@ -457,7 +457,7 @@ export class ModuleMGPlayer extends ModuleObject {
     if(this.room){
 
       //START: PLACEABLE COLLISION
-      this.tmpPos = this.position.clone().add(this.AxisFront);
+      this.tmpPos = this.position.clone().add(this.forceVector);
       let plcEdgeLines = [];
       let face;
       let edge;
@@ -535,16 +535,16 @@ export class ModuleMGPlayer extends ModuleObject {
             average.add( force.negate() );
           }
           this.position.copy(this.tmpPos);
-          this.AxisFront.copy(average.divideScalar(plcEdgeLines.length));
+          this.forceVector.copy(average.divideScalar(plcEdgeLines.length));
         }
       }else{
-        this.AxisFront.set(0, 0, 0);
+        this.forceVector.set(0, 0, 0);
       }
       //END: ROOM COLLISION
 
       //Check to see if we tp'd inside of a placeable
-      if(this.AxisFront.length()){
-        this.tmpPos.copy(this.position).add(this.AxisFront);
+      if(this.forceVector.length()){
+        this.tmpPos.copy(this.position).add(this.forceVector);
         for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
           obj = this.room.placeables[j];
           if(obj && obj.collisionData.walkmesh && obj.model && obj.model.visible){
@@ -552,7 +552,7 @@ export class ModuleMGPlayer extends ModuleObject {
               face = obj.collisionData.walkmesh.faces[i];
               if(face.triangle.containsPoint(this.tmpPos) && face.surfacemat.walk){
                 //bail we should not be here
-                this.AxisFront.set(0, 0, 0);
+                this.forceVector.set(0, 0, 0);
                 this.position.copy(_oPosition);
               }
             }
@@ -566,8 +566,8 @@ export class ModuleMGPlayer extends ModuleObject {
               Utility.LineLineIntersection(
                 this.position.x,
                 this.position.y,
-                this.position.x + this.AxisFront.x,
-                this.position.y + this.AxisFront.y,
+                this.position.x + this.forceVector.x,
+                this.position.y + this.forceVector.y,
                 edge.line.start.x,
                 edge.line.start.y,
                 edge.line.end.x,
@@ -581,7 +581,7 @@ export class ModuleMGPlayer extends ModuleObject {
         }
 
         //update creature position
-        this.position.add(this.AxisFront);
+        this.position.add(this.forceVector);
         //DETECT: GROUND FACE
         this.lastRoom = this.room;
         this.collisionData.lastGroundFace = this.collisionData.groundFace;
@@ -594,11 +594,11 @@ export class ModuleMGPlayer extends ModuleObject {
         }
 
         if(!this.collisionData.groundFace){
-          this.AxisFront.set(0, 0, 0);
+          this.forceVector.set(0, 0, 0);
           this.position.copy(_oPosition);
           this.collisionData.groundFace = this.collisionData.lastGroundFace;
           this.attachToRoom(this.lastRoom);
-          this.AxisFront.set(0, 0, 0);
+          this.forceVector.set(0, 0, 0);
         }
       }
     }
@@ -609,7 +609,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.box.set(new THREE.Vector3(-1, -1, -1), new THREE.Vector3(1, 1, 1));
     this.box.translate(this.position);
-    this.box.translate(this.AxisFront);
+    this.box.translate(this.forceVector);
 
   }
 

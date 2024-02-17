@@ -801,7 +801,7 @@ export class ModuleDoor extends ModuleObject {
       if(trans){
         GameState.raycaster.ray.origin.copy(object.position);
         GameState.raycaster.ray.origin.z += 1;
-        GameState.raycaster.ray.direction.copy(object.AxisFront);
+        GameState.raycaster.ray.direction.copy(object.forceVector);
         const intersections: THREE.Intersection[] =[];
         trans.children[0].raycast(GameState.raycaster, intersections);
         if(intersections.length){

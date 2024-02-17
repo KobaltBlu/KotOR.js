@@ -261,13 +261,13 @@ export class ModelViewerControls {
     }
 
     if(this.keys['w']){
-      //console.log(this.AxisFront, this.AxisFront.clone().multiplyScalar(speed));
+      //console.log(this.forceVector, this.forceVector.clone().multiplyScalar(speed));
       this.context.camera.position.add(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
     if(this.keys['s']){
-      //console.log(this.AxisFront.clone().multiplyScalar(speed));
+      //console.log(this.forceVector.clone().multiplyScalar(speed));
       this.context.camera.position.sub(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }

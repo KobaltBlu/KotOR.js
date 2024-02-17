@@ -74,7 +74,7 @@ export class ModuleObject {
   effectIconList: IEffectIconListItem[] = [];
 
   container: OdysseyObject3D;
-  AxisFront: THREE.Vector3;
+  forceVector: THREE.Vector3;
   position: THREE.Vector3;
   rotation: THREE.Euler;
   quaternion: THREE.Quaternion;
@@ -245,15 +245,12 @@ export class ModuleObject {
   _conversation: DLGObject;
   cutsceneMode: boolean;
 
-  static DX_LIST: number[] = [1, 0.15425144988758405, -0.9524129804151563, -0.4480736161291702, 0.8141809705265618, 0.6992508064783751, -0.5984600690578581, -0.8838774731823718, 0.32578130553514806, 0.9843819506325049, -0.022096619278683942, -0.9911988217552068];
-  static DY_LIST: number[] = [0, -0.9880316240928618, -0.3048106211022167, 0.8939966636005579, 0.5806111842123143, -0.7148764296291646, -0.8011526357338304, 0.46771851834275896, 0.9454451549211168, -0.1760459464712114, -0.9997558399011495, -0.13238162920545193];
-
   constructor (gff = new GFFObject) {
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
     this.initialized = false;
 
     //this.moduleObject = null;
-    this.AxisFront = new THREE.Vector3();
+    this.forceVector = new THREE.Vector3();
     this.container = new OdysseyObject3D();
     this.container.userData.moduleObject = this;
     this.position = this.container.position;
@@ -466,7 +463,7 @@ export class ModuleObject {
 
   updatePaused(delta: number = 0){
     // this.force = 0;
-    // this.AxisFront.set(0, 0, 0);
+    // this.forceVector.set(0, 0, 0);
     if(this.spawned){
       this.setModelVisibility();
     }

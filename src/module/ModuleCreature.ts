@@ -392,7 +392,7 @@ export class ModuleCreature extends ModuleObject {
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
     }
 
-    this.AxisFront.set(0, 0, 0);
+    this.forceVector.set(0, 0, 0);
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
 
@@ -544,10 +544,10 @@ export class ModuleCreature extends ModuleObject {
         this.force = 0;
         this.speed = 0;
         this.animSpeed = 1;
-        this.AxisFront.set(0, 0, 0);
+        this.forceVector.set(0, 0, 0);
       }
 
-      this.AxisFront.z = 0;
+      this.forceVector.z = 0;
 
       this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
 
@@ -564,19 +564,19 @@ export class ModuleCreature extends ModuleObject {
         this.animSpeed = 1;
       }
         
-      if(!this.AxisFront.length()){
-        this.AxisFront.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
-        this.AxisFront.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
-        if(this.AxisFront.length()){
+      if(!this.forceVector.length()){
+        this.forceVector.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
+        this.forceVector.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
+        if(this.forceVector.length()){
           if(this.animSpeed > 0.75){
             this.setAnimationState(ModuleCreatureAnimState.RUNNING);
           }else{
             this.setAnimationState(ModuleCreatureAnimState.WALKING);
           }
         }
-        //this.AxisFront.z = gravityDelta;
+        //this.forceVector.z = gravityDelta;
       }else{
-        this.AxisFront.multiplyScalar(forceDelta);
+        this.forceVector.multiplyScalar(forceDelta);
       }
 
       if(this.force < 1){
@@ -587,7 +587,7 @@ export class ModuleCreature extends ModuleObject {
         this.speed = 0;
       }
 
-      if(!this.AxisFront.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING )){
+      if(!this.forceVector.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING )){
         this.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.speed = 0;
         this.force = 0;
@@ -653,7 +653,7 @@ export class ModuleCreature extends ModuleObject {
         this.onBlocked();
       }
 
-      if(this.AxisFront.length())
+      if(this.forceVector.length())
         this.collisionData.updateCollision(delta);
 
       this.updatePerceptionList(delta);

@@ -82,8 +82,8 @@ export class Action {
       //Check Creature Avoidance
       let threatening = undefined;
       let threateningDistance = Infinity;
-      let ahead = owner.position.clone().sub(owner.AxisFront.clone().normalize()).multiplyScalar(1);
-      let ahead2 = owner.position.clone().sub(owner.AxisFront.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
+      let ahead = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1);
+      let ahead2 = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
       for(let i = 0; i < GameState.module.area.creatures.length; i++){
         let creature = GameState.module.area.creatures[i];
         if(creature === owner || creature.isDead())
@@ -143,8 +143,8 @@ export class Action {
         let tangent = newTarget.sub(owner.position.clone());
         let atan = Math.atan2(-avoidance_force.y, -avoidance_force.x);
         owner.rotation.z = (atan + Math.PI/2); //(1 - delta) * owner.rotation.z + delta * (atan + Math.PI/2)
-        owner.AxisFront.x = Math.cos(atan);
-        owner.AxisFront.y = Math.sin(atan);
+        owner.forceVector.x = Math.cos(atan);
+        owner.forceVector.y = Math.sin(atan);
 
         owner.blockingTimer += 1;
       }else{

@@ -90,8 +90,8 @@ export class ActionMoveToPoint extends Action {
           let tangent = point.vector.clone().sub(this.owner.position.clone());
           let atan = Math.atan2(-tangent.y, -tangent.x);
           this.owner.setFacing(atan + Math.PI/2, false);
-          this.owner.AxisFront.x = Math.cos(atan);
-          this.owner.AxisFront.y = Math.sin(atan);
+          this.owner.forceVector.x = Math.cos(atan);
+          this.owner.forceVector.y = Math.sin(atan);
     
           this.runCreatureAvoidance(delta);
     
@@ -100,7 +100,7 @@ export class ActionMoveToPoint extends Action {
           //   arrivalDistance = 1.5;
           // }
 
-          this.owner.AxisFront.negate();
+          this.owner.forceVector.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
           // this.owner.walk = !run;
           this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
