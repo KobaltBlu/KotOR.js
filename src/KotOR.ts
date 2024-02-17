@@ -21,8 +21,6 @@ export * from "./LoadingScreen";
 export * from "./SaveGame";
 export * from "./utility/ConfigClient";
 
-export * from "./AnimatedTexture";
-
 export * from "./odyssey";
 export * from "./odyssey/controllers/OdysseyController";
 
