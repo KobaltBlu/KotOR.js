@@ -5505,7 +5505,15 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      return 0;
+      switch(args[0]){
+        case 0:
+          return GameState.PartyManager.SwoopUpgrade1;
+        case 1:
+          return GameState.PartyManager.SwoopUpgrade2;
+        case 2:
+          return GameState.PartyManager.SwoopUpgrade3;
+      }
+      return -1;
     }	
   },
   783: {
@@ -5527,7 +5535,10 @@ NWScriptDefK2.Actions = {
     name: 'ShowSwoopUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      //cut content?
+      // GameState.MenuManager.MenuSwoopUp.open();
+    }
   },
   786: {
     comment: 'DJS-OEI 1/13/2004\n786: Grants the target a feat without regard for prerequisites.',
