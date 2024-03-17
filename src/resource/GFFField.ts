@@ -88,6 +88,8 @@ export class GFFField {
     switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
         return this.cexoLocString.getValue();
+      case GFFDataType.DWORD64:
+        return this.data.readBigUInt64LE();
       default:
         return this.value;
     }

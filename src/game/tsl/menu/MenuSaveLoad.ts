@@ -2,6 +2,9 @@ import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
+import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
+import { SaveGame } from "../../../SaveGame";
+import { TextureLoader } from "../../../loaders";
 
 /**
  * MenuSaveLoad class.
@@ -84,6 +87,31 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.tGuiPanel.getFill().position.z = -1;
       resolve();
     });
+  }
+
+  show() {
+    super.show();
+    this.selectedControl = this.LB_GAMES;
+    this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
+    this.LB_GAMES.clearItems();
+    let saves = [];
+    if (this.mode == MenuSaveLoadMode.SAVEGAME) {
+      saves = SaveGame.saves.filter(save => {
+        return !save.getIsQuickSave() && !save.getIsAutoSave();
+      });
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
+      saves.unshift(new NewSaveItem());
+    } else {
+      saves = SaveGame.saves;
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
+    }
+    for (let i = 0; i < saves.length; i++) {
+      let save = saves[i];
+      this.LB_GAMES.addItem(save, null);
+    }
+    this.selected = saves[0];
+    this.UpdateSelected();
+    TextureLoader.LoadQueue();
   }
   
 }

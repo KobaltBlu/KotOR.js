@@ -15,6 +15,8 @@ import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import type { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
 
+const winEpoch = new Date("01-01-1601 UTC").getTime();
+
 /**
  * SaveGame class.
  * 
@@ -31,6 +33,7 @@ export class SaveGame {
   LASTMODULE: string;
   SAVEGAMENAME: string;
   TIMEPLAYED: number;
+  TIMESTAMP: Date;
   GAMEPLAYHINT: number;
   STORYHINT: number;
   thumbnail: OdysseyTexture;
@@ -76,6 +79,7 @@ export class SaveGame {
     this.TIMEPLAYED = 0;
     this.GAMEPLAYHINT = 0;
     this.STORYHINT = 0;
+    this.TIMESTAMP = new Date();
 
     this.loadNFO();
     this.thumbnail = null;
@@ -154,6 +158,11 @@ export class SaveGame {
 
       if(this.savenfo.RootNode.hasField('TIMEPLAYED')){
         this.TIMEPLAYED = this.savenfo.getFieldByLabel('TIMEPLAYED').getValue()
+      }
+
+      if(this.savenfo.RootNode.hasField('TIMESTAMP')){
+        let timestamp: bigint = this.savenfo.getFieldByLabel('TIMESTAMP').getValue();
+        this.TIMESTAMP = new Date(parseInt((timestamp/10000n) as any) + winEpoch);
       }
     }catch(e){
       console.error(e);
