@@ -54,6 +54,7 @@ export class SaveGame {
   partytable: PartyTableManager;
   inventory: GFFObject;
   directory: string;
+  PCNAME: string;
   
 
   static saves: SaveGame[] = [];
@@ -163,6 +164,10 @@ export class SaveGame {
       if(this.savenfo.RootNode.hasField('TIMESTAMP')){
         let timestamp: bigint = this.savenfo.getFieldByLabel('TIMESTAMP').getValue();
         this.TIMESTAMP = new Date(parseInt((timestamp/10000n) as any) + winEpoch);
+      }
+
+      if(this.savenfo.RootNode.hasField('PCNAME')){
+        this.PCNAME = this.savenfo.getFieldByLabel('PCNAME').getValue()
       }
     }catch(e){
       console.error(e);
@@ -370,6 +375,14 @@ export class SaveGame {
 
   getSaveNumber(){
     return parseInt(this.folderName.split(' - ')[0]);
+  }
+
+  getHoursPlayed(){
+    return Math.floor(this.TIMEPLAYED / 3600);
+  }
+
+  getMinutesPlayed(){
+    return Math.floor(60 * ((this.TIMEPLAYED / 3600) % 1));
   }
 
   async getThumbnail(){

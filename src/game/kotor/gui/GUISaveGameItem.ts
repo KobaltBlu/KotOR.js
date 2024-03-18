@@ -1,3 +1,4 @@
+import type { SaveGame } from "../../../SaveGame";
 import { GUIProtoItem } from "../../../gui";
 import type { GameMenu, GUIControl } from "../../../gui";
 import { GFFStruct } from "../../../resource/GFFStruct";
@@ -12,6 +13,8 @@ import { GFFStruct } from "../../../resource/GFFStruct";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISaveGameItem extends GUIProtoItem {
+
+  declare node: SaveGame;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);

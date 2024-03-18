@@ -82,6 +82,7 @@ export class MenuSaveLoad extends GameMenu {
       });
       this._button_b = this.BTN_BACK;
 
+      this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
         this.UpdateSelected();
@@ -95,26 +96,38 @@ export class MenuSaveLoad extends GameMenu {
   show() {
     super.show();
     this.selectedControl = this.LB_GAMES;
-    this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
-    this.LB_GAMES.clearItems();
-    let saves = [];
+    this.reloadSaves();
+    if (this.mode == MenuSaveLoadMode.SAVEGAME) {
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
+    }else{
+      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
+    }
+    TextureLoader.LoadQueue();
+  }
+
+  getSaveGames(): SaveGame[] {
+    let saves: SaveGame[] = [];
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
       saves = SaveGame.saves.filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
-      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
       saves.unshift(new NewSaveItem());
-    } else {
+    }else{
       saves = SaveGame.saves;
-      this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
     }
+    return saves;
+  }
+
+  reloadSaves(){
+    this.LB_GAMES.clearItems();
+    let saves = this.getSaveGames();
     for (let i = 0; i < saves.length; i++) {
       let save = saves[i];
       this.LB_GAMES.addItem(save, null);
     }
     this.selected = saves[0];
     this.UpdateSelected();
-    TextureLoader.LoadQueue();
+    this.LB_GAMES.updateList();
   }
 
   UpdateSelected() {
@@ -125,6 +138,7 @@ export class MenuSaveLoad extends GameMenu {
     this.LBL_PLANETNAME.setText('');
     this.LBL_AREANAME.setText('');
     if (this.selected instanceof SaveGame) {
+      this.LB_GAMES.selectItem(this.selected);
       if (this.selected instanceof NewSaveItem) {
 
       }else{

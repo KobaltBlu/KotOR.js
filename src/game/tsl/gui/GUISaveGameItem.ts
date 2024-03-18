@@ -1,3 +1,4 @@
+import type { SaveGame } from "../../../SaveGame";
 import { GUIProtoItem } from "../../../gui";
 import type { GameMenu, GUIControl } from "../../../gui";
 import { GFFStruct } from "../../../resource/GFFStruct";
@@ -17,6 +18,8 @@ const toPaddedDigit = (num: number, len = 2) => {
  */
 export class GUISaveGameItem extends GUIProtoItem {
 
+  declare node: SaveGame;
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
   }
@@ -24,10 +27,20 @@ export class GUISaveGameItem extends GUIProtoItem {
   createControl(){
     try{
       super.createControl();
-      this.setText(
-        this.node.getFullName() + "\n" + 
-        `${toPaddedDigit(this.node.TIMESTAMP.getHours())}:${toPaddedDigit(this.node.TIMESTAMP.getMinutes())}:${toPaddedDigit(this.node.TIMESTAMP.getSeconds())} - ${toPaddedDigit(this.node.TIMESTAMP.getDate())}, ${toPaddedDigit(this.node.TIMESTAMP.getMonth() + 1)}, ${toPaddedDigit(this.node.TIMESTAMP.getFullYear(), 4)}`
-      );
+      const saveTimeString = `${toPaddedDigit(this.node.TIMESTAMP.getHours())}:${toPaddedDigit(this.node.TIMESTAMP.getMinutes())}:${toPaddedDigit(this.node.TIMESTAMP.getSeconds())} - ${toPaddedDigit(this.node.TIMESTAMP.getDate())}, ${toPaddedDigit(this.node.TIMESTAMP.getMonth() + 1)}, ${toPaddedDigit(this.node.TIMESTAMP.getFullYear(), 4)}`;
+      if(this.node.getIsAutoSave()){
+        this.setText(
+          "AUTOSAVE" + "\n" + saveTimeString
+        );
+      }else if(this.node.getIsQuickSave()){
+        this.setText(
+          "QUICKSAVE" + "\n" + saveTimeString
+        );
+      }else{
+        this.setText(
+          this.node.getSaveNumber() + " : " + this.node.getSaveName() + "\n" + saveTimeString
+        );
+      }
     }catch(e){
       console.error(e);
     }
