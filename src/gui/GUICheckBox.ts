@@ -266,6 +266,9 @@ export class GUICheckBox extends GUIControl{
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
+        let cbSize = this.getCBScale();
+        this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
+        this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
     }
 
@@ -326,6 +329,9 @@ export class GUICheckBox extends GUIControl{
         if(texture == null){
           this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
         }
+        let cbSize = this.getCBScale();
+        this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
+        this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
     }else{
       this.highlightSelected.fill.material.visible = false;
@@ -339,7 +345,7 @@ export class GUICheckBox extends GUIControl{
     //Highlight Selected
     this.attachEventListenters( this.highlightSelected.mesh );
 
-    this.addEventListener( 'mouseMove', () => { });
+    this.addEventListener( 'mouseMove', (e: any) => { });
 
     this.addEventListener( 'click', () =>{
       console.log('click', this);
@@ -352,8 +358,10 @@ export class GUICheckBox extends GUIControl{
 
     this.addEventListener( 'mouseUp', () => { });
 
-    let cbSize = this.extent.height;
+    let cbSize = this.getCBScale();
+    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     
     this.borderSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
@@ -365,9 +373,14 @@ export class GUICheckBox extends GUIControl{
     this.updateCBVisualState();
   }
 
+  getCBScale(){
+    // return this.guiFont?.bsline || this.extent.height/2;
+    return 24;
+  }
+
   buildFill(){
     super.buildFill();
-    let cbSize = this.extent.height;
+    let cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
@@ -375,7 +388,7 @@ export class GUICheckBox extends GUIControl{
 
   buildHighlightFill(){
     super.buildHighlightFill();
-    let cbSize = this.extent.height;
+    let cbSize = this.getCBScale();
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
@@ -391,6 +404,12 @@ export class GUICheckBox extends GUIControl{
     this.borderSelected.fill.mesh.visible = false;
     this.highlight.fill.mesh.visible = false;
     this.highlightSelected.fill.mesh.visible = false;
+
+    let cbSize = this.getCBScale();
+    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
+    this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
+    this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
 
     if(this.hover){
       if(this.value){
@@ -409,7 +428,6 @@ export class GUICheckBox extends GUIControl{
   }
 
   onHoverOut(){
-
     this.hover = false;
     this.pulsing = false;
 
@@ -422,7 +440,6 @@ export class GUICheckBox extends GUIControl{
   }
 
   onHoverIn(){
-
     if(!this.hover && typeof this.onHover === 'function')
       this.onHover();
 
@@ -439,7 +456,6 @@ export class GUICheckBox extends GUIControl{
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSound('gui_scroll');
     }
-    
   }
 
   onINIPropertyAttached(){
@@ -448,7 +464,6 @@ export class GUICheckBox extends GUIControl{
   }
 
   setValue(value: boolean){
-
     this.value = value ? 1 : 0;
 
     if(this.iniProperty){
@@ -459,7 +474,6 @@ export class GUICheckBox extends GUIControl{
       this.onValueChanged(this.value);
 
     this.updateCBVisualState();
-    
   }
 
 }

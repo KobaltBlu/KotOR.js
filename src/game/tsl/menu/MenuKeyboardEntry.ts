@@ -31,6 +31,12 @@ export class MenuKeyboardEntry extends K1_MenuKeyboardEntry {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_Cancel.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+      
       resolve();
     });
   }

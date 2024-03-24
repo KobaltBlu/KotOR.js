@@ -1,6 +1,7 @@
 import { GameState } from "../../../GameState";
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { MenuTop as K1_MenuTop } from "../../kotor/KOTOR";
 
@@ -125,12 +126,14 @@ export class MenuTop extends K1_MenuTop {
       });
 
       this.BTN_CHANGE2.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
-        this.UpdatePartyUI();
+        GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
       this.BTN_CHANGE3.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.SwitchLeaderAtIndex(2);
+      });
+
+      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
         this.UpdatePartyUI();
       });
 
@@ -185,20 +188,20 @@ export class MenuTop extends K1_MenuTop {
 
   UpdatePartyUI() {
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      let partyMember = GameState.PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
+      const partyMember = GameState.PartyManager.party[i];
+      const portTextureRef = partyMember.getPortraitResRef();
       
-      let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
       this.TogglePartyMember(i, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
-      if (pmBG.getFillTextureName() != portrait.baseresref) {
-        pmBG.setFillTextureName(portrait.baseresref);
-        TextureLoader.Load(portrait.baseresref).then((texture: OdysseyTexture) => {
+      if (pmBG.getFillTextureName() != portTextureRef) {
+        pmBG.setFillTextureName(portTextureRef);
+        TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }
       if (i == 0) {
         (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
+        (this.getControlByName('PB_FORCE' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getFP() / partyMember.getMaxFP() * 100);
       }
     }
   }

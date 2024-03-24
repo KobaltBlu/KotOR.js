@@ -275,7 +275,7 @@ export class InGameOverlay extends GameMenu {
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.SwitchLeaderAtIndex(2);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
@@ -290,7 +290,7 @@ export class InGameOverlay extends GameMenu {
       });
 
       this.BTN_CHAR3.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
+        GameState.PartyManager.SwitchLeaderAtIndex(1);
         switch(Math.floor(Math.random() * (4 - 1) + 1)){
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);

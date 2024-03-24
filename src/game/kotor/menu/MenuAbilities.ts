@@ -1,6 +1,12 @@
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
+enum AbilityFilter {
+  SKILLS = 1,
+  POWERS = 2,
+  FEATS = 3
+}
+
 /**
  * MenuAbilities class.
  * 
@@ -30,6 +36,8 @@ export class MenuAbilities extends GameMenu {
   BTN_CHANGE1: GUIButton;
   BTN_CHANGE2: GUIButton;
 
+  filter: AbilityFilter = AbilityFilter.SKILLS;
+
   constructor(){
     super();
     this.gui_resref = 'abilities';
@@ -45,8 +53,23 @@ export class MenuAbilities extends GameMenu {
         e.stopPropagation();
         this.close();
       });
-
       this._button_b = this.BTN_EXIT;
+
+      this.BTN_SKILLS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.filter = AbilityFilter.SKILLS;
+      });
+
+      this.BTN_POWERS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.filter = AbilityFilter.POWERS;
+      });
+
+      this.BTN_FEATS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.filter = AbilityFilter.FEATS;
+      });
+
       resolve();
     });
   }

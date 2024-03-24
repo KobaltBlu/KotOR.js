@@ -45,7 +45,7 @@ export class CExoLocString {
     return this.strings[index];
   }
 
-  getTLKValue() {
+  getTLKValue(): string {
     return TLKManager.GetStringById(this.RESREF).Value;
   }
 

@@ -364,9 +364,9 @@ export class GUIScrollBar extends GUIControl{
 
     if(this.list){
       if(this.list.isScrollBarLeft()){
-        this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset), 0);
+        this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
       }else{
-        this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset), 0);
+        this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 - this.list.border.inneroffset/2), 0);
       }      
     }else{
       this.anchorOffset.set(0, 0);

@@ -43,6 +43,7 @@ export class MainOptions extends K1_MainOptions {
 
       this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        this.manager.MenuGameplay.open();
       });
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
@@ -62,6 +63,7 @@ export class MainOptions extends K1_MainOptions {
 
       this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        this.manager.MenuFeedback.open();
       });
       resolve();
     });

@@ -35,6 +35,29 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_Cancel.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_Accept.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_Filter_Move.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
+      this.BTN_Filter_Game.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
+      this.BTN_Filter_Mini.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+      });
+
       resolve();
     });
   }

@@ -55,6 +55,7 @@ export class SaveGame {
   inventory: GFFObject;
   directory: string;
   PCNAME: string;
+  isNewSave = false;
   
 
   static saves: SaveGame[] = [];

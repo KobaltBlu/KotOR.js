@@ -56,6 +56,7 @@ export class MenuManager {
   static MenuEquipment: KOTOR.MenuEquipment;
   static MenuFeedback: KOTOR.MenuFeedback;
   static MenuGalaxyMap: KOTOR.MenuGalaxyMap;
+  static MenuGameplay: KOTOR.MenuGameplay;
   static MenuGraphics: KOTOR.MenuGraphics;
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
   static MenuInventory: KOTOR.MenuInventory;
@@ -73,6 +74,9 @@ export class MenuManager {
   static MenuStore: KOTOR.MenuStore;
   static MenuSwoopUp: TSL.MenuSwoopUp;
   static MenuTop: KOTOR.MenuTop;
+  static MenuMouse: KOTOR.MenuMouse;
+  static MenuKeyboardMapping: KOTOR.MenuKeyboardMapping;
+  static MenuKeyboardEntry: KOTOR.MenuKeyboardEntry;
 
   static Init(){
 
@@ -145,7 +149,7 @@ export class MenuManager {
     GameState.CursorManager.cursor.material.depthTest = false;
     GameState.CursorManager.cursor.material.depthWrite = false;
     GameState.CursorManager.cursor.renderOrder = 9999999;
-    MenuManager.pulse += delta;
+    MenuManager.pulse += 1.25 * delta;
     if(MenuManager.pulse > 2){
       MenuManager.pulse = 0;
     }
@@ -216,6 +220,7 @@ export class MenuManager {
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(KOTOR.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(KOTOR.MenuEquipment) as KOTOR.MenuEquipment;
         MenuManager.MenuGalaxyMap = await MenuManager.GameMenuLoader(KOTOR.MenuGalaxyMap) as KOTOR.MenuGalaxyMap;
+        MenuManager.MenuGameplay = await MenuManager.GameMenuLoader(KOTOR.MenuGameplay) as KOTOR.MenuGameplay;
         MenuManager.MenuGraphics = await MenuManager.GameMenuLoader(KOTOR.MenuGraphics) as KOTOR.MenuGraphics;
         MenuManager.MenuGraphicsAdvanced = await MenuManager.GameMenuLoader(KOTOR.MenuGraphicsAdvanced) as KOTOR.MenuGraphicsAdvanced;
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(KOTOR.MenuInventory) as KOTOR.MenuInventory;
@@ -223,6 +228,9 @@ export class MenuManager {
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(KOTOR.MenuLevelUp) as KOTOR.MenuLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(KOTOR.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(KOTOR.MenuMessages) as KOTOR.MenuMessages;
+        MenuManager.MenuMouse = await MenuManager.GameMenuLoader(KOTOR.MenuMouse) as KOTOR.MenuMouse;
+        MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
+        MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.MenuOptions = await MenuManager.GameMenuLoader(KOTOR.MenuOptions) as KOTOR.MenuOptions;
         MenuManager.MenuFeedback = await MenuManager.GameMenuLoader(KOTOR.MenuFeedback) as KOTOR.MenuFeedback;
         MenuManager.MenuPartySelection = await MenuManager.GameMenuLoader(KOTOR.MenuPartySelection) as KOTOR.MenuPartySelection;
@@ -261,11 +269,13 @@ export class MenuManager {
         MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(TSL.CharGenSkills) as KOTOR.CharGenSkills;
 
         MenuManager.MenuAbilities = await MenuManager.GameMenuLoader(TSL.MenuAbilities) as KOTOR.MenuAbilities;
+        MenuManager.MenuAutoPause = await MenuManager.GameMenuLoader(TSL.MenuAutoPause) as KOTOR.MenuAutoPause;
         MenuManager.MenuCharacter = await MenuManager.GameMenuLoader(TSL.MenuCharacter) as KOTOR.MenuCharacter;
         MenuManager.MenuChemicals = await MenuManager.GameMenuLoader(TSL.MenuChemicals) as TSL.MenuChemicals;
         MenuManager.MenuContainer = await MenuManager.GameMenuLoader(TSL.MenuContainer) as KOTOR.MenuContainer;
         MenuManager.MenuEquipment = await MenuManager.GameMenuLoader(TSL.MenuEquipment) as KOTOR.MenuEquipment;
         MenuManager.MenuGalaxyMap = await MenuManager.GameMenuLoader(TSL.MenuGalaxyMap) as KOTOR.MenuGalaxyMap;
+        MenuManager.MenuGameplay = await MenuManager.GameMenuLoader(TSL.MenuGameplay) as KOTOR.MenuGameplay;
         MenuManager.MenuGraphics = await MenuManager.GameMenuLoader(TSL.MenuGraphics) as KOTOR.MenuGraphics;
         MenuManager.MenuGraphicsAdvanced = await MenuManager.GameMenuLoader(TSL.MenuGraphicsAdvanced) as KOTOR.MenuGraphicsAdvanced;
         MenuManager.MenuInventory = await MenuManager.GameMenuLoader(TSL.MenuInventory) as KOTOR.MenuInventory;
@@ -273,6 +283,9 @@ export class MenuManager {
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(TSL.MenuLevelUp) as KOTOR.MenuLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(TSL.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(TSL.MenuMessages) as KOTOR.MenuMessages;
+        MenuManager.MenuMouse = await MenuManager.GameMenuLoader(TSL.MenuMouse) as KOTOR.MenuMouse;
+        MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(TSL.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
+        MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.MenuOptions = await MenuManager.GameMenuLoader(TSL.MenuOptions) as KOTOR.MenuOptions;
         MenuManager.MenuFeedback = await MenuManager.GameMenuLoader(TSL.MenuFeedback) as KOTOR.MenuFeedback;
         MenuManager.MenuPartySelection = await MenuManager.GameMenuLoader(TSL.MenuPartySelection) as KOTOR.MenuPartySelection;

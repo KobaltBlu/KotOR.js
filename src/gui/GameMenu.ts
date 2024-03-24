@@ -64,6 +64,8 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
+  eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
+
   constructor(){
     this._button_a = undefined;
     this._button_b = undefined;
@@ -405,6 +407,52 @@ export class GameMenu {
 
   triggerControllerRStickYPress( positive = false ){
 
+  }
+
+  addEventListener(name: string, callback: Function){
+    if(typeof callback !== 'function'){ return; }
+
+    name = name.toUpperCase().trim();
+    let listeners = this.eventListenters.get(name);
+    if(!Array.isArray(listeners)){
+      listeners = [callback];
+      this.eventListenters.set(name, listeners);
+    }else if(listeners.indexOf(callback) == -1){
+      listeners.push(callback);
+    }
+  }
+
+  removeEventListener(name: string, callback: Function){
+    if(typeof callback !== 'function'){ return; }
+
+    name = name.toUpperCase().trim();
+    let listeners = this.eventListenters.get(name);
+    if(Array.isArray(listeners)){
+      let idx = listeners.indexOf(callback);
+      if(idx >= 0){ listeners.splice(idx, 1); }
+    }
+  }
+
+  triggerEventListener(name: string){
+    name = name.toUpperCase().trim();
+    let listeners = this.eventListenters.get(name);
+    if(Array.isArray(listeners)){
+      for(let i = 0; i < listeners.length; i++){
+        listeners[i]();
+      }
+    }
+  }
+
+  gameStringParse(text: string){
+    text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
+    text = text.replace(/<FullName>/gm, GameState.player?.firstName);
+    text = text.replace(/<LastName>/gm, GameState.player?.lastName);
+
+    text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
+      return GameState.module.getCustomToken(parseInt(p1));
+    });
+
+    return text;
   }
 
 }

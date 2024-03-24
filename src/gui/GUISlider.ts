@@ -139,7 +139,7 @@ export class GUISlider extends GUIControl{
   mouseInside(){
     if(this.disableSelection) return;
 
-    const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
+    // const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
     const mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
     const scrollBarWidth = this.extent.width;
     const scrollBarHeight = this.extent.height;
@@ -148,35 +148,43 @@ export class GUISlider extends GUIControl{
     let valueChanged = false;
 
     if(this.direction == GUISliderDirection.Horizontal){
-      this.thumb.mesh.position.x = (mouseX + 21) + this.extent.width/2;
+      const maxWidth = (this.extent.width - this.thumb.width);
+      const minX = this.widget.position.x - maxWidth/2;
+      const maxX = this.widget.position.x + maxWidth/2;
 
-      if(this.thumb.mesh.position.x < -((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
-        this.thumb.mesh.position.x = -((scrollBarWidth - this.thumb.mesh.scale.x))/2
+      let mouseX = Mouse.positionUI.x;
+
+      if(mouseX < minX){
+        mouseX = minX;
       }
 
-      if(this.thumb.mesh.position.x > ((scrollBarWidth - this.thumb.mesh.scale.x))/2 ){
-        this.thumb.mesh.position.x = ((scrollBarWidth - this.thumb.mesh.scale.x))/2
+      if(mouseX > maxX){
+        mouseX = maxX
       }
 
-      const maxScroll = ((scrollBarWidth - this.thumb.mesh.scale.x)/2);
-      scrollX = (this.thumb.mesh.position.x + maxScroll) / (maxScroll*2);
+      const scrollX = ((mouseX - minX) / (maxX - minX));
+      this.thumb.mesh.position.x = maxWidth * (scrollX - 0.5);
       this.thumb.mesh.position.y = 0;
       valueChanged = (scrollX != this.value);
       value = scrollX;
     }else{
-      this.thumb.mesh.position.y = (mouseY + 12.5);
+      const maxHeight = (this.extent.height - this.thumb.height);
+      const minY = this.widget.position.y - maxHeight/2;
+      const maxY = this.widget.position.y + maxHeight/2;
 
-      if(this.thumb.mesh.position.y < -((scrollBarHeight - this.thumb.mesh.scale.y))/2 ){
-        this.thumb.mesh.position.y = -((scrollBarHeight - this.thumb.mesh.scale.y))/2
+      let mouseY = Mouse.positionUI.y;
+
+      if(mouseY < minY){
+        mouseY = minY;
       }
 
-      if(this.thumb.mesh.position.y > ((scrollBarHeight - this.thumb.mesh.scale.y))/2 ){
-        this.thumb.mesh.position.y = ((scrollBarHeight - this.thumb.mesh.scale.y))/2
+      if(mouseY > maxY){
+        mouseY = maxY
       }
 
-      const maxScroll = ((scrollBarHeight - this.thumb.mesh.scale.y)/2);
-      scrollY = (this.thumb.mesh.position.y + maxScroll) / (maxScroll*2);
+      const scrollY = ((mouseY - minY) / (maxY - minY));
       this.thumb.mesh.position.x = 0;
+      this.thumb.mesh.position.y = maxHeight * (scrollY - 0.5);
       valueChanged = (scrollY != this.value);
       value = scrollY;
     }

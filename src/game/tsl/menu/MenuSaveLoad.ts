@@ -95,6 +95,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
 
       this.LBL_PCNAME.setText('');
       this.LBL_TIMEPLAYED.setText('');
+      this.LB_GAMES.border.inneroffsety = 7;
       this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
       this.LB_GAMES.onSelected = (save: any) => {
         this.selected = save;
@@ -120,7 +121,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     let saves: SaveGame[] = [];
 
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
-      saves = SaveGame.saves.filter(save => {
+      saves = SaveGame.saves.slice().filter(save => {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
       saves = saves.reverse();
@@ -138,7 +139,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     }
 
     this.filters = saves.filter( (save) => {
-      return !save.getIsQuickSave() && !save.getIsAutoSave();
+      return !save.getIsQuickSave() && !save.getIsAutoSave() && !save.isNewSave;
     }).map( (save) => {
       return save.PCNAME;
     }).filter( (pcname, index, array) => {

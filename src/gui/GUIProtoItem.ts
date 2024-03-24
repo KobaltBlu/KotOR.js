@@ -21,6 +21,7 @@ export class GUIProtoItem extends GUIControl{
   list: GUIListBox;
   startX: number;
   startY: number;
+  textBasedHeight: boolean = false;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -29,22 +30,26 @@ export class GUIProtoItem extends GUIControl{
     this.isProtoItem = false;
 
     this.onSelect = () => {
-      if(this.selected){
-        this.showHighlight();
-        this.hideBorder();
-        this.pulsing = true;
-        this.text.color.copy(this.defaultHighlightColor);
-        this.text.material.uniforms.diffuse.value = this.text.color;
-        this.text.material.needsUpdate = true;
-      }else{
-        this.hideHighlight();
-        this.showBorder();
-        this.pulsing = false;
-        this.text.color.copy(this.defaultColor);
-        this.text.material.uniforms.diffuse.value = this.text.color;
-        this.text.material.needsUpdate = true;
-      }
+      this.onSelectStateChanged();
     };
+  }
+
+  onSelectStateChanged(){
+    if(this.selected){
+      this.showHighlight();
+      this.hideBorder();
+      this.pulsing = true;
+      this.text.color.copy(this.defaultHighlightColor);
+      this.text.material.uniforms.diffuse.value = this.text.color;
+      this.text.material.needsUpdate = true;
+    }else{
+      this.hideHighlight();
+      this.showBorder();
+      this.pulsing = false;
+      this.text.color.copy(this.defaultColor);
+      this.text.material.uniforms.diffuse.value = this.text.color;
+      this.text.material.needsUpdate = true;
+    }
   }
 
   setList(list: GUIListBox){
@@ -52,49 +57,29 @@ export class GUIProtoItem extends GUIControl{
   }
 
   calculatePosition(){
-    let parentExtent = { width: this.menu.width, height: this.menu.height };
-    let parentOffsetX, parentOffsetY;
-    if(!(this.parent instanceof THREE.Scene)){
-      parentExtent = this.menu.tGuiPanel.extent;
-      //console.log(this.parent)
-      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
-      parentOffsetX = this.menu.tGuiPanel.worldPosition.x;
-      parentOffsetY = this.menu.tGuiPanel.worldPosition.y;
-
-    }else{
-      parentOffsetX = parentOffsetY = 0;
-    }
-
-    let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
-
-    //let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-
-    let listIndex = this.list.children.indexOf(this);
-    //console.log('List Index', listIndex);
-
-    //let posX = -(this.list.extent.left - this.extent.left)/2;
-    let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.padding;
+    /*let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.border.inneroffset;
 
     if(!this.list.isScrollBarLeft()){
+      posX -= this.parent.border.inneroffset/2;
       posX = posX * -1;
+    }else{
+      posX -= this.parent.border.inneroffset + this.list.border.inneroffset;
     }
 
     let height = this.getItemHeight();
-    let posY = this.list.extent.height/2 - (height + this.list.lastHeight);//((this.list.extent.height - 4) + ( (height - 4) - ((this.extent.height) * listIndex) ));
+    let posY = this.list.lastHeight + (this.list.extent.height/2) - height;
     posY += height/2;
-    this.list.lastHeight += height;
+    this.list.lastHeight += height + this.list.padding;
     this.startX = posX;
     this.startY = posY;
+
     this.anchor = Anchor.None;
-    this.anchorOffset.set(posX, posY);
+    this.anchorOffset.set(0, 0);
 
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
     
-    this.calculateBox();
-
+    this.calculateBox();*/
   }
 
   getItemHeight(){
@@ -110,7 +95,8 @@ export class GUIProtoItem extends GUIControl{
       }
     }
     height += cHeight;
-    return height;
+    // return height;
+    return this.extent.height;
   }
 
   calculateBox(){
@@ -120,17 +106,6 @@ export class GUIProtoItem extends GUIControl{
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
     this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
     this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-
-    /*this.box = new THREE.Box2(
-      new THREE.Vector2(
-        this.widget.position.x - this.extent.width/2 + worldPosition.x,
-        this.widget.position.y - this.extent.height/2 + worldPosition.y
-      ),
-      new THREE.Vector2(
-        this.widget.position.x + this.extent.width/2 + worldPosition.x,
-        this.widget.position.y + this.extent.height/2 + worldPosition.y
-      )
-    );*/
     
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();

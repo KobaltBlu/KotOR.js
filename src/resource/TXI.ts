@@ -37,8 +37,8 @@ export class TXI {
   spacingr: number;
   spacingb: number;
   caretindent: number;
-  upperleftcoords: any[];
-  lowerrightcoords: any[];
+  upperleftcoords: {x: number, y: number, z: number}[];
+  lowerrightcoords: {x: number, y: number, z: number}[];
   isAnimated: boolean;
   numx: number;
   numy: number;

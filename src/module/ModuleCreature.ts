@@ -79,7 +79,7 @@ export class ModuleCreature extends ModuleObject {
   bodyVariation: number;
   cha: number;
   challengeRating: number;
-  classes: any[];
+  classes: CreatureClass[];
   comment: string;
   con: number;
   currentForce: number;
@@ -2731,7 +2731,7 @@ export class ModuleCreature extends ModuleObject {
   getSpellCasterLevel(){
     let level = 0;
     for(let i = 0; i < this.classes.length; i++){
-      if(this.classes[i].spellcaster == 1){
+      if(this.classes[i].spellcaster){
         level += this.classes[i].level;
       }
     }
@@ -2846,7 +2846,7 @@ export class ModuleCreature extends ModuleObject {
   getTotalClassLevel(){
     let total = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
-      total += parseInt(this.classes[i].level);
+      total += this.classes[i].level;
     }
     return total;
   }
@@ -2896,6 +2896,8 @@ export class ModuleCreature extends ModuleObject {
   autoLevelUp(){
     if(this.canLevelUp()){
       let mainClass = this.getMainClass();
+      if(!mainClass){ return; }
+
       mainClass.level += 1;
 
       if(this.getTotalClassLevel() % 4 == 0){
@@ -2921,7 +2923,7 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      this.maxHitPoints += parseInt(mainClass.hitdie) + ( (this.getCON() - 10) /2 );
+      this.maxHitPoints += mainClass.hitdie + ( (this.getCON() - 10) /2 );
       this.currentHitPoints = 0;
 
     }
@@ -3078,6 +3080,16 @@ export class ModuleCreature extends ModuleObject {
 
     if(typeof this.equipment.LEFTARMBAND != 'undefined'){
       spells.push(...this.equipment.LEFTARMBAND.getSpells());
+    }
+
+    return spells;
+  }
+
+  getClassSpells(){
+    const spells = [];
+
+    for(let i = 0, len = this.classes.length; i < len; i++){
+      spells.push(...this.classes[i].getSpells());
     }
 
     return spells;
@@ -3779,7 +3791,12 @@ export class ModuleCreature extends ModuleObject {
       break;
     }
     
-    uti.load();
+    if(!uti.load()){
+      if(typeof args.onLoad == 'function')
+        args.onLoad();
+
+      return;
+    }
     uti.loadModel().then( () => {
       if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
         uti.model.playAnimation('off', true);
@@ -4226,10 +4243,14 @@ export class ModuleCreature extends ModuleObject {
   parseEquipmentSlots(){
     let slots = Object.keys(this.equipment);
     for(let i = 0; i < slots.length; i++){
-      let slot: ModuleItem = (this.equipment as any)[slots[i]];
-      if(slot){
-        slot.setPossessor(this);
-        slot.load();
+      const slotKey = slots[i];
+      let item: ModuleItem = (this.equipment as any)[slotKey];
+      if(item){
+        item.setPossessor(this);
+        if(!item.load()){
+          (this.equipment as any)[slotKey] = undefined;
+          item.destroy();
+        }
       }
     }
   }
@@ -4246,10 +4267,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   loadItem( template: GFFObject ){
-
     let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
-    item.load();
+    if(!item.load()){
+      return;
+    }
     let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
@@ -4258,7 +4280,6 @@ export class ModuleCreature extends ModuleObject {
       this.inventory.push(item);
       return item;
     }
-
   }
 
   playSoundSet(type = -1){

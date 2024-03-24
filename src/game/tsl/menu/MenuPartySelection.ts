@@ -107,6 +107,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.childMenu = this.manager.MenuTop;
       this.default0 = this.LBL_NA0.getFillTextureName();
       this.default1 = this.LBL_NA1.getFillTextureName();
       this.default2 = this.LBL_NA2.getFillTextureName();
@@ -412,6 +413,9 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       return;
     if (this.char instanceof ModuleCreature)
       this.char.update(delta);
+      if(this.char.model instanceof OdysseyModel3D && this.char.model.bonesInitialized){
+        this.char.model.update( delta );
+      }
     try {
       this.LBL_3D_VIEW.render(delta);
     } catch (e: any) {

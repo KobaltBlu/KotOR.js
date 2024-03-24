@@ -53,6 +53,7 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
+      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
@@ -71,16 +72,19 @@ export class MenuInventory extends GameMenu {
     }
   }
 
-  show() {
-    super.show();
-    this.manager.MenuTop.LBLH_INV.onHoverIn();
-    this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+  filterInventory(){
     this.LB_ITEMS.clearItems();
     let inv = GameState.InventoryManager.getNonQuestInventory();
     for (let i = 0; i < inv.length; i++) {
       this.LB_ITEMS.addItem(inv[i]);
     }
     TextureLoader.LoadQueue();
+  }
+
+  show() {
+    super.show();
+    this.manager.MenuTop.LBLH_INV.onHoverIn();
+    this.filterInventory();
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     let currentPC = GameState.PartyManager.party[0];

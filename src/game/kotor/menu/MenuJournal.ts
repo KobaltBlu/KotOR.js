@@ -75,15 +75,19 @@ export class MenuJournal extends GameMenu {
         switch(this.sort){
           case JournalSort.RECIEVED:
             this.sort = JournalSort.NAME;
+            this.updateList();
           break;
           case JournalSort.NAME:
             this.sort = JournalSort.PRIORITY;
+            this.updateList();
           break;
           case JournalSort.PRIORITY:
             this.sort = JournalSort.PLANET;
+            this.updateList();
           break;
           case JournalSort.PLANET:
             this.sort = JournalSort.RECIEVED;
+            this.updateList();
           break;
         }
         this.UpdateLabels();
@@ -160,14 +164,65 @@ export class MenuJournal extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_JOU.onHoverIn();
 
+    this.updateList();
+    this.UpdateLabels();
+  }
+
+  updateList(){
     this.LB_ITEMS.clearItems();
     this.LBL_ITEM_DESCRIPTION.clearItems();
-    const entries = GameState.JournalManager.Entries;
+    const entries = this.getFilteredEntries();
     for(let i = 0; i < entries.length; i++){
       this.LB_ITEMS.addItem(entries[i]);
     }
+  }
 
-    this.UpdateLabels();
+  getFilteredEntries(){
+    const entries = GameState.JournalManager.Entries.slice();
+
+    return entries.sort( (a, b) => {
+      if(this.sort == JournalSort.NAME){
+        let nameA = a.category.name.getTLKValue().toLocaleLowerCase();
+        let nameB = b.category.name.getTLKValue().toLocaleLowerCase();
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        
+        return 0;
+      }else if(this.sort == JournalSort.RECIEVED){
+        if (a.date < b.date) {
+          return -1;
+        }
+        if (a.date > b.date) {
+          return 1;
+        }
+        
+        return 0;
+      }else if(this.sort == JournalSort.PRIORITY){
+        if (a.category.priority < b.category.priority) {
+          return -1;
+        }
+        if (a.category.priority > b.category.priority) {
+          return 1;
+        }
+        
+        return 0;
+      }else if(this.sort == JournalSort.PLANET){
+        if (a.category.planet_id < b.category.planet_id) {
+          return -1;
+        }
+        if (a.category.planet_id > b.category.planet_id) {
+          return 1;
+        }
+        
+        return 0;
+      }
+
+      return 0;
+    });
   }
 
   triggerControllerBumperLPress() {

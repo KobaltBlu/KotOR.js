@@ -22,25 +22,22 @@ export class GUISaveGameItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.extent.height = 39.5;
   }
 
   createControl(){
     try{
-      super.createControl();
       const saveTimeString = `${toPaddedDigit(this.node.TIMESTAMP.getHours())}:${toPaddedDigit(this.node.TIMESTAMP.getMinutes())}:${toPaddedDigit(this.node.TIMESTAMP.getSeconds())} - ${toPaddedDigit(this.node.TIMESTAMP.getDate())}, ${toPaddedDigit(this.node.TIMESTAMP.getMonth() + 1)}, ${toPaddedDigit(this.node.TIMESTAMP.getFullYear(), 4)}`;
-      if(this.node.getIsAutoSave()){
-        this.setText(
-          "AUTOSAVE" + "\n" + saveTimeString
-        );
+      if(this.node.isNewSave){
+        this.text.text = this.node.getFullName();
+      }else if(this.node.getIsAutoSave()){
+        this.text.text = "AUTOSAVE" + "\n" + saveTimeString;
       }else if(this.node.getIsQuickSave()){
-        this.setText(
-          "QUICKSAVE" + "\n" + saveTimeString
-        );
+        this.text.text = "QUICKSAVE" + "\n" + saveTimeString;
       }else{
-        this.setText(
-          this.node.getSaveNumber() + " : " + this.node.getSaveName() + "\n" + saveTimeString
-        );
+        this.text.text = this.node.getSaveNumber() + " : " + this.node.getSaveName() + "\n" + saveTimeString;
       }
+      super.createControl();
     }catch(e){
       console.error(e);
     }

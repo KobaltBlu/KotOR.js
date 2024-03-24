@@ -24,7 +24,7 @@ export class GUIButton extends GUIControl {
     super.onHoverIn();
     this.hideBorder();
 
-    this.pulsing = true;
+    // this.pulsing = true;
     this.text.color.set(this.defaultHighlightColor);
     (this.text.material as any).color = this.text.color;
     this.text.material.needsUpdate = true;
@@ -35,7 +35,7 @@ export class GUIButton extends GUIControl {
     super.onHoverOut();
     this.showBorder();
 
-    this.pulsing = false;
+    // this.pulsing = false;
     this.text.color.set(this.defaultColor);
     (this.text.material as any).color = this.text.color;
     this.text.material.needsUpdate = true;

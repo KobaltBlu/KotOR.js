@@ -21,6 +21,23 @@ import { TalentObject } from "./TalentObject";
  */
 export class TalentSkill extends TalentObject {
   rank: number;
+  name: string;
+  description: string;
+  icon: string;
+  untrained: string;
+  keyability: string;
+  armorcheckpenalty: string;
+  allclassescanuse: string;
+  // category: string;
+  maxcr: string;
+  constant: string;
+  hostileskill: string;
+
+  /* class props */
+
+  droidcanuse: string;
+  npccanuse: string;
+
   constructor( id = 0, rank = 0 ){
     super( id );
     this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentSkill;
@@ -54,6 +71,18 @@ export class TalentSkill extends TalentObject {
 
   setRank( value = 0){
     this.rank = value;
+  }
+
+  getIcon(){
+    return this.icon;
+  }
+
+  getNameStrRef(){
+    return parseInt(this.name);
+  }
+
+  getDescription(){
+    return this.description;
   }
 
   save(){

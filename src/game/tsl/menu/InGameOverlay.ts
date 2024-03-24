@@ -240,7 +240,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.BTN_ABI.addEventListener('click', (e: any) => {
         e.stopPropagation();
-        this.manager.MenuCharacter.open();
+        this.manager.MenuAbilities.open();
       });
 
       this.BTN_INV.addEventListener('click', (e: any) => {
@@ -277,11 +277,11 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       this.BTN_CHAR2.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(2, 1)[0]);
+        GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
       this.BTN_CHAR3.addEventListener('click', (e: any) => {
-        GameState.PartyManager.party.unshift(GameState.PartyManager.party.splice(1, 1)[0]);
+        GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
       this.BTN_CLEARALL.addEventListener('click', (e: any) => {

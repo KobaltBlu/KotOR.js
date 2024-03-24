@@ -1,6 +1,13 @@
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuMessages as K1_MenuMessages } from "../../kotor/KOTOR";
 
+enum MessageType {
+  DIALOG = 1,
+  FEEDBACK = 2,
+  COMBAT = 3,
+  EFFECTS = 4
+}
+
 /**
  * MenuMessages class.
  * 
@@ -33,6 +40,8 @@ export class MenuMessages extends K1_MenuMessages {
   declare LBL_EFFECTS_GOOD: GUILabel;
   declare LBL_EFFECTS_BAD: GUILabel;
 
+  messageType: MessageType = MessageType.DIALOG;
+
   constructor(){
     super();
     this.gui_resref = 'messages_p';
@@ -44,12 +53,68 @@ export class MenuMessages extends K1_MenuMessages {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_EXIT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_DIALOG.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.messageType = MessageType.DIALOG;
+        this.updateListVisibility();
+      });
+
+      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.messageType = MessageType.FEEDBACK;
+        this.updateListVisibility();
+      });
+
+      this.BTN_COMBAT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.messageType = MessageType.COMBAT;
+        this.updateListVisibility();
+      });
+
+      this.BTN_EFFECTS.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.messageType = MessageType.EFFECTS;
+        this.updateListVisibility();
+      });
+
       resolve();
     });
   }
 
-show() {
-  super.show();
-}
+  updateListVisibility(){
+    this.LBL_EFFECTS_BAD.hide();
+    this.LB_EFFECTS_BAD.hide();
+    this.LBL_EFFECTS_GOOD.hide();
+    this.LB_EFFECTS_GOOD.hide();
+    this.LB_COMBAT.hide();
+    this.LB_DIALOG.hide();
+    this.LB_MESSAGES.hide();
+
+    switch(this.messageType){
+      case MessageType.DIALOG:
+        this.LB_DIALOG.show();
+      break;
+      case MessageType.FEEDBACK:
+        this.LB_MESSAGES.show();
+      break;
+      case MessageType.COMBAT:
+        this.LB_COMBAT.show();
+      break;
+      default:
+        this.LBL_EFFECTS_BAD.show();
+        this.LB_EFFECTS_BAD.show();
+        this.LBL_EFFECTS_GOOD.show();
+        this.LB_EFFECTS_GOOD.show();
+      break;
+    }
+
+
+  }
   
 }

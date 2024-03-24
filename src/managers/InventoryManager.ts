@@ -17,7 +17,7 @@ import { GameState } from "../GameState";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InventoryManager {
-  static inventory: any[] = [];
+  static inventory: ModuleItem[] = [];
 
   static getInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
@@ -39,7 +39,7 @@ export class InventoryManager {
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(!item.Plot){
+        if(!item.plot){
           equippable.push(item);
         }
       }
@@ -61,7 +61,7 @@ export class InventoryManager {
       let equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         let item = InventoryManager.inventory[i];
-        if(item.Plot){
+        if(item.plot){
           equippable.push(item);
         }
       }

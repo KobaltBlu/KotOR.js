@@ -43,6 +43,21 @@ export class MenuGameplay extends K1_MenuGameplay {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+
+      this.BTN_KEYMAP.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.manager.MenuKeyboardMapping.open();
+      });
+
+      this.BTN_MOUSE.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.manager.MenuMouse.open();
+      });
       resolve();
     });
   }

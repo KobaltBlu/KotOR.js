@@ -32,6 +32,19 @@ export class MenuFeedback extends K1_MenuFeedback {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_b = this.BTN_BACK;
+
+      this.BTN_DEFAULT.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+        this.manager.MenuMessages.open();
+      });
+
       resolve();
     });
   }

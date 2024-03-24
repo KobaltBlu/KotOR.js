@@ -108,7 +108,7 @@ export class GUIProgressBar extends GUIControl {
       visible: true
     });
     //this.progress.fill.material.defines.USE_MAP = '';
-    this.progress.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
+    this.progress.fill.material.uniforms.diffuse.value = this.progress.color;
     this.progress.fill.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
     this.progress.fill.mesh = new THREE.Mesh( this.progress.fill.geometry, this.progress.fill.material );
     this.progress.fill.mesh.position.z = this.zOffset + 1;
@@ -211,6 +211,9 @@ export class GUIProgressBar extends GUIControl {
       else
         sprite.position.y = -offsetY;
     }
+
+    (this.progress.fill.geometry.attributes.uv as THREE.BufferAttribute).setY(1, value);
+    this.progress.fill.geometry.attributes.uv.needsUpdate = true;
     
     (sprite.material as any).uniforms.opacity.value = 1;
     (sprite.material as any).transparent = true;

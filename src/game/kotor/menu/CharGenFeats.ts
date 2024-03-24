@@ -68,7 +68,7 @@ export class CharGenFeats extends GameMenu {
       let feat = feats[i];
       if(this.creature){
         let mainClass = this.creature.getMainClass();
-        if (feat.constant != '****') {
+        if (mainClass && feat.constant != '****') {
           if (mainClass.isFeatAvailable(feat)) {
             let status = mainClass.getFeatStatus(feat);
             if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
@@ -90,13 +90,15 @@ export class CharGenFeats extends GameMenu {
     let list = [];
     if(this.creature){
       let mainClass = this.creature.getMainClass();
-      for (let i = 0; i < featCount; i++) {
-        let feat = feats[i];
-        if (feat.constant != '****') {
-          if (mainClass.isFeatAvailable(feat)) {
-            let status = mainClass.getFeatStatus(feat);
-            if (this.creature.getHasFeat(feat.__index) || status == 0 || status == 1) {
-              list.push(feat);
+      if(mainClass){
+        for (let i = 0; i < featCount; i++) {
+          let feat = feats[i];
+          if (feat.constant != '****') {
+            if (mainClass.isFeatAvailable(feat)) {
+              let status = mainClass.getFeatStatus(feat);
+              if (this.creature.getHasFeat(feat.__index) || status == 0 || status == 1) {
+                list.push(feat);
+              }
             }
           }
         }

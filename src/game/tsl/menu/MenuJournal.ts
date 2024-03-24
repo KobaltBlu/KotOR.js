@@ -1,5 +1,13 @@
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuJournal as K1_MenuJournal } from "../../kotor/KOTOR";
+import { GUIJournalItem } from "../gui/GUIJournalItem";
+
+enum JournalSort {
+  RECIEVED = 0,
+  NAME = 1,
+  PRIORITY = 2,
+  PLANET = 3,
+}
 
 /**
  * MenuJournal class.
@@ -47,6 +55,36 @@ export class MenuJournal extends K1_MenuJournal {
         this.close()
         this.manager.MenuMessages.open();
       });
+      
+      this.LB_ITEMS.GUIProtoItemClass = GUIJournalItem;
+      this.LB_ITEMS.onSelect = (node: any) => {
+        console.log(node);
+      };
+
+      this.BTN_FILTER_TIME.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.sort = JournalSort.RECIEVED;
+        this.updateList();
+      });
+
+      this.BTN_FILTER_NAME.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.sort = JournalSort.NAME;
+        this.updateList();
+      });
+
+      this.BTN_FILTER_PRIORITY.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.sort = JournalSort.PRIORITY;
+        this.updateList();
+      });
+
+      this.BTN_FILTER_PLANET.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.sort = JournalSort.PLANET;
+        this.updateList();
+      });
+
       resolve();
     });
   }

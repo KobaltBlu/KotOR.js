@@ -1,5 +1,7 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+import { GUIMovieItem } from "../gui/GUIMovieItem";
 
 /**
  * MainMovies class.
@@ -21,6 +23,10 @@ export class MainMovies extends K1_MainMovies {
   declare BTN_BACK: GUIButton;
   declare LB_MOVIES: GUIListBox;
 
+  selected: any;
+  selectedIndex: number = 0;
+  movieList: any[] = [];
+
   constructor(){
     super();
     this.gui_resref = 'titlemovie_p';
@@ -32,6 +38,29 @@ export class MainMovies extends K1_MainMovies {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.LB_MOVIES.GUIProtoItemClass = GUIMovieItem;
+      
+      const table = GameState.TwoDAManager.datatables.get('movies');
+      for(let i = 0; i < table.RowCount; i++){
+        const row = table.getRowByIndex(i);
+        this.LB_MOVIES.addItem(row);
+        this.movieList.push(row);
+      }
+
+      this.LBL_UNLOCKED_VALUE.setText(`${table.RowCount} / ${table.RowCount}`);
+
+      this.LB_MOVIES.onSelected = (node: any) => {
+        console.log(node);
+        this.selected = node;
+        this.selectedIndex = this.movieList.indexOf(node);
+      }
+
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_b = this.BTN_BACK;
+
       resolve();
     });
   }

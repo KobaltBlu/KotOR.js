@@ -35,6 +35,11 @@ export class MenuMouse extends K1_MenuMouse {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_BACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
       resolve();
     });
   }

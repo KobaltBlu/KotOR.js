@@ -592,6 +592,10 @@ export class GameState implements EngineContext {
         GameState.MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
         GameState.MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
 
+        if(GameState.GameKey == GameEngineType.TSL){
+          GameState.MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
+        }
+
         //Preload fx textures
         TextureLoader.enQueue(
           ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',

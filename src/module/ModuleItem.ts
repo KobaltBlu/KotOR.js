@@ -445,7 +445,6 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
-
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
@@ -453,12 +452,13 @@ export class ModuleItem extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
-        //
+        return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
+        return false;
       }
     }else if(!this.loaded && this.getInventoryRes()){
       //Load template and merge fields
@@ -467,52 +467,54 @@ export class ModuleItem extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
+        return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
+        return false;
       }
     }else{
       //We already have the template (From SAVEGAME)
       this.initProperties();
       // this.loadScripts();
+      return true;
     }
   }
 
-  loadModel(): Promise<OdysseyModel3D> {
-    let itemclass = this.baseItem.itemClass;
-    let DefaultModel = this.baseItem.defaultModel;
-    itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-    DefaultModel = DefaultModel.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+  async loadModel(): Promise<OdysseyModel3D> {
+    if(!this.baseItem){ 
+      this.model = new OdysseyModel3D;
+      return this.model;
+    }
 
-    if(DefaultModel != 'i_null'){
-      DefaultModel = this.nthStringConverter(DefaultModel, this.getModelVariation());
-      if(!parseInt(DefaultModel.substr(-3))){
-        DefaultModel = itemclass+'_'+(('000'+this.getModelVariation()).substr(-3));
+    let itemclass = this.baseItem.itemClass;
+    let defaultModel = this.baseItem.defaultModel;
+    itemclass = itemclass.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+    defaultModel = defaultModel.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+
+    if(defaultModel != 'i_null'){
+      defaultModel = this.nthStringConverter(defaultModel, this.getModelVariation());
+      if(!parseInt(defaultModel.substr(-3))){
+        defaultModel = itemclass+'_'+(('000'+this.getModelVariation()).substr(-3));
       }
     }
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      MDLLoader.loader.load(DefaultModel).then(
-        (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: this.context,
-            lighting: true,
-            //castShadow: false,
-            //receiveShadow: false
-          }).then((model: OdysseyModel3D) => {
-            this.model = model;
-            resolve(this.model);
-          }).catch( () => {
-            this.model = new OdysseyModel3D;
-            resolve(this.model);
-          });
-        }
-      ).catch( () => {
-        this.model = new OdysseyModel3D;
-        resolve(this.model);
+
+    try{
+      const mdl = await MDLLoader.loader.load(defaultModel);
+      const model = await OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        lighting: true,
+        //castShadow: false,
+        //receiveShadow: false
       });
-    });
+      this.model = model;
+      return this.model;
+    }catch(e){
+      this.model = new OdysseyModel3D;
+      return this.model;
+    }
   }
 
   nthStringConverter(name = '', nth = 1){

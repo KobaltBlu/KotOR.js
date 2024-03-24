@@ -62,6 +62,12 @@ export class MainMenu extends K1_MainMenu {
 
       this.BTN_MOVIES.addEventListener('click', (e: any) => {
         e.stopPropagation();
+        this.manager.MainMovies.open();
+      });
+
+      this.BTN_MUSIC.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.manager.MainMusic.open();
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e: any) => {

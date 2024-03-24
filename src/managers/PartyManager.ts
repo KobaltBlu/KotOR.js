@@ -16,6 +16,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../loaders";
 import { GameEngineType } from "../enums/engine";
+import { PartyManagerEvent } from "../types/PartyManagerEvent";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -151,8 +152,27 @@ export class PartyManager {
   static SwoopUpgrade2: number = -1;
   static SwoopUpgrade3: number = -1;
 
+  static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
+
   static Init(){
 
+  }
+
+  static SwitchLeaderAtIndex(index: number = 0){
+    if(index > 0){
+      console.warn(`Invalid index selected: ${index}`);
+      return;
+    }
+
+    if(index >= PartyManager.party.length){
+      console.warn(`Index out of range: ${index}/${PartyManager.party.length}`);
+      return;
+    }
+
+    const pm = PartyManager.party.splice(index, 1)[0];
+    PartyManager.party.unshift(pm);
+    PartyManager.ProcessEventListener('change', [pm]);
+    return pm;
   }
 
   static RemoveNPCById(nID = 0, leaveInWorld = false){
@@ -763,6 +783,36 @@ export class PartyManager {
     PartyManager.PlayerTemplate = pTPL;
     PartyManager.PlayerTemplate.json = PartyManager.PlayerTemplate.toJSON();
     return PartyManager.PlayerTemplate;
+  }
+
+  static AddEventListener(type: PartyManagerEvent, cb: Function){
+    if(typeof cb !== 'function'){ return; }
+
+    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    if(events.indexOf(cb) === -1){
+      events.push(cb);
+    }
+
+    if(!PartyManager.#eventListeners.has(type)){
+      PartyManager.#eventListeners.set(type, events);
+    }
+  }
+
+  static RemoveEventListener(type: PartyManagerEvent, cb: Function){
+    if(!PartyManager.#eventListeners.has(type)){ return; }
+
+    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    const idx = events.indexOf(cb);
+    if(idx >= -1){
+      events.splice(idx, 1);
+    }
+  }
+
+  static ProcessEventListener(type: PartyManagerEvent, args: any[]){
+    const events: Function[] = PartyManager.#eventListeners.get(type) || [];
+    for(let i = 0; i < events.length; i++){
+      events[i](...args);
+    }
   }
 
 }

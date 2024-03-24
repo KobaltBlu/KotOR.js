@@ -58,6 +58,12 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       this.tGuiPanel.widget.add(this.BTN_ANISOTROPYLEFT.createControl());
       this.tGuiPanel.widget.add(this.BTN_ANTIALIASLEFT.createControl());
 
+      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_a = this.BTN_CANCEL;
+
       this.BTN_BACK.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.close();

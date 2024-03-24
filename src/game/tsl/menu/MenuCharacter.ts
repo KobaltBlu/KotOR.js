@@ -130,9 +130,11 @@ export class MenuCharacter extends K1_MenuCharacter {
             resolve();
           });
         }).catch( (e: any) => {
+          console.error(e);
           resolve();
         });
       }).catch( (e: any) => {
+        console.error(e);
         resolve();
       });
     });
@@ -151,25 +153,29 @@ export class MenuCharacter extends K1_MenuCharacter {
 
   show() {
     super.show();
-    this.recalculatePosition();
-    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
-    this.updateCharacterStats(GameState.PartyManager.party[0]);
-    
-    this.BTN_CHANGE1?.hide();
-    this.BTN_CHANGE2?.hide();
-    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      let partyMember = GameState.PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
-      if (!i) {
-        
-      } else {
-        const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
-        BTN_CHANGE.show();
-        if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
-          BTN_CHANGE.setFillTextureName(portrait.baseresref);
+    try{
+      this.recalculatePosition();
+      this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+      this.updateCharacterStats(GameState.PartyManager.party[0]);
+      
+      this.BTN_CHANGE1?.hide();
+      this.BTN_CHANGE2?.hide();
+      for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+        let partyMember = GameState.PartyManager.party[i];
+        let portraitId = partyMember.getPortraitId();
+        let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
+        if (!i) {
+          
+        } else {
+          const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
+          BTN_CHANGE.show();
+          if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
+            BTN_CHANGE.setFillTextureName(portrait.baseresref);
+          }
         }
       }
+    }catch(e){
+      console.error(e);
     }
   }
   

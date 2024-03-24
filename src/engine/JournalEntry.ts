@@ -29,11 +29,11 @@ export class JournalEntry {
   }
 
   getName(): string {
-    return this.category.name.getTLKValue().Value;
+    return this.category.name.getTLKValue();
   }
 
   getEntryText(): string {
-    return this.entry.text.getTLKValue().Value;
+    return this.entry.text.getTLKValue();
   }
 
   load(): void {

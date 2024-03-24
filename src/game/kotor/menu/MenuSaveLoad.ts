@@ -188,9 +188,17 @@ export class MenuSaveLoad extends GameMenu {
 export class NewSaveItem extends SaveGame {
   constructor(){
     super();
+    this.isNewSave = true;
   }
 
   getFullName(){
     return GameState.TLKManager.TLKStrings[1586].Value;
   }
+
+  async load(): Promise<void> {}
+  async loadNFO(): Promise<void> {}
+  async loadPIFO(): Promise<void> {}
+  async loadGlobalVARS(): Promise<void> {}
+  async loadInventory(): Promise<void> {}
+  async loadPartyTable(): Promise<void> {}
 }

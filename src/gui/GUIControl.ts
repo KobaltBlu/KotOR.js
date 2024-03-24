@@ -22,6 +22,8 @@ import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
 import type { GameMenu } from "./GameMenu";
 import { BitWise } from "../utility/BitWise";
+import { GUIListBox } from "./GUIListBox";
+import GUIFont from "./GUIFont";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -61,6 +63,7 @@ export class GUIControl {
   scale: boolean;
   iniProperty: string = "";
   autoCalculatePosition: boolean = true;
+  guiFont: GUIFont;
 
   dPadTarget: IDPadTarget = {
     up: undefined,
@@ -148,7 +151,7 @@ export class GUIControl {
   anchorOffset: THREE.Vector2 = new THREE.Vector2(0, 0);
   editable: boolean;
   selected: boolean;
-  onSelect: any;
+  onSelect: Function;
 
   userData: any = {};
   
@@ -586,7 +589,7 @@ export class GUIControl {
         if(text){
           this.text.font = text.getFieldByLabel('FONT')?.getValue();
           this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
-          this.text.text = ( text.hasField('TEXT') ? text.getFieldByLabel('TEXT')?.getValue().replace(/\{.*\}/gi, '') : '' );
+          this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
           this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
           this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
 
@@ -832,6 +835,7 @@ export class GUIControl {
           texture.minFilter = THREE.LinearFilter;
           texture.magFilter = THREE.LinearFilter;
           texture.needsUpdate = true;
+          this.guiFont = new GUIFont(texture);
           this.onFontTextureLoaded();
           this.text.material.visible = true;
         }
@@ -999,7 +1003,7 @@ export class GUIControl {
   }
 
   update(delta: number){
-    if(this.pulsing){
+    if(this.pulsing || (this.hover && this.onClick)){
       if(this.border.edge_material){
         this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }
@@ -1448,11 +1452,14 @@ export class GUIControl {
     let left = this.extent.left - ( (parentExtent.width - this.extent.width) / 2 );
     let top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
 
+    let shrinkWidth = this.getShrinkWidth();
+    left += shrinkWidth;
+
     return {
       top: top,
       left: left,// + this.border.dimension,
-      width: this.extent.width - this.border.dimension,
-      height: this.extent.height - this.border.dimension
+      width: this.extent.width,
+      height: this.extent.height,
     };
 
   }
@@ -1480,15 +1487,19 @@ export class GUIControl {
     };
   }
 
+  flipLeft(): boolean {
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox) && (this as any).isScrollBarLeft()){
+      return true;
+    }
+    return false;
+  }
+
   getFillExtent(){
     let extent = this.getControlExtent();
     let inner = this.getInnerSize();
     //console.log('size', extent, inner);
 
-    let shrinkWidth = 0;
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
-    }
+    let shrinkWidth = this.getShrinkWidth();
 
     let width = inner.width - this.border.dimension - shrinkWidth;
     let height = inner.height - this.border.dimension;
@@ -1503,7 +1514,7 @@ export class GUIControl {
 
     return {
       top: extent.top, 
-      left: extent.left - shrinkWidth/2, 
+      left: extent.left, 
       width: width,
       height: height
     };
@@ -1525,16 +1536,26 @@ export class GUIControl {
     }
   }
 
-  getBorderExtent(side: string){
-    // let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
-
-    let top = 0, left = 0, width = 0, height = 0;
-
+  getShrinkWidth() {
     let shrinkWidth = 0;
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
       shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
     }
+    return shrinkWidth;
+  }
+
+  getBorderExtent(side: string){
+    // let extent = this.getControlExtent();
+    let inner = this.getInnerSize();
+
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
+      inner.width += this.parent.border.inneroffset * 2;
+      inner.width = Math.min(this.extent.width, inner.width);
+    }
+
+    let top = 0, left = 0, width = 0, height = 0;
+
+    let shrinkWidth = this.getShrinkWidth();
 
     switch(side){
       case 'top':
@@ -1597,7 +1618,7 @@ export class GUIControl {
 
     return {
       top: top, 
-      left: left, 
+      left: left + (this.flipLeft() ? shrinkWidth : 0), 
       width: width,
       height: height
     };
@@ -1608,92 +1629,93 @@ export class GUIControl {
     let extent = this.getControlExtent();
     let inner = this.getInnerSize();
 
-    let shrinkWidth = 0;
-    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
+    let top = 0, left = 0, width = 0, height = 0;
+
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
+      inner.width += this.parent.border.inneroffset * 2;
+      inner.width = Math.min(this.extent.width, inner.width);
     }
+
+    let shrinkWidth = this.getShrinkWidth();
 
     switch(side){
       case 'top':
-        return {
-          top: -( (inner.height/2) ), 
-          left: -shrinkWidth/2,
-          width: inner.width - (this.getHightlightSize()) - shrinkWidth,
-          height: this.getHightlightSize()
-        };
+        top = -( (inner.height/2) );
+        left = -shrinkWidth/2;
+        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
+        height = this.getHightlightSize();
       break;
       case 'bottom':
-        return {
-          top: (inner.height/2), 
-          left: -shrinkWidth/2, 
-          width: inner.width - (this.getHightlightSize()) - shrinkWidth,
-          height: this.getHightlightSize()
-        };
+        top = (inner.height/2); 
+        left = -shrinkWidth/2; 
+        width = inner.width - (this.getHightlightSize()) - shrinkWidth;
+        height = this.getHightlightSize();
       break;
       case 'left':
-        return {
-          top: 0, 
-          left: -(inner.width/2), 
-          width: inner.height - (this.getHightlightSize()),
-          height: this.getHightlightSize()
-        };
+        top = 0; 
+        left = -(inner.width/2); 
+        width = inner.height - (this.getHightlightSize());
+        height = this.getHightlightSize();
       break;
       case 'right':
-        return {
-          top: 0, 
-          left: (inner.width/2), 
-          width: inner.height - (this.getHightlightSize()),
-          height: this.getHightlightSize()
-        };
+        top = 0; 
+        left = (inner.width/2); 
+        width = inner.height - (this.getHightlightSize());
+        height = this.getHightlightSize();
       break;
       case 'topLeft':
-        return {
-          top: ((inner.height/2)), 
-          left: -((inner.width/2)), 
-          width: this.getHightlightSize(),
-          height: this.getHightlightSize()
-        };
+        top = ((inner.height/2)); 
+        left = -((inner.width/2)); 
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'topRight':
-        return {
-          top: (inner.height/2), 
-          left: (inner.width/2) - shrinkWidth, 
-          width: this.getHightlightSize(),
-          height: this.getHightlightSize()
-        };
+        top = (inner.height/2); 
+        left = (inner.width/2) - shrinkWidth; 
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'bottomLeft':
-        return {
-          top: -((inner.height/2)), 
-          left: -((inner.width/2)), 
-          width: this.getHightlightSize(),
-          height: this.getHightlightSize()
-        };
+        top = -((inner.height/2)); 
+        left = -((inner.width/2)); 
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
       case 'bottomRight':
-        return {
-          top: -((inner.height/2)), 
-          left: ((inner.width / 2)) - shrinkWidth, 
-          width: this.getHightlightSize(),
-          height: this.getHightlightSize()
-        };
+        top = -((inner.height/2)); 
+        left = ((inner.width / 2)) - shrinkWidth; 
+        width = this.getHightlightSize();
+        height = this.getHightlightSize();
       break;
     }
+
+    if(width < 0){
+      width = 0.00001;
+    }
+
+    if(height < 0){
+      height = 0.00001;
+    }
+
+    return {
+      top: top, 
+      left: left + (this.flipLeft() ? shrinkWidth : 0), 
+      width: width,
+      height: height
+    };
   }
 
   buildFill(){
     let extent = this.getFillExtent();
+    
     if(this.border.fill.mesh){
       this.border.fill.mesh.name = this.widget.name+' center fill';
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
       this.border.fill.mesh.position.z = this.zOffset;
 
-      let shrinkWidth = 0;
-      if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-        shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
-      }
-      this.border.fill.mesh.position.x = -shrinkWidth/2;
+      let shrinkWidth = this.getShrinkWidth();
+      this.border.fill.mesh.position.x = (this.flipLeft() ? shrinkWidth/2 : -shrinkWidth/2);
     }
   }
 
@@ -1896,7 +1918,7 @@ export class GUIControl {
     texture.needsUpdate = true;
 
     if(this.text.text != '' || (this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref] != 'undefined'))
-      this.updateTextGeometry(this.text.text != '' ? this.text.text : GameState.TLKManager.TLKStrings[this.text.strref].Value);
+      this.updateTextGeometry(this.text.text != '' ? this.menu.gameStringParse(this.text.text) : this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref].Value));
     
     this.text.geometry.computeBoundingSphere = function () {
       if (this.boundingSphere === null) {
@@ -1935,6 +1957,13 @@ export class GUIControl {
 
   }
 
+  getCharPositions(char: number){
+    return {
+      ul: this.text.texture.txi.upperleftcoords[char],
+      lr: this.text.texture.txi.lowerrightcoords[char]
+    }
+  }
+
   updateTextGeometry(text: string){
 
     if(!(this.text.texture instanceof THREE.Texture))
@@ -1961,28 +1990,33 @@ export class GUIControl {
       count: textCharCount
     });
 
-    let maxLineWidth = this.getInnerSize().width + 10;
+    let lines: string[] = text.split('\n');
+    let lineCount: number = lines.length;
+    let line: string;
+    let lineX = 0, lineY = 0;
+    let spaceChar = 32;
+    let words: string[] = [];
+    let word: string, wordLength: number, wordWidth: number, char: number, ul: {x: number, y: number}, lr: {x: number, y: number}, charW: number, charH: number;
+    let u0: number, v1: number, u1: number, v0: number;
 
-    let paragraphs = text.split('\n');
-    let pCount = paragraphs.length;
-    let x = 0, y = 0;
-    let space_code = 32;
-    let words = [];
-    let word, wordLength, wordWidth, char, ul, lr, w, h;
-    let u0, v1, u1, v0;
+    const space_ul = texture.txi.upperleftcoords[spaceChar];
+    const space_lr = texture.txi.lowerrightcoords[spaceChar];
+    const space_width = ((space_lr.x - space_ul.x) * texture.image.width) * scale;
+
+    let maxLineWidth = this.getOuterSize().width;
     
-    for(let p = 0; p < pCount; p++){
-      let paragraph = paragraphs[p];
-      x = 0;
+    for(let l = 0; l < lineCount; l++){
+      line = lines[l];
+      lineX = 0;
 
-      if(p > 0){
-        y -= txi_bsline;
+      if(l > 0){
+        lineY -= txi_bsline;
       }
 
-      words = paragraph.split(' ');
-      for(let j = 0, len = words.length; j < len; j++){
-
-        word = words[j];
+      words = line.split(' ');
+      let startI = posI;
+      for(let w = 0, len = words.length; w < len; w++){
+        word = words[w];
         wordLength = word.length;
         wordWidth = 0;
 
@@ -1995,13 +2029,14 @@ export class GUIControl {
         }
 
         //Wrap to new line if needed
-        if(j >= 1 && x + wordWidth > ( maxLineWidth - txi_height ) ){
-          y -= txi_bsline;
-          x = 0;
+        if(w >= 1 && lineX + wordWidth > ( maxLineWidth - txi_height ) ){
+          lineY -= txi_bsline;
+          lineX = 0;
+          startI = posI;
         }
         
         //If this isn't the first word of the line prepend a space to it
-        if(x){
+        if(lineX){
           word = ' '+word;
           wordLength++;
         }
@@ -2012,21 +2047,21 @@ export class GUIControl {
           ul = texture.txi.upperleftcoords[char];
           lr = texture.txi.lowerrightcoords[char];
 
-          w = ((lr.x - ul.x) * texture.image.width) * scale;
-          h = ((lr.y - ul.y) * texture.image.height) * scale;
+          charW = ((lr.x - ul.x) * texture.image.width) * scale;
+          charH = ((lr.y - ul.y) * texture.image.height) * scale;
 
           // BL
-          positions[posI++] = x
-          positions[posI++] = y
+          positions[posI++] = lineX
+          positions[posI++] = lineY
           // TL
-          positions[posI++] = x
-          positions[posI++] = y + h
+          positions[posI++] = lineX
+          positions[posI++] = lineY + charH
           // TR
-          positions[posI++] = x + w
-          positions[posI++] = y + h
+          positions[posI++] = lineX + charW
+          positions[posI++] = lineY + charH
           // BR
-          positions[posI++] = x + w
-          positions[posI++] = y
+          positions[posI++] = lineX + charW
+          positions[posI++] = lineY
 
           // top left position
           u0 = ul.x;
@@ -2048,11 +2083,37 @@ export class GUIControl {
           uvs[uvI++] = v1
 
           //Advance the x position by the width of the current char
-          x += w;
+          lineX += charW;
         }
-
       }
 
+      let horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
+      let vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
+
+      if(horizontal == GUIControlAlignment.HorizontalCenter){
+        const diffX = maxLineWidth - lineX;
+        const diffHalfX = diffX/2;
+        let t = posI - startI;
+        let charCount = t/8;
+        for(let i = 0; i < charCount; i++){
+          const index = startI + (i * 8);
+          positions[index + 0] += diffHalfX;
+          positions[index + 2] += diffHalfX;
+          positions[index + 4] += diffHalfX;
+          positions[index + 6] += diffHalfX;
+        }
+      }else if(horizontal == GUIControlAlignment.HorizontalRight){
+        const diffX = maxLineWidth - lineX;
+        let t = posI - startI;
+        let charCount = t/8;
+        for(let i = 0; i < charCount; i++){
+          const index = startI + (i * 8);
+          positions[index + 0] += diffX;
+          positions[index + 2] += diffX;
+          positions[index + 4] += diffX;
+          positions[index + 6] += diffX;
+        }
+      }
     }
     
     if(this.text.geometry){
@@ -2069,13 +2130,14 @@ export class GUIControl {
       this.text.geometry.computeBoundingBox();
     }
     this.alignText();
-
+    // this.processEventListener('textChanged');
   }
 
+  textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+
   alignText(){
-    let size = new THREE.Vector3();
     if(this.text.geometry && this.text.geometry.boundingBox){
-      this.text.geometry.boundingBox.getSize(size);
+      this.text.geometry.boundingBox.getSize(this.textSize);
     }
     this.widget.userData.text.position.z = this.zOffset;
 
@@ -2086,31 +2148,38 @@ export class GUIControl {
 
     switch(horizontal){
       case GUIControlAlignment.HorizontalLeft:
-        this.widget.userData.text.position.x = -(innerSize.width/2 - size.x/2) - size.x/2;
+        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
       break;
       case GUIControlAlignment.HorizontalCenter:
-        this.widget.userData.text.position.x = -size.x/2;
+        // this.widget.userData.text.position.x = -this.textSize.x/2;
+        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
       break;
       case GUIControlAlignment.HorizontalRight:
-        this.widget.userData.text.position.x = (innerSize.width/2 - size.x/2) - size.x/2;
+        // this.widget.userData.text.position.x = (innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
+        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
       break;
     }
 
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (innerSize.height/2 - size.y/2) + size.y/2;
+        this.widget.userData.text.position.y = (innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
       break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = size.y/2;
+        this.widget.userData.text.position.y = this.textSize.y/2;
       break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(innerSize.height/2 - size.y/2) + size.y/2;
+        this.widget.userData.text.position.y = -(innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
       break;
     }
 
-    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox)){
-      // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
-    }
+    // if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox)){
+    //   // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
+    //   this.extent.height = this.textSize.y;
+    //   if(this.guiFont){
+    //     this.extent.height += (this.guiFont.height * 100)/2;
+    //   }
+    //   this.resizeControl();
+    // }
     
   }
 
@@ -2159,8 +2228,10 @@ export class GUIControl {
     if(typeof str != 'string')
       str = str.toString();
 
+    str = str.trim();
+
     let oldText = this.text.text;
-    this.text.text = (str).toString().replace(/\s*\{.*?\}\s*/gi, '');
+    this.text.text = this.menu.gameStringParse(str);
 
     if(typeof this.text.geometry !== 'object')
       this.buildText();
@@ -2188,7 +2259,7 @@ export class GUIControl {
 
   getHintText(){
     if(this.text.strref != 0 && typeof GameState.TLKManager.TLKStrings[this.text.strref+1] != 'undefined'){
-      return GameState.TLKManager.TLKStrings[this.text.strref+1].Value;
+      return GameState.TLKManager.TLKStrings[this.text.strref].Value;
     }else{
       return '';
     }
