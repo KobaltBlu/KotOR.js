@@ -63,6 +63,16 @@ export class MenuOptions extends K1_MenuOptions {
         this.manager.MenuSaveLoad.open();
       });
 
+      this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.manager.MenuGameplay.open();
+      });
+
+      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+        e.stopPropagation();
+        this.manager.MenuFeedback.open();
+      });
+
       this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
         e.stopPropagation();
         this.manager.MenuAutoPause.open();
