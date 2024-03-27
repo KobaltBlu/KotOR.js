@@ -260,8 +260,10 @@ export class InGameComputer extends GameMenu {
       if(!this.isContinueDialog(reply)){
         this.LB_REPLIES.addItem(
           this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-          (e: any) => {
-            this.onReplySelect(reply);
+          {
+            onClick: (e: any) => {
+              this.onReplySelect(reply);
+            }
           }
         );
       }

@@ -70,9 +70,9 @@ export class MenuAutoPause extends K1_MenuAutoPause {
 
       this.CB_ENEMYSIGHTED.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Autopause Options.Enemy Sighted') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.EnemySighted, true);
         }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.EnemySighted, false);
         }
       };
       
@@ -83,9 +83,9 @@ export class MenuAutoPause extends K1_MenuAutoPause {
 
       this.CB_MINESIGHTED.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Autopause Options.Mine Sighted') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.MineSighted, true);
         }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.MineSighted, false);
         }
       };
       
@@ -96,9 +96,9 @@ export class MenuAutoPause extends K1_MenuAutoPause {
 
       this.CB_PARTYKILLED.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Autopause Options.Party Killed') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.PartyMemberKilled, true);
         }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.PartyMemberKilled, false);
         }
       };
       
@@ -109,9 +109,9 @@ export class MenuAutoPause extends K1_MenuAutoPause {
 
       this.CB_ACTIONMENU.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Autopause Options.Action Menu') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.ActionMenuUsed, true);
         }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.ActionMenuUsed, false);
         }
       };
       

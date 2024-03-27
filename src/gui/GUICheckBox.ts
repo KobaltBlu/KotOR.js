@@ -473,6 +473,8 @@ export class GUICheckBox extends GUIControl{
     if(typeof this.onValueChanged === 'function')
       this.onValueChanged(this.value);
 
+    this.processEventListener('valueChanged', [this.value]);
+
     this.updateCBVisualState();
   }
 

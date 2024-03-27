@@ -40,6 +40,8 @@ const box = { min: [0, 0], max: [0, 0] }
 export class GUIControl {
   objectType: number = GUIControlTypeMask.GUIControl;
   position: THREE.Vector3 = new THREE.Vector3();
+  list: GUIListBox;
+  isProtoItem: boolean;
   node: any;
   visible: boolean = true;
   calculateBox() {
@@ -437,6 +439,10 @@ export class GUIControl {
       left: 0,
       right: 0
     };
+  }
+
+  setList(list: GUIListBox){
+    this.list = list;
   }
 
   initInputListeners(){
@@ -1283,7 +1289,7 @@ export class GUIControl {
   }
 
   calculatePosition(){
-    if(!this.autoCalculatePosition)
+    if(!this.autoCalculatePosition || this.list)
       return;
 
     let parentExtent = { width: this.menu.width, height: this.menu.height };
@@ -1418,8 +1424,21 @@ export class GUIControl {
 
   updateBounds(){
     let worldPosition: THREE.Vector3 = new THREE.Vector3;
-    this.widget.getWorldPosition(worldPosition);
-    this.box.setFromCenterAndSize((new THREE.Vector2(worldPosition.x, worldPosition.y)), new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale))
+    if(this.list){
+      worldPosition.copy(this.parent.widget.position.clone());
+      //console.log('worldPos', worldPosition);
+      this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
+      this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
+      this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
+      this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+      
+      for(let i = 0; i < this.children.length; i++){
+        this.children[i].updateBounds();
+      }
+    }else{
+      this.widget.getWorldPosition(worldPosition);
+      this.box.setFromCenterAndSize((new THREE.Vector2(worldPosition.x, worldPosition.y)), new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale));
+    }
   }
 
   updateScale(){
@@ -2467,8 +2486,11 @@ export class GUIControl {
   processEventListener(name = '', args: any[] = []){
     let processed = false;
 
-    if(!args.length)
+    if(!args.length){
       args = [GUIControlEventFactory.generateEventObject()];
+    }else{
+      args = [GUIControlEventFactory.generateEventObject(), ...args];
+    }
 
     if(this.eventListeners.hasOwnProperty(name)){
       let len = (this.eventListeners as any)[name].length;

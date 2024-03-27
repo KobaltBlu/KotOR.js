@@ -25,7 +25,6 @@ export class GUIScrollBar extends GUIControl{
   arrowTex: THREE.Texture;
   upArrowGeometry: THREE.PlaneGeometry;
   upArrowMaterial: THREE.MeshBasicMaterial;
-  list: GUIListBox;
   scrollPos: number;
   scrollMax: number;
   mouseOffset: { x: number; y: number; };

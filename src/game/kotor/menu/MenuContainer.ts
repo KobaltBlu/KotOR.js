@@ -148,7 +148,7 @@ export class MenuContainer extends GameMenu {
       let inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
         let item = inventory[i];
-        this.LB_ITEMS.addItem(item, null);
+        this.LB_ITEMS.addItem(item);
       }
       TextureLoader.LoadQueue();
     }

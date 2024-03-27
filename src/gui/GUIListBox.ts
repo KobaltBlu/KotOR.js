@@ -12,6 +12,12 @@ import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import type { GUIProtoItem } from "./GUIProtoItem";
 import type { GUIScrollBar } from "./GUIScrollBar";
 
+interface GUIListItemCallbacks {
+  onClick?: Function;
+  onValueChanged?: Function;
+  onHover?: Function;
+}
+
 /**
  * GUIListBox class.
  * 
@@ -219,120 +225,140 @@ export class GUIListBox extends GUIControl {
     return this.protoItem.type;
   }
 
-  addItem(node: any, onClick?: Function, customBuilder?: Function){
+  addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
     let control = this.protoItem;
     let type = control.type;
+    
+    let ctrl: GUIControl;
+    let widget: THREE.Object3D;
 
-    if(this.listItems.indexOf(node) == -1){
+    let idx = this.listItems.indexOf(node);
+    if(idx == -1){
       this.listItems.push(node);
     }else{
-      return;
+      return this.children[idx];
     }
 
-    if(typeof customBuilder == 'function'){
-      customBuilder(control.control, type);
-      this.cullOffscreen();
-    }else{
+    if(typeof this.GUIProtoItemClass === 'undefined'){
+      switch(type){
+        case GUIControlType.Label:
+        case GUIControlType.ProtoItem:
+          ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
+          ctrl.text.texture = this.protoItem.text.texture;
+          ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
+          ctrl.text.text = node;
+          ctrl.isProtoItem = false;
+          ctrl.offset = this.offset;
+          ctrl.node = node;
+          ctrl.setList( this );
+          idx = this.children.push(ctrl) - 1;
 
-      let index = -1;
-      let ctrl: GUIProtoItem;
-      let widget;
+          widget = ctrl.createControl();
+          ctrl.setText(node);
+          ctrl.buildText();
 
-      if(typeof this.GUIProtoItemClass === 'undefined'){
-        switch(type){
-          case GUIControlType.Label:
-          case GUIControlType.ProtoItem:
-            ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
-            ctrl.text.texture = this.protoItem.text.texture;
-            ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
-            ctrl.text.text = node;
+          this.itemGroup.add(widget);
+          
+          if(typeof options.onClick === 'function'){
+            ctrl.addEventListener('click', (e: any) => {
+              e.stopPropagation();
+              
+              options.onClick(node, ctrl);
+            });
+          }
+        break;
+        case GUIControlType.CheckBox:
+          ctrl = new this.menu.factory.GUICheckBox(this.menu, control.control, this, this.scale);
+          ctrl.text.texture = this.protoItem.text.texture;
+          ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
+          ctrl.text.text = node;
+          ctrl.isProtoItem = false;
+          ctrl.offset = this.offset;
+          ctrl.node = node;
+          ctrl.setList( this );
+          idx = this.children.push(ctrl) - 1;
+
+          widget = ctrl.createControl();
+          this.itemGroup.add(widget);
+          
+          if(typeof options.onClick === 'function'){
+            ctrl.addEventListener('click', (e: any) => {
+              e.stopPropagation();
+
+              options.onClick(node, ctrl);
+            });
+          }
+          
+          if(typeof options.onValueChanged === 'function'){
+            ctrl.addEventListener('valueChanged', (e: any) => {
+              e.stopPropagation();
+              
+              options.onValueChanged(node, ctrl);
+            });
+          }
+        break;
+        case GUIControlType.Button:
+          try{
+            ctrl = new this.menu.factory.GUIButton(this.menu, control.control, this, this.scale);
             ctrl.isProtoItem = false;
             ctrl.offset = this.offset;
             ctrl.node = node;
             ctrl.setList( this );
-            this.children.push(ctrl);
+            idx = this.children.push(ctrl) - 1;
+
+            ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
+            ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
 
             widget = ctrl.createControl();
-            ctrl.setText(node);
-            ctrl.buildText();
+            ctrl.setText(node.getName());
 
             this.itemGroup.add(widget);
-
-            ctrl.addEventListener('click', (e: any) => {
-              e.stopPropagation();
-              if(typeof onClick === 'function')
-                onClick(node, ctrl);
-            });
-
-            //this.calculatePosition();
-            //this.cullOffscreen();
-
-          break;
-          case GUIControlType.Button:
-            try{
-              ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
-              ctrl.isProtoItem = false;
-              ctrl.offset = this.offset;
-              ctrl.node = node;
-              ctrl.setList( this );
-              this.children.push(ctrl);
-
-              ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
-              ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
-
-              widget = ctrl.createControl();
-              ctrl.setText(node.getName());
-
-              this.itemGroup.add(widget);
-
+          
+            if(typeof options.onClick === 'function'){
               ctrl.addEventListener('click', (e: any) => {
                 e.stopPropagation();
                 this.select(ctrl);
 
-                if(typeof onClick === 'function')
-                  onClick(node, ctrl);
+                options.onClick(node, ctrl);
               });
-            }catch(e){
-              console.log(e);
             }
-          break;
-          default:
-            console.error('GUIListBox.add', 'Unknown ControlType', type);
-          break;
-        }
-      }else{
-        ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
-        ctrl.isProtoItem = true;
-        ctrl.offset = this.offset;
-        ctrl.node = node;
-        ctrl.setList( this );
-        this.children.push(ctrl);
-
-        ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
-        ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
-
-        index = this.itemGroup.children.length;
-        widget = ctrl.createControl();
-
-        this.itemGroup.add(widget);
-
-        //widget.position.x += 52/2;
-
-        if(!ctrl.disableSelection){
-          ctrl.addEventListener('click', (e: any) => {
-            e.stopPropagation();
-            this.select(ctrl);
-
-            if(typeof onClick === 'function')
-              onClick(node, ctrl);
-          });
-        }
+          }catch(e){
+            console.log(e);
+          }
+        break;
+        default:
+          console.error('GUIListBox.add', 'Unknown ControlType', type);
+        break;
       }
+    }else{
+      ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
+      ctrl.isProtoItem = true;
+      ctrl.offset = this.offset;
+      ctrl.node = node;
+      ctrl.setList( this );
+      idx = this.children.push(ctrl) - 1;
 
+      ctrl.highlight.color = ctrl.defaultHighlightColor.clone();
+      ctrl.border.color = ctrl.defaultColor.clone();
+      
+      widget = ctrl.createControl();
+
+      this.itemGroup.add(widget);
+          
+      if(typeof options.onClick === 'function' && !ctrl.disableSelection){
+        ctrl.addEventListener('click', (e: any) => {
+          e.stopPropagation();
+          this.select(ctrl);
+
+          options.onClick(node, ctrl);
+        });
+      }
     }
 
     this.updateList();
     this.scrollbar.update();
+
+    return this.children[idx];
   }
 
   setSelectedIndex(index: number = 0){
@@ -429,6 +455,7 @@ export class GUIListBox extends GUIControl {
           const height = (node as GUIProtoItem).getItemHeight();
           node.widget.position.y = -nodeOffset;
           nodeOffset += height + this.padding;
+          node.updateBounds();
         }
 
       } else {
@@ -438,6 +465,7 @@ export class GUIListBox extends GUIControl {
           const height = this.getNodeHeight(node);
           node.widget.position.y = -nodeOffset;
           nodeOffset += height;
+          node.updateBounds();
         }
       }
     }
@@ -446,11 +474,11 @@ export class GUIListBox extends GUIControl {
       //this.scrollbar.updateScrollThumb();
     }
 
-    if(!this.maxScroll){
-      this.scrollbar.hide();
-    }else{
-      this.scrollbar.show();
-    }
+    // if(!this.maxScroll){
+    //   this.scrollbar.hide();
+    // }else{
+    //   this.scrollbar.show();
+    // }
 
     this.calculateBox();
     this.cullOffscreen();
@@ -558,6 +586,10 @@ export class GUIListBox extends GUIControl {
       if(this.scrollbar.thumb.position.y > ((scrollBarHeight - this.scrollbar.thumb.scale.y))/2 ){
         this.scrollbar.thumb.position.y = ((scrollBarHeight - this.scrollbar.thumb.scale.y))/2 || 0
       }
+
+      if(isNaN(this.scrollbar.thumb.position.y)){
+        this.scrollbar.thumb.position.y = 0;
+      }
     }
 
     this.updateList();
@@ -579,6 +611,10 @@ export class GUIListBox extends GUIControl {
 
       if(this.scrollbar.thumb.position.y > ((scrollBarHeight - this.scrollbar.thumb.scale.y))/2 ){
         this.scrollbar.thumb.position.y = ((scrollBarHeight - this.scrollbar.thumb.scale.y))/2 || 0
+      }
+
+      if(isNaN(this.scrollbar.thumb.position.y)){
+        this.scrollbar.thumb.position.y = 0;
       }
     }
       

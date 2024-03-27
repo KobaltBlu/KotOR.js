@@ -123,7 +123,7 @@ export class MenuSaveLoad extends GameMenu {
     let saves = this.getSaveGames();
     for (let i = 0; i < saves.length; i++) {
       let save = saves[i];
-      this.LB_GAMES.addItem(save, null);
+      this.LB_GAMES.addItem(save);
     }
     this.selected = saves[0];
     this.UpdateSelected();

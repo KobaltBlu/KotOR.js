@@ -17,11 +17,6 @@ import type { GUIListBox } from "./GUIListBox";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIProtoItem extends GUIControl{
-  isProtoItem: boolean;
-  list: GUIListBox;
-  startX: number;
-  startY: number;
-  textBasedHeight: boolean = false;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -50,10 +45,6 @@ export class GUIProtoItem extends GUIControl{
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;
     }
-  }
-
-  setList(list: GUIListBox){
-    this.list = list;
   }
 
   calculatePosition(){
@@ -110,7 +101,6 @@ export class GUIProtoItem extends GUIControl{
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();
     }
-
   }
 
   directionalNavigate(direction = ''){

@@ -317,8 +317,10 @@ export class InGameDialog extends GameMenu {
       let reply = replies[i];
       this.LB_REPLIES.addItem(
         this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-        (e: any) => {
-          this.onReplySelect(reply);
+        { 
+          onClick: (e: any) => {
+            this.onReplySelect(reply);
+          } 
         }
       );
     }
