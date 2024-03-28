@@ -103,7 +103,7 @@ export class GUISpellItem extends GUIProtoItem {
           }
         });
 
-        buttonIcon.addEventListener('click', (e: any) => {
+        buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
         });
 

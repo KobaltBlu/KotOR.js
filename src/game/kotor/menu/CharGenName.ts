@@ -33,19 +33,19 @@ export class CharGenName extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.END_BTN.addEventListener('click', (e: any) => {
+      this.END_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
         this.manager.CharGenQuickPanel.step2 = true;
         this.close();
       });
 
-      this.BTN_RANDOM.addEventListener('click', (e: any) => {
+      this.BTN_RANDOM.addEventListener('click', (e) => {
         e.stopPropagation();
         this.NAME_BOX_EDIT.setText(GameState.CharGenManager.generateRandomName());
       });

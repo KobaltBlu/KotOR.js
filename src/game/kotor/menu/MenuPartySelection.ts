@@ -88,70 +88,70 @@ export class MenuPartySelection extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_NPC0.addEventListener('click', (e: any) => {
+      this.BTN_NPC0.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(0)){
           this.selectNPC(0)
         }
       });
 
-      this.BTN_NPC1.addEventListener('click', (e: any) => {
+      this.BTN_NPC1.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(1)){
           this.selectNPC(1);
         }
       });
 
-      this.BTN_NPC2.addEventListener('click', (e: any) => {
+      this.BTN_NPC2.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(2)){
           this.selectNPC(2);
         }
       });
 
-      this.BTN_NPC3.addEventListener('click', (e: any) => {
+      this.BTN_NPC3.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(3)){
           this.selectNPC(3);
         }
       });
 
-      this.BTN_NPC4.addEventListener('click', (e: any) => {
+      this.BTN_NPC4.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(4)){
           this.selectNPC(4);
         }
       });
 
-      this.BTN_NPC5.addEventListener('click', (e: any) => {
+      this.BTN_NPC5.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(5)){
           this.selectNPC(5);
         }
       });
 
-      this.BTN_NPC6.addEventListener('click', (e: any) => {
+      this.BTN_NPC6.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(6)){
           this.selectNPC(6);
         }
       });
 
-      this.BTN_NPC7.addEventListener('click', (e: any) => {
+      this.BTN_NPC7.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(7)){
           this.selectNPC(7);
         }
       });
 
-      this.BTN_NPC8.addEventListener('click', (e: any) => {
+      this.BTN_NPC8.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(8)){
           this.selectNPC(8);
         }
       });
 
-      this.BTN_DONE.addEventListener('click', (e: any) => {
+      this.BTN_DONE.addEventListener('click', (e) => {
         e.stopPropagation();
 
         if(!this.canClose())
@@ -167,12 +167,12 @@ export class MenuPartySelection extends GameMenu {
         
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
 
         if(this.canRemove(this.selectedNPC)){

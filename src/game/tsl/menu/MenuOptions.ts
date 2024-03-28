@@ -46,44 +46,44 @@ export class MenuOptions extends K1_MenuOptions {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_LOADGAME.addEventListener('click', (e: any) => {
+      this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open();
       });
 
-      this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
+      this.BTN_SAVEGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
         this.manager.MenuSaveLoad.open();
       });
 
-      this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
+      this.BTN_GAMEPLAY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGameplay.open();
       });
 
-      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+      this.BTN_FEEDBACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuFeedback.open();
       });
 
-      this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
+      this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAutoPause.open();
       });
 
-      this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
+      this.BTN_GRAPHICS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGraphics.open();
       });
 
-      this.BTN_SOUND.addEventListener('click', (e: any) => {
+      this.BTN_SOUND.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSound.open();
       });

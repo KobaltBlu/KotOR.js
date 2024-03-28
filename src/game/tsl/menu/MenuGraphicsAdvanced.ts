@@ -58,19 +58,19 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       this.tGuiPanel.widget.add(this.BTN_ANISOTROPYLEFT.createControl());
       this.tGuiPanel.widget.add(this.BTN_ANTIALIASLEFT.createControl());
 
-      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+      this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_a = this.BTN_CANCEL;
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_TEXQUALRIGHT.addEventListener('click', (e: any) => {
+      this.BTN_TEXQUALRIGHT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
         if(quality >= texPacks.RowCount) quality = texPacks.RowCount-1;
@@ -78,7 +78,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
         this.updateTextureQualityLabel();
       });
 
-      this.BTN_TEXQUALLEFT.addEventListener('click', (e: any) => {
+      this.BTN_TEXQUALLEFT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality--;
         if(quality < 0) quality = 0;

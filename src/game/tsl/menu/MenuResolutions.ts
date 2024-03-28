@@ -31,13 +31,13 @@ export class MenuResolutions extends K1_MenuResolutions {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+      this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_CANCEL;
 
-      this.BTN_OK.addEventListener('click', (e: any) => {
+      this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.ResolutionManager.screenResolution = this.activeResolution;
         window.dispatchEvent(new Event('resize'));

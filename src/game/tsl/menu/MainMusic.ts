@@ -77,7 +77,7 @@ export class MainMusic extends GameMenu {
         this.selectedIndex = this.musicList.indexOf(node);
       }
 
-      this.BTN_PLAY.addEventListener('click', (e: any) => {
+      this.BTN_PLAY.addEventListener('click', (e) => {
         e.stopPropagation();
         AudioLoader.LoadMusic(this.selected.filename).then((data: ArrayBuffer) => {
           this.setBackgroundMusic(data);
@@ -86,12 +86,12 @@ export class MainMusic extends GameMenu {
         });
       });
 
-      this.BTN_STOP.addEventListener('click', (e: any) => {
+      this.BTN_STOP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.stopBackgroundMusic();
       });
 
-      this.BTN_NEXT.addEventListener('click', (e: any) => {
+      this.BTN_NEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.selectedIndex++;
         if(this.selectedIndex >= table.RowCount){
@@ -101,14 +101,14 @@ export class MainMusic extends GameMenu {
         this.LB_MUSIC.selectItem(this.LB_MUSIC.listItems[this.selectedIndex]);
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.stopBackgroundMusic();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_LOOP.addEventListener('click', (e: any) => {
+      this.BTN_LOOP.addEventListener('click', (e) => {
         this.loop = !this.loop;
         this.BTN_LOOP.pulsing = this.loop;
       });

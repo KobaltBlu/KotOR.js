@@ -134,14 +134,14 @@ export class MenuFeedback extends K1_MenuFeedback {
         }
       };
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.iniConfig.save();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_DEFAULT.addEventListener('click', (e: any) => {
+      this.BTN_DEFAULT.addEventListener('click', (e) => {
         e.stopPropagation();
         CB_HIDE_UNEQ.setValue(false);
         CB_TUT_POPUPS.setValue(true);

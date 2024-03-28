@@ -37,13 +37,13 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+      this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_a = this.BTN_CANCEL;
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

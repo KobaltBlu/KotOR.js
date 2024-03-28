@@ -51,7 +51,7 @@ export class MenuMap extends GameMenu {
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>( async (resolve, reject) => {
       this.LBL_MapNote.setText('');
-      this.LBL_Map.addEventListener('click', (e: any) => {
+      this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
         const mapNote: ModuleWaypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
@@ -59,12 +59,12 @@ export class MenuMap extends GameMenu {
         }
       });
 
-      this.BTN_PRTYSLCT.addEventListener('click', (e: any) => {
+      this.BTN_PRTYSLCT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuPartySelection.open();
       });
 
-      this.BTN_RETURN.addEventListener('click', (e: any) => {
+      this.BTN_RETURN.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
         if(!GameState.module.area.unescapable){
@@ -73,7 +73,7 @@ export class MenuMap extends GameMenu {
         }
       });
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

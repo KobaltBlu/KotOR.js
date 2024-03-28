@@ -43,17 +43,17 @@ export class CharGenQuickPanel extends GameMenu {
       this.step1 = false;
       this.step2 = false;
 
-      this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenPortCust.open();
       });
 
-      this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenName.open();
       });
 
-      this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME3.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
         GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
@@ -65,7 +65,7 @@ export class CharGenQuickPanel extends GameMenu {
         });
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenMain.close();
         this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;

@@ -50,7 +50,7 @@ export class MenuJournal extends K1_MenuJournal {
 
       this.BTN_MESSAGES = this.getControlByName('BTN_MESSAGES');
 
-      this.BTN_MESSAGES.addEventListener('click', (e: any) => {
+      this.BTN_MESSAGES.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close()
         this.manager.MenuMessages.open();
@@ -61,25 +61,25 @@ export class MenuJournal extends K1_MenuJournal {
         console.log(node);
       };
 
-      this.BTN_FILTER_TIME.addEventListener('click', (e: any) => {
+      this.BTN_FILTER_TIME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sort = JournalSort.RECIEVED;
         this.updateList();
       });
 
-      this.BTN_FILTER_NAME.addEventListener('click', (e: any) => {
+      this.BTN_FILTER_NAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sort = JournalSort.NAME;
         this.updateList();
       });
 
-      this.BTN_FILTER_PRIORITY.addEventListener('click', (e: any) => {
+      this.BTN_FILTER_PRIORITY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sort = JournalSort.PRIORITY;
         this.updateList();
       });
 
-      this.BTN_FILTER_PLANET.addEventListener('click', (e: any) => {
+      this.BTN_FILTER_PLANET.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sort = JournalSort.PLANET;
         this.updateList();

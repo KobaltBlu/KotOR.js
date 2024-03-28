@@ -24,6 +24,7 @@ import type { GameMenu } from "./GameMenu";
 import { BitWise } from "../utility/BitWise";
 import { GUIListBox } from "./GUIListBox";
 import GUIFont from "./GUIFont";
+import { GUIControlEvent } from "./GUIControlEvent";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -2454,7 +2455,7 @@ export class GUIControl {
   }
 
   //Add an event listener
-  addEventListener(name: string = '', callback?: Function){
+  addEventListener(name: string = '', callback?: (event: GUIControlEvent, ...args: any) => void){
     if(typeof callback === 'function'){
       if(this.eventListeners.hasOwnProperty(name)){
         (this.eventListeners as any)[name].push(callback);
@@ -2486,10 +2487,13 @@ export class GUIControl {
   processEventListener(name = '', args: any[] = []){
     let processed = false;
 
+    const event = GUIControlEventFactory.generateEventObject();
+    event.data = args;
+
     if(!args.length){
-      args = [GUIControlEventFactory.generateEventObject()];
+      args = [event];
     }else{
-      args = [GUIControlEventFactory.generateEventObject(), ...args];
+      args = [event, ...args];
     }
 
     if(this.eventListeners.hasOwnProperty(name)){

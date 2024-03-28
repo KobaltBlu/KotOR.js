@@ -84,13 +84,13 @@ export class MenuCharacter extends K1_MenuCharacter {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_AUTO.addEventListener('click', (e: any) => {
+      this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.getCurrentPlayer().canLevelUp()){
           GameState.getCurrentPlayer().autoLevelUp();

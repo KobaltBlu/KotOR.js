@@ -60,25 +60,25 @@ export class MenuAbilities extends K1_MenuAbilities {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_SKILLS.addEventListener('click', (e: any) => {
+      this.BTN_SKILLS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.filter = AbilityFilter.SKILLS;
         this.updateFilter();
       });
 
-      this.BTN_POWERS.addEventListener('click', (e: any) => {
+      this.BTN_POWERS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.filter = AbilityFilter.POWERS;
         this.updateFilter();
       });
 
-      this.BTN_FEATS.addEventListener('click', (e: any) => {
+      this.BTN_FEATS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.filter = AbilityFilter.FEATS;
         this.updateFilter();

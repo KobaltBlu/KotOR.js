@@ -32,7 +32,7 @@ export class CharGenQuickOrCustom extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
+      this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
           let class_data = GameState.TwoDAManager.datatables.get('classes').rows[GameState.CharGenManager.selectedClass];
@@ -70,7 +70,7 @@ export class CharGenQuickOrCustom extends GameMenu {
         }
       });
 
-      this.CUST_CHAR_BTN.addEventListener('click', (e: any) => {
+      this.CUST_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         //Game.CharGenMain.state = CharGenMain.STATES.CUSTOM;
         //Game.CharGenCustomPanel.Show();
@@ -87,7 +87,7 @@ export class CharGenQuickOrCustom extends GameMenu {
         this.manager.CharGenSkills.reset();
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         //Game.CharGenMain.Hide();
 

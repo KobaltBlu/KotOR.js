@@ -54,7 +54,7 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    this.thumb.mesh.addEventListener('click', (e: any) => {
+    this.thumb.mesh.addEventListener('click', (e) => {
       console.log('hello');
       this.mouseInside();
     });
@@ -99,7 +99,7 @@ export class GUISlider extends GUIControl{
       this.mouseInside();
     })
 
-    this.addEventListener('click', (e: any) =>{
+    this.addEventListener('click', (e) =>{
       e.stopPropagation();
       const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
       const mouseY = Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2);
@@ -112,7 +112,7 @@ export class GUISlider extends GUIControl{
       this.mouseInside();
     });
 
-    this.addEventListener('mouseDown', (e: any) => {
+    this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
       const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
       const mouseY = Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2);

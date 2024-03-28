@@ -225,7 +225,7 @@ export class GUIScrollBar extends GUIControl{
       }
     })
 
-    this.addEventListener('mouseDown', (e: any) => {
+    this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
       let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
       let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);

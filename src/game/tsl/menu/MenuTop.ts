@@ -77,59 +77,59 @@ export class MenuTop extends K1_MenuTop {
       this.LBLH_INV.widget.position.z = 5;
       this.LBLH_EQU.widget.position.z = 5;
 
-      this.BTN_MSG.addEventListener('click', (e: any) => {
+      this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuPartySelection.open();
       });
 
-      this.BTN_JOU.addEventListener('click', (e: any) => {
+      this.BTN_JOU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuJournal.open();
       });
 
-      this.BTN_MAP.addEventListener('click', (e: any) => {
+      this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuMap.open();
       });
 
-      this.BTN_OPT.addEventListener('click', (e: any) => {
+      this.BTN_OPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuOptions.open();
       });
 
-      this.BTN_CHAR.addEventListener('click', (e: any) => {
+      this.BTN_CHAR.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuCharacter.open();
       });
 
-      this.BTN_ABI.addEventListener('click', (e: any) => {
+      this.BTN_ABI.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuAbilities.open();
       });
 
-      this.BTN_INV.addEventListener('click', (e: any) => {
+      this.BTN_INV.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuInventory.open();
       });
 
-      this.BTN_EQU.addEventListener('click', (e: any) => {
+      this.BTN_EQU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuEquipment.open();
       });
 
-      this.BTN_CHANGE2.addEventListener('click', (e: any) => {
+      this.BTN_CHANGE2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
-      this.BTN_CHANGE3.addEventListener('click', (e: any) => {
+      this.BTN_CHANGE3.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 

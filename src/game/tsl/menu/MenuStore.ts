@@ -52,18 +52,18 @@ export class MenuStore extends K1_MenuStore {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_Cancel.addEventListener('click', (e: any) => {
+      this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_Examine.addEventListener('click', (e: any) => {
+      this.BTN_Examine.addEventListener('click', (e) => {
         e.stopPropagation();
         this.sellMode = !this.sellMode;
         this.show();
       });
 
-      this.BTN_Accept.addEventListener('click', (e: any) => {
+      this.BTN_Accept.addEventListener('click', (e) => {
         e.stopPropagation();
         if(!this.sellMode){
           if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
@@ -133,7 +133,7 @@ export class MenuStore extends K1_MenuStore {
         let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], { 
-            onClick: (item: any) => {
+            onClick: (e, item: any) => {
               this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
@@ -153,7 +153,7 @@ export class MenuStore extends K1_MenuStore {
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_SHOPITEMS.addItem(inv[i], { 
-            onClick: (item: any) => {
+            onClick: (e, item: any) => {
               this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());

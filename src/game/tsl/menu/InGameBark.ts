@@ -29,7 +29,7 @@ export class InGameBark extends K1_InGameBark {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LBL_BARKTEXT.addEventListener('click', (e: any) => {
+      this.LBL_BARKTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

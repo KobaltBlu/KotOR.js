@@ -47,40 +47,40 @@ export class CharGenCustomPanel extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenMain.close();
         this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
         this.manager.CharGenMain.open();
       });
 
-      this.BTN_STEPNAME1.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenPortCust.open();
       });
 
-      this.BTN_STEPNAME2.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
         this.manager.CharGenAbilities.open();
       });
 
-      this.BTN_STEPNAME3.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME3.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenSkills.open();
       });
 
-      this.BTN_STEPNAME4.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME4.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenFeats.open();
       });
 
-      this.BTN_STEPNAME5.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME5.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenName.open();
       });
 
-      this.BTN_STEPNAME6.addEventListener('click', (e: any) => {
+      this.BTN_STEPNAME6.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
         GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];

@@ -71,14 +71,14 @@ export class MenuGalaxyMap extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>( async (resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
         Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
 
@@ -238,7 +238,7 @@ export class MenuGalaxyMap extends GameMenu {
           if (planet.enabled) {
             control.show();
             control.disableBorder();
-            control.addEventListener('click', (e: any) => {
+            control.addEventListener('click', (e) => {
               e.stopPropagation();
               this.changePlanet(Planetary.selected);
             });

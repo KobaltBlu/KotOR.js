@@ -51,7 +51,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_SAVELOAD.setText('Load');
-      this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
+      this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
@@ -76,13 +76,13 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       });
       this._button_a = this.BTN_SAVELOAD;
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_FILTER.addEventListener('click', (e: any) => {
+      this.BTN_FILTER.addEventListener('click', (e) => {
         if(this.filters.length){
           this.cFilterIndex++;
           if(this.cFilterIndex >= this.filters.length){

@@ -42,35 +42,35 @@ export class MenuOptions extends GameMenu {
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_LOADGAME.addEventListener('click', (e: any) => {
+      this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open();
       });
 
-      this.BTN_SAVEGAME.addEventListener('click', (e: any) => {
+      this.BTN_SAVEGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.SAVEGAME;
         this.manager.MenuSaveLoad.open();
       });
 
-      this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
+      this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAutoPause.open();
       });
 
-      this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
+      this.BTN_GRAPHICS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGraphics.open();
       });
 
-      this.BTN_SOUND.addEventListener('click', (e: any) => {
+      this.BTN_SOUND.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSound.open();
       });

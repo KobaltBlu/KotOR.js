@@ -11,11 +11,12 @@ import { GUIControlType } from "../enums/gui/GUIControlType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import type { GUIProtoItem } from "./GUIProtoItem";
 import type { GUIScrollBar } from "./GUIScrollBar";
+import { GUIControlEvent } from "./GUIControlEvent";
 
 interface GUIListItemCallbacks {
-  onClick?: Function;
-  onValueChanged?: Function;
-  onHover?: Function;
+  onClick?: (e: GUIControlEvent, ...args: any) => void;
+  onValueChanged?: (e: GUIControlEvent, ...args: any) => void;
+  onHover?: (e: GUIControlEvent, ...args: any) => void;
 }
 
 /**
@@ -260,7 +261,7 @@ export class GUIListBox extends GUIControl {
           this.itemGroup.add(widget);
           
           if(typeof options.onClick === 'function'){
-            ctrl.addEventListener('click', (e: any) => {
+            ctrl.addEventListener('click', (e) => {
               e.stopPropagation();
               
               options.onClick(node, ctrl);
@@ -282,7 +283,7 @@ export class GUIListBox extends GUIControl {
           this.itemGroup.add(widget);
           
           if(typeof options.onClick === 'function'){
-            ctrl.addEventListener('click', (e: any) => {
+            ctrl.addEventListener('click', (e) => {
               e.stopPropagation();
 
               options.onClick(node, ctrl);
@@ -290,7 +291,7 @@ export class GUIListBox extends GUIControl {
           }
           
           if(typeof options.onValueChanged === 'function'){
-            ctrl.addEventListener('valueChanged', (e: any) => {
+            ctrl.addEventListener('valueChanged', (e) => {
               e.stopPropagation();
               
               options.onValueChanged(node, ctrl);
@@ -315,7 +316,7 @@ export class GUIListBox extends GUIControl {
             this.itemGroup.add(widget);
           
             if(typeof options.onClick === 'function'){
-              ctrl.addEventListener('click', (e: any) => {
+              ctrl.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.select(ctrl);
 
@@ -346,7 +347,7 @@ export class GUIListBox extends GUIControl {
       this.itemGroup.add(widget);
           
       if(typeof options.onClick === 'function' && !ctrl.disableSelection){
-        ctrl.addEventListener('click', (e: any) => {
+        ctrl.addEventListener('click', (e) => {
           e.stopPropagation();
           this.select(ctrl);
 

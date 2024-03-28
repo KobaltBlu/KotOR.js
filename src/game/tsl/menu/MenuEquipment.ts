@@ -85,7 +85,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.equipmentSelectionActive){
           this.slot = null;
@@ -97,106 +97,106 @@ export class MenuEquipment extends K1_MenuEquipment {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_INV_IMPLANT.addEventListener('click', (e: any) => {
+      this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
-      this.BTN_INV_HEAD.addEventListener('click', (e: any) => {
+      this.BTN_INV_HEAD.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.HEAD;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
-      this.BTN_INV_HANDS.addEventListener('click', (e: any) => {
+      this.BTN_INV_HANDS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMS;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
-      this.BTN_INV_ARM_L.addEventListener('click', (e: any) => {
+      this.BTN_INV_ARM_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
-      this.BTN_INV_BODY.addEventListener('click', (e: any) => {
+      this.BTN_INV_BODY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
-      this.BTN_INV_ARM_R.addEventListener('click', (e: any) => {
+      this.BTN_INV_ARM_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
-      this.BTN_INV_WEAP_L.addEventListener('click', (e: any) => {
+      this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
-      this.BTN_INV_BELT.addEventListener('click', (e: any) => {
+      this.BTN_INV_BELT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.BELT;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
-      this.BTN_INV_WEAP_R.addEventListener('click', (e: any) => {
+      this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
       });
 
-      this.BTN_INV_WEAP_L2.addEventListener('click', (e: any) => {
+      this.BTN_INV_WEAP_L2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND2;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
       });
 
-      this.BTN_INV_WEAP_R2.addEventListener('click', (e: any) => {
+      this.BTN_INV_WEAP_R2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND2;
         this.equipmentSelectionActive = true;
         this.UpdateList();
-      }).addEventListener('hover', (e: any) => {
+      }).addEventListener('hover', (e) => {
         this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
       });
 
-      this.BTN_EQUIP.addEventListener('click', (e: any) => {
+      this.BTN_EQUIP.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
@@ -215,7 +215,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         this.UpdateSelected(item);
       }
 
-      this.BTN_SWAPWEAPONS.addEventListener('click', (e: any) => {
+      this.BTN_SWAPWEAPONS.addEventListener('click', (e) => {
         let currentPC = GameState.PartyManager.party[0];
         if(currentPC){
           const right_1 = currentPC.equipment.RIGHTHAND;

@@ -306,7 +306,7 @@ export class CharGenManager {
   
 
   static getMaxSkillPoints() {
-    return 10 + parseInt(CharGenManager.selectedCreature.classes[0].skillpointbase);
+    return 10 + parseInt(CharGenManager.selectedCreature.classes[0].skillpointbase as any);
   }
 
   static getSkillTableColumn() {

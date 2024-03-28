@@ -2,6 +2,7 @@ import type { GFFStruct } from "../resource/GFFStruct";
 import type { GameMenu } from "./GameMenu";
 import { GUIControl } from "./GUIControl";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GUIControlEvent } from "./GUIControlEvent";
 
 /**
  * GUILabel class.
@@ -83,6 +84,6 @@ export class GUILabel extends GUIControl {
     return this.getText();
   }
 
-  static _defaultClickHandler: Function = (e: any) => { e.stopPropagation(); };
+  static _defaultClickHandler: (e: GUIControlEvent) => void = (e: GUIControlEvent) => { e.stopPropagation(); };
 
 }

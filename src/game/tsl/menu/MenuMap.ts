@@ -42,7 +42,7 @@ export class MenuMap extends K1_MenuMap {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_MapNote.setText('');
-      this.LBL_Map.addEventListener('click', (e: any) => {
+      this.LBL_Map.addEventListener('click', (e) => {
         e.stopPropagation();
         const mapNote: ModuleWaypoint = this.miniMap.onClick();
         if(mapNote && mapNote.mapNote instanceof CExoLocString){
@@ -50,13 +50,13 @@ export class MenuMap extends K1_MenuMap {
         }
       });
 
-      this.BTN_RETURN.addEventListener('click', (e: any) => {
+      this.BTN_RETURN.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this.BTN_RETURN.hide();
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

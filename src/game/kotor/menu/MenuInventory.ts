@@ -47,7 +47,7 @@ export class MenuInventory extends GameMenu {
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

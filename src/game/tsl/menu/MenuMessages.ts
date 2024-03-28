@@ -54,30 +54,30 @@ export class MenuMessages extends K1_MenuMessages {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_DIALOG.addEventListener('click', (e: any) => {
+      this.BTN_DIALOG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.messageType = MessageType.DIALOG;
         this.updateListVisibility();
       });
 
-      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+      this.BTN_FEEDBACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.messageType = MessageType.FEEDBACK;
         this.updateListVisibility();
       });
 
-      this.BTN_COMBAT.addEventListener('click', (e: any) => {
+      this.BTN_COMBAT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.messageType = MessageType.COMBAT;
         this.updateListVisibility();
       });
 
-      this.BTN_EFFECTS.addEventListener('click', (e: any) => {
+      this.BTN_EFFECTS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.messageType = MessageType.EFFECTS;
         this.updateListVisibility();

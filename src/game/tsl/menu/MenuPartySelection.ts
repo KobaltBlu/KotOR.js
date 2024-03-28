@@ -120,7 +120,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
       this.default9 = this.LBL_NA9.getFillTextureName();
       this.default10 = this.LBL_NA10.getFillTextureName();
       this.default11 = this.LBL_NA11.getFillTextureName();
-      this.BTN_NPC0.addEventListener('click', (e: any) => {
+      this.BTN_NPC0.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(0)){
           this.selectedNPC = 0;
@@ -128,7 +128,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC1.addEventListener('click', (e: any) => {
+      this.BTN_NPC1.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(1)){
           this.selectedNPC = 1;
@@ -136,7 +136,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC2.addEventListener('click', (e: any) => {
+      this.BTN_NPC2.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(2)){
           this.selectedNPC = 2;
@@ -144,7 +144,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC3.addEventListener('click', (e: any) => {
+      this.BTN_NPC3.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(3)){
           this.selectedNPC = 3;
@@ -152,7 +152,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC4.addEventListener('click', (e: any) => {
+      this.BTN_NPC4.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(4)){
           this.selectedNPC = 4;
@@ -160,7 +160,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC5.addEventListener('click', (e: any) => {
+      this.BTN_NPC5.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(5)){
           this.selectedNPC = 5;
@@ -168,7 +168,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC6.addEventListener('click', (e: any) => {
+      this.BTN_NPC6.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(6)){
           this.selectedNPC = 6;
@@ -176,7 +176,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC7.addEventListener('click', (e: any) => {
+      this.BTN_NPC7.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(7)){
           this.selectedNPC = 7;
@@ -184,7 +184,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC8.addEventListener('click', (e: any) => {
+      this.BTN_NPC8.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(8)){
           this.selectedNPC = 8;
@@ -192,7 +192,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC9.addEventListener('click', (e: any) => {
+      this.BTN_NPC9.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(9)){
           this.selectedNPC = 9;
@@ -200,7 +200,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC10.addEventListener('click', (e: any) => {
+      this.BTN_NPC10.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(10)){
           this.selectedNPC = 10;
@@ -208,7 +208,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_NPC11.addEventListener('click', (e: any) => {
+      this.BTN_NPC11.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(11)){
           this.selectedNPC = 11;
@@ -216,7 +216,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         }
       });
 
-      this.BTN_DONE.addEventListener('click', (e: any) => {
+      this.BTN_DONE.addEventListener('click', (e) => {
         e.stopPropagation();
 
         if(!this.canClose())
@@ -232,12 +232,12 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
 
         //Area Unescapable disables party selection as well as transit

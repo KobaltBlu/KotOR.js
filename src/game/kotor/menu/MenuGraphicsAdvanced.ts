@@ -51,13 +51,13 @@ export class MenuGraphicsAdvanced extends GameMenu {
       this.tGuiPanel.widget.add(this.BTN_ANISOTROPYLEFT.createControl());
       this.tGuiPanel.widget.add(this.BTN_ANTIALIASLEFT.createControl());
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_TEXQUALRIGHT.addEventListener('click', (e: any) => {
+      this.BTN_TEXQUALRIGHT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
         if(quality >= GameState.TwoDAManager.datatables.get('texpacks').RowCount) quality = GameState.TwoDAManager.datatables.get('texpacks').RowCount-1;
@@ -65,7 +65,7 @@ export class MenuGraphicsAdvanced extends GameMenu {
         this.updateTextureQualityLabel();
       });
 
-      this.BTN_TEXQUALLEFT.addEventListener('click', (e: any) => {
+      this.BTN_TEXQUALLEFT.addEventListener('click', (e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality--;
         if(quality < 0) quality = 0;

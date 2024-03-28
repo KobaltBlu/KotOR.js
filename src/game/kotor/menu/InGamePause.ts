@@ -31,7 +31,7 @@ export class InGamePause extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
+      this.BTN_UNPAUSE.addEventListener('click', (e) => {
         GameState.AutoPauseManager.Unpause();
       });
       resolve();

@@ -49,33 +49,33 @@ export class MainMenu extends K1_MainMenu {
       this.LBL_NEWCONTENT.hide();
       this.BTN_WARP.hide();
 
-      this.BTN_NEWGAME.addEventListener('click', (e: any) => {
+      this.BTN_NEWGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.Start();
       });
 
-      this.BTN_LOADGAME.addEventListener('click', (e: any) => {
+      this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open();
       });
 
-      this.BTN_MOVIES.addEventListener('click', (e: any) => {
+      this.BTN_MOVIES.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MainMovies.open();
       });
 
-      this.BTN_MUSIC.addEventListener('click', (e: any) => {
+      this.BTN_MUSIC.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MainMusic.open();
       });
 
-      this.BTN_OPTIONS.addEventListener('click', (e: any) => {
+      this.BTN_OPTIONS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MainOptions.open();
       });
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         window.close();
       });

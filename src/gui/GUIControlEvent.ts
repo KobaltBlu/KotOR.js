@@ -9,6 +9,7 @@
  */
 export class GUIControlEvent {
   propagate: boolean = true;
+  data: any[] = [];
   
   constructor(){}
 

@@ -129,7 +129,7 @@ export class MenuAutoPause extends GameMenu {
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

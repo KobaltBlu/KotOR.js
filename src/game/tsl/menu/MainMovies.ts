@@ -55,7 +55,7 @@ export class MainMovies extends K1_MainMovies {
         this.selectedIndex = this.movieList.indexOf(node);
       }
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

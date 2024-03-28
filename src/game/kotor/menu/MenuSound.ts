@@ -39,13 +39,13 @@ export class MenuSound extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ADVANCED.addEventListener('click', (e: any) => {
+      this.BTN_ADVANCED.addEventListener('click', (e) => {
         e.stopPropagation();
         //this.Hide();
         this.manager.MenuSoundAdvanced.open();

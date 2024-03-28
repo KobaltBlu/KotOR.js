@@ -30,7 +30,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.QUICK_CHAR_BTN.addEventListener('click', (e: any) => {
+      this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
           let class_data = GameState.TwoDAManager.datatables.get('classes').rows[GameState.CharGenManager.selectedClass];
@@ -66,7 +66,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         }
       });
 
-      this.CUST_CHAR_BTN.addEventListener('click', (e: any) => {
+      this.CUST_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         //GameState.CharGenMain.state = CharGenMain.STATES.CUSTOM;
         //GameState.CharGenCustomPanel.Show();
@@ -81,7 +81,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         this.manager.CharGenSkills.reset();
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         //Game.CharGenMain.Hide();
 

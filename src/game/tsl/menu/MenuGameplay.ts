@@ -1,3 +1,4 @@
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "../../../gui";
 import { MenuGameplay as K1_MenuGameplay } from "../../kotor/KOTOR";
 
@@ -32,6 +33,9 @@ export class MenuGameplay extends K1_MenuGameplay {
   declare BTN_DEFAULT: GUIButton;
   declare CB_REVERSE_INGAME: GUICheckBox;
 
+  difficultyList: any[] = [];
+  selectedDifficulty: any;
+
   constructor(){
     super();
     this.gui_resref = 'optgameplay_p';
@@ -44,22 +48,98 @@ export class MenuGameplay extends K1_MenuGameplay {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      const difficultyTable = GameState.TwoDAManager.datatables.get('difficultyopt');
+
+      for(let i = 0; i < difficultyTable.RowCount; i++){
+        const row = difficultyTable.rows[i];
+        if(row.name == '****'){
+          continue;
+        }
+        
+        this.difficultyList.push(row);
+        if(row.desc === 'Normal'){
+          this.selectedDifficulty = row;
+        }
+      }
+
+      this.BTN_DIFFLEFT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let idx = this.difficultyList.indexOf(this.selectedDifficulty);
+        if(idx == -1){ idx = 1; }
+        idx -= 1;
+
+        if(idx < 0){ 
+          idx = 0; 
+        }
+        this.selectedDifficulty = this.difficultyList[idx];
+        this.updateSelectedDifficulty();
+      });
+
+      this.BTN_DIFFRIGHT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let idx = this.difficultyList.indexOf(this.selectedDifficulty);
+        if(idx == -1){ idx = 1; }
+        idx += 1;
+
+        if(idx >= this.selectedDifficulty.length){ 
+          idx = this.selectedDifficulty.length - 1; 
+        }
+        this.selectedDifficulty = this.difficultyList[idx];
+        this.updateSelectedDifficulty();
+      });
+
+      this.CB_LEVELUP.attachINIProperty('Game Options.Auto Level Up NPCs');
+      this.CB_INVERTCAM.attachINIProperty('Game Options.Mouse Look');
+      this.CB_AUTOSAVE.attachINIProperty('Game Options.AutoSave');
+      this.CB_REVERSE_INGAME.attachINIProperty('Game Options.Reverse Ingame YAxis');
+      this.CB_REVERSE.attachINIProperty('Game Options.Reverse Minigame YAxis');
+      this.CB_DISABLEMOVE.attachINIProperty('Game Options.Combat Movement');
+
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_KEYMAP.addEventListener('click', (e: any) => {
+      this.BTN_KEYMAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuKeyboardMapping.open();
       });
 
-      this.BTN_MOUSE.addEventListener('click', (e: any) => {
+      this.BTN_MOUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMouse.open();
       });
       resolve();
     });
+  }
+
+  show(){
+    super.show();
+    this.updateSelectedDifficulty();
+  }
+
+  updateSelectedDifficulty(){
+    if(!this.difficultyList.length){ return; }
+
+    if(!this.selectedDifficulty){
+      this.selectedDifficulty = this.difficultyList[1];
+    }
+
+    const idx = this.difficultyList.indexOf(this.selectedDifficulty);
+    const maxIdx = this.difficultyList.length - 1;
+    if(idx == 0){
+      this.BTN_DIFFLEFT.hide();
+    }else{
+      this.BTN_DIFFLEFT.show();
+    }
+
+    if(idx == maxIdx){
+      this.BTN_DIFFRIGHT.hide();
+    }else{
+      this.BTN_DIFFRIGHT.show();
+    }
+
+    this.BTN_DIFFICULTY.setText(GameState.TLKManager.GetStringById(this.selectedDifficulty.name).Value);
   }
   
 }

@@ -40,49 +40,49 @@ export class MenuTop extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_MSG.addEventListener('click', (e: any) => {
+      this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuMessages.open();
       });
 
-      this.BTN_JOU.addEventListener('click', (e: any) => {
+      this.BTN_JOU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuJournal.open();
       });
 
-      this.BTN_MAP.addEventListener('click', (e: any) => {
+      this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuMap.open();
       });
 
-      this.BTN_OPT.addEventListener('click', (e: any) => {
+      this.BTN_OPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuOptions.open();
       });
 
-      this.BTN_CHAR.addEventListener('click', (e: any) => {
+      this.BTN_CHAR.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuCharacter.open();
       });
 
-      this.BTN_ABI.addEventListener('click', (e: any) => {
+      this.BTN_ABI.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuAbilities.open();
       });
 
-      this.BTN_INV.addEventListener('click', (e: any) => {
+      this.BTN_INV.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuInventory.open();
       });
 
-      this.BTN_EQU.addEventListener('click', (e: any) => {
+      this.BTN_EQU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
         this.manager.MenuEquipment.open();

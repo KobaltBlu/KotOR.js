@@ -133,7 +133,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
         this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
       });
 
-      this.BTN_DEFAULT.addEventListener('click', (e: any) => {
+      this.BTN_DEFAULT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CB_ENDROUND.setValue(false);
         this.CB_ENEMYSIGHTED.setValue(true);
@@ -143,7 +143,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
         this.CB_TRIGGERS.setValue(true);
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

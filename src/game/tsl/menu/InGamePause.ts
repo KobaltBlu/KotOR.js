@@ -30,7 +30,7 @@ export class InGamePause extends K1_InGamePause {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
-      this.BTN_UNPAUSE.addEventListener('click', (e: any) => {
+      this.BTN_UNPAUSE.addEventListener('click', (e) => {
         GameState.AutoPauseManager.Unpause();
       });
     });

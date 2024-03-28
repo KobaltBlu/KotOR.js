@@ -50,7 +50,7 @@ export class MenuSaveLoad extends GameMenu {
       this._button_y = this.BTN_DELETE;
 
       this.BTN_SAVELOAD.setText('Load');
-      this.BTN_SAVELOAD.addEventListener('click', (e: any) => {
+      this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
         const savegame = this.selected;
         if(this.mode == MenuSaveLoadMode.LOADGAME){
@@ -76,7 +76,7 @@ export class MenuSaveLoad extends GameMenu {
       this._button_a = this.BTN_SAVELOAD;
 
       this.BTN_BACK = this.getControlByName('BTN_BACK');
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

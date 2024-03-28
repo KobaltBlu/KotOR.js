@@ -43,7 +43,7 @@ export class MenuContainer extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+      this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.LB_ITEMS.clearItems();
         if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
@@ -53,7 +53,7 @@ export class MenuContainer extends GameMenu {
       });
       this._button_b = this.BTN_CANCEL;
 
-      this.BTN_OK.addEventListener('click', (e: any) => {
+      this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
           this.LB_ITEMS.clearItems();
@@ -71,7 +71,7 @@ export class MenuContainer extends GameMenu {
       });
       this._button_a = this.BTN_OK;
 
-      this.BTN_GIVEITEMS.addEventListener('click', (e: any) => {
+      this.BTN_GIVEITEMS.addEventListener('click', (e) => {
         e.stopPropagation();
 
         switch(this.mode){

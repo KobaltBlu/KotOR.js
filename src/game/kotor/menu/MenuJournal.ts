@@ -60,7 +60,7 @@ export class MenuJournal extends GameMenu {
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
@@ -70,7 +70,7 @@ export class MenuJournal extends GameMenu {
         this.UpdateSelected();
       }
 
-      this.BTN_SORT.addEventListener('click', (e: any) => {
+      this.BTN_SORT.addEventListener('click', (e) => {
         e.stopPropagation();
         switch(this.sort){
           case JournalSort.RECIEVED:
@@ -93,7 +93,7 @@ export class MenuJournal extends GameMenu {
         this.UpdateLabels();
       });
 
-      this.BTN_SWAPTEXT.addEventListener('click', (e: any) => {
+      this.BTN_SWAPTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
         switch(this.mode){
           case JournalQuestMode.ACTIVE:

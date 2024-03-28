@@ -90,7 +90,7 @@ export class MenuStore extends GameMenu {
         this.LB_INVITEMS.clearItems();
         let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_INVITEMS.addItem(inv[i], { onClick: (item: ModuleItem) => {
+          this.LB_INVITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
             this.LB_DESCRIPTION.clearItems();
             this.LB_DESCRIPTION.addItem(item.getDescription());
@@ -108,7 +108,7 @@ export class MenuStore extends GameMenu {
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_SHOPITEMS.addItem(inv[i], { onClick: (item: ModuleItem) => {
+          this.LB_SHOPITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
             this.LB_DESCRIPTION.clearItems();
             this.LB_DESCRIPTION.addItem(item.getDescription());

@@ -57,32 +57,32 @@ export class MainMenu extends GameMenu {
       this.LBL_NEWCONTENT.hide();
       this.BTN_WARP.hide();
 
-      this.BTN_NEWGAME.addEventListener('click', (e: any) => {
+      this.BTN_NEWGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.Start();
       });
 
-      this.BTN_LOADGAME.addEventListener('click', (e: any) => {
+      this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open()
       });
 
-      this.BTN_MOVIES.addEventListener('click', (e: any) => {
+      this.BTN_MOVIES.addEventListener('click', (e) => {
         e.stopPropagation();
         //this.Hide();
         this.manager.MainMovies.open();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
       });
 
-      this.BTN_OPTIONS.addEventListener('click', (e: any) => {
+      this.BTN_OPTIONS.addEventListener('click', (e) => {
         e.stopPropagation();
         //this.Hide();
         this.manager.MainOptions.open();
       });
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         window.close();
       });

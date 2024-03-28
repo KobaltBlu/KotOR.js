@@ -87,7 +87,7 @@ export class GUIFeatItem extends GUIProtoItem {
           }
         });
 
-        buttonIcon.addEventListener('click', (e: any) => {
+        buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
         });
 

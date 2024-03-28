@@ -32,11 +32,11 @@ export class MenuKeyboardEntry extends K1_MenuKeyboardEntry {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_Cancel.addEventListener('click', (e: any) => {
+      this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
-      
+
       resolve();
     });
   }

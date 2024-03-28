@@ -45,7 +45,7 @@ export class MenuSoundAdvanced extends GameMenu {
       }
     };
 
-    this.BTN_BACK.addEventListener('click', (e: any) => {
+    this.BTN_BACK.addEventListener('click', (e) => {
       e.stopPropagation();
       /*this.Hide();
       if(GameState.Mode == Game.MODES.INGAME){

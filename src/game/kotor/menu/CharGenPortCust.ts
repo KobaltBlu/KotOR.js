@@ -50,7 +50,7 @@ export class CharGenPortCust extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_ARRL.addEventListener('click', (e: any) => {
+      this.BTN_ARRL.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.CharGenManager.selectedCreature;
       
@@ -89,7 +89,7 @@ export class CharGenPortCust extends GameMenu {
 
       });
 
-      this.BTN_ARRR.addEventListener('click', (e: any) => {
+      this.BTN_ARRR.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.CharGenManager.selectedCreature;
 
@@ -128,7 +128,7 @@ export class CharGenPortCust extends GameMenu {
 
       });
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.CharGenManager.selectedCreature;
         if(!this.exiting){
@@ -145,7 +145,7 @@ export class CharGenPortCust extends GameMenu {
         }
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
         const creature = GameState.CharGenManager.selectedCreature;
         

@@ -261,7 +261,7 @@ export class InGameComputer extends GameMenu {
         this.LB_REPLIES.addItem(
           this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
           {
-            onClick: (e: any) => {
+            onClick: (e) => {
               this.onReplySelect(reply);
             }
           }

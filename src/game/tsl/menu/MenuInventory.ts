@@ -62,49 +62,49 @@ export class MenuInventory extends K1_MenuInventory {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_ALL.addEventListener('click', (e: any) => {
+      this.BTN_ALL.addEventListener('click', (e) => {
         this.filter = InventoryFilter.ALL;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_DATAPADS.addEventListener('click', (e: any) => {
+      this.BTN_DATAPADS.addEventListener('click', (e) => {
         this.filter = InventoryFilter.DATAPADS;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_WEAPONS.addEventListener('click', (e: any) => {
+      this.BTN_WEAPONS.addEventListener('click', (e) => {
         this.filter = InventoryFilter.WEAPONS;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_ARMOR.addEventListener('click', (e: any) => {
+      this.BTN_ARMOR.addEventListener('click', (e) => {
         this.filter = InventoryFilter.ARMOR;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_USEABLE.addEventListener('click', (e: any) => {
+      this.BTN_USEABLE.addEventListener('click', (e) => {
         this.filter = InventoryFilter.USEABLE;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_QUESTS.addEventListener('click', (e: any) => {
+      this.BTN_QUESTS.addEventListener('click', (e) => {
         this.filter = InventoryFilter.QUESTS;
         this.filterInventory();
         this.updateFilterButton();
       });
 
-      this.BTN_MISC.addEventListener('click', (e: any) => {
+      this.BTN_MISC.addEventListener('click', (e) => {
         this.filter = InventoryFilter.MISC;
         this.filterInventory();
         this.updateFilterButton();

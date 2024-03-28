@@ -213,47 +213,47 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_MENUBG.widget.position.z = -1;
 
 
-      this.BTN_MSG.addEventListener('click', (e: any) => {
+      this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuPartySelection.open();
       });
 
-      this.BTN_JOU.addEventListener('click', (e: any) => {
+      this.BTN_JOU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuJournal.open();
       });
 
-      this.BTN_MAP.addEventListener('click', (e: any) => {
+      this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMap.open();
       });
 
-      this.BTN_OPT.addEventListener('click', (e: any) => {
+      this.BTN_OPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuOptions.open();
       });
 
-      this.BTN_CHAR.addEventListener('click', (e: any) => {
+      this.BTN_CHAR.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuCharacter.open();
       });
 
-      this.BTN_ABI.addEventListener('click', (e: any) => {
+      this.BTN_ABI.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAbilities.open();
       });
 
-      this.BTN_INV.addEventListener('click', (e: any) => {
+      this.BTN_INV.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuInventory.open();
       });
 
-      this.BTN_EQU.addEventListener('click', (e: any) => {
+      this.BTN_EQU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuEquipment.open();
       });
 
-      this.TB_PAUSE.addEventListener('click', (e: any) => {
+      this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         
         if(GameState.State == EngineState.PAUSED){
@@ -264,49 +264,49 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       });
 
-      this.TB_SOLO.addEventListener('click', (e: any) => {
+      this.TB_SOLO.addEventListener('click', (e) => {
         e.stopPropagation();
       });
 
-      this.TB_STEALTH.addEventListener('click', (e: any) => {
+      this.TB_STEALTH.addEventListener('click', (e) => {
         e.stopPropagation();
       });
 
-      this.BTN_CHAR1.addEventListener('click', (e: any) => {
+      this.BTN_CHAR1.addEventListener('click', (e) => {
         this.manager.MenuEquipment.open()
       });
 
-      this.BTN_CHAR2.addEventListener('click', (e: any) => {
+      this.BTN_CHAR2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      this.BTN_CHAR3.addEventListener('click', (e: any) => {
+      this.BTN_CHAR3.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
-      this.BTN_CLEARALL.addEventListener('click', (e: any) => {
+      this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearAllActions();
         GameState.getCurrentPlayer().combatData.combatState = false;
         GameState.getCurrentPlayer().cancelCombat();
       });
 
-      this.LBL_QUEUE0.addEventListener('click', (e: any) => {
+      this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearCombatAction();
       });
 
-      this.LBL_QUEUE1.addEventListener('click', (e: any) => {
+      this.LBL_QUEUE1.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearCombatActionAtIndex(0);
       });
 
-      this.LBL_QUEUE2.addEventListener('click', (e: any) => {
+      this.LBL_QUEUE2.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearCombatActionAtIndex(1);
       });
 
-      this.LBL_QUEUE3.addEventListener('click', (e: any) => {
+      this.LBL_QUEUE3.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
@@ -315,7 +315,7 @@ export class InGameOverlay extends K1_InGameOverlay {
           
         //this['BTN_TARGET'+i]
 
-        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e: any) => {
+        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           const action = ActionMenuManager.ActionPanels.targetPanels[i].getSelectedAction();
 
@@ -337,13 +337,13 @@ export class InGameOverlay extends K1_InGameOverlay {
 
         });
 
-        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e: any) => {
+        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e: any) => {
+        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);

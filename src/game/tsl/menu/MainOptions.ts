@@ -36,32 +36,32 @@ export class MainOptions extends K1_MainOptions {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_GAMEPLAY.addEventListener('click', (e: any) => {
+      this.BTN_GAMEPLAY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGameplay.open();
       });
 
-      this.BTN_AUTOPAUSE.addEventListener('click', (e: any) => {
+      this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAutoPause.open();
       });
 
-      this.BTN_GRAPHICS.addEventListener('click', (e: any) => {
+      this.BTN_GRAPHICS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGraphics.open();
       });
 
-      this.BTN_SOUND.addEventListener('click', (e: any) => {
+      this.BTN_SOUND.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuSound.open();
       });
 
-      this.BTN_FEEDBACK.addEventListener('click', (e: any) => {
+      this.BTN_FEEDBACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuFeedback.open();
       });

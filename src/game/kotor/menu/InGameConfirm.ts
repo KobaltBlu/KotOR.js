@@ -43,13 +43,13 @@ export class InGameConfirm extends GameMenu {
       this.defaultExtent.top = this.tGuiPanel.extent.top;
       this.defaultExtent.left = this.tGuiPanel.extent.left;
 
-      this.BTN_OK.addEventListener('click', (e: any) => {
+      this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_a = this.BTN_OK;
 
-      this.BTN_CANCEL.addEventListener('click', (e: any) => {
+      this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });

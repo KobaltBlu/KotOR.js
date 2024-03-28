@@ -49,12 +49,12 @@ export class CharGenClass extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MainMenu.Start();
       });
 
-      this.BTN_SEL1.addEventListener('click', (e: any) => {
+      this.BTN_SEL1.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;
@@ -71,7 +71,7 @@ export class CharGenClass extends GameMenu {
         });
       });
 
-      this.BTN_SEL2.addEventListener('click', (e: any) => {
+      this.BTN_SEL2.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;
@@ -88,7 +88,7 @@ export class CharGenClass extends GameMenu {
         });
       });
 
-      this.BTN_SEL3.addEventListener('click', (e: any) => {
+      this.BTN_SEL3.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;
@@ -105,7 +105,7 @@ export class CharGenClass extends GameMenu {
         });
       });
 
-      this.BTN_SEL4.addEventListener('click', (e: any) => {
+      this.BTN_SEL4.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;
@@ -122,7 +122,7 @@ export class CharGenClass extends GameMenu {
         });
       });
 
-      this.BTN_SEL5.addEventListener('click', (e: any) => {
+      this.BTN_SEL5.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;
@@ -139,7 +139,7 @@ export class CharGenClass extends GameMenu {
         });
       });
 
-      this.BTN_SEL6.addEventListener('click', (e: any) => {
+      this.BTN_SEL6.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selecting) return;
         this.selecting = true;

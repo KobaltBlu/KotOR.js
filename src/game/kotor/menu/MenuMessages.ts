@@ -33,12 +33,12 @@ export class MenuMessages extends GameMenu {
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
-      this.BTN_SHOW.addEventListener('click', (e: any) => {
+      this.BTN_SHOW.addEventListener('click', (e) => {
         if(this.mode == 0){
           this.mode = 1;
         }else{

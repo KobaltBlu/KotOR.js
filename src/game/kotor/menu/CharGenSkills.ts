@@ -70,12 +70,12 @@ export class CharGenSkills extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
         console.log('CharGenSkills', 'Assigning skillpoints')
         GameState.CharGenManager.selectedCreature.skills[0].rank = GameState.CharGenManager.computerUse;
@@ -89,7 +89,7 @@ export class CharGenSkills extends GameMenu {
         this.close();
       });
 
-      this.BTN_RECOMMENDED.addEventListener('click', (e: any) => {
+      this.BTN_RECOMMENDED.addEventListener('click', (e) => {
 
         GameState.CharGenManager.resetSkillPoints();
         GameState.CharGenManager.availSkillPoints = GameState.CharGenManager.getMaxSkillPoints();

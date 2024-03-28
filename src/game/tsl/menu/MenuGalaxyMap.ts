@@ -52,14 +52,14 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
         Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ACCEPT.addEventListener('click', (e: any) => {
+      this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
 

@@ -103,13 +103,13 @@ export class MenuCharacter extends GameMenu {
       this.SLD_ALIGN.setVertical();
       this.SLD_ALIGN.disableSelection = true;
 
-      this.BTN_EXIT.addEventListener('click', (e: any) => {
+      this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_AUTO.addEventListener('click', (e: any) => {
+      this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.getCurrentPlayer().canLevelUp()){
           GameState.getCurrentPlayer().autoLevelUp();

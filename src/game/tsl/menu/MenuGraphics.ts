@@ -40,7 +40,7 @@ export class MenuGraphics extends K1_MenuGraphics {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.BTN_BACK.addEventListener('click', (e: any) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         /*this.Hide();
         if(GameState.Mode == EngineMode.INGAME){
@@ -52,7 +52,7 @@ export class MenuGraphics extends K1_MenuGraphics {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_ADVANCED.addEventListener('click', (e: any) => {
+      this.BTN_ADVANCED.addEventListener('click', (e) => {
         this.manager.MenuGraphicsAdvanced.open();
       });
 
@@ -63,7 +63,7 @@ export class MenuGraphics extends K1_MenuGraphics {
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
 
-      this.BTN_RESOLUTION.addEventListener('click', (e: any) => {
+      this.BTN_RESOLUTION.addEventListener('click', (e) => {
         this.manager.MenuResolutions.open();
       });
 
