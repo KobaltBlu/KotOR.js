@@ -1,5 +1,7 @@
+import { KeyMapper } from "../../../controls";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
+import { GUIKeyMapItem } from "../gui/GUIKeyMapItem";
 
 /**
  * MenuKeyboardMapping class.
@@ -23,6 +25,8 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   declare BTN_Cancel: GUIButton;
   declare BTN_Accept: GUIButton;
   declare BTN_Default: GUIButton;
+
+  page = 0;
 
   constructor(){
     super();
@@ -48,18 +52,44 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
 
       this.BTN_Filter_Move.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.page = 0;
+        this.updateList();
       });
 
       this.BTN_Filter_Game.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.page = 1;
+        this.updateList();
       });
 
       this.BTN_Filter_Mini.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.page = 2;
+        this.updateList();
       });
+
+      this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
+      this.LST_EventList.border.inneroffset = 5;
+      this.LST_EventList.border.inneroffsety = 5;
 
       resolve();
     });
+  }
+
+  show(): void {
+    super.show();
+    this.page = 0;
+    this.updateList();
+  }
+
+  updateList(){
+    const actions = KeyMapper.ACTIONS_ALL.filter( action => action.page == this.page && action.sortpos >= 0 ).sort( (a, b) => {
+      return a.sortpos - b.sortpos;
+    });
+    this.LST_EventList.clearItems();
+    for(let i = 0; i < actions.length; i++){
+      this.LST_EventList.addItem(actions[i]);
+    }
   }
   
 }

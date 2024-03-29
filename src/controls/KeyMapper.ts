@@ -274,6 +274,7 @@ export class KeyMapper {
     action1005: undefined,
   };
 
+  static ACTIONS_ALL: Keymap[] = [];
   static ACTIONS_INGAME: Keymap[] = [];
   static ACTIONS_MINIGAME: Keymap[] = [];
   static ACTIONS_GUI: Keymap[] = [];
@@ -295,6 +296,7 @@ export class KeyMapper {
         const row: any = rows[i];
         const map = Keymap.From2DA(row);
         (KeyMapper.Actions as any)[row.__rowlabel.toLowerCase()] = map;
+                            KeyMapper.ACTIONS_ALL.push(map);
         if(map.icpc)        KeyMapper.ACTIONS_INGAME.push(map);
         if(map.icminigame)  KeyMapper.ACTIONS_MINIGAME.push(map);
         if(map.icpcgui)     KeyMapper.ACTIONS_GUI.push(map);
