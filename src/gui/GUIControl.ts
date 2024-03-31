@@ -1010,7 +1010,7 @@ export class GUIControl {
   }
 
   update(delta: number){
-    if(this.pulsing || (this.hover && this.onClick)){
+    if(this.pulsing || (this.hover && this.onClick) || this.selected){
       if(this.border.edge_material){
         this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
       }

@@ -6,6 +6,7 @@ import { KeyInput } from "./KeyInput";
 import { Keyboard } from "./Keyboard";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { TwoDAManager } from "../managers/TwoDAManager";
+import type { INIConfig } from "../INIConfig";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 
@@ -46,6 +47,7 @@ export class Keymap {
 
   keyboardInput: KeyInput;
   gamepadInput: KeyInput|AnalogInput;
+  label: string;
 
   processCallback?: KeymapProcessorCallback;
 
@@ -79,6 +81,7 @@ export class Keymap {
     if(typeof row.scale !== 'undefined')        keymap.scale        = row.scale         == '****' ?  0    : parseInt(row.scale);
     if(typeof row.scalemag !== 'undefined')     keymap.scalemag     = row.scalemag      == '****' ? -1    : parseInt(row.scalemag);
     if(typeof row.scaleexp !== 'undefined')     keymap.scaleexp     = row.scaleexp      == '****' ? -1    : parseInt(row.scaleexp);
+    if(typeof row.__rowlabel !== 'undefined')   keymap.label        = row.__rowlabel;
 
     return keymap;
   }
@@ -415,10 +418,25 @@ export class KeyMapper {
     }
   }
 
-  static BindKeyboard(keyboard: Keyboard){
+  static BindKeyboard(keyboard: Keyboard, iniConfig: INIConfig){
+    const remappedKeys = Object.fromEntries(
+      Object.entries( (iniConfig.getProperty('Keymapping') || {})).map(([k, v]) => [k.toLowerCase(), v])
+    );
+    for(let i = 0; i < KeyMapper.ACTIONS_ALL.length; i++){
+      const keyMap = KeyMapper.ACTIONS_ALL[i];
+
+      if(typeof remappedKeys[keyMap.label] === 'number'){
+        keyMap.language0 = remappedKeys[keyMap.label] as number;
+      }
+
+      const action: KeyInput = (keyboard.action as any)[language0ToKeyCode(keyMap.language0)];
+      if(action){
+        keyMap.keyboardInput = action;
+      }
+    }
 
     //Movement
-    KeyMapper.Actions[KeyMapAction.ActionUp].keyboardInput = keyboard.action.KeyW;
+    /*KeyMapper.Actions[KeyMapAction.ActionUp].keyboardInput = keyboard.action.KeyW;
     KeyMapper.Actions[KeyMapAction.ActionDown].keyboardInput = keyboard.action.KeyS;
     KeyMapper.Actions[KeyMapAction.ActionLeft].keyboardInput = keyboard.action.KeyZ;
     KeyMapper.Actions[KeyMapAction.ActionRight].keyboardInput = keyboard.action.KeyC;
@@ -429,10 +447,10 @@ export class KeyMapper {
     KeyMapper.Actions[KeyMapAction.GUI].keyboardInput = keyboard.action.Escape;
     KeyMapper.Actions[KeyMapAction.SelectPrev].keyboardInput = keyboard.action.KeyQ;
     KeyMapper.Actions[KeyMapAction.SelectNext].keyboardInput = keyboard.action.KeyE;
-    KeyMapper.Actions[KeyMapAction.WALKMODIFY].keyboardInput = keyboard.action.KeyB;
+    KeyMapper.Actions[KeyMapAction.WALKMODIFY].keyboardInput = keyboard.action.KeyB;*/
 
     //Game
-    KeyMapper.Actions[KeyMapAction.Pause].keyboardInput = keyboard.action.Pause;
+    /*KeyMapper.Actions[KeyMapAction.Pause].keyboardInput = keyboard.action.Pause;
     KeyMapper.Actions[KeyMapAction.Pause1].keyboardInput = keyboard.action.Space;
     KeyMapper.Actions[KeyMapAction.DefaultAction].keyboardInput = keyboard.action.KeyR;
 
@@ -466,18 +484,18 @@ export class KeyMapper {
 
     KeyMapper.Actions[KeyMapAction.PrevMenu].keyboardInput = keyboard.action.KeyQ;
     KeyMapper.Actions[KeyMapAction.NextMenu].keyboardInput = keyboard.action.KeyE;
-    KeyMapper.Actions[KeyMapAction.ClearOneAction].keyboardInput = keyboard.action.KeyY;
+    KeyMapper.Actions[KeyMapAction.ClearOneAction].keyboardInput = keyboard.action.KeyY;*/
 
     //MiniGame
-    KeyMapper.Actions[KeyMapAction.MGActionUp].keyboardInput = keyboard.action.KeyW;
+    /*KeyMapper.Actions[KeyMapAction.MGActionUp].keyboardInput = keyboard.action.KeyW;
     KeyMapper.Actions[KeyMapAction.MGActionDown].keyboardInput = keyboard.action.KeyS;
     KeyMapper.Actions[KeyMapAction.MGActionLeft].keyboardInput = keyboard.action.KeyA;
     KeyMapper.Actions[KeyMapAction.MGActionRight].keyboardInput = keyboard.action.KeyD;
     KeyMapper.Actions[KeyMapAction.MGshoot].keyboardInput = keyboard.action.Space;
-    KeyMapper.Actions[KeyMapAction.PauseMinigame].keyboardInput = keyboard.action.Escape;
+    KeyMapper.Actions[KeyMapAction.PauseMinigame].keyboardInput = keyboard.action.Escape;*/
 
     //Dialog
-    KeyMapper.Actions[KeyMapAction.Dialog1].keyboardInput = keyboard.action.Digit1;
+    /*KeyMapper.Actions[KeyMapAction.Dialog1].keyboardInput = keyboard.action.Digit1;
     KeyMapper.Actions[KeyMapAction.Dialog2].keyboardInput = keyboard.action.Digit2;
     KeyMapper.Actions[KeyMapAction.Dialog3].keyboardInput = keyboard.action.Digit3;
     KeyMapper.Actions[KeyMapAction.Dialog4].keyboardInput = keyboard.action.Digit4;
@@ -486,7 +504,7 @@ export class KeyMapper {
     KeyMapper.Actions[KeyMapAction.Dialog7].keyboardInput = keyboard.action.Digit7;
     KeyMapper.Actions[KeyMapAction.Dialog8].keyboardInput = keyboard.action.Digit8;
     KeyMapper.Actions[KeyMapAction.Dialog9].keyboardInput = keyboard.action.Digit9;
-    KeyMapper.Actions[KeyMapAction.DialogSkip].keyboardInput = keyboard.action.Space;
+    KeyMapper.Actions[KeyMapAction.DialogSkip].keyboardInput = keyboard.action.Space;*/
 
     //Custom Mappings
     KeyMapper.Actions[KeyMapAction.FlyUp].keyboardInput = keyboard.action.NumpadAdd;
@@ -535,4 +553,295 @@ export class KeyMapper {
     
   }
 
+}
+
+export function language0ToKeyCode(language0: number): string {
+  switch(language0){
+    case 9:
+      return 'UpArrow'; 
+    case 7:
+      return 'LeftArrow'; 
+    case 8:
+      return 'RightArrow'; 
+    case 10:
+      return 'DownArrow'; 
+    case 11:
+      return 'Numpad1'; 
+    case 12:
+      return 'Numpad2'; 
+    case 13:
+      return 'Numpad3'; 
+    case 14:
+      return 'Numpad4'; 
+    case 15:
+      return 'Numpad5'; 
+    case 16:
+      return 'Numpad6'; 
+    case 17:
+      return 'Numpad7'; 
+    case 18:
+      return 'Numpad8'; 
+    case 19:
+      return 'Numpad9'; 
+    case 20:
+      return 'Numpad0'; 
+    case 21:
+      return 'NumpadDecimal'; 
+    case 22:
+      return 'NumpadSubtract'; 
+    case 23:
+      return 'NumpadAdd'; 
+    case 24:
+      return 'ShiftLeft'; 
+    case 25:
+      return 'ShiftRight'; 
+    case 28:
+      return 'ControlLeft'; 
+    case 29:
+      return 'ControlRight'; 
+    case 30:
+      return 'Tab'; 
+    case 31:
+      return 'Escape'; 
+    case 32:
+      return 'Home'; 
+    case 33:
+      return 'End';  
+    case 34:
+      return 'PageUp'; 
+    case 35:
+      return 'PageDown'; 
+    case 36:
+      return 'Insert'; 
+    case 37:
+      return 'Delete'; 
+    case 39:
+      return 'F1'; 
+    case 40:
+      return 'F2'; 
+    case 41:
+      return 'F3'; 
+    case 42:
+      return 'F4'; 
+    case 43:
+      return 'F5'; 
+    case 44:
+      return 'F6'; 
+    case 45:
+      return 'F7'; 
+    case 46:
+      return 'F8'; 
+    case 47:
+      return 'F9'; 
+    case 48:
+      return 'F10'; 
+    case 49:
+      return 'F11'; 
+    case 50:
+      return 'F12'; 
+    case 51:
+      return 'KeyA'; 
+    case 52:
+      return 'KeyB'; 
+    case 53:
+      return 'KeyC'; 
+    case 54:
+      return 'KeyD'; 
+    case 55:
+      return 'KeyE'; 
+    case 56:
+      return 'KeyF'; 
+    case 57:
+      return 'KeyG'; 
+    case 58:
+      return 'KeyH'; 
+    case 59:
+      return 'KeyI'; 
+    case 60:
+      return 'KeyJ'; 
+    case 61:
+      return 'KeyK'; 
+    case 62:
+      return 'KeyL'; 
+    case 63:
+      return 'KeyM'; 
+    case 64:
+      return 'KeyN'; 
+    case 65:
+      return 'KeyO'; 
+    case 66:
+      return 'KeyP'; 
+    case 67:
+      return 'KeyQ'; 
+    case 68:
+      return 'KeyR'; 
+    case 69:
+      return 'KeyS'; 
+    case 70:
+      return 'KeyT'; 
+    case 71:
+      return 'KeyU'; 
+    case 72:
+      return 'KeyV'; 
+    case 73:
+      return 'KeyW'; 
+    case 74:
+      return 'KeyX'; 
+    case 75:
+      return 'KeyY'; 
+    case 76:
+      return 'KeyZ'; 
+    case 77:
+      return 'Digit1'; 
+    case 78:
+      return 'Digit2'; 
+    case 79:
+      return 'Digit3'; 
+    case 80:
+      return 'Digit4'; 
+    case 81:
+      return 'Digit5'; 
+    case 82:
+      return 'Digit6'; 
+    case 83:
+      return 'Digit7'; 
+    case 84:
+      return 'Digit8'; 
+    case 85:
+      return 'Digit9'; 
+    case 86:
+      return 'Digit0'; 
+    case 87:
+      return 'Space'; 
+    case 88:
+      return 'NumpadEnter';
+    case 89:
+      return 'CapsLock'; 
+    case 90:
+      return 'Pause';
+    case 94:
+      return 'Minus'; 
+    case 96:
+      return 'Backspace'; 
+    case 97:
+      return 'BracketRight'; 
+    case 98:
+      return 'Backslash';
+    case 99:
+      return 'Semicolon'; 
+    case 103:
+      return 'Comma'; 
+    case 104:
+      return 'Period'; 
+    case 105:
+      return 'Slash';
+    case 106:
+      return 'NumpadMultiply';
+    case 108:
+      return 'NumpadDivide';
+  }
+  return undefined;
+}
+
+export enum KeyCodeToLanguage0 {
+  Backquote =       undefined, //UNUSED
+  AltLeft =         undefined, //UNUSED
+  AltRight =        undefined, //UNUSED
+  NumLock =         undefined, //UNUSED
+  MetaLeft =        undefined, //UNUSED
+  BracketLeft =     undefined, 
+  Quote =           undefined, 
+  Equal =           undefined,
+  UpArrow =         9,  //Up
+  LeftArrow =       7, //Left
+  RightArrow =      8, //Right
+  DownArrow =       10,  //Down
+  Numpad1 =         11, //NUM 1
+  Numpad2 =         12, //NUM 2
+  Numpad3 =         13, //NUM 3
+  Numpad4 =         14, //NUM 4
+  Numpad5 =         15, //NUM 5
+  Numpad6 =         16, //NUM 6
+  Numpad7 =         17, //NUM 7
+  Numpad8 =         18, //NUM 8
+  Numpad9 =         19, //NUM 9 
+  Numpad0 =         20, //NUM 0
+  NumpadDecimal =   21, //Num Del
+  NumpadSubtract =  22, //- 
+  NumpadAdd =       23, //+
+  ShiftLeft =       24, 
+  ShiftRight =      25, 
+  ControlLeft =     28, 
+  ControlRight =    29, 
+  Tab =             30, 
+  Escape =          31, 
+  Home =            32, 
+  End =             33,  
+  PageUp =          34, 
+  PageDown =        35, 
+  Insert =          36, 
+  Delete =          37, 
+  F1 =              39, 
+  F2 =              40, 
+  F3 =              41, 
+  F4 =              42, 
+  F5 =              43, 
+  F6 =              44, 
+  F7 =              45, 
+  F8 =              46, 
+  F9 =              47, 
+  F10 =             48, 
+  F11 =             49, 
+  F12 =             50, 
+  KeyA =            51, 
+  KeyB =            52, 
+  KeyC =            53, 
+  KeyD =            54, 
+  KeyE =            55, 
+  KeyF =            56, 
+  KeyG =            57, 
+  KeyH =            58, 
+  KeyI =            59, 
+  KeyJ =            60, 
+  KeyK =            61, 
+  KeyL =            62, 
+  KeyM =            63, 
+  KeyN =            64, 
+  KeyO =            65, 
+  KeyP =            66, 
+  KeyQ =            67, 
+  KeyR =            68, 
+  KeyS =            69, 
+  KeyT =            70, 
+  KeyU =            71, 
+  KeyV =            72, 
+  KeyW =            73, 
+  KeyX =            74, 
+  KeyY =            75, 
+  KeyZ =            76, 
+  Digit1 =          77, 
+  Digit2 =          78, 
+  Digit3 =          79, 
+  Digit4 =          80, 
+  Digit5 =          81, 
+  Digit6 =          82, 
+  Digit7 =          83, 
+  Digit8 =          84, 
+  Digit9 =          85, 
+  Digit0 =          86, 
+  Space =           87, 
+  NumpadEnter =     88, //NUM Enter 
+  // Enter =        88, 
+  CapsLock =        89, 
+  Pause =           90,
+  Minus =           94, 
+  Backspace =       96, 
+  BracketRight =    97, 
+  Backslash =       98, // \ 
+  Semicolon =       99, 
+  Comma =           103, 
+  Period =          104, 
+  Slash =           105, // /
+  NumpadMultiply =  106,  //*
+  NumpadDivide =    108,  //Num /
 }

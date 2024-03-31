@@ -356,6 +356,12 @@ export class GUIListBox extends GUIControl {
       }
     }
 
+    if(ctrl){
+      ctrl.addEventListener('click', (e) => {
+        this.select(ctrl);
+      });
+    }
+
     this.updateList();
     this.scrollbar.update();
 
@@ -402,6 +408,7 @@ export class GUIListBox extends GUIControl {
         this.selectedItem = item;
         if(!bWasItemSelected && typeof item.onSelect === 'function'){
           item.onSelect.call(this);
+          // item.processEventListener('select');
         }
         if(!bWasItemSelected && typeof this.onSelected === 'function')
           this.onSelected(item.node);
@@ -639,6 +646,8 @@ export class GUIListBox extends GUIControl {
         }else{
           this.menu.setWidgetHoverActive(control, false);
         }
+      }else{
+        this.menu.setWidgetHoverActive(control, false);
       }
     }
 

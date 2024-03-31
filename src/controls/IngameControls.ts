@@ -60,6 +60,10 @@ export class IngameControls {
           GameState.MenuManager.activeGUIElement.onKeyDown(e);
         }
       }
+
+      if(GameState.MenuManager.activeMenus.length){
+        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keydown', e);
+      }
     });
 
     window.addEventListener('keyup', (e: KeyboardEvent) => {
@@ -69,6 +73,10 @@ export class IngameControls {
         if(typeof GameState.MenuManager.activeGUIElement.onKeyUp === 'function'){
           GameState.MenuManager.activeGUIElement.onKeyUp(e);
         }
+      }
+
+      if(GameState.MenuManager.activeMenus.length){
+        GameState.MenuManager.activeMenus[GameState.MenuManager.activeMenus.length-1].triggerEventListener('keyup', e);
       }
     });
 
@@ -320,7 +328,7 @@ export class IngameControls {
   }
 
   initKeys(){
-    KeyMapper.BindKeyboard(this.keyboard);
+    KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
     KeyMapper.BindGamepad(this.gamePad);
 
     //W

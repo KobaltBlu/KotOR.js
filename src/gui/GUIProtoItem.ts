@@ -6,6 +6,7 @@ import { Anchor } from "../enums/gui/Anchor";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "../managers/ResolutionManager";
 import type { GUIListBox } from "./GUIListBox";
+import { Mouse } from "../controls/Mouse";
 
 /**
  * GUIProtoItem class.
@@ -27,6 +28,14 @@ export class GUIProtoItem extends GUIControl{
     this.onSelect = () => {
       this.onSelectStateChanged();
     };
+
+    this.addEventListener('mouseIn', (e) => {
+      console.log('mouseIn', this);
+    })
+
+    this.addEventListener('mouseOut', (e) => {
+      console.log('mouseOut', this);
+    })
   }
 
   onSelectStateChanged(){

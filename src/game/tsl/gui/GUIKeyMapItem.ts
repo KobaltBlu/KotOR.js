@@ -20,6 +20,8 @@ import { Keymap } from "../../../controls";
 export class GUIKeyMapItem extends GUIProtoItem {
 
   declare node: Keymap;
+  buttonLabel: GUIButton;
+  buttonKey: GUIButton;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
@@ -45,34 +47,38 @@ export class GUIKeyMapItem extends GUIProtoItem {
       const labelWidth = protoWidth - iconWidth - this.parent.border.inneroffset;
 
       //Label
-      const buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonLabel.extent.left = 0;
-      buttonLabel.extent.width = labelWidth;
-      buttonLabel.extent.height = protoHeight;
-      buttonLabel.text.text = GameState.TLKManager.GetStringById(this.node.actionstrref)?.Value || '';
-      buttonLabel.autoCalculatePosition = false;
-      this.children.push(buttonLabel);
+      this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
+      this.buttonLabel.extent.left = 0;
+      this.buttonLabel.extent.width = labelWidth;
+      this.buttonLabel.extent.height = protoHeight;
+      this.buttonLabel.text.text = GameState.TLKManager.GetStringById(this.node.actionstrref)?.Value || '';
+      this.buttonLabel.autoCalculatePosition = false;
+      this.children.push(this.buttonLabel);
 
-      const _buttonWidget = buttonLabel.createControl();
-      _buttonWidget.position.x = -(protoWidth - buttonLabel.extent.width) / 2;
+      const _buttonWidget = this.buttonLabel.createControl();
+      _buttonWidget.position.x = -(protoWidth - this.buttonLabel.extent.width) / 2;
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
       //Key
-      const buttonKey = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonKey.extent.left = 0;
-      buttonKey.extent.width = iconWidth;
-      buttonKey.extent.height = protoHeight;
-      buttonKey.text.text = this.node.character.toLocaleUpperCase();
-      buttonKey.autoCalculatePosition = false;
-      this.children.push(buttonKey);
+      this.buttonKey = new GUIButton(this.menu, this.control, this, this.scale);
+      this.buttonKey.extent.left = 0;
+      this.buttonKey.extent.width = iconWidth;
+      this.buttonKey.extent.height = protoHeight;
+      this.buttonKey.text.text = this.node.character.toLocaleUpperCase();
+      this.buttonKey.autoCalculatePosition = false;
+      this.children.push(this.buttonKey);
 
-      const _buttonKeyWidget = buttonKey.createControl();
+      const _buttonKeyWidget = this.buttonKey.createControl();
       _buttonKeyWidget.position.x = (protoWidth - iconWidth) / 2;
       _buttonKeyWidget.position.y = 0;
       _buttonKeyWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonKeyWidget);
+
+      this.buttonLabel.addEventListener('click', (e) => {
+        this.list.select(this);
+      });
       
       return this.widget;
     }catch(e){
@@ -80,6 +86,17 @@ export class GUIKeyMapItem extends GUIProtoItem {
     }
     return this.widget;
 
+  }
+
+  onSelectStateChanged(){
+    super.onSelectStateChanged();
+    if(this.selected){
+      this.buttonLabel.selected = true;
+      this.buttonKey.selected = true;
+    }else{
+      this.buttonLabel.selected = false;
+      this.buttonKey.selected = false;
+    }
   }
 
 }

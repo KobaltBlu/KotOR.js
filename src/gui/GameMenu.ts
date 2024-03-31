@@ -13,6 +13,7 @@ import { GUIControl } from "./GUIControl";
 import { GUIControlFactory } from "./GUIControlFactory";
 import { BitWise } from "../utility/BitWise";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { Mouse } from "../controls/Mouse";
 
 /**
  * GameMenu class.
@@ -40,7 +41,7 @@ export class GameMenu {
   selectedControl: GUIControl;
 
   //Used for hoverstate tracking
-  activeWidget: GUIControl[] = [];
+  activeControls: GUIControl[] = [];
 
   bVisible: boolean = false;
   scale: number = 1;
@@ -265,6 +266,16 @@ export class GameMenu {
       this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 
+    if(this.activeControls.length){
+      for(var i = this.activeControls.length; i--;){
+        const control = this.activeControls[i];
+        if(!control.box.containsPoint(Mouse.positionUI)){
+          control.onHoverOut();
+          this.activeControls.splice(i, 1);
+        }
+      }
+    }
+
     if(this.tGuiPanel && this.tGuiPanel.children){
       let len = this.tGuiPanel.children.length;
       for(let i = 0; i < len; i++){
@@ -279,26 +290,26 @@ export class GameMenu {
     }catch(e){ console.error(e); }
   }
 
-  setWidgetHoverActive(widget: GUIControl, bActive: boolean = false){
+  setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
 
-    if(!BitWise.InstanceOfObject(widget, GUIControlTypeMask.GUIControl) || BitWise.InstanceOfObject(widget, GUIControlTypeMask.GUIProtoItem))
+    if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl) || BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem))
       return false;
 
-    let idx = this.activeWidget.indexOf(widget);
+    let idx = this.activeControls.indexOf(control);
 
     if(bActive){
       if(idx == -1){
-        this.activeWidget.push(widget);
-        if(widget){
-          widget.onHoverIn();
+        this.activeControls.push(control);
+        if(control){
+          control.onHoverIn();
         }
       }
     }else{
       if(idx > -1){
-        if(widget){
-          widget.onHoverOut();
+        if(control){
+          control.onHoverOut();
         }
-        this.activeWidget.splice(idx, 1);
+        this.activeControls.splice(idx, 1);
       }
     }
 
@@ -433,12 +444,12 @@ export class GameMenu {
     }
   }
 
-  triggerEventListener(name: string){
+  triggerEventListener(name: string, ...args: any){
     name = name.toUpperCase().trim();
     let listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
       for(let i = 0; i < listeners.length; i++){
-        listeners[i]();
+        listeners[i](...args);
       }
     }
   }

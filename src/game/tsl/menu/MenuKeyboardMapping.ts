@@ -1,4 +1,4 @@
-import { KeyMapper } from "../../../controls";
+import { KeyMapper, Keymap } from "../../../controls";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
 import { GUIKeyMapItem } from "../gui/GUIKeyMapItem";
@@ -27,6 +27,7 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
   declare BTN_Default: GUIButton;
 
   page = 0;
+  selectedKey: Keymap;
 
   constructor(){
     super();
@@ -71,6 +72,14 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
       this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
       this.LST_EventList.border.inneroffset = 5;
       this.LST_EventList.border.inneroffsety = 5;
+      this.LST_EventList.onSelected = (node: any) => {
+        this.selectedKey = node;
+        console.log('select', node);
+      }
+
+      this.addEventListener('keyup', (e: any) => {
+        console.log(e, this.selectedKey);
+      });
 
       resolve();
     });
