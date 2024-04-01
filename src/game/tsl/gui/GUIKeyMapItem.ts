@@ -88,6 +88,10 @@ export class GUIKeyMapItem extends GUIProtoItem {
 
   }
 
+  setKeyText(key: string){
+    this.buttonKey.setText(key);
+  }
+
   onSelectStateChanged(){
     super.onSelectStateChanged();
     if(this.selected){

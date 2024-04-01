@@ -383,7 +383,7 @@ export class GUIListBox extends GUIControl {
     }
   }
 
-  select(item: GUIControl){
+  select(control: GUIControl){
     try{
       let len = this.children.length;
       let bWasSelected = false;
@@ -392,7 +392,7 @@ export class GUIListBox extends GUIControl {
       //deselect all 
       for(let i = 0; i < len; i++){
         bWasSelected = this.children[i].selected;
-        if(this.children[i] == item){
+        if(this.children[i] == control){
           bWasItemSelected = this.children[i].selected;
           continue; 
         }
@@ -403,19 +403,23 @@ export class GUIListBox extends GUIControl {
         }
       }
 
-      if(item instanceof GUIControl && this.selectedItem != item){
-        item.selected = true;
-        this.selectedItem = item;
-        if(!bWasItemSelected && typeof item.onSelect === 'function'){
-          item.onSelect.call(this);
+      if(control instanceof GUIControl && this.selectedItem != control){
+        control.selected = true;
+        this.selectedItem = control;
+        if(!bWasItemSelected && typeof control.onSelect === 'function'){
+          control.onSelect.call(this);
           // item.processEventListener('select');
         }
         if(!bWasItemSelected && typeof this.onSelected === 'function')
-          this.onSelected(item.node);
+          this.onSelected(control.node, control);
       }
     }catch(e){
       console.error(e);
     }
+  }
+
+  clearSelection(){
+    this.select(undefined);
   }
 
   selectItem(item: any){
