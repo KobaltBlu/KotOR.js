@@ -42,4 +42,15 @@ export class TLKManager {
     return TLKManager.TLKStrings[index];
   }
 
+  static Search(query: string) {
+    return this.TLKStrings.filter( (str) => {
+      return str.Value.indexOf(query) >= 0
+    }).map( (str) => {
+      return {
+        index: this.TLKStrings.indexOf(str),
+        text: str.Value
+      };
+    });
+  }
+
 }
