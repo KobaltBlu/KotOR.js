@@ -23,7 +23,7 @@ export class GUIMovieItem extends GUIProtoItem {
 
   createControl(){
     try{
-      this.text.text = GameState.TLKManager.GetStringById(this.node.strrefname).Value
+      this.setText(GameState.TLKManager.GetStringById(this.node.strrefname).Value);
       super.createControl();
     }catch(e){
       console.error(e);

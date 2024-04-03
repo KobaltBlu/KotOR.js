@@ -29,13 +29,13 @@ export class GUISaveGameItem extends GUIProtoItem {
     try{
       const saveTimeString = `${toPaddedDigit(this.node.TIMESTAMP.getHours())}:${toPaddedDigit(this.node.TIMESTAMP.getMinutes())}:${toPaddedDigit(this.node.TIMESTAMP.getSeconds())} - ${toPaddedDigit(this.node.TIMESTAMP.getDate())}, ${toPaddedDigit(this.node.TIMESTAMP.getMonth() + 1)}, ${toPaddedDigit(this.node.TIMESTAMP.getFullYear(), 4)}`;
       if(this.node.isNewSave){
-        this.text.text = this.node.getFullName();
+        this.setText(this.node.getFullName());
       }else if(this.node.getIsAutoSave()){
-        this.text.text = "AUTOSAVE" + "\n" + saveTimeString;
+        this.setText("AUTOSAVE" + "\n" + saveTimeString);
       }else if(this.node.getIsQuickSave()){
-        this.text.text = "QUICKSAVE" + "\n" + saveTimeString;
+        this.setText("QUICKSAVE" + "\n" + saveTimeString);
       }else{
-        this.text.text = this.node.getSaveNumber() + " : " + this.node.getSaveName() + "\n" + saveTimeString;
+        this.setText(this.node.getSaveNumber() + " : " + this.node.getSaveName() + "\n" + saveTimeString);
       }
       super.createControl();
     }catch(e){

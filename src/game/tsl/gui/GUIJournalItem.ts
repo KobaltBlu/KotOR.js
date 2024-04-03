@@ -29,7 +29,7 @@ export class GUIJournalItem extends GUIProtoItem {
 
   createControl(){
     try{
-      this.text.text = this.node.category.name.getTLKValue();
+      this.setText(this.node.category.name.getTLKValue());
       super.createControl();
     }catch(e){
       console.error(e);

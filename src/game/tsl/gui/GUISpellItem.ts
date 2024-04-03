@@ -64,7 +64,7 @@ export class GUISpellItem extends GUIProtoItem {
 
         let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
         buttonIcon.name = 'BUTTON';
-        buttonIcon.text.text = '';
+        buttonIcon.setText('');
         buttonIcon.disableTextAlignment();
         buttonIcon.extent.width = iconHeight;
         buttonIcon.extent.height = iconHeight;
@@ -136,7 +136,7 @@ export class GUISpellItem extends GUIProtoItem {
         if(i > 0){
           let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
-          arrowIcon.text.text = '';
+          arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
           arrowIcon.extent.width = arrowHeight;
           arrowIcon.extent.height = arrowHeight;

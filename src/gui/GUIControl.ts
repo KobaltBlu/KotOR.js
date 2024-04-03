@@ -599,7 +599,7 @@ export class GUIControl {
           this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
           this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
           if(this.text.text == ''){
-            this.text.text = GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '';
+            this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
           }
           this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
           this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();

@@ -35,7 +35,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       //Create the actual control elements below
       let button = new GUIButton(this.menu, this.control, this, this.scale);
       button.extent.width = 190;
-      button.text.text = this.node.getName();
+      button.setText(this.node.getName());
       button.autoCalculatePosition = false;
       this.children.push(button);
 
@@ -46,7 +46,7 @@ export class GUIEquipmentItem extends GUIProtoItem {
       this.widget.add(_buttonWidget);
 
       let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
+      buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
       buttonIcon.disableTextAlignment();
       buttonIcon.extent.width = 55;
       buttonIcon.extent.height = 55;

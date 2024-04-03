@@ -247,7 +247,6 @@ export class GUIListBox extends GUIControl {
           ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
           ctrl.text.texture = this.protoItem.text.texture;
           ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
-          ctrl.text.text = node;
           ctrl.isProtoItem = false;
           ctrl.offset = this.offset;
           ctrl.node = node;
@@ -272,7 +271,6 @@ export class GUIListBox extends GUIControl {
           ctrl = new this.menu.factory.GUICheckBox(this.menu, control.control, this, this.scale);
           ctrl.text.texture = this.protoItem.text.texture;
           ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
-          ctrl.text.text = node;
           ctrl.isProtoItem = false;
           ctrl.offset = this.offset;
           ctrl.node = node;
@@ -280,6 +278,7 @@ export class GUIListBox extends GUIControl {
           idx = this.children.push(ctrl) - 1;
 
           widget = ctrl.createControl();
+          ctrl.setText(node);
           this.itemGroup.add(widget);
           
           if(typeof options.onClick === 'function'){

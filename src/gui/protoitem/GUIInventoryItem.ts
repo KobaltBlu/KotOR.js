@@ -43,7 +43,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       const buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
       buttonLabel.extent.left = 0;
       buttonLabel.extent.width = labelWidth;
-      buttonLabel.text.text = this.node.getName();
+      buttonLabel.setText(this.node.getName());
       buttonLabel.autoCalculatePosition = false;
       this.children.push(buttonLabel);
 
@@ -55,7 +55,7 @@ export class GUIInventoryItem extends GUIProtoItem {
 
       //Icon
       const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
-      buttonIcon.text.text = this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '';
+      buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
       buttonIcon.disableTextAlignment();
       buttonIcon.extent.width = iconWidth;
       buttonIcon.extent.height = iconHeight;

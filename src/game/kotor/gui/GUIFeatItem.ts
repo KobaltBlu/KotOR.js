@@ -48,7 +48,7 @@ export class GUIFeatItem extends GUIProtoItem {
         let locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
 
         let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
-        buttonIcon.text.text = '';
+        buttonIcon.setText('');
         buttonIcon.disableTextAlignment();
         buttonIcon.extent.width = 56;
         buttonIcon.extent.height = 56;
@@ -119,7 +119,7 @@ export class GUIFeatItem extends GUIProtoItem {
         let arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
           let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
-          arrowIcon.text.text = '';
+          arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
           arrowIcon.extent.width = 32;
           arrowIcon.extent.height = 32;

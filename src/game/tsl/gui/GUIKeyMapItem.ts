@@ -51,7 +51,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
       this.buttonLabel.extent.left = 0;
       this.buttonLabel.extent.width = labelWidth;
       this.buttonLabel.extent.height = protoHeight;
-      this.buttonLabel.text.text = GameState.TLKManager.GetStringById(this.node.actionstrref)?.Value || '';
+      this.buttonLabel.setText(GameState.TLKManager.GetStringById(this.node.actionstrref)?.Value || '');
       this.buttonLabel.autoCalculatePosition = false;
       this.children.push(this.buttonLabel);
 
@@ -66,7 +66,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
       this.buttonKey.extent.left = 0;
       this.buttonKey.extent.width = iconWidth;
       this.buttonKey.extent.height = protoHeight;
-      this.buttonKey.text.text = this.node.character.toLocaleUpperCase();
+      this.buttonKey.setText(this.node.character.toLocaleUpperCase());
       this.buttonKey.autoCalculatePosition = false;
       this.children.push(this.buttonKey);
 
