@@ -109,6 +109,45 @@ export class MenuGameplay extends K1_MenuGameplay {
         e.stopPropagation();
         this.manager.MenuMouse.open();
       });
+
+      
+
+      this.BTN_DIFFICULTY.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42265].Value)
+      });
+      
+      this.CB_LEVELUP.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42266].Value)
+      });
+      
+      this.CB_INVERTCAM.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48697].Value)
+      });
+      
+      this.CB_AUTOSAVE.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[38038].Value)
+      });
+      
+      this.CB_REVERSE_INGAME.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[106490].Value)
+      });
+      
+      this.CB_REVERSE.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48699].Value)
+      });
+      
+      this.CB_DISABLEMOVE.addEventListener( 'hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42484].Value)
+      });
+
+
       resolve();
     });
   }
