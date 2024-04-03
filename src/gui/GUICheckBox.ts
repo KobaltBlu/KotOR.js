@@ -437,6 +437,7 @@ export class GUICheckBox extends GUIControl{
       this.onMouseOut();
 
     this.updateCBVisualState();
+    this.processEventListener('mouseOut');
   }
 
   onHoverIn(){
@@ -456,6 +457,9 @@ export class GUICheckBox extends GUIControl{
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSound('gui_scroll');
     }
+    
+    this.processEventListener('hover');
+    this.processEventListener('mouseIn');
   }
 
   onINIPropertyAttached(){
