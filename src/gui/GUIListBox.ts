@@ -234,7 +234,7 @@ export class GUIListBox extends GUIControl {
     let widget: THREE.Object3D;
 
     let idx = this.listItems.indexOf(node);
-    if(idx == -1){
+    if(idx == -1 || typeof node === 'string'){
       this.listItems.push(node);
     }else{
       return this.children[idx];

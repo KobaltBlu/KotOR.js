@@ -25,6 +25,7 @@ import { BitWise } from "../utility/BitWise";
 import { GUIListBox } from "./GUIListBox";
 import GUIFont from "./GUIFont";
 import { GUIControlEvent } from "./GUIControlEvent";
+import { GUIControlType } from "../enums/gui/GUIControlType";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -597,6 +598,9 @@ export class GUIControl {
           this.text.font = text.getFieldByLabel('FONT')?.getValue();
           this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
           this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
+          if(this.text.text == ''){
+            this.text.text = GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '';
+          }
           this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
           this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
 
@@ -1989,168 +1993,11 @@ export class GUIControl {
     if(!(this.text.texture instanceof THREE.Texture))
       return;
 
-    let scale = 1;
-    let texture = this.text.texture;
-
-    let texRatio = texture.image.width / texture.image.height;
-
-    let txi_height = texture.txi.fontheight     * 100;
-    let txi_bsline = texture.txi.baselineheight * 100;
-    let txi_spaceR = texture.txi.spacingr       * 100;
-    let txi_spaceB = texture.txi.spacingb       * 100;
-
-    let textCharCount = text.length;
-    let positions = new Float32Array(textCharCount * 4 * 2);
-    let posI = 0, uvI = 0;
-    let uvs = new Float32Array(textCharCount * 4 * 2);
-
-    let indices = createIndicies({
-      clockwise: true,
-      type: 'uint16',
-      count: textCharCount
-    });
-
-    let lines: string[] = text.split('\n');
-    let lineCount: number = lines.length;
-    let line: string;
-    let lineX = 0, lineY = 0;
-    let spaceChar = 32;
-    let words: string[] = [];
-    let word: string, wordLength: number, wordWidth: number, char: number, ul: {x: number, y: number}, lr: {x: number, y: number}, charW: number, charH: number;
-    let u0: number, v1: number, u1: number, v0: number;
-
-    const space_ul = texture.txi.upperleftcoords[spaceChar];
-    const space_lr = texture.txi.lowerrightcoords[spaceChar];
-    const space_width = ((space_lr.x - space_ul.x) * texture.image.width) * scale;
-
-    let maxLineWidth = this.getOuterSize().width;
-    
-    for(let l = 0; l < lineCount; l++){
-      line = lines[l];
-      lineX = 0;
-
-      if(l > 0){
-        lineY -= txi_bsline;
-      }
-
-      words = line.split(' ');
-      let startI = posI;
-      for(let w = 0, len = words.length; w < len; w++){
-        word = words[w];
-        wordLength = word.length;
-        wordWidth = 0;
-
-        //Calculate the length of the word to be printed
-        for(let i = 0; i < wordLength; i++){
-          char = word.charCodeAt(i);
-          ul = texture.txi.upperleftcoords[char];
-          lr = texture.txi.lowerrightcoords[char];
-          wordWidth += ((lr.x - ul.x) * texture.image.width) * scale;
-        }
-
-        //Wrap to new line if needed
-        if(w >= 1 && lineX + wordWidth > ( maxLineWidth - txi_height ) ){
-          lineY -= txi_bsline;
-          lineX = 0;
-          startI = posI;
-        }
-        
-        //If this isn't the first word of the line prepend a space to it
-        if(lineX){
-          word = ' '+word;
-          wordLength++;
-        }
-
-        for(let i = 0; i < wordLength; i++){
-          char = word.charCodeAt(i);
-
-          ul = texture.txi.upperleftcoords[char];
-          lr = texture.txi.lowerrightcoords[char];
-
-          charW = ((lr.x - ul.x) * texture.image.width) * scale;
-          charH = ((lr.y - ul.y) * texture.image.height) * scale;
-
-          // BL
-          positions[posI++] = lineX
-          positions[posI++] = lineY
-          // TL
-          positions[posI++] = lineX
-          positions[posI++] = lineY + charH
-          // TR
-          positions[posI++] = lineX + charW
-          positions[posI++] = lineY + charH
-          // BR
-          positions[posI++] = lineX + charW
-          positions[posI++] = lineY
-
-          // top left position
-          u0 = ul.x;
-          v1 = ul.y;
-          u1 = lr.x;
-          v0 = lr.y;
-
-          // BL
-          uvs[uvI++] = u0
-          uvs[uvI++] = v1
-          // TL
-          uvs[uvI++] = u0
-          uvs[uvI++] = v0
-          // TR
-          uvs[uvI++] = u1
-          uvs[uvI++] = v0
-          // BR
-          uvs[uvI++] = u1
-          uvs[uvI++] = v1
-
-          //Advance the x position by the width of the current char
-          lineX += charW;
-        }
-      }
-
-      let horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
-      let vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
-
-      if(horizontal == GUIControlAlignment.HorizontalCenter){
-        const diffX = maxLineWidth - lineX;
-        const diffHalfX = diffX/2;
-        let t = posI - startI;
-        let charCount = t/8;
-        for(let i = 0; i < charCount; i++){
-          const index = startI + (i * 8);
-          positions[index + 0] += diffHalfX;
-          positions[index + 2] += diffHalfX;
-          positions[index + 4] += diffHalfX;
-          positions[index + 6] += diffHalfX;
-        }
-      }else if(horizontal == GUIControlAlignment.HorizontalRight){
-        const diffX = maxLineWidth - lineX;
-        let t = posI - startI;
-        let charCount = t/8;
-        for(let i = 0; i < charCount; i++){
-          const index = startI + (i * 8);
-          positions[index + 0] += diffX;
-          positions[index + 2] += diffX;
-          positions[index + 4] += diffX;
-          positions[index + 6] += diffX;
-        }
-      }
+    if(this.guiFont){
+      this.guiFont.buildGeometry(this.text.geometry, this.text.text, this.text.alignment, this.getOuterSize().width);
+      this.alignText();
     }
     
-    if(this.text.geometry){
-      this.text.geometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
-
-      let posAttribute = new THREE.BufferAttribute( new Float32Array( positions ), 2 ).setUsage( THREE.StaticDrawUsage );
-      let uvAttribute = new THREE.BufferAttribute( new Float32Array( uvs ), 2 ).setUsage( THREE.StaticDrawUsage );
-      this.text.geometry.setAttribute( 'position', posAttribute );
-      this.text.geometry.setAttribute( 'uv', uvAttribute );
-
-      this.text.geometry.index.needsUpdate = true;
-      this.text.geometry.attributes.position.needsUpdate = true;
-      this.text.geometry.attributes.uv.needsUpdate = true;
-      this.text.geometry.computeBoundingBox();
-    }
-    this.alignText();
-    // this.processEventListener('textChanged');
   }
 
   textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -2161,25 +2008,13 @@ export class GUIControl {
     }
     this.widget.userData.text.position.z = this.zOffset;
 
-    let horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
-    let vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
-    
     const innerSize = this.getInnerSize()
 
-    switch(horizontal){
-      case GUIControlAlignment.HorizontalLeft:
-        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
-      break;
-      case GUIControlAlignment.HorizontalCenter:
-        // this.widget.userData.text.position.x = -this.textSize.x/2;
-        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
-      break;
-      case GUIControlAlignment.HorizontalRight:
-        // this.widget.userData.text.position.x = (innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
-        this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
-      break;
-    }
+    //Horizontal Alignment moved to GUIFont
+    // const horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
+    this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
 
+    const vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
         this.widget.userData.text.position.y = (innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
@@ -2192,14 +2027,12 @@ export class GUIControl {
       break;
     }
 
-    // if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox)){
-    //   // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
-    //   this.extent.height = this.textSize.y;
-    //   if(this.guiFont){
-    //     this.extent.height += (this.guiFont.height * 100)/2;
-    //   }
-    //   this.resizeControl();
-    // }
+    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) && this.type == GUIControlType.Label){
+      // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
+      this.extent.height = this.textSize.y;
+      this.resizeControl();
+      this.list.updateList();
+    }
     
   }
 
