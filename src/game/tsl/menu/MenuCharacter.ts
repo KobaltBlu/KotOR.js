@@ -168,9 +168,11 @@ export class MenuCharacter extends K1_MenuCharacter {
           
         } else {
           const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
-          BTN_CHANGE.show();
-          if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
-            BTN_CHANGE.setFillTextureName(portrait.baseresref);
+          if(BTN_CHANGE){
+            BTN_CHANGE.show();
+            if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
+              BTN_CHANGE.setFillTextureName(portrait.baseresref);
+            }
           }
         }
       }
