@@ -199,6 +199,7 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
+      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.UpdateSelected(item);
       }
@@ -208,7 +209,6 @@ export class MenuEquipment extends GameMenu {
 
   UpdateListHover(slot: number) {
     if (slot) {
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.clearItems();
       let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
       let currentPC = GameState.PartyManager.party[0];
@@ -281,7 +281,6 @@ export class MenuEquipment extends GameMenu {
       this.LBL_TXTBAR?.hide();
       this.LBL_SELECTTITLE?.setText('');
     }
-    this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     this.selectedItem = null;
     this.UpdateSelected(null);

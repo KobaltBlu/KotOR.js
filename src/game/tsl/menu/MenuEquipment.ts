@@ -5,6 +5,7 @@ import { MenuEquipment as K1_MenuEquipment } from "../../kotor/KOTOR";
 import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { GameState } from "../../../GameState";
+import { GUIInventoryItem } from "../gui/GUIInventoryItem";
 
 /**
  * MenuEquipment class.
@@ -211,6 +212,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         }
       });
 
+      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.UpdateSelected(item);
       }
