@@ -5,6 +5,7 @@ import { TextureLoader } from "../../../loaders";
 import { GFFStruct } from "../../../resource/GFFStruct";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
+import { GUIControlAlignment } from "../../../enums/gui/GUIControlAlignment";
 
 /**
  * GUIInventoryItem class.
@@ -44,6 +45,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       const buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
       buttonLabel.extent.left = 0;
       buttonLabel.extent.width = labelWidth;
+      buttonLabel.extent.height = protoHeight;
       buttonLabel.setText(this.node.getName());
       buttonLabel.autoCalculatePosition = false;
       this.children.push(buttonLabel);
@@ -57,7 +59,8 @@ export class GUIInventoryItem extends GUIProtoItem {
       //Icon
       const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
-      buttonIcon.disableTextAlignment();
+      // buttonIcon.disableTextAlignment();
+      buttonIcon.text.alignment = GUIControlAlignment.HorizontalRight | GUIControlAlignment.VerticalBottom;
       buttonIcon.extent.width = iconWidth;
       buttonIcon.extent.height = iconHeight;
       buttonIcon.extent.top = 0;
@@ -74,13 +77,13 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonIconWidget.position.z = this.zIndex + 1;
 
       //Stack Count Text Position
-      if(this.node.getStackSize() >= 100){
-        buttonIcon.widget.userData.text.position.set(6, -10, 5);
-      }else if(this.node.getStackSize() >= 10){
-        buttonIcon.widget.userData.text.position.set(10, -10, 5);
-      }else{
-        buttonIcon.widget.userData.text.position.set(14, -10, 5);
-      }
+      // if(this.node.getStackSize() >= 100){
+      //   buttonIcon.widget.userData.text.position.set(6, -10, 5);
+      // }else if(this.node.getStackSize() >= 10){
+      //   buttonIcon.widget.userData.text.position.set(10, -10, 5);
+      // }else{
+      //   buttonIcon.widget.userData.text.position.set(14, -10, 5);
+      // }
 
       this.widget.add(_buttonIconWidget);
 
