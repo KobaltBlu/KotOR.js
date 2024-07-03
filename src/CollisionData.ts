@@ -102,7 +102,7 @@ export class CollisionData {
   playerFeetRay = new THREE.Vector3(0, 0, 0);
   updateCollision(delta = 0){
     
-    if(!this.object.model || !this.object.room || !GameState.module || !this.object.area){
+    if(!this.object || !this.object.model || !this.object.room || !GameState.module || !this.object.area){
       return;
     }
 
@@ -488,7 +488,7 @@ export class CollisionData {
   }
 
   roomCheck(delta: number = 0){
-    if(!this.object.room){
+    if(!this.object.room && this.object.area){
       if(!this.roomCheckTimer || this.roomCheckTimer <= 0){
         this.roomCheckTimer = 1;
         this.findWalkableFace();

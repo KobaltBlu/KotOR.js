@@ -49,6 +49,8 @@ export class Keymap {
   gamepadInput: KeyInput|AnalogInput;
   label: string;
 
+  tokenRegEx: RegExp;
+
   processCallback?: KeymapProcessorCallback;
 
   setProcessor(callback: KeymapProcessorCallback){
@@ -82,6 +84,8 @@ export class Keymap {
     if(typeof row.scalemag !== 'undefined')     keymap.scalemag     = row.scalemag      == '****' ? -1    : parseInt(row.scalemag);
     if(typeof row.scaleexp !== 'undefined')     keymap.scaleexp     = row.scaleexp      == '****' ? -1    : parseInt(row.scaleexp);
     if(typeof row.__rowlabel !== 'undefined')   keymap.label        = row.__rowlabel;
+
+    keymap.tokenRegEx = new RegExp(`<${keymap.name}>`, 'gm');
 
     return keymap;
   }

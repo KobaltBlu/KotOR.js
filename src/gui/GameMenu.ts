@@ -14,6 +14,7 @@ import { GUIControlFactory } from "./GUIControlFactory";
 import { BitWise } from "../utility/BitWise";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { Mouse } from "../controls/Mouse";
+import { KeyMapper } from "../controls";
 
 /**
  * GameMenu class.
@@ -458,6 +459,10 @@ export class GameMenu {
     text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
     text = text.replace(/<FullName>/gm, GameState.player?.firstName);
     text = text.replace(/<LastName>/gm, GameState.player?.lastName);
+
+    KeyMapper.ACTIONS_ALL.forEach( (keymap) => {
+      text = text.replace(keymap.tokenRegEx, keymap.character);
+    });
 
     text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
       return GameState.module.getCustomToken(parseInt(p1));

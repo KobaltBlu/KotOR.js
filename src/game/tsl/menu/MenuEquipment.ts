@@ -213,6 +213,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       });
 
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.padding = 2;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.UpdateSelected(item);
       }
