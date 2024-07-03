@@ -1419,6 +1419,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
+    if(!this.model){ 
+      console.warn('dialogPlayOdysseyAnimation failed');
+      console.log(this, anim);
+      return; 
+    }
     this.dialogAnimation = {
       animation: anim,
       data: {
@@ -1430,6 +1435,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   dialogPlayAnimation(data: ITwoDAAnimation = {} as ITwoDAAnimation){
+    if(!this.model){ 
+      console.warn('dialogPlayAnimation failed');
+      console.log(this, data);
+      return; 
+    }
     this.dialogAnimation = { 
       animation: this.model.getAnimationByName(data.name),
       data: data,

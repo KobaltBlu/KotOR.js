@@ -1805,14 +1805,17 @@ export class ModuleObject {
   }
 
   dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
-    if(this.model){
-      const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
-      if(odysseyAnimation){
-        this.dialogAnimation = {
-          animation: odysseyAnimation,
-          data: anim,
-          started: false,
-        }
+    if(!this.model){ 
+      console.warn('dialogPlayAnimation failed');
+      console.log(this, anim);
+      return; 
+    }
+    const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
+    if(odysseyAnimation){
+      this.dialogAnimation = {
+        animation: odysseyAnimation,
+        data: anim,
+        started: false,
       }
     }
   }
