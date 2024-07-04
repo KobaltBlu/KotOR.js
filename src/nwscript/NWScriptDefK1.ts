@@ -3828,7 +3828,15 @@ NWScriptDefK1.Actions = {
     comment: "311: Get the gold piece value of oItem.\n* Returns 0 if oItem is not a valid item.\n",
     name: "GetGoldPieceValue",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleItem]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        if(args[0].getBaseItemId() == 57){
+          return args[0].getStackSize();
+        }
+      }
+      return 0;
+    }
   },
   312:{
     comment: "312: * Returns TRUE if oCreature is of a playable racial type.\n",
@@ -3943,9 +3951,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        if(args[0].isPM){
-          GameState.PartyManager.Gold += args[1] || 0;
-        }
+        args[0].addGold(args[1] || 0);
       }
     }
   },
@@ -5008,7 +5014,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.PartyManager.Gold || 0;
+      return args[0].getGold();
     }
   },
   419:{
@@ -5223,17 +5229,12 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, ModuleCreature, number]){
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
 
-        //If the gold is taken from the player
-        //creatures don't currently carry gold
-        if(args[1].isPM){
-          GameState.PartyManager.Gold -= args[0] || 0;
-        }
+        //Remove nGold from the target
+        args[1].removeGold(args[0]);
 
         //If the gold is returned to the caller
-        if(args[2]){
-          if(this.caller.isPM){
-            GameState.PartyManager.Gold += args[0];
-          }
+        if(!args[2] && BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+          this.caller.addGold(args[0]);
         }
 
       }

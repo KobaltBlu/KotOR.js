@@ -946,6 +946,33 @@ export class ModuleObject {
     return;
   }
 
+  getGold(): number {
+    if(this.isPartyMember()){
+      return GameState.PartyManager.Gold;
+    }
+    return 0;
+  }
+
+  addGold(nGold = 0): void {
+    if(this.isPartyMember()){
+      GameState.PartyManager.Gold += nGold;
+      return;
+    }
+  }
+
+  removeGold(nGold = 0): number {
+    if(this.isPartyMember()){
+      if(nGold > GameState.PartyManager.Gold){
+        nGold = GameState.PartyManager.Gold;
+      }
+      GameState.PartyManager.Gold -= nGold;
+      if(GameState.PartyManager.Gold < 0){
+        GameState.PartyManager.Gold = 0;
+      }
+      return nGold;
+    }
+  }
+
   updateCollision(delta: number = 0){ }
 
   doCommand(script: NWScriptInstance){
@@ -1524,10 +1551,6 @@ export class ModuleObject {
 
   isPartyMember(){
     return this.isPM;//GameState.PartyManager.party.indexOf(this as any) >= 0;
-  }
-
-  getGold(){
-    return 0;
   }
 
   computeBoundingBox(force: boolean = false){
