@@ -411,14 +411,16 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     super.update(delta);
     if (!this.bVisible)
       return;
-    if (this.char instanceof ModuleCreature)
+    
+    if (this.char instanceof ModuleCreature){
       this.char.update(delta);
       if(this.char.model instanceof OdysseyModel3D && this.char.model.bonesInitialized){
         this.char.model.update( delta );
       }
-    try {
-      this.LBL_3D_VIEW.render(delta);
-    } catch (e: any) {
+      try {
+        this.LBL_3D_VIEW.render(delta);
+      } catch (e: any) {
+      }
     }
   }
 
