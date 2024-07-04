@@ -363,7 +363,7 @@ export class ModuleDoor extends ModuleObject {
         /*if(this.requiresKey()){
           console.log('key required', this.keyName())
           if(object instanceof ModuleCreature){
-            if(object.hasItem(this.keyName())){
+            if(object.hasItemByTag(this.keyName())){
               this.openDoor(object);
             }else if(this.scripts.onFailToOpen instanceof NWScriptInstance){
               console.log('Running script')

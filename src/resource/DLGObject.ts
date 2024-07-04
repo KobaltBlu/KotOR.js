@@ -348,7 +348,7 @@ export class DLGObject {
     return new Promise<void>( (resolve, reject) => {
       let model: any;
       if(actor.participant == 'PLAYER'){
-        model = GameState.player.model;
+        model = GameState.PartyManager.party[0].model;
         //Load the actor's supermodel
         MDLLoader.loader.load(actor.resref)
         .then((actorModel: OdysseyModel) => {
@@ -357,15 +357,15 @@ export class DLGObject {
             actor.animations = actorSuperModel.odysseyAnimations;
 
             if(this.isAnimatedCutscene)
-              GameState.player.setFacing(0, true);
+              GameState.PartyManager.party[0].setFacing(0, true);
 
             if(this.unequipItems)
-              GameState.player.UnequipItems();
+              GameState.PartyManager.party[0].UnequipItems();
 
             if(this.unequipHeadItem)
-              GameState.player.UnequipHeadItem();
+              GameState.PartyManager.party[0].UnequipHeadItem();
 
-            actor.moduleObject = GameState.player;
+            actor.moduleObject = GameState.PartyManager.party[0];
             if(actor.moduleObject){
               actor.moduleObject.setCutsceneMode(true);
             }

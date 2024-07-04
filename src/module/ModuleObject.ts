@@ -68,6 +68,7 @@ export class ModuleObject {
   id: number;
   initialized: boolean;
   isPlayer: boolean = false;
+  isPM: boolean = false;
   name: string;
   objectType: number = ModuleObjectType.ModuleObject;
 
@@ -857,6 +858,21 @@ export class ModuleObject {
   // INVENTORY MANAGEMENT
   //----------------------//
 
+  hasItemByTag(sTag=''){
+    sTag = sTag.toLowerCase();
+    if(this.isPartyMember()){
+      return !!GameState.InventoryManager.getItemByTag(sTag);
+    }
+
+    for(let i = 0; i < this.inventory.length; i++){
+      const cItem = this.inventory[i];
+      if(cItem.tag.toLocaleLowerCase() == sTag)
+        return true;
+    }
+    
+    return false;
+  }
+
   addItem(item: ModuleItem){
     item.load();
     
@@ -918,6 +934,10 @@ export class ModuleObject {
   }
 
   getItemByTag(sTag = ''): ModuleItem {
+    if(this.isPartyMember()){
+      return GameState.InventoryManager.getItemByTag(sTag) as ModuleItem;
+    }
+
     for(let i = 0; i < this.inventory.length; i++){
       let item = this.inventory[i];
       if(item.getTag() == sTag)
@@ -1503,17 +1523,7 @@ export class ModuleObject {
   }
 
   isPartyMember(){
-    return GameState.PartyManager.party.indexOf(this as any) >= 0;
-  }
-
-  hasItem(sTag=''){
-    sTag = sTag.toLowerCase();
-    if(this.isPartyMember()){
-      return GameState.InventoryManager.getItemByTag(sTag);
-    }else{
-      return undefined;
-    }
-
+    return this.isPM;//GameState.PartyManager.party.indexOf(this as any) >= 0;
   }
 
   getGold(){

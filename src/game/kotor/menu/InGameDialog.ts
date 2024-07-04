@@ -101,7 +101,7 @@ export class InGameDialog extends GameMenu {
     return this.owner;
   }
 
-  StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
+  StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
     this.currentCameraAnimation = undefined;
     this.LBL_MESSAGE.setText(' ');
     this.LB_REPLIES.clearItems();
@@ -112,7 +112,7 @@ export class InGameDialog extends GameMenu {
     this.ended = false;
     this.currentEntry = null;
     this.state = -1;
-    if (this.owner == GameState.player) {
+    if (this.owner == GameState.PartyManager.party[0]) {
       let old_listener = this.listener;
       this.listener = this.owner;
       this.owner = old_listener;
@@ -149,6 +149,10 @@ export class InGameDialog extends GameMenu {
             reply.runScripts();
           }
         } else {
+          if(this.listener.isPM){
+            GameState.PartyManager.MakePlayerLeader();
+            this.listener = this.dialog.listener = GameState.PartyManager.party[0];
+          }
           if (this.startingEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
             this.setPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
           } else {

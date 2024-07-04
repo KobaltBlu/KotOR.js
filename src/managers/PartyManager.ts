@@ -159,19 +159,22 @@ export class PartyManager {
   }
 
   static SwitchLeaderAtIndex(index: number = 0){
-    if(index > 0){
-      console.warn(`Invalid index selected: ${index}`);
-      return;
-    }
+    index = Math.abs(index);
 
     if(index >= PartyManager.party.length){
       console.warn(`Index out of range: ${index}/${PartyManager.party.length}`);
       return;
     }
 
+    if(index == 0){
+      console.warn(`Party Member at index 0 is already the party leader.`);
+      return PartyManager.party[0];
+    }
+
     const pm = PartyManager.party.splice(index, 1)[0];
     PartyManager.party.unshift(pm);
     PartyManager.ProcessEventListener('change', [pm]);
+    PartyManager.UpdateLeader();
     return pm;
   }
 
@@ -184,6 +187,7 @@ export class PartyManager {
         for(let j = 0; j < PartyManager.party.length; j++){
           if(PartyManager.party[j].partyID == nID){
             let creature = PartyManager.party[j];
+            creature.isPM = false;
             PartyManager.party.splice(j, 1);
             PartyManager.RebuildPortraitOrder();
 
@@ -304,6 +308,7 @@ export class PartyManager {
   //Add a world creature to the list of Party Members and remove it from the creatures array
   static AddCreatureToParty(slot = 1, creature: ModuleCreature){
     if(creature instanceof ModuleCreature){
+      creature.isPM = true;
       PartyManager.NPCS[slot].available = true;
       //PartyManager.NPCS[nID].canSelect = true;
       PartyManager.NPCS[slot].template = creature.template;
@@ -328,6 +333,7 @@ export class PartyManager {
       const spawn = player.position.clone();
       const quaternion = player.quaternion.clone();
 
+      partyMember.isPM = true;
       partyMember.partyID = 0;
       partyMember.load();
       partyMember.position.copy(spawn);
@@ -399,6 +405,20 @@ export class PartyManager {
     return !PartyManager.IsPartyMemberLeader();
   }
 
+  static MakePlayerLeader(swapWorldPositions: boolean = true){
+    const idx = PartyManager.party.indexOf(GameState.player);
+    if(idx > 0){
+      const old_pm = PartyManager.party[0];
+      const old_pm_pos = PartyManager.party[0].position.clone();
+      const old_player_pos = GameState.player.position.clone();
+      PartyManager.SwitchLeaderAtIndex(idx);
+      if(swapWorldPositions){
+        GameState.player.setPosition(old_pm_pos);
+        old_pm.setPosition(old_player_pos);
+      }
+    }
+  }
+
   //Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
   static GetCreatureStartingPartyIndex(creature: ModuleCreature){
 
@@ -439,6 +459,7 @@ export class PartyManager {
     if(nIdx == 0 || nIdx == 1){
       try{
         if(!(currentSlot instanceof ModuleCreature)){
+          partyMember.isPM = true;
           partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.load();
           //PartyManager.party[nIdx+1] = partyMember;
@@ -483,6 +504,7 @@ export class PartyManager {
     if(npc){
       if(npc.template){
         let partyMember = new ModuleCreature(npc.template);
+        partyMember.isPM = true;
         partyMember.load();
         partyMember.loadModel().then( (model: OdysseyModel3D) => {
           model.userData.moduleObject = partyMember;

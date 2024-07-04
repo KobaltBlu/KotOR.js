@@ -71,7 +71,11 @@ export class InGameComputer extends GameMenu {
     });
   }
 
-  StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.player) {
+  StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
+    if(this.listener.isPM){
+      GameState.PartyManager.MakePlayerLeader();
+      this.listener =  GameState.PartyManager.party[0];
+    }
     this.LB_MESSAGE.clearItems();
     this.LB_REPLIES.clearItems();
     this.open();
@@ -79,7 +83,7 @@ export class InGameComputer extends GameMenu {
     this.listener = listener;
     this.ended = false;
     this.currentEntry = null;
-    if (this.owner == GameState.player) {
+    if (this.owner == GameState.PartyManager.party[0]) {
       let old_listener = this.listener;
       this.listener = this.owner;
       this.owner = old_listener;

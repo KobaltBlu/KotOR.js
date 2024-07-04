@@ -379,7 +379,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        return args[0].hasItem( args[1] );
+        return args[0].getItemByTag( args[1] );
       }else{
         return undefined;
       }
@@ -2698,7 +2698,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0) ? NW_TRUE : NW_FALSE;
+      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.player == args[0]) ? NW_TRUE : NW_FALSE;
     }
   },
   218:{
@@ -2990,7 +2990,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.player;
+      return GameState.PartyManager.party[0];
     }
   },
   239:{
@@ -3943,7 +3943,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        if(args[0] == GameState.player){
+        if(args[0].isPM){
           GameState.PartyManager.Gold += args[1] || 0;
         }
       }
@@ -5225,13 +5225,13 @@ NWScriptDefK1.Actions = {
 
         //If the gold is taken from the player
         //creatures don't currently carry gold
-        if(args[1] == GameState.player){
+        if(args[1].isPM){
           GameState.PartyManager.Gold -= args[0] || 0;
         }
 
         //If the gold is returned to the caller
         if(args[2]){
-          if(this.caller = GameState.player){
+          if(this.caller.isPM){
             GameState.PartyManager.Gold += args[0];
           }
         }
@@ -6192,9 +6192,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      // this._pcIdx = 0;
-      //I believe GetFirstPC should only ever return the player, because partymember do not get added to the modules player list.
-      return GameState.player;//PartyManager.party[this._pcIdx];
+      return GameState.PartyManager.party[0];
     }
   },
   549:{
@@ -6203,9 +6201,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      //this._pcIdx++;
-      //I believe GetNextPC should only ever return undefined, because partymember do not get added to the modules player list. And there is only one player
-      return;//PartyManager.party[this._pcIdx];
+      return;
     }
   },
   550:{
@@ -6424,7 +6420,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 ? NW_TRUE : NW_FALSE );
+      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.player ? NW_TRUE : NW_FALSE );
     }
   },
   577:{
@@ -6433,15 +6429,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      switch(args[0]){
-        case 0:
-          return GameState.PartyManager.party[0];
-        case 1:
-          return GameState.PartyManager.party[1];
-        case 2:
-          return GameState.PartyManager.party[2];
-      }
-      return undefined;
+      return GameState.PartyManager.party[args[0]];
     }
   },
   578:{
@@ -6486,7 +6474,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [string, number, number, number]){
-      //console.log('AurPostString', args[0]);
+      console.log('AurPostString', args[0]);
     }
   },
   583:{

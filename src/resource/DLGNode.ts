@@ -141,12 +141,12 @@ export class DLGNode {
 
     if(this.listenerTag != ''){
       if(this.listenerTag == 'PLAYER'){
-        this.listener = GameState.player;
+        this.listener = GameState.PartyManager.party[0];
       }else{
         this.listener = GameState.ModuleObjectManager.GetObjectByTag(this.listenerTag);
       }
     }else{
-      this.listener = GameState.player;
+      this.listener = GameState.PartyManager.party[0];
     }
 
     if(typeof this.listener == 'undefined'){
