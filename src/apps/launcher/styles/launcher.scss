@@ -124,3 +124,57 @@ div#container:before {
   0% { transform: translate3d(100px,0,0); opacity: 0.0; }
   100% { transform: translate3d(0,0,0); opacity: 1.0; }
 }
+
+.panel {
+  margin: 10px;
+  padding: 10px;
+  background: #2b3033;
+  border-radius: 5px;
+  box-shadow: 5px 5px 10px #00000078;
+  border: 2px solid #434343;
+  font-family: sans-serif;
+}
+
+ul.link-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  li {
+    padding-bottom: 10px;
+    a {
+      text-decoration: none;
+    }
+  }
+}
+
+a:link {
+  color: #CCC;
+  &:hover {
+    color: #FFF;
+  }
+}
+
+.video-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill,minmax(220px, 1fr));
+}
+
+.youtube-video{
+  width: 200px;
+  margin-bottom: 20px;
+  a {
+    color: #cd9e6e;
+    text-decoration: none;
+  }
+  .thumbnail {
+    background-color: #000;
+    background-position: 50%;
+    background-size: 100%;
+    border: 2px solid #6e543a;
+    border-radius: 5px;
+    box-shadow: 0 0 25px #000;
+    padding-right: 1em;
+    padding-top: 56.25%;
+    transition: all .25s ease-in-out;
+  }
+}

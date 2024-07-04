@@ -84,6 +84,9 @@
   bottom:0;
   background: rgba(0,0,0,0.25);
   overflow: hidden;
+  &.full-width {
+    left: 0;
+  }
 }
 
 .launcher-content {

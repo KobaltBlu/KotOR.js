@@ -1,4 +1,4 @@
-import { BrowserWindow } from "electron";
+import { BrowserWindow, shell } from "electron";
 import * as path from "path";
 import Main from "./Main";
 
@@ -35,9 +35,18 @@ export class LauncherWindow {
     // and load the index.html of the app.
     this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/launcher/index.html`);
     //this.browserWindow.openDevTools();
-    //this.browserWindow.on('ready', () => {
-      //this.browserWindow.webcontents.openDevTools();
-    //})
+    this.browserWindow.on('ready-to-show', () => {
+      // this.browserWindow.webcontents.openDevTools();
+      if(!this.browserWindow) { return; }
+      this.browserWindow.webContents.setWindowOpenHandler((details) => {
+        console.log(details);
+        if(details.frameName == '_new' || details.url.indexOf('https://') >= 0){
+          shell.openExternal(details.url);
+          return { action: 'deny' };
+        }
+        return { action: 'allow' };
+      })
+    })
   
     // Emitted when the window is closed.
     this.browserWindow.on('closed', () => {

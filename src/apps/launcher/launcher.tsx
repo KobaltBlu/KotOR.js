@@ -9,6 +9,7 @@ import { ProfileTabContent } from "./components/ProfileTabContent";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { LightboxComponent } from "./components/LightboxComponenet";
 import { Launcher } from "./context/Launcher";
+import axios, { Axios } from "axios";
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
@@ -29,6 +30,9 @@ const App = function() {
   const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
   const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
   const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
+
+  const [selectedTab, setSelectedTab] = useState('apps');
+  const [videos, setVideos] = useState([]);
 
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
@@ -102,6 +106,15 @@ const App = function() {
       console.log(tabRefs);
       setAppReady(true);
     })
+
+    axios.get(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
+      if(res.data?.videos){
+        setVideos(res.data.videos);
+      }
+    }).catch((e) => {
+      console.error(e);
+    })
+
     window.addEventListener('focus', onFocus);
     document.addEventListener('fullscreenchange', onFullscreenChange);
     //on-unmount
@@ -137,6 +150,13 @@ const App = function() {
     }
   }
 
+  const onTabClicked = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const tabId = e.currentTarget.href.split('#').pop();
+    if(!tabId){ return; }
+    setSelectedTab(tabId);
+  }
+
   return (
     <>
       <div id="container" className={`${appReady ? 'ready': ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
@@ -145,7 +165,9 @@ const App = function() {
           <div className="menu-accent"><div className="inner"></div></div>
           <ul className="top-nav">
             <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" /></li>
-            <li className="tab-btn"><a href="#apps">Apps</a></li>
+            <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
+            <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
+            <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
           </ul>
           <div id="launcher-menu-top-right" className="launcher-menu-top-right">
             <div className="launcher-min" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
@@ -154,7 +176,7 @@ const App = function() {
           </div>
         </div>
         <div className="tab-host">
-          <div className="tab selected" data-tab-id="apps">
+          {(selectedTab == 'apps' && <div className="tab selected">
             <div className="launcher-options">
               {Object.values(profileCategoriesValue).map((category: any, i: number) => {
                 return (
@@ -173,7 +195,49 @@ const App = function() {
                 )
               })}
             </div>
-          </div>
+          </div>)}
+          {(selectedTab == 'community' && <div className="tab selected">
+            <div className="launcher-contents full-width">
+              <div className="panel">
+                <h4>Helpful Links</h4><br />
+                <ul className="link-list">
+                  <li><a href="https://github.com/KobaltBlu/KotOR.js" target="_new">KotOR.js GitHub Repo</a></li>
+                  <li><a href="https://swkotor.net" target="_new">SWKotOR.net</a></li>
+                  <li><a href="https://www.youtube.com/@KotORjs" target="_new">YouTube Channel</a></li>
+                  <li><a href="https://deadlystream.com" target="_new">Deadly Stream Forum</a></li>
+                </ul>
+
+                <div className="video-wrapper">
+                  {videos.map( (video: any) => {
+                    return (
+                      <div className="youtube-video">
+                        <a href={video.link['@attributes'].href} target="_new" title={video.title}>
+                          <div className="thumbnail" style={{backgroundImage: `url(${video.thumbnail})`}}></div>
+                          <span className="title">{video.title}</span>
+                        </a>
+                      </div>
+                    )
+                  })}
+                </div>
+
+              </div>
+            </div>
+          </div>)}
+          {(selectedTab == 'buy' && <div className="tab selected">
+            <div className="launcher-contents full-width">
+              <div className="panel">
+                <p>This project does not support piracy. To use this app, you will need to have obtained a legal copy of the supported games that you wish to play.</p>
+                <br />
+                <div className="buy">
+                  <iframe src="https://store.steampowered.com/widget/32370/" frameBorder="0" width="646" height="190"></iframe>
+                </div>
+                <br />
+                <div className="buy">
+                  <iframe src="https://store.steampowered.com/widget/208580/" frameBorder="0" width="646" height="190"></iframe>
+                </div>
+              </div>
+            </div>
+          </div>)}
         </div>
       </div>
     </>
