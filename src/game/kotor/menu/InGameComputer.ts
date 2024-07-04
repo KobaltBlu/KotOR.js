@@ -72,9 +72,9 @@ export class InGameComputer extends GameMenu {
   }
 
   StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
-    if(this.listener.isPM){
+    if(listener.isPM){
       GameState.PartyManager.MakePlayerLeader();
-      this.listener =  GameState.PartyManager.party[0];
+      listener =  GameState.PartyManager.party[0];
     }
     this.LB_MESSAGE.clearItems();
     this.LB_REPLIES.clearItems();
