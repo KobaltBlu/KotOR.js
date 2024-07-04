@@ -742,7 +742,11 @@ export class GameState implements EngineContext {
       }
 
       targetPosition.copy(obj.position);
-      targetPosition.z += losZ;
+      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+        targetPosition.z += losZ;
+      }else{
+        targetPosition.z += 0.1;
+      }
 
       distance = targetPosition.distanceTo(playerPosition);
       if(distance > GameState.maxSelectableDistance){
