@@ -98,6 +98,8 @@ export class FileTypeManager {
       case 'ifo': 
       case 'are': 
       case 'git': 
+      case 'res': 
+      case 'fac': 
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik': 
