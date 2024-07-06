@@ -38,58 +38,46 @@ export class KEYObject {
     this.keys = [];
   }
 
-  loadFile(file: string, onComplete?: Function){
-    
-    GameFileSystem.readFile(file).then( (buffer) => {
+  async loadFile(file: string){
+    const buffer = await GameFileSystem.readFile(file);
 
-      this.reader = new BinaryReader(buffer);
+    this.reader = new BinaryReader(buffer);
 
-      this.fileType = this.reader.readChars(4);
-      this.FileVersion = this.reader.readChars(4);
-      this.bifCount = this.reader.readUInt32();
-      this.keyCount = this.reader.readUInt32();
-      this.offsetToFileTable = this.reader.readUInt32();
-      this.offsetToKeyTable = this.reader.readUInt32();
-      this.buildYear = this.reader.readUInt32();
-      this.buildDay = this.reader.readUInt32();
-      this.reserved = this.reader.readBytes(32);
+    this.fileType = this.reader.readChars(4);
+    this.FileVersion = this.reader.readChars(4);
+    this.bifCount = this.reader.readUInt32();
+    this.keyCount = this.reader.readUInt32();
+    this.offsetToFileTable = this.reader.readUInt32();
+    this.offsetToKeyTable = this.reader.readUInt32();
+    this.buildYear = this.reader.readUInt32();
+    this.buildDay = this.reader.readUInt32();
+    this.reserved = this.reader.readBytes(32);
 
-      this.bifs = [];
+    this.bifs = [];
 
-      this.reader.seek(this.offsetToFileTable);
-      for(let i = 0; i < this.bifCount; i++){
-        this.bifs[i] = {
-          fileSize:this.reader.readUInt32(),
-          filenameOffset: this.reader.readUInt32(),
-          filenameSize: this.reader.readUInt16(),
-          drives: this.reader.readUInt16()
-        } as IBIFEntry;
-      }
+    this.reader.seek(this.offsetToFileTable);
+    for(let i = 0; i < this.bifCount; i++){
+      this.bifs[i] = {
+        fileSize:this.reader.readUInt32(),
+        filenameOffset: this.reader.readUInt32(),
+        filenameSize: this.reader.readUInt16(),
+        drives: this.reader.readUInt16()
+      } as IBIFEntry;
+    }
 
-      for(let i = 0; i < this.bifCount; i++){
-        this.reader.seek(this.bifs[i].filenameOffset);
-        this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
-      }
+    for(let i = 0; i < this.bifCount; i++){
+      this.reader.seek(this.bifs[i].filenameOffset);
+      this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
+    }
 
-      this.reader.seek(this.offsetToKeyTable);
-      for(let i = 0; i < this.keyCount; i++){
-        this.keys[i] = {
-          resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
-          resType: this.reader.readUInt16(),
-          resId: this.reader.readUInt32(),
-        } as IKEYEntry;
-      }
-
-      if(typeof onComplete === 'function'){
-        onComplete();
-      }
-
-    }).catch( (err) => {
-      console.error(err);
-      if(typeof onComplete === 'function'){
-        onComplete();
-      }
-    })
+    this.reader.seek(this.offsetToKeyTable);
+    for(let i = 0; i < this.keyCount; i++){
+      this.keys[i] = {
+        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,''),
+        resType: this.reader.readUInt16(),
+        resId: this.reader.readUInt32(),
+      } as IKEYEntry;
+    }
   }
 
   getFileLabel(index = 0){

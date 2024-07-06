@@ -61,7 +61,7 @@ export class ActionUseObject extends Action {
 
       this.owner.setFacingObject( this.target );
 
-      if(this.target != GameState.player){
+      if(this.target != GameState.PartyManager.Player){
         this.target.use(this.owner);
       }
 

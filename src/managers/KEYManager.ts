@@ -18,25 +18,21 @@ export class KEYManager {
 
   static Key: KEYObject = new KEYObject();
 
-  static Load( filepath: string, onComplete?: Function ){
+  static async Load( filepath: string){
     KEYManager.Key = new KEYObject();
-    KEYManager.Key.loadFile(filepath, () => {
-      KEYManager.LoadBIFs(onComplete);
-    });
+    await KEYManager.Key.loadFile(filepath);
+    KEYManager.LoadBIFs();
   }
 
-  static LoadBIFs(onComplete?: Function){
-    new AsyncLoop({
-      array: KEYManager.Key.bifs,
-      onLoop: async (bifRes: IBIFEntry, loop: AsyncLoop, index: number, count: number) => {
-        const bifPath: string = bifRes.filename;
-        const bif = new BIFObject(bifPath);
-        await bif.load()
-        BIFManager.bifIndexes.set( path.parse(bifRes.filename).name, index );
-        BIFManager.bifs.set(index, bif);
-        loop.next();
-      }
-    }).iterate(onComplete);
+  static async LoadBIFs(){
+    for(let i = 0; i < KEYManager.Key.bifs.length; i++){
+      const bifRes: IBIFEntry = KEYManager.Key.bifs[i];
+      const bifPath: string = bifRes.filename;
+      const bif = new BIFObject(bifPath);
+      await bif.load()
+      BIFManager.bifIndexes.set( path.parse(bifRes.filename).name, i);
+      BIFManager.bifs.set(i, bif);
+    }
   }
 
 }

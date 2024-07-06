@@ -83,7 +83,7 @@ export class MenuGalaxyMap extends GameMenu {
         this.close();
 
         if(this.script instanceof NWScriptInstance){
-          this.script.run(GameState.player);
+          this.script.run(GameState.PartyManager.party[0]);
         }
 
       });

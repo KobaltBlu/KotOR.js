@@ -119,33 +119,24 @@ export class TGAObject {
 
   }
 
-  export( file = '' ){
-    return new Promise( (resolve, reject) => {
-      let writer = new BinaryWriter();
+  async export( resRef = '' ){
+    let writer = new BinaryWriter();
 
-      writer.writeByte(this.header.ID);
-      writer.writeByte(this.header.ColorMapType);
-      writer.writeByte(this.header.FileType);
-      writer.writeByte(this.header.ColorMapIndex);
-      writer.writeUInt32(this.header.offsetX);
-      writer.writeUInt32(this.header.offsetY);
-      writer.writeUInt16(this.header.width);
-      writer.writeUInt16(this.header.height);
-      writer.writeByte(this.header.bitsPerPixel);
-      writer.writeByte(this.header.imageDescriptor);
-  
-      try{
-        writer.writeBytes(this.pixelData);
-      }catch(e){
-        reject(e);
-      }
-  
-      GameFileSystem.writeFile(file, writer.buffer).then( () => {
-        resolve(true);
-      }).catch( (err) => {
-        reject(err);
-      })
-    });
+    writer.writeByte(this.header.ID);
+    writer.writeByte(this.header.ColorMapType);
+    writer.writeByte(this.header.FileType);
+    writer.writeByte(this.header.ColorMapIndex);
+    writer.writeUInt32(this.header.offsetX);
+    writer.writeUInt32(this.header.offsetY);
+    writer.writeUInt16(this.header.width);
+    writer.writeUInt16(this.header.height);
+    writer.writeByte(this.header.bitsPerPixel);
+    writer.writeByte(this.header.imageDescriptor);
+
+    writer.writeBytes(this.pixelData);
+
+    await GameFileSystem.writeFile(resRef, writer.buffer);
+    return true;
   }
 
   static FlipY(pixelData: Buffer, width = 1, height = 1){

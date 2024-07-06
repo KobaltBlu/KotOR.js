@@ -210,7 +210,7 @@ export class GameState implements EngineContext {
 
   //GameState properties
   static globalLight: THREE.AmbientLight;
-  static player: ModuleCreature;
+  static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
   static walkmeshList: any[];
@@ -413,7 +413,7 @@ export class GameState implements EngineContext {
 
     GameState.scene.add(GameState.globalLight);
 
-    GameState.player = undefined;
+    GameState.currentLeader = undefined;
     GameState.playerFeetOffset = new THREE.Vector3(0,0,1);
 
     GameState.collisionList = [];
@@ -701,7 +701,7 @@ export class GameState implements EngineContext {
       return GameState.module.area.miniGame.player as any;
     }
     let p = GameState.PartyManager.party[0];
-    return p ? p : GameState.player;
+    return p ? p : GameState.PartyManager.Player;
   }
 
   static tUpdateSelectable = 0;
@@ -1190,6 +1190,14 @@ export class GameState implements EngineContext {
 
     if(GameState.deltaTime > 1000)
       GameState.deltaTime = GameState.deltaTime % 1;
+  }
+
+  static async GetScreenShot(){
+    return new Promise<TGAObject>( (resolve, reject) => {
+      GameState.onScreenShot = (tga: TGAObject) => {
+        resolve(tga);
+      };
+    });
   }
 
 }

@@ -212,12 +212,6 @@ export class Module {
     this.entryX;
     this.entryY;
     this.entryZ;
-
-    this.creatorId = 2;
-    this.cutSceneList = [];
-    this.expansionList = [];
-    this.globalVariableList = [];
-    this.hak;
     
     this.isSaveGame = false;
     this.name = new CExoLocString();
@@ -268,10 +262,6 @@ export class Module {
         this.expansionPack = 0;
       }
 
-      this.cutSceneList = [];
-      this.expansionList = [];
-      this.globalVariableList = [];
-
       this.creatorId = ifo.getFieldByLabel('Mod_Creator_ID').getValue();
       this.description = ifo.getFieldByLabel('Mod_Description').getCExoLocString();
 
@@ -288,7 +278,7 @@ export class Module {
 
       //Mod_Tokens
       if(ifo.RootNode.hasField('Mod_Tokens') && isLoadingSave){
-        let tokenList = ifo.getFieldByLabel('Mod_Tokens').getChildStructs();
+        const tokenList = ifo.getFieldByLabel('Mod_Tokens').getChildStructs();
         for(let i = 0, len = tokenList.length; i < len; i++){
           this.setCustomToken(
             tokenList[i].getFieldByLabel('Mod_TokensNumber').getValue(),
@@ -298,9 +288,14 @@ export class Module {
       }
 
       if(ifo.RootNode.hasField('Mod_PlayerList') && isLoadingSave){
-        let playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
+        const playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
         if(playerList.length){
           GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
+          if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
+            GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+          }else{
+            GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
+          }
         }
       }
 
@@ -351,38 +346,38 @@ export class Module {
   }
 
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
-    if(effect instanceof GameEffect){
-      effect.loadModel();
-      let object: any = {
-        model: new THREE.Object3D(),
-        position: lLocation.position,
-        dispose: function(){
-          this.onRemove();
-          this.removeEffect(this);
-        },
-        removeEffect: function(effect: GameEffect){
-          let index = this.effects.indexOf(effect);
-          if(index >= 0){
-            this.effects.splice(index, 1);
-          }
+    if(!(effect instanceof GameEffect)){ return; }
+
+    effect.loadModel();
+    const object: any = {
+      model: new THREE.Object3D(),
+      position: lLocation.position,
+      dispose: function(){
+        this.onRemove();
+        this.removeEffect(this);
+      },
+      removeEffect: function(effect: GameEffect){
+        let index = this.effects.indexOf(effect);
+        if(index >= 0){
+          this.effects.splice(index, 1);
         }
-      };
+      }
+    };
 
-      object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-      object.audioEmitter.maxDistance = 50;
-      object.audioEmitter.type = AudioEmitterType.POSITIONAL;
-      object.audioEmitter.load();
-      object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
+    object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
+    object.audioEmitter.maxDistance = 50;
+    object.audioEmitter.type = AudioEmitterType.POSITIONAL;
+    object.audioEmitter.load();
+    object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
 
-      object.model.position.copy(lLocation.position);
+    object.model.position.copy(lLocation.position);
 
-      effect.setCreator(object);
-      effect.setAttachedObject(this);
-      effect.onApply(object);
-      this.effects.push(effect);
+    effect.setCreator(object);
+    effect.setAttachedObject(this);
+    effect.onApply(object);
+    this.effects.push(effect);
 
-      GameState.group.effects.add(object.model);
-    }
+    GameState.group.effects.add(object.model);
   }
 
   tick(delta = 0){
@@ -516,12 +511,12 @@ export class Module {
     }
 
     if(this.scripts.onModuleLoad){
-      this.scripts.onModuleLoad.enteringObject = GameState.player;
+      this.scripts.onModuleLoad.enteringObject = GameState.PartyManager.party[0];
       this.scripts.onModuleLoad.run(this.area, 0);
     }
 
     if(this.scripts.onClientEnter){
-      this.scripts.onClientEnter.enteringObject = GameState.player;
+      this.scripts.onClientEnter.enteringObject = GameState.PartyManager.party[0];
       this.scripts.onClientEnter.run(this.area, 0);
     }
   }
@@ -573,9 +568,9 @@ export class Module {
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
-    if(GameState.player){
-      GameState.player.destroy();
-      GameState.player = undefined;
+    if(GameState.PartyManager.Player){
+      GameState.PartyManager.Player.destroy();
+      GameState.PartyManager.Player = undefined;
     }
 
     //Clear emitters
@@ -651,8 +646,8 @@ export class Module {
 
     //Player
     const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
-    if(GameState.player){
-      playerList.addChildStruct( GameState.player.save().RootNode );
+    if(GameState.PartyManager.Player){
+      playerList.addChildStruct( GameState.PartyManager.Player.save().RootNode );
     }
 
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartDay') ).setValue(this.timeManager.day);

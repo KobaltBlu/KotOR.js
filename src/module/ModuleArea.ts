@@ -1167,7 +1167,7 @@ export class ModuleArea extends ModuleObject {
 
       GameState.MenuManager.LoadScreen.setProgress(100);
 
-      FollowerCamera.facing = Utility.NormalizeRadian(GameState.player.getFacing() - Math.PI/2);
+      FollowerCamera.facing = Utility.NormalizeRadian(GameState.PartyManager.party[0].getFacing() - Math.PI/2);
 
       try { await this.weather.load(); } catch(e){ console.error(e); }
 
@@ -1218,7 +1218,7 @@ export class ModuleArea extends ModuleObject {
       GameState.PartyManager.PlayerTemplate.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
       return GameState.PartyManager.PlayerTemplate;
     }else{
-      return GameState.PartyManager.ResetPlayerTemplate();
+      return GameState.PartyManager.GeneratePlayerTemplate();
     }
   }
 
@@ -1324,42 +1324,43 @@ export class ModuleArea extends ModuleObject {
   }
 
   async loadPlayer(): Promise<void> {
-    console.log('Loading Player', GameState.player)
+    console.log('Loading Player', GameState.PartyManager.Player)
     try{
-      if(GameState.player instanceof ModuleCreature){
-        GameState.player.partyID = -1;
+      if(GameState.PartyManager.Player instanceof ModuleCreature){
+        GameState.PartyManager.Player.npcId = -1;
 
         if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.player) ] = GameState.player;
-          GameState.group.party.add( GameState.player.container );
+          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.currentLeader) ] = GameState.currentLeader;
+          GameState.group.party.add( GameState.PartyManager.Player.container );
         }
 
         //Reset the players actions between modules
-        GameState.player.clearAllActions();
-        GameState.player.force = 0;
-        GameState.player.collisionData.groundFace = undefined;
-        GameState.player.collisionData.lastGroundFace = undefined;
-        GameState.player.load();
+        GameState.PartyManager.Player.clearAllActions();
+        GameState.PartyManager.Player.force = 0;
+        GameState.PartyManager.Player.collisionData.groundFace = undefined;
+        GameState.PartyManager.Player.collisionData.lastGroundFace = undefined;
+        GameState.PartyManager.Player.load();
         try{
-          const model = await GameState.player.loadModel();
-          GameState.player.model = model;
-          GameState.player.model.hasCollision = true;
+          const model = await GameState.PartyManager.Player.loadModel();
+          GameState.PartyManager.Player.model = model;
+          GameState.PartyManager.Player.model.hasCollision = true;
           //let spawnLoc = this.getSpawnLocation();
-          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.player);
-          GameState.player.position.copy(spawnLoc.position);
-          GameState.player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
+          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
+          GameState.PartyManager.Player.position.copy(spawnLoc.position);
+          GameState.PartyManager.Player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
-          GameState.player.getCurrentRoom();
-          // GameState.player.computeBoundingBox(true);
+          GameState.PartyManager.Player.getCurrentRoom();
+          // GameState.PartyManager.Player.computeBoundingBox(true);
         }catch(e){
           console.error(e);
         }
       }else{
         let player = new ModulePlayer( this.getPlayerTemplate() );
-        player.partyID = -1;
+        player.npcId = -1;
         
         player.load();
-        GameState.player = player;
+        // GameState.currentLeader = player;
+        GameState.PartyManager.ActualPlayer = player;
       
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
@@ -1834,8 +1835,8 @@ export class ModuleArea extends ModuleObject {
 
   runOnEnterScripts(){
     if(this.scripts.onEnter instanceof NWScriptInstance){
-      console.log('onEnter', this.scripts.onEnter, GameState.player)
-      this.scripts.onEnter.enteringObject = GameState.player;
+      console.log('onEnter', this.scripts.onEnter, GameState.PartyManager.party[0])
+      this.scripts.onEnter.enteringObject = GameState.PartyManager.party[0];
       this.scripts.onEnter.debug.action = true;
       this.scripts.onEnter.run(this, 0);
     }

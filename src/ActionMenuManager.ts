@@ -104,7 +104,7 @@ export class ActionMenuManager {
             icon: 'i_attack'
           }));
         }
-      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.player)){
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0])){
         ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
           action: {
             type: ActionType.ActionPhysicalAttacks,

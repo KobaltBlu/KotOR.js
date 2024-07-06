@@ -47,7 +47,7 @@ export class GameInitializer {
   static currentGame: any;
   static files: string[] = [];
 
-  static Init(props: any){
+  static async Init(props: any){
 
     props = Object.assign({
       game: null,
@@ -94,120 +94,130 @@ export class GameInitializer {
     GameState.GameEffectFactory = GameEffectFactory;
     GameState.GameEventFactory = GameEventFactory;
 
-    CurrentGame.CleanGameInProgressFolder().then( () => {
-      if(GameInitializer.currentGame != props.game){
-        GameInitializer.currentGame = props.game;
+    await CurrentGame.CleanGameInProgressFolder();
+    if(GameInitializer.currentGame == props.game){
+      if(props.onLoad != null)
+        props.onLoad();
 
-        ConfigClient.Init().then( () => {
-        
-          LoadingScreen.main.SetMessage("Loading Keys");
-          KEYManager.Load('chitin.key', async () => {
-            await ResourceLoader.InitGlobalCache();
-            LoadingScreen.main.SetMessage("Loading Game Resources");
-            GameInitializer.LoadGameResources( () => {
-              //Load JRL File
-              LoadingScreen.main.SetMessage("Loading JRL File");
-              JournalManager.LoadJournal().then( () => {
-                //Load TLK File
-                LoadingScreen.main.SetMessage("Loading TLK File");
-                TLKManager.LoadTalkTable().then( () => {
-                  KeyMapper.Init();
-                  GamePad.Init();
-                  if(GameState.GameKey == GameEngineType.TSL){
-                    GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
-                  }else{
-                    GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
-                  }
-                  GameState.iniConfig.load().then( () => {
-                    AutoPauseManager.INIConfig = GameState.iniConfig;
-                    AutoPauseManager.Init();
+      return;
+    }
 
-                    
-                    GameState.GlobalVariableManager.Init();
+    GameInitializer.currentGame = props.game;
 
-                    
-                    console.log('Planetary: Loading');
-                    Planetary.Init().then( () => {
-                    
-                      console.log('SaveGames: Loading');
-                      SaveGame.GetSaveGames().then( () => {
-                        console.log('SaveGames: Complete');
-                        if(typeof props.onLoad === 'function'){
-                          props.onLoad();
-                        }
-                      });
-                    });
-                  });
-                })
-              });
-            });
-          });
+    await ConfigClient.Init();
+    
+    LoadingScreen.main.SetMessage("Loading Keys");
+    await KEYManager.Load('chitin.key');
+    await ResourceLoader.InitGlobalCache();
+    LoadingScreen.main.SetMessage("Loading Game Resources");
+    await GameInitializer.LoadGameResources();
 
-        });
+    /**
+     * Initialize Journal
+     */
+    LoadingScreen.main.SetMessage("Loading JRL File");
+    await JournalManager.LoadJournal();
 
-      }else{
-        if(props.onLoad != null)
-          props.onLoad();
-      }
-    });
+    /**
+     * Initialize TLK
+     */
+    LoadingScreen.main.SetMessage("Loading TLK File");
+    await TLKManager.LoadTalkTable();
+
+    /**
+     * Initialize Controls
+     */
+    KeyMapper.Init();
+    GamePad.Init();
+
+    /**
+     * Initialize INIConfig
+     */
+    if(GameState.GameKey == GameEngineType.TSL){
+      GameState.iniConfig = new INIConfig('swkotor2.ini', INIConfig.defaultConfigs.swKotOR2);
+    }else{
+      GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
+    }
+    await GameState.iniConfig.load();
+    AutoPauseManager.INIConfig = GameState.iniConfig;
+
+    /**
+     * Initialize AutoPauseManager
+     */
+    AutoPauseManager.Init();
+
+    /**
+     * Initialize GLobal Variabled
+     */
+    GameState.GlobalVariableManager.Init();
+
+    /**
+     * Initialize Planetary
+     */
+    await Planetary.Init()
+
+    /**
+     * Initialize SaveGame Folder
+     */
+    await SaveGame.GetSaveGames();
+
+    /**
+     * Initialize Complete
+     */
+    if(typeof props.onLoad === 'function'){
+      props.onLoad();
+    }
 
   }
 
-  static LoadGameResources(onSuccess?: Function){
+  static LoadGameResources(){
+    return new Promise<void>((resolve, reject) => {
+      LoadingScreen.main.SetMessage("Loading BIF's");
 
-    LoadingScreen.main.SetMessage("Loading BIF's");
+      LoadingScreen.main.SetMessage("Loading RIM's");
+      GameInitializer.LoadRIMs( () => {
+        GameInitializer.LoadModules( () => {
 
-    LoadingScreen.main.SetMessage("Loading RIM's");
-    GameInitializer.LoadRIMs( () => {
+          //Load all of the 2da files into memory
+          GameInitializer.Load2DAs( () => {
+            LoadingScreen.main.SetMessage('Loading: Texture Packs');
+            GameInitializer.LoadTexturePacks( () => {
+              GameInitializer.LoadGameAudioResources( {
+                folder: 'streammusic',
+                name: 'StreamMusic',
+                onSuccess: () => {
+                  GameInitializer.LoadGameAudioResources( {
+                    folder: 'streamsounds',
+                    name: 'StreamSounds',
+                    onSuccess: () => {
+                      if(GameState.GameKey != GameEngineType.TSL){
+                        GameInitializer.LoadGameAudioResources( {
+                          folder: 'streamwaves',
+                          name: 'StreamWaves',
+                          onSuccess: () => {
 
-      GameInitializer.LoadModules( () => {
+                            resolve();
+                          }
+                        });
+                      }else{
+                        GameInitializer.LoadGameAudioResources( {
+                          folder: 'streamvoice',
+                          name: 'StreamSounds',
+                          onSuccess: () => {
 
-        //Load all of the 2da files into memory
-        GameInitializer.Load2DAs( () => {
-          LoadingScreen.main.SetMessage('Loading: Texture Packs');
-          GameInitializer.LoadTexturePacks( () => {
-
-            GameInitializer.LoadGameAudioResources( {
-              folder: 'streammusic',
-              name: 'StreamMusic',
-              onSuccess: () => {
-                GameInitializer.LoadGameAudioResources( {
-                  folder: 'streamsounds',
-                  name: 'StreamSounds',
-                  onSuccess: () => {
-                    if(GameState.GameKey != GameEngineType.TSL){
-                      GameInitializer.LoadGameAudioResources( {
-                        folder: 'streamwaves',
-                        name: 'StreamWaves',
-                        onSuccess: () => {
-
-                          if(onSuccess != null)
-                            onSuccess();
-                        }
-                      });
-                    }else{
-                      GameInitializer.LoadGameAudioResources( {
-                        folder: 'streamvoice',
-                        name: 'StreamSounds',
-                        onSuccess: () => {
-
-                          if(onSuccess != null)
-                            onSuccess();
-                        }
-                      });
+                            resolve();
+                          }
+                        });
+                      }
                     }
-                  }
-                });
-              }
+                  });
+                }
+              });
             });
           });
         });
-
       });
-
     });
-
-
   }
 
   static LoadRIMs(onSuccess?: Function){

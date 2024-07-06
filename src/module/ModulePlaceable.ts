@@ -159,14 +159,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   onClick(callee: ModuleObject){
-
-    //You can't interact with yourself
-    if((this as any) === GameState.player && GameState.getCurrentPlayer() === (this as any)){
-      return;
-    }
-
     GameState.getCurrentPlayer().actionUseObject( this );
-    
   }
 
   detachFromRoom(room: ModuleRoom): void {
@@ -398,7 +391,7 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.scripts.onInvDisturbed instanceof NWScriptInstance){
-      this.scripts.onInvDisturbed.run(GameState.player);
+      this.scripts.onInvDisturbed.run(GameState.PartyManager.party[0]);
     }
 
   }

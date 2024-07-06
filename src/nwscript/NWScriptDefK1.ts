@@ -192,7 +192,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      const creature = GameState.PartyManager.SwitchPlayerToPartyMember(args[0]);
+      const creature = GameState.PartyManager.SwitchPlayerCharacter(args[0]);
       if(creature) return true;
       return false;
     }
@@ -212,9 +212,12 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
+      const pm = GameState.PartyManager.GetPMByNPCId(args[0]);
+      if(!pm){ return NW_FALSE; }
+
       return GameState.PartyManager.party.unshift(
         GameState.PartyManager.party.splice(
-          GameState.PartyManager.party.indexOf(GameState.player), 
+          GameState.PartyManager.party.indexOf(pm), 
           1
         )[0]
       ) ? NW_TRUE : NW_FALSE;
@@ -2698,7 +2701,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.player == args[0]) ? NW_TRUE : NW_FALSE;
+      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.PartyManager.ActualPlayer == args[0]) ? NW_TRUE : NW_FALSE;
     }
   },
   218:{
@@ -5898,7 +5901,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       //This will kinda work for now but I think it is supposed to check if any actions in the queue were set by the player
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){// && this.caller == GameState.player){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         return this.caller.combatData.combatQueue.length ? NW_TRUE : NW_FALSE;//this.caller.actionQueue.length ? NW_TRUE : NW_FALSE;
       }else{
         return 0;
@@ -6421,7 +6424,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.player ? NW_TRUE : NW_FALSE );
+      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.PartyManager.ActualPlayer ? NW_TRUE : NW_FALSE );
     }
   },
   577:{
@@ -7416,24 +7419,21 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION],
     action: function(this: NWScriptInstance, args: [number, EngineLocation]){
-
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], GameState.PartyManager.GetNPCResRefById(args[0]));
-      if(buffer){
-        let partyMember = new GameState.Module.ModuleArea.ModuleCreature(new GFFObject(buffer));
-        args[1].area.attachObject(partyMember);
-        partyMember.load();
-        partyMember.loadModel().then( (model: OdysseyModel3D) => {
-          partyMember.model.userData.moduleObject = partyMember;
-          partyMember.position.copy(args[1].position);
-          partyMember.setFacing(args[1].getFacing(), true);
-          partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
-          model.hasCollision = true;
-          GameState.group.creatures.add( partyMember.container );
-        });
-        return partyMember;
-      }
-      return undefined;
-  
+      const template = GameState.PartyManager.NPCS[args[0]]?.template;
+      if(!template){ return undefined; }
+      
+      const partyMember = new GameState.Module.ModuleArea.ModuleCreature(template);
+      args[1].area.attachObject(partyMember);
+      partyMember.load();
+      partyMember.loadModel().then( (model: OdysseyModel3D) => {
+        partyMember.model.userData.moduleObject = partyMember;
+        partyMember.setPosition(args[1].position);
+        partyMember.setFacing(args[1].getFacing(), true);
+        partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
+        model.hasCollision = true;
+        GameState.group.creatures.add( partyMember.container );
+      });
+      return partyMember;
     }
   },
   699:{

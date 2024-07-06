@@ -4,6 +4,7 @@ import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
 import type { ModuleCreature, ModuleObject } from "../module";
 import { BitWise } from "../utility/BitWise";
+import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import { NWScriptDef } from "./NWScriptDef";
 import { NWScriptDefK1 } from "./NWScriptDefK1";
 import { NWScriptInstance } from "./NWScriptInstance";
@@ -6232,7 +6233,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return  GameState.player == args[0] ? 1 : 0;
+      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlayer) ? NW_TRUE : NW_FALSE;
     }
   },
   876: {

@@ -247,16 +247,16 @@ export class ModuleTrigger extends ModuleObject {
     this.actionQueue.process( delta );
 
     /*
-    let pos = GameState.player.getModel().position.clone();
+    let pos = GameState.PartyManager.Player.getModel().position.clone();
     if(this.box.containsPoint(pos)){
-      if(this.objectsInside.indexOf(GameState.player.getModel()) == -1){
-        this.objectsInside.push(GameState.player.getModel());
-        this.onEnter(GameState.player.getModel());
+      if(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()) == -1){
+        this.objectsInside.push(GameState.PartyManager.Player.getModel());
+        this.onEnter(GameState.PartyManager.Player.getModel());
       }
     }else{
-      if(this.objectsInside.indexOf(GameState.player.getModel()) <= 0){
-        //this.onExit(GameState.player.getModel());
-        this.objectsInside.splice(this.objectsInside.indexOf(GameState.player.getModel()), 1)
+      if(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()) <= 0){
+        //this.onExit(GameState.PartyManager.Player.getModel());
+        this.objectsInside.splice(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()), 1)
       }
     }
     */

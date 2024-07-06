@@ -35,7 +35,7 @@ export class MenuContainer extends K1_MenuContainer {
         e.stopPropagation();
         this.LB_ITEMS.clearItems();
         if(this.container instanceof ModulePlaceable){
-          this.container.close(GameState.player);
+          this.container.close(GameState.PartyManager.party[0]);
         }
         this.close();
       });
@@ -46,7 +46,7 @@ export class MenuContainer extends K1_MenuContainer {
         this.LB_ITEMS.clearItems();
         if(this.container instanceof ModulePlaceable){
           this.container.retrieveInventory();
-          this.container.close(GameState.player);
+          this.container.close(GameState.PartyManager.party[0]);
         }else if(this.container instanceof ModuleCreature){
           this.container.retrieveInventory();
           //this.container.close(Game.player);

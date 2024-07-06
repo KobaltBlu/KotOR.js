@@ -143,6 +143,14 @@ export class CurrentGame {
     });
   }
 
+  static async WriteFile( filename: string, buffer: Buffer){
+    try{
+      await GameFileSystem.writeFile(path.join(CurrentGame.gameinprogress_dir, filename), buffer);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
   static ExportToSaveFolder( folder: string ){
     return new Promise( async (resolve, reject) => {
       let sav = new ERFObject();

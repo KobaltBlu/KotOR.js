@@ -64,7 +64,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
         this.close();
 
         if(this.script instanceof NWScriptInstance){
-          this.script.run(GameState.player);
+          this.script.run(GameState.PartyManager.party[0]);
         }
 
       });

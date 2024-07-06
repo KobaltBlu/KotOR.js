@@ -46,6 +46,7 @@ import { CombatRound, CombatRoundAction } from "../combat";
 import { Dice } from "../utility/Dice";
 import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
+import { ActionType } from "../enums/actions/ActionType";
 
 /**
 * ModuleObject class.
@@ -205,6 +206,7 @@ export class ModuleObject {
   isDeadSelectable: boolean = true;
   isDestroyable: boolean = true;
   isRaisable: boolean = true;
+  playerCreated: boolean = false;
 
   //complex animation varaibles
   fp_push_played: any;
@@ -501,6 +503,7 @@ export class ModuleObject {
       let i = this.actionQueue.length;
       while(i--){
         let action = this.actionQueue[i];
+        if(action.type == ActionType.ActionDialogObject){ continue; }
         if(typeof action.clearable !== 'undefined'){
           if(action.clearable){
             this.actionQueue.splice(i , 1);

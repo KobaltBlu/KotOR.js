@@ -67,14 +67,6 @@ export class ActionCloseDoor extends Action {
         //console.log(action.object);
 
         this.owner.setFacingObject( this.target );
-
-        /*if(this.target == GameState.player){
-          return ActionStatus.COMPLETE;
-        }else{
-          //this.target.use(GameState.player);
-          this.target.closeDoor(this.owner);
-          return ActionStatus.COMPLETE;
-        }*/
         
         (this.target as ModuleDoor).closeDoor(this.owner);
         return ActionStatus.COMPLETE;

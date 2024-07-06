@@ -137,7 +137,7 @@ export class ModuleCreature extends ModuleObject {
   ssf: SSFObject;
   joiningXP: any;
   skillPoints: any;
-  partyID: number;
+  npcId: number;
   // appearance: any;
 
   animationState: ICreatureAnimationState;
@@ -661,7 +661,7 @@ export class ModuleCreature extends ModuleObject {
 
 
       //If a non controlled party member is stuck, warp them to their follow position
-      if(this.partyID != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 1){
+      if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 1){
         this.setPosition(GameState.PartyManager.GetFollowPosition(this));
         this.collisionTimer = 0;
       }
@@ -811,17 +811,9 @@ export class ModuleCreature extends ModuleObject {
       let str = this.heardStrings[0];
       //console.log('HeardString', this.id, str, this.isListening, this);
       if(this.isListening && str){
-        let pattern = this.listeningPatterns[str.string];
-
-        if(this == GameState.player){
-          //console.log('heardString', str, pattern);
-        }
+        const pattern = this.listeningPatterns[str.string];
 
         if(typeof pattern != 'undefined'){
-          if(this == GameState.player){
-            //console.log('updateListeningPatterns', pattern, str);
-          }
-
           this.heardStrings.shift();
           this.onDialog(str.speaker, pattern);
         }
@@ -1298,7 +1290,7 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     if(target == this)
-      target = GameState.player;
+      target = GameState.PartyManager.party[0];
 
     if(target.isDead())
       return;
@@ -2192,7 +2184,7 @@ export class ModuleCreature extends ModuleObject {
   onClick(callee: ModuleObject){
 
     //You can't interact with yourself
-    if(this === GameState.player && GameState.getCurrentPlayer() === this){
+    if(this === GameState.PartyManager.ActualPlayer && GameState.getCurrentPlayer() === this){
       return;
     }
 
@@ -4406,7 +4398,7 @@ export class ModuleCreature extends ModuleObject {
     
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue('Bad StrRef');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue( this == GameState.player ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue( this == GameState.PartyManager.ActualPlayer ? 1 : 0);
     
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') )
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
@@ -4577,8 +4569,11 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this == GameState.player ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this == GameState.PartyManager.ActualPlayer ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(1);
+    if(this.playerCreated){
+      gff.RootNode.addField( new GFFField(GFFDataType.INT, 'PlayerCreated') ).setValue(1);
+    }
 
     //Creature Inventory
     let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
@@ -4681,8 +4676,8 @@ export class ModuleCreature extends ModuleObject {
 
     this.template = gff;
 
-    if(this.partyID >= 0){
-      GameState.PartyManager.NPCS[this.partyID].template = this.template;
+    if(this.npcId >= 0){
+      GameState.PartyManager.NPCS[this.npcId].template = this.template;
     }
 
     return gff;

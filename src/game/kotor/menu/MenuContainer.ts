@@ -47,7 +47,7 @@ export class MenuContainer extends GameMenu {
         e.stopPropagation();
         this.LB_ITEMS.clearItems();
         if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
-          this.container.close(GameState.player);
+          this.container.close(GameState.PartyManager.party[0]);
         }
         this.close();
       });
@@ -59,7 +59,7 @@ export class MenuContainer extends GameMenu {
           this.LB_ITEMS.clearItems();
           if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
             this.container.retrieveInventory();
-            this.container.close(GameState.player);
+            this.container.close(GameState.PartyManager.party[0]);
           }else if(this.container instanceof GameState.Module.ModuleArea.ModuleCreature){
             this.container.retrieveInventory();
             //this.container.close(Game.player);

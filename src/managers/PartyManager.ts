@@ -17,6 +17,9 @@ import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot
 import { ResourceLoader } from "../loaders";
 import { GameEngineType } from "../enums/engine";
 import { PartyManagerEvent } from "../types/PartyManagerEvent";
+import { ModulePlayer } from "../module/ModulePlayer";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -58,7 +61,20 @@ export class PartyManager {
   static party: ModuleCreature[] = [];
   static aiStyle = 0;
   static PlayerTemplate: GFFObject;
-  static Player: ModuleObject;
+  static ActualPlayerTemplate: GFFObject;
+
+  /**
+   * Current Player Creature (Can be overridden by with an NPC)
+   * This object will be stored in the Module's PlayList on Save
+   */
+  static Player: ModuleCreature;
+
+  /**
+   * Actual Player Creature (This is the player create that was created by the player)
+   * If Player is not Equal to ActualPlayer export pc.utc on Save
+   */
+  static ActualPlayer: ModulePlayer;
+
   static PortraitOrder: any[] = [];
   static MaxSize = 2;
   static NPCS: PartyNPCList = {
@@ -185,7 +201,7 @@ export class PartyManager {
 
         //Remove the partymember from the module
         for(let j = 0; j < PartyManager.party.length; j++){
-          if(PartyManager.party[j].partyID == nID){
+          if(PartyManager.party[j].npcId == nID){
             let creature = PartyManager.party[j];
             creature.isPM = false;
             PartyManager.party.splice(j, 1);
@@ -323,18 +339,28 @@ export class PartyManager {
     }
   }
 
-  static SwitchPlayerToPartyMember(nIdx = 0){
-    let template: GFFObject = (nIdx == -1) ?
-      PartyManager.PlayerTemplate : PartyManager.NPCS[nIdx].template;
-    const partyMember = new ModuleCreature(template);
-    const player = this.party[0];
+  static SwitchPlayerCharacter(npcId = 0){
+    let partyMember: ModuleCreature;
+    if(npcId == -1){
+      partyMember = new ModulePlayer(PartyManager.ActualPlayerTemplate);
+    }else{
+      partyMember = new ModuleCreature(PartyManager.NPCS[npcId].template);
+    }
+     
+    const oldPC = PartyManager.Player;
+
+    if(PartyManager.Player.isPlayer){
+      PartyManager.ActualPlayer = PartyManager.Player;
+      PartyManager.ActualPlayerTemplate = PartyManager.Player.save();
+      CurrentGame.WriteFile('pc.utc', PartyManager.ActualPlayerTemplate.getExportBuffer());
+    }
 
     try{
-      const spawn = player.position.clone();
-      const quaternion = player.quaternion.clone();
+      const spawn = oldPC.position.clone();
+      const quaternion = oldPC.quaternion.clone();
 
       partyMember.isPM = true;
-      partyMember.partyID = 0;
+      partyMember.npcId = npcId;
       partyMember.load();
       partyMember.position.copy(spawn);
       partyMember.quaternion.copy(quaternion);
@@ -348,7 +374,7 @@ export class PartyManager {
         model.hasCollision = true;
         
         GameState.group.party.add( partyMember.container );
-        player.destroy();
+        oldPC.destroy();
         PartyManager.Player = partyMember;
         partyMember.onSpawn();
       });
@@ -361,14 +387,14 @@ export class PartyManager {
 
   //Save the current party member templates
   static Save(){
-    const npcs = PartyManager.party.filter( (pm) => pm.partyID >= 0 );
+    const npcs = PartyManager.party.filter( (pm) => pm.npcId >= 0 );
     for(let i = 0; i < npcs.length; i++){
       let pm = npcs[i];
       PartyManager.CurrentMembers[i] = {
         isLeader: i == 0 ? true : false,
-        memberID: pm.partyID
+        memberID: pm.npcId
       };
-      PartyManager.SavePartyMember(pm.partyID);
+      PartyManager.SavePartyMember(pm.npcId);
     }
   }
 
@@ -381,7 +407,7 @@ export class PartyManager {
   //Update the party members to see if any of them is the current party leader
   static UpdateLeader(){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      if(PartyManager.party[0].partyID == PartyManager.CurrentMembers[i].memberID){
+      if(PartyManager.party[0].npcId == PartyManager.CurrentMembers[i].memberID){
         PartyManager.CurrentMembers[i].isLeader = true;
       }else{
         PartyManager.CurrentMembers[i].isLeader = false;
@@ -394,7 +420,7 @@ export class PartyManager {
 
   //Check to see if the current leader is a party member and not the player
   static IsPartyMemberLeader(){
-    if(PartyManager.party[0].partyID >= 0){
+    if(PartyManager.party[0].npcId >= 0){
       return true;
     }
     return false;
@@ -405,17 +431,21 @@ export class PartyManager {
     return !PartyManager.IsPartyMemberLeader();
   }
 
+  static GetPMByNPCId(npcId: number = -1){
+    return PartyManager.party.find( (obj) => obj.npcId == npcId);
+  }
+
   static MakePlayerLeader(swapWorldPositions: boolean = true){
-    const idx = PartyManager.party.indexOf(GameState.player);
-    if(idx > 0){
-      const old_pm = PartyManager.party[0];
-      const old_pm_pos = PartyManager.party[0].position.clone();
-      const old_player_pos = GameState.player.position.clone();
-      PartyManager.SwitchLeaderAtIndex(idx);
-      if(swapWorldPositions){
-        GameState.player.setPosition(old_pm_pos);
-        old_pm.setPosition(old_player_pos);
-      }
+    const idx = PartyManager.party.indexOf(PartyManager.Player);
+    if(idx <= 0){ return; }
+
+    const old_pm = PartyManager.party[0];
+    const old_pm_pos = PartyManager.party[0].position.clone();
+    const old_player_pos = PartyManager.Player.position.clone();
+    PartyManager.SwitchLeaderAtIndex(idx);
+    if(swapWorldPositions){
+      PartyManager.Player.setPosition(old_pm_pos);
+      old_pm.setPosition(old_player_pos);
     }
   }
 
@@ -441,7 +471,7 @@ export class PartyManager {
   //   }
 
   //   if(creature instanceof ModuleCreature){
-  //     return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature.partyID) ]
+  //     return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature.npcId) ]
   //   }
 
   //   return undefined;
@@ -460,7 +490,7 @@ export class PartyManager {
       try{
         if(!(currentSlot instanceof ModuleCreature)){
           partyMember.isPM = true;
-          partyMember.partyID = PartyManager.CurrentMembers[nIdx].memberID;
+          partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.load();
           //PartyManager.party[nIdx+1] = partyMember;
 
@@ -499,28 +529,33 @@ export class PartyManager {
   }
 
   //Used in the TSL PartySelection menu to load creature for the 3D preview of the selected party member
-  static LoadPartyMemberCreature(idx = 0, onLoad?: Function){
-    let npc = PartyManager.NPCS[idx];
-    if(npc){
-      if(npc.template){
-        let partyMember = new ModuleCreature(npc.template);
-        partyMember.isPM = true;
-        partyMember.load();
-        partyMember.loadModel().then( (model: OdysseyModel3D) => {
-          model.userData.moduleObject = partyMember;
-          partyMember.onSpawn();
-          if(typeof onLoad === 'function')
-            onLoad(partyMember);
-
-        });
-      }else{
-        if(typeof onLoad === 'function')
-          onLoad(null);
-      }
-    }else{
+  static LoadPartyMemberCreature(npcId = 0, onLoad?: Function){
+    const npc = PartyManager.NPCS[npcId];
+    if(!npc){
       if(typeof onLoad === 'function')
         onLoad(null);
+
+      return;
     }
+
+    if(!npc.template){
+      if(typeof onLoad === 'function')
+        onLoad(null);
+
+      return;
+    }
+    
+    const partyMember = new ModuleCreature(npc.template);
+    partyMember.npcId = npcId;
+    partyMember.isPM = true;
+    partyMember.load();
+    partyMember.loadModel().then( (model: OdysseyModel3D) => {
+      model.userData.moduleObject = partyMember;
+      partyMember.onSpawn();
+      if(typeof onLoad === 'function')
+        onLoad(partyMember);
+
+    });
     
   }
 
@@ -661,55 +696,28 @@ export class PartyManager {
           await PartyManager.ExportPartyMemberTemplate(i, pm.template);
         }
       }
+      await PartyManager.ExportPlayerCharacter();
       resolve();
     });
   }
 
-  public static async SavePartyMember(index: number = 0){
-    const pm = PartyManager.party.find( (pm) => pm.partyID == index );
+  static async ExportPlayerCharacter(){
+    if(BitWise.InstanceOfObject(PartyManager.Player, ModuleObjectType.ModulePlayer)){ return; }
+    const gff = GameState.PartyManager.ActualPlayer.save();
+    await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));
+  }
+
+  public static async SavePartyMember(npcId: number = 0){
+    const pm = PartyManager.party.find( (pm) => pm.npcId == npcId );
     if(pm) pm.save();
-    const npc = PartyManager.NPCS[index];
-    if(npc){
-      if(npc.template instanceof GFFObject){
-        await PartyManager.ExportPartyMemberTemplate(index, npc.template);
-      }
+    const npc = PartyManager.NPCS[npcId];
+    if(!npc){ return; }
+    if(npc.template instanceof GFFObject){
+      await PartyManager.ExportPartyMemberTemplate(npcId, npc.template);
     }
   }
 
-  public static GetNPCResRefById(nId: number){
-    switch(nId){
-      case 0:
-        return 'p_bastilla'
-      break;
-      case 1:
-        return 'p_cand'
-      break;
-      case 2:
-        return 'p_carth'
-      break;
-      case 3:
-        return 'p_hk47'
-      break;
-      case 4:
-        return 'p_jolee'
-      break;
-      case 5:
-        return 'p_juhani'
-      break;
-      case 6:
-        return 'p_mission'
-      break;
-      case 7:
-        return 'p_t3m4'
-      break;
-      case 8:
-        return 'p_zaalbar'
-      break;
-    }
-    return '';
-  }
-
-  public static ResetPlayerTemplate(): GFFObject {
+  public static GeneratePlayerTemplate(): GFFObject {
     let pTPL = new GFFObject();
 
     pTPL.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );

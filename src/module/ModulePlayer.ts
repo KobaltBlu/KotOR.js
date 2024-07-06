@@ -22,6 +22,7 @@ export class ModulePlayer extends ModuleCreature {
     super(gff);
     this.objectType |= ModuleObjectType.ModulePlayer;
     this.isPM = true;
+    this.isPlayer = true;
   }
 
   update(delta: number = 0){

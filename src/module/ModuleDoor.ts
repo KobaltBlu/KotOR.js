@@ -327,14 +327,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onClick(callee: ModuleObject){
-
-    //You can't interact with yourself
-    if((this as any) === GameState.player && GameState.getCurrentPlayer() === (this as any)){
-      return;
-    }
-
     GameState.getCurrentPlayer().actionOpenDoor( this );
-    
   }
 
   use(object: ModuleObject){
@@ -765,9 +758,6 @@ export class ModuleDoor extends ModuleObject {
       intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
       
       if(intersects.length){
-        if((this as any) == GameState.player){
-          //console.log(intersects);
-        }
         if(intersects[0].object.userData.moduleObject){
           this.attachToRoom(intersects[0].object.userData.moduleObject);
           return;

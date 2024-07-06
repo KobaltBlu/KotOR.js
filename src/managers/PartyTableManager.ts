@@ -211,7 +211,7 @@ export class PartyTableManager {
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.PartyManager.Player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
       partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
 
       //TODO: COST MULT LIST
@@ -240,10 +240,10 @@ export class PartyTableManager {
       let numMembers = 0;
       for(let i = 0; i < GameState.PartyManager.party.length; i++){
         let member = GameState.PartyManager.party[i];
-        if(member != GameState.player){
+        if(member != GameState.PartyManager.Player){
           let memberStruct = new GFFStruct();
           memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );
-          memberStruct.addField( new GFFField(GFFDataType.INT, 'PT_MEMBER_ID') ).setValue( member.partyID );
+          memberStruct.addField( new GFFField(GFFDataType.INT, 'PT_MEMBER_ID') ).setValue( member.npcId );
           ptMembersList.addChildStruct( memberStruct );
           numMembers++;
         }

@@ -653,9 +653,6 @@ export class ModuleMGPlayer extends ModuleObject {
         intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
-          if((this as any) == GameState.player){
-            //console.log(intersects);
-          }
           if(intersects[0].object.userData.moduleObject){
             this.attachToRoom(intersects[0].object.userData.moduleObject);
             return;
