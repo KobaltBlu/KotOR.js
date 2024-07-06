@@ -21,7 +21,7 @@ export class KEYManager {
   static async Load( filepath: string){
     KEYManager.Key = new KEYObject();
     await KEYManager.Key.loadFile(filepath);
-    KEYManager.LoadBIFs();
+    await KEYManager.LoadBIFs();
   }
 
   static async LoadBIFs(){

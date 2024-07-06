@@ -60,20 +60,20 @@ export class PartyManager {
 
   static party: ModuleCreature[] = [];
   static aiStyle = 0;
-  static PlayerTemplate: GFFObject;
-  static ActualPlayerTemplate: GFFObject;
 
   /**
    * Current Player Creature (Can be overridden by with an NPC)
    * This object will be stored in the Module's PlayList on Save
    */
   static Player: ModuleCreature;
+  static PlayerTemplate: GFFObject;
 
   /**
    * Actual Player Creature (This is the player create that was created by the player)
    * If Player is not Equal to ActualPlayer export pc.utc on Save
    */
-  static ActualPlayer: ModulePlayer;
+  // static ActualPlayer: ModulePlayer;
+  static ActualPlayerTemplate: GFFObject;
 
   static PortraitOrder: any[] = [];
   static MaxSize = 2;
@@ -343,14 +343,15 @@ export class PartyManager {
     let partyMember: ModuleCreature;
     if(npcId == -1){
       partyMember = new ModulePlayer(PartyManager.ActualPlayerTemplate);
+      PartyManager.PlayerTemplate = PartyManager.ActualPlayerTemplate;
     }else{
       partyMember = new ModuleCreature(PartyManager.NPCS[npcId].template);
     }
      
     const oldPC = PartyManager.Player;
+    PartyManager.Player = partyMember;
 
-    if(PartyManager.Player.isPlayer){
-      PartyManager.ActualPlayer = PartyManager.Player;
+    if(PartyManager.Player.isPlayer && npcId >= 0){
       PartyManager.ActualPlayerTemplate = PartyManager.Player.save();
       CurrentGame.WriteFile('pc.utc', PartyManager.ActualPlayerTemplate.getExportBuffer());
     }
@@ -375,7 +376,6 @@ export class PartyManager {
         
         GameState.group.party.add( partyMember.container );
         oldPC.destroy();
-        PartyManager.Player = partyMember;
         partyMember.onSpawn();
       });
       return partyMember;
@@ -668,23 +668,14 @@ export class PartyManager {
     return GameState.module.area.getNearestWalkablePoint(targetPos);
   }
 
-  static GiveXP( amount = 0){
+  static GiveXP(nXP = 0){
 
   }
 
   static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){
-    return new Promise<void>( async (resolve, reject) => {
-      if(template instanceof GFFObject){
-        template.removeFieldByLabel('TemplateResRef');
-        template.export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc') , () => {
-          resolve();
-        }, () => {
-          resolve();
-        });
-      }else{
-        resolve();
-      }
-    });
+    if(!(template instanceof GFFObject)){ return; }
+    template.removeFieldByLabel('TemplateResRef');
+    await template.export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc'));
   }
 
   static async ExportPartyMemberTemplates(){
@@ -702,8 +693,8 @@ export class PartyManager {
   }
 
   static async ExportPlayerCharacter(){
-    if(BitWise.InstanceOfObject(PartyManager.Player, ModuleObjectType.ModulePlayer)){ return; }
-    const gff = GameState.PartyManager.ActualPlayer.save();
+    if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
+    const gff = GameState.PartyManager.ActualPlayerTemplate;
     await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));
   }
 

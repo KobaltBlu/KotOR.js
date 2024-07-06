@@ -2701,7 +2701,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.PartyManager.ActualPlayer == args[0]) ? NW_TRUE : NW_FALSE;
+      return (GameState.PartyManager.party.indexOf(args[0] as any) >= 0 || GameState.PartyManager.Player == args[0]) ? NW_TRUE : NW_FALSE;
     }
   },
   218:{
@@ -6424,7 +6424,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
-      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.PartyManager.ActualPlayer ? NW_TRUE : NW_FALSE );
+      return ( GameState.PartyManager.party.indexOf(args[0]) >= 0 || args[0] == GameState.PartyManager.Player ? NW_TRUE : NW_FALSE );
     }
   },
   577:{

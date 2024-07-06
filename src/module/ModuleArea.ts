@@ -1360,7 +1360,7 @@ export class ModuleArea extends ModuleObject {
         
         player.load();
         // GameState.currentLeader = player;
-        GameState.PartyManager.ActualPlayer = player;
+        GameState.PartyManager.Player = player;
       
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;

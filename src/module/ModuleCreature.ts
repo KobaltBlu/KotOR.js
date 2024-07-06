@@ -2184,7 +2184,7 @@ export class ModuleCreature extends ModuleObject {
   onClick(callee: ModuleObject){
 
     //You can't interact with yourself
-    if(this === GameState.PartyManager.ActualPlayer && GameState.getCurrentPlayer() === this){
+    if(this === GameState.PartyManager.Player && GameState.getCurrentPlayer() === this){
       return;
     }
 
@@ -4398,7 +4398,9 @@ export class ModuleCreature extends ModuleObject {
     
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue('Bad StrRef');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue( this == GameState.PartyManager.ActualPlayer ? 1 : 0);
+    if(this.playerCreated){
+      gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue(1);
+    }
     
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') )
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
@@ -4569,7 +4571,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this == GameState.PartyManager.ActualPlayer ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this.playerCreated ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(1);
     if(this.playerCreated){
       gff.RootNode.addField( new GFFField(GFFDataType.INT, 'PlayerCreated') ).setValue(1);

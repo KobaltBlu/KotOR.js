@@ -457,8 +457,9 @@ export class GameMenu {
 
   gameStringParse(text: string){
     text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
-    text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayer?.firstName);
-    text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayer?.lastName);
+    text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
+    text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
+    text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
 
     KeyMapper.ACTIONS_ALL.forEach( (keymap) => {
       text = text.replace(keymap.tokenRegEx, keymap.character);

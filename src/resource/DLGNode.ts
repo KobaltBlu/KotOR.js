@@ -788,8 +788,9 @@ export class DLGNode {
     let text = this.text;
     text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
     //if(this.speaker instanceof ModuleCreature){
-      text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayer.firstName);
-      text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayer.lastName);
+      text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
+      text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
+      text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
       text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
         return GameState.module.getCustomToken(parseInt(p1));
       });
