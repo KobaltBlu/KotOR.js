@@ -28,8 +28,9 @@ export class TabERFEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile().then( (response) => {
+        file.readFile().then( async (response) => {
           this.erf = new KotOR.ERFObject(response.buffer);
+          await this.erf.load();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.erf);
         });
