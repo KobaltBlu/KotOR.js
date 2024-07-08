@@ -3241,16 +3241,16 @@ NWScriptDefK1.Actions = {
         console.warn('BeginConversation', 'args[1] is not an instanceof ModuleObject');
         return NW_FALSE;
       }
-      
+
       if(args[0] != ''){
         const dlg = DLGObject.FromResRef(args[0]);
         if(!dlg){ return NW_FALSE; }
 
         GameState.MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
         return NW_TRUE;
-      }else if(this.caller._conversation){
-        GameState.MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1] as any);
-        (args[1])._conversation = undefined;
+      }else if(this.conversation){
+        GameState.MenuManager.InGameDialog.StartConversation(this.conversation, this.caller, args[1] as any);
+        this.conversation = undefined;
         return NW_TRUE;
       }else if(this.caller.conversation){
         GameState.MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
@@ -7977,11 +7977,11 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller._conversation = undefined;
+        this.conversation = undefined;
       }
-      if(BitWise.InstanceOfObject(this.listenPatternSpeaker, ModuleObjectType.ModuleObject)){
-        this.listenPatternSpeaker._conversation = undefined;
-      }
+      // if(BitWise.InstanceOfObject(this.listenPatternSpeaker, ModuleObjectType.ModuleObject)){
+      //   this.listenPatternSpeaker._conversation = undefined;
+      // }
     }
   },
   750:{

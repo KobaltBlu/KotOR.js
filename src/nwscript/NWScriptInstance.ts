@@ -8,6 +8,7 @@ import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefActio
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 // import { ModuleObjectManager } from "../managers";
 import type { ModuleObject } from "../module";
+import type { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "../talents";
@@ -74,6 +75,7 @@ export class NWScriptInstance {
   //ListenPattern
   listenPatternNumber: number = -1;
   listenPatternSpeaker: ModuleObject = undefined;
+  conversation: DLGObject;
 
   talent: TalentObject;
 

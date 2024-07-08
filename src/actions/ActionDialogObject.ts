@@ -85,11 +85,10 @@ export class ActionDialogObject extends Action {
       this.owner.force = 0;
       this.owner.speed = 0;
 
-      this.target._conversation = this.conversation;
-
       this.owner.heardStrings = [];
       this.target.heardStrings = [];
       if(this.target.scripts.onDialog){
+        this.target.scripts.onDialog.conversation = this.conversation;
         this.target.onDialog(this.owner, -1);
       }else{
         GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);

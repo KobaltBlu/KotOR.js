@@ -245,7 +245,6 @@ export class ModuleObject {
   lastAoeExited: ModuleObject;
 
   conversation: DLGObject;
-  _conversation: DLGObject;
   cutsceneMode: boolean;
 
   constructor (gff = new GFFObject) {
