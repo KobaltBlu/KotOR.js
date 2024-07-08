@@ -52,47 +52,48 @@ export class ActionDialogObject extends Action {
       }
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      if(GameState.Mode != EngineMode.DIALOG){
-        let distance = Utility.Distance2D(this.owner.position, this.target.position);
-        if(distance > 4.5 && !ignoreStartRange){
+    if(GameState.Mode == EngineMode.DIALOG){
+      console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
+      return ActionStatus.FAILED;
+    }
 
-          // this.owner.openSpot = undefined;
-          let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-          actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-          actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-          actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-          actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-          actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-          actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-          actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
-          actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-          actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-          this.owner.actionQueue.addFront(actionMoveToTarget);
-
-          return ActionStatus.IN_PROGRESS;
-        }else{
-          this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-          this.owner.force = 0;
-          this.owner.speed = 0;
-
-          this.target._conversation = this.conversation;
-
-          this.owner.heardStrings = [];
-          this.target.heardStrings = [];
-          if(this.target.scripts.onDialog){
-            this.target.onDialog(this.owner, -1);
-          }else{
-            GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
-          }
-          return ActionStatus.COMPLETE;
-        }
-      }else{
-        console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
-        return ActionStatus.FAILED;
-      }
-    }else{
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+    {
       GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
+      return ActionStatus.COMPLETE;
+    }
+
+    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    if(distance > 4.5 && !ignoreStartRange){
+
+      // this.owner.openSpot = undefined;
+      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
+      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
+      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
+      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
+      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
+      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
+      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
+      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      this.owner.actionQueue.addFront(actionMoveToTarget);
+
+      return ActionStatus.IN_PROGRESS;
+    }else{
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      this.owner.force = 0;
+      this.owner.speed = 0;
+
+      this.target._conversation = this.conversation;
+
+      this.owner.heardStrings = [];
+      this.target.heardStrings = [];
+      if(this.target.scripts.onDialog){
+        this.target.onDialog(this.owner, -1);
+      }else{
+        GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
+      }
       return ActionStatus.COMPLETE;
     }
     

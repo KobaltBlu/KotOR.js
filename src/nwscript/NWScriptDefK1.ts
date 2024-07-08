@@ -3233,35 +3233,34 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [string, ModuleObject]){
-      if( !(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)) ){
+      if(!(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject))){
         args[1] = this.listenPatternSpeaker;
       }
   
-      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
-        if(args[0] != ''){
-          const dlg = DLGObject.FromResRef(args[0]);
-          if(dlg){
-            GameState.MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
-            return 1;
-          }
-          return 0;
-        }else if(this.caller._conversation){
-          GameState.MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1] as any);
-          (args[1])._conversation = undefined;
-          return 1;
-        }else if(this.caller.conversation){
-          GameState.MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
-          return 1;
-        }else if(this.listenPatternSpeaker.conversation){
-          GameState.MenuManager.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
-          return 1;
-        }else{
-          console.warn('BeginConversation', 'no dialog condition met');
-          return 0;
-        }
-      }else{
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
         console.warn('BeginConversation', 'args[1] is not an instanceof ModuleObject');
-        return 0;
+        return NW_FALSE;
+      }
+      
+      if(args[0] != ''){
+        const dlg = DLGObject.FromResRef(args[0]);
+        if(!dlg){ return NW_FALSE; }
+
+        GameState.MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
+        return NW_TRUE;
+      }else if(this.caller._conversation){
+        GameState.MenuManager.InGameDialog.StartConversation(this.caller._conversation, this.caller, args[1] as any);
+        (args[1])._conversation = undefined;
+        return NW_TRUE;
+      }else if(this.caller.conversation){
+        GameState.MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
+        return NW_TRUE;
+      }else if(this.listenPatternSpeaker.conversation){
+        GameState.MenuManager.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
+        return NW_TRUE;
+      }else{
+        console.warn('BeginConversation', 'no dialog condition met');
+        return NW_FALSE;
       }
     }
   },
