@@ -26,6 +26,7 @@ import { BitWise } from "../utility/BitWise";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
 import { ModuleObject } from "./ModuleObject";
 import type { ModuleItem } from "./ModuleItem";
+import { DLGConversationType } from "../enums/dialog/DLGConversationType";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -427,16 +428,39 @@ export class ModulePlaceable extends ModuleObject {
       this.audioEmitter.playSound(this.getObjectSounds()['opened'].toLowerCase());
     }
 
+    // const dialog = this.getConversation();
+
     if(this.hasInventory){
       GameState.MenuManager.MenuContainer.AttachContainer(this);
       GameState.MenuManager.MenuContainer.open();
-    }else if(this.getConversation() && this.getConversation().resref){
-      GameState.MenuManager.InGameDialog.StartConversation(this.getConversation(), object);
-    }
+    }/*else if(dialog && dialog.resref){
+      GameState.MenuManager.InGameDialog.StartConversation(dialog, object);
+    }*/
 
+    /**
+     * I am seeing bugs in TSL. These bugs are causing the convo to fire twice.
+     * Example: 001EBO (TSL) - comppnl002 has a conversation value and a onUsed script (a_compdlg).
+     * The onUsed script has code in it that begins a conversation which is firing after the first one finishes.
+     * I have changed this function to only call StartConversation if there isn't a Script assigned in onUsed
+     * 
+     * On further investigation, I see the same thing the in lev_m40aa (K1). Both of these levels use SwitchPlayerCharacter.
+     * There must be a limitation in the engine when a PM is acting as the player. Maybe the normal dialog code fails because
+     * there isn't a PC in the level or in the party. Therefore it is manually triggered via the onUsed script. If that is the case
+     * though, how does this same level function once the player character is restored to the party?
+     * 
+     * Looking at the documentation for UTP files, there is a note on the conversation field. 
+     * "ResRef of DLG file to use if a player converses with this object via ActionStartConversation()"
+     * This leads me to believe that ActionStartConversation is the only way for a Door or Placeable to start a conversation with the player
+     */
     if(this.scripts.onUsed instanceof NWScriptInstance){
       this.scripts.onUsed.run(this);
-    }
+    }/*else if(!this.hasInventory && dialog && dialog.resref){
+      if(dialog.conversationType == DLGConversationType.COMPUTER){
+        GameState.MenuManager.InGameComputer.StartConversation(dialog, object);
+      }else{
+        GameState.MenuManager.InGameDialog.StartConversation(dialog, object);
+      }
+    }*/
 
   }
 
@@ -888,7 +912,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.inventory.length ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(0);

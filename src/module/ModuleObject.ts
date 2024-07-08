@@ -545,12 +545,12 @@ export class ModuleObject {
     }
   }
 
-  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, unk1 = 0, unk2 = 1, clearable = false ){
+  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
     const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
-    action.setParameter(2, ActionParameterType.INT, unk1);
-    action.setParameter(3, ActionParameterType.INT, unk2);
+    action.setParameter(2, ActionParameterType.INT, bPrivate ? 1 : 0);
+    action.setParameter(3, ActionParameterType.INT, nConvoType);
     action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
     action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     action.clearable = clearable;

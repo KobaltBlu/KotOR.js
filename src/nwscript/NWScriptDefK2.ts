@@ -1453,7 +1453,27 @@ NWScriptDefK2.Actions = {
     name: 'ActionStartConversation',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    /**
+     * TSL made some modifications to this function.
+     * 4 additional arguments were added
+     * int bUseLeader = FALSE, 
+     * int nBarkX = -1, 
+     * int nBarkY = -1, 
+     * int bDontClearAllActions = 0
+     * nBarkX, and nBarkY override the left, top corner position for the bark string if the conversation starting is a bark string. 
+     * They only happen on a conversation by conversation basis and don't stay in effect in subsequent conversations.
+     * @param this NWScriptInstance
+     * @param args [oObjectToConverse: ModuleObject, sDialogResRef: string = "", bPrivateConversation: boolean = FALSE, nConversationType: number = CONVERSATION_TYPE_CINEMATIC, bIgnoreStartRange: boolean = FALSE, sNameObjectToIgnore1: string = "", sNameObjectToIgnore2: string = "", sNameObjectToIgnore3: string = "", sNameObjectToIgnore4: string = "", sNameObjectToIgnore5: string = "", sNameObjectToIgnore6: string = "", bUseLeader: boolean = FALSE, nBarkX: number = -1, nBarkY: number = -1, bDontClearAllActions: boolean = 0]
+     */
+    action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
+        //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
+        this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3] );
+      }else{
+        console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
+      }
+    }
   },
   205: {
     comment: '205: Pause the current conversation.',
