@@ -780,6 +780,16 @@ export class GameState implements EngineContext {
       selectableObjects.push(obj);
     }
 
+    if(selectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
+      GameState.CursorManager.selectedObject = undefined;
+      GameState.CursorManager.selected = undefined;
+    }
+
+    if(selectableObjects.indexOf(GameState.CursorManager.hoveredObject) == -1){
+      GameState.CursorManager.hoveredObject = undefined;
+      GameState.CursorManager.hovered = undefined;
+    }
+
     return selectableObjects;
   }
 
