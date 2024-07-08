@@ -497,24 +497,28 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_TARGET' + index);
-    if (ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
-      const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
-      if (action && guiControl.getFillTextureName() != action.icon) {
-        guiControl.setFillTextureName(action.icon);
-        TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
-          guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
-          guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
-          guiControl.border.fill.material.transparent = true;
-          guiControl.highlight.fill.material.transparent = true;
-          guiControl.widget.position.z = 1;
-        });
-      } else if (!action) {
-        guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
-        guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
-      }
-    } else {
+    if (!ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      return;
+    }
+
+    const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
+    if (!action) {
+      guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
+      guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      return;
+    }
+
+    if (guiControl.getFillTextureName() != action.icon) {
+      guiControl.setFillTextureName(action.icon);
+      TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
+        guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
+        guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
+        guiControl.border.fill.material.transparent = true;
+        guiControl.highlight.fill.material.transparent = true;
+        guiControl.widget.position.z = 5;
+      });
     }
   }
 
@@ -529,7 +533,7 @@ export class InGameOverlay extends GameMenu {
           guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
           guiControl.border.fill.material.transparent = true;
           guiControl.highlight.fill.material.transparent = true;
-          guiControl.widget.position.z = 1;
+          guiControl.widget.position.z = 5;
         });
       } else if (!action) {
         guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
@@ -730,7 +734,7 @@ export class InGameOverlay extends GameMenu {
           this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
         }
       }
-      if (oPC.combatRound.scheduledActionList || oPC.combatRound.scheduledActionList.length) {
+      if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
         this.showCombatUI();
         let action0 = oPC.combatRound.action;
         let action1 = oPC.combatRound.scheduledActionList[0];

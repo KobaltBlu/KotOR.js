@@ -43,7 +43,7 @@ export class ActionPhysicalAttacks extends Action {
     
     this.target = this.getParameter(1);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
       return ActionStatus.FAILED;
     }
 
@@ -92,71 +92,71 @@ export class ActionPhysicalAttacks extends Action {
         owner.speed = 0;
         // (owner as any).openSpot = undefined;
 
-        if(owner.combatRound){
-          const combatRound = owner.combatRound;
-          if(!combatRound.roundPaused) {
+        if(!owner.combatRound){
+          return ActionStatus.FAILED;
+        }
 
-            if( !combatRound.engaged ){ //non dueling round
-              combatRound.beginCombatRound();
-              combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-              if(combatRound.action){
-                combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
-              }
+        const combatRound = owner.combatRound;
+        if(!combatRound.roundPaused) {
 
-            }else{ //dueling round
-              combatRound.beginCombatRound();
-              if(combatRound.action){
-                combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
-              }
-              combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-
-              if(combatRound.master){
-                target.combatRound.beginCombatRound();
-                target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH/2);
-                if(target.combatRound.action){
-                  target.combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
-                }
-              }
-
+          if( !combatRound.engaged ){ //non dueling round
+            combatRound.beginCombatRound();
+            combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+            if(combatRound.action){
+              combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
             }
 
-            if(combatRound.roundStarted){
+          }else{ //dueling round
+            combatRound.beginCombatRound();
+            if(combatRound.action){
+              combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
+            }
+            combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
 
-              if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
-                combatRound.setAttackTarget(combatRound.newAttackTarget);
+            if(combatRound.master){
+              target.combatRound.beginCombatRound();
+              target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH/2);
+              if(target.combatRound.action){
+                target.combatRound.action.animation = ModuleCreatureAnimState.ATTACK_DUELING;
               }
-
-              combatRound.calculateAttackDamage(owner as any, combatRound.action);
-
-              owner.setFacing(
-                Math.atan2(
-                  owner.position.y - target.position.y,
-                  owner.position.x - target.position.x
-                ) + Math.PI/2,
-                false
-              );
-
-              let attack_sound = THREE.MathUtils.randInt(0, 2);
-              switch(attack_sound){
-                case 1:
-                  owner.playSoundSet(SSFType.ATTACK_2);
-                break;
-                case 2:
-                  owner.playSoundSet(SSFType.ATTACK_3);
-                break;
-                default:
-                  owner.playSoundSet(SSFType.ATTACK_1);
-                break;
-              }
-
-              return ActionStatus.COMPLETE;
             }
 
           }
-          return ActionStatus.IN_PROGRESS;
-        }else{
-          return ActionStatus.FAILED;
+
+          if(combatRound.roundStarted){
+
+            if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
+              combatRound.setAttackTarget(combatRound.newAttackTarget);
+            }
+
+            combatRound.calculateAttackDamage(owner as any, combatRound.action);
+
+            owner.setFacing(
+              Math.atan2(
+                owner.position.y - target.position.y,
+                owner.position.x - target.position.x
+              ) + Math.PI/2,
+              false
+            );
+
+            let attack_sound = THREE.MathUtils.randInt(0, 2);
+            switch(attack_sound){
+              case 1:
+                owner.playSoundSet(SSFType.ATTACK_2);
+              break;
+              case 2:
+                owner.playSoundSet(SSFType.ATTACK_3);
+              break;
+              default:
+                owner.playSoundSet(SSFType.ATTACK_1);
+              break;
+            }
+
+            return ActionStatus.COMPLETE;
+          }
+
         }
+        return ActionStatus.IN_PROGRESS;
       }
     }
   }

@@ -141,6 +141,9 @@ export class CombatRound {
               this.master = false;
             }
           }
+        }else if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+          this.master = true;
+          targetCombatRound.master = !this.master;
         }
       }else if(
         this.action.actionType == CombatActionType.CAST_SPELL ||
