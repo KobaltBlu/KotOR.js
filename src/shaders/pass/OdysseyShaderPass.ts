@@ -72,11 +72,11 @@ export class OdysseyShaderPass extends Pass {
 		let enabled = false;
 		if(effect){
       if(parseInt(effect.enablesaturation)){
-        this.uniforms.saturation.value = parseFloat(effect.saturation);
+        this.uniforms.saturation.value = parseFloat(typeof effect.saturation != 'undefined' ? effect.saturation : effect.saturation_pc);
         this.uniforms.modulation.value.set(
-          parseFloat(effect.modulationred),
-          parseFloat(effect.modulationgreen),
-          parseFloat(effect.modulationblue)
+          parseFloat(typeof effect.modulationred != 'undefined' ? effect.modulationred : effect.modulationred_pc),
+          parseFloat(typeof effect.modulationgreen != 'undefined' ? effect.modulationgreen : effect.modulationgreen_pc),
+          parseFloat(typeof effect.modulationblue != 'undefined' ? effect.modulationblue : effect.modulationblue_pc)
         );
         this.uniforms.bmodulate.value = true;
 				enabled = true;
