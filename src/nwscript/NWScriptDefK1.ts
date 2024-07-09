@@ -7640,11 +7640,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
       console.log('SetGlobalFadeIn', args[1], args[2], args[3], args[4]);
-      setTimeout( () => {
-        GameState.FadeOverlayManager.holdForScript = false;
-        GameState.FadeOverlayManager.FadeIn( args[1], args[2], args[3], args[4]);
-      }, args[0] * 1000);
-  
+      GameState.FadeOverlayManager.holdForScript = false;
+      GameState.FadeOverlayManager.FadeIn( args[1], args[2], args[3], args[4], args[0]);
     }
   },
   720:{
@@ -7654,10 +7651,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
       console.log('SetGlobalFadeOut', args[1], args[2], args[3], args[4]);
-      setTimeout( () => {
-        GameState.FadeOverlayManager.holdForScript = false;
-        GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4]);
-      }, args[0] * 1000);
+      GameState.FadeOverlayManager.holdForScript = false;
+      GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4], args[0]);
     }
   },
   721:{

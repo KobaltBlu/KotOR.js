@@ -19,6 +19,7 @@ export class FadeOverlayManager {
   static fading = false;
   static duration = 0;
   static elapsed = 0;
+  static wait = 0;
   static state: FadeOverlayState = FadeOverlayState.NONE;
 
   static holdForScript: boolean;
@@ -31,22 +32,24 @@ export class FadeOverlayManager {
     GameState.scene_gui.add( FadeOverlayManager.plane );
   }
 
-  static FadeOut(duration = 0, r = 0, g = 0, b = 0){
+  static FadeOut(duration = 0, r = 0, g = 0, b = 0, nWait = 0){
     //FadeOverlayManager.material.opacity = 0;
     FadeOverlayManager.material.visible = true;
     FadeOverlayManager.material.color.setRGB(r,g,b);
     FadeOverlayManager.duration = duration*2;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.state = FadeOverlayState.FADING_OUT;
+    FadeOverlayManager.wait = nWait;
   }
 
-  static FadeIn(duration = 0, r = 0, g = 0, b = 0){
+  static FadeIn(duration = 0, r = 0, g = 0, b = 0, nWait = 0){
     //FadeOverlayManager.material.opacity = 1;
     FadeOverlayManager.material.visible = true;
     FadeOverlayManager.material.color.setRGB(r,g,b);
     FadeOverlayManager.duration = duration*2;
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.state = FadeOverlayState.FADING_IN;
+    FadeOverlayManager.wait = nWait;
   }
 
   static FadeInFromCutscene(){
@@ -60,6 +63,12 @@ export class FadeOverlayManager {
     if(FadeOverlayManager.state == FadeOverlayState.NONE || FadeOverlayManager.state == FadeOverlayState.FADED_IN || FadeOverlayManager.state == FadeOverlayState.FADED_OUT){
       return;
     }
+
+    FadeOverlayManager.wait -= delta;
+    if(FadeOverlayManager.wait > 0){
+      return;
+    }
+    FadeOverlayManager.wait = 0;
 
     FadeOverlayManager.elapsed += 1*delta;
 
