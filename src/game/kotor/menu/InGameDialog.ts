@@ -345,11 +345,9 @@ export class InGameDialog extends GameMenu {
       GameState.currentCamera = GameState.getCameraById(entry.cameraID);
     }
     if (
-      this.dialog.isAnimatedCutscene && 
-      (
-        entry.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA || 
-        this.dialog.animatedCamera
-      )
+      entry.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA || 
+      this.dialog.animatedCamera && 
+      entry.cameraAnimation > -1
     ) {
       if (entry.cameraAnimation > -1) {
         entry.checkList.cameraAnimationComplete = false;
@@ -538,7 +536,7 @@ export class InGameDialog extends GameMenu {
     if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
       this.currentCameraAnimation = this.dialog.animatedCamera.getAnimationByName(this.getCUTAnimationName(nCamera));
       if(this.currentCameraAnimation){
-
+        this.currentEntry.checkList.cameraAnimationComplete = false;
       }
     }
   }
@@ -711,8 +709,8 @@ export class InGameDialog extends GameMenu {
       if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
         this.dialog.animatedCamera.animationManager.update(delta);
         this.dialog.animatedCamera.camerahook.updateMatrixWorld();
-        let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
-        GameState.camera_animated.position.copy(pos);
+        // let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
+        this.dialog.animatedCamera.camerahook.getWorldPosition(GameState.camera_animated.position);//.copy(pos);
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
         GameState.currentCamera = GameState.camera_animated;
@@ -724,8 +722,8 @@ export class InGameDialog extends GameMenu {
       if (this.dialog.animatedCamera instanceof OdysseyModel3D) {
         this.dialog.animatedCamera.animationManager.update(delta);
         this.dialog.animatedCamera.camerahook.updateMatrixWorld();
-        let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
-        GameState.camera_animated.position.copy(pos);
+        // let pos = new THREE.Vector3(this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).x, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).y, this.dialog.animatedCamera.camerahook.getWorldPosition(new THREE.Vector3()).z);
+        this.dialog.animatedCamera.camerahook.getWorldPosition(GameState.camera_animated.position);//.copy(pos);
         GameState.camera_animated.quaternion.copy(this.dialog.animatedCamera.camerahook.quaternion);
         GameState.camera_animated.updateProjectionMatrix();
         if(this.dialog.animatedCamera.animationManager.currentAnimation != this.currentCameraAnimation){
@@ -734,7 +732,6 @@ export class InGameDialog extends GameMenu {
       } else {
         this.updateCamera();
       }
-      
     }
 
     if(GameState.ConversationPaused) return;

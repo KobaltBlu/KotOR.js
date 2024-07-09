@@ -12,6 +12,7 @@ import { GFFStruct } from "./GFFStruct";
 import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
 
 /**
  * DLGNode class.
@@ -359,7 +360,7 @@ export class DLGNode {
   resetChecklist(){
     this.checkList = {
       isSkipped: false,
-      cameraAnimationComplete: this.dialog.isAnimatedCutscene ? false : true,
+      cameraAnimationComplete: this.dialog.animatedCamera && this.cameraID > -1 && this.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA ? false : true,
       voiceOverComplete: false,
       alreadyAllowed: false,
       fadeComplete: false,
@@ -368,7 +369,7 @@ export class DLGNode {
         if (this.checkList.alreadyAllowed || this.checkList.isSkipped) {
           return false;
         }
-        if (this.dialog.isAnimatedCutscene && !!this.dialog.animatedCamera) {
+        if (!!this.dialog.animatedCamera && this.cameraID > -1 && this.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA) {
           if (this.checkList.cameraAnimationComplete) {
             this.checkList.alreadyAllowed = true;
             return true;
