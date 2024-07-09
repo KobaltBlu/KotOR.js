@@ -327,21 +327,21 @@ export class DLGObject {
   }
 
   async loadStuntCamera(){
-    return new Promise<void>( (resolve, reject) => {
-      if(!!this.animatedCameraResRef){
-        MDLLoader.loader.load(this.animatedCameraResRef)
-        .then((model: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(model)
-          .then((model: OdysseyModel3D) => {
-            this.animatedCamera = model;
-            this.animatedCamera.bonesInitialized = true;
-            resolve();
-          }).catch(resolve);
-        }).catch(resolve);
-      }else{
-        resolve();
-      }
-    });
+    try{
+      console.log('loadStuntCamera', this.animatedCameraResRef);
+      if(!this.animatedCameraResRef){ return; }
+
+      const model = await MDLLoader.loader.load(this.animatedCameraResRef);
+      if(!model){ return; }
+
+      const mdl = await OdysseyModel3D.FromMDL(model);
+      if(!mdl){ return; }
+
+      this.animatedCamera = mdl;
+      this.animatedCamera.bonesInitialized = true;
+    }catch(e){
+      console.error(e);
+    }
   }
 
   async loadStuntActor( actor: IDLGStuntActor ){
