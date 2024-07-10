@@ -700,8 +700,33 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('LocName'))
       this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue()
 
-    if(this.template.RootNode.hasField('Animation'))
+    if(this.template.RootNode.hasField('Animation')){
       this.setAnimationState(this.template.getFieldByLabel('Animation').getValue());
+    }
+
+    if(this.template.RootNode.hasField('AnimationState')){
+      const animState = this.template.getFieldByLabel('AnimationState').getValue();
+      switch(animState){
+        case 1:
+          this.setAnimationState(ModulePlaceableAnimState.OPEN);
+        break;
+        case 2:
+          this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+        break;
+        case 3:
+          this.setAnimationState(ModulePlaceableAnimState.DEAD);
+        break;
+        case 4:
+          this.setAnimationState(ModulePlaceableAnimState.ACTIVATE);
+        break;
+        case 5:
+          this.setAnimationState(ModulePlaceableAnimState.DEACTIVATE);
+        break;
+        default:
+          this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
+        break;
+      }
+    }
 
     if(this.template.RootNode.hasField('Appearance')){
       this.appearance = this.template.getFieldByLabel('Appearance').getValue();
@@ -909,7 +934,7 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Fort') ).setValue(this.fort);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
