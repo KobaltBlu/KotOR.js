@@ -37,6 +37,7 @@ const initializeApp = function(){
   KotOR.LoadingScreen.main.SetBackgroundImage(app_profile.background);
   KotOR.LoadingScreen.main.Show();
   KotOR.GameState.GameKey = GameKey;
+  KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
   KotOR.GameInitializer.Init({
     game: GameKey,
     onLoad: () => {
