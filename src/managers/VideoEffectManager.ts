@@ -18,7 +18,6 @@ export class VideoEffectManager {
   static videoEffectId: number = -1;
 
   static SetVideoEffect(id: number = -1){
-    console.log('SetVideoEffect', id);
     if(VideoEffectManager.videoEffectId == id){ return; }
 
     VideoEffectManager.videoEffectId = id;
@@ -66,7 +65,6 @@ export class VideoEffectManager {
   }
 
   static Reset(){
-    console.log('Reset');
     VideoEffectManager.videoEffectId = -1;
     VideoEffectManager.videoEffect = undefined;
 		GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
