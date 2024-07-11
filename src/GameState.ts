@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager 
+  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
+  VideoEffectManager
 } from "./managers";
 
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
@@ -110,6 +111,7 @@ export class GameState implements EngineContext {
   static ActionFactory: typeof ActionFactory;
   static GameEffectFactory: typeof GameEffectFactory;
   static GameEventFactory: typeof GameEventFactory;
+  static VideoEffectManager: typeof VideoEffectManager;
 
   static Location: any;
 
@@ -292,7 +294,7 @@ export class GameState implements EngineContext {
     
     GameState.models = [];
 
-    GameState.videoEffect = -1;
+    GameState.VideoEffectManager.SetVideoEffect(-1);
     GameState.onScreenShot = undefined;
 
     GameState.time = 0;
@@ -806,6 +808,7 @@ export class GameState implements EngineContext {
     GameState.Mode = EngineMode.LOADING;
     GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();
+    GameState.VideoEffectManager.SetVideoEffect(-1);
     CursorManager.selectableObjects = [];
     VideoPlayer.Load(sMovie1).then( () => {
       VideoPlayer.Load(sMovie2).then( () => {
@@ -953,16 +956,6 @@ export class GameState implements EngineContext {
       AudioEngine.Mute();
   }
 
-  static UpdateVideoEffect(){
-    const videoEffects = GameState.TwoDAManager.datatables.get('videoeffects');
-    if(GameState.videoEffect >= 0 && GameState.videoEffect < videoEffects.RowCount){
-      let effect = videoEffects.rows[GameState.videoEffect];
-      GameState.odysseyShaderPass.setOdysseyVideoEffect(effect);
-    }else{
-      GameState.odysseyShaderPass.setOdysseyVideoEffect(undefined);
-    }
-  }
-
   static ReloadTextureCache(){
     if(GameState.module && GameState.module.area){
       GameState.module.area.reloadTextures();
@@ -997,7 +990,7 @@ export class GameState implements EngineContext {
     GameState.limiter.elapsed = GameState.limiter.now - GameState.limiter.then;
 
     GameState.controls.Update(delta);
-    GameState.UpdateVideoEffect();
+    GameState.VideoEffectManager.Update(delta);
 
     GameState.MenuManager.Update(delta);
     GameState.MenuManager.InGameAreaTransition.hide();
@@ -1035,16 +1028,16 @@ export class GameState implements EngineContext {
       if(GameState.Mode == EngineMode.INGAME){
         //Make sure we are using the follower camera while ingame
         GameState.currentCamera = GameState.camera;
-        GameState.videoEffect = -1;
+        GameState.VideoEffectManager.SetVideoEffect(-1);
       }else if(GameState.Mode == EngineMode.FREELOOK){
-        GameState.videoEffect = -1;
+        GameState.VideoEffectManager.SetVideoEffect(-1);
         const player = GameState.getCurrentPlayer();
         if(player){
           const appearance = player.getAppearance();
           if(appearance){
             const effectId = appearance.freelookeffect;
             if(!isNaN(effectId)){
-              GameState.videoEffect = effectId;
+              GameState.VideoEffectManager.SetVideoEffect(effectId);
             }
           }
         }

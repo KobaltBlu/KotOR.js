@@ -26,3 +26,4 @@ export * from "./TLKManager";
 export * from "./TutorialManager";
 export * from "./TwoDAManager";
 export * from "./ResolutionManager";
+export * from "./VideoEffectManager";

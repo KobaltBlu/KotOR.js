@@ -237,7 +237,7 @@ export class InGameComputer extends GameMenu {
     this.LB_REPLIES.clearItems();
 
     this.currentEntry = entry;
-    GameState.videoEffect = entry.getVideoEffect();
+    GameState.VideoEffectManager.SetVideoEffect(entry.getVideoEffect());
 
     entry.updateJournal();
 
@@ -345,7 +345,7 @@ export class InGameComputer extends GameMenu {
         }
       }
     }
-    GameState.videoEffect = -1;
+    GameState.VideoEffectManager.SetVideoEffect(-1);
   }
 
   getCurrentListener(): ModuleObject {

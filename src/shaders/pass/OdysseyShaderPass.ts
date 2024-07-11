@@ -67,43 +67,4 @@ export class OdysseyShaderPass extends Pass {
 		this.fsQuad.dispose();
 
 	}
-
-	setOdysseyVideoEffect(effect: any = undefined){
-		let enabled = false;
-		if(effect){
-      if(parseInt(effect.enablesaturation)){
-        this.uniforms.saturation.value = parseFloat(typeof effect.saturation != 'undefined' ? effect.saturation : effect.saturation_pc);
-        this.uniforms.modulation.value.set(
-          parseFloat(typeof effect.modulationred != 'undefined' ? effect.modulationred : effect.modulationred_pc),
-          parseFloat(typeof effect.modulationgreen != 'undefined' ? effect.modulationgreen : effect.modulationgreen_pc),
-          parseFloat(typeof effect.modulationblue != 'undefined' ? effect.modulationblue : effect.modulationblue_pc)
-        );
-        this.uniforms.bmodulate.value = true;
-				enabled = true;
-      }else{
-        this.uniforms.bmodulate.value = false;
-        this.uniforms.saturation.value = 1;
-        this.uniforms.modulation.value.set(1, 1, 1);
-      }
-
-      if(parseInt(effect.enablescannoise)){
-				this.uniforms.bscanlines.value = true;
-        this.uniforms.grayscale.value = true;
-        this.uniforms.sCount.value = (Math.floor(Math.random() * 256) + 250)*0.5;
-				enabled = true;
-      }else{
-				this.uniforms.bscanlines.value = false;
-        this.uniforms.grayscale.value = false;
-      }
-		}else{
-			//saturation/modulation pass
-			this.uniforms.bmodulate.value = false;
-
-			//film pass
-			this.uniforms.bscanlines.value = false;
-			this.uniforms.grayscale.value = false;
-		}
-		this.enabled = enabled;
-	}
-
 }

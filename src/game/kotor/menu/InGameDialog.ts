@@ -278,7 +278,7 @@ export class InGameDialog extends GameMenu {
     entry.initProperties();
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    GameState.videoEffect = entry.getVideoEffect();
+    GameState.VideoEffectManager.SetVideoEffect(entry.getVideoEffect());
     this.LBL_MESSAGE.setText(entry.getCompiledString());
     this.LB_REPLIES.hide();
     this.LB_REPLIES.clearItems();
@@ -458,7 +458,7 @@ export class InGameDialog extends GameMenu {
         GameState.FadeOverlayManager.FadeInFromCutscene();
       }
     }
-    GameState.videoEffect = -1;
+    GameState.VideoEffectManager.SetVideoEffect(-1);
   }
 
   updateEntryAnimations(entry: DLGNode) {

@@ -5842,7 +5842,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.videoEffect = !isNaN(args[0]) ? args[0] : -1;
+      GameState.VideoEffectManager.SetVideoEffect(!isNaN(args[0]) ? args[0] : -1);
     }
   },
   509:{
@@ -5860,7 +5860,7 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      GameState.videoEffect = -1;
+      GameState.VideoEffectManager.SetVideoEffect(-1);
     }
   },
   511:{

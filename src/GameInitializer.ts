@@ -15,7 +15,7 @@ import {
   PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager,   
   KEYManager,
   RIMManager,
-  ERFManager
+  ERFManager, VideoEffectManager
 } from "./managers";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
@@ -93,6 +93,7 @@ export class GameInitializer {
     GameState.ActionFactory = ActionFactory;
     GameState.GameEffectFactory = GameEffectFactory;
     GameState.GameEventFactory = GameEventFactory;
+    GameState.VideoEffectManager = VideoEffectManager;
 
     await CurrentGame.CleanGameInProgressFolder();
     if(GameInitializer.currentGame == props.game){
@@ -160,6 +161,8 @@ export class GameInitializer {
      * Initialize SaveGame Folder
      */
     await SaveGame.GetSaveGames();
+
+    VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects'));
 
     /**
      * Initialize Complete
