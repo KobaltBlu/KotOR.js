@@ -50,84 +50,33 @@ export class TextureLoader {
     resRef = resRef.toLowerCase();
     if(TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef) && !noCache){
       return (TextureLoader.textures.has(resRef) ? TextureLoader.textures.get(resRef) : TextureLoader.guiTextures.has(resRef) ? TextureLoader.guiTextures.get(resRef) : undefined)
-    }else{
-      let texture: OdysseyTexture = await TextureLoader.LoadOverride(resRef, noCache);
-      if(!!texture){
-        texture.anisotropy = TextureLoader.Anisotropy;
-        return texture;
-      }else{
-        const texture = await TextureLoader.tpcLoader.fetch(resRef);
-        if(!!texture){
-          texture.anisotropy = TextureLoader.Anisotropy;
-          texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
-          if(!noCache){
-            if(texture.pack === 0){
-              TextureLoader.guiTextures.set(resRef, texture);
-            }else{
-              TextureLoader.textures.set(resRef, texture);
-            }
-          }
-          
-          return texture;
-        }
-
-        const tga = await TextureLoader.tgaLoader.fetch(resRef);
-        if(!!tga){
-          tga.anisotropy = TextureLoader.Anisotropy;
-          tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
-
-          if(!noCache) TextureLoader.textures.set(resRef, tga);
-        }
-        
-        return tga;
-      }
     }
-  }
-
-  static async LoadOverride(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
-    const dir = 'Override';
-
-    /*if(!GameState.Flags.EnableOverride){
-      //Skip the override check and pass back a null value
-      return undefined;
-    }*/
-
-    const tpc_exists = await GameFileSystem.exists(path.join(dir, resRef+'.tpc'));
-    if (tpc_exists) {
-      const texture = await TextureLoader.tpcLoader.fetchOverride(resRef);
-      if(!texture){
-        return undefined;
-      }
-
+    
+    const texture = await TextureLoader.tpcLoader.fetch(resRef);
+    if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
 
-      if(!noCache)
-        TextureLoader.textures.set(resRef, texture);
-
-      return texture;
-    } else {
-      const tga_exists = await GameFileSystem.exists(path.join(dir, resRef+'.tga'));
-      if (tga_exists) {
-        const tga = await TextureLoader.tgaLoader.fetchOverride(resRef);
-        if(!tga){
-          return undefined;
+      if(!noCache){
+        if(texture.pack === 0){
+          TextureLoader.guiTextures.set(resRef, texture);
+        }else{
+          TextureLoader.textures.set(resRef, texture);
         }
-
-        tga.anisotropy = TextureLoader.Anisotropy;
-        
-        if(!!tga){
-          tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
-
-          if(!noCache)
-            TextureLoader.textures.set(resRef, tga);;
-        }
-
-        return tga;
       }
+      
+      return texture;
     }
-    return undefined;
+
+    const tga = await TextureLoader.tgaLoader.fetch(resRef);
+    if(!!tga){
+      tga.anisotropy = TextureLoader.Anisotropy;
+      tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
+
+      if(!noCache) TextureLoader.textures.set(resRef, tga);
+    }
+    
+    return tga;
   }
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {

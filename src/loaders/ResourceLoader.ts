@@ -137,19 +137,19 @@ export class ResourceLoader {
 
     data = await this.searchLocal(resId, resRef);
     if(data){
-      ResourceLoader.setCache(resId, resRef, data);
+      ResourceLoader.setCache(null, resId, resRef, data);
       return data;
     }
 
     data = await this.searchKeyTable(resId, resRef);
     if(data){
-      ResourceLoader.setCache(resId, resRef, data);
+      ResourceLoader.setCache(null, resId, resRef, data);
       return data;
     }
 
     data = await this.searchModuleArchives(resId, resRef);
     if(data){
-      ResourceLoader.setCache(resId, resRef, data);
+      ResourceLoader.setCache(null, resId, resRef, data);
       return data;
     }
 
@@ -186,15 +186,6 @@ export class ResourceLoader {
     ResourceLoader.cache = {};
   }
 
-  static setCache(resId: number, resRef: string, opts: any = {}){
-    resRef = resRef.toLowerCase();
-
-    if(typeof ResourceLoader.cache[resId] === 'undefined')
-      ResourceLoader.cache[resId] = {};
-
-    ResourceLoader.cache[resId][resRef] = opts;
-  }
-
   static getCache(resId: number, resRef: string): Buffer {
     if(ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).has(resRef)){
       return ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).get(resRef);
@@ -214,6 +205,19 @@ export class ResourceLoader {
       }
     }
     return null;
+  }
+
+  static setCache(type: CacheScope, resId: number, resRef: string, buffer: Buffer){
+    const cache = ResourceLoader.CacheScopes[type];
+    if(cache){
+      ResourceLoader.CacheScopes[type].get(resId).set(resRef, buffer);
+      return;
+    }
+    
+    if(typeof ResourceLoader.cache[resId] === 'undefined')
+      ResourceLoader.cache[resId] = {};
+
+    ResourceLoader.cache[resId][resRef] = buffer;
   }
 
   static async searchLocal(resId: number, resRef = ''): Promise<Buffer> {

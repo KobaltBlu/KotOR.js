@@ -76,7 +76,7 @@ export class TPCLoader {
 
       return texture;
     }catch(e){
-      console.error(e);
+      // console.error(e);
       return undefined;
     }
   }

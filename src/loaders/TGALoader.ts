@@ -53,11 +53,11 @@ export class TGALoader {
 
 				return texture;
 			}catch(e){
-				console.error(e);
+				// console.error(e);
 				return texture;
 			}
 		}catch(e){
-			console.error(e);
+			// console.error(e);
 			return undefined;
 		}
 	}
@@ -88,7 +88,7 @@ export class TGALoader {
 				return texture;
 			}
 		}catch(e){
-			console.error(e);
+			// console.error(e);
 			throw e;
 		}
 	}

@@ -30,6 +30,7 @@ import { ActionFactory } from "./actions/ActionFactory";
 import { GameEffectFactory } from "./effects/GameEffectFactory";
 import { GameEventFactory } from "./events/GameEventFactory";
 import { INIConfig } from "./INIConfig";
+import { CacheScope } from "./enums";
 
 /**
  * GameInitializer class.
@@ -174,7 +175,10 @@ export class GameInitializer {
   }
 
   static LoadGameResources(){
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
+      LoadingScreen.main.SetMessage("Loading Override");
+      await GameInitializer.LoadOverride();
+
       LoadingScreen.main.SetMessage("Loading BIF's");
 
       LoadingScreen.main.SetMessage("Loading RIM's");
@@ -423,6 +427,23 @@ export class GameInitializer {
       if(typeof args.onSuccess === 'function')
         args.onSuccess();
     });
+  }
+
+  static async LoadOverride(){
+    const files = await GameFileSystem.readdir('Override', {recursive: false});
+    for(let i = 0, len = files.length; i < len; i++){
+      let f = files[i];
+      let _parsed = path.parse(f);
+      let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
+      const resId = ResourceTypes[ext];
+
+      if(resId != 'undefined'){
+        const buffer = await GameFileSystem.readFile(f);
+        if(!buffer && !buffer.length){ continue; }
+
+        ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name, buffer);
+      }
+    }
   }
 
 }
