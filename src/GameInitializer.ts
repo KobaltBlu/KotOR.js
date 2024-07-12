@@ -437,12 +437,14 @@ export class GameInitializer {
       let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
       const resId = ResourceTypes[ext];
 
-      if(resId != 'undefined'){
-        const buffer = await GameFileSystem.readFile(f);
-        if(!buffer && !buffer.length){ continue; }
-
-        ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name, buffer);
+      if(typeof resId === 'undefined'){
+        continue;
       }
+
+      const buffer = await GameFileSystem.readFile(f);
+      if(!buffer && !buffer.length){ continue; }
+
+      ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
     }
   }
 
