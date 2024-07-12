@@ -11,6 +11,7 @@ import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
 import { GameEngineType } from '../enums/engine';
+import { ResourceLoader } from './ResourceLoader';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
@@ -51,6 +52,15 @@ export class TextureLoader {
     if(TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef) && !noCache){
       return (TextureLoader.textures.has(resRef) ? TextureLoader.textures.get(resRef) : TextureLoader.guiTextures.has(resRef) ? TextureLoader.guiTextures.get(resRef) : undefined)
     }
+
+    const tga = await TextureLoader.tgaLoader.fetch(resRef);
+    if(!!tga){
+      tga.anisotropy = TextureLoader.Anisotropy;
+      tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
+
+      if(!noCache) TextureLoader.textures.set(resRef, tga);
+      return tga;
+    }
     
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(!!texture){
@@ -68,15 +78,7 @@ export class TextureLoader {
       return texture;
     }
 
-    const tga = await TextureLoader.tgaLoader.fetch(resRef);
-    if(!!tga){
-      tga.anisotropy = TextureLoader.Anisotropy;
-      tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
-
-      if(!noCache) TextureLoader.textures.set(resRef, tga);
-    }
-    
-    return tga;
+    return undefined;
   }
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
