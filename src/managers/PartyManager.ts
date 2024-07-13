@@ -361,6 +361,7 @@ export class PartyManager {
       const quaternion = oldPC.quaternion.clone();
 
       partyMember.isPM = true;
+      partyMember.isPC = 1;
       partyMember.npcId = npcId;
       partyMember.load();
       partyMember.position.copy(spawn);
