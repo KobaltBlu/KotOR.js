@@ -123,6 +123,7 @@ export class AudioEmitter {
   }
 
   async playSound(resRef = ''): Promise<AudioBufferSourceNode>{
+    if(resRef == '****' || !resRef?.length){ return; }
     if(!!this.currentSound){
       try{
         this.currentSound.disconnect();

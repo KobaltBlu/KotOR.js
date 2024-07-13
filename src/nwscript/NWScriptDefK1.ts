@@ -666,11 +666,11 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        try{
-          this.caller.audioEmitter.playSound(args[0]);
-        }catch(e){ console.error(e); }
-      }
+      try{
+        const oSound = GameState.ModuleObjectManager.GetObjectByTag(args[0], 0, NWModuleObjectType.SOUND) as ModuleSound;
+        if(!oSound){ return; }
+        oSound.emitter.playNextSound();
+      }catch(e){ console.error(e); }
     }
   },
   47:{
