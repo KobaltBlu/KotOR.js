@@ -562,7 +562,7 @@ export class ShaderOdysseyModel extends Shader {
           #ifdef SELFILLUMCOLOR
             vec3 outgoingLight = (reflectedLight.directDiffuse) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
           #else
-            vec3 outgoingLight = (reflectedLight.directDiffuse * tweakColor) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+            vec3 outgoingLight = (reflectedLight.directDiffuse) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
           #endif
         #endif
       #endif
@@ -571,7 +571,7 @@ export class ShaderOdysseyModel extends Shader {
         //outgoingLight = vec3(diffuseColor.rgb + animatedLight);
         //mix(diffuseColor.rgb, reflectedLight.directDiffuse, 0.75)
         //outgoingLight = max(diffuseColor.rgb, mix( diffuseColor.rgb, emissive, 0.5 ));
-        outgoingLight = (diffuseColor.rgb * tweakColor) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
+        outgoingLight = (diffuseColor.rgb) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
         #ifdef SELFILLUMCOLOR
           outgoingLight = (diffuseColor.rgb) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
           outgoingLight *= max(vec3(0.25), selfIllumColor);
@@ -624,6 +624,12 @@ export class ShaderOdysseyModel extends Shader {
       #else
         gl_FragColor = vec4( outgoingLight, diffuseColor.a );
       #endif
+      
+      //#ifdef USE_TWEAK_COLOR
+      //  float average = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;
+      //  gl_FragColor.rgb = (vec3(average, average, average) * tweakColor);
+      //#endif
+
       #include <tonemapping_fragment>
       #include <encodings_fragment>
       #include <fog_fragment>

@@ -1377,6 +1377,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         if(options.useTweakColor){
           material.uniforms.diffuse.value = new THREE.Color( odysseyNode.diffuse.r, odysseyNode.diffuse.g, odysseyNode.diffuse.b );
           material.uniforms.tweakColor.value.setRGB((options.tweakColor & 255)/255, ((options.tweakColor >> 8) & 255)/255, ((options.tweakColor >> 16) & 255)/255);
+          material.defines.USE_TWEAK_COLOR = '';
         }else{
           material.uniforms.tweakColor.value.setRGB(1, 1, 1);
           material.uniforms.diffuse.value = new THREE.Color( 1, 1, 1 );//odysseyNode.Diffuse.r, odysseyNode.Diffuse.g, odysseyNode.Diffuse.b );

@@ -1354,11 +1354,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setAnimationState(animState: ModuleCreatureAnimState){
-    if(animState){
-      this.animationState.index = animState;
-      this.animationState.animation = this.animationConstantToAnimation(animState);
-      this.animationState.started = false;
-    }
+    if(!animState){ return; }
+    
+    this.animationState.index = animState;
+    this.animationState.animation = this.animationConstantToAnimation(animState);
+    this.animationState.started = false;
   }
   
   resetAnimationState(){
@@ -1411,6 +1411,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
+    console.log('dialogPlayOdysseyAnimation', anim)
     if(!this.model){ 
       console.warn('dialogPlayOdysseyAnimation failed');
       console.log(this, anim);
@@ -1427,6 +1428,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   dialogPlayAnimation(data: ITwoDAAnimation = {} as ITwoDAAnimation){
+    console.log('dialogPlayAnimation', data)
     if(!this.model){ 
       console.warn('dialogPlayAnimation failed');
       console.log(this, data);

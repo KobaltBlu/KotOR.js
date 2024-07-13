@@ -172,6 +172,7 @@ export class AudioEmitter {
 
     //attempt to load from the buffer cache
     if(this.buffers.has(resRef)){
+      this.stop();
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
       // this.currentSound.buffer.onEnd = onEnd;
@@ -186,6 +187,7 @@ export class AudioEmitter {
       const data = await AudioLoader.LoadStreamWave(resRef);
       try{
         const buffer = await this.addSound(resRef, data);
+        this.stop();
         this.currentSound = this.engine.audioCtx.createBufferSource();
         this.currentSound.buffer = buffer;
         // this.currentSound.buffer.onEnd = onEnd;

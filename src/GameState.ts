@@ -804,114 +804,105 @@ export class GameState implements EngineContext {
     this.audioEmitter.load();
   }
 
-  static LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+  static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
     GameState.Mode = EngineMode.LOADING;
     GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();
     GameState.VideoEffectManager.SetVideoEffect(-1);
     CursorManager.selectableObjects = [];
-    VideoPlayer.Load(sMovie1).then( () => {
-      VideoPlayer.Load(sMovie2).then( () => {
-        VideoPlayer.Load(sMovie3).then( () => {
-          VideoPlayer.Load(sMovie4).then( () => {
-            VideoPlayer.Load(sMovie5).then( () => {
-              VideoPlayer.Load(sMovie6).then( async () => {
-                GameState.Mode = EngineMode.LOADING;
-                
-                if(GameState.module){
-                  try{ await GameState.module.save(); }catch(e){
-                    console.error(e);
-                  }
-                  try{ GameState.module.dispose(); }catch(e){
-                    console.error(e);
-                  }
+    await VideoPlayer.Load(sMovie1);
+    await VideoPlayer.Load(sMovie2);
+    await VideoPlayer.Load(sMovie3);
+    await VideoPlayer.Load(sMovie4);
+    await VideoPlayer.Load(sMovie5);
+    await VideoPlayer.Load(sMovie6);
+    GameState.Mode = EngineMode.LOADING;
+    
+    if(GameState.module){
+      try{ await GameState.module.save(); }catch(e){
+        console.error(e);
+      }
+      try{ GameState.module.dispose(); }catch(e){
+        console.error(e);
+      }
+    }
+
+    //Remove all cached scripts and kill all running instances
+    GameState.NWScript.Reload();
+
+    //Resets all keys to their default state
+    GameState.controls.initKeys();
+
+    await GameState.FactionManager.Load();
+    const module = await GameState.Module.Load(name, waypoint);
+    GameState.module = module;
+    GameState.scene.visible = false;
+
+    GameState.MenuManager.LoadScreen.setProgress(0);
+    await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
+    GameState.MenuManager.LoadScreen.showRandomHint();
+    GameState.MenuManager.LoadScreen.open();
+    GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
+
+    console.log('Module.loadScene');
+    await module.loadScene();
+    TextureLoader.LoadQueue( () => {
+      module.initEventQueue();
+      console.log('Module.initScripts');
+      module.initScripts().then(() => {
+        window.setTimeout( () => {
+          //GameState.scene_gui.background = null;
+          GameState.scene.visible = true;
+          
+          AudioEngine.Unmute();
+
+          let runSpawnScripts = !GameState.isLoadingSave;
+          GameState.isLoadingSave = false;
+
+          GameState.ResetModuleAudio();
+
+          GameState.MenuManager.InGameOverlay.recalculatePosition();
+          GameState.MenuManager.InGameOverlay.open();
+
+          GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+          GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+          
+          console.log('ModuleArea.initAreaObjects');
+          GameState.module.area
+            .initAreaObjects(runSpawnScripts)
+            .then( 
+          () => {
+            GameState.RestoreEnginePlayMode();
+            console.log('ModuleArea: ready to play');
+            GameState.module.readyToProcessEvents = true;
+
+            if(!GameState.holdWorldFadeInForDialog)
+              GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0);
+            
+            GameState.MenuManager.LoadScreen.close();
+
+            if(GameState.Mode == EngineMode.INGAME){
+
+              let anyCanLevel = false;
+              for(let i = 0; i < GameState.PartyManager.party.length; i++){
+                if(GameState.PartyManager.party[i].canLevelUp()){
+                  anyCanLevel = true;
                 }
+              }
 
-                //Remove all cached scripts and kill all running instances
-                GameState.NWScript.Reload();
+              if(anyCanLevel){
+                GameState.audioEmitter.playSound('gui_level');
+              }
 
-                //Resets all keys to their default state
-                GameState.controls.initKeys();
-
-                GameState.FactionManager.Load().then( () => {
-                  GameState.Module.Load(name, waypoint).then((module: Module) => {
-                    GameState.module = module;
-                    GameState.scene.visible = false;
-
-                    GameState.MenuManager.LoadScreen.setProgress(0);
-                    GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name).then( () => {
-                      GameState.MenuManager.LoadScreen.showRandomHint();
-                      GameState.MenuManager.LoadScreen.open();
-                      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
-
-                      console.log('Module.loadScene');
-                      module.loadScene().then((d: any) => {
-                        TextureLoader.LoadQueue( () => {
-                          module.initEventQueue();
-                          console.log('Module.initScripts');
-                          module.initScripts().then(() => {
-                            GameState.MenuManager.LoadScreen.close();
-                            window.setTimeout( ()=> {
-                              //GameState.scene_gui.background = null;
-                              GameState.scene.visible = true;
-                              
-                              AudioEngine.Unmute();
-
-                              let runSpawnScripts = !GameState.isLoadingSave;
-                              GameState.isLoadingSave = false;
-
-                              GameState.ResetModuleAudio();
-
-                              GameState.MenuManager.InGameOverlay.recalculatePosition();
-                              GameState.MenuManager.InGameOverlay.open();
-
-                              GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-                              GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-                              
-                              console.log('ModuleArea.initAreaObjects');
-                              GameState.module.area
-                                .initAreaObjects(runSpawnScripts)
-                                .then( 
-                              () => {
-                                GameState.RestoreEnginePlayMode();
-                                console.log('ModuleArea: ready to play');
-                                GameState.module.readyToProcessEvents = true;
-
-                                if(!GameState.holdWorldFadeInForDialog)
-                                  GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0);
-
-                                if(GameState.Mode == EngineMode.INGAME){
-                
-                                  let anyCanLevel = false;
-                                  for(let i = 0; i < GameState.PartyManager.party.length; i++){
-                                    if(GameState.PartyManager.party[i].canLevelUp()){
-                                      anyCanLevel = true;
-                                    }
-                                  }
-                
-                                  if(anyCanLevel){
-                                    GameState.audioEmitter.playSound('gui_level');
-                                  }
-                
-                                }
-                              });
-                            });
-                          });
-                        }, (ref: ITextureLoaderQueuedRef) => {
-                          const material = ref.material as any;
-                          if(material?.map){
-                            GameState.renderer.initTexture(material.map);
-                          }
-                        });
-                      });
-                    });
-                  });
-                });
-              });
-            });
+            }
           });
         });
       });
+    }, (ref: ITextureLoaderQueuedRef) => {
+      const material = ref.material as any;
+      if(material?.map){
+        GameState.renderer.initTexture(material.map);
+      }
     });
   }
 
@@ -1012,8 +1003,6 @@ export class GameState implements EngineContext {
       GameState.Mode == EngineMode.FREELOOK
     ){
 
-      
-
       //Get Selectable Objects In Range
       if(GameState.Mode == EngineMode.INGAME){
         GameState.tUpdateSelectable -= delta || 0;
@@ -1058,6 +1047,11 @@ export class GameState implements EngineContext {
         GameState.module.tickPaused(delta);
       }else{
         GameState.module.tick(delta);
+
+        //Update the Bark Overlay if it is visible
+        if(GameState.MenuManager.InGameBark?.bVisible){
+          GameState.MenuManager.InGameBark.update(delta);
+        }
       }
       
       //TODO: Move Cursor Logic Into Global Cursor Manager

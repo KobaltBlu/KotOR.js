@@ -127,59 +127,61 @@ export class InGameDialog extends GameMenu {
     this.bottomBar.position.y = -this.topBar.position.y;
     this.resetLetterBox();
     this.LB_REPLIES.hide();
+    
     if (!dialog) {
       dialog = this.owner.getConversation();
     }
-    if (dialog instanceof DLGObject) {
-      let result = this.loadDialog(dialog);
-      if(!result) return;
-      this.updateCamera();
-      this.isListening = true;
-      this.updateTextPosition();
-      this.startingEntry = null;
-      this.getNextEntry(this.dialog.startingList, (entry: any) => {
-        this.startingEntry = entry;
-        let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
-        if (isBarkDialog) {
-          this.endConversation();
-          this.manager.InGameBark.bark(entry);
-          entry.runScripts();
-          let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
-          if (reply) {
-            reply.runScripts();
-          }
-        } else {
-          if(this.listener.isPM){
-            GameState.PartyManager.MakePlayerLeader();
-            this.listener = this.dialog.listener = GameState.PartyManager.party[0];
-          }
-          if (this.startingEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
-            this.setPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
-          } else {
-            GameState.currentCamera = GameState.camera_dialog;
-            this.updateCamera();
-          }
-          this.canLetterbox = true;
-          if (this.dialog.isAnimatedCutscene) {
-            GameState.holdWorldFadeInForDialog = true;
-            this.dialog.loadStuntCamera().then(() => {
-              this.dialog.loadStuntActors().then(() => {
-                this.beginDialog();
-              });
-            });
-          } else {
-            GameState.holdWorldFadeInForDialog = false;
-            this.dialog.loadStuntCamera().then(() => {
-              this.dialog.loadStuntActors().then(() => {
-                this.beginDialog();
-              });
-            });
-          }
-        }
-      });
-    } else {
+
+    if (!(dialog instanceof DLGObject)) {
       this.endConversation();
     }
+
+    let result = this.loadDialog(dialog);
+    if(!result) return;
+    this.updateCamera();
+    this.isListening = true;
+    this.updateTextPosition();
+    this.startingEntry = null;
+    this.getNextEntry(this.dialog.startingList, (entry: any) => {
+      this.startingEntry = entry;
+      let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
+      if (isBarkDialog) {
+        this.endConversation();
+        this.manager.InGameBark.bark(entry);
+        entry.runScripts();
+        let reply = this.dialog.getReplyByIndex(entry.replies[0].index);
+        if (reply) {
+          reply.runScripts();
+        }
+      } else {
+        if(this.listener.isPM){
+          GameState.PartyManager.MakePlayerLeader();
+          this.listener = this.dialog.listener = GameState.PartyManager.party[0];
+        }
+        if (this.startingEntry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
+          this.setPlaceableCamera(this.startingEntry.cameraAnimation > -1 ? this.startingEntry.cameraAnimation : this.startingEntry.cameraID);//, this.startingEntry.cameraAngle);
+        } else {
+          GameState.currentCamera = GameState.camera_dialog;
+          this.updateCamera();
+        }
+        this.canLetterbox = true;
+        if (this.dialog.isAnimatedCutscene) {
+          GameState.holdWorldFadeInForDialog = true;
+          this.dialog.loadStuntCamera().then(() => {
+            this.dialog.loadStuntActors().then(() => {
+              this.beginDialog();
+            });
+          });
+        } else {
+          GameState.holdWorldFadeInForDialog = false;
+          this.dialog.loadStuntCamera().then(() => {
+            this.dialog.loadStuntActors().then(() => {
+              this.beginDialog();
+            });
+          });
+        }
+      }
+    });
   }
 
   loadDialog(dialog: DLGObject) {
@@ -463,8 +465,10 @@ export class InGameDialog extends GameMenu {
 
   updateEntryAnimations(entry: DLGNode) {
     if (this.dialog.isAnimatedCutscene) {
+      console.log('animcut')
       for (let i = 0; i < entry.animations.length; i++) {
         let participant = entry.animations[i];
+        console.log('participant', participant)
         if (this.dialog.stuntActors.has(participant.participant)) {
           try {
             const actor = this.dialog.stuntActors.get(participant.participant);
@@ -480,13 +484,23 @@ export class InGameDialog extends GameMenu {
           }
         } else {
           let actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
+          console.log('actor', actor)
           if (actor && participant.animation >= 10000) {
             let anim = actor.animationConstantToAnimation(participant.animation);
+            console.log('anim', anim)
             if (anim) {
               actor.dialogPlayAnimation(anim);
             } else {
               console.error('Anim', participant.animation);
             }
+          }else{
+            let anim = this.getDialogAnimation(participant.animation);
+            console.log('anim', anim)
+            if (anim) {
+              actor.dialogPlayAnimation(anim);
+            } else {
+              console.error('Anim', participant.animation);
+            }  
           }
         }
       }
@@ -523,6 +537,10 @@ export class InGameDialog extends GameMenu {
 
   getCUTAnimationName(index = 0) {
     return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
+  }
+
+  getDialogAnimation(index = 0): any{
+    return undefined;
   }
 
   setPlaceableCamera(nCamera: number) {

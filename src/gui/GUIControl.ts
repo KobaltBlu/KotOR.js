@@ -2303,13 +2303,13 @@ export class GUIControl {
     if(this.eventListeners.hasOwnProperty(name)){
       if(typeof callback === 'function'){
         //Remove this specific callback from the event listener
-        let cbIndex = (this.eventListeners as any).indexOf(callback);
+        let cbIndex = (this.eventListeners as any)[name].indexOf(callback);
         if(cbIndex > -1){
-          (this.eventListeners as any).splice(cbIndex, 1);
+          (this.eventListeners as any)[name].splice(cbIndex, 1);
         }
       }else{
         //Remove all callbacks for this listener
-        (this.eventListeners as any) = [];
+        (this.eventListeners as any)[name] = [];
       }
     }
     return this;

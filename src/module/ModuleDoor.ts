@@ -215,7 +215,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   requiresKey(){
-    return this.keyRequired ? true : false;
+    return this.keyRequired && this.keyName.length ? true : false;
   }
 
   getName(){

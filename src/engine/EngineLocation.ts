@@ -69,7 +69,7 @@ export default class EngineLocation {
 
   //Use the rotation values to update the facing value
   updateFacing(){
-    this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
+    this.facing = -Math.atan2(this.rotation.y, this.rotation.x);
   }
 
   getArea(){

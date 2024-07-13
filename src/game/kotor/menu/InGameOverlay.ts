@@ -546,128 +546,129 @@ export class InGameOverlay extends GameMenu {
   }
 
   UpdateTargetUIPanels() {
-    if (this._canShowTargetUI()) {
-      if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-        if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
-          this.PB_HEALTH.setFillTextureName('enemy_bar');
-          TextureLoader.Load('enemy_bar').then((map: OdysseyTexture) => {
-            this.PB_HEALTH.setFillTexture(map);
-          });
-        } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
-          this.PB_HEALTH.setFillTextureName('friend_bar');
-          TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
-            this.PB_HEALTH.setFillTexture(map);
-          });
-        }
-      } else {
-        if (this.PB_HEALTH.getFillTextureName() != 'friend_bar') {
-          this.PB_HEALTH.setFillTextureName('friend_bar');
-          TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
-            this.PB_HEALTH.setFillTexture(map);
-          });
-        }
-      }
-      if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
-        this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
-      }
-      let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
-      if (health > 100)
-        health = 100;
-      this.PB_HEALTH.setProgress(health);
-      let maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
-      let maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
-      let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
-      let pos = new THREE.Vector3();
-      if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-        pos.copy(GameState.CursorManager.selectedObject.position);
-        pos.z += 2;
-      } else {
-        pos = pos.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
-      }
-      pos.project(GameState.currentCamera);
-      const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
-      const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
-      pos.x = pos.x * widthHalf;
-      pos.y = -(pos.y * heightHalf);
-      pos.z = 0;
-      targetScreenPosition.add(pos);
-      if (targetScreenPosition.x > maxBoundsX) {
-        targetScreenPosition.x = maxBoundsX;
-      }
-      if (targetScreenPosition.x < -maxBoundsX2) {
-        targetScreenPosition.x = -maxBoundsX2;
-      }
-      if (targetScreenPosition.y > 640 / 2) {
-        targetScreenPosition.y = 640 / 2;
-      }
-      if (targetScreenPosition.y < 100) {
-        targetScreenPosition.y = 100;
-      }
-      this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
-      this.LBL_NAME?.show();
-      this.LBL_NAMEBG?.show();
-      this.PB_HEALTH?.show();
-      this.LBL_HEALTHBG?.show();
-      this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
-      this.LBL_NAME.anchor = Anchor.User;
-      this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
-      this.LBL_NAMEBG.anchor = Anchor.User;
-      this.PB_HEALTH.extent.left = targetScreenPosition.x - 20;
-      this.PB_HEALTH.anchor = Anchor.User;
-      this.LBL_HEALTHBG.extent.left = targetScreenPosition.x - 20;
-      this.LBL_HEALTHBG.anchor = Anchor.User;
-      this.LBL_NAME.extent.top = targetScreenPosition.y - 38;
-      this.LBL_NAMEBG.extent.top = targetScreenPosition.y - 38;
-      this.PB_HEALTH.extent.top = targetScreenPosition.y - 12;
-      this.LBL_HEALTHBG.extent.top = targetScreenPosition.y - 12;
-      this.LBL_NAME.recalculate();
-      this.LBL_NAMEBG.recalculate();
-      this.PB_HEALTH.recalculate();
-      this.LBL_HEALTHBG.recalculate();
-      if (!!ActionMenuManager.targetActionCount()) {
-        for (let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++) {
-          let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
-          this.getControlByName('BTN_TARGET' + i).scale = false;
-          this.getControlByName('BTN_TARGET' + i).extent.left = targetScreenPosition.x + xPos;
-          this.getControlByName('BTN_TARGET' + i).extent.top = targetScreenPosition.y;
-          this.getControlByName('BTN_TARGET' + i).anchor = Anchor.User;
-          this.getControlByName('LBL_TARGET' + i).scale = false;
-          this.getControlByName('LBL_TARGET' + i).extent.left = targetScreenPosition.x + xPos + 3;
-          this.getControlByName('LBL_TARGET' + i).extent.top = targetScreenPosition.y + 14;
-          this.getControlByName('LBL_TARGET' + i).anchor = Anchor.User;
-          this.getControlByName('BTN_TARGETUP' + i).scale = false;
-          this.getControlByName('BTN_TARGETUP' + i).extent.left = targetScreenPosition.x + xPos;
-          this.getControlByName('BTN_TARGETUP' + i).extent.top = targetScreenPosition.y + 5;
-          this.getControlByName('BTN_TARGETUP' + i).anchor = Anchor.User;
-          this.getControlByName('BTN_TARGETDOWN' + i).scale = false;
-          this.getControlByName('BTN_TARGETDOWN' + i).extent.left = targetScreenPosition.x + xPos;
-          this.getControlByName('BTN_TARGETDOWN' + i).extent.top = targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
-          this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
-          this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
-          this.UpdateTargetUIIcon(i);
-          this.getControlByName('BTN_TARGET' + i).recalculate();
-          this.getControlByName('LBL_TARGET' + i).recalculate();
-          this.getControlByName('BTN_TARGETUP' + i).recalculate();
-          this.getControlByName('BTN_TARGETDOWN' + i).recalculate();
-          this.getControlByName('BTN_TARGET' + i)?.show();
-          this.getControlByName('LBL_TARGET' + i)?.show();
-          this.getControlByName('BTN_TARGETUP' + i)?.show();
-          this.getControlByName('BTN_TARGETDOWN' + i)?.show();
-        }
-      } else {
-        for (let i = 0; i < 3; i++) {
-          this.getControlByName('BTN_TARGET' + i)?.hide();
-          this.getControlByName('LBL_TARGET' + i)?.hide();
-          this.getControlByName('BTN_TARGETUP' + i)?.hide();
-          this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
-        }
-      }
-    } else {
+    if (!this._canShowTargetUI()) {
       ActionMenuManager.SetTarget(undefined);
       this.LBL_NAME?.hide();
       this.LBL_NAMEBG?.hide();
       this.PB_HEALTH?.hide();
       this.LBL_HEALTHBG?.hide();
+      for (let i = 0; i < 3; i++) {
+        this.getControlByName('BTN_TARGET' + i)?.hide();
+        this.getControlByName('LBL_TARGET' + i)?.hide();
+        this.getControlByName('BTN_TARGETUP' + i)?.hide();
+        this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
+      }
+      return;
+    }
+
+    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
+      if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+        this.PB_HEALTH.setFillTextureName('enemy_bar');
+        TextureLoader.Load('enemy_bar').then((map: OdysseyTexture) => {
+          this.PB_HEALTH.setFillTexture(map);
+        });
+      } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
+        this.PB_HEALTH.setFillTextureName('friend_bar');
+        TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
+          this.PB_HEALTH.setFillTexture(map);
+        });
+      }
+    } else {
+      if (this.PB_HEALTH.getFillTextureName() != 'friend_bar') {
+        this.PB_HEALTH.setFillTextureName('friend_bar');
+        TextureLoader.Load('friend_bar').then((map: OdysseyTexture) => {
+          this.PB_HEALTH.setFillTexture(map);
+        });
+      }
+    }
+    if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
+      this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
+    }
+    let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
+    if (health > 100)
+      health = 100;
+    this.PB_HEALTH.setProgress(health);
+    let maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
+    let maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
+    let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
+    let pos = new THREE.Vector3();
+    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
+      pos.copy(GameState.CursorManager.selectedObject.position);
+      pos.z += 2;
+    } else {
+      pos = pos.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
+    }
+    pos.project(GameState.currentCamera);
+    const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
+    const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
+    pos.x = pos.x * widthHalf;
+    pos.y = -(pos.y * heightHalf);
+    pos.z = 0;
+    targetScreenPosition.add(pos);
+    if (targetScreenPosition.x > maxBoundsX) {
+      targetScreenPosition.x = maxBoundsX;
+    }
+    if (targetScreenPosition.x < -maxBoundsX2) {
+      targetScreenPosition.x = -maxBoundsX2;
+    }
+    if (targetScreenPosition.y > 640 / 2) {
+      targetScreenPosition.y = 640 / 2;
+    }
+    if (targetScreenPosition.y < 100) {
+      targetScreenPosition.y = 100;
+    }
+    this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
+    this.LBL_NAME?.show();
+    this.LBL_NAMEBG?.show();
+    this.PB_HEALTH?.show();
+    this.LBL_HEALTHBG?.show();
+    this.LBL_NAME.extent.left = targetScreenPosition.x - 20;
+    this.LBL_NAME.anchor = Anchor.User;
+    this.LBL_NAMEBG.extent.left = targetScreenPosition.x - 20;
+    this.LBL_NAMEBG.anchor = Anchor.User;
+    this.PB_HEALTH.extent.left = targetScreenPosition.x - 20;
+    this.PB_HEALTH.anchor = Anchor.User;
+    this.LBL_HEALTHBG.extent.left = targetScreenPosition.x - 20;
+    this.LBL_HEALTHBG.anchor = Anchor.User;
+    this.LBL_NAME.extent.top = targetScreenPosition.y - 38;
+    this.LBL_NAMEBG.extent.top = targetScreenPosition.y - 38;
+    this.PB_HEALTH.extent.top = targetScreenPosition.y - 12;
+    this.LBL_HEALTHBG.extent.top = targetScreenPosition.y - 12;
+    this.LBL_NAME.recalculate();
+    this.LBL_NAMEBG.recalculate();
+    this.PB_HEALTH.recalculate();
+    this.LBL_HEALTHBG.recalculate();
+    if (!!ActionMenuManager.targetActionCount()) {
+      for (let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++) {
+        let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
+        this.getControlByName('BTN_TARGET' + i).scale = false;
+        this.getControlByName('BTN_TARGET' + i).extent.left = targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGET' + i).extent.top = targetScreenPosition.y;
+        this.getControlByName('BTN_TARGET' + i).anchor = Anchor.User;
+        this.getControlByName('LBL_TARGET' + i).scale = false;
+        this.getControlByName('LBL_TARGET' + i).extent.left = targetScreenPosition.x + xPos + 3;
+        this.getControlByName('LBL_TARGET' + i).extent.top = targetScreenPosition.y + 14;
+        this.getControlByName('LBL_TARGET' + i).anchor = Anchor.User;
+        this.getControlByName('BTN_TARGETUP' + i).scale = false;
+        this.getControlByName('BTN_TARGETUP' + i).extent.left = targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGETUP' + i).extent.top = targetScreenPosition.y + 5;
+        this.getControlByName('BTN_TARGETUP' + i).anchor = Anchor.User;
+        this.getControlByName('BTN_TARGETDOWN' + i).scale = false;
+        this.getControlByName('BTN_TARGETDOWN' + i).extent.left = targetScreenPosition.x + xPos;
+        this.getControlByName('BTN_TARGETDOWN' + i).extent.top = targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
+        this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
+        this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
+        this.UpdateTargetUIIcon(i);
+        this.getControlByName('BTN_TARGET' + i).recalculate();
+        this.getControlByName('LBL_TARGET' + i).recalculate();
+        this.getControlByName('BTN_TARGETUP' + i).recalculate();
+        this.getControlByName('BTN_TARGETDOWN' + i).recalculate();
+        this.getControlByName('BTN_TARGET' + i)?.show();
+        this.getControlByName('LBL_TARGET' + i)?.show();
+        this.getControlByName('BTN_TARGETUP' + i)?.show();
+        this.getControlByName('BTN_TARGETDOWN' + i)?.show();
+      }
+    } else {
       for (let i = 0; i < 3; i++) {
         this.getControlByName('BTN_TARGET' + i)?.hide();
         this.getControlByName('LBL_TARGET' + i)?.hide();

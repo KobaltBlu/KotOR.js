@@ -704,6 +704,8 @@ export class ModuleObject {
         return ModuleCreatureAnimState.CUSTOM01;
       case 120: //TREAT_INJURED
         return ModuleCreatureAnimState.TREAT_INJURED;
+      case 123: //DIVE_ROLL
+        return ModuleCreatureAnimState.DIVE_ROLL;
 
       // Placeable animation constants
       case 200: 
@@ -1837,19 +1839,23 @@ export class ModuleObject {
   }
 
   dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
+    console.log('dialogPlayAnimation',anim);
     if(!this.model){ 
       console.warn('dialogPlayAnimation failed');
       console.log(this, anim);
       return; 
     }
+
     const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
-    if(odysseyAnimation){
-      this.dialogAnimation = {
-        animation: odysseyAnimation,
-        data: anim,
-        started: false,
-      }
+    if(!odysseyAnimation){
+      return;
     }
+
+    this.dialogAnimation = {
+      animation: odysseyAnimation,
+      data: anim,
+      started: false,
+    };
   }
 
   dialogResetAnimationState(){
@@ -2189,7 +2195,11 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[256];
           }else{
-            return animations2DA.rows[6];
+            if(this.getHP()/this.getMaxHP() > .20){
+              return animations2DA.rows[6];
+            }else{
+              return animations2DA.rows[8];
+            }
           }
         break;
         case ModuleCreatureAnimState.PAUSE2:
@@ -2197,23 +2207,39 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[257];
           }else{
-            return animations2DA.rows[7];
+            if(this.getHP()/this.getMaxHP() > .20){
+              return animations2DA.rows[7];
+            }else{
+              return animations2DA.rows[8];
+            }
           }
         break;
         case ModuleCreatureAnimState.PAUSE3:
           if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          return animations2DA.rows[359];
+          if(this.getHP()/this.getMaxHP() > .20){
+            return animations2DA.rows[359];
+          }else{
+            return animations2DA.rows[8];
+          }
         break;
         case ModuleCreatureAnimState.PAUSE4:
           if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          return animations2DA.rows[357];
+          if(this.getHP()/this.getMaxHP() > .20){
+            return animations2DA.rows[357];
+          }else{
+            return animations2DA.rows[8];
+          }
         break;
         case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
           if(this.isPoisoned()) return animations2DA.rows[15];
           if(this.isSimpleCreature()){
             return animations2DA.rows[12];
           }else{
-            return animations2DA.rows[7];
+            if(this.getHP()/this.getMaxHP() > .20){
+              return animations2DA.rows[7];
+            }else{
+              return animations2DA.rows[8];
+            }
           }
         break;
         case ModuleCreatureAnimState.PAUSE_BORED:
@@ -2267,13 +2293,13 @@ export class ModuleObject {
         break;
         case ModuleCreatureAnimState.WALKING:
           if(this.isSimpleCreature()){
-            if(this.getHP()/this.getMaxHP() > .15){
+            if(this.getHP()/this.getMaxHP() > .20){
               return animations2DA.rows[253];
             }else{
               return animations2DA.rows[254];
             }
           }else{
-            if(this.getHP()/this.getMaxHP() > .15){
+            if(this.getHP()/this.getMaxHP() > .20){
               switch(this.getCombatAnimationWeaponType()){
                 case 2:
                   return animations2DA.rows[338];
@@ -2297,7 +2323,7 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[255];
           }else{
-            if(this.getHP()/this.getMaxHP() > .15){
+            if(this.getHP()/this.getMaxHP() > .20){
               switch(this.getCombatAnimationWeaponType()){
                 case 1:
                   return animations2DA.rows[343];
