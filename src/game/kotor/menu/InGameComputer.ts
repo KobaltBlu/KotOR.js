@@ -280,7 +280,7 @@ export class InGameComputer extends GameMenu {
     this.state = 0;
   }
 
-   showReplies(entry: DLGNode) {
+  showReplies(entry: DLGNode) {
     this.state = 1;
     if (GameState.Mode != EngineMode.DIALOG)
       return;

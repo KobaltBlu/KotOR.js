@@ -630,7 +630,7 @@ NWScriptDefK1.Actions = {
 
       const action = new GameState.ActionFactory.ActionOpenDoor();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
-      action.setParameter(0, ActionParameterType.INT, 0);
+      action.setParameter(1, ActionParameterType.INT, 0);
       this.caller.actionQueue.add(action);
     }
   },
@@ -650,7 +650,7 @@ NWScriptDefK1.Actions = {
 
       const action = new GameState.ActionFactory.ActionCloseDoor();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
-      action.setParameter(0, ActionParameterType.INT, 0);
+      action.setParameter(1, ActionParameterType.INT, 0);
       this.caller.actionQueue.add(action);
     }
   },
