@@ -340,7 +340,7 @@ export class ModuleDoor extends ModuleObject {
         if(this.keyRequired && this.keyName.length){
           const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
           if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
-            this.locked = false;
+            this.unlock(object);
           }
         }
       }
@@ -353,19 +353,6 @@ export class ModuleDoor extends ModuleObject {
         if(this.getObjectSounds()['locked'] != '****'){
           this.audioEmitter.playSound(this.getObjectSounds()['locked'].toLowerCase());
         }
-        /*if(this.requiresKey()){
-          console.log('key required', this.keyName())
-          if(object instanceof ModuleCreature){
-            if(object.hasItemByTag(this.keyName())){
-              this.openDoor(object);
-            }else if(this.scripts.onFailToOpen instanceof NWScriptInstance){
-              console.log('Running script')
-              this.scripts.onFailToOpen.run(this);
-            }
-          }
-        }else{
-          this.openDoor(object);
-        }*/
       }else{
         this.openDoor(object);
       }
@@ -373,10 +360,24 @@ export class ModuleDoor extends ModuleObject {
       console.log('already open');
     }
 
-    /*if(this.GetConversation() != ''){
-      MenuManager.InGameDialog.StartConversation(this.GetConversation(), object);
-    }*/
+  }
 
+  lock(object: ModuleObject){
+    if(this.locked){ return; }
+    this.locked = true;
+    
+    if(this.scripts.onLock instanceof NWScriptInstance){
+      this.scripts.onLock.run(this);
+    }
+  }
+
+  unlock(object: ModuleObject){
+    if(!this.locked){ return; }
+    this.locked = false;
+    
+    if(this.scripts.onUnlock instanceof NWScriptInstance){
+      this.scripts.onUnlock.run(this);
+    }
   }
 
   attemptUnlock(object: ModuleObject){
@@ -385,7 +386,7 @@ export class ModuleDoor extends ModuleObject {
       let d20 = 20;//d20 rolls are auto 20's outside of combat
       let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
       if(skillCheck >= 1){
-        this.locked = false;
+        this.unlock(object);
         
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
           object.playSoundSet(SSFType.UNLOCK_SUCCESS);
