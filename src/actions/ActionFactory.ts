@@ -28,9 +28,14 @@ import { ActionUseObject } from "./ActionUseObject";
 import { ActionWait } from "./ActionWait";
 import { ActionRandomWalk } from "./ActionRandomWalk";
 import { ActionPickUpItem } from "./ActionPickUpItem";
-import type { Action } from "./Action";
 import { ActionForceFollowObject } from "./ActionForceFollowObject";
 import { ActionSpeakStrRef } from "./ActionSpeakStrRef";
+import { ActionSetMine } from "./ActionSetMine";
+import { ActionFlagMine } from "./ActionFlagMine";
+import { ActionRecoverMine } from "./ActionRecoverMine";
+import { ActionDisarmMine } from "./ActionDisarmMine";
+import { ActionExamineMine } from "./ActionExamineMine";
+import type { Action } from "./Action";
 
 /**
  * ActionFactory class.
@@ -154,6 +159,21 @@ export class ActionFactory {
       break;
       case ActionType.ActionWait:
         action = new ActionWait(actionId, groupId);
+      break;
+      case ActionType.ActionSetMine:
+        action = new ActionSetMine(actionId, groupId);
+      break;
+      case ActionType.ActionFlagMine:
+        action = new ActionFlagMine(actionId, groupId);
+      break;
+      case ActionType.ActionRecoverMine:
+        action = new ActionRecoverMine(actionId, groupId);
+      break;
+      case ActionType.ActionDisarmMine:
+        action = new ActionDisarmMine(actionId, groupId);
+      break;
+      case ActionType.ActionExamineMine:
+        action = new ActionExamineMine(actionId, groupId);
       break;
       default:
         console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);
