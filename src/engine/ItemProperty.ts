@@ -99,7 +99,7 @@ export class ItemProperty {
     return false;
   }
 
-  is(property: any, subType: any){
+  is(property: any, subType: any = undefined){
     if(typeof property != 'undefined' && typeof subType != 'undefined'){
       return this.propertyName == property && this.subType == subType;
     }else{

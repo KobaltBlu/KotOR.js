@@ -24,6 +24,7 @@ import { BitWise } from "../utility/BitWise";
 import { Dice } from "../utility/Dice";
 import { ItemProperty } from "../engine/ItemProperty";
 import { GameState } from "../GameState";
+import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "../enums";
 
 /**
 * ModuleItem class.
@@ -47,7 +48,7 @@ export class ModuleItem extends ModuleObject {
   textureVariation: number;
   palleteID: number;
   loaded: boolean;
-  properties: any[];
+  properties: ItemProperty[];
   possessor: any;
   descIdentified: any;
   stolen: any;
@@ -441,6 +442,43 @@ export class ModuleItem extends ModuleObject {
         }
       }
 
+    }
+  }
+
+  useItemOnObject(oCaster: ModuleCreature, oTarget: ModuleObject){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(!property.isUseable()){ continue; }
+
+      if(property.is(ModuleItemProperty.CastSpell)){
+        const action = new GameState.ActionFactory.ActionItemCastSpell();
+        action.setParameter(0, ActionParameterType.DWORD, oTarget);
+        action.setParameter(1, ActionParameterType.DWORD, oTarget.area);
+        action.setParameter(2, ActionParameterType.FLOAT, oTarget.position.x);
+        action.setParameter(3, ActionParameterType.FLOAT, oTarget.position.y);
+        action.setParameter(4, ActionParameterType.FLOAT, oTarget.position.z);
+        action.setParameter(5, ActionParameterType.INT, property.getValue());
+        action.setParameter(6, ActionParameterType.INT, 1);
+        action.setParameter(7, ActionParameterType.FLOAT, 1.0);
+        action.setParameter(8, ActionParameterType.INT, -1);
+        action.setParameter(9, ActionParameterType.INT, -1);
+        action.setParameter(10, ActionParameterType.DWORD, this);
+        action.setParameter(11, ActionParameterType.STRING, '');
+        oCaster.actionQueue.add(action);
+      }else if(property.is(ModuleItemProperty.ThievesTools)){
+        const action = new GameState.ActionFactory.ActionUnlockObject();
+        action.setParameter(0, ActionParameterType.DWORD, oTarget);
+        action.setParameter(1, ActionParameterType.DWORD, this);
+        oCaster.actionQueue.add(action);
+      }else if(property.is(ModuleItemProperty.Trap)){
+        const action = new GameState.ActionFactory.ActionSetMine();
+        action.setParameter(0, ActionParameterType.DWORD, this);
+        action.setParameter(1, ActionParameterType.DWORD, oTarget);
+        action.setParameter(2, ActionParameterType.FLOAT, oTarget.position.x);
+        action.setParameter(3, ActionParameterType.FLOAT, oTarget.position.y);
+        action.setParameter(4, ActionParameterType.FLOAT, oTarget.position.z);
+        oCaster.actionQueue.add(action);
+      }
     }
   }
 

@@ -27,6 +27,7 @@ import { GameEffectFactory } from "../effects/GameEffectFactory";
 import { ModuleObject } from "./ModuleObject";
 import type { ModuleItem } from "./ModuleItem";
 import { DLGConversationType } from "../enums/dialog/DLGConversationType";
+import { SkillType } from "../enums/nwscript/SkillType";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -479,8 +480,8 @@ export class ModulePlaceable extends ModuleObject {
   attemptUnlock(object: ModuleObject){
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
-      if(skillCheck >= 1){
+      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(SkillType.SECURITY)) + d20) - this.openLockDC;
+      if(skillCheck >= 1 && object.getSkillLevel(SkillType.SECURITY) >= 1){
         this.unlock(object);
         object.playSoundSet(SSFType.UNLOCK_SUCCESS);
       }else{

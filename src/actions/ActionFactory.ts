@@ -77,6 +77,11 @@ export class ActionFactory {
   static ActionRandomWalk: typeof ActionRandomWalk = ActionRandomWalk;
   static ActionForceFollowObject: typeof ActionForceFollowObject = ActionForceFollowObject;
   static ActionSpeakStrRef: typeof ActionSpeakStrRef = ActionSpeakStrRef;
+  static ActionSetMine: typeof ActionSetMine = ActionSetMine;
+  static ActionRecoverMine: typeof ActionRecoverMine = ActionRecoverMine;
+  static ActionDisarmMine: typeof ActionDisarmMine = ActionDisarmMine;
+  static ActionExamineMine: typeof ActionExamineMine = ActionExamineMine;
+  static ActionFlagMine: typeof ActionFlagMine = ActionFlagMine;
 
   static FromStruct( struct: GFFStruct ): Action {
     let action: Action = undefined as any;

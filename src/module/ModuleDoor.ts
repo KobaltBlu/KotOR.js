@@ -30,6 +30,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
+import { SkillType } from "../enums";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -384,8 +385,8 @@ export class ModuleDoor extends ModuleObject {
     if(object instanceof ModuleObject){
       
       let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(6)) + d20) / this.openLockDC;
-      if(skillCheck >= 1){
+      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(SkillType.SECURITY)) + d20) - this.openLockDC;
+      if(skillCheck >= 1 && object.getSkillLevel(SkillType.SECURITY) >= 1){
         this.unlock(object);
         
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){

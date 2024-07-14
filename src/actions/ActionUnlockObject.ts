@@ -10,6 +10,10 @@ import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModulePlaceable } from "../module/ModulePlaceable";
 import type { ModuleDoor } from "../module/ModuleDoor";
+import type { ModuleItem } from "../module";
+import { SkillType } from "../enums/nwscript/SkillType";
+import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
+import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
 
 /**
  * ActionUnlockObject class.
@@ -22,7 +26,8 @@ import type { ModuleDoor } from "../module/ModuleDoor";
  */
 export class ActionUnlockObject extends Action {
   timer: number;
-  shouted: any;
+  shouted: boolean;
+  usedItem: boolean;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -31,6 +36,7 @@ export class ActionUnlockObject extends Action {
 
     //PARAMS
     // 0 - dword: object id
+    // 1 - dword: item id (security tunneler)
     
   }
 
@@ -67,6 +73,26 @@ export class ActionUnlockObject extends Action {
 
       return ActionStatus.IN_PROGRESS;
     }else{
+
+      const oItem = this.getParameter(1) as ModuleItem;
+      if(oItem && !this.usedItem){
+        for(let i = 0, len = oItem.properties.length; i < len; i++){
+          let property = oItem.properties[i];
+          if(!property.isUseable()){ continue; }
+    
+          if(property.is(ModuleItemProperty.ThievesTools)){
+            const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
+            effect.setCreator(this.owner);
+            effect.setSpellId(-1);
+            effect.setInt(0, SkillType.SECURITY);
+            effect.setInt(1, property.getValue());
+            effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+            this.owner.addEffect(effect.initialize(), GameEffectDurationType.TEMPORARY, 3);
+          }
+        }
+        this.usedItem = true;
+      }
+      
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
@@ -93,6 +119,8 @@ export class ActionUnlockObject extends Action {
         (this.target as any).attemptUnlock(this.owner);
         return ActionStatus.COMPLETE;
       }
+
+      //todo: consume oItem
 
       return ActionStatus.IN_PROGRESS;
       

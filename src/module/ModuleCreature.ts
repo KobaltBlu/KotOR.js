@@ -107,7 +107,7 @@ export class ModuleCreature extends ModuleObject {
   partyInteract: number;
   phenotype: number;
   race: number;
-  skills: any[];
+  skills: TalentSkill[];
   soundSetFile: number;
   specialAbilities: any[];
   str: number;
@@ -307,7 +307,7 @@ export class ModuleCreature extends ModuleObject {
       onUserDefined: undefined
     };
 
-    this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
+    this.skills = [];
 
     this.soundSetFile = 0;
     this.specialAbilities = [];
@@ -3815,7 +3815,7 @@ export class ModuleCreature extends ModuleObject {
     try{
       this.classes = [];
       this.feats = [];
-      this.skills = [0, 0, 0, 0, 0, 0, 0, 0];
+      this.skills = [new TalentSkill(0), new TalentSkill(1), new TalentSkill(2), new TalentSkill(3), new TalentSkill(4), new TalentSkill(5), new TalentSkill(6), new TalentSkill(7)];
       
       if(!this.initialized){
         if(this.template.RootNode.hasField('ObjectId')){

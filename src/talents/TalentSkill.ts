@@ -48,6 +48,7 @@ export class TalentSkill extends TalentObject {
       Object.assign(this, GameState.TwoDAManager.datatables.get('skills').rows[this.id]);
     }
   }
+  
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
