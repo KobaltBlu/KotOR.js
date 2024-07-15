@@ -506,21 +506,6 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  addTrap(nTrapId: number = -1){
-    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
-    if(!trap){ return; }
-
-    if(trap.trapscript?.length && trap.trapscript != '****'){
-      this.scripts.onTrapTriggered = NWScript.Load(trap.trapscript);
-    }
-
-    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
-    this.trapDetectDC = nDetectDC;
-
-    // const nSetDC = !isNaN(parseInt(trap.setdc)) ? parseInt(trap.setdc) : 0;
-    // this.trapDetectDC = nDetectDC;
-  }
-
   //Some modules have exit triggers that are placed in the same location that the player spawns into
   //This is my way of keeping the player from immediately activating the trigger
   //They will be added to the objectsInside array without triggering the onEnter script

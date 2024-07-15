@@ -47,6 +47,8 @@ import { Dice } from "../utility/Dice";
 import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
+import { NWScript } from "../nwscript/NWScript";
+import { SkillType } from "../enums";
 
 /**
 * ModuleObject class.
@@ -242,7 +244,7 @@ export class ModuleObject {
 
   conversation: DLGObject;
   cutsceneMode: boolean;
-  
+
   trapDetectable: boolean;
   trapDetectDC: number;
   trapDisarmable: boolean;
@@ -250,6 +252,7 @@ export class ModuleObject {
   trapOneShot: boolean;
   trapType: number;
   trapFlag: boolean;
+  ownerDemolitions: number = -1;
 
   constructor (gff = new GFFObject) {
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
@@ -988,6 +991,38 @@ export class ModuleObject {
     let action = new GameState.ActionFactory.ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
     this.actionQueue.add(action);
+  }
+
+  addTrap(nTrapId: number = -1, owner: ModuleObject){
+    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
+    if(!trap){ return; }
+    console.log('addTrap', trap);
+
+    if(trap.trapscript?.length && trap.trapscript != '****'){
+      this.scripts.onTrapTriggered = NWScript.Load(trap.trapscript);
+    }
+
+    this.trapType = nTrapId;
+
+    this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
+
+    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
+    this.trapDetectDC = nDetectDC + 20 + this.ownerDemolitions;
+    this.trapDetectable = true;
+
+    const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
+    this.trapDisarmDC = nDisarmDC + 20 + this.ownerDemolitions;
+    this.trapDisarmable = false;
+
+    //todo: create and spawn trap trigger in the world for the mine visual
+
+    //mine faction will be the owner's faction
+
+    //Trigger Geomerty
+    //-2,  2, 0
+    //-2, -2, 0
+    // 2, -2, 0
+    // 2,  2, 0
   }
 
   //---------------//

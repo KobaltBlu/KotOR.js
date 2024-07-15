@@ -1,5 +1,5 @@
 import { GameState } from "../GameState";
-import { ModuleCreatureAnimState } from "../enums";
+import { ModuleCreatureAnimState, ModuleItemProperty } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
@@ -24,6 +24,7 @@ export class ActionSetMine extends Action {
 
   bAnimQueued = false;
   oItem: ModuleItem;
+  usedItem: any;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -69,6 +70,20 @@ export class ActionSetMine extends Action {
         action.setParameter(2, ActionParameterType.FLOAT, 1.5);
         this.owner.actionQueue.addFront(action);
         return ActionStatus.IN_PROGRESS;
+      }
+
+      if(this.oItem && !this.usedItem){
+        for(let i = 0, len = this.oItem.properties.length; i < len; i++){
+          let property = this.oItem.properties[i];
+          if(!property.isUseable()){ continue; }
+    
+          if(property.is(ModuleItemProperty.Trap)){
+            if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+              this.target.addTrap(property.subType, this.owner);
+            }
+          }
+        }
+        this.usedItem = true;
       }
       
       const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);

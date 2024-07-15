@@ -291,11 +291,12 @@ export class Module {
       const playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
       if(playerList.length){
         GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
-        if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
-          GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-        }else{
-          GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
-        }
+        GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc || GameState.PartyManager.PlayerTemplate;
+        // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
+        //   GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+        // }else{
+        //   GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
+        // }
       }
     }
 
@@ -376,6 +377,11 @@ export class Module {
     this.effects.push(effect);
 
     GameState.group.effects.add(object.model);
+  }
+
+  addEvent(event: GameEvent){
+    if(this.eventQueue.indexOf(event) >= 0){ return; }
+    this.eventQueue.push(event);
   }
 
   tick(delta = 0){
