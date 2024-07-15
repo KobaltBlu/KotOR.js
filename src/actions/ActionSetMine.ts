@@ -1,8 +1,11 @@
 import { GameState } from "../GameState";
+import { ModuleCreatureAnimState } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { SignalEventType } from "../enums/events/SignalEventType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleItem } from "../module/ModuleItem";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -19,6 +22,9 @@ import { Action } from "./Action";
 
 export class ActionSetMine extends Action {
 
+  bAnimQueued = false;
+  oItem: ModuleItem;
+
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
     this.type = ActionType.ActionSetMine;
@@ -33,14 +39,14 @@ export class ActionSetMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter(0);
+    this.oItem = this.getParameter(0);
+    this.target = this.getParameter(1);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
-        // this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -55,7 +61,38 @@ export class ActionSetMine extends Action {
         return ActionStatus.IN_PROGRESS;
       }
 
-      //todo: set mine
+      if(!this.bAnimQueued){
+        this.bAnimQueued = true;
+        const action = new GameState.ActionFactory.ActionPlayAnimation();
+        action.setParameter(0, ActionParameterType.INT, ModuleCreatureAnimState.SET_MINE);
+        action.setParameter(1, ActionParameterType.FLOAT, 1);
+        action.setParameter(2, ActionParameterType.FLOAT, 1.5);
+        this.owner.actionQueue.addFront(action);
+        return ActionStatus.IN_PROGRESS;
+      }
+      
+      const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
+
+      const event = new GameState.GameEventFactory.EventSignalEvent();
+      event.setCaller(this.getOwner());
+      event.setObject(this.getTarget());
+      event.setDay(futureTime.pauseDay);
+      event.setTime(futureTime.pauseTime);
+      event.eventType = SignalEventType.OnTrapTriggered;
+      GameState.module.addEvent(event);
+      
+      if(this.oItem){
+        //If we have more charges, reduce the charges count by 1
+        if(this.oItem.charges > 1){
+          this.oItem.charges -= 1;
+        }
+        //If we are out of charges remove the item from the owners inventory
+        else
+        {
+          this.owner.removeItem(this.oItem, 1);
+        }
+      }
+      
       return ActionStatus.COMPLETE;
     }
     

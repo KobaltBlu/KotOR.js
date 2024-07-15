@@ -1597,8 +1597,10 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      this.objectInSphapeIndex.set(0, 0);
-      return GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
+      this.objectInSphapeIndex.set(args[0], 0);
+      const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
+      console.log('GetFirstObjectInShape', ls, args);
+      return ls;
     }
   },
   129:{
@@ -1607,9 +1609,11 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      const nextId = this.objectInSphapeIndex.get(0) + 1;
-      this.objectInSphapeIndex.set(0, nextId);
-      return GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
+      const nextId = this.objectInSphapeIndex.get(args[0]) + 1;
+      this.objectInSphapeIndex.set(args[0], nextId);
+      const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
+      console.log('GetNextObjectInShape', ls, args, nextId);
+      return ls;
     }
   },
   130:{
@@ -2736,6 +2740,7 @@ NWScriptDefK1.Actions = {
             args[1].setExpireDay(future.pauseDay);
             args[1].setExpireTime(future.pauseTime);
           }
+          console.log('ApplyEffectToObject', args[2], args[1], args[0], args[3]);
           args[2].addEffect(args[1], args[0], args[3]);
         }else{
           console.error('ApplyEffectToObject', 'Expected a GameEffect', args);
@@ -2984,7 +2989,17 @@ NWScriptDefK1.Actions = {
     comment: "237: * Returns TRUE if oSource considers oTarget as neutral.\n",
     name: "GetIsNeutral",
     type: 3,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        if( ( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 ? NW_TRUE : NW_FALSE ) && ( GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ? NW_TRUE : NW_FALSE ) ){
+          return NW_TRUE;
+        }
+        return args[1].isFriendly(args[0]) || args[1].isNeutral(args[0]) ? NW_TRUE : NW_FALSE;
+      }else{
+        return NW_FALSE;
+      }
+    }
   },
   238:{
     comment: "238: Get the PC that is involved in the conversation.\n* Returns OBJECT_INVALID on error.\n",
@@ -3698,7 +3713,11 @@ NWScriptDefK1.Actions = {
     comment: "299: Use this in spell scripts to get nDamage adjusted by oTarget's reflex and\nevasion saves.\n- nDamage\n- oTarget\n- nDC: Difficulty check\n- nSaveType: SAVING_THROW_TYPE_*\n- oSaveVersus\n",
     name: "GetReflexAdjustedDamage",
     type: 3,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [EngineLocation, EngineLocation]){
+      //todo: currently passing back unmodified damage
+      return args[0];
+    }
   },
   300:{
     comment: "300: Play nAnimation immediately.\n- nAnimation: ANIMATION_*\n- fSpeed\n- fSeconds: Duration of the animation (this is not used for Fire and\nForget animations) If a time of -1.0f is specified for a looping animation\nit will loop until the next animation is applied.\n",
@@ -6066,13 +6085,25 @@ NWScriptDefK1.Actions = {
     comment: "527: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject is disarmable.\n",
     name: "GetTrapDisarmable",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapDisarmable ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   528:{
     comment: "528: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject is detectable.\n",
     name: "GetTrapDetectable",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapDetectable ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   529:{
     comment: "529: - oTrapObject: a placeable, door or trigger\n- oCreature\n* Returns TRUE if oCreature has detected oTrapObject\n",
@@ -6084,19 +6115,37 @@ NWScriptDefK1.Actions = {
     comment: "530: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject has been flagged as visible to all creatures.\n",
     name: "GetTrapFlagged",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapFlag ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   531:{
     comment: "531: Get the trap base type (TRAP_BASE_TYPE_*) of oTrapObject.\n- oTrapObject: a placeable, door or trigger\n",
     name: "GetTrapBaseType",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapType;
+      }
+      return -1;
+    }
   },
   532:{
     comment: "532: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject is one-shot (i.e. it does not reset itself\nafter firing.\n",
     name: "GetTrapOneShot",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapOneShot ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   533:{
     comment: "533: Get the creator of oTrapObject, the creature that set the trap.\n- oTrapObject: a placeable, door or trigger\n* Returns OBJECT_INVALID if oTrapObject was created in the toolset.\n",
@@ -6114,13 +6163,25 @@ NWScriptDefK1.Actions = {
     comment: "535: Get the DC for disarming oTrapObject.\n- oTrapObject: a placeable, door or trigger\n",
     name: "GetTrapDisarmDC",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapDisarmDC;
+      }
+      return NW_FALSE;
+    }
   },
   536:{
     comment: "536: Get the DC for detecting oTrapObject.\n- oTrapObject: a placeable, door or trigger\n",
     name: "GetTrapDetectDC",
     type: 3,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return args[0].trapDetectDC;
+      }
+      return NW_FALSE;
+    }
   },
   537:{
     comment: "537: * Returns TRUE if a specific key is required to open the lock on oObject.\n",
@@ -8108,7 +8169,7 @@ NWScriptDefK1.Actions = {
     type: 3,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return ConfigClient.get('Game.debug.is_shipping_build') ? true : true;
+      return NW_FALSE;//ConfigClient.get('Game.debug.is_shipping_build') ? NW_TRUE : NW_FALSE;
     }
   },
   762:{

@@ -6,6 +6,9 @@ import type { ModuleCreature } from "./module/ModuleCreature";
 import { IActionPanelLists } from "./interface/gui/IActionPanelLists";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { ActionType } from "./enums/actions/ActionType";
+import { SkillType } from "./enums/nwscript/SkillType";
+import { ActionParameterType, ModuleObjectConstant } from "./enums";
+import { TalentObject } from "./talents/TalentObject";
 
 /**
  * ActionMenuManager class.
@@ -66,17 +69,41 @@ export class ActionMenuManager {
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
 
+    const securityTalent = ActionMenuManager.oPC.getSkillList()[6];
+    const bHasSecuritySkill = ActionMenuManager.oPC.getSkillLevel(SkillType.SECURITY) >= 1;
+
     if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleObject){
 
       if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModulePlaceable){
         if(ActionMenuManager.oTarget.isLocked() && !ActionMenuManager.oTarget.requiresKey()){
-          const securityTalent = ActionMenuManager.oPC.getSkillList()[6];
-          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-            talent: securityTalent,
-            target: ActionMenuManager.oTarget,
-            icon: securityTalent.icon
-          }));
+          if(bHasSecuritySkill){
+            const action = new GameState.ActionFactory.ActionUnlockObject();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: securityTalent.icon
+            }));
+          }
 
+          const securityTunnelers = this.oPC.getInventory().filter((item) => {
+            return item.baseItemId == 59
+          });
+
+          if(securityTunnelers.length){
+            const item = securityTunnelers[0];
+            
+            const action = new GameState.ActionFactory.ActionUnlockObject();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
+            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: item.getIcon()
+            }));
+          }
+          
           ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: {
               type: ActionType.ActionPhysicalAttacks,
@@ -85,16 +112,57 @@ export class ActionMenuManager {
             },
             icon: 'i_attack'
           }));
+
+          const mineList = this.oPC.getInventory().filter((item) => {
+            return item.baseItemId == 58
+          });
+          for(let i = 0, len = mineList.length; i < len; i++){
+            const item = mineList[i];
+            const setMine = new GameState.ActionFactory.ActionSetMine();
+            setMine.setOwner(ActionMenuManager.oPC);
+            setMine.setTarget(ActionMenuManager.oTarget);
+            setMine.setParameter(0, ActionParameterType.DWORD, item);
+            setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
+            setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
+            setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
+            setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
+            ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: setMine,
+              icon: item.getIcon()
+            }));
+          }
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
         if(ActionMenuManager.oTarget.isLocked() && !ActionMenuManager.oTarget.requiresKey()){
-          const securityTalent = ActionMenuManager.oPC.getSkillList()[6];
-          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-            talent: securityTalent,
-            target: ActionMenuManager.oTarget,
-            icon: securityTalent.icon
-          }));
+          if(bHasSecuritySkill){
+            const action = new GameState.ActionFactory.ActionUnlockObject();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
 
+            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: securityTalent.icon
+            }));
+          }
+
+          const securityTunnelers = this.oPC.getInventory().filter((item) => {
+            return item.baseItemId == 59
+          });
+
+          if(securityTunnelers.length){
+            const item = securityTunnelers[0];
+            
+            const action = new GameState.ActionFactory.ActionUnlockObject();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
+            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: item.getIcon()
+            }));
+          }
+          
           ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: {
               type: ActionType.ActionPhysicalAttacks,
@@ -103,6 +171,25 @@ export class ActionMenuManager {
             },
             icon: 'i_attack'
           }));
+
+          const mineList = this.oPC.getInventory().filter((item) => {
+            return item.baseItemId == 58
+          });
+          for(let i = 0, len = mineList.length; i < len; i++){
+            const item = mineList[i];
+            const setMine = new GameState.ActionFactory.ActionSetMine();
+            setMine.setOwner(ActionMenuManager.oPC);
+            setMine.setTarget(ActionMenuManager.oTarget);
+            setMine.setParameter(0, ActionParameterType.DWORD, item);
+            setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
+            setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
+            setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
+            setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
+            ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: setMine,
+              icon: item.getIcon()
+            }));
+          }
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0])){
         ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
@@ -197,6 +284,40 @@ export class ActionMenuManager {
         return previousValue += currentValue.actions.length;
       }, 0
     );
+  }
+
+  static onTargetMenuAction(index: number = 0){
+    if(!ActionMenuManager.oPC){ return; }
+
+    const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
+    if(action){
+      if(index==0){
+        if(!action.talent){
+          ActionMenuManager.oPC.attackCreature(action.target, undefined);
+        }else if(action.talent instanceof TalentObject){
+          action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
+        }
+      }else if(action.talent){
+        action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
+      }else if(action.action){
+        console.log('onTargetMenuAction', action);
+        ActionMenuManager.oPC.actionQueue.addFront(
+          action.action
+        );
+      }
+    }
+  }
+
+  static onSelfMenuAction(index: number = 0){
+    if(!ActionMenuManager.oPC){ return; }
+    
+    const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
+    if(!action){ return; }
+
+    if(action.talent instanceof TalentObject){
+      //GameState.getCurrentPlayer().useTalent(action.talent, action.target);
+      action.talent.useTalentOnObject(ActionMenuManager.oPC, ActionMenuManager.oPC);
+    }
   }
 
 }

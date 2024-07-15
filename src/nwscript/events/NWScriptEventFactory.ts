@@ -43,9 +43,11 @@ export class NWScriptEventFactory {
         stringList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
       }
 
-      tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
-      for(let i = 0, len = tmpList.length; i < len; i++){
-        objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+      if(struct.hasField('ObjectList')){
+        tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
+        for(let i = 0, len = tmpList.length; i < len; i++){
+          objectList[i] = tmpList[i].getFieldByLabel('Parameter').getValue();
+        }
       }
 
       //Initialize the event object based on the type

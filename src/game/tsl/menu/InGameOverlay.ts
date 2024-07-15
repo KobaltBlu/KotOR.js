@@ -312,29 +312,10 @@ export class InGameOverlay extends K1_InGameOverlay {
       });
 
       for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
-          
-        //this['BTN_TARGET'+i]
 
         this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          const action = ActionMenuManager.ActionPanels.targetPanels[i].getSelectedAction();
-
-          if(action){
-            if(i==0){
-              if(!action.talent){
-                GameState.getCurrentPlayer().attackCreature(action.target, undefined);
-              }else if(action.talent instanceof TalentObject){
-                action.talent.useTalentOnObject(action.target, GameState.getCurrentPlayer());
-              }
-            }else if(action.talent){
-              action.talent.useTalentOnObject(action.target, GameState.getCurrentPlayer());
-            }else if(action.action){
-              GameState.getCurrentPlayer().actionQueue.add(
-                action.action
-              );
-            }
-          }
-
+          ActionMenuManager.onTargetMenuAction(i);
         });
 
         this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
@@ -347,6 +328,27 @@ export class InGameOverlay extends K1_InGameOverlay {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
+        });
+
+      }
+
+      for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
+
+        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
+          e.stopPropagation();
+          ActionMenuManager.onSelfMenuAction(i);
+        });
+
+        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+          e.stopPropagation();
+          ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
+          this.UpdateSelfUIIcon(i);
+        });
+
+        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+          e.stopPropagation();
+          ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
+          this.UpdateSelfUIIcon(i);
         });
 
       }
@@ -366,10 +368,10 @@ export class InGameOverlay extends K1_InGameOverlay {
   show() {
     super.show();
     GameState.Mode = EngineMode.INGAME;
-    this.BTN_ACTIONDOWN0.flipY();
-    this.BTN_ACTIONDOWN1.flipY();
-    this.BTN_ACTIONDOWN2.flipY();
-    this.BTN_ACTIONDOWN3.flipY();
+    // this.BTN_ACTIONDOWN0.flipY();
+    // this.BTN_ACTIONDOWN1.flipY();
+    // this.BTN_ACTIONDOWN2.flipY();
+    // this.BTN_ACTIONDOWN3.flipY();
     this.BTN_ACTIONDOWN4.flipY();
     this.BTN_ACTIONDOWN5.flipY();
   }

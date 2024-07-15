@@ -194,10 +194,6 @@ export class ModuleObject {
   hasMapNote: boolean;
   mapNote: CExoLocString;
   mapNoteEnabled: boolean;
-  trapDetectable: any;
-  trapDisarmable: any;
-  trapOneShot: any;
-  trapType: any;
   portraidId: any;
   setByPlayerParty: any;
   highlightHeight: any;
@@ -246,6 +242,14 @@ export class ModuleObject {
 
   conversation: DLGObject;
   cutsceneMode: boolean;
+  
+  trapDetectable: boolean;
+  trapDetectDC: number;
+  trapDisarmable: boolean;
+  trapDisarmDC: number;
+  trapOneShot: boolean;
+  trapType: number;
+  trapFlag: boolean;
 
   constructor (gff = new GFFObject) {
     this.helperColor.setHex( Math.random() * 0xFFFFFF );

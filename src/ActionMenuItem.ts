@@ -1,4 +1,5 @@
 import { GameState } from "./GameState";
+import type { ModuleItem } from "./module/ModuleItem";
 
 /**
  * ActionMenuItem class.
@@ -15,6 +16,7 @@ export class ActionMenuItem {
   action: any = undefined;
   talent: any = undefined;
   icon = '';
+  item: ModuleItem;
 
   constructor( props: any = {} ){
     props = Object.assign({
@@ -22,11 +24,13 @@ export class ActionMenuItem {
       talent: undefined,
       target: GameState.ActionMenuManager.oTarget,
       icon: '',
+      item: undefined
     }, props);
     this.action = props.action;
     this.talent = props.talent;
     this.icon = props.icon;
     this.target = props.target;
+    this.item = props.item;
   }
 
 }

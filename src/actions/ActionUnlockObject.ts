@@ -28,6 +28,7 @@ export class ActionUnlockObject extends Action {
   timer: number;
   shouted: boolean;
   usedItem: boolean;
+  oItem: ModuleItem;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -42,6 +43,7 @@ export class ActionUnlockObject extends Action {
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter(0);
+    this.oItem = this.getParameter(1);
 
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
@@ -74,10 +76,9 @@ export class ActionUnlockObject extends Action {
       return ActionStatus.IN_PROGRESS;
     }else{
 
-      const oItem = this.getParameter(1) as ModuleItem;
-      if(oItem && !this.usedItem){
-        for(let i = 0, len = oItem.properties.length; i < len; i++){
-          let property = oItem.properties[i];
+      if(this.oItem && !this.usedItem){
+        for(let i = 0, len = this.oItem.properties.length; i < len; i++){
+          let property = this.oItem.properties[i];
           if(!property.isUseable()){ continue; }
     
           if(property.is(ModuleItemProperty.ThievesTools)){
@@ -92,7 +93,7 @@ export class ActionUnlockObject extends Action {
         }
         this.usedItem = true;
       }
-      
+
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
@@ -119,8 +120,18 @@ export class ActionUnlockObject extends Action {
         (this.target as any).attemptUnlock(this.owner);
         return ActionStatus.COMPLETE;
       }
-
-      //todo: consume oItem
+      
+      if(this.oItem){
+        //If we have more charges, reduce the charges count by 1
+        if(this.oItem.charges > 1){
+          this.oItem.charges -= 1;
+        }
+        //If we are out of charges remove the item from the owners inventory
+        else
+        {
+          this.owner.removeItem(this.oItem, 1);
+        }
+      }
 
       return ActionStatus.IN_PROGRESS;
       

@@ -70,7 +70,7 @@ export class Action {
   }
 
   getTarget(){
-    this.target;
+    return this.target;
   }
 
   runCreatureAvoidance(delta = 0){

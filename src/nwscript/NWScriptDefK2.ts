@@ -5615,7 +5615,10 @@ NWScriptDefK2.Actions = {
     name: 'GetOwnerDemolitionsSkill',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      //todo
+      return 0;
+    }
   },
   794: {
     comment: 'RWT-OEI 01/29/04\n794: Disables or Enables the Orient On Click behavior in creatures. If\n     disabled, they will not orient to face the player when clicked on\n     for dialogue. The default behavior is TRUE.',

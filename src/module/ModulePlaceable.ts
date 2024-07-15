@@ -70,8 +70,6 @@ export class ModulePlaceable extends ModuleObject {
   portraitId: number;
   ref: number;
   static: boolean;
-  trapDetectDC: number;
-  trapFlag: number;
   will: number;
   x: number;
   y: number;
@@ -136,7 +134,7 @@ export class ModulePlaceable extends ModuleObject {
     this.trapDetectDC = 0;
     this.trapDetectable = false;
     this.trapDisarmable = false;
-    this.trapFlag = 0;
+    this.trapFlag = false;
     this.trapOneShot = false;
     this.trapType = 0;
     this.will = 0;
@@ -841,16 +839,16 @@ export class ModulePlaceable extends ModuleObject {
       this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
   
     if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
+      this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
 
     if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
+      this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
   
     if(this.template.RootNode.hasField('TrapFlag'))
-      this.trapFlag = this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
+      this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
 
     if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
+      this.trapOneShot = !!this.template.getFieldByLabel('TrapOneShot').getValue();
 
     if(this.template.RootNode.hasField('TemplateResRef'))
       this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();

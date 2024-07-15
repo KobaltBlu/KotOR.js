@@ -30,11 +30,9 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 */
 export class ModuleTrigger extends ModuleObject {
   objectsInsideIdx: number;
-  lastObjectEntered: any;
-  lastObjectExited: any;
+  lastObjectEntered: ModuleObject;
+  lastObjectExited: ModuleObject;
   triggered: boolean;
-  trapFlag: any;
-  trapDetectDC: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);

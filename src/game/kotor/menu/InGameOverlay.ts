@@ -335,24 +335,7 @@ export class InGameOverlay extends GameMenu {
 
         this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          const action = ActionMenuManager.ActionPanels.targetPanels[i].getSelectedAction();
-
-          if(action){
-            if(i==0){
-              if(!action.talent){
-                GameState.getCurrentPlayer().attackCreature(action.target, undefined);
-              }else if(action.talent instanceof TalentObject){
-                action.talent.useTalentOnObject(action.target, GameState.getCurrentPlayer());
-              }
-            }else if(action.talent){
-              action.talent.useTalentOnObject(action.target, GameState.getCurrentPlayer());
-            }else if(action.action){
-              GameState.getCurrentPlayer().actionQueue.add(
-                action.action
-              );
-            }
-          }
-
+          ActionMenuManager.onTargetMenuAction(i);
         });
 
         this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
@@ -373,10 +356,7 @@ export class InGameOverlay extends GameMenu {
 
         this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          const action = ActionMenuManager.ActionPanels.selfPanels[i].getSelectedAction();
-          if(action){
-            GameState.getCurrentPlayer().useTalent(action.talent, action.target);
-          }
+          ActionMenuManager.onSelfMenuAction(i);
         });
 
         this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
@@ -689,109 +669,109 @@ export class InGameOverlay extends GameMenu {
     if (!this.bVisible)
       return;
 
-    if (!GameState.module.area.miniGame) {
-      const oPC = GameState.getCurrentPlayer();
-      ActionMenuManager.SetPC(oPC);
-      ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
-      ActionMenuManager.UpdateMenuActions();
-      this.UpdateTargetUIPanels();
-      this.UpdateSelfUIPanels();
+    if (GameState.module.area.miniGame) { return; }
+    
+    const oPC = GameState.getCurrentPlayer();
+    ActionMenuManager.SetPC(oPC);
+    ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
+    ActionMenuManager.UpdateMenuActions();
+    this.UpdateTargetUIPanels();
+    this.UpdateSelfUIPanels();
 
-      //update minimap
-      this.miniMap.setPosition(oPC.position.x, oPC.position.y);
-      this.miniMap.setRotation(GameState.controls.camera.rotation.z);
-      this.miniMap.render(delta);
+    //update minimap
+    this.miniMap.setPosition(oPC.position.x, oPC.position.y);
+    this.miniMap.setRotation(GameState.controls.camera.rotation.z);
+    this.miniMap.render(delta);
 
-      this.TogglePartyMember(0, false);
-      this.TogglePartyMember(1, false);
-      this.TogglePartyMember(2, false);
-      
-      for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-        let partyMember = GameState.PartyManager.party[i];
-        let portraitId = partyMember.getPortraitId();
-        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
-        let id = i;
-        switch (i) {
-        case 1:
-          id = 2;
-          break;
-        case 2:
-          id = 1;
-          break;
-        }
-        this.TogglePartyMember(id, true);
-        let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
-        if (pmBG.getFillTextureName() != portrait.baseresref) {
-          pmBG.setFillTextureName(portrait.baseresref);
-          TextureLoader.tpcLoader.fetch(portrait.baseresref).then((texture: OdysseyTexture) => {
-            pmBG.setFillTexture(texture);
+    this.TogglePartyMember(0, false);
+    this.TogglePartyMember(1, false);
+    this.TogglePartyMember(2, false);
+    
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      let partyMember = GameState.PartyManager.party[i];
+      let portraitId = partyMember.getPortraitId();
+      let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
+      let id = i;
+      switch (i) {
+      case 1:
+        id = 2;
+        break;
+      case 2:
+        id = 1;
+        break;
+      }
+      this.TogglePartyMember(id, true);
+      let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
+      if (pmBG.getFillTextureName() != portrait.baseresref) {
+        pmBG.setFillTextureName(portrait.baseresref);
+        TextureLoader.tpcLoader.fetch(portrait.baseresref).then((texture: OdysseyTexture) => {
+          pmBG.setFillTexture(texture);
+        });
+      }
+      (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
+      (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
+      if (partyMember.isDebilitated()) {
+        this.getControlByName('LBL_DEBILATATED' + (id + 1))?.show();
+      } else {
+        this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
+      }
+    }
+    if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
+      this.showCombatUI();
+      let action0 = oPC.combatRound.action;
+      let action1 = oPC.combatRound.scheduledActionList[0];
+      let action2 = oPC.combatRound.scheduledActionList[1];
+      let action3 = oPC.combatRound.scheduledActionList[2];
+      if (action0 != undefined) {
+        if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
+          this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
+          TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
+            this.LBL_QUEUE0.setFillTexture(texture);
+            this.LBL_QUEUE0.border.fill.material.transparent = true;
           });
         }
-        (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
-        (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
-        if (partyMember.isDebilitated()) {
-          this.getControlByName('LBL_DEBILATATED' + (id + 1))?.show();
-        } else {
-          this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
-        }
+      } else {
+        this.LBL_QUEUE0.setFillTextureName('');
+        this.LBL_QUEUE0.setFillTexture(undefined);
       }
-      if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
-        this.showCombatUI();
-        let action0 = oPC.combatRound.action;
-        let action1 = oPC.combatRound.scheduledActionList[0];
-        let action2 = oPC.combatRound.scheduledActionList[1];
-        let action3 = oPC.combatRound.scheduledActionList[2];
-        if (action0 != undefined) {
-          if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
-            this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
-            TextureLoader.tpcLoader.fetch(action0.iconResRef).then((texture: OdysseyTexture) => {
-              this.LBL_QUEUE0.setFillTexture(texture);
-              this.LBL_QUEUE0.border.fill.material.transparent = true;
-            });
-          }
-        } else {
-          this.LBL_QUEUE0.setFillTextureName('');
-          this.LBL_QUEUE0.setFillTexture(undefined);
-        }
-        if (action1 != undefined) {
-          if (this.LBL_QUEUE1.getFillTextureName() != action1.iconResRef) {
-            this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
-            TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
-              this.LBL_QUEUE1.setFillTexture(texture);
-              this.LBL_QUEUE1.border.fill.material.transparent = true;
-            });
-          }
-        } else {
-          this.LBL_QUEUE1.setFillTextureName('');
-          this.LBL_QUEUE1.setFillTexture(undefined);
-        }
-        if (action2 != undefined) {
-          if (this.LBL_QUEUE2.getFillTextureName() != action2.iconResRef) {
-            this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
-            TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
-              this.LBL_QUEUE2.setFillTexture(texture);
-              this.LBL_QUEUE2.border.fill.material.transparent = true;
-            });
-          }
-        } else {
-          this.LBL_QUEUE2.setFillTextureName('');
-          this.LBL_QUEUE2.setFillTexture(undefined);
-        }
-        if (action3 != undefined) {
-          if (this.LBL_QUEUE3.getFillTextureName() != action3.iconResRef) {
-            this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
-            TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
-              this.LBL_QUEUE3.setFillTexture(texture);
-              this.LBL_QUEUE3.border.fill.material.transparent = true;
-            });
-          }
-        } else {
-          this.LBL_QUEUE3.setFillTextureName('');
-          this.LBL_QUEUE3.setFillTexture(undefined);
+      if (action1 != undefined) {
+        if (this.LBL_QUEUE1.getFillTextureName() != action1.iconResRef) {
+          this.LBL_QUEUE1.setFillTextureName(action1.iconResRef);
+          TextureLoader.tpcLoader.fetch(action1.iconResRef).then((texture: OdysseyTexture) => {
+            this.LBL_QUEUE1.setFillTexture(texture);
+            this.LBL_QUEUE1.border.fill.material.transparent = true;
+          });
         }
       } else {
-        this.hideCombatUI();
+        this.LBL_QUEUE1.setFillTextureName('');
+        this.LBL_QUEUE1.setFillTexture(undefined);
       }
+      if (action2 != undefined) {
+        if (this.LBL_QUEUE2.getFillTextureName() != action2.iconResRef) {
+          this.LBL_QUEUE2.setFillTextureName(action2.iconResRef);
+          TextureLoader.tpcLoader.fetch(action2.iconResRef).then((texture: OdysseyTexture) => {
+            this.LBL_QUEUE2.setFillTexture(texture);
+            this.LBL_QUEUE2.border.fill.material.transparent = true;
+          });
+        }
+      } else {
+        this.LBL_QUEUE2.setFillTextureName('');
+        this.LBL_QUEUE2.setFillTexture(undefined);
+      }
+      if (action3 != undefined) {
+        if (this.LBL_QUEUE3.getFillTextureName() != action3.iconResRef) {
+          this.LBL_QUEUE3.setFillTextureName(action3.iconResRef);
+          TextureLoader.tpcLoader.fetch(action3.iconResRef).then((texture: OdysseyTexture) => {
+            this.LBL_QUEUE3.setFillTexture(texture);
+            this.LBL_QUEUE3.border.fill.material.transparent = true;
+          });
+        }
+      } else {
+        this.LBL_QUEUE3.setFillTextureName('');
+        this.LBL_QUEUE3.setFillTexture(undefined);
+      }
+    } else {
+      this.hideCombatUI();
     }
   }
 
