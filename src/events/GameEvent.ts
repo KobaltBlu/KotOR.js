@@ -47,7 +47,7 @@ export class GameEvent {
   }
 
   getCaller(){
-    return BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : this.setCaller(GameState.ModuleObjectManager.GetObjectById(this.callerId));
+    return BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller : this.setCaller(GameState.ModuleObjectManager.GetObjectById(this.callerId));
   }
 
   setObjectId(nObjectId: number){
@@ -61,7 +61,7 @@ export class GameEvent {
   }
 
   getObject(){
-    return BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object.id : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
+    return BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
   }
 
   eventDataFromStruct(struct: GFFStruct){

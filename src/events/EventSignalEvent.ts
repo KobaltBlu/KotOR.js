@@ -8,6 +8,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
+import { SignalEventType } from "../enums";
 
 /**
  * EventSignalEvent class.
@@ -51,12 +52,50 @@ export class EventSignalEvent extends GameEvent {
     }
 
     switch(this.eventType){
-      case 26:
+      case SignalEventType.OnClose:
+        if(obj.scripts.onClose){
+          const instance = obj.scripts.onClose.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnOpen:
+        if(obj.scripts.onOpen){
+          const instance = obj.scripts.onOpen.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnDamaged:
+        if(obj.scripts.onDamaged){
+          const instance = obj.scripts.onDamaged.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnDeath:
+        if(obj.scripts.onDeath){
+          const instance = obj.scripts.onDeath.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnDisarm:
+        if(obj.scripts.onDisarm){
+          const instance = obj.scripts.onDisarm.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnFailToOpen:
+        if(obj.scripts.onFailToOpen){
+          const instance = obj.scripts.onFailToOpen.nwscript.newInstance();
+          instance.run(obj);
+        }
+      break;
+      case SignalEventType.OnTrapTriggered:
         console.log('onTrapTriggered', obj.scripts.onTrapTriggered);
         if(obj.scripts.onTrapTriggered){
           const instance = obj.scripts.onTrapTriggered.nwscript.newInstance();
           instance.run(obj);
-          console.log('onTrapTriggered', 'complete');
+        }
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          obj.setHP(-11);
         }
       break;
     }

@@ -13,9 +13,11 @@ import { Action } from "./Action";
  */
 export class ActionPlayAnimation extends Action {
   overlayAnimation: any;
-  animation: any;
-  speed: any;
-  time: any;
+  animation: number;
+  speed: number;
+  time: number;
+
+  bInitialized: boolean;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(groupId);
@@ -33,9 +35,12 @@ export class ActionPlayAnimation extends Action {
     if(this.overlayAnimation)
       return ActionStatus.FAILED;
 
-    this.animation = this.getParameter(0);
-    this.speed = this.getParameter(1);
-    this.time = this.getParameter(2);
+    
+    if(!this.bInitialized){
+      this.animation = this.getParameter(0);
+      this.speed = this.getParameter(1);
+      this.time = this.getParameter(2);
+    }
 
     if(this.animation >= 10000){
       this.owner.setAnimationState(this.animation);
@@ -43,6 +48,8 @@ export class ActionPlayAnimation extends Action {
       console.error('ActionPlayAnimation Invalid animation', this.owner.getName(), this.animation, this);
       return ActionStatus.FAILED;
     }
+    
+    this.bInitialized = true;
 
     if(this.time == -1){
       return ActionStatus.COMPLETE;

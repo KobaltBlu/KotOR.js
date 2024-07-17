@@ -59,6 +59,7 @@ export class ActionSetMine extends Action {
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
 
+        console.log('ActionSetMine', 'MOVE_TO_TARGET');
         return ActionStatus.IN_PROGRESS;
       }
 
@@ -69,6 +70,7 @@ export class ActionSetMine extends Action {
         action.setParameter(1, ActionParameterType.FLOAT, 1);
         action.setParameter(2, ActionParameterType.FLOAT, 1.5);
         this.owner.actionQueue.addFront(action);
+        console.log('ActionSetMine', 'ANIMATION_QUEUED');
         return ActionStatus.IN_PROGRESS;
       }
 
@@ -84,6 +86,7 @@ export class ActionSetMine extends Action {
           }
         }
         this.usedItem = true;
+        console.log('ActionSetMine', 'ITEM_USED');
       }
       
       const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
@@ -108,9 +111,11 @@ export class ActionSetMine extends Action {
         }
       }
       
+      console.log('ActionSetMine', 'COMPLETE');
       return ActionStatus.COMPLETE;
     }
     
+    console.log('ActionSetMine', 'FAILED');
     return ActionStatus.FAILED;
   }
 

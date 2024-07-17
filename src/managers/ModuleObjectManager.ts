@@ -608,43 +608,43 @@ export class ModuleObjectManager {
 
     //console.log('GetObjectsInShape', objectFilter, shape);
 
-    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE || oType <= 1){ //CREATURE
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
       object_pool = object_pool.concat(this.module.area.creatures);
     }
 
-    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM || oType <= 1){ //ITEM
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){ //ITEM
       object_pool = object_pool.concat(this.module.area.items);
     }
 
-    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER || oType <= 1){ //TRIGGER
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){ //TRIGGER
       object_pool = object_pool.concat(this.module.area.triggers); 
     }
 
-    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR || oType <= 1){ //DOOR
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){ //DOOR
       object_pool = object_pool.concat(this.module.area.doors); 
     }
 
-    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE || oType <= 1){ //AOE
+    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){ //AOE
               
     }
 
-    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT || oType <= 1){ //WAYPOINTS
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){ //WAYPOINTS
       object_pool = object_pool.concat(this.module.area.waypoints);
     }
     
-    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE || oType <= 1){ //PLACEABLE
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){ //PLACEABLE
       object_pool = object_pool.concat(this.module.area.placeables);
     }
 
-    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE || oType <= 1){ //STORE
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){ //STORE
           
     }
     
-    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER || oType <= 1){ //ENCOUNTER
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){ //ENCOUNTER
           
     }
     
-    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND || oType <= 1){ //SOUND
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(this.module.area.sounds);
     }
 
