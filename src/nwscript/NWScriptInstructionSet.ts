@@ -945,7 +945,7 @@ export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWSc
   
   //destroy the remaing elements off the stack
   this.stack.stack.splice(
-    //offset of the first element to destory
+    //offset of the first element to destroy
     ( this.stack.pointer - instruction.sizeToDestroy ) / 4,
     //count of elements to destroy
     ( instruction.sizeToDestroy - instruction.sizeOfElementToSave ) / 4

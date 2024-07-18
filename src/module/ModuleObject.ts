@@ -254,6 +254,9 @@ export class ModuleObject {
   trapFlag: boolean;
   ownerDemolitions: number = -1;
 
+  fadeOnDestory: boolean = false;
+  fadeOutTimer: number = 3000;
+
   constructor (gff = new GFFObject) {
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
     this.initialized = false;
@@ -1201,7 +1204,7 @@ export class ModuleObject {
 
       GameState.ModuleObjectManager.RemoveObject(this);
     }catch(e){
-      console.error('ModuleObject.destory', e);
+      console.error('ModuleObject.destroy', e);
     }
   }
 

@@ -518,7 +518,7 @@ export class ModuleRoom extends ModuleObject {
     super.destroy();
     if(this.area){
       const pIdx = this.area.rooms.indexOf(this);
-      //console.log('ModuleObject.destory', 'placeable', pIdx)
+      //console.log('ModuleObject.destroy', 'placeable', pIdx)
       if(pIdx > -1){
         this.area.rooms.splice(pIdx, 1);
       }

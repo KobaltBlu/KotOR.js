@@ -57,7 +57,7 @@ export class OdysseyModelAnimationManager {
 
   }
 
-  destory(){
+  destroy(){
     this.model = undefined;
   }
 
