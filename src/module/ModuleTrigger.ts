@@ -12,9 +12,10 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { ConfigClient } from "../utility/ConfigClient";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { ModuleDoorAnimState } from "../enums";
 
 /**
 * ModuleTrigger class.
@@ -33,6 +34,9 @@ export class ModuleTrigger extends ModuleObject {
   lastObjectEntered: ModuleObject;
   lastObjectExited: ModuleObject;
   triggered: boolean;
+
+  trapModel: OdysseyModel3D;
+  trapAnimationState: ModuleDoorAnimState = ModuleDoorAnimState.DEFAULT;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -137,6 +141,7 @@ export class ModuleTrigger extends ModuleObject {
         this.loadScripts()
         this.buildGeometry();
         this.initObjectsInside();
+        this.loadTrap();
       }else{
         console.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
@@ -144,6 +149,7 @@ export class ModuleTrigger extends ModuleObject {
           this.loadScripts();
           this.buildGeometry();
           this.initObjectsInside();
+          this.loadTrap();
         }
       }
 
@@ -153,6 +159,31 @@ export class ModuleTrigger extends ModuleObject {
       this.loadScripts()
       this.buildGeometry();
       this.initObjectsInside();
+      this.loadTrap();
+    }
+  }
+
+  loadTrap(){
+    if(this.type == 2){
+      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[this.trapType];
+      if(trap && trap.model != '****'){
+        MDLLoader.loader.load(trap.model).then( (trapMDL) => {
+          OdysseyModel3D.FromMDL(trapMDL, {
+            context: this.context,
+            castShadow: false,
+            receiveShadow: false,
+            mergeStatic: false
+          }).then( (model: OdysseyModel3D) => {
+            this.trapModel = model;
+            this.container.add(model);
+            if(this.trapFlag){
+              this.model.playAnimation('detect', false);
+            }else{
+              this.model.playAnimation('default', false);
+            }
+          });
+        });
+      }
     }
   }
 
@@ -243,6 +274,15 @@ export class ModuleTrigger extends ModuleObject {
 
     this.action = this.actionQueue[0];
     this.actionQueue.process( delta );
+
+    if(this.trapModel){
+      this.trapModel.update(delta);
+      if(this.trapFlag && this.trapModel.animationManager.currentAnimation?.name != 'detect'){
+        this.trapModel.playAnimation('detect', false);
+      }else if(!this.trapFlag && this.trapModel.animationManager.currentAnimation?.name != 'default'){
+        this.trapModel.playAnimation('default', false);
+      }
+    }
 
     /*
     let pos = GameState.PartyManager.Player.getModel().position.clone();
@@ -467,6 +507,10 @@ export class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.hasField('SetByPlayerParty'))
       this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
 
+    if(this.setByPlayerParty){
+      this.trapFlag = this.setByPlayerParty;
+    }
+
     if(this.template.RootNode.hasField('Tag'))
       this.tag = this.template.getFieldByLabel('Tag').getValue();
 
@@ -484,6 +528,12 @@ export class ModuleTrigger extends ModuleObject {
 
     if(this.template.RootNode.hasField('TrapOneShot'))
       this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
+
+    if(this.template.RootNode.hasField('TrapDetectDC'))
+      this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
+
+    if(this.template.RootNode.hasField('TrapFlag'))
+      this.trapFlag = this.template.getFieldByLabel('TrapFlag').getValue();
 
     if(this.template.RootNode.hasField('TrapType'))
       this.trapType = this.template.getFieldByLabel('TrapType').getValue();
@@ -526,6 +576,12 @@ export class ModuleTrigger extends ModuleObject {
 
   destroy(): void {
     super.destroy();
+
+    if(this.trapModel){
+      this.trapModel.removeFromParent();
+      this.trapModel.dispose();
+    }
+
     if(this.area) this.area.detachObject(this);
   }
 
