@@ -163,32 +163,37 @@ export class ActionMenuManager {
             }));
           }
           
-          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-            action: {
-              type: ActionType.ActionPhysicalAttacks,
-              object: ActionMenuManager.oTarget,
-              talent: undefined
-            },
-            icon: 'i_attack'
-          }));
+          if(!this.oTarget?.notBlastable){
+            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: {
+                type: ActionType.ActionPhysicalAttacks,
+                object: ActionMenuManager.oTarget,
+                talent: undefined
+              },
+              icon: 'i_attack'
+            }));
+          }
 
           const mineList = this.oPC.getInventory().filter((item) => {
             return item.baseItemId == 58
           });
-          for(let i = 0, len = mineList.length; i < len; i++){
-            const item = mineList[i];
-            const setMine = new GameState.ActionFactory.ActionSetMine();
-            setMine.setOwner(ActionMenuManager.oPC);
-            setMine.setTarget(ActionMenuManager.oTarget);
-            setMine.setParameter(0, ActionParameterType.DWORD, item);
-            setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
-            setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
-            setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
-            setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
-            ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: setMine,
-              icon: item.getIcon()
-            }));
+
+          if(!this.oTarget?.notBlastable){
+            for(let i = 0, len = mineList.length; i < len; i++){
+              const item = mineList[i];
+              const setMine = new GameState.ActionFactory.ActionSetMine();
+              setMine.setOwner(ActionMenuManager.oPC);
+              setMine.setTarget(ActionMenuManager.oTarget);
+              setMine.setParameter(0, ActionParameterType.DWORD, item);
+              setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
+              setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
+              setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
+              setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
+              ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+                action: setMine,
+                icon: item.getIcon()
+              }));
+            }
           }
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0])){

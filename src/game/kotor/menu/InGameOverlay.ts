@@ -480,6 +480,7 @@ export class InGameOverlay extends GameMenu {
     if (!ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setFillTextureName('');
       return;
     }
 
@@ -487,11 +488,13 @@ export class InGameOverlay extends GameMenu {
     if (!action) {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setFillTextureName('');
       return;
     }
 
     if (guiControl.getFillTextureName() != action.icon) {
       guiControl.setFillTextureName(action.icon);
+      guiControl.setHighlightFillTexture(action.icon);
       TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
         guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
         guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
@@ -508,6 +511,7 @@ export class InGameOverlay extends GameMenu {
       const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
         guiControl.setFillTextureName(action.icon);
+        guiControl.setHighlightFillTexture(action.icon);
         TextureLoader.tpcLoader.fetch(action.icon).then((texture: OdysseyTexture) => {
           guiControl.setMaterialTexture(guiControl.border.fill.material, texture);
           guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
@@ -518,10 +522,12 @@ export class InGameOverlay extends GameMenu {
       } else if (!action) {
         guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
         guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+        guiControl.setFillTextureName('');
       }
     } else {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
+      guiControl.setFillTextureName('');
     }
   }
 
@@ -639,14 +645,20 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
         this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
         this.UpdateTargetUIIcon(i);
-        this.getControlByName('BTN_TARGET' + i).recalculate();
-        this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGETUP' + i).recalculate();
         this.getControlByName('BTN_TARGETDOWN' + i).recalculate();
+        this.getControlByName('BTN_TARGET' + i).recalculate();
+        this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
-        this.getControlByName('BTN_TARGETUP' + i)?.show();
-        this.getControlByName('BTN_TARGETDOWN' + i)?.show();
+        
+        if(ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
+          this.getControlByName('BTN_TARGETUP' + i)?.hide();
+          this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
+        }else{
+          this.getControlByName('BTN_TARGETUP' + i)?.show();
+          this.getControlByName('BTN_TARGETDOWN' + i)?.show();
+        }
       }
     } else {
       for (let i = 0; i < 3; i++) {
@@ -661,6 +673,16 @@ export class InGameOverlay extends GameMenu {
   UpdateSelfUIPanels(delta = 0) {
     for (let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++) {
       this.UpdateSelfUIIcon(i);
+      this.getControlByName('BTN_ACTIONUP' + i).recalculate();
+      this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
+        
+      if(ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+        this.getControlByName('BTN_ACTIONUP' + i)?.hide();
+        this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
+      }else{
+        this.getControlByName('BTN_ACTIONUP' + i)?.show();
+        this.getControlByName('BTN_ACTIONDOWN' + i)?.show();
+      }
     }
   }
 
@@ -670,7 +692,7 @@ export class InGameOverlay extends GameMenu {
       return;
 
     if (GameState.module.area.miniGame) { return; }
-    
+
     const oPC = GameState.getCurrentPlayer();
     ActionMenuManager.SetPC(oPC);
     ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);

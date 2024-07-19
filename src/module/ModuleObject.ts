@@ -253,6 +253,8 @@ export class ModuleObject {
   trapType: number;
   trapFlag: boolean;
   ownerDemolitions: number = -1;
+  
+  notBlastable: boolean = false;
 
   fadeOnDestory: boolean = false;
   fadeOutTimer: number = 3000;

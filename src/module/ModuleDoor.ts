@@ -981,7 +981,10 @@ export class ModuleDoor extends ModuleObject {
       this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
     
     if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue() ? true : false;
+      this.useTweakColor = !!this.template.getFieldByLabel('UseTweakColor').getValue();
+
+    if(this.template.RootNode.hasField('NotBlastable'))
+      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
     let keys = Object.keys(this.scripts);
     for(let i = 0; i < keys.length; i++){
