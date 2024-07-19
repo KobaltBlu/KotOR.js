@@ -913,6 +913,12 @@ export class Module {
         GameState.ModuleObjectManager.COUNT = module.nextObjId0;
 
       GameState.ModuleObjectManager.module = module;
+
+      if(GameState.isLoadingSave){
+        console.log('Module', 'SaveGame.loadInventory');
+        await GameState.SaveGame.loadInventory();
+      }
+
       return module;
     }catch(e){
       console.log(`Module.Load: failed to load module.`);

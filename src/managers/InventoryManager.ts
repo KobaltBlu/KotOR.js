@@ -109,67 +109,34 @@ export class InventoryManager {
       item = template;
     }
 
-    if(item instanceof GameState.Module.ModuleArea.ModuleItem){
-      if(item.getBaseItemId() == 57){ //Credits
-        GameState.PartyManager.Gold += item.getStackSize();
-      }else{
-        item.load();
-        let hasItem = InventoryManager.getItemByTag(item.getTag());
-        if(hasItem){
-
-          if(!limitOne){
-            hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
-          }else{
-            hasItem.setStackSize(hasItem.getStackSize() + 1);
-          }
-
-          return hasItem;
-        }else{
-
-          if(limitOne)
-            item.setStackSize(1);
-
-          InventoryManager.inventory.push(item);
-          return item;
-        }
-      }
-    }else{
+    if(!(item instanceof GameState.Module.ModuleArea.ModuleItem)){
       throw 'You can only add an item of type ModuleItem to an inventory';
     }
 
+    item.initProperties();
+    if(item.getBaseItemId() == 57){ //Credits
+      GameState.PartyManager.Gold += item.getStackSize();
+    }else{
+      item.load();
+      let hasItem = InventoryManager.getItemByTag(item.getTag());
+      if(hasItem){
 
-    
+        if(!limitOne){
+          hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+        }else{
+          hasItem.setStackSize(hasItem.getStackSize() + 1);
+        }
 
+        return hasItem;
+      }else{
 
-    /*itm = Object.assign({
-      AddCost: 100,
-      BaseItem: 0,
-      Charges: 0,
-      Cost: 100,
-      DELETING: 0,
-      DescIdentified: new CExoLocString(),
-      Description: new CExoLocString(),
-      Dropable: 1,
-      Identified: 1,
-      LocalizedName: new CExoLocString(),
-      MaxCharges: 0,
-      ModelVariation: 1,
-      NewItem: 1,
-      NonEquippable: 0,
-      Pickpocketable: 1,
-      Plot: 0,
-      PropertiesList: [],
-      StackSize: 1,
-      Stolen: 0,
-      Tag: '',
-      Upgrades: 0,
-      XOrientation: 0,
-      XPosition: 0,
-      YOrientation: 0,
-      YPosition: 0,
-      ZOrientation: 0,
-      ZPosition: 0
-    }, itm);*/
+        if(limitOne)
+          item.setStackSize(1);
+
+        InventoryManager.inventory.push(item);
+        return item;
+      }
+    }
 
   }
 

@@ -231,7 +231,7 @@ export class SaveGame {
     //Load GlobalVars
     await this.loadGlobalVARS();
     //Load Inventory
-    await this.loadInventory();
+    // await this.loadInventory();
     //Load PartyTable
     await this.loadPartyTable();
     //Load PIFO if it exists

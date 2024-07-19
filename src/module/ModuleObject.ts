@@ -48,7 +48,7 @@ import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
-import { SkillType } from "../enums";
+import { ModuleTriggerType, SkillType } from "../enums";
 
 /**
 * ModuleObject class.
@@ -256,6 +256,7 @@ export class ModuleObject {
 
   fadeOnDestory: boolean = false;
   fadeOutTimer: number = 3000;
+  linkedToObject: ModuleObject;
 
   constructor (gff = new GFFObject) {
     this.helperColor.setHex( Math.random() * 0xFFFFFF );
@@ -1017,15 +1018,32 @@ export class ModuleObject {
     this.trapDisarmDC = nDisarmDC + 20 + this.ownerDemolitions;
     this.trapDisarmable = false;
 
-    //todo: create and spawn trap trigger in the world for the mine visual
+    const trigger = new (this.area.constructor as typeof ModuleArea).ModuleTrigger();
+    trigger.initialized = true;
+    trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
+    trigger.factionId = owner.factionId;
+    trigger.type = ModuleTriggerType.TRAP;
+    trigger.trapType = nTrapId;
+    trigger.setByPlayerParty = owner.isPartyMember();
+    trigger.trapDetectDC = this.trapDetectDC;
+    trigger.trapDisarmDC = this.trapDisarmDC
+    trigger.trapDetectable = false;
+    trigger.trapDisarmable = false;
+    trigger.ownerDemolitions = -1;
+    trigger.position.copy(this.position);
 
-    //mine faction will be the owner's faction
+    trigger.linkedToObject = this;
+    this.linkedToObject = trigger;
 
     //Trigger Geomerty
-    //-2,  2, 0
-    //-2, -2, 0
-    // 2, -2, 0
-    // 2,  2, 0
+    trigger.vertices[0] = new THREE.Vector3(-2,  2, 0);
+    trigger.vertices[1] = new THREE.Vector3(-2, -2, 0);
+    trigger.vertices[2] = new THREE.Vector3( 2,  2, 0);
+    trigger.vertices[3] = new THREE.Vector3( 2,  2, 0);
+
+    trigger.load();
+
+    this.area.triggers.push(trigger);
   }
 
   //---------------//

@@ -357,8 +357,9 @@ export class ModuleTrigger extends ModuleObject {
       }
     }
 
-    this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
-
+    if(this.mesh){
+      this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
+    }
   }
 
   onEnter(object?: ModuleObject){
