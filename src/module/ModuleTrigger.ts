@@ -42,7 +42,8 @@ export class ModuleTrigger extends ModuleObject {
   reticleNode: OdysseyObject3D = new OdysseyObject3D();
   trapModelResRef: string;
   trapExplosionSound: string;
-  trapTriggered: any;
+  trapTriggered: boolean;
+  trapResRef: string;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -611,6 +612,7 @@ export class ModuleTrigger extends ModuleObject {
         this.trapName = GameState.TLKManager.GetStringById(trap.name).Value;
         this.trapModelResRef = trap.model;
         this.trapExplosionSound = trap.explosionsound;
+        this.trapResRef = trap.resref;
       }
     }
 

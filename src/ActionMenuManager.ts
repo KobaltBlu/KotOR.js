@@ -7,7 +7,7 @@ import { IActionPanelLists } from "./interface/gui/IActionPanelLists";
 import { GameEngineType } from "./enums/engine/GameEngineType";
 import { ActionType } from "./enums/actions/ActionType";
 import { SkillType } from "./enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant } from "./enums";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "./enums";
 import { TalentObject } from "./talents/TalentObject";
 
 /**
@@ -71,6 +71,7 @@ export class ActionMenuManager {
 
     const securityTalent = ActionMenuManager.oPC.getSkillList()[SkillType.SECURITY];
     const bHasSecuritySkill = ActionMenuManager.oPC.getSkillLevel(SkillType.SECURITY) >= 1;
+    const bHasDemolitionsSkill = ActionMenuManager.oPC.getSkillLevel(SkillType.DEMOLITIONS) >= 1;
 
     if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleObject){
 
@@ -260,6 +261,34 @@ export class ActionMenuManager {
           }));
         }
 
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleTrigger){
+        if(ActionMenuManager.oTarget.type == ModuleTriggerType.TRAP){
+          /**
+           * Disarm Mine
+           */
+          if(bHasDemolitionsSkill && ActionMenuManager.oTarget.trapDisarmable){
+            const action = new GameState.ActionFactory.ActionDisarmMine();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: 'gui_mp_dismined'
+            }));
+          }
+
+          /**
+           * Recover Mine
+           */
+          if(bHasDemolitionsSkill){
+            const action = new GameState.ActionFactory.ActionRecoverMine();
+            action.setOwner(ActionMenuManager.oPC);
+            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              action: action,
+              icon: 'gui_mp_recmined'
+            }));
+          }
+        }
       }
 
     }
@@ -301,8 +330,13 @@ export class ActionMenuManager {
     const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if(action){
       if(index==0){
-        if(!action.talent){
+        if(action.action && action.action.type == ActionType.ActionPhysicalAttacks){
           ActionMenuManager.oPC.attackCreature(action.target, undefined);
+        }else if(action.action){
+          console.log('onTargetMenuAction', action);
+          ActionMenuManager.oPC.actionQueue.addFront(
+            action.action
+          ); 
         }else if(action.talent instanceof TalentObject){
           action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
         }
