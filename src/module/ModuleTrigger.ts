@@ -1,7 +1,7 @@
 import { ModuleObject } from "./ModuleObject";
 import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
 // import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
@@ -37,6 +37,12 @@ export class ModuleTrigger extends ModuleObject {
 
   trapModel: OdysseyModel3D;
   trapAnimationState: ModuleDoorAnimState = ModuleDoorAnimState.DEFAULT;
+  trapName: string = '';
+
+  reticleNode: OdysseyObject3D = new OdysseyObject3D();
+  trapModelResRef: string;
+  trapExplosionSound: string;
+  trapTriggered: any;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -55,8 +61,23 @@ export class ModuleTrigger extends ModuleObject {
     this.box = new THREE.Box3();
 
     this.triggered = false;
+    this.highlightHeight = 0.10000000149011612;
     this.initProperties();
 
+    this.container.add(this.reticleNode);
+    this.reticleNode.position.z = this.highlightHeight;
+
+  }
+
+  getReticleNode(){
+    return this.reticleNode;
+  }
+
+  getName(){
+    if(this.type == ModuleTriggerType.TRAP){
+      return this.trapName;
+    }
+    return '';
   }
 
   getType(){
@@ -164,26 +185,23 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   loadTrap(){
-    if(this.type == 2){
-      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[this.trapType];
-      if(trap && trap.model != '****'){
-        MDLLoader.loader.load(trap.model).then( (trapMDL) => {
-          OdysseyModel3D.FromMDL(trapMDL, {
-            context: this.context,
-            castShadow: false,
-            receiveShadow: false,
-            mergeStatic: false
-          }).then( (model: OdysseyModel3D) => {
-            this.trapModel = model;
-            this.container.add(model);
-            if(this.trapFlag){
-              this.model.playAnimation('detect', false);
-            }else{
-              this.model.playAnimation('default', false);
-            }
-          });
+    if(this.type == 2 && this.trapModelResRef && this.trapModelResRef != '***'){
+      MDLLoader.loader.load(this.trapModelResRef).then( (trapMDL) => {
+        OdysseyModel3D.FromMDL(trapMDL, {
+          context: this.context,
+          castShadow: false,
+          receiveShadow: false,
+          mergeStatic: false
+        }).then( (model: OdysseyModel3D) => {
+          this.trapModel = model;
+          this.container.add(model);
+          if(this.trapFlag){
+            this.model.playAnimation('detect', false);
+          }else{
+            this.model.playAnimation('default', false);
+          }
         });
-      }
+      });
     }
   }
 
@@ -260,6 +278,10 @@ export class ModuleTrigger extends ModuleObject {
         }
       }
     }
+  }
+
+  isUseable(): boolean {
+    return this.type == ModuleTriggerType.TRAP;
   }
 
   update(delta = 0){
@@ -364,8 +386,9 @@ export class ModuleTrigger extends ModuleObject {
 
   onEnter(object?: ModuleObject){
     console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
-    if(this.type == ModuleTriggerType.TRAP){
+    if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
+        this.trapTriggered = true;
         console.log('ModuleTrigger.onEnter', 'Trap Triggered')
         const event = new GameState.GameEventFactory.EventSignalEvent();
         event.setCaller(object);
@@ -581,6 +604,15 @@ export class ModuleTrigger extends ModuleObject {
     }
     
     this.initialized = true;
+
+    if(this.type == ModuleTriggerType.TRAP){
+      const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[this.trapType];
+      if(trap){
+        this.trapName = GameState.TLKManager.GetStringById(trap.name).Value;
+        this.trapModelResRef = trap.model;
+        this.trapExplosionSound = trap.explosionsound;
+      }
+    }
 
   }
 

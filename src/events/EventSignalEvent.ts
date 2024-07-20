@@ -116,8 +116,16 @@ export class EventSignalEvent extends GameEvent {
           obj.setHP(-11);
           obj.onDamaged();
           if(obj.linkedToObject){
+            if(obj.linkedToObject.audioEmitter){
+              obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as any).trapExplosionSound);
+            }
             obj.linkedToObject.destroy();
           }
+        }else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+          if(obj.audioEmitter){
+            obj.audioEmitter.playSound((obj as any).trapExplosionSound);
+          }
+          obj.destroy();
         }
       break;
     }

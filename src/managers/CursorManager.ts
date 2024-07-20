@@ -129,6 +129,8 @@ export class CursorManager {
       TextureLoader.enQueue('gui_mp_attackU', CursorManager.attack);
       TextureLoader.enQueue('gui_mp_attackD', CursorManager.attackD);
     }
+    TextureLoader.enQueue('gui_mp_dismineU', CursorManager.trap);
+    TextureLoader.enQueue('gui_mp_dismineD', CursorManager.trapD);
     TextureLoader.enQueue('gui_mp_selectU', CursorManager.select);
     TextureLoader.enQueue('gui_mp_selectD', CursorManager.selectD);
 
@@ -220,6 +222,12 @@ export class CursorManager {
         }else{
           CursorManager.setReticle2('reticleF2');
         }
+      }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+        if(object.isHostile(GameState.getCurrentPlayer())){
+          CursorManager.setReticle2('reticleF2');
+        }else{
+          CursorManager.setReticle2('reticleF2');
+        }
       }
     }
   }
@@ -252,6 +260,16 @@ export class CursorManager {
         CursorManager.setCursor('select');
 
         CursorManager.setReticle('reticleF');
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      if(!object.isUseable()){
+        return;
+      }
+      if(canChangeCursor)
+        CursorManager.setCursor('trap');
+      else
+        CursorManager.setCursor('select');
+
+      CursorManager.setReticle('reticleF');
     }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
 
       if(object.isHostile(GameState.getCurrentPlayer())){
@@ -383,6 +401,11 @@ export class CursorManager {
           return;
         }      
         CursorManager.setReticle2('reticleF2');
+      }else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleTrigger)){
+        if(!CursorManager.selectedObject.isUseable()){
+          return;
+        }      
+        CursorManager.setReticle2('reticleF2');
       }else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleCreature)){
         if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
           CursorManager.setReticle2('reticleH2');
@@ -416,6 +439,9 @@ export class CursorManager {
 
       targetPosition.copy(obj.position);
       targetPosition.z += losZ;
+      if(obj.highlightHeight){
+        // targetPosition.z += obj.highlightHeight;
+      }
 
       points.push(...targetPosition.toArray());
       sizes.push(CursorManager.pointSize);
@@ -438,7 +464,7 @@ export class CursorManager {
     CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
     const intersectsT = CursorManager.raycaster.intersectObjects( occluders, false );
     if(intersectsT[0] && intersectsT[0].object?.uuid == CursorManager.testPoints.uuid){
-      // console.log('intersects', intersectsT[0], objects2[intersectsT[0]?.index], intersectsT);
+      // console.log('intersects', intersectsT[0], objects[intersectsT[0]?.index], intersectsT);
       return objects[intersectsT[0].index];
     }
     CursorManager.raycaster.params.Points.threshold = pThresholdCache;

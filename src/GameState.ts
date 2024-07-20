@@ -57,6 +57,7 @@ import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 // import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
 import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
+import { ModuleTriggerType } from "./enums";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -713,7 +714,8 @@ export class GameState implements EngineContext {
     const objects = [
       ...GameState.module.area.placeables, 
       ...GameState.module.area.doors, 
-      ...GameState.module.area.creatures
+      ...GameState.module.area.creatures,
+      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
     ];
 
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
