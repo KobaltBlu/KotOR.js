@@ -15,7 +15,7 @@ import { ConfigClient } from "../utility/ConfigClient";
 import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleDoorAnimState } from "../enums";
+import { ModuleDoorAnimState, SignalEventType } from "../enums";
 
 /**
 * ModuleTrigger class.
@@ -363,35 +363,44 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   onEnter(object?: ModuleObject){
-    console.log('ModuleTrigger', this.getTag(), 'enter 2')
-    if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
+    console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
+    if(this.type == ModuleTriggerType.TRAP){
+      if(object.isHostile(this)){
+        console.log('ModuleTrigger.onEnter', 'Trap Triggered')
+        const event = new GameState.GameEventFactory.EventSignalEvent();
+        event.setCaller(object);
+        event.setObject(this);
+        event.setDay(GameState.module.timeManager.pauseDay);
+        event.setTime(GameState.module.timeManager.pauseTime);
+        event.eventType = SignalEventType.OnTrapTriggered;
+        GameState.module.addEvent(event);
+      }
+    }else if(this.linkedToModule && (GameState.Mode != EngineMode.DIALOG)){
       if(object == GameState.getCurrentPlayer()){
         GameState.LoadModule(this.linkedToModule.toLowerCase(), this.linkedTo.toLowerCase());
       }
-    }else{
-      console.log('ModuleTrigger', this.getTag(), 'enter 1')
-      if(this.scripts.onEnter instanceof NWScriptInstance && this.scripts.onEnter.running != true){
-        console.log('ModuleTrigger', this.getTag(), this.scripts.onEnter.name, 'enter running')
-        this.scripts.onEnter.running = true;
-        //let script = this.scripts.onEnter.clone();
-        this.scripts.onEnter.debug.action = true;
-        this.scripts.onEnter.enteringObject = object;
-        this.scripts.onEnter.run(this, 0);
-        this.scripts.onEnter.running = false;
-        //console.log('trigger', object, this);
-      }
+      return;
     }
+
+    console.log('ModuleTrigger', this.getTag(), 'enter 1')
+    const event = new GameState.GameEventFactory.EventSignalEvent();
+    event.setCaller(object);
+    event.setObject(this);
+    event.setDay(GameState.module.timeManager.pauseDay);
+    event.setTime(GameState.module.timeManager.pauseTime);
+    event.eventType = SignalEventType.OnObjectEnter;
+    GameState.module.addEvent(event);
   }
 
   onExit(object?: ModuleObject){
-    if(this.scripts.onExit instanceof NWScriptInstance && this.scripts.onEnter.running != true){
-      //this.scripts.onExit.running = true;
-      this.scripts.onExit.exitingObject = object;
-      /*
-        this.scripts.onExit.run(this, 0);
-        this.scripts.onExit.running = false;
-      */
-    }
+    console.log('ModuleTrigger', this.getTag(), 'exit')
+    const event = new GameState.GameEventFactory.EventSignalEvent();
+    event.setCaller(object);
+    event.setObject(this);
+    event.setDay(GameState.module.timeManager.pauseDay);
+    event.setTime(GameState.module.timeManager.pauseTime);
+    event.eventType = SignalEventType.OnObjectExit;
+    GameState.module.addEvent(event);
   }
 
   loadScripts(){

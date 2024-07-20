@@ -88,6 +88,24 @@ export class EventSignalEvent extends GameEvent {
           instance.run(obj);
         }
       break;
+      case SignalEventType.OnObjectEnter:
+        if(obj.scripts.onEnter && !obj.scripts.onEnter.running){
+          obj.scripts.onEnter.running = true;
+          const instance = obj.scripts.onEnter.nwscript.newInstance();
+          instance.enteringObject = this.getCaller();
+          instance.run(obj);
+          obj.scripts.onEnter.running = false;
+        }
+      break;
+      case SignalEventType.OnObjectExit:
+        if(obj.scripts.onExit && !obj.scripts.onExit.running){
+          obj.scripts.onExit.running = true;
+          const instance = obj.scripts.onExit.nwscript.newInstance();
+          instance.exitingObject = this.getCaller();
+          instance.run(obj);
+          obj.scripts.onExit.running = false;
+        }
+      break;
       case SignalEventType.OnTrapTriggered:
         console.log('onTrapTriggered', obj.scripts.onTrapTriggered);
         if(obj.scripts.onTrapTriggered){

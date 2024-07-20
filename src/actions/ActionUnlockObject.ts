@@ -14,6 +14,7 @@ import type { ModuleItem } from "../module";
 import { SkillType } from "../enums/nwscript/SkillType";
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
+import { SignalEventType } from "../enums/events/SignalEventType";
 
 /**
  * ActionUnlockObject class.
@@ -117,7 +118,16 @@ export class ActionUnlockObject extends Action {
       this.timer -= delta;
 
       if(this.timer <= 0){
-        (this.target as any).attemptUnlock(this.owner);
+        const unlocked = (this.target as any).attemptUnlock(this.owner);
+        if(!unlocked){
+          const event = new GameState.GameEventFactory.EventSignalEvent();
+          event.setCaller(this.getOwner());
+          event.setObject(this.target);
+          event.setDay(GameState.module.timeManager.pauseDay);
+          event.setTime(GameState.module.timeManager.pauseTime);
+          event.eventType = SignalEventType.OnFailToOpen;
+          GameState.module.addEvent(event);
+        }
         return ActionStatus.COMPLETE;
       }
       

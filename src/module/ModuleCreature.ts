@@ -4287,12 +4287,13 @@ export class ModuleCreature extends ModuleObject {
   }
 
   playSoundSet(type = -1){
-    if(this.ssf instanceof SSFObject){
-      let resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
-      if(resref != ''){
-        if(this.audioEmitter)
-          this.audioEmitter.playSound(resref);
-      }
+    if(!(this.ssf instanceof SSFObject)){
+      return;
+    }
+    const resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
+    if(resref != ''){
+      if(this.audioEmitter)
+        this.audioEmitter.playSound(resref);
     }
   }
 

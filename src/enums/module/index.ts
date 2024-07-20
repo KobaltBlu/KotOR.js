@@ -18,3 +18,4 @@ export * from "./ModulePlaceableAnimState";
 export * from "./ModulePlaceableState";
 export * from "./ModuleTriggerType";
 export * from "./WeatherCondition";
+export * from "./ModulePlaceableObjectSound";

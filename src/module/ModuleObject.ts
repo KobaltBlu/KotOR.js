@@ -253,7 +253,7 @@ export class ModuleObject {
   trapType: number;
   trapFlag: boolean;
   ownerDemolitions: number = -1;
-  
+
   notBlastable: boolean = false;
 
   fadeOnDestory: boolean = false;
@@ -1011,16 +1011,17 @@ export class ModuleObject {
     this.trapType = nTrapId;
 
     this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
+    let d20 = 20;
 
     const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
-    this.trapDetectDC = nDetectDC + 20 + this.ownerDemolitions;
+    this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
     this.trapDetectable = true;
 
     const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
-    this.trapDisarmDC = nDisarmDC + 20 + this.ownerDemolitions;
+    this.trapDisarmDC = nDisarmDC + d20 + this.ownerDemolitions;
     this.trapDisarmable = false;
 
-    const trigger = new (this.area.constructor as typeof ModuleArea).ModuleTrigger();
+    const trigger = new GameState.Module.ModuleArea.ModuleTrigger();
     trigger.initialized = true;
     trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
     trigger.factionId = owner.factionId;

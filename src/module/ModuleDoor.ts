@@ -1,5 +1,5 @@
 import { ModuleObject } from "./ModuleObject";
-import type { ModuleRoom } from ".";
+import type { ModuleRoom } from "./ModuleRoom";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { GameState } from "../GameState";
 import { SSFType } from "../enums/resource/SSFType";
@@ -30,7 +30,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { SkillType } from "../enums";
+import { ModulePlaceableObjectSound, SkillType } from "../enums";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -244,6 +244,42 @@ export class ModuleDoor extends ModuleObject {
     return result;
   }
 
+  playObjectSound(type: ModulePlaceableObjectSound){
+    const objSounds = this.getObjectSounds();
+
+    if(!this.audioEmitter){
+      return;
+    }
+
+    switch(type){
+      case ModulePlaceableObjectSound.OPENED:
+        if(objSounds?.opened != '****'){
+          this.audioEmitter.playSound(objSounds?.opened);
+        }
+      break;
+      case ModulePlaceableObjectSound.CLOSED:
+        if(objSounds?.closed != '****'){
+          this.audioEmitter.playSound(objSounds?.closed);
+        }
+      break;
+      case ModulePlaceableObjectSound.DESTROYED:
+        if(objSounds?.destroyed != '****'){
+          this.audioEmitter.playSound(objSounds?.destroyed);
+        }
+      break;
+      case ModulePlaceableObjectSound.USED:
+        if(objSounds?.used != '****'){
+          this.audioEmitter.playSound(objSounds?.used);
+        }
+      break;
+      case ModulePlaceableObjectSound.LOCKED:
+        if(objSounds?.locked != '****'){
+          this.audioEmitter.playSound(objSounds?.locked);
+        }
+      break;
+    }
+  }
+
   /*getTemplateResRef(){
     return this.templateResRef;
   }*/
@@ -335,13 +371,19 @@ export class ModuleDoor extends ModuleObject {
 
     if(!this.openState){
       
-      if(this.isLocked()){
-        if(this.keyRequired && this.keyName.length){
+      if(this.isLocked() && this.keyRequired){
+        if(this.keyName.length){
           const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
           if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
             this.unlock(object);
+            if(this.autoRemoveKey){
+              object.removeItem(keyItem);
+            }
+            object.playSoundSet(SSFType.UNLOCK_SUCCESS);
           }
         }
+  
+        object.playSoundSet(SSFType.UNLOCK_FAIL);
       }
 
       if(this.isLocked()){
@@ -349,9 +391,7 @@ export class ModuleDoor extends ModuleObject {
           this.scripts.onFailToOpen.run(this);
         }
 
-        if(this.getObjectSounds()['locked'] != '****'){
-          this.audioEmitter.playSound(this.getObjectSounds()['locked'].toLowerCase());
-        }
+        this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
       }else{
         this.openDoor(object);
       }
@@ -380,13 +420,16 @@ export class ModuleDoor extends ModuleObject {
   }
 
   attemptUnlock(object: ModuleObject){
-    if(object instanceof ModuleObject){
-      
+    if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject)){
+      return false;
+    }
+    
+    const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
+    if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
       let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + object.getSkillLevel(SkillType.SECURITY)) + d20) - this.openLockDC;
-      if(skillCheck >= 1 && object.getSkillLevel(SkillType.SECURITY) >= 1){
+      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
-        
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
           object.playSoundSet(SSFType.UNLOCK_SUCCESS);
         }
@@ -395,12 +438,10 @@ export class ModuleDoor extends ModuleObject {
           object.playSoundSet(SSFType.UNLOCK_FAIL);
         }
       }
-         
-      this.use(object);
-      return true;
-    }else{
-      return false;
     }
+        
+    this.use(object);
+    return true;
   }
 
   openDoor(object: ModuleObject){
@@ -421,9 +462,7 @@ export class ModuleDoor extends ModuleObject {
       this.scripts.onOpen.run(this);
     }
 
-    if(this.getObjectSounds()['opened'] != '****'){
-      this.audioEmitter.playSound(this.getObjectSounds()['opened'].toLowerCase());
-    }
+    this.playObjectSound(ModulePlaceableObjectSound.OPENED);
 
     // if(GameState.selectedObject == this){
     //   GameState.selectedObject = GameState.selected = undefined;
@@ -494,9 +533,7 @@ export class ModuleDoor extends ModuleObject {
       object.lastDoorExited = this;
     }
 
-    if(this.getObjectSounds()['closed'] != '****'){
-      this.audioEmitter.playSound(this.getObjectSounds()['closed'].toLowerCase());
-    }
+    this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
 
     if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
       this.collisionData.walkmesh.mesh.removeFromParent();
