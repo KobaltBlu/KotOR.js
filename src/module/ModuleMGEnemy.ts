@@ -186,7 +186,7 @@ export class ModuleMGEnemy extends ModuleObject {
           }
         }
       }
-      this.onDamage();
+      this.onDamaged();
     }
   }
 
@@ -326,7 +326,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  onDamage(){
+  onDamaged(){
     if(this.scripts.onDamage instanceof NWScriptInstance){
       this.scripts.onDamage.run(this, 0);
     }

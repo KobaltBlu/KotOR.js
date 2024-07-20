@@ -30,7 +30,6 @@ export class ModuleAreaOfEffect extends ModuleObject {
   creatorId: any;
 
   linkedToObjectId: number;
-  linkedToObject: ModuleObject;
 
   lastEnteredId: number;
   lastEntered: ModuleObject;

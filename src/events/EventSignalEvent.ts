@@ -114,6 +114,7 @@ export class EventSignalEvent extends GameEvent {
         }
         if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
           obj.setHP(-11);
+          obj.onDamaged();
           if(obj.linkedToObject){
             obj.linkedToObject.destroy();
           }

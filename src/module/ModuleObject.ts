@@ -1072,7 +1072,7 @@ export class ModuleObject {
   // SCRIPT EVENTS
   //---------------//
 
-  onDamage(){
+  onDamaged(){
     if(this.isDead())
       return true;
 
@@ -1097,10 +1097,6 @@ export class ModuleObject {
     //stub
   }
 
-  onDamaged(){
-    //stub
-  }
-
   onBlocked(){
     //stub
   }
@@ -1121,7 +1117,7 @@ export class ModuleObject {
     // }
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
-    this.onDamage();
+    this.onDamaged();
   }
 
   getCurrentRoom(){

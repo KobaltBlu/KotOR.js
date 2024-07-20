@@ -6739,7 +6739,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.onDamage();
+        this.caller.onDamaged();
       }
     }
   },
@@ -6750,7 +6750,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //this.caller.onDamage();
+        //this.caller.onDamaged();
       }
     }
   },

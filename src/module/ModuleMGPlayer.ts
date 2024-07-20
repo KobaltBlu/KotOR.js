@@ -297,7 +297,7 @@ export class ModuleMGPlayer extends ModuleObject {
           }
         }
       }
-      this.onDamage();
+      this.onDamaged();
     }
   }
 
@@ -797,7 +797,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  onDamage(): boolean{
+  onDamaged(): boolean{
     if(this.scripts.onDamage instanceof NWScriptInstance){
       this.scripts.onDamage.run(this, 0);
     }

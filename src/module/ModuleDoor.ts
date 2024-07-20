@@ -605,11 +605,12 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onDamaged(){
+  onDamaged(): boolean{
     if(this.scripts.onDamaged instanceof NWScriptInstance){
       let instance = this.scripts.onDamaged.nwscript.newInstance();
       instance.run(this);
     }
+    return false;
   }
 
   update(delta = 0){
