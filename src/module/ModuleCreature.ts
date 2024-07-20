@@ -53,6 +53,7 @@ import { CombatActionType } from "../enums/combat/CombatActionType";
 import { CombatRoundAction } from "../combat";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
 import type { Action } from "../actions/Action";
+import { ModuleTriggerType } from "../enums";
 
 /**
 * ModuleCreature class.
@@ -896,6 +897,15 @@ export class ModuleCreature extends ModuleObject {
           this.notifyPerceptionSeenObject(creature, false);
         }
       }
+    }
+
+    for(let i = 0, triglen = this.area.triggers.length; i < triglen; i++){
+      const trig = this.area.triggers[i];
+      if(trig.type != ModuleTriggerType.TRAP){ continue; }
+      if(trig.trapDetected){ continue; }
+      const actionFlag = new GameState.ActionFactory.ActionFlagMine();
+      actionFlag.setParameter(0, ActionParameterType.DWORD, trig);
+      this.actionQueue.addFront(actionFlag);
     }
     
   }

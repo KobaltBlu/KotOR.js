@@ -44,6 +44,7 @@ export class ModuleTrigger extends ModuleObject {
   trapExplosionSound: string;
   trapTriggered: boolean;
   trapResRef: string;
+  trapDetected: boolean = false;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -196,7 +197,7 @@ export class ModuleTrigger extends ModuleObject {
         }).then( (model: OdysseyModel3D) => {
           this.trapModel = model;
           this.container.add(model);
-          if(this.trapFlag){
+          if(this.trapDetected){
             this.model.playAnimation('detect', false);
           }else{
             this.model.playAnimation('default', false);
@@ -242,6 +243,17 @@ export class ModuleTrigger extends ModuleObject {
     this.mesh.visible = false;
     this.container.add(this.mesh);
     GameState.group.triggers.add(this.container);
+  }
+
+  detectTrap(){
+    if(this.trapDetected){ return; }
+    this.trapDetected = true;
+
+    if(this.trapDetected){
+      this.model.playAnimation('detect', false);
+    }else{
+      this.model.playAnimation('default', false);
+    }
   }
 
   //Some modules have exit triggers that are placed in the same location that the player spawns into
@@ -300,9 +312,9 @@ export class ModuleTrigger extends ModuleObject {
 
     if(this.trapModel){
       this.trapModel.update(delta);
-      if(this.trapFlag && this.trapModel.animationManager.currentAnimation?.name != 'detect'){
+      if(this.trapDetected && this.trapModel.animationManager.currentAnimation?.name != 'detect'){
         this.trapModel.playAnimation('detect', false);
-      }else if(!this.trapFlag && this.trapModel.animationManager.currentAnimation?.name != 'default'){
+      }else if(!this.trapDetected && this.trapModel.animationManager.currentAnimation?.name != 'default'){
         this.trapModel.playAnimation('default', false);
       }
     }
