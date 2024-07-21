@@ -1233,6 +1233,8 @@ export class GUIControl {
       this.border.fill.texture = name;
       this.borderFillEnabled = true;
       if(name.length){
+        this.highlightFillEnabled = true;
+        this.highlight.fill.texture = name;
         TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.setFillTexture(texture)
           this.setHighlightFillTexture(texture);
