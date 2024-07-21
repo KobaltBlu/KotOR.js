@@ -683,12 +683,6 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('OnUserDefined'))
       this.scripts.onUserDefined = this.template.getFieldByLabel('OnUserDefined').getValue();
-    
-    if(this.template.RootNode.hasField('TweakColor'))
-      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-    
-    if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue();
 
     let keys = Object.keys(this.scripts);
     for(let i = 0; i < keys.length; i++){
@@ -918,6 +912,15 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('Bearing'))
       this.bearing = this.template.RootNode.getFieldByLabel('Bearing').getValue();
+    
+    if(this.template.RootNode.hasField('TweakColor'))
+      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
+    
+    if(this.template.RootNode.hasField('UseTweakColor'))
+      this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue();
+
+    if(this.template.RootNode.hasField('NotBlastable'))
+      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
       let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
