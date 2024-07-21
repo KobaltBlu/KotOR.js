@@ -9,6 +9,8 @@ import { AttackResult } from "../enums/combat/AttackResult";
 import { TalentFeat } from "../talents";
 import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
+import { Dice } from "../utility/Dice";
+import { DiceType } from "../enums/combat/DiceType";
 
 /**
  * CombatAttackData class.
@@ -56,9 +58,18 @@ export class CombatAttackData {
   }
 
   calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
-    if(!this.attackWeapon) return;
+    /**
+     * Unarmed Strike
+     */
+    if(!this.attackWeapon){
+      let damageMultiplier = isCritial ? 2.0 : 1.0;
+      const nDamage = Dice.roll(1, DiceType.d4);
+      this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
 
-    let damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
+      return;
+    };
+
+    const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
 
     if(!creature.isSimpleCreature()){
       this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage() * damageMultiplier);

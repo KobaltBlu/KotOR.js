@@ -205,6 +205,11 @@ export class ModulePlaceable extends ModuleObject {
     //   }
     // }
 
+    if(this.locked && this.getHP() <= 0){
+      this.locked = false;
+      this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);
+    }
+
     if(!(this.model instanceof OdysseyModel3D))
       return;
 

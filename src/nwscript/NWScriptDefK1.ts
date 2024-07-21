@@ -2740,7 +2740,7 @@ NWScriptDefK1.Actions = {
             args[1].setExpireDay(future.pauseDay);
             args[1].setExpireTime(future.pauseTime);
           }
-          console.log('ApplyEffectToObject', args[2], args[1], args[0], args[3]);
+          // console.log('ApplyEffectToObject', args[2], args[1], args[0], args[3]);
           args[2].addEffect(args[1], args[0], args[3]);
         }else{
           console.error('ApplyEffectToObject', 'Expected a GameEffect', args);

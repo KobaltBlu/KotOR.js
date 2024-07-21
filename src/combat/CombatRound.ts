@@ -322,6 +322,37 @@ export class CombatRound {
             )
           );
 
+          /**
+           * Unarmed Strike
+           */
+          if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
+            //Roll to hit
+            let attackRoll = Dice.roll(1, DiceType.d20, bab);
+            let isCritical = (attackRoll >= 20);
+            if(hasAssuredHit || isCritical || attackRoll > 1){
+              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
+              if(hits){
+                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
+                this.attackList[this.currentAttack].attackWeapon = undefined;
+                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
+                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
+                this.currentAttack++;
+              }else{
+                this.attackList[this.currentAttack].reactObject = combatAction.target;
+                this.attackList[this.currentAttack].attackWeapon = undefined;
+                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
+                this.currentAttack++;
+              }
+            }else{
+              this.attackList[this.currentAttack].reactObject = combatAction.target;
+              this.attackList[this.currentAttack].attackWeapon = undefined;
+              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
+              this.currentAttack++;
+            }
+            //TODO: Log to combat menu
+          }
+
           if(creature.equipment.RIGHTHAND){
             //Roll to hit
             let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.RIGHTHAND.getAttackBonus());
@@ -614,7 +645,7 @@ export class CombatRound {
           creature.animationState.index = ModuleCreatureAnimState.ATTACK;
         }
 
-        if(combatAction.target){
+        if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
           const target: ModuleCreature = combatAction.target as any;
           if(
             target.animationState.index == ModuleCreatureAnimState.IDLE || 
@@ -636,7 +667,7 @@ export class CombatRound {
           creature.animationState.index = ModuleCreatureAnimState.ATTACK;
         }
 
-        if(combatAction.target){
+        if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
           const target: ModuleCreature = combatAction.target as any;
           if(
             target.animationState.index == ModuleCreatureAnimState.IDLE || 
