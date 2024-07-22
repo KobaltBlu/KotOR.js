@@ -58,6 +58,7 @@ import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 
 import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 import { ModuleTriggerType } from "./enums";
+import { Planetary } from "./Planetary";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -113,6 +114,8 @@ export class GameState implements EngineContext {
   static GameEffectFactory: typeof GameEffectFactory;
   static GameEventFactory: typeof GameEventFactory;
   static VideoEffectManager: typeof VideoEffectManager;
+
+  static Planetary: typeof Planetary = Planetary;
 
   static Location: any;
 

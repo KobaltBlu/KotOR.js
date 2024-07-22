@@ -266,7 +266,7 @@ export class MenuGalaxyMap extends GameMenu {
       control.disableBorder();
       control.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.changePlanet(Planetary.selected);
+        this.changePlanet(planet);
       });
     }
   }
