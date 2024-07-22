@@ -142,9 +142,9 @@ export class InGameDialog extends GameMenu {
     this.isListening = true;
     this.updateTextPosition();
     this.startingEntry = null;
-    this.getNextEntry(this.dialog.startingList, (entry: any) => {
+    this.getNextEntry(this.dialog.startingList, (entry: DLGNode) => {
       this.startingEntry = entry;
-      let isBarkDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
+      let isBarkDialog = entry.replies.length == 1 && !entry.cameraAngle && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
       if (isBarkDialog) {
         this.endConversation();
         this.manager.InGameBark.bark(entry);

@@ -40,7 +40,7 @@ export class MenuGameplay extends K1_MenuGameplay {
     super();
     this.gui_resref = 'optgameplay_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -170,6 +170,7 @@ export class Action {
 
   getParameter( index = 0 ){
     let param = this.parameters[index];
+    if(!param){ return; }
     switch(param.type){
       case ActionParameterType.DWORD:
         return GameState.ModuleObjectManager.GetObjectById(param.value);

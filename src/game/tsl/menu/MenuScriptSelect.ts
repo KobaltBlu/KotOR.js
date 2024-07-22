@@ -22,7 +22,7 @@ export class MenuScriptSelect extends K1_MenuScriptSelect {
     super();
     this.gui_resref = 'scriptselect_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

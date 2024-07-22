@@ -33,7 +33,7 @@ export class MenuLevelUp extends K1_MenuLevelUp {
     super();
     this.gui_resref = 'leveluppnl_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

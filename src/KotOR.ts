@@ -1,3 +1,5 @@
+// @ts-ignore
+export * as dxtJs from "dxt-js";
 export * from "./utility/polyfills";
 export * from "./audio";
 export * from "./module";

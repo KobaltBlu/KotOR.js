@@ -30,7 +30,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
     super();
     this.gui_resref = 'optsoundadv_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

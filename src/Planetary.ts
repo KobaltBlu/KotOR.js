@@ -106,6 +106,7 @@ export class Planet {
   guitag: string;
   enabled: boolean;
   selectable: boolean;
+  lockedOutReason: number = -1;
 
   constructor(_2da: any = {}){
     this.id = parseInt(TwoDAObject.cellParser(_2da.__rowlabel));
@@ -115,6 +116,7 @@ export class Planet {
     this.icon = TwoDAObject.cellParser(_2da.icon);
     this.model = TwoDAObject.cellParser(_2da.model);
     this.guitag = TwoDAObject.cellParser(_2da.guitag);
+    this.lockedOutReason = TwoDAObject.normalizeValue(_2da.lockedoutreason,'number', -1);
 
     this.enabled = false;
     this.selectable = false;

@@ -30,7 +30,7 @@ export class MenuPowerLevelUp extends K1_MenuPowerLevelUp {
     super();
     this.gui_resref = 'pwrlvlup_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

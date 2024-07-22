@@ -46,7 +46,7 @@ export class MenuUpgrade extends K1_MenuUpgrade {
     super();
     this.gui_resref = 'upgrade_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

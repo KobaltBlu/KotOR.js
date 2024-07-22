@@ -31,7 +31,7 @@ export class MainMovies extends K1_MainMovies {
     super();
     this.gui_resref = 'titlemovie_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

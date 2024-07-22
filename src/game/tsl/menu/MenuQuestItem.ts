@@ -21,7 +21,7 @@ export class MenuQuestItem extends K1_MenuQuestItem {
     super();
     this.gui_resref = 'questitem_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

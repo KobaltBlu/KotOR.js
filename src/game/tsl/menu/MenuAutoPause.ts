@@ -40,7 +40,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
     super();
     this.gui_resref = 'optautopause_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

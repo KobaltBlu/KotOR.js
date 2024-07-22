@@ -44,7 +44,7 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
     super();
     this.gui_resref = 'statussummary_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

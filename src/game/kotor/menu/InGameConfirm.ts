@@ -112,5 +112,31 @@ export class InGameConfirm extends GameMenu {
       }
     }
   }
+
+  fromStringRef(strRef: number){
+    const tlkString = GameState.TLKManager.GetStringById(strRef);
+    if(!tlkString){ return; }
+    this.LB_MESSAGE.clearItems();
+    this.LB_MESSAGE.addItem(tlkString.Value);
+    let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
+    console.log(messageHeight);
+    this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = messageHeight;
+    this.LB_MESSAGE.resizeControl();
+    
+    this.tGuiPanel.extent.height = this.height = 44 + messageHeight;
+    // this.tGuiPanel.extent.left = 0;
+    // this.tGuiPanel.extent.top = -this.tGuiPanel.extent.height/2;
+    this.tGuiPanel.recalculate();
+
+    this.LB_MESSAGE.extent.top = (-this.tGuiPanel.extent.height) + (this.LB_MESSAGE.extent.height) + 50;// + (this.LB_MESSAGE.extent.height/2) + 28;
+    this.LB_MESSAGE.recalculate();
+
+    this.BTN_CANCEL.hide();
+    this.BTN_OK.extent.top = (this.tGuiPanel.extent.height) - (this.BTN_OK.extent.height + 10);// + ((this.LB_MESSAGE.extent.height/2) + 28 + (this.BTN_OK.extent.height/2));
+    this.tGuiPanel.resizeControl();
+    this.LB_MESSAGE.resizeControl();
+    
+    this.open();
+  }
   
 }

@@ -35,7 +35,7 @@ export class MenuSound extends K1_MenuSound {
     super();
     this.gui_resref = 'optsound_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -49,7 +49,7 @@ export class PartyTableManager {
         let currentPlanet = GlxyMap.getFieldByLabel('GlxyMapSelPnt').getValue();
 
         for(let i = 0; i < planetCount; i++){
-          Planetary.SetPlanetAvailable(i,  (planetBits>>i) % 2 != 0);
+          Planetary.SetPlanetAvailable(i,  !!((planetBits>>i) & 0x01));
         }
 
         Planetary.SetSelectedPlanet(currentPlanet);

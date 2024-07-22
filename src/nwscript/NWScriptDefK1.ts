@@ -7259,6 +7259,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       console.log('BarkString', args[1]);
+      GameState.MenuManager.InGameBark.barkFromStringRef(args[1]);
     }
   },
   672:{
@@ -7939,8 +7940,8 @@ NWScriptDefK1.Actions = {
     type: 0,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.MenuManager.MenuGalaxyMap.open();
       Planetary.SetSelectedPlanet(args[0]);
+      GameState.MenuManager.MenuGalaxyMap.open();
     }
   },
   740:{

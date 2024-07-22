@@ -328,6 +328,9 @@ export class CombatRound {
           if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
             //Roll to hit
             let attackRoll = Dice.roll(1, DiceType.d20, bab);
+            if(BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModulePlaceable) || BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleDoor)){
+              attackRoll = 20 + bab;
+            }
             let isCritical = (attackRoll >= 20);
             if(hasAssuredHit || isCritical || attackRoll > 1){
               let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();

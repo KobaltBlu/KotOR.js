@@ -46,7 +46,7 @@ export class MenuComponent extends GameMenu {
     super();
     this.gui_resref = 'component_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

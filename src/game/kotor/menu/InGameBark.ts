@@ -6,8 +6,9 @@ import { ResourceLoader } from "../../../loaders";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
 import { LIPObject } from "../../../resource/LIPObject";
 import { GameState } from "../../../GameState";
-import { ModuleObjectType } from "../../../enums";
+import { DLGNodeType, ModuleObjectType } from "../../../enums";
 import { BitWise } from "../../../utility/BitWise";
+import { DLGNode } from "../../../resource/DLGNode";
 
 /**
  * InGameBark class.
@@ -101,6 +102,22 @@ export class InGameBark extends GameMenu {
       this.bHasAudio = false;
       console.error('VO ERROR', entry);
     }
+  }
+
+  barkFromString(text: string){
+    const entry = new DLGNode();
+    entry.nodeType = DLGNodeType.ENTRY;
+    entry.text = text;
+    this.bark(entry);
+  }
+
+  barkFromStringRef(strRef: number){
+    const tlkString = GameState.TLKManager.GetStringById(strRef);
+    if(!tlkString){ return; }
+    const entry = new DLGNode();
+    entry.nodeType = DLGNodeType.ENTRY;
+    entry.text = tlkString.Value;
+    this.bark(entry);
   }
 
   update(delta = 0){

@@ -46,7 +46,7 @@ export class MenuSwoopUp extends GameMenu {
     super();
     this.gui_resref = 'swoopup_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

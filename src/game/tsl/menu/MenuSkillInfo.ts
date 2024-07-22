@@ -21,7 +21,7 @@ export class MenuSkillInfo extends K1_MenuSkillInfo {
     super();
     this.gui_resref = 'skillinfo_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

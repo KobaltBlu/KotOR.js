@@ -28,7 +28,7 @@ export class MenuMouse extends K1_MenuMouse {
     super();
     this.gui_resref = 'optmouse_p';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
