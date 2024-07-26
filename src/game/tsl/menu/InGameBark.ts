@@ -31,6 +31,7 @@ export class InGameBark extends K1_InGameBark {
         this.bAudioPlayed = true;
         this.barkTimer = 0;
       });
+      this.tGuiPanel.widget.position.z = 5;
       resolve();
     });
   }
