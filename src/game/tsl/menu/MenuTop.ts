@@ -76,6 +76,10 @@ export class MenuTop extends K1_MenuTop {
       this.LBLH_CHA.widget.position.z = 5;
       this.LBLH_INV.widget.position.z = 5;
       this.LBLH_EQU.widget.position.z = 5;
+      this.BTN_CHAR.widget.position.z = 5;
+      this.LBL_CHAR1.widget.position.z = 5;
+      this.LBL_CHAR2.widget.position.z = 5;
+      this.LBL_CHAR3.widget.position.z = 5;
 
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -187,8 +191,12 @@ export class MenuTop extends K1_MenuTop {
   }
 
   UpdatePartyUI() {
-    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+    for (let i = 0; i < GameState.PartyManager.MaxSize; i++) {
       const partyMember = GameState.PartyManager.party[i];
+      if(!partyMember){
+        this.TogglePartyMember(i, false);
+        continue;
+      }
       const portTextureRef = partyMember.getPortraitResRef();
       
       this.TogglePartyMember(i, true);
@@ -207,29 +215,59 @@ export class MenuTop extends K1_MenuTop {
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
+    const character = GameState.PartyManager.party[nth];
     switch (nth) {
-    case 0:
-      this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1)).hide();
-      this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1)).hide();
-      this.getControlByName('LBL_DEBILATATED' + (nth + 1)).hide();
-      this.getControlByName('LBL_DISABLE' + (nth + 1)).hide();
-      this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
-      this.getControlByName('LBL_BACK' + (nth + 1)).show();
-      this.getControlByName('LBL_CHAR' + (nth + 1)).show();
-      this.getControlByName('LBL_BACK' + (nth + 1)).show();
-      this.getControlByName('PB_FORCE' + (nth + 1)).show();
-      this.getControlByName('PB_VIT' + (nth + 1)).show();
-      break;
-    default:
-      if (!bVisible) {
+      case 0:
+        this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1)).hide();
+        this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1)).hide();
+        this.getControlByName('LBL_DEBILATATED' + (nth + 1)).hide();
+        this.getControlByName('LBL_DISABLE' + (nth + 1)).hide();
         this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
-        this.getControlByName('LBL_CHAR' + (nth + 1)).hide();
-        this.getControlByName('BTN_CHANGE' + (nth + 1)).hide();
-      } else {
-        this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+        this.getControlByName('LBL_BACK' + (nth + 1)).show();
         this.getControlByName('LBL_CHAR' + (nth + 1)).show();
-        this.getControlByName('BTN_CHANGE' + (nth + 1)).show();
-      }
+        this.getControlByName('LBL_BACK' + (nth + 1)).show();
+        this.getControlByName('PB_FORCE' + (nth + 1)).show();
+        this.getControlByName('PB_VIT' + (nth + 1)).show();
+
+        this.LBL_CHARNAME.setText(character.getName());
+
+        if (character.classes[0]) {
+          this.LBL_TOP_CLASS1.setText(character.classes[0].getName());
+          this.LBL_TOP_CLASS1LEVEL?.setText(character.classes[0].level);
+          this.LBL_TOP_CLASS1.show();
+          this.LBL_TOP_CLASS1LEVEL?.show();
+          // this.LBL_TOP_CLASS1.extent.top = 98;
+          // this.LBL_TOP_CLASS1.recalculate();
+        }else{
+          this.LBL_TOP_CLASS1?.hide();
+          this.LBL_TOP_CLASS1LEVEL?.hide();
+        }
+
+        if (character.classes[1]) {
+          this.LBL_TOP_CLASS2?.setText(character.classes[1].getName());
+          this.LBL_TOP_CLASS2LEVEL?.setText(character.classes[1].level);
+          this.LBL_TOP_CLASS2?.show();
+          this.LBL_TOP_CLASS2LEVEL?.show();
+        }else{
+          this.LBL_TOP_CLASS2?.hide();
+          this.LBL_TOP_CLASS2LEVEL?.hide();
+        }
+
+      break;
+      default:
+        if (!bVisible) {
+          this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+          this.getControlByName('LBL_CHAR' + (nth + 1)).hide();
+          this.getControlByName('BTN_CHANGE' + (nth + 1)).hide();
+        } else {
+          if(character.canLevelUp()){
+            this.getControlByName('LBL_LEVELUP' + (nth + 1)).show();
+          }else{
+            this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
+          }
+          this.getControlByName('LBL_CHAR' + (nth + 1)).show();
+          this.getControlByName('BTN_CHANGE' + (nth + 1)).show();
+        }
       break;
     }
   }

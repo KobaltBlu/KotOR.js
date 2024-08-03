@@ -76,7 +76,8 @@ export class PartyManager {
   static ActualPlayerTemplate: GFFObject;
 
   static PortraitOrder: any[] = [];
-  static MaxSize = 2;
+  static MaxSize = 3;
+  static MaxNPCCount = 2;
   static NPCS: PartyNPCList = {
     0: {
       available: false,

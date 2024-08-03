@@ -185,7 +185,7 @@ export class MenuPartySelection extends GameMenu {
           if(this.npcInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.UpdateSelection();
-          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxSize){
+          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
             this.addToParty(this.selectedNPC);
           }
           this.UpdateCount();
@@ -197,7 +197,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   selectNPC(npc: number = -1){
-    if(npc < 0 || npc >= GameState.PartyManager.MaxSize) return;
+    if(npc < 0 || npc >= GameState.PartyManager.MaxNPCCount) return;
     // if(PartyManager.CurrentMembers.length >= 2) return;
     this.selectedNPC = npc;
     this.UpdateSelection();
@@ -274,7 +274,7 @@ export class MenuPartySelection extends GameMenu {
   }
 
   UpdateCount() {
-    this.LBL_COUNT.setText((GameState.PartyManager.MaxSize - GameState.PartyManager.CurrentMembers.length).toString());
+    this.LBL_COUNT.setText((GameState.PartyManager.MaxNPCCount - GameState.PartyManager.CurrentMembers.length).toString());
   }
 
   hide() {

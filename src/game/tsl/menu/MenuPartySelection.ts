@@ -245,7 +245,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
           if(this.npcInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
             this.UpdateSelection();
-          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxSize){
+          }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
             this.addToParty(this.selectedNPC);
           }
           this.UpdateCount();
@@ -354,7 +354,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   }
 
   UpdateCount() {
-    this.lbl_count.setText((GameState.PartyManager.MaxSize - GameState.PartyManager.CurrentMembers.length).toString());
+    this.lbl_count.setText((GameState.PartyManager.MaxNPCCount - GameState.PartyManager.CurrentMembers.length).toString());
   }
 
   hide() {
