@@ -1,6 +1,7 @@
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ApplicationMode } from "../enums/ApplicationMode";
 import { GameEngineType } from "../enums/engine";
+import { OSInfo } from "./OSInfo";
 
 /**
  * ApplicationProfile class.
@@ -30,14 +31,14 @@ export class ApplicationProfile {
     }
     if(window.location.origin === 'file://'){
       ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
-      if(window.navigator.platform.toLocaleLowerCase() == 'win32'){
+      if(OSInfo.isWindows()){
         ApplicationProfile.path_sep = '/';
       }else{
         ApplicationProfile.path_sep = '/';
       }
     }else{
       ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
-      if(window.navigator.platform.toLocaleLowerCase() == 'win32'){
+      if(OSInfo.isWindows()){
         ApplicationProfile.path_sep = '/';
       }else{
         ApplicationProfile.path_sep = '/';
