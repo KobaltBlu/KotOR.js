@@ -444,7 +444,7 @@ export class SaveGame {
       await GameFileSystem.mkdir(this.directory, { recursive: false });
         
       await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
-      await GameState.PartyManager.export( this.directory );
+      await GameState.PartyManager.Export( this.directory );
       await SaveGame.ExportGlobalVars( this.directory );
     }catch(e){
       console.error(e);
@@ -481,7 +481,7 @@ export class SaveGame {
 
     await SaveGame.ExportSaveNFO(save_dir, name);
     await SaveGame.ExportGlobalVars( save_dir );
-    await GameState.PartyManager.export( save_dir );
+    await GameState.PartyManager.Export( save_dir );
 
     //Get Screenshot
     const tga = await GameState.GetScreenShot();

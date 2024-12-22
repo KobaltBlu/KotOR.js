@@ -102,11 +102,12 @@ export class PartyManager {
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
 
-  static Init(){
-
-  }
-
   static async Load(gff: GFFObject){
+    if(!(gff instanceof GFFObject)){
+      console.error('PartyManager.Load', gff);
+      throw 'PartyManager expected gff to be of type GFFObject';
+    }
+
     PartyManager.partyTableTemplate = gff;
 
     PartyManager.MaxPartyCount = GameState.GameKey == GameEngineType.TSL ? 12 : 9;
@@ -128,133 +129,126 @@ export class PartyManager {
       };
     }
 
-    if(gff instanceof GFFObject){
-      if(gff.RootNode.hasField('GlxyMap')){
-        let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
-        
-        let planetCount = GlxyMap.getFieldByLabel('GlxyMapNumPnts').getValue();
-        let planetBits = GlxyMap.getFieldByLabel('GlxyMapPlntMsk').getValue(); //Max 32?
-        let currentPlanet = GlxyMap.getFieldByLabel('GlxyMapSelPnt').getValue();
+    if(gff.RootNode.hasField('GlxyMap')){
+      let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
+      
+      let planetCount = GlxyMap.getFieldByLabel('GlxyMapNumPnts').getValue();
+      let planetBits = GlxyMap.getFieldByLabel('GlxyMapPlntMsk').getValue(); //Max 32?
+      let currentPlanet = GlxyMap.getFieldByLabel('GlxyMapSelPnt').getValue();
 
-        for(let i = 0; i < planetCount; i++){
-          GameState.Planetary.SetPlanetAvailable(i,  !!((planetBits>>i) & 0x01));
-        }
-
-        GameState.Planetary.SetSelectedPlanet(currentPlanet);
+      for(let i = 0; i < planetCount; i++){
+        GameState.Planetary.SetPlanetAvailable(i,  !!((planetBits>>i) & 0x01));
       }
 
-      //Init the TutorialWindowTracker      
-      const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
-      let bitCount = 0;
-      if(tutorial2DA){
-        bitCount = Math.ceil(tutorial2DA.RowCount / 8) * 8;
-        for(let i = 0; i < bitCount; i++){
-          GameState.TutorialWindowTracker[i] = 0;
-        }
-      }
-
-      if(gff.RootNode.hasField('PT_TUT_WND_SHOWN')){
-        let tutWindBytes = gff.RootNode.getFieldByLabel('PT_TUT_WND_SHOWN').getVoid();
-        let maxBits = tutWindBytes.length * 8;
-        for(let i = 0; i < maxBits; i++){
-          for(let j = 0; j < 8; j++){
-            let bit = (tutWindBytes[i] >> j) & 1;
-            GameState.TutorialWindowTracker[ (i * 8) + j ] = bit;
-          }
-        }
-      }
-    
-      if(gff.RootNode.hasField('PT_AVAIL_NPCS')){
-        let avail = gff.getFieldByLabel('PT_AVAIL_NPCS').getChildStructs();
-        for(let i = 0; i < avail.length; i++){
-          //console.log(PartyManager.NPCS[i]);
-          GameState.PartyManager.NPCS[i].available = avail[i].getFieldByLabel('PT_NPC_AVAIL').getValue();
-          GameState.PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
-        }
-      }
-    
-      //TSL: PT_AVAIL_PUPS
-      if(gff.RootNode.hasField('PT_AVAIL_PUPS')){
-        let avail = gff.getFieldByLabel('PT_AVAIL_PUPS').getChildStructs();
-        for(let i = 0; i < avail.length; i++){
-          GameState.PartyManager.Puppets[i].available = !!avail[i].getFieldByLabel('PT_PUP_AVAIL').getValue();
-          GameState.PartyManager.Puppets[i].select = !!avail[i].getFieldByLabel('PT_PUP_SELECT').getValue();
-        }
-      }
-
-      //TSL: PT_ITEM_CHEMICAL
-      if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
-        GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
-      }
-
-      //TSL: PT_ITEM_COMPONEN
-      if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
-        GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONEN').getValue();
-      }
-    
-      //TSL: PT_AVAIL_PUPS
-      if(gff.RootNode.hasField('PT_INFLUENCE')){
-        const list = gff.getFieldByLabel('PT_INFLUENCE').getChildStructs();
-        for(let i = 0; i < list.length; i++){
-          GameState.PartyManager.InfluenceMap.set(i, list[i].getFieldByLabel('PT_NPC_INFLUENCE').getValue());
-        }
-      }
-    
-      //TSL: PT_AVAIL_PUPS
-      if(gff.RootNode.hasField('PT_PUPPETS')){
-        const list = gff.getFieldByLabel('PT_PUPPETS').getChildStructs();
-        for(let i = 0; i < list.length; i++){
-          //todo
-        }
-      }
-
-      GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
-
-      if(gff.RootNode.hasField('PT_CONTROLLED_NP')){
-        console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
-      }
-
-      if(gff.RootNode.hasField('PT_MEMBERS')){
-        let pms = gff.getFieldByLabel('PT_MEMBERS').getChildStructs();
-        let currentPartyInfo = [];
-        GameState.PartyManager.CurrentMembers = [];
-        for(let i = 0; i < pms.length; i++){
-          GameState.PartyManager.CurrentMembers.push({
-            isLeader: pms[i].getFieldByLabel('PT_IS_LEADER').getValue() ? true : false,
-            memberID: pms[i].getFieldByLabel('PT_MEMBER_ID').getValue()
-          })
-        }
-      }
-
-      if(gff.RootNode.hasField('JNL_Entries')){
-        const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
-        for(let i = 0; i < entries.length; i++){
-          GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
-        }
-      }
-
-      if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
-        const entries = gff.RootNode.getFieldByLabel('PT_DLG_MSG_LIST').getChildStructs();
-        for(let i = 0; i < entries.length; i++){
-          GameState.DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
-        }
-      }
-
-      if(gff.RootNode.hasField('PT_FB_MSG_LIST')){
-        const entries = gff.RootNode.getFieldByLabel('PT_FB_MSG_LIST').getChildStructs();
-        for(let i = 0; i < entries.length; i++){
-          GameState.FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
-        }
-      }
-    }else{
-      console.error('PartyTableManager', 'gff', gff);
-      throw 'PartyTableManager expected gff to be of type GFFObject';
+      GameState.Planetary.SetSelectedPlanet(currentPlanet);
     }
 
-    //console.log('PartyTableManager', 'Loading Party Templates')
-    const arr = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-    for(let i = 0; i < arr.length; i++){
-      const id = arr[i];
+    //Init the TutorialWindowTracker      
+    const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
+    let bitCount = 0;
+    if(tutorial2DA){
+      bitCount = Math.ceil(tutorial2DA.RowCount / 8) * 8;
+      for(let i = 0; i < bitCount; i++){
+        GameState.TutorialWindowTracker[i] = 0;
+      }
+    }
+
+    if(gff.RootNode.hasField('PT_TUT_WND_SHOWN')){
+      let tutWindBytes = gff.RootNode.getFieldByLabel('PT_TUT_WND_SHOWN').getVoid();
+      let maxBits = tutWindBytes.length * 8;
+      for(let i = 0; i < maxBits; i++){
+        for(let j = 0; j < 8; j++){
+          let bit = (tutWindBytes[i] >> j) & 1;
+          GameState.TutorialWindowTracker[ (i * 8) + j ] = bit;
+        }
+      }
+    }
+  
+    if(gff.RootNode.hasField('PT_AVAIL_NPCS')){
+      let avail = gff.getFieldByLabel('PT_AVAIL_NPCS').getChildStructs();
+      for(let i = 0; i < avail.length; i++){
+        //console.log(PartyManager.NPCS[i]);
+        GameState.PartyManager.NPCS[i].available = avail[i].getFieldByLabel('PT_NPC_AVAIL').getValue();
+        GameState.PartyManager.NPCS[i].canSelect = avail[i].getFieldByLabel('PT_NPC_SELECT').getValue();
+      }
+    }
+  
+    //TSL: PT_AVAIL_PUPS
+    if(gff.RootNode.hasField('PT_AVAIL_PUPS')){
+      let avail = gff.getFieldByLabel('PT_AVAIL_PUPS').getChildStructs();
+      for(let i = 0; i < avail.length; i++){
+        GameState.PartyManager.Puppets[i].available = !!avail[i].getFieldByLabel('PT_PUP_AVAIL').getValue();
+        GameState.PartyManager.Puppets[i].select = !!avail[i].getFieldByLabel('PT_PUP_SELECT').getValue();
+      }
+    }
+
+    //TSL: PT_ITEM_CHEMICAL
+    if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
+      GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
+    }
+
+    //TSL: PT_ITEM_COMPONEN
+    if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
+      GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONEN').getValue();
+    }
+  
+    //TSL: PT_AVAIL_PUPS
+    if(gff.RootNode.hasField('PT_INFLUENCE')){
+      const list = gff.getFieldByLabel('PT_INFLUENCE').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        GameState.PartyManager.InfluenceMap.set(i, list[i].getFieldByLabel('PT_NPC_INFLUENCE').getValue());
+      }
+    }
+  
+    //TSL: PT_AVAIL_PUPS
+    if(gff.RootNode.hasField('PT_PUPPETS')){
+      const list = gff.getFieldByLabel('PT_PUPPETS').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        //todo
+      }
+    }
+
+    GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
+
+    if(gff.RootNode.hasField('PT_CONTROLLED_NP')){
+      console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
+    }
+
+    if(gff.RootNode.hasField('PT_MEMBERS')){
+      let pms = gff.getFieldByLabel('PT_MEMBERS').getChildStructs();
+      let currentPartyInfo = [];
+      GameState.PartyManager.CurrentMembers = [];
+      for(let i = 0; i < pms.length; i++){
+        GameState.PartyManager.CurrentMembers.push({
+          isLeader: pms[i].getFieldByLabel('PT_IS_LEADER').getValue() ? true : false,
+          memberID: pms[i].getFieldByLabel('PT_MEMBER_ID').getValue()
+        })
+      }
+    }
+
+    if(gff.RootNode.hasField('JNL_Entries')){
+      const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
+      for(let i = 0; i < entries.length; i++){
+        GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
+      }
+    }
+
+    if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
+      const entries = gff.RootNode.getFieldByLabel('PT_DLG_MSG_LIST').getChildStructs();
+      for(let i = 0; i < entries.length; i++){
+        GameState.DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
+      }
+    }
+
+    if(gff.RootNode.hasField('PT_FB_MSG_LIST')){
+      const entries = gff.RootNode.getFieldByLabel('PT_FB_MSG_LIST').getChildStructs();
+      for(let i = 0; i < entries.length; i++){
+        GameState.FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
+      }
+    }
+
+    for(let i = 0; i < PartyManager.MaxPartyCount; i++){
+      const id = i;
       try{
         const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availnpc'+id+'.utc') );
         GameState.PartyManager.NPCS[id].template = null;
@@ -267,7 +261,7 @@ export class PartyManager {
     }
   }
 
-  static async export(directory = '', onSave?: Function){
+  static async Export(directory = ''){
     return new Promise<void>( (resolve, reject) => {
       //Export PARTYTABLE.res
       let partytable = new GFFObject();
@@ -370,10 +364,6 @@ export class PartyManager {
 
       partytable.FileType = 'PT  ';
       partytable.export(path.join(directory, 'PARTYTABLE.res'), () => {
-
-        if(typeof onSave == 'function')
-          onSave();
-
         resolve();
       }, () => {
         reject();
@@ -1045,4 +1035,3 @@ export class PartyManager {
   }
 
 }
-PartyManager.Init();
