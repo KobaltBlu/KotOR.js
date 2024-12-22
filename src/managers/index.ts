@@ -19,7 +19,6 @@ export * from "./LightManager";
 export * from "./MenuManager";
 export * from "./ModuleObjectManager";
 export * from "./PartyManager";
-export * from "./PartyTableManager";
 export * from "./RIMManager";
 export * from "./ShaderManager";
 export * from "./TLKManager";

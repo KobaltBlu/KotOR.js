@@ -10,10 +10,8 @@ import { GFFStruct } from "./resource/GFFStruct";
 import { ERFObject } from "./resource/ERFObject";
 import { BinaryReader } from "./BinaryReader";
 import { Utility } from "./utility/Utility";
-import { TGAObject } from "./resource/TGAObject";
 import EngineLocation from "./engine/EngineLocation";
 import { GameFileSystem } from "./utility/GameFileSystem";
-import type { PartyTableManager, PartyManager, GlobalVariableManager, InventoryManager, MenuManager } from "./managers";
 import { ResourceTypes } from "./KotOR";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
@@ -53,7 +51,7 @@ export class SaveGame {
   PORTRAIT1: string;
   PORTRAIT2: string;
   globalVars: GFFObject;
-  partytable: PartyTableManager;
+  // partytable: PartyTableManager;
   inventory: GFFObject;
   directory: string;
   PCNAME: string;
@@ -339,8 +337,9 @@ export class SaveGame {
     try{
       const data = await GameFileSystem.readFile(path.join(this.directory, 'PARTYTABLE.res'));
       const gff = new GFFObject(data);
-      this.partytable = new GameState.PartyTableManager(gff);
-      await this.partytable.Load();
+      await GameState.PartyManager.Load(gff);
+      // this.partytable = new GameState.PartyTableManager(gff);
+      // await this.partytable.Load();
     }catch(e){
       console.error(e);
     }
@@ -445,7 +444,7 @@ export class SaveGame {
       await GameFileSystem.mkdir(this.directory, { recursive: false });
         
       await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
-      await GameState.PartyTableManager.export( this.directory );
+      await GameState.PartyManager.export( this.directory );
       await SaveGame.ExportGlobalVars( this.directory );
     }catch(e){
       console.error(e);
@@ -482,7 +481,7 @@ export class SaveGame {
 
     await SaveGame.ExportSaveNFO(save_dir, name);
     await SaveGame.ExportGlobalVars( save_dir );
-    await GameState.PartyTableManager.export( save_dir );
+    await GameState.PartyManager.export( save_dir );
 
     //Get Screenshot
     const tga = await GameState.GetScreenShot();

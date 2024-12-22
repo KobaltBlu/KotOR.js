@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
   VideoEffectManager
 } from "./managers";
 
@@ -95,7 +95,6 @@ export class GameState implements EngineContext {
   static MenuManager: typeof MenuManager;
   static ModuleObjectManager: typeof ModuleObjectManager;
   static PartyManager: typeof PartyManager;
-  static PartyTableManager: typeof PartyTableManager;
   static ResolutionManager: typeof ResolutionManager;
   static ShaderManager: typeof ShaderManager;
   static TLKManager: typeof TLKManager;

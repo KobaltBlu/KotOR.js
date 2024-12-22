@@ -12,7 +12,7 @@ import { ConfigClient } from "./utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  PartyTableManager, ResolutionManager, ShaderManager, TwoDAManager, FactionManager,   
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,   
   KEYManager,
   RIMManager,
   ERFManager, VideoEffectManager
@@ -76,7 +76,6 @@ export class GameInitializer {
     GameState.MenuManager = MenuManager;
     GameState.ModuleObjectManager = ModuleObjectManager;
     GameState.PartyManager = PartyManager;
-    GameState.PartyTableManager = PartyTableManager;
     GameState.ResolutionManager = ResolutionManager;
     GameState.ShaderManager = ShaderManager;
     GameState.TLKManager = TLKManager;
