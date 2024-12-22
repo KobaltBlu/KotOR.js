@@ -17,7 +17,7 @@ import { Action } from "./Action";
 export class ActionRandomWalk extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionRandomWalk;
 
     //PARAMS

@@ -15,7 +15,7 @@ import { Action } from "./Action";
 export class ActionSpeakStrRef extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionSpeakStrRef;
 
     //PARAMS
@@ -25,7 +25,7 @@ export class ActionSpeakStrRef extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    const str = GameState.TLKManager.GetStringById( this.getParameter(0) ).Value;
+    const str = GameState.TLKManager.GetStringById( this.getParameter<number>(0) ).Value;
     return ActionStatus.FAILED;
   }
 

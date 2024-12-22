@@ -1,6 +1,7 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 import * as THREE from "three";
@@ -21,7 +22,7 @@ export class ActionJumpToPoint extends Action {
   facing: number;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionJumpToPoint;
 
     this.x = 0;
@@ -43,18 +44,18 @@ export class ActionJumpToPoint extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    this.target = this.getParameter(3);
+    this.target = this.getParameter<ModuleObject>(3);
 
     //if(!(this.target instanceof ModuleObject))
     //  return ActionStatus.FAILED;
 
-    this.x = this.getParameter(0);
-    this.y = this.getParameter(1);
-    this.z = this.getParameter(2);
+    this.x = this.getParameter<number>(0);
+    this.y = this.getParameter<number>(1);
+    this.z = this.getParameter<number>(2);
 
     this.facing = -Math.atan2(
-      this.getParameter(6),
-      this.getParameter(7)
+      this.getParameter<number>(6),
+      this.getParameter<number>(7)
     );
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){

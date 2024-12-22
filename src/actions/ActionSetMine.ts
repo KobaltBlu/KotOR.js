@@ -6,6 +6,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { SignalEventType } from "../enums/events/SignalEventType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleItem } from "../module/ModuleItem";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -27,7 +28,7 @@ export class ActionSetMine extends Action {
   usedItem: boolean = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionSetMine;
 
     //PARAMS
@@ -40,8 +41,8 @@ export class ActionSetMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.oItem = this.getParameter(0);
-    this.target = this.getParameter(1);
+    this.oItem = this.getParameter<ModuleItem>(0);
+    this.target = this.getParameter<ModuleObject>(1);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       const distance = Utility.Distance2D(this.owner.position, this.target.position);

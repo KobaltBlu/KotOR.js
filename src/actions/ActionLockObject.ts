@@ -4,7 +4,7 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
-// import { ModuleCreature, ModuleDoor, ModulePlaceable } from "../module";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -21,7 +21,7 @@ import { Action } from "./Action";
 export class ActionLockObject extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionLockObject;
 
     //PARAMS
@@ -33,7 +33,7 @@ export class ActionLockObject extends Action {
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
       return ActionStatus.FAILED;
 
-    this.target = this.getParameter(0);
+    this.target = this.getParameter<ModuleObject>(0);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       let distance = Utility.Distance2D(this.owner.position, this.target.position);

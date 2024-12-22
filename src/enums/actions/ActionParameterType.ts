@@ -9,9 +9,18 @@
  * @enum
  */
 export enum ActionParameterType {
+  /** Integer parameter type */
   INT     = 1,
+  
+  /** Floating point number parameter type */
   FLOAT   = 2,
+  
+  /** Double Word (32-bit unsigned integer) parameter type */
   DWORD   = 3,
+  
+  /** String parameter type */
   STRING  = 4,
+  
+  /** Script situation parameter type */
   SCRIPT_SITUATION = 5
 };

@@ -1,6 +1,7 @@
 import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { Action } from "./Action";
 
 /**
@@ -15,7 +16,7 @@ import { Action } from "./Action";
 export class ActionDoCommand extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionDoCommand;
 
     //PARAMS
@@ -24,19 +25,17 @@ export class ActionDoCommand extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    let script = this.getParameter(0);
-    if(script){
-      script.setCaller(this.owner);
-      script.runScript({
-        seek: script.offset
-      });
-      return ActionStatus.COMPLETE;
-    }else{
+    const script = this.getParameter<NWScriptInstance>(0);
+    if(!script){
       console.error('ActionDoCommand: Not an instanceof NWScriptInstance');
       return ActionStatus.FAILED;
     }
     
-    return ActionStatus.FAILED;
+    script.setCaller(this.owner);
+    script.runScript({
+      seek: script.offset
+    });
+    return ActionStatus.COMPLETE;
   }
 
 }

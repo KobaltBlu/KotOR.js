@@ -13,20 +13,30 @@ import { Action } from "./Action";
  */
 export class ActionWait extends Action {
 
+  /**
+   * Creates a new ActionWait instance.
+   * @param {number} [actionId=-1] - The unique identifier for this action
+   * @param {number} [groupId=-1] - The group identifier this action belongs to
+   */
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionWait;
 
-    //PARAMS
-    // 0 - float: delta time left to wait
-    
+    /**
+     * PARAMS
+     * @param {number} 0 - float: delta time left to wait
+     */
   }
 
+  /**
+   * Updates the wait action, reducing the remaining wait time by the delta.
+   * @param {number} [delta=0] - The time elapsed since the last update
+   * @returns {ActionStatus} COMPLETE when wait time is finished, IN_PROGRESS otherwise
+   */
   update(delta: number = 0): ActionStatus {
-    if( this.setParameter(0, 1, this.getParameter(0) - delta) <= 0 ){
+    if( this.setParameter<number>(0, 1, this.getParameter<number>(0) - delta) <= 0 ){
       return ActionStatus.COMPLETE;
     }
     return ActionStatus.IN_PROGRESS;
   }
-
 }

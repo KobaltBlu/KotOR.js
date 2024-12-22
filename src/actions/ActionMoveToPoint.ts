@@ -1,13 +1,14 @@
+import * as THREE from "three";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { Action } from "./Action";
-import * as THREE from "three";
 import { Utility } from "../utility/Utility";
 import { GameState } from "../GameState";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { ModuleObject } from "../module/ModuleObject";
 
 /**
  * ActionMoveToPoint class.
@@ -24,7 +25,7 @@ export class ActionMoveToPoint extends Action {
   real_target_position: THREE.Vector3 = new THREE.Vector3();
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionMoveToPoint;
 
     //PARAMS
@@ -45,14 +46,14 @@ export class ActionMoveToPoint extends Action {
       return ActionStatus.FAILED;
 
     this.target_position.set(
-      this.getParameter(0),
-      this.getParameter(1),
-      this.getParameter(2),
+      this.getParameter<number>(0),
+      this.getParameter<number>(1),
+      this.getParameter<number>(2),
     );
 
     this.real_target_position.copy(this.target_position);
 
-    this.target = this.getParameter(4);
+    this.target = this.getParameter<ModuleObject>(4);
     if(this.target){
       this.real_target_position.copy(this.target.position);
       if( BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) && this.target.isDead() ){
@@ -62,8 +63,8 @@ export class ActionMoveToPoint extends Action {
       }
     }
 
-    const range = this.getParameter(6) || 0.1;
-    const run = this.getParameter(5) ? true : false;
+    const range = this.getParameter<number>(6) || 0.1;
+    const run = this.getParameter<number>(5) ? true : false;
 
     if(this.owner.computedPath == undefined){
       this.calculatePath();
@@ -121,7 +122,7 @@ export class ActionMoveToPoint extends Action {
         this.owner.computedPath.timer -= 10*delta;
       }
 
-      let timeout = this.getParameter(8) - delta;
+      let timeout = this.getParameter<number>(8) - delta;
       if(timeout <= 0){
         let fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);

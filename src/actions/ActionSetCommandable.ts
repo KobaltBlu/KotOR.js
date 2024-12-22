@@ -1,4 +1,3 @@
-import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { Action } from "./Action";
@@ -15,7 +14,7 @@ import { Action } from "./Action";
 export class ActionSetCommandable extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionSetCommandable;
 
     //PARAMS
@@ -25,7 +24,7 @@ export class ActionSetCommandable extends Action {
 
   update(delta: number = 0): ActionStatus {
     if(this.owner){
-      this.owner.setCommandable( this.getParameter(0) ? true : false );
+      this.owner.setCommandable( this.getParameter<number>(0) ? true : false );
       return ActionStatus.COMPLETE;
     }
     return ActionStatus.FAILED;

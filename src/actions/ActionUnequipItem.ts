@@ -19,8 +19,8 @@ import { ActionQueue } from "./ActionQueue";
  */
 export class ActionUnequipItem extends Action {
 
-  constructor( groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID ){
-    super(groupId);
+  constructor(actionId: number = -1,  groupId: number = -1 ){
+    super(actionId, groupId);
     this.type = ActionType.ActionUnequipItem;
 
     //PARAMS
@@ -35,7 +35,7 @@ export class ActionUnequipItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const item = this.getParameter(0) as ModuleItem;
+    const item = this.getParameter<ModuleItem>(0);
     const obj = this.owner as ModuleCreature;
 
     if(obj.equipment.HEAD == item){

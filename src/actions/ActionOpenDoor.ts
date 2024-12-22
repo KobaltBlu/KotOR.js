@@ -5,6 +5,7 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import type { ModuleDoor } from "../module/ModuleDoor";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -21,7 +22,7 @@ import { Action } from "./Action";
 export class ActionOpenDoor extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionOpenDoor;
 
     //PARAMS
@@ -32,7 +33,7 @@ export class ActionOpenDoor extends Action {
 
   update(delta: number = 0): ActionStatus {
 
-    this.target = this.getParameter(0);
+    this.target = this.getParameter<ModuleObject>(0);
 
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
       return ActionStatus.FAILED;

@@ -1,8 +1,8 @@
 import { ModuleObjectType } from "../enums";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
-// import { ModuleCreature, ModuleObject } from "../module";
 import { Action } from "./Action";
 
 /**
@@ -17,7 +17,7 @@ import { Action } from "./Action";
 export class ActionJumpToObject extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionJumpToObject;
 
     //PARAMS
@@ -28,7 +28,7 @@ export class ActionJumpToObject extends Action {
 
   update(delta: number = 0): ActionStatus {
 
-    this.target = this.getParameter(0);
+    this.target = this.getParameter<ModuleObject>(0);
 
     if(!this.target)
       return ActionStatus.FAILED;

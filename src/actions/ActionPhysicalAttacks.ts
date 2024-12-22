@@ -5,7 +5,8 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
-import type { ModuleCreature } from "../module";
+import type { ModuleCreature } from "../module/ModuleCreature";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
@@ -23,7 +24,7 @@ import * as THREE from 'three';
 export class ActionPhysicalAttacks extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionPhysicalAttacks;
 
     //PARAMS
@@ -41,7 +42,7 @@ export class ActionPhysicalAttacks extends Action {
 
   update(delta: number = 0): ActionStatus {
     
-    this.target = this.getParameter(1);
+    this.target = this.getParameter<ModuleObject>(1);
 
     if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)){
       return ActionStatus.FAILED;

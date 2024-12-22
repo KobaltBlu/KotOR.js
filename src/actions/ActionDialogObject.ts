@@ -5,6 +5,7 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
+import type { ModuleObject } from "../module/ModuleObject";
 import { DLGObject } from "../resource/DLGObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
@@ -24,7 +25,7 @@ export class ActionDialogObject extends Action {
   conversation: DLGObject;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionDialogObject;
     this.clearable = false;
 
@@ -41,9 +42,9 @@ export class ActionDialogObject extends Action {
   update(delta: number = 0): ActionStatus {
     //console.log('ActionDialogObject', this);
 
-    this.target = this.getParameter(0);
-    let conversation_resref: string = this.getParameter(1) || '';
-    let ignoreStartRange = this.getParameter(4) || 0;
+    this.target = this.getParameter<ModuleObject>(0);
+    let conversation_resref: string = this.getParameter<string>(1) || '';
+    let ignoreStartRange = this.getParameter<number>(4) || 0;
 
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
@@ -65,7 +66,6 @@ export class ActionDialogObject extends Action {
 
     let distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
-
       // this.owner.openSpot = undefined;
       let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);

@@ -20,7 +20,7 @@ export class ActionPlayAnimation extends Action {
   bInitialized: boolean;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionPlayAnimation;
 
     //PARAMS
@@ -37,9 +37,9 @@ export class ActionPlayAnimation extends Action {
 
     
     if(!this.bInitialized){
-      this.animation = this.getParameter(0);
-      this.speed = this.getParameter(1);
-      this.time = this.getParameter(2);
+      this.animation = this.getParameter<number>(0);
+      this.speed = this.getParameter<number>(1);
+      this.time = this.getParameter<number>(2);
     }
 
     if(this.animation >= 10000){

@@ -22,7 +22,7 @@ export class ActionFollowLeader extends Action {
   path_realtime: boolean;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionFollowLeader;
 
     //PARAMS

@@ -9,6 +9,7 @@ import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
 // import { TalentSpell } from "../talents/TalentSpell";
 import { BitWise } from "../utility/BitWise";
+import type { ModuleObject } from "../module/ModuleObject";
 
 /**
  * ActionCastSpell class.
@@ -24,7 +25,7 @@ export class ActionCastSpell extends Action {
   spell: any = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionCastSpell;
 
     //PARAMS
@@ -45,8 +46,8 @@ export class ActionCastSpell extends Action {
 
   update(delta: number = 0): ActionStatus {
     //console.log('ActionCastSpell', this);
-    this.target = this.getParameter(5);
-    this.spell = new GameState.TalentSpell( this.getParameter(0) );
+    this.target = this.getParameter<ModuleObject>(5);
+    this.spell = new GameState.TalentSpell( this.getParameter<number>(0));
 
     if(this.spell){
       if(!this.spell.inRange(this.target, this.owner)){

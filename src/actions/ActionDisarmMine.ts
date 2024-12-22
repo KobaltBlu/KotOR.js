@@ -5,6 +5,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ResourceLoader } from "../loaders/ResourceLoader";
+import type { ModuleObject } from "../module/ModuleObject";
 import type { ModuleTrigger } from "../module/ModuleTrigger";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
@@ -25,7 +26,7 @@ import { Action } from "./Action";
 export class ActionDisarmMine extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionDisarmMine;
 
     //PARAMS - unknown
@@ -34,7 +35,7 @@ export class ActionDisarmMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter(0);
+    this.target = this.getParameter<ModuleObject>(0);
     if(!this.target){
       return ActionStatus.FAILED;
     }

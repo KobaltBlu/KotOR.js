@@ -2,7 +2,8 @@ import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
+import type { ModuleItem } from "../module/ModuleItem";
+import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Action } from "./Action";
 
@@ -18,7 +19,7 @@ import { Action } from "./Action";
 export class ActionTakeItem extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionTakeItem;
 
     //PARAMS
@@ -36,12 +37,12 @@ export class ActionTakeItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const oItem = this.getParameter(0) as ModuleItem;
+    const oItem = this.getParameter<ModuleItem>(0);
     if(!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
       return ActionStatus.FAILED;
     }
 
-    const oTarget = this.getParameter(1) as ModuleObject;
+    const oTarget = this.getParameter<ModuleObject>(1);
     if(
       !BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModuleCreature) &&
       !BitWise.InstanceOfObject(oTarget, ModuleObjectType.ModulePlaceable) &&

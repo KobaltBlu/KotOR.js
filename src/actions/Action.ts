@@ -1,4 +1,3 @@
-
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
@@ -15,9 +14,14 @@ import { ActionParameter } from "./ActionParameter";
 import { ActionQueue } from "./ActionQueue";
 
 /**
- * Action base class.
+ * Base class for all game actions in the engine.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @remarks
+ * Actions represent discrete behaviors that game objects can perform. They are managed
+ * by the ActionQueue system and can be chained together to create complex behaviors.
+ * Each action type extends this base class and implements its own update logic.
  * 
  * @file Action.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -25,56 +29,119 @@ import { ActionQueue } from "./ActionQueue";
  */
 export class Action {
   
+  /** Reference to the ActionQueue class */
   static ActionQueue: typeof ActionQueue = ActionQueue;
 
+  /** The type identifier for this action */
   type: ActionType;
-  groupId: number = -1;
+
+  /** Group identifier for related actions */
+  groupId: number = ActionQueue.AUTO_INCREMENT_GROUP_ID;
+
+  /** The object performing the action */
   owner: ModuleObject;
+
+  /** The target of the action, if any */
   target: ModuleObject;
-  parameters: any[];
+
+  /** Array of parameters controlling the action's behavior */
+  parameters: ActionParameter[];
+
+  /** Pathfinding data for movement-based actions */
   path: any;
+
+  /** Position data for finding open spaces */
   openSpot: any;
+
+  /** Whether this action can be cleared from the queue */
   clearable: boolean = true;
+
+  /** Associated combat action data */
   combatAction: ICombatAction;
+
+  /** Reference to parent cutscene attack action */
   isCutsceneAttack: Action;
+
+  /** The queue this action belongs to */
   queue: ActionQueue;
+
+  /** Whether this action was initiated by user input */
   isUserAction: boolean = false;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  /**
+   * Creates a new action instance.
+   * 
+   * @param actionId - Unique identifier for this action
+   * @param groupId - Identifier for grouping related actions
+   */
+  constructor(actionId: number = -1, groupId: number = -1) {
     this.type = ActionType.ActionInvalid;
-    this.groupId = groupId;
-
-    this.owner = undefined; //The owner of the action
-    this.target = undefined; //The target of the action
-
+    this.groupId = groupId == -1 ? ActionQueue.AUTO_INCREMENT_GROUP_ID : groupId;
+    this.owner = undefined;
+    this.target = undefined;
     this.parameters = [];
-
     this.path = undefined;
     this.openSpot = undefined;
   }
 
+  /**
+   * Updates the action state.
+   * 
+   * @param delta - Time elapsed since last update in seconds
+   * @returns Current status of the action
+   * @virtual
+   */
   update(delta: number = 0): ActionStatus {
     return ActionStatus.FAILED;
   }
 
-  setOwner( owner: ModuleObject ){
+  /**
+   * Sets the owner of this action.
+   * 
+   * @param owner - The object that will perform this action
+   */
+  setOwner(owner: ModuleObject) {
     this.owner = owner;
   }
 
-  getOwner(){
+  /**
+   * Gets the owner of this action.
+   * 
+   * @returns The object performing this action
+   */
+  getOwner() {
     return this.owner;
   }
 
-  setTarget( target: ModuleObject ){
+  /**
+   * Sets the target of this action.
+   * 
+   * @param target - The object this action is targeting
+   */
+  setTarget(target: ModuleObject) {
     this.target = target;
   }
 
-  getTarget(){
+  /**
+   * Gets the target of this action.
+   * 
+   * @returns The target of this action
+   */
+  getTarget() {
     return this.target;
   }
 
-  runCreatureAvoidance(delta = 0){
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+  /**
+   * Handles creature collision avoidance during movement.
+   * 
+   * @param delta - Time elapsed since last update in seconds
+   * @remarks
+   * This method checks for potential collisions with other creatures and
+   * adjusts movement vectors to avoid them. Only applies to creature-type
+   * objects that are part of the party.
+   */
+  runCreatureAvoidance(delta = 0) {
+    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const owner: ModuleCreature = this.owner as any;
 
     if(GameState.PartyManager.party.indexOf(owner) >= 0){
@@ -158,59 +225,79 @@ export class Action {
     }
   }
 
-  setParameters( params: GFFStruct[] = [], count = 0 ){
-    if(count){
-      if(Array.isArray(params)){
-        for(let i = 0; i < count; i++){
-          this.parameters[i] = ActionParameter.FromStruct( params[i] );
+  /**
+   * Sets multiple parameters for this action from GFF structs.
+   * 
+   * @param params - Array of GFF structs containing parameter data
+   * @param count - Number of parameters to set
+   */
+  setParameters(params: GFFStruct[] = [], count = 0) {
+    if (count) {
+      if (Array.isArray(params)) {
+        for (let i = 0; i < count; i++) {
+          this.parameters[i] = ActionParameter.FromStruct(params[i]);
         }
       }
     }
   }
 
-  getParameter( index = 0 ){
+  /**
+   * Gets the value of a parameter at the specified index.
+   * 
+   * @param index - Index of the parameter to retrieve
+   * @returns The parameter value, converted to appropriate type
+   */
+  getParameter<T>(index = 0): T {
     let param = this.parameters[index];
-    if(!param){ return; }
-    switch(param.type){
+    if (!param) { return; }
+    switch (param.type) {
       case ActionParameterType.DWORD:
-        return GameState.ModuleObjectManager.GetObjectById(param.value);
+        return GameState.ModuleObjectManager.GetObjectById(param.value as number) as T;
       default:
-        return param.value;
+        return param.value as T;
     }
   }
 
-  setParameter( index = 0, type = 0, value: any = 0 ){
+  /**
+   * Sets a parameter value at the specified index.
+   * 
+   * @param index - Index of the parameter to set
+   * @param type - Type of the parameter from ActionParameterType
+   * @param value - Value to set
+   * @returns The converted parameter value
+   * @throws Error if parameter type is invalid
+   */
+  setParameter<T>(index = 0, type = 0, value: any = 0): T {
     let param = this.parameters[index];
 
-    if(typeof param == 'undefined'){
-      param = this.parameters[index] = new ActionParameter( type );
+    if (typeof param == 'undefined') {
+      param = this.parameters[index] = new ActionParameter(type);
     }
 
-    switch(param.type){
+    switch (param.type) {
       case ActionParameterType.INT:
-        param.value = !isNaN((value|0)) ? (value|0) : 0;
-      break;
+        param.value = !isNaN((value | 0)) ? (value | 0) : 0;
+        break;
       case ActionParameterType.FLOAT:
         param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
-      break;
+        break;
       case ActionParameterType.DWORD:
-        if(BitWise.InstanceOfObject(value, ModuleObjectType.ModuleObject)){
+        if (BitWise.InstanceOfObject(value, ModuleObjectType.ModuleObject)) {
           param.value = value.id ? value.id : ModuleObjectConstant.OBJECT_INVALID;
-        }else{
+        } else {
           param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;
         }
-      break;
+        break;
       case ActionParameterType.STRING:
         param.value = value.toString();
-      break;
+        break;
       case ActionParameterType.SCRIPT_SITUATION:
-        if(value instanceof GameState.NWScript.NWScriptInstance)
+        if (value instanceof GameState.NWScript.NWScriptInstance)
           param.value = value;
-      break;
+        break;
       default:
-        throw 'setParameter: Invalid type: ('+type+')';
+        throw 'setParameter: Invalid type: (' + type + ')';
     }
-    return param.value;
+    return param.value as T;
   }
-
 }

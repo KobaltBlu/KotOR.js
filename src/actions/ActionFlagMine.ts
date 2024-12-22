@@ -1,12 +1,10 @@
-import { GameState } from "../GameState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+import type { ModuleObject } from "../module/ModuleObject";
 import type { ModuleTrigger } from "../module/ModuleTrigger";
 import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
 import { Action } from "./Action";
 
 /**
@@ -22,7 +20,7 @@ import { Action } from "./Action";
 export class ActionFlagMine extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionFlagMine;
 
     //PARAMS - unknown
@@ -31,7 +29,7 @@ export class ActionFlagMine extends Action {
 
   update(delta?: number): ActionStatus {
 
-    this.target = this.getParameter(0);
+    this.target = this.getParameter<ModuleObject>(0);
 
     if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
       const trap: ModuleTrigger = this.target as any;

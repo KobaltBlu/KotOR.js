@@ -18,7 +18,7 @@ import { Action } from "./Action";
 export class ActionGiveItem extends Action {
 
   constructor( actionId: number = -1, groupId: number = -1 ){
-    super(groupId);
+    super(actionId, groupId);
     this.type = ActionType.ActionGiveItem;
 
     //PARAMS
@@ -36,12 +36,12 @@ export class ActionGiveItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    const oItem = this.getParameter(0) as ModuleItem;
+    const oItem = this.getParameter<ModuleItem>(0);
     if(!BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)){
       return ActionStatus.FAILED;
     }
 
-    const oGiveTo = this.getParameter(1) as ModuleObject;
+    const oGiveTo = this.getParameter<ModuleObject>(1);
     if(
       !BitWise.InstanceOfObject(oGiveTo, ModuleObjectType.ModuleCreature) &&
       !BitWise.InstanceOfObject(oGiveTo, ModuleObjectType.ModulePlaceable) &&
