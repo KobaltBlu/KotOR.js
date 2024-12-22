@@ -78,12 +78,11 @@ export class GFFObject {
     this.exportedLabels = [];
 
     this.json = {};
+    this.RootNode = new GFFStruct(-1);
 
     //END EXPORT VARS
 
-    if(file == null){
-      this.RootNode = new GFFStruct(-1);
-    }else{
+    if(file != null){
       if(typeof file == 'string'){
         try{
           this.file = file;
