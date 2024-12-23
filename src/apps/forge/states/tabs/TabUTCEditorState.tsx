@@ -24,6 +24,14 @@ export class TabUTCEditorState extends TabState {
 
     this.setContentView(<TabUTCEditor tab={this}></TabUTCEditor>);
     this.openFile();
+    this.saveTypes = [
+      {
+        description: 'Odyssey Creature File',
+        accept: {
+          'application/octet-stream': ['.utc']
+        }
+      }
+    ];
   }
 
   public openFile(file?: EditorFile){

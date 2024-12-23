@@ -95,7 +95,7 @@ export class Module {
    * modified afterward by toolset. The game saves out 32 bytes instead of 16. Applications other than the toolset
    * can set this to all null bytes when creating a new IFO file.
    */
-  id: Buffer = Buffer.alloc(16);
+  id: Uint8Array = new Uint8Array(16);
 
   /**
    * Name of module
@@ -994,7 +994,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_GVar_List') );
 
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak', this.hak) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') ).setData(this.id || Buffer.alloc(16));
+    ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') ).setData(this.id || new Uint8Array(16));
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame', 0) );
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour) );
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name') ).setCExoLocString(this.name );

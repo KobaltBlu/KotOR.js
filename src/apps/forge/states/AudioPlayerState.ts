@@ -106,6 +106,9 @@ export class AudioPlayerState {
     if(file instanceof EditorFile){
       file.readFile().then( (response) => {
         try{
+          if(!response.buffer ){
+            throw new Error('Audio Buffer is undefined');
+          }
           AudioPlayerState.audioFile = new KotOR.AudioFile(response.buffer);
           AudioPlayerState.audioFile.filename = file.resref+'.'+file.ext;
           if(AudioPlayerState.isPlaying()){
@@ -258,7 +261,7 @@ export class AudioPlayerState {
       });
 
       if(!payload.canceled && typeof payload.filePath != 'undefined'){
-        fs.writeFile(payload.filePath, AudioPlayerState.audioFile.getExportableData() || Buffer.allocUnsafe(0), (err) => {
+        fs.writeFile(payload.filePath, AudioPlayerState.audioFile.getExportableData() || new Uint8Array(0), (err) => {
           if (err) {
             console.warn('AudioFile Save Fail', payload.filePath);
             // if(typeof args.onError == 'function')
@@ -292,7 +295,7 @@ export class AudioPlayerState {
       } as SaveFilePickerOptions ).then( async (handle: FileSystemFileHandle) => {
         if(handle){
           const writable = await handle.createWritable();
-          await writable.write(AudioPlayerState.audioFile.getExportableData() || Buffer.allocUnsafe(0));
+          await writable.write(AudioPlayerState.audioFile.getExportableData() || new Uint8Array(0));
           await writable.close();
           console.log('AudioFile Saved', handle.name);
         }

@@ -20,7 +20,7 @@ export class AudioLoader {
 
   constructor () { }
 
-  static toArrayBuffer(buffer: Buffer) {
+  static toArrayBuffer(buffer: Uint8Array) {
     let ab = new ArrayBuffer(buffer.length);
     let view = new Uint8Array(ab);
     for (let i = 0; i < buffer.length; ++i) {

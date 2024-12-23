@@ -35,7 +35,7 @@ export class MainMenu extends GameMenu {
   BTN_EXIT: GUIButton;
   _3dViewModel: OdysseyModel3D;
   _3dView: LBL_3DView;
-  bgMusicBuffer: Buffer;
+  bgMusicBuffer: ArrayBuffer;
   bgMusicResRef: string = 'mus_theme_cult';
 
   constructor(){

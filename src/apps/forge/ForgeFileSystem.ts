@@ -90,7 +90,7 @@ export class ForgeFileSystem {
     });
   }
 
-  static async OpenFileBuffer( options: OpenFileOptions = {} ): Promise<Buffer> {
+  static async OpenFileBuffer( options: OpenFileOptions = {} ): Promise<Uint8Array> {
     options = Object.assign({
       multiple: false,
       exts: []
@@ -101,20 +101,20 @@ export class ForgeFileSystem {
         if(Array.isArray(response.paths)){
           fs.readFile(response.paths[0], (err, buffer) => {
             if(err) throw err;
-            return Buffer.from(buffer);
+            return new Uint8Array(buffer);
           });
         }
       }else{
         if(Array.isArray(response.handles)){
           const [handle] = response.handles as FileSystemFileHandle[];
           let file = await handle.getFile();
-          return Buffer.from( await file.arrayBuffer() );
+          return new Uint8Array( await file.arrayBuffer() );
         }
       }
     }catch(e: any){
       console.error(e);
     }
-    return Buffer.alloc(0);
+    return new Uint8Array(0);
   }
 
   static OpenDirectory(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {

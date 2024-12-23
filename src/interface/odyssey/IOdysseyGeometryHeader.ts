@@ -24,5 +24,5 @@ export interface IOdysseyGeometryHeader {
   nodeCount: number;
   refCount: number;
   geometryType: number;
-  unknown4: Buffer;
+  unknown4: Uint8Array;
 }

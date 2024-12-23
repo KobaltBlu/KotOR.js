@@ -143,7 +143,7 @@ export class CurrentGame {
     });
   }
 
-  static async WriteFile( filename: string, buffer: Buffer){
+  static async WriteFile( filename: string, buffer: Uint8Array){
     try{
       await GameFileSystem.writeFile(path.join(CurrentGame.gameinprogress_dir, filename), buffer);
     }catch(e){

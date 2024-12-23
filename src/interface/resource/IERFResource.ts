@@ -11,5 +11,5 @@
 export interface IERFResource {
   offset: number;
   size: number;
-  data: Buffer;
+  data: Uint8Array;
 }

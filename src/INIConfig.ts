@@ -33,7 +33,8 @@ export class INIConfig {
   async load(): Promise<void> {
     try{
       const buffer = await GameFileSystem.readFile(this.ini_path);
-      let ini_text = buffer.toString('utf8');
+      const decoder = new TextDecoder('utf-8');
+      let ini_text = decoder.decode(buffer);
       let lines = ini_text.split(/\r?\n/);
 
       this.current_section = null;

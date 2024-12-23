@@ -10,5 +10,5 @@
  */
 export interface IFindTPCResult {
   pack: number;
-  buffer: Buffer;
+  buffer: Uint8Array;
 };

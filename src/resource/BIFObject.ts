@@ -1,7 +1,6 @@
 import { BinaryReader } from "../BinaryReader";
 import * as path from 'path';
 import { KEYManager } from "../managers/KEYManager";
-import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { IResourceDiskInfo } from "../interface/resource/IResourceDiskInfo";
 import { IBIFResource } from "../interface/resource/IBIFResource";
@@ -21,7 +20,7 @@ const BIF_HEADER_SIZE = 20;
  */
 export class BIFObject {
   resource_path: string;
-  buffer: Buffer;
+  buffer: Uint8Array;
   inMemory: boolean = false;
 
   fileType: string;
@@ -37,7 +36,7 @@ export class BIFObject {
   resources: IBIFResource[] = [];
   file: string;
 
-  constructor(file: Buffer|string){
+  constructor(file: Uint8Array|string){
 
     this.resourceDiskInfo = {
       path: '',
@@ -46,15 +45,15 @@ export class BIFObject {
 
     this.resources = [];
 
-    if(isBuffer(file)){
-      this.buffer = file as Buffer;
+    if(file instanceof Uint8Array){
+      this.buffer = file;
       this.inMemory = true;
       this.resourceDiskInfo.path = '';
       this.resourceDiskInfo.existsOnDisk = false;
     }else if(typeof file === 'string'){
       this.file = file;
       this.inMemory = false;
-      this.buffer = Buffer.allocUnsafe(0);
+      this.buffer = new Uint8Array(0);
       this.resourceDiskInfo.path = file;
       this.resourceDiskInfo.existsOnDisk = true;
       this.resourceDiskInfo.pathInfo = path.parse(this.resourceDiskInfo.path);
@@ -80,7 +79,7 @@ export class BIFObject {
 
   async readFromDisk(){
     const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r');
-    const header = Buffer.alloc(BIF_HEADER_SIZE);
+    const header = new Uint8Array(BIF_HEADER_SIZE);
     await GameFileSystem.read(fd, header, 0, BIF_HEADER_SIZE, 0)
     this.reader = new BinaryReader(header);
 
@@ -94,7 +93,7 @@ export class BIFObject {
     this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
 
     //Read variable tabs blocks
-    const variableTable: Buffer = Buffer.alloc(this.variableTableSize);
+    const variableTable: Uint8Array = new Uint8Array(this.variableTableSize);
     await GameFileSystem.read(fd, variableTable, 0, this.variableTableSize, this.variableTableOffset);
     this.reader.reuse(variableTable);
     for(let i = 0; i < this.variableResourceCount; i++){
@@ -153,27 +152,27 @@ export class BIFObject {
     }
   }
 
-  async getResourceBuffer(res?: IBIFResource): Promise<Buffer> {
-    if(!res){ return Buffer.allocUnsafe(0); }
-    if(!res.size){ return Buffer.allocUnsafe(0); }
+  async getResourceBuffer(res?: IBIFResource): Promise<Uint8Array> {
+    if(!res){ return new Uint8Array(0); }
+    if(!res.size){ return new Uint8Array(0); }
 
     try{
       const fd = await GameFileSystem.open(this.resourceDiskInfo.path, 'r')
-      const buffer = Buffer.alloc(res.size);
+      const buffer = new Uint8Array(res.size);
       await GameFileSystem.read(fd, buffer, 0, buffer.length, res.offset);
       await GameFileSystem.close(fd);
 
       return buffer;
     }catch(e){
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
   }
 
-  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Buffer> {
+  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Uint8Array> {
     const resource = this.getResource(resRef, resType);
     if (typeof resource === 'undefined') {
       console.error('getResourceBufferByResRef', resRef, resType, resource);
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
 
     return await this.getResourceBuffer(resource);
@@ -188,7 +187,7 @@ export class BIFObject {
       if(key != null){
         const res = this.getResource(pathInfo.file.name, ResourceTypes[pathInfo.file.ext]);
         if(res){
-          this.getResourceBuffer(res).then( (buffer: Buffer) => {
+          this.getResourceBuffer(res).then( (buffer: Uint8Array) => {
             if(typeof onLoad === 'function')
               onLoad(buffer);
           }, (e: any) => {

@@ -5,7 +5,6 @@ import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "./ResourceTypes";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { OdysseyModel3D } from "../three/odyssey";
 import { OdysseyModelAnimation } from "../odyssey";
@@ -25,7 +24,7 @@ export class LIPObject {
   static FILE_TYPE  = 'LIP ';
   static FILE_VER   = 'V1.0';
 
-  file: string|Buffer;
+  file: string|Uint8Array;
   HeaderSize: number;
   keyframes: ILIPKeyFrame[];
   time: number;
@@ -37,7 +36,7 @@ export class LIPObject {
 
   static readonly MAX_LIP_SHAPES = 16;
 
-  constructor(file: string|Buffer, onComplete?: Function){
+  constructor(file: string|Uint8Array, onComplete?: Function){
     this.file = file;
     this.HeaderSize = 16;
 
@@ -64,7 +63,7 @@ export class LIPObject {
     
     try{
 
-      if(isBuffer(this.file)){
+      if(this.file instanceof Uint8Array){
 
         if(!this.file.length){
 
@@ -81,11 +80,11 @@ export class LIPObject {
           return;
         }
 
-        this.readBinary(Buffer.from(this.file), onComplete);
+        this.readBinary(this.file, onComplete);
 
       }else{
         GameFileSystem.readFile(this.file as string).then( (buffer) => {
-          this.readBinary(Buffer.from(buffer), onComplete);
+          this.readBinary(buffer, onComplete);
         }).catch( (err) => {
           console.error('LIPObject', 'LIP Header Read', err);
         });
@@ -97,9 +96,8 @@ export class LIPObject {
     }
   }
 
-  readBinary(buffer: Buffer, onComplete?: Function){
-
-    if(isBuffer(buffer)){
+  readBinary(buffer: Uint8Array, onComplete?: Function){
+    if(buffer instanceof Uint8Array){
 
       let reader = new BinaryReader(buffer);
 
@@ -255,7 +253,7 @@ export class LIPObject {
     this.keyframes.sort((a,b) => (a.time > b.time) ? 1 : ((b.time > a.time) ? -1 : 0)); 
   }
 
-  toExportBuffer(): Buffer {
+  toExportBuffer(): Uint8Array {
     let writer = new BinaryWriter();
 
     //Write the header to the buffer
@@ -316,7 +314,7 @@ export class LIPObject {
 
   static async Load(resref: string = ''): Promise<LIPObject>{
     return new Promise<LIPObject|any>( (resolve, reject) => {
-      ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Buffer) => {
+      ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Uint8Array) => {
         resolve(new LIPObject(buffer));
       }).catch( (e) => {
         console.error(e);

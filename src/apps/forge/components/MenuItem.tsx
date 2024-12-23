@@ -42,7 +42,7 @@ export const MenuItem = function(props: any){
     );
   }else if(parent){
     return (
-      <NavDropdown.Item item={item} onClick={onClick}>{item.name}</NavDropdown.Item>
+      <NavDropdown.Item onClick={onClick}>{item.name}</NavDropdown.Item>
     );
   }else{
     return (

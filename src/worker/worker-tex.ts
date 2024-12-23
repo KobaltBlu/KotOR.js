@@ -1,6 +1,5 @@
 import { PixelManager } from "../utility/PixelManager";
 import { TPCObject } from "../resource/TPCObject";
-import isBuffer from "is-buffer";
 
 function concatenate (resultConstructor: any, ...arrays: any) {
   let totalLength = 0;
@@ -19,7 +18,7 @@ function concatenate (resultConstructor: any, ...arrays: any) {
 onmessage = function (e: any = {}){
   if(!e.data || !e.data.buffer) return;
   let tpc = new TPCObject({
-    file: Buffer.from(e.data.buffer)
+    file: new Uint8Array(e.data.buffer)
   });
   tpc.header = e.data.Header;
 

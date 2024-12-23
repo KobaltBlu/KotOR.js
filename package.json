@@ -11,7 +11,8 @@
     "webpack:prod": "cross-env NODE_ENV=production webpack",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
-    "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never"
+    "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never",
+    "typedoc": "typedoc --plugin typedoc-plugin-markdown --out ./docs ./src/KotOR.ts"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -21,14 +22,14 @@
     "@types/bootstrap": "^5.2.5",
     "@types/escodegen": "^0.0.7",
     "@types/esprima": "^4.0.3",
+    "@types/node": "^22.10.2",
     "@types/offscreencanvas": "^2019.7.0",
     "@types/react": "^18.0.27",
     "@types/react-dom": "^18.0.10",
     "@types/signals": "^1.0.1",
     "@types/three": "^0.149.0",
-    "@types/wicg-file-system-access": "^2020.9.5",
+    "@types/wicg-file-system-access": "^2020.9.8",
     "browserify-fs": "^1.0.0",
-    "buffer": "^6.0.3",
     "circular-dependency-plugin": "^5.2.2",
     "copy-webpack-plugin": "^11.0.0",
     "cross-env": "^7.0.3",
@@ -41,7 +42,6 @@
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.0",
     "idb-keyval": "^6.2.0",
-    "is-buffer": "^2.0.5",
     "mini-css-extract-plugin": "^2.6.1",
     "monaco-editor-webpack-plugin": "^7.0.1",
     "npm-run-all": "^4.1.5",
@@ -64,7 +64,9 @@
     "ts-jison": "^0.0.6",
     "ts-loader": "^9.4.1",
     "tsc-watch": "^6.0.0",
-    "typescript": "^4.8.4",
+    "typedoc": "^0.27.5",
+    "typedoc-plugin-markdown": "^4.3.3",
+    "typescript": "^5.7.2",
     "url-loader": "^4.1.1",
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.74.0",
@@ -77,7 +79,6 @@
     "jison": "^0.4.18",
     "monaco-editor": "^0.34.1",
     "ractive": "^1.4.1",
-    "string_decoder": "^1.2.0",
     "three": "^0.149.0"
   }
 }

@@ -1,6 +1,4 @@
 import { EditorFile } from "./EditorFile";
-import * as path from "path";
-import * as fs from "fs";
 import { DeepObject } from "../../DeepObject";
 import { ForgeState } from "./states/ForgeState";
 import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
@@ -10,7 +8,6 @@ import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
 import { ProjectFileSystem } from "./ProjectFileSystem";
 import { ForgeFileSystem } from "./ForgeFileSystem";
-import { StringDecoder } from "string_decoder";
 import { ProjectSettings } from "./interfaces/ProjectSettings";
 
 export class Project {
@@ -114,9 +111,9 @@ export class Project {
     if ( await ProjectFileSystem.exists('.forge/settings.json') ) {
       try{
         const buffer = await ProjectFileSystem.readFile('.forge/settings.json');
-        let decoder = new StringDecoder('utf8');
+        let decoder = new TextDecoder('utf8');
         this.settings = JSON.parse(
-          decoder.write(buffer)
+          decoder.decode(buffer)
         );
 
         if(typeof this.settings != 'object'){
@@ -336,9 +333,10 @@ export class Project {
 
   async saveSettings(){
     try{
+      const encoder = new TextEncoder();
       const saved = await ProjectFileSystem.writeFile(
         '.forge/settings.json', 
-        Buffer.from(
+        encoder.encode(
           JSON.stringify(this.settings, null, "\t")
         )
       );

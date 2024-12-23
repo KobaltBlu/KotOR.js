@@ -32,7 +32,7 @@ export class KEYObject {
   offsetToKeyTable: number = 0;
   buildYear: number = 0;
   buildDay: number = 0;
-  reserved: Buffer;
+  reserved: Uint8Array;
 
   constructor(){
     this.keys = [];
@@ -126,11 +126,11 @@ export class KEYObject {
     return bifResults.flat();
   }
 
-  async getFileBuffer(key: IKEYEntry): Promise<Buffer>{
-    if(!key){ return Buffer.allocUnsafe(0); }
+  async getFileBuffer(key: IKEYEntry): Promise<Uint8Array>{
+    if(!key){ return new Uint8Array(0); }
 
     const bif: BIFObject = BIFManager.bifs.get(KEYObject.getBIFIndex(key.resId));
-    if(!bif){ return Buffer.allocUnsafe(0); }
+    if(!bif){ return new Uint8Array(0); }
 
     const buffer = await bif.getResourceBuffer(bif.getResourceById(key.resId));
     return buffer;

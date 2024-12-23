@@ -22,7 +22,7 @@ export class VISObject {
   rooms: any[] = [];
   area: ModuleArea;
 
-  constructor ( data?: Buffer, area?: ModuleArea ) {
+  constructor ( data?: Uint8Array, area?: ModuleArea ) {
 
     this.rooms = [];
     this.area = area;

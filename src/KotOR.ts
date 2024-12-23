@@ -59,8 +59,3 @@ export * from "./three/odyssey";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 export * from "./utility/Utility";
-
-// export * as THREE from "three";
-
-/** @ignore */
-export { Buffer } from "buffer";

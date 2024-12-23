@@ -75,11 +75,6 @@ const libraryConfig = (name, color) => ({
       name,
       reporters: ['fancy'],
     }),
-    // Work around for Buffer is undefined:
-    // https://github.com/webpack/changelog-v5/issues/10
-    new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer'],
-    }),
     new CopyPlugin({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
@@ -96,7 +91,7 @@ const libraryConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      "buffer": require.resolve("buffer"),
+      // "buffer": require.resolve("buffer"),
     }
   },
   externals: {
@@ -189,11 +184,6 @@ const launcherConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
-    }),
-    // Work around for Buffer is undefined:
-    // https://github.com/webpack/changelog-v5/issues/10
-    new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer'],
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -307,11 +297,6 @@ const gameConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
-    }),
-    // Work around for Buffer is undefined:
-    // https://github.com/webpack/changelog-v5/issues/10
-    new webpack.ProvidePlugin({
-      // Buffer: ['buffer', 'Buffer'],
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -435,11 +420,6 @@ const forgeConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
-    }),
-    // Work around for Buffer is undefined:
-    // https://github.com/webpack/changelog-v5/issues/10
-    new webpack.ProvidePlugin({
-      Buffer: ['buffer', 'Buffer'],
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',

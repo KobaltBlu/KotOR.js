@@ -106,7 +106,7 @@ export class JournalManager {
 
   static LoadJournal(){
     return new Promise<void>( (resolve, reject) => {
-      ResourceLoader.loadResource(ResourceTypes.jrl, 'global').then((buffer: Buffer) => {
+      ResourceLoader.loadResource(ResourceTypes.jrl, 'global').then((buffer: Uint8Array) => {
         JournalManager.gff = new GFFObject(buffer);
         if(JournalManager.gff.RootNode.hasField('Categories')){
           JournalManager.Categories = [];

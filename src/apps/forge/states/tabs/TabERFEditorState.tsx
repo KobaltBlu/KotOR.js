@@ -14,6 +14,14 @@ export class TabERFEditorState extends TabState {
     super(options);
     this.setContentView(<TabERFEditor tab={this}></TabERFEditor>);
     this.openFile();
+    this.saveTypes = [
+      {
+        description: 'Encapsulated Resource File (ERF)',
+        accept: {
+          'application/octet-stream': ['.erf']
+        }
+      }
+    ];
   }
 
   public async openFile(file?: EditorFile){

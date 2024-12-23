@@ -23,6 +23,14 @@ export class TabUTPEditorState extends TabState {
 
     this.setContentView(<TabUTPEditor tab={this}></TabUTPEditor>);
     this.openFile();
+    this.saveTypes = [
+      {
+        description: 'Odyssey Placeable File',
+        accept: {
+          'application/octet-stream': ['.utp']
+        }
+      }
+    ];
   }
 
   public openFile(file?: EditorFile){

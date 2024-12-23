@@ -45,7 +45,7 @@ export class TXI {
   fps: number;
   info: string;
 
-  constructor(info: Buffer|Uint8Array|string = ''){
+  constructor(info: Uint8Array|Uint8Array|string = ''){
 
     this.blending = TXIBlending.NONE;
     this.textureType = TXITexType.DIFFUSE;

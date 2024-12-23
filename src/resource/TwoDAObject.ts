@@ -1,4 +1,3 @@
-import isBuffer from 'is-buffer';
 import { BinaryReader } from "../BinaryReader";
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { BinaryWriter } from '../BinaryWriter';
@@ -16,7 +15,7 @@ import { BinaryWriter } from '../BinaryWriter';
  */
 export class TwoDAObject {
 
-  file: Buffer|string|undefined = undefined;
+  file: Uint8Array|string|undefined = undefined;
   FileType: string;
   FileVersion: string;
   ColumnCount: number;
@@ -25,7 +24,7 @@ export class TwoDAObject {
   columns: string[];
   rows: any = {};
 
-  constructor(file: Buffer|string|undefined = undefined, onComplete?: Function){
+  constructor(file: Uint8Array|string|undefined = undefined, onComplete?: Function){
     this.file = file;
     this.columns = ["__rowlabel"];
     this.ColumnCount = 0;
@@ -33,8 +32,8 @@ export class TwoDAObject {
     this.rows = {};
     
     if(!!file){
-      if(isBuffer(file)) {
-        let br = new BinaryReader(file as Buffer);
+      if(file instanceof Uint8Array) {
+        let br = new BinaryReader(file);
         this.read2DA(br);
 
         if(onComplete != null)
@@ -136,7 +135,7 @@ export class TwoDAObject {
 
   }
 
-  toExportBuffer(): Buffer {
+  toExportBuffer(): Uint8Array {
     try{
       const bw = new BinaryWriter();
       bw.writeChars('2DA ');
@@ -188,8 +187,28 @@ export class TwoDAObject {
       return bw.buffer;
     }catch(e){
       console.error(e);
-      return Buffer.alloc(0);
+      return new Uint8Array(0);
     }
+  }
+
+  toCSV(): string {
+    let csv = '';
+    for(let i = 0; i < this.columns.length; i++){
+      csv += this.columns[i];
+      if(i < this.columns.length - 1) csv += ',';
+    }
+    csv += '\n';
+    const indexes = Object.keys(this.rows);
+    for(let i = 0; i < indexes.length; i++){
+      const index = indexes[i];
+      const row = this.rows[index];
+      for(let j = 0; j < this.columns.length; j++){
+        csv += row[this.columns[j]];
+        if(j < this.columns.length - 1) csv += ',';
+      }
+      csv += '\n';
+    }
+    return csv;
   }
 
   getRowByIndex(index = -1){

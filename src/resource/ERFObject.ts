@@ -1,4 +1,3 @@
-import isBuffer from "is-buffer";
 import * as path from "path";
 import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
@@ -24,7 +23,7 @@ const ERF_HEADER_SIZE = 160;
  */
 export class ERFObject {
   resource_path: string;
-  buffer: Buffer;
+  buffer: Uint8Array;
   inMemory: boolean = false;
   
   localizedStrings: IERFLanguage[] = [];
@@ -36,7 +35,7 @@ export class ERFObject {
   erfDataOffset: number;
   group: string = 'erf';
 
-  constructor(file?: string|Buffer){
+  constructor(file?: string|Uint8Array){
     this.localizedStrings = [];
     this.keyList = [];
     this.resources = [];
@@ -46,9 +45,9 @@ export class ERFObject {
       fileVersion: 'V1.0'
     } as IERFObjectHeader;
 
-    if(isBuffer(file)){
+    if(file instanceof Uint8Array){
       this.inMemory = true;
-      this.buffer = file as Buffer;
+      this.buffer = file;
     }else if(typeof file === 'string'){
       this.resource_path = file;
       this.inMemory = false;
@@ -69,7 +68,7 @@ export class ERFObject {
   async loadFromDisk(): Promise<void> {
     try{
       const fd = await GameFileSystem.open(this.resource_path, 'r');
-      let header = Buffer.alloc(ERF_HEADER_SIZE);
+      let header = new Uint8Array(ERF_HEADER_SIZE);
       await GameFileSystem.read(fd, header, 0, ERF_HEADER_SIZE, 0);
       this.reader = new BinaryReader(header);
 
@@ -87,11 +86,11 @@ export class ERFObject {
       this.header.DescriptionStrRef = this.reader.readUInt32();
       this.header.reserved = this.reader.readBytes(116);               //Byte 116
 
-      header = Buffer.allocUnsafe(0);
+      header = new Uint8Array(0);
 
       //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
       this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
-      header = Buffer.alloc(this.erfDataOffset);
+      header = new Uint8Array(this.erfDataOffset);
       await GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0);
       this.reader.reuse(header);
 
@@ -125,7 +124,7 @@ export class ERFObject {
         this.resources.push(resource);
       }
 
-      header = Buffer.allocUnsafe(0);
+      header = new Uint8Array(0);
       this.reader.dispose();
 
       await GameFileSystem.close(fd);
@@ -135,7 +134,7 @@ export class ERFObject {
   }
 
   async loadFromBuffer(): Promise<void> {
-    let header = Buffer.from(this.buffer, 0, ERF_HEADER_SIZE);
+    let header = new Uint8Array(this.buffer.slice(0, ERF_HEADER_SIZE));
     this.reader = new BinaryReader(header);
 
     this.header.fileType = this.reader.readChars(4);
@@ -152,12 +151,12 @@ export class ERFObject {
     this.header.DescriptionStrRef = this.reader.readUInt32();
     this.header.reserved = this.reader.readBytes(116);                 //Byte 116
 
-    header = Buffer.allocUnsafe(0);
+    header = new Uint8Array(0);
     this.reader.dispose();
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
     this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
-    header = Buffer.from(this.buffer, 0, this.erfDataOffset);
+    header = new Uint8Array(this.buffer.slice(0, this.erfDataOffset));
     this.reader.reuse(header);
 
     this.reader.seek(this.header.offsetToLocalizedString);
@@ -190,7 +189,7 @@ export class ERFObject {
       this.resources.push(resource);
     }
 
-    header = Buffer.allocUnsafe(0);
+    header = new Uint8Array(0);
     this.reader.dispose();
   }
 
@@ -205,20 +204,20 @@ export class ERFObject {
     return undefined;
   }
 
-  async getResourceBuffer(resource: IERFResource): Promise<Buffer> {
+  async getResourceBuffer(resource: IERFResource): Promise<Uint8Array> {
     if (typeof resource == 'undefined') {
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
 
 
     if(!resource.size){
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
 
-    const buffer = Buffer.alloc(resource.size);
+    const buffer = new Uint8Array(resource.size);
 
     if(this.inMemory){
-      this.buffer.copy(buffer, 0, resource.offset, resource.offset + (resource.size - 1));
+      buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       return buffer;
     }else{
       const fd = await GameFileSystem.open(this.resource_path, 'r');
@@ -229,11 +228,11 @@ export class ERFObject {
     return buffer;
   }
 
-  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Buffer> {
+  async getResourceBufferByResRef(resRef: string, resType: number): Promise<Uint8Array> {
     const resource = this.getResource(resRef, resType);
     if (typeof resource === 'undefined') {
       console.error('getResourceBufferByResRef', resRef, resType, resource);
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
 
     return await this.getResourceBuffer(resource);
@@ -250,22 +249,22 @@ export class ERFObject {
     return resources;
   }
 
-  async exportRawResource(directory: string, resref: string, restype: number = 0x000F): Promise<Buffer> {
+  async exportRawResource(directory: string, resref: string, restype: number = 0x000F): Promise<Uint8Array> {
     if(directory == null){
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
 
     const resource = this.getResource(resref, restype);
     if(!resource){
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
     }
     
     if(this.inMemory){
-      const buffer = Buffer.from(this.buffer, resource.offset, resource.offset + (resource.size - 1));
+        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
-      let buffer = Buffer.alloc(resource.size);
+      let buffer = new Uint8Array(resource.size);
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
       console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
@@ -276,7 +275,7 @@ export class ERFObject {
     }
   }
 
-  addResource(resRef: string, resType: number, buffer: Buffer){
+  addResource(resRef: string, resType: number, buffer: Uint8Array){
 
     const resId = this.resources.push({
       offset: -1,
@@ -354,7 +353,7 @@ export class ERFObject {
     output.writeUInt32(new Date().getFullYear() - 1900);
     output.writeUInt32(ERFObject.DayOfTheYear());
     output.writeUInt32(0);
-    output.writeBytes(Buffer.alloc(116));
+    output.writeBytes(new Uint8Array(116));
 
     //LocalStrings
     for(let i = 0; i < this.localizedStrings.length; i++){

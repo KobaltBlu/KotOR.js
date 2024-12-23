@@ -87,7 +87,7 @@ export class GameMenu {
       //mainmenu16x12
       this.loadBackground( () => {
         
-        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref).then(async (buffer: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref).then(async (buffer: Uint8Array) => {
           
           this.menuGFF = new GFFObject(buffer);
           

@@ -28,20 +28,20 @@ const mp3HeaderTest = [0xFF, 0xFB];
  */
 export class AudioFile {
   audioType: AudioFileAudioType;
-  data: Buffer;
+  data: Uint8Array;
   isProcessed: boolean;
   filename: any;
   header: any = { riff: {}, riffSize: {}, wave: {}, };
   reader: BinaryReader;
 
-  constructor(data: Buffer){
+  constructor(data: Uint8Array){
     this.audioType = AudioFileAudioType.Unknown;
     this.data = data;
     this.isProcessed = false;
   }
 
   //Get the binary data and remove any junk bytes that may be padding the file
-  async getBinaryStream(): Promise<Buffer>{
+  async getBinaryStream(): Promise<Uint8Array>{
     //String file path
     if(typeof this.data == 'string'){
 
@@ -177,7 +177,7 @@ export class AudioFile {
         //console.log('rawDataOffset', rawDataOffset);
         this.reader.seek(rawDataOffset);
         let dataADPCM = this.reader.readBytes(this.reader.length() - (rawDataOffset));
-        let adpcm = new ADPCMDecoder({header: this.header, data: Buffer.from(dataADPCM)});
+        let adpcm = new ADPCMDecoder({header: this.header, data: new Uint8Array(dataADPCM)});
         //console.log('ADPCMDecoder', adpcm);
 
         let decompiled = this.buildWave({
@@ -266,12 +266,12 @@ export class AudioFile {
     return header;
   }
 
-  buildWave(header: any, data: Buffer){
+  buildWave(header: any, data: Uint8Array){
 
     let riffHeaderLen = 8;
     let waveHeaderLen = 56;
 
-    let buffer = Buffer.alloc( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
+    let buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
     let bWriter = new BinaryWriter(buffer);
 
     let riffSize = data.length + waveHeaderLen;
@@ -322,7 +322,7 @@ export class AudioFile {
             console.log('rawDataOffset', rawDataOffset);
             this.data.seek(rawDataOffset);
             let dataADPCM = this.data.readBytes(this.data.Length() - (rawDataOffset));
-            let adpcm = new ADPCMDecoder({header: this.header, data: Buffer.from(dataADPCM)});
+            let adpcm = new ADPCMDecoder({header: this.header, data: new Uint8Array(dataADPCM)});
             console.log('ADPCMDecoder', adpcm);
 
             let decompiled = this.buildWave({
@@ -345,7 +345,7 @@ export class AudioFile {
       break;
     }
 
-    return Buffer.allocUnsafe(0);
+    return new Uint8Array(0);
 
   }
 

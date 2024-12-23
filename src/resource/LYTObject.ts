@@ -1,4 +1,3 @@
-import { StringDecoder } from "string_decoder";
 import { ILayoutRoom } from "../interface/resource/ILayoutRoom";
 import { ILayoutDoorHook } from "../interface/resource/ILayoutDoorHook";
 import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
@@ -23,18 +22,18 @@ export class LYTObject {
   obstacles: ILayoutObstacle[];
   text: any;
 
-  constructor( data?: Buffer ){
+  constructor( data?: Uint8Array ){
 
     if(typeof data == 'undefined')
-      data = Buffer.alloc(0);
+      data = new Uint8Array(0);
 
     this.rooms = [];
     this.doorhooks = [];
     this.tracks = [];
     this.obstacles = [];
 
-    let decoder = new StringDecoder('utf8');
-    this.text = decoder.write(data);
+    let decoder = new TextDecoder('utf8');
+    this.text = decoder.decode(data);
     let lines = this.text.split('\n');
 
     let MODES = {

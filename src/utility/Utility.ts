@@ -140,7 +140,7 @@ export class Utility {
     //         switch(res.ResType){
     //           case ResourceTypes['are']:
 
-    //             rim.getResourceBufferByResRef(res.ResRef, res.ResType, (data: Buffer) => {
+    //             rim.getResourceBufferByResRef(res.ResRef, res.ResType, (data: Uint8Array) => {
     //               let are = new GFFObject(data, (gff: GFFObject) => {
 
     //                 let Name = gff.getFieldByLabel('Name').getCExoLocString();
@@ -346,7 +346,7 @@ export class Utility {
   };*/
 
 
-  static ArrayMatch(array1: any[]|Buffer, array2: any[]|Buffer){
+  static ArrayMatch(array1: any[]|Uint8Array, array2: any[]|Uint8Array){
     return (array1.length == array2.length) && array1.every(function(element, index) {
       return element === array2[index];
     });

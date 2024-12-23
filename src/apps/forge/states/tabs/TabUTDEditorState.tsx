@@ -24,6 +24,14 @@ export class TabUTDEditorState extends TabState {
 
     this.setContentView(<TabUTDEditor tab={this}></TabUTDEditor>);
     this.openFile();
+    this.saveTypes = [
+      {
+        description: 'Odyssey Door File',
+        accept: {
+          'application/octet-stream': ['.utd']
+        }
+      }
+    ];
   }
 
   public openFile(file?: EditorFile){

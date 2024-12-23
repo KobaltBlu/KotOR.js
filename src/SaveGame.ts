@@ -494,7 +494,7 @@ export class SaveGame {
 
   static async ExportSaveNFO( directory: string, savename: string){
     console.log('ExportSaveNFO', directory, savename);
-    let nfo = new GFFObject();
+    const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
 
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.areaName.getValue();
@@ -527,8 +527,8 @@ export class SaveGame {
     gvt.FileType = 'GVT ';
 
     //Global Booleans
-    let catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    let boolBuffer = Buffer.alloc( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
+    const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
+    const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
       let boolean = globBool;
@@ -546,17 +546,18 @@ export class SaveGame {
     });
 
     //Global Locations
-    let catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
-    let locationBuffer = Buffer.alloc(24 * 100);
+    const catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
+    const locationBuffer = new Uint8Array(24 * 100);
+    const locationDataView = new DataView(locationBuffer.buffer);
 
     i = 0;
     GameState.GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
-      locationBuffer.writeFloatLE( location.value.position.x, (24 * i) + 0  );
-      locationBuffer.writeFloatLE( location.value.position.y, (24 * i) + 4  );
-      locationBuffer.writeFloatLE( location.value.position.z, (24 * i) + 8  );
-      locationBuffer.writeFloatLE( location.value.rotation.x, (24 * i) + 12 );
-      locationBuffer.writeFloatLE( location.value.rotation.y, (24 * i) + 16 );
-      locationBuffer.writeFloatLE( location.value.rotation.z, (24 * i) + 20 );
+      locationDataView.setFloat32( (24 * i) + 0, location.value.position.x, true );
+      locationDataView.setFloat32( (24 * i) + 4, location.value.position.y, true );
+      locationDataView.setFloat32( (24 * i) + 8, location.value.position.z, true );
+      locationDataView.setFloat32( (24 * i) + 12, location.value.rotation.x, true );
+      locationDataView.setFloat32( (24 * i) + 16, location.value.rotation.y, true );
+      locationDataView.setFloat32( (24 * i) + 20, location.value.rotation.z, true );
 
       let locStruct = new GFFStruct();
       locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location.name);
@@ -565,35 +566,35 @@ export class SaveGame {
     });
 
     //Global Numbers
-    let catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
-    let numberBuffer = Buffer.alloc(GameState.GlobalVariableManager.Globals.Number.size);
+    const catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
+    const numberBuffer = new Uint8Array(GameState.GlobalVariableManager.Globals.Number.size);
 
     i = 0;
     GameState.GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
       numberBuffer[i] = (numberObj.value & 0xFF);
 
-      let numberStruct = new GFFStruct();
+      const numberStruct = new GFFStruct();
       numberStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(numberObj.name);
       catNumberList.addChildStruct(numberStruct);
       i++;
     });
 
     
-    let catStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
+    const catStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
 
     gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValBoolean')).setData( boolBuffer );
     gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValLocation')).setData( locationBuffer );
     gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber')).setData( numberBuffer );
 
-    let valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
+    const valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
     i = 0;
     GameState.GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
-      let stringCatStruct = new GFFStruct();
+      const stringCatStruct = new GFFStruct();
       stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj.name);
       catStringList.addChildStruct(stringCatStruct);
 
 
-      let stringValStruct = new GFFStruct();
+      const stringValStruct = new GFFStruct();
       stringValStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).setValue(stringObj.value);
       valStringList.addChildStruct(stringValStruct);
       i++;

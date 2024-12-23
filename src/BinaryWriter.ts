@@ -1,4 +1,4 @@
-import isBuffer from "is-buffer";
+import { Endians } from "./enums/resource/Endians";
 
 /**
  * BinaryWriter class.
@@ -12,25 +12,31 @@ import isBuffer from "is-buffer";
 export class BinaryWriter {
 
   position: number = 0;
-  buffer: Buffer;
+  buffer: Uint8Array;
   length: number;
+  endians: Endians = Endians.LITTLE;
 
-  constructor( buffer = Buffer.alloc(0) ){
-    //variables
+  tmp8: Uint8Array = new Uint8Array(1);
+  tmp16: Uint8Array = new Uint8Array(2);
+  tmp32: Uint8Array = new Uint8Array(4);
+  tmp64: Uint8Array = new Uint8Array(8);
+
+  constructor( buffer = new Uint8Array(0), endians = Endians.LITTLE ){
     this.position = 0;
     this.buffer = buffer;
-    this.length = this.buffer.length;
+    this.length = this.buffer.length; 
+    this.endians = endians;
   }
 
   dispose(): void {
-    this.buffer = Buffer.allocUnsafe(0);
+    this.buffer = new Uint8Array(0);
   }
 
   seek(pos: number){
     this.position = pos;
   }
 
-  movePointerForward(num: number){
+  skip(num: number){
     this.position += num;
   }
 
@@ -38,118 +44,89 @@ export class BinaryWriter {
     return this.position;
   }
 
-  enlargeBuffer(buffer: Buffer){
+  enlargeBuffer(buffer: Uint8Array){
     //Check to see if we need to enlarge the buffer size
-    let targetLength = this.position + buffer.length;
-    if(targetLength > this.buffer.length){
-
-      //This is the amount that we will increase the buffer by
-      let paddingLength = targetLength - this.buffer.length;
-
-      let tmpBuffer = Buffer.alloc(targetLength);
-      this.buffer.copy(tmpBuffer, 0, 0, this.buffer.length);
-      this.buffer = tmpBuffer;
+    const targetLength = this.position + buffer.length;
+    if(targetLength <= this.buffer.length){
+      return;
     }
+    //This is the amount that we will increase the buffer by
+    // let paddingLength = targetLength - this.buffer.length;
+
+    const tmpBuffer = new Uint8Array(targetLength);
+    tmpBuffer.set(this.buffer, 0);
+    this.buffer = tmpBuffer;
   }
 
-  appendData(buffer: Buffer){
+  appendData(buffer: Uint8Array){
+    if(!buffer || buffer.length === 0){ return; }
 
-    if(buffer != null){
+    this.enlargeBuffer(buffer);
+    this.length = this.buffer.length;
+    this.buffer.set(buffer, this.position);
+    this.skip(buffer.length);
+  }
 
-      this.enlargeBuffer(buffer);
-      this.length = this.buffer.length;
-      buffer.copy(this.buffer, this.position, 0, buffer.length);
-      //console.log(this.buffer);
+  writeInt8(int8: number = 0){
+    this.tmp8[0] = int8 & 0xFF;
+    this.appendData(this.tmp8);
+  }
 
-      /*if(this.position == this.buffer.length){
-        //Append buffer to end of current buffer
-        this.length = this.buffer.length;
-        buffer.copy(this.buffer, this.position, 0, buffer.length);
-        //console.log(this.buffer);
-        //this.buffer = Buffer.concat([this.buffer, buffer], this.length);
+  writeUInt8(uint8: number = 0){
+    this.tmp8[0] = uint8 & 0xFF;
+    this.appendData(this.tmp8);
+  }
 
-      }else{
-        //Splice buffer into the current position of the current buffer
-
-        //This is the data that will be appended before the new data is spliced
-        let beginDataLen = this.position;
-        let beginDataBuffer = Buffer.from(this.buffer, 0, this.position);
-
-        //This is the data that will be appended after the new data is spliced
-        let endDataLen = this.length - this.position;
-
-        if(endDataLen < buffer.length){
-          this.length = beginDataLen + buffer.length;
-          this.buffer = Buffer.concat([beginDataBuffer, this.buffer], this.length);
-        }else{
-
-          let endDataBuffer = Buffer.from(this.buffer, this.position, endDataLen);
-          this.length = beginDataLen + buffer.length + endDataLen; // or this.length += buffer.length;
-          this.buffer = Buffer.concat([beginDataBuffer, this.buffer, endDataBuffer], this.length);
-        }
-
-      }*/
-
-      this.movePointerForward(buffer.length);
+  writeInt16(int16: number = 0){
+    this.tmp16.set([int16 & 0xFF, (int16 >> 8) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp16.reverse();
     }
-
+    this.appendData(this.tmp16);
   }
 
-  writeInt8(int8: number){
-    let tmpBuffer = Buffer.alloc(1);
-    tmpBuffer.writeInt8(int8);
-    this.appendData(tmpBuffer);
+  writeUInt16(uint16: number = 0){
+    this.tmp16.set([uint16 & 0xFF, (uint16 >> 8) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp16.reverse();
+    }
+    this.appendData(this.tmp16);
   }
 
-  writeUInt8(uint8: number){
-    let tmpBuffer = Buffer.alloc(1);
-    tmpBuffer.writeUInt8(uint8);
-    this.appendData(tmpBuffer);
+  writeInt32(int32: number = 0){
+    this.tmp32.set([int32 & 0xFF, (int32 >> 8) & 0xFF, (int32 >> 16) & 0xFF, (int32 >> 24) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp32.reverse();
+    }
+    this.appendData(this.tmp32);
   }
 
-  writeInt16(int16: number){
-    let tmpBuffer = Buffer.alloc(2);
-    tmpBuffer.writeInt16LE(int16);
-    this.appendData(tmpBuffer);
-  }
-
-  writeUInt16(uint16: number){
-    let tmpBuffer = Buffer.alloc(2);
-    tmpBuffer.writeUInt16LE(uint16);
-    this.appendData(tmpBuffer);
-  }
-
-  writeInt32(int32: number){
-    let tmpBuffer = Buffer.alloc(4);
-    tmpBuffer.writeInt32LE(int32);
-    this.appendData(tmpBuffer);
-  }
-
-  writeUInt32(uint32 = 0){
-    let tmpBuffer = Buffer.alloc(4);
-    tmpBuffer.writeUInt32LE(uint32);
-    this.appendData(tmpBuffer);
+  writeUInt32(uint32: number = 0){
+    this.tmp32.set([uint32 & 0xFF, (uint32 >> 8) & 0xFF, (uint32 >> 16) & 0xFF, (uint32 >> 24) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp32.reverse();
+    }
+    this.appendData(this.tmp32);
   }
 
   writeChar(char: string, encoding='ascii'){
-    if(char.length){
-      let tmpBuffer = Buffer.alloc(1);
-      tmpBuffer.writeUInt8(char.charCodeAt(0));
-      this.appendData(tmpBuffer);
-    }
+    if(!char.length){ return; }
+
+    this.tmp8[0] = char.charCodeAt(0) & 0xFF;
+    this.appendData(this.tmp8);
   }
 
   writeChars(chars: any|any[] = [], encoding='ascii'){
     if(typeof chars === 'string')
       chars = chars.split('');
 
-    if(chars.length){
-      let tmpBuffer = Buffer.alloc(chars.length);
-      for(let i = 0; i < chars.length; i++){
-        tmpBuffer.writeUInt8(chars[i].charCodeAt(), i);
-      }
-      this.appendData(tmpBuffer);
+    if(!chars.length){ return; }
+
+    const tmpBuffer = new Uint8Array(chars.length);
+    for(let i = 0; i < chars.length; i++){
+      tmpBuffer[i] = chars[i].charCodeAt(0) & 0xFF;
     }
+    this.appendData(tmpBuffer);
   }
 
   writeString(string: string, encoding='ascii'){
@@ -162,44 +139,47 @@ export class BinaryWriter {
   }
 
   writeByte(byte: number){
-    this.writeUInt8(byte);
+    this.writeUInt8(byte & 0xFF);
   }
 
-  writeBytes(bytes: Uint8Array|Buffer|any[] = []){
-    //console.log('Writing Bytes: ', bytes.length);
-    let tmpBuffer = isBuffer(bytes) ? bytes as Buffer : Buffer.from(bytes);
-    //this.buffer = Buffer.concat( [ this.buffer, (isBuffer(bytes) ? bytes as Buffer : Buffer.from(bytes)) ] );
-    this.appendData(tmpBuffer);
-    //console.log('Buffer Concat: ');
-    
+  writeBytes(bytes: Uint8Array){
+    this.appendData(bytes);
   }
 
-  write(tmpBuffer = Buffer.alloc(0)){
+  write(tmpBuffer: Uint8Array){
     this.appendData(tmpBuffer);
   }
 
-  writeSingle(single: number){
-    let tmpBuffer = Buffer.alloc(4);
-    tmpBuffer.writeFloatLE(single);
-    this.appendData(tmpBuffer);
+  writeSingle(single: number = 0){
+    this.tmp32.set([single & 0xFF, (single >> 8) & 0xFF, (single >> 16) & 0xFF, (single >> 24) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp32.reverse();
+    }
+    this.appendData(this.tmp32);
   }
 
-  writeDouble(double: number){
-    let tmpBuffer = Buffer.alloc(8);
-    tmpBuffer.writeDoubleLE(double);
-    this.appendData(tmpBuffer);
+  writeDouble(double: number = 0){
+    this.tmp64.set([double & 0xFF, (double >> 8) & 0xFF, (double >> 16) & 0xFF, (double >> 24) & 0xFF, (double >> 32) & 0xFF, (double >> 40) & 0xFF, (double >> 48) & 0xFF, (double >> 56) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp64.reverse();
+    }
+    this.appendData(this.tmp64);
   }
 
-  writeUInt64(uint64: number){
-    let tmpBuffer = Buffer.alloc(8);
-    tmpBuffer.writeDoubleLE(uint64);
-    this.appendData(tmpBuffer);
+  writeUInt64(uint64: number = 0){
+    this.tmp64.set([uint64 & 0xFF, (uint64 >> 8) & 0xFF, (uint64 >> 16) & 0xFF, (uint64 >> 24) & 0xFF, (uint64 >> 32) & 0xFF, (uint64 >> 40) & 0xFF, (uint64 >> 48) & 0xFF, (uint64 >> 56) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp64.reverse();
+    }
+    this.appendData(this.tmp64);
   }
 
-  writeInt64(int64: number){
-    let tmpBuffer = Buffer.alloc(8);
-    tmpBuffer.writeDoubleLE(int64);
-    this.appendData(tmpBuffer);
+  writeInt64(int64: number = 0){
+    this.tmp64.set([int64 & 0xFF, (int64 >> 8) & 0xFF, (int64 >> 16) & 0xFF, (int64 >> 24) & 0xFF, (int64 >> 32) & 0xFF, (int64 >> 40) & 0xFF, (int64 >> 48) & 0xFF, (int64 >> 56) & 0xFF]);
+    if(this.endians == Endians.BIG){
+      this.tmp64.reverse();
+    }
+    this.appendData(this.tmp64);
   }
 
   close(){

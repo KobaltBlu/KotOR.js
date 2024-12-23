@@ -12,18 +12,27 @@ import { Endians } from "./enums/resource/Endians";
 export class BinaryReader {
 
   position: number = 0;
-  buffer: Buffer;
-  endians: Endians;
+  buffer: Uint8Array;
+  bufferView: DataView;
+  endians: Endians = Endians.LITTLE;
+  isLE: boolean;
 
   _value: any;
 
-  constructor(reader: Buffer, endians = Endians.LITTLE){
+  constructor(reader: Uint8Array, endians = Endians.LITTLE){
     //variables
     this.position = 0;
     this.buffer = reader;
+    this.bufferView = new DataView(reader.buffer);
     this.endians = endians;
+    this.isLE = endians == Endians.LITTLE;
 
     this._value = undefined;
+  }
+
+  setEndian(endian: Endians){
+    this.endians = endian;
+    this.isLE = endian == Endians.LITTLE;
   }
 
   seek(pos: number): void {
@@ -31,15 +40,11 @@ export class BinaryReader {
   }
 
   skip(num: number): void {
-    this.movePointerForward(num);
+    this.position += num;
   }
 
   length(){
     return this.buffer.length;
-  }
-
-  movePointerForward(num: number): void {
-    this.position += num;
   }
 
   tell(): number {
@@ -50,7 +55,7 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.buffer.readInt8(this.position);
+    this._value = this.bufferView.getInt8(this.position);
     this.position += 1;
     return this._value;
   }
@@ -59,7 +64,7 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.buffer.readUInt8(this.position);
+    this._value = this.bufferView.getUint8(this.position);
     this.position += 1;
     return this._value;
   }
@@ -68,7 +73,7 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.endians == Endians.LITTLE ? this.buffer.readInt16LE(this.position) : this.buffer.readInt16BE(this.position);
+    this._value = this.bufferView.getInt16(this.position, this.isLE);
     this.position += 2;
     return this._value;
   }
@@ -77,7 +82,7 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.endians == Endians.LITTLE ? this.buffer.readUInt16LE(this.position) : this.buffer.readUInt16BE(this.position);
+    this._value = this.bufferView.getUint16(this.position, this.isLE);
     this.position += 2;
     return this._value;
   }
@@ -86,7 +91,10 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.endians == Endians.LITTLE ? this.buffer.readUInt32LE(this.position) : this.buffer.readInt32BE(this.position);
+    this._value = this.bufferView.getUint32(this.position, this.isLE);
+    if(typeof this._value ==='undefined'){
+      console.warn('readUInt32', this._value, this.position, this.buffer.length);
+    }
     this.position += 4;
     return this._value;
   }
@@ -95,7 +103,10 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = this.endians == Endians.LITTLE ? this.buffer.readInt32LE(this.position) : this.buffer.readInt32BE(this.position);
+    this._value = this.bufferView.getInt32(this.position, this.isLE);
+    if(typeof this._value ==='undefined'){
+      console.warn('readInt32', this._value, this.position, this.buffer.length);
+    }
     this.position += 4;
     return this._value;
   }
@@ -111,8 +122,8 @@ export class BinaryReader {
   readChars(num: number, encoding: BufferEncoding = 'latin1'): string {
     if(this.position >= this.buffer.length)
       return '\0';
-
-    this._value = this.buffer.slice(this.position, this.position + num).toString(encoding);
+    const textDecoder = new TextDecoder(encoding);
+    this._value = textDecoder.decode(this.buffer.slice(this.position, this.position + num));
     this.position += num;
     //console.log(num, this._value);
     return this._value;
@@ -144,9 +155,9 @@ export class BinaryReader {
     return this.readInt8();
   }
 
-  readBytes(num: number): Buffer {
+  readBytes(num: number): Uint8Array {
     if(this.position >= this.buffer.length)
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
 
     this._value = this.buffer.slice(this.position, this.position + num);
     this.position += num;
@@ -157,7 +168,7 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = (this.endians == Endians.LITTLE) ? this.buffer.readFloatLE(this.position) : this.buffer.readFloatBE(this.position);
+    this._value = this.bufferView.getFloat32(this.position, this.isLE);
     this.position += 4;
     return this._value;
   }
@@ -166,23 +177,23 @@ export class BinaryReader {
     if(this.position >= this.buffer.length)
       return 0;
 
-    this._value = (this.endians == Endians.LITTLE) ? this.buffer.readDoubleLE(this.position) : this.buffer.readDoubleBE(this.position);
+    this._value = this.bufferView.getFloat64(this.position, this.isLE);
     this.position += 8;
     return this._value;
   }
 
-  readUInt64(): Buffer {
+  readUInt64(): Uint8Array {
     if(this.position >= this.buffer.length)
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
 
     this._value = this.buffer.slice(this.position, this.position + 8);
     this.position += 8;
     return this._value;
   }
 
-  readInt64(): Buffer {
+  readInt64(): Uint8Array {
     if(this.position >= this.buffer.length)
-      return Buffer.allocUnsafe(0);
+      return new Uint8Array(0);
 
     this._value = this.buffer.slice(this.position, this.position + 8);
     this.position += 8;
@@ -197,14 +208,16 @@ export class BinaryReader {
     return new BinaryReader(buffer, this.endians)
   }
 
-  reuse(buffer: Buffer){
+  reuse(buffer: Uint8Array){
     this.position = 0;
     this.buffer = buffer;
+    this.bufferView = new DataView(buffer.buffer);
   }
 
   dispose(){
     this.position = 0;
-    this.buffer = Buffer.allocUnsafe(0);
+    this.buffer = new Uint8Array(0);
+    this.bufferView = new DataView(this.buffer.buffer);
   }
 
 }

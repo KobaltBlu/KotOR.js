@@ -41,7 +41,7 @@ export class TabLIPEditorState extends TabState {
   tabName: string = `LIP Editor`;
 
   //Lip
-  lip: KotOR.LIPObject = new KotOR.LIPObject(Buffer.alloc(0));
+  lip: KotOR.LIPObject = new KotOR.LIPObject(new Uint8Array(0));
 
   //Audio
   gainNode: GainNode;
@@ -111,6 +111,15 @@ export class TabLIPEditorState extends TabState {
     this.utilitiesTabManager.addTab(this.lipOptionsTab);
 
     this.setContentView(<TabLIPEditor tab={this}></TabLIPEditor>);
+
+    this.saveTypes = [
+      {
+        description: 'Odyssey Lipsync File',
+        accept: {
+          'application/octet-stream': ['.lip']
+        }
+      }
+    ];
   }
 
   show(): void {
@@ -428,8 +437,9 @@ export class TabLIPEditorState extends TabState {
   }
 
   importPHN(): void {
-    ForgeFileSystem.OpenFileBuffer({ext: ['phn']}).then( (buffer: Buffer ) => {
-      let data = buffer.toString();
+    ForgeFileSystem.OpenFileBuffer({ext: ['phn']}).then( (buffer: Uint8Array ) => {
+      const textDecoder = new TextDecoder();
+      let data = textDecoder.decode(buffer);
       console.log('phn', data);
       let eoh = data.indexOf('END OF HEADER');
       if(eoh > -1){
@@ -695,7 +705,7 @@ export class TabLIPEditorState extends TabState {
     });
   }
 
-  getExportBuffer(): Buffer {
+  async getExportBuffer(): Promise<Uint8Array> {
     if(this.lip){
       return this.lip.toExportBuffer();
     }

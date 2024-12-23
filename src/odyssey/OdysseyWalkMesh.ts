@@ -804,7 +804,7 @@ export class OdysseyWalkMesh {
 
     const EOF = perimeter_size;
 
-    const bw = new BinaryWriter(Buffer.alloc(EOF));
+    const bw = new BinaryWriter(new Uint8Array(EOF));
 
     //--------//
     // HEADER
@@ -813,7 +813,7 @@ export class OdysseyWalkMesh {
     bw.writeChars(this.header.fileType);
     bw.writeChars(this.header.version);
     bw.writeUInt32(this.header.walkMeshType);
-    bw.writeBytes(Buffer.alloc(48));
+    bw.writeBytes(new Uint8Array(48));
     bw.writeSingle(this.header.position.x);
     bw.writeSingle(this.header.position.y);
     bw.writeSingle(this.header.position.z);

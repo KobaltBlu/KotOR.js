@@ -27,6 +27,7 @@ export class TabImageViewerState extends TabState {
   workingData: Uint8Array;
   bitsPerPixel: number;
 
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     // this.singleInstance = true;
@@ -38,6 +39,21 @@ export class TabImageViewerState extends TabState {
 
     this.setContentView(<TabImageViewer tab={this}></TabImageViewer>);
     this.openFile();
+
+    this.saveTypes = [
+      {
+        description: 'Compressed Odyssey Image File',
+        accept: {
+          'image/*': ['.tpc']
+        }
+      },
+      {
+        description: 'TGA Image File',
+        accept: {
+          'image/*': ['.tga']
+        }
+      }
+    ];
   }
 
   openFile(file?: EditorFile){
@@ -196,6 +212,30 @@ export class TabImageViewerState extends TabState {
   static PreviewAlphaFix(pixelData: Uint8Array){
     for (let i = 0; i < pixelData.length; i += 4){
       pixelData[i + 3] = 255;
+    }
+  }
+
+  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+    if(ext == 'tga'){
+      const tga = new KotOR.TGAObject();
+      tga.header = {
+        ID: 0,
+        ColorMapType: 0,
+        FileType: 2,
+        ColorMapIndex: 0,
+        offsetX: 0,
+        offsetY: 0,
+        width: this.image.header.width,
+        height: this.image.header.height,
+        bitsPerPixel: 32,
+        imageDescriptor: 0,
+        hasColorMap: false,
+        pixelDataOffset: 0,
+      };
+      tga.pixelData = TabImageViewerState.TGAColorFix(await this.getPixelData());
+      return tga.toExportBuffer();
+    }else{
+      return super.getExportBuffer(ext);
     }
   }
 

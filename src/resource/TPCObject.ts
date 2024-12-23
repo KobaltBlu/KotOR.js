@@ -27,7 +27,7 @@ export class TPCObject {
 
   header: ITPCHeader;
   txi: TXI = new TXI('');
-  file: Buffer;
+  file: Uint8Array;
   filename: string;
   pack: number;
 
@@ -54,7 +54,7 @@ export class TPCObject {
       let _txiDataLength = this.file.length - _txiOffset;
 
       if (_txiDataLength > 0){
-        let txiReader = new BinaryReader(Buffer.from( this.file.buffer, _txiOffset, _txiDataLength ));
+        let txiReader = new BinaryReader(this.file.slice(_txiOffset, _txiOffset + _txiDataLength ));
         let txiData = '';
         let ch;
         
@@ -134,15 +134,15 @@ export class TPCObject {
   		let height = dds.height;
       let dataSize = this.header.dataSize;
       let dataLength = 0;
-      let byteArray = Buffer.alloc(0);
+      let byteArray = new Uint8Array(0);
 
   		for ( let i = 0; i < dds.mipmapCount; i++ ) {
 
   			if ( !this.header.compressed ) {
   				dataLength = width * height * this.header.minDataSize;
-          const rawBuffer = Buffer.from( this.file.buffer, dataOffset, dataLength );
+          const rawBuffer = this.file.slice(dataOffset, dataOffset + dataLength);
           if(this.header.encoding == ENCODING.RGB){
-            byteArray = Buffer.alloc( (rawBuffer.length/3) * 4 );
+            byteArray = new Uint8Array( (rawBuffer.length/3) * 4 );
             let n = 4 * width * height;
             let s = 0, d = 0;
             while (d < n) {
@@ -161,7 +161,7 @@ export class TPCObject {
           }else if(this.header.encoding == ENCODING.RGBA){
             dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
           }
-          byteArray = Buffer.from( this.file.buffer, dataOffset, dataLength );
+          byteArray = this.file.slice(dataOffset, dataOffset + dataLength);
           if(!compressMipMaps){
             byteArray = dxtJs.decompress(byteArray, width, height, this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5 );
           }
@@ -237,11 +237,11 @@ export class TPCObject {
           let mergedImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
 
           //Compress it with the proper DXT encoding
-          let mipmap_data = compressMipMaps ? dxtJs.compress(Buffer.from(mergedImageData.data), imageWidth, imageHeight, encoding) : Buffer.from(mergedImageData.data);
+          let mipmap_data = compressMipMaps ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding) : mergedImageData.data;
 
           //Add it the the new mipmaps list
           mipmaps.push({
-            data: Buffer.from(mipmap_data), 
+            data: mipmap_data, 
             width: imageWidth, 
             height: imageHeight
           });
@@ -291,7 +291,7 @@ export class TPCObject {
 
     // Parse header
     let Header: ITPCHeader = {} as ITPCHeader;
-    let Reader = new BinaryReader(Buffer.from(this.file, 0, TPCHeaderLength ));
+    let Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
     Reader.seek(0);
     Header.dataSize = Reader.readUInt32();
     Header.alphaTest = Reader.readSingle();

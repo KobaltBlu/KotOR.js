@@ -1,5 +1,5 @@
 
-export type ResourceCacheScopeResource = Map<string, Buffer>;
+export type ResourceCacheScopeResource = Map<string, Uint8Array>;
 export type ResourceCacheScope = Map<number, ResourceCacheScopeResource>;
 
 /**

@@ -1,6 +1,5 @@
 import { BinaryReader } from "../BinaryReader";
 import { TLKString } from "./TLKString";
-import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
@@ -16,7 +15,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 export class TLKObject {
 
-  file: Buffer|string;
+  file: Uint8Array|string;
   reader: BinaryReader;
   TLKStrings: TLKString[];
 
@@ -28,7 +27,7 @@ export class TLKObject {
   StringCount: number;
   StringEntriesOffset: number;
 
-  constructor(file: Buffer|string = '', onSuccess?: Function, onProgress?: Function){
+  constructor(file: Uint8Array|string = '', onSuccess?: Function, onProgress?: Function){
     this.file = file;
     this.TLKStrings = [];
     console.log('TLKObject', 'Opening TLK');
@@ -38,7 +37,7 @@ export class TLKObject {
       }).catch( () => {
         if(typeof onSuccess === 'function') onSuccess();
       });
-    }else if(isBuffer(file)){
+    }else if(file instanceof Uint8Array){
       this.LoadFromBuffer(this.file, onProgress).then( () => {
         if(typeof onSuccess === 'function') onSuccess();
       }).catch( () => {
@@ -47,7 +46,7 @@ export class TLKObject {
     }
   }
 
-  LoadFromBuffer( buffer: Buffer, onProgress?: Function ){
+  LoadFromBuffer( buffer: Uint8Array, onProgress?: Function ){
     return new Promise<void>( (resolve, reject) => {
       try{
         console.log('TLKObject', 'Reading');

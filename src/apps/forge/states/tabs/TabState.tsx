@@ -39,6 +39,7 @@ export class TabState extends EventListenerModel {
   tabName: string = 'Unnamed Tab';
 
   file: EditorFile;
+  saveTypes: FilePickerAcceptType[] = [];
   
   #tabContentView: JSX.Element = (<></>);
 
@@ -128,8 +129,8 @@ export class TabState extends EventListenerModel {
     return this.file;
   }
 
-  getExportBuffer(): Buffer {
-    return this.file.buffer ? this.file.buffer : Buffer.allocUnsafe(0);
+  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+    return this.file.buffer ? this.file.buffer : new Uint8Array(0);
   }
 
   show(){
@@ -187,7 +188,7 @@ export class TabState extends EventListenerModel {
             console.log('saveFile', currentFile.path);
             //trigger a Save
             try{
-              let saveBuffer = this.getExportBuffer();
+              let saveBuffer = await this.getExportBuffer(currentFile.path.split('.').pop());
               fs.writeFile(currentFile.path, saveBuffer, () => {
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
@@ -211,7 +212,7 @@ export class TabState extends EventListenerModel {
               }
               if(granted){
                 try{
-                  let saveBuffer = this.getExportBuffer();
+                  let saveBuffer = await this.getExportBuffer(currentFile.handle.name.split('.').pop());
                   let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
                   await ws.write(saveBuffer);
                   currentFile.buffer = saveBuffer;
@@ -226,13 +227,16 @@ export class TabState extends EventListenerModel {
                 resolve(false);
               }
             }else{
-              let newHandle = await window.showSaveFilePicker();
+              let newHandle = await window.showSaveFilePicker({
+                suggestedName: currentFile.getFilename(),
+                types: this.saveTypes.length ? this.saveTypes : undefined
+              });
               if(newHandle){
                 currentFile.handle = newHandle;
                 try{
                   let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  let saveBuffer = this.getExportBuffer();
-                  await ws.write(saveBuffer || Buffer.allocUnsafe(0));
+                  let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
+                  await ws.write(saveBuffer || new Uint8Array(0));
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
                   resolve(true);
@@ -257,24 +261,43 @@ export class TabState extends EventListenerModel {
     });
   }
 
+  getSaveTypes(): any {
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      return this.saveTypes.length ? Object.values(this.saveTypes.map( (type) => {
+        return {
+          name: type.description,
+          extensions: Object.keys(type.accept).map( (node) => {
+            return typeof type.accept[node] === 'string' ? type.accept[node].replace('.', '') : type.accept[node].map( (type) => type.replace('.', ''));
+          }).flat()
+        }
+      })) : [
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    }else{
+      return this.saveTypes.length ? this.saveTypes : undefined
+    }
+  }
+
   async saveAs() {
-    let currentFile = EditorFile.From(this.getFile());
-    currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
-    currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+    console.log('fileTypes', this.getSaveTypes());
+    let currentFile = this.getFile();
+    // currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+    // currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     return new Promise<boolean>( async (resolve, reject) => {
       try{
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           let savePath = await dialog.showSaveDialog({
             title: 'Save File As',
             defaultPath: currentFile.getFilename(),
+            filters: this.getSaveTypes()
           });
           if(savePath && !savePath.cancelled){
             console.log('savePath', savePath.filePath);
             try{
-              let saveBuffer = this.getExportBuffer();
+              let saveBuffer = await this.getExportBuffer(savePath.filePath.split('.').pop());
               fs.writeFile(savePath.filePath, saveBuffer, () => {
-                this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
-                this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+                // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+                // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
                 this.file = currentFile;
                 currentFile.setPath(savePath.filePath);
                 currentFile.archive_path = undefined;
@@ -290,17 +313,20 @@ export class TabState extends EventListenerModel {
             }
           }
         }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-          let newHandle = await window.showSaveFilePicker();
+          let newHandle = await window.showSaveFilePicker({
+            suggestedName: currentFile.getFilename(),
+            types: this.getSaveTypes()
+          });
           if(newHandle){
             currentFile.handle = newHandle;
             console.log('handle', newHandle.name, newHandle);
             try{
               currentFile.setPath(newHandle.name);
-              let saveBuffer = this.getExportBuffer();
+              let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
               let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-              await ws.write(saveBuffer || Buffer.allocUnsafe(0));
-              this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
-              this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+              await ws.write(saveBuffer || new Uint8Array(0));
+              // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+              // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
               this.file = currentFile;
               currentFile.archive_path = undefined;
               currentFile.archive_path2 = undefined;

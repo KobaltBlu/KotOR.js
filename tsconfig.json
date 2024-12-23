@@ -19,7 +19,7 @@
     "jsx": "react",
     "types": [
       "@types/wicg-file-system-access",
-      "./node_modules/user-agent-data-types",
+      "user-agent-data-types",
       "node",
       "offscreencanvas",
     ],

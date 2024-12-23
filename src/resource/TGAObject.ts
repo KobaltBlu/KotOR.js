@@ -2,7 +2,6 @@ import { BinaryReader } from "../BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
 import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";
-import isBuffer from "is-buffer";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
@@ -18,16 +17,16 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 export class TGAObject {
 
-  file: Buffer;
+  file: Uint8Array;
   header: ITGAHeader;
-  pixelData: Buffer;
+  pixelData: Uint8Array;
   txi: any;
   filename: string;
 
   constructor ( args: ITGAObjectOptions = {} as ITGAObjectOptions ) {
 
     const _default: ITGAObjectOptions = {
-      file: Buffer.alloc(0),
+      file: new Uint8Array(0),
       filename: '',
     } as ITGAObjectOptions;
 
@@ -36,15 +35,15 @@ export class TGAObject {
     console.log('TGAObject', args);
 
     if(typeof options.file === 'string'){
-      this.file = Buffer.alloc(0);
-    }else if(isBuffer(options.file)){
+      this.file = new Uint8Array(0);
+    }else if(options.file instanceof Uint8Array){
       this.file = options.file;
     }
 
     this.filename = options.filename;
 
     this.header = this.readHeader();
-    this.pixelData = Buffer.alloc(0);
+    this.pixelData = new Uint8Array(0);
 
   }
 
@@ -62,7 +61,7 @@ export class TGAObject {
       imageDescriptor: 0
     } as ITGAHeader;
 
-    if(isBuffer(this.file)){
+    if(this.file instanceof Uint8Array && !!this.file.length){
       let reader = new BinaryReader(this.file);
 
       Header.ID = reader.readByte();
@@ -119,7 +118,7 @@ export class TGAObject {
 
   }
 
-  async export( resRef = '' ){
+  async toExportBuffer(): Promise<Uint8Array> {
     let writer = new BinaryWriter();
 
     writer.writeByte(this.header.ID);
@@ -135,11 +134,16 @@ export class TGAObject {
 
     writer.writeBytes(this.pixelData);
 
-    await GameFileSystem.writeFile(resRef, writer.buffer);
+    return writer.buffer;
+  }
+
+  async export( resRef = '' ){
+    const buffer = await this.toExportBuffer();
+    await GameFileSystem.writeFile(resRef, buffer);
     return true;
   }
 
-  static FlipY(pixelData: Buffer, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
     let offset = 0;
     let stride = width * 4;
 
@@ -164,7 +168,7 @@ export class TGAObject {
         tga.header.bitsPerPixel = 32;
         let data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        tga.pixelData = Buffer.allocUnsafe(data.length);
+        tga.pixelData = new Uint8Array(data.length);
 
         let rowByteLength = data.length / tga.header.height;
         for(let i = 0; i < tga.header.height; i++){

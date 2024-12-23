@@ -5,8 +5,8 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 
 export interface ModelCacheReference {
   model: OdysseyModel;
-  // mdl: Buffer;
-  // mdx: Buffer;
+  // mdl: Uint8Array;
+  // mdx: Uint8Array;
 }
 
 export interface ModelCacheInterface {
@@ -38,8 +38,8 @@ export class MDLLoader {
           // const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
           resolve(ref.model);
         }else{
-          ResourceLoader.loadResource(ResourceTypes['mdl'], resref).then((mdl_buffer: Buffer) => {
-            ResourceLoader.loadResource(ResourceTypes['mdx'], resref).then((mdx_buffer: Buffer) => {
+          ResourceLoader.loadResource(ResourceTypes['mdl'], resref).then((mdl_buffer: Uint8Array) => {
+            ResourceLoader.loadResource(ResourceTypes['mdx'], resref).then((mdx_buffer: Uint8Array) => {
               const mdl = MDLLoader.MDLFromBuffer(mdl_buffer, mdx_buffer);
 
               ModelCache.models.set(resref, {
@@ -71,7 +71,7 @@ export class MDLLoader {
     ModelCache.models.clear();
   }
 
-  static MDLFromBuffer(mdl_buffer: Buffer, mdx_buffer: Buffer): OdysseyModel {
+  static MDLFromBuffer(mdl_buffer: Uint8Array, mdx_buffer: Uint8Array): OdysseyModel {
     let mdlReader = new BinaryReader(mdl_buffer);
     let mdxReader = new BinaryReader(mdx_buffer);
     return new OdysseyModel(mdlReader, mdxReader);

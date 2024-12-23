@@ -1,4 +1,3 @@
-import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { Endians } from "../enums/resource/Endians";
@@ -57,9 +56,9 @@ export class NWScript {
   eofFound: boolean;
   prog: number;
   progSize: number;
-  code: Buffer;
+  code: Uint8Array;
 
-  constructor ( dataOrFile: any = null, onComplete?: Function, decompile = true ){
+  constructor ( dataOrFile?: string|Uint8Array ){
 
     this.instrIdx = 0;
     this.lastOffset = -1;
@@ -81,31 +80,24 @@ export class NWScript {
     this.paramString = '';
     this.verified = false;
 
-    if( dataOrFile != null ) {
+    if( !dataOrFile ) {
+      return;
+    }
 
-      if( typeof dataOrFile === 'string' ){
-
-        GameFileSystem.readFile(dataOrFile).then( (buffer) => {
-          this.decompile(buffer);
-          if(typeof onComplete === 'function')
-            onComplete(this);
-        });
-
-      }else if ( isBuffer(dataOrFile) ){
-        if(dataOrFile.slice(0, 8).toString() == 'NCS V1.0'){
-          this.init(dataOrFile);
-        }
-        if(typeof onComplete === 'function')
-            onComplete(this);
+    if( typeof dataOrFile === 'string' ){
+      GameFileSystem.readFile(dataOrFile).then( (buffer) => {
+        this.decompile(buffer);
+      });
+    }else if ( dataOrFile instanceof Uint8Array ){
+      const textDecoder = new TextDecoder();
+      if(textDecoder.decode(dataOrFile.slice(0, 8)) == 'NCS V1.0'){
+        this.init(dataOrFile);
       }
-
-    }else{
-      //init empty / new nwscript
     }
 
   }
   
-  decompile(binary: Buffer) {
+  decompile(binary: Uint8Array) {
     throw new Error("Method not implemented.");
   }
 
@@ -117,11 +109,10 @@ export class NWScript {
     return false;
   }
 
-  init (data: Buffer, progSize?: number){
+  init (data: Uint8Array, progSize?: number){
     this.prevByteCode = 0;
     this.instructions = new Map();
-    let reader = new BinaryReader(data);
-    reader.endians = Endians.BIG;
+    let reader = new BinaryReader(data, Endians.BIG);
 
     this.eofFound = false;
 
@@ -134,8 +125,7 @@ export class NWScript {
       this.code = data.slice( 13, this.progSize );
       this.progSize = this.code.length;
       
-      reader = new BinaryReader(this.code);
-      reader.endians = Endians.BIG;
+      reader = new BinaryReader(this.code, Endians.BIG);
     }else{
        //Store a binary code of the code for exporting ScriptSituations
       this.code = data;
@@ -175,16 +165,28 @@ export class NWScript {
     switch(instruction.code){
       case OP_CPDOWNSP:
         instruction.opCall = CALL_CPDOWNSP;
-        instruction.offset = reader.readUInt32();
-        instruction.size = reader.readUInt16();
+        instruction.offset = reader.readInt32();
+        instruction.size = reader.readInt16();
+        if(instruction.offset == undefined){
+          console.warn('CPDOWNSP', instruction.offset, instruction.size, reader.position);
+        }
+        if(instruction.size == undefined){
+          console.warn('CPDOWNSP', instruction.offset, instruction.size, reader.position);
+        }
       break;
       case OP_RSADD:
         instruction.opCall = CALL_RSADD;
       break;
       case OP_CPTOPSP:
         instruction.opCall = CALL_CPTOPSP;
-        instruction.pointer = reader.readUInt32();
-        instruction.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        instruction.pointer = reader.readInt32();
+        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        if(instruction.pointer == undefined){
+          console.warn('CPTOPSP', instruction.pointer, instruction.size, reader.position);
+        }
+        if(instruction.size == undefined){
+          console.warn('CPTOPSP', instruction.pointer, instruction.size, reader.position);
+        }
       break;
       case OP_CONST:
         instruction.opCall = CALL_CONST;
@@ -331,12 +333,18 @@ export class NWScript {
       case OP_CPDOWNBP:
         instruction.opCall = CALL_CPDOWNBP;
         instruction.offset = reader.readInt32();
-        instruction.size = reader.readUInt16();
+        instruction.size = reader.readInt16();
+        if(instruction.offset == undefined){
+          console.warn('CPDOWNBP', instruction.offset, instruction.size, reader.position);
+        }
+        if(instruction.size == undefined){
+          console.warn('CPDOWNBP', instruction.offset, instruction.size, reader.position);
+        }
       break;
       case OP_CPTOPBP:
         instruction.opCall = CALL_CPTOPBP;
-        instruction.pointer = reader.readUInt32();
-        instruction.size = reader.readUInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        instruction.pointer = reader.readInt32();
+        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
       break;
       case OP_DECIBP:
         instruction.opCall = CALL_DECIBP;

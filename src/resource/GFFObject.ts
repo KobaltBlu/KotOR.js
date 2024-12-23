@@ -57,7 +57,7 @@ export class GFFObject {
   exportedStructs: GFFStruct[];
   exportedFields: GFFField[];
 
-  constructor(file?: string|Buffer, onComplete?: GFFObjectOnCompleteCallback, onError?: Function){
+  constructor(file?: string|Uint8Array, onComplete?: GFFObjectOnCompleteCallback, onError?: Function){
 
     //START EXPORT VARS
 
@@ -150,7 +150,7 @@ export class GFFObject {
     this.resourceID = resID;
   }
 
-  parse(binary: Buffer, onComplete?: Function){
+  parse(binary: Uint8Array, onComplete?: Function){
     this.reader = new BinaryReader(binary);
 
     this.FileType = this.reader.readChars(4);
@@ -202,7 +202,11 @@ export class GFFObject {
     }
     //End Fields
 
-    this.RootNode = this.buildStruct(this.tmpStructArray[0]);
+    try{
+      this.RootNode = this.buildStruct(this.tmpStructArray[0]);
+    }catch(e){
+      console.error(e);
+    }
 
     this.reader = null;
     this.tmpStructArray = [];
@@ -246,30 +250,31 @@ export class GFFObject {
     let field = new GFFField(f.Type, this.tmpLabelArray[f.Label]);
 
     let data = f.Data;
-    let offset = data.readUInt32LE();
+    let dataView = new DataView(data.buffer);
+    let offset = dataView.getUint32(0, true);
 
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     switch (field.getType()){
       case GFFDataType.BYTE: //Byte
-        field.setValue(data.readUInt8());
+        field.setValue(dataView.getUint8(0));
         break;
       case GFFDataType.CHAR: //Char
-        field.setValue(data.readUInt8());
+        field.setValue(dataView.getUint8(0));
         break;
       case GFFDataType.WORD: //UInt16
-        field.setValue(data.readUInt16LE());
+        field.setValue(dataView.getUint16(0, true));
         break;
       case GFFDataType.SHORT: //Int16
-        field.setValue(data.readInt16LE());
+        field.setValue(dataView.getInt16(0, true));
         break;
       case GFFDataType.DWORD: //UInt32
-        field.setValue(data.readUInt32LE());
+        field.setValue(dataView.getUint32(0, true));
         break;
       case GFFDataType.INT: //Int32
-        field.setValue(data.readInt32LE());
+        field.setValue(dataView.getInt32(0, true));
         break;
       case GFFDataType.FLOAT: //Float
-        field.setValue(data.readFloatLE());
+        field.setValue(dataView.getFloat32(0, true));
         break;
       case GFFDataType.DWORD64: //Dword64
         field.setData(this.getDword64(offset));

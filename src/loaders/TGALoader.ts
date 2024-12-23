@@ -135,7 +135,7 @@ export class TGALoader {
 	}
 
 	// reference from vthibault, https://github.com/vthibault/roBrowser/blob/master/src/Loaders/Targa.js
-	parse( buffer: Buffer, name: string ) {
+	parse( buffer: Uint8Array, name: string ) {
 
 		// TGA Constants
 		let TGA_TYPE_NO_DATA = 0,

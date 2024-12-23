@@ -9,6 +9,6 @@
  * @interface
  */
 export interface ITGAObjectOptions {
-  file: string|Buffer;
+  file: string|Uint8Array;
   filename: string;
 }

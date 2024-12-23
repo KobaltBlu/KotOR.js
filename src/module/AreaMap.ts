@@ -18,7 +18,7 @@ import { ModuleWaypoint } from ".";
 * @memberof KotOR
 */
 export class AreaMap {
-  data: Buffer;
+  data: Uint8Array;
   mapResX: number;
   mapResY: number;
   northAxis: number;
@@ -49,7 +49,7 @@ export class AreaMap {
   };
 
   constructor(){
-    this.data = Buffer.alloc(4);
+    this.data = new Uint8Array(4);
 
     this.mapResX = 0;
     this.mapResY = 0;
@@ -83,7 +83,7 @@ export class AreaMap {
 
   generateMapData(){
     this.dataSize = (Math.ceil(((this.mapResX+1) * (this.mapResY+1)) / 32) * 32) / 8;
-    this.data = Buffer.alloc(this.dataSize);
+    this.data = new Uint8Array(this.dataSize);
     this.generateAlphaTexture();
   }
 

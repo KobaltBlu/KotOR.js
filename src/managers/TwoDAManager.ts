@@ -29,7 +29,7 @@ export class TwoDAManager {
       onLoop: (resource: IBIFResource, asyncLoop: AsyncLoop) => {
         key = KEYManager.Key.getFileKeyByRes(resource);
         //Load 2da's with the resource loader so it can pick up ones in the override folder
-        ResourceLoader.loadResource(ResourceTypes['2da'], key.resRef).then((d: Buffer) => {
+        ResourceLoader.loadResource(ResourceTypes['2da'], key.resRef).then((d: Uint8Array) => {
           TwoDAManager.datatables.set(key.resRef, new TwoDAObject(d));
           asyncLoop.next();
         }).catch( (e) => {console.error(e); asyncLoop.next();});

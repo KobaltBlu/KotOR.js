@@ -47,7 +47,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
                 if(savePath && !savePath.cancelled){
                   console.log('savePath', savePath.filePath);
                   try{
-                    let saveBuffer = Buffer.from(currentFile.buffer)
+                    let saveBuffer = new Uint8Array(currentFile.buffer)
                     fs.writeFile(savePath.filePath, saveBuffer, () => {
                       currentFile.setPath(savePath.filePath);
                       currentFile.archive_path = undefined;
@@ -66,9 +66,9 @@ export const TabERFEditor = function(props: BaseTabProps) {
                   console.log('handle', newHandle.name, newHandle);
                   try{
                     currentFile.setPath(newHandle.name);
-                    let saveBuffer = Buffer.from(currentFile.buffer)
+                    let saveBuffer = new Uint8Array(currentFile.buffer)
                     let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                    await ws.write(saveBuffer || Buffer.allocUnsafe(0));
+                    await ws.write(saveBuffer || new Uint8Array(0));
                     currentFile.buffer = saveBuffer;
                     currentFile.unsaved_changes = false;
                   }catch(e){
@@ -118,8 +118,8 @@ export const TabERFEditor = function(props: BaseTabProps) {
   }
 
   const openERFResource = async (key: KotOR.IERFKeyEntry) => {
-    let buffer: Buffer;
-    let buffer2: Buffer;
+    let buffer: Uint8Array;
+    let buffer2: Uint8Array;
     if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
       buffer = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdl']);
       buffer2 = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdx']);

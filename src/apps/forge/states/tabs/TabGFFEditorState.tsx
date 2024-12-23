@@ -26,6 +26,14 @@ export class TabGFFEditorState extends TabState {
     super(options);
     this.setContentView(<TabGFFEditor tab={this}></TabGFFEditor>);
     this.openFile();
+    this.saveTypes = [
+      {
+        description: 'Generic File Format (GFF)',
+        accept: {
+          'application/octet-stream': ['.gff']
+        }
+      }
+    ];
   }
 
   public openFile(file?: EditorFile){

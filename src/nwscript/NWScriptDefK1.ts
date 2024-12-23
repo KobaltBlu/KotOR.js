@@ -3060,7 +3060,7 @@ NWScriptDefK1.Actions = {
     type: 6,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, string, EngineLocation, number]){
-      let buffer: Buffer;
+      let buffer: Uint8Array;
       switch(args[0]){
         case 1:
           buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], args[1]);

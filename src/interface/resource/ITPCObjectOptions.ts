@@ -9,7 +9,7 @@
  * @interface
  */
 export interface ITPCObjectOptions {
-  file?: Buffer,
+  file?: Uint8Array,
   filename?: string,
   pack?: number;
 }

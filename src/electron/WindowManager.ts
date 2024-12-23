@@ -111,7 +111,8 @@ export class WindowManager {
     
     ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
       return new Promise( (resolve, reject) => {
-        dialog.showSaveDialog(data).then(result => {
+        console.log('save-file-dialog2', event, data[0]);
+        dialog.showSaveDialog(data[0]).then(result => {
           resolve(result);
         }).catch(err => {
           reject(err)

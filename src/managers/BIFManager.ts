@@ -24,7 +24,7 @@ export class BIFManager {
     if(resource){
       const bif: BIFObject = BIFManager.bifs.get( KEYObject.getBIFIndex(resource.Id) )
       if(bif){
-        bif.getResourceBuffer(resource).then( (buffer: Buffer) => {
+        bif.getResourceBuffer(resource).then( (buffer: Uint8Array) => {
           if(typeof onComplete === 'function'){
             onComplete(buffer);
           }

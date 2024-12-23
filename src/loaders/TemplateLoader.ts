@@ -32,7 +32,7 @@ export class TemplateLoader {
     }, args);
 
     console.log('TemplateLoader', args.ResType, args.ResRef)
-    ResourceLoader.loadResource(args.ResType, args.ResRef).then((data: Buffer) => {
+    ResourceLoader.loadResource(args.ResType, args.ResRef).then((data: Uint8Array) => {
       console.log('TemplateLoader', args.ResType, args.ResRef, data);
       new GFFObject(data, (gff) => {
         if(args.onLoad != null)

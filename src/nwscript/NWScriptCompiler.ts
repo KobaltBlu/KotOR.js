@@ -29,6 +29,20 @@ const NWCompileDataTypes = {
   'FV': 0x3C,
 };
 
+const concatBuffers = (buffers: Uint8Array[]) => {
+  let totalLength = 0;
+  for(let i = 0; i < buffers.length; i++){
+    totalLength += buffers[i].length;
+  }
+  const mergedArray = new Uint8Array(totalLength);
+  let offset = 0;
+  for(let i = 0; i < buffers.length; i++){
+    mergedArray.set(buffers[i], offset);
+    offset += buffers[i].length;
+  }
+  return mergedArray;
+}
+
 /**
  * NWScriptCompiler class.
  * 
@@ -122,7 +136,7 @@ export class NWScriptCompiler {
     return undefined;
   }
 
-  opcodeDebug(name: string, buffer: Buffer){
+  opcodeDebug(name: string, buffer: Uint8Array){
     if( this._silent ) return;
     console.log( (name + "                ").slice(0, 16), buffer );
   }
@@ -161,7 +175,7 @@ export class NWScriptCompiler {
     const bpCache = this.basePointer;
     const spCache = this.stackPointer;
     this._silent = true;
-    const buffer = this.compileStatement( statement ) as Buffer;
+    const buffer = this.compileStatement( statement ) as Uint8Array;
     this._silent = false;
     this.basePointer = bpCache;
     this.spCache = spCache;
@@ -184,7 +198,7 @@ export class NWScriptCompiler {
     this.scopes = [];
     if(typeof this.ast === 'object' && this.ast.type == 'program'){
       console.log('CompileMain: Begin');
-      const buffer = Buffer.alloc(0);
+      const buffer = new Uint8Array(0);
       const buffers = [buffer];
 
       this.program_bytes_written = 0;
@@ -274,22 +288,22 @@ export class NWScriptCompiler {
         }
       }
 
-      const program = Buffer.concat(buffers);
+      const program = concatBuffers(buffers);
       this.scopePop();
 
-      const NCS_Header = Buffer.alloc(8);
-      NCS_Header.writeUInt8(0x4E, 0) // N
-      NCS_Header.writeUInt8(0x43, 1) // C
-      NCS_Header.writeUInt8(0x53, 2) // S
-      NCS_Header.writeUInt8(0x20, 3) //  
-      NCS_Header.writeUInt8(0x56, 4) // V
-      NCS_Header.writeUInt8(0x31, 5) // 1
-      NCS_Header.writeUInt8(0x2E, 6) // .
-      NCS_Header.writeUInt8(0x30, 7) // 0
+      const NCS_Header = new Uint8Array(8);
+      NCS_Header[0] = 0x4E; // N
+      NCS_Header[1] = 0x43; // C
+      NCS_Header[2] = 0x53; // S
+      NCS_Header[3] = 0x20; //  
+      NCS_Header[4] = 0x56; // V
+      NCS_Header[5] = 0x31; // 1
+      NCS_Header[6] = 0x2E; // .
+      NCS_Header[7] = 0x30; // 0
       
       const T = this.writeT(program.length + 13);
       console.log('CompileMain: Complete');
-      return Buffer.concat([NCS_Header, T, program]);
+      return concatBuffers([NCS_Header, T, program]);
     }
   }
 
@@ -299,7 +313,7 @@ export class NWScriptCompiler {
     this.scopes = [];
     if(typeof this.ast === 'object' && this.ast.type == 'program'){
       console.log('CompileMain: Begin');
-      const buffer = Buffer.alloc(0);
+      const buffer =  new Uint8Array(0);
       const buffers = [buffer];
 
       this.program_bytes_written = 0;
@@ -333,7 +347,7 @@ export class NWScriptCompiler {
         let globalStatementsLength = 0;
         for(let i = 0; i < globalStatements.length; i++){
           //globalStatementsLength += this.getStatementLength(globalStatements[i]);
-          buffers.push( this.compileStatement( globalStatements[i]) as Buffer );
+          buffers.push( this.compileStatement( globalStatements[i]) as Uint8Array );
         }
       
         buffers.push( this.writeSAVEBP() );
@@ -410,22 +424,22 @@ export class NWScriptCompiler {
         }
       }
 
-      const program = Buffer.concat(buffers);
+      const program = concatBuffers(buffers);
       this.scopePop();
 
-      const NCS_Header = Buffer.alloc(8);
-      NCS_Header.writeUInt8(0x4E, 0) // N
-      NCS_Header.writeUInt8(0x43, 1) // C
-      NCS_Header.writeUInt8(0x53, 2) // S
-      NCS_Header.writeUInt8(0x20, 3) //  
-      NCS_Header.writeUInt8(0x56, 4) // V
-      NCS_Header.writeUInt8(0x31, 5) // 1
-      NCS_Header.writeUInt8(0x2E, 6) // .
-      NCS_Header.writeUInt8(0x30, 7) // 0
+      const NCS_Header = new Uint8Array(8);
+      NCS_Header[0] = 0x4E; // N
+      NCS_Header[1] = 0x43; // C
+      NCS_Header[2] = 0x53; // S
+      NCS_Header[3] = 0x20; //  
+      NCS_Header[4] = 0x56; // V
+      NCS_Header[5] = 0x31; // 1
+      NCS_Header[6] = 0x2E; // .
+      NCS_Header[7] = 0x30; // 0
       
       const T = this.writeT(program.length + 13);
       console.log('CompileMain: Complete');
-      return Buffer.concat([NCS_Header, T, program]);
+      return concatBuffers([NCS_Header, T, program]);
     }
   }
 
@@ -490,7 +504,7 @@ export class NWScriptCompiler {
   }
 
   compileLiteral( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'literal'){
       if(statement.datatype.value == 'vector'){
         buffers.push( this.writeCONST(NWCompileDataTypes.F, statement.value.x) );
@@ -500,7 +514,7 @@ export class NWScriptCompiler {
         buffers.push( this.writeCONST(statement.datatype.unary, statement.value) );
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   getDataType( value?: any ): any {
@@ -521,17 +535,17 @@ export class NWScriptCompiler {
   }
 
   compileVariableList( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'variableList'){
       for(let i = 0; i < statement.variables.length; i++){
-        buffers.push( this.compileStatement( statement.variables[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.variables[i] ) as Uint8Array );
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileVariable( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'variable'){
       //console.log('variable', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
       if(statement.struct){
@@ -553,7 +567,7 @@ export class NWScriptCompiler {
           if(statement.struct_reference && statement.variable_reference){
             if(statement.value){ //assigning
               //console.log('struct.assign', statement);
-              buffers.push( this.compileStatement(statement.value) as Buffer );
+              buffers.push( this.compileStatement(statement.value) as Uint8Array );
               const propertyStackPointer = (statement.struct_reference.stackPointer + statement.variable_reference.offsetPointer);
               if(statement.struct_reference.is_global){
                 buffers.push( this.writeCPDOWNBP( (propertyStackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
@@ -590,13 +604,13 @@ export class NWScriptCompiler {
             buffers.push( this.writeRSADD( statement.datatype.unary ) );
           }
           if(statement.value){
-            buffers.push( this.compileStatement(statement.value) as Buffer );
+            buffers.push( this.compileStatement(statement.value) as Uint8Array );
             buffers.push( this.writeCPDOWNSP( (statement.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
             buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
           }
         }else{
           if(statement.value){ //assigning
-            buffers.push( this.compileStatement(statement.value) as Buffer );
+            buffers.push( this.compileStatement(statement.value) as Uint8Array );
             if(statement.variable_reference.is_global){
               buffers.push( this.writeCPDOWNBP( (statement.variable_reference.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
             }else if(statement.variable_reference.type == 'argument'){
@@ -627,11 +641,11 @@ export class NWScriptCompiler {
         }
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileStruct( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'struct'){
       statement.stackPointer = this.stackPointer;
       statement.is_global = this.basePointerWriting;
@@ -653,19 +667,19 @@ export class NWScriptCompiler {
         }
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileArgument( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'argument'){
 
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileReturn( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     //cache the stack pointer
     const sp = this.stackPointer;
@@ -674,7 +688,7 @@ export class NWScriptCompiler {
     const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
     //Push the return value to the stack if we have one
     if(statement.value){
-      buffers.push( this.compileStatement( statement.value ) as Buffer );
+      buffers.push( this.compileStatement( statement.value ) as Uint8Array );
       const returnStackOffset = this.scope.block.returnStackPointer;
       const blockStackOffset = (this.stackPointer - this.scope.block.preStatementsStackPointer);
       const returnStackPointer = returnStackOffset - blockStackOffset;
@@ -703,11 +717,11 @@ export class NWScriptCompiler {
     //restore the stack pointer
     this.stackPointer = sp;
 
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
-  compileFunction( block: any ){
-    const buffers: Buffer[] = [];
+  compileFunction( block: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
     this.scopePush( new NWScriptScope() );
     this.scope.block = block;
     
@@ -742,7 +756,7 @@ export class NWScriptCompiler {
     block.block_start_jmp = this.scope.bytes_written;
 
     for(let i = 0; i < block.statements.length; i++){
-      buffers.push( this.compileStatement( block.statements[i] ) as Buffer );
+      buffers.push( this.compileStatement( block.statements[i] ) as Uint8Array );
     }
 
     block.postStatementsStackPointer = this.stackPointer;
@@ -771,16 +785,16 @@ export class NWScriptCompiler {
     //Close out this function block with a RETN statement
     buffers.push( this.writeRETN() );
 
-    block.blockSize = Buffer.concat(buffers).length;
+    block.blockSize = concatBuffers(buffers).length;
 
     //restore the stack pointer to where it was before this function was compiled
     this.stackPointer = storeSP;
     this.scopePop();
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileFunctionCall( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     
     //console.log('function_call', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
     if(statement && statement.type == "function_call"){
@@ -821,10 +835,10 @@ export class NWScriptCompiler {
               this.getInstructionLength(OP_RETN) 
             ) 
           );
-          buffers.push( this.compileStatement(arg) as Buffer );
+          buffers.push( this.compileStatement(arg) as Uint8Array );
           buffers.push( this.writeRETN() );
         }else{
-          buffers.push( this.compileStatement(arg) as Buffer );
+          buffers.push( this.compileStatement(arg) as Uint8Array );
         }
         argumentsDataSize += (this.getStatementDataTypeSize(arg));
       }
@@ -840,18 +854,18 @@ export class NWScriptCompiler {
       }
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileAnonymousBlock( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'block'){
       statement.block_start = this.scope.bytes_written;
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -861,14 +875,14 @@ export class NWScriptCompiler {
 
       statement.block_end = this.scope.bytes_written;
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileAdd( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'add'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeADD( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -885,14 +899,14 @@ export class NWScriptCompiler {
         //unsupported add
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileSub( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'sub'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeSUB( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -909,14 +923,14 @@ export class NWScriptCompiler {
         //unsupported sub
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileMul( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'mul'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeMUL( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -933,14 +947,14 @@ export class NWScriptCompiler {
         //unsupported mul
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileDiv( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'div'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeDIV( NWCompileDataTypes.II ) );
       }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
@@ -957,13 +971,13 @@ export class NWScriptCompiler {
         //unsupported div
       }
     }   
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileCompare( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'compare'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
 
       console.log('right', statement.right);
       if(statement.type == 'compare'){
@@ -979,7 +993,7 @@ export class NWScriptCompiler {
         }
       }
 
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(statement.operator.value == '=='){
         if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
@@ -1073,11 +1087,11 @@ export class NWScriptCompiler {
       }
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileIf( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'if'){
       const ifelses: any[] = ([] as any[]).concat([statement], statement.else);
@@ -1089,7 +1103,7 @@ export class NWScriptCompiler {
         //Compile the condition statements
         if(ifelse.condition && ifelse.condition.length){
           for(let j = 0; j < ifelse.condition.length; j++){
-            buffers.push( this.compileStatement( ifelse.condition[j] ) as Buffer );
+            buffers.push( this.compileStatement( ifelse.condition[j] ) as Uint8Array );
           }
         }
         
@@ -1108,7 +1122,7 @@ export class NWScriptCompiler {
 
         //Compile if statements
         for(let j = 0; j < ifelse.statements.length; j++){
-          buffers.push( this.compileStatement( ifelse.statements[j] ) as Buffer );
+          buffers.push( this.compileStatement( ifelse.statements[j] ) as Uint8Array );
         }
 
         const sp_offset = this.stackPointer - sp_cache;
@@ -1145,11 +1159,11 @@ export class NWScriptCompiler {
 
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileSwitch( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'switch'){
 
@@ -1161,12 +1175,12 @@ export class NWScriptCompiler {
       //save the pointer to the switch varaible location on the stack
       const switch_condition_sp = this.stackPointer;
       //push the switch variable onto the stack
-      buffers.push( this.compileStatement(switchCondition) as Buffer );
+      buffers.push( this.compileStatement(switchCondition) as Uint8Array );
       
       for(let i = 0; i < statement.cases.length; i++){
         const _case = statement.cases[i];
         buffers.push( this.writeCPTOPSP( (switch_condition_sp - this.stackPointer), 0x04) );
-        buffers.push( this.compileStatement( _case.condition ) as Buffer );
+        buffers.push( this.compileStatement( _case.condition ) as Uint8Array );
         buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
         buffers.push( this.writeJNZ( _case.block_start ? _case.block_start - this.scope.bytes_written : 0x7FFFFFFF ) );
       }
@@ -1183,7 +1197,7 @@ export class NWScriptCompiler {
         _case.block_start = this.scope.bytes_written;
 
         for(let j = 0; j < _case.statements.length; j++){
-          buffers.push( this.compileStatement( _case.statements[j] ) as Buffer );
+          buffers.push( this.compileStatement( _case.statements[j] ) as Uint8Array );
         }
 
         if(!_case.fallthrough){
@@ -1199,7 +1213,7 @@ export class NWScriptCompiler {
         _default.block_start = this.scope.bytes_written;
 
         for(let i = 0; i < _default.statements.length; i++){
-          buffers.push( this.compileStatement( _default.statements[i] ) as Buffer );
+          buffers.push( this.compileStatement( _default.statements[i] ) as Uint8Array );
         }
 
         buffers.push( this.writeJMP( statement.block_end - this.scope.bytes_written ) );
@@ -1214,11 +1228,11 @@ export class NWScriptCompiler {
       buffers.push( this.writeMOVSP( -4 ) );
       
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileDoWhileLoop( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'do'){
       const nested_state = new NWScriptNestedState( statement );
@@ -1229,7 +1243,7 @@ export class NWScriptCompiler {
 
       statement.statements_start = this.scope.bytes_written;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -1242,7 +1256,7 @@ export class NWScriptCompiler {
 
       statement.condition_start = this.scope.bytes_written;
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
       }
 
       //If the condition is false Jump out of the loop
@@ -1266,12 +1280,12 @@ export class NWScriptCompiler {
       this.scope.removeNestedState( nested_state );
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileWhileLoop( statement: any ){
     
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'while'){
       const nested_state = new NWScriptNestedState( statement );
@@ -1283,7 +1297,7 @@ export class NWScriptCompiler {
 
       //Compile the while condition statements
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
 
@@ -1297,7 +1311,7 @@ export class NWScriptCompiler {
 
       //Compile the block statements
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
       }
 
       //Get stack elements that should be removed from this scope
@@ -1317,11 +1331,11 @@ export class NWScriptCompiler {
       this.scope.removeNestedState( nested_state );
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileForLoop( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'for'){
       const nested_state = new NWScriptNestedState( statement );
@@ -1333,7 +1347,7 @@ export class NWScriptCompiler {
       //Begin initializer
       statement.initializer_start = this.scope.bytes_written;
 
-      buffers.push( this.compileStatement( statement.initializer ) as Buffer );
+      buffers.push( this.compileStatement( statement.initializer ) as Uint8Array );
 
       statement.initializer_end = this.scope.bytes_written;
       //End initializer
@@ -1345,7 +1359,7 @@ export class NWScriptCompiler {
       statement.continue_start = this.scope.bytes_written;
 
       for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
       buffers.push( 
@@ -1364,7 +1378,7 @@ export class NWScriptCompiler {
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Buffer );
+        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
       }
       const stackOffset = this.stackPointer - statement.preStatementsSPCache;
       if(stackOffset) buffers.push( this.writeMOVSP( -stackOffset ) );
@@ -1377,7 +1391,7 @@ export class NWScriptCompiler {
       //Begin incrementor
       statement.incrementor_start = this.scope.bytes_written;
 
-      buffers.push( this.compileStatement( statement.incrementor ) as Buffer );
+      buffers.push( this.compileStatement( statement.incrementor ) as Uint8Array );
 
       statement.incrementor_end = this.scope.bytes_written;
       //End incrementor
@@ -1392,11 +1406,11 @@ export class NWScriptCompiler {
       this.scope.removeNestedState( nested_state );
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileContinue( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement.type == 'continue'){
       statement.block_start = this.scope.bytes_written;
 
@@ -1423,11 +1437,11 @@ export class NWScriptCompiler {
       statement.block_end = this.scope.bytes_written;
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   compileBreak( statement: any ){
-    const buffers: Buffer[] = [];
+    const buffers: Uint8Array[] = [];
     if(statement.type == 'break'){
       statement.block_start = this.scope.bytes_written;
 
@@ -1454,29 +1468,29 @@ export class NWScriptCompiler {
       statement.block_end = this.scope.bytes_written;
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
-  compileTernery( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileTernery( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'ternery'){
       
     }
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   //Not the value
-  compileNOT( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
-    buffers.push( this.compileStatement( statement.value ) as Buffer );
+  compileNOT( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
+    buffers.push( this.compileStatement( statement.value ) as Uint8Array );
     buffers.push( this.writeNOTI( ) );
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
-  compileINC( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileINC( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'inc'){
       //buffers.push( this.compileStatement( statement.variable_reference ) );
       if(statement.variable_reference.is_global){
@@ -1508,11 +1522,11 @@ export class NWScriptCompiler {
       }
       buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
-  compileDEC( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileDEC( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'dec'){
       //buffers.push( this.compileStatement( statement.variable_reference ) );
       if(statement.variable_reference.is_global){
@@ -1531,57 +1545,57 @@ export class NWScriptCompiler {
         );
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   //Negate the number
-  compileNEG( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileNEG( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
 
-    buffers.push( this.compileStatement( statement.value ) as Buffer );
+    buffers.push( this.compileStatement( statement.value ) as Uint8Array );
     buffers.push( this.writeNEG( this.getDataType( statement.value ).unary ) );
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   //Ones compliment
-  compileComp( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileComp( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
 
-    buffers.push( this.compileStatement( statement.value ) as Buffer );
+    buffers.push( this.compileStatement( statement.value ) as Uint8Array );
     buffers.push( this.writeCOMPI( ) );
     
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   //Inclusive OR
-  compileINCOR( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileINCOR( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'incor'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeINCORII( ) );
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   //Exclusive OR
-  compileEXCOR( statement: any ): Buffer {
-    const buffers: Buffer[] = [];
+  compileEXCOR( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'xor'){
-      buffers.push( this.compileStatement(statement.left) as Buffer );
-      buffers.push( this.compileStatement(statement.right) as Buffer );
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeEXCORII( ) );
       }
     }
-    return Buffer.concat(buffers);
+    return concatBuffers(buffers);
   }
 
   writeCPDOWNSP( offsetRelativeToTopOfStack = 0, numBytesToCopy = 4 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_CPDOWNSP));
+    const buffer =  Buffer.alloc(this.getInstructionLength(OP_CPDOWNSP));
     buffer.writeInt8(OP_CPDOWNSP, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt32BE(offsetRelativeToTopOfStack, 2);

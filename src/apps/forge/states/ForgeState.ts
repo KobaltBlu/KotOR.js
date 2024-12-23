@@ -32,7 +32,7 @@ export class ForgeState {
 
   static #eventListeners: any = {};
 
-  static nwscript_nss: Buffer;
+  static nwscript_nss: Uint8Array;
   static nwScriptParser: NWScriptParser;
 
   static addEventListener<T>(type: T, cb: Function): void {
@@ -189,9 +189,10 @@ export class ForgeState {
   static initNWScriptParser(){
     return new Promise<void>( (resolve, reject) => {
       KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
-        (nss: Buffer) => {
+        (nss: Uint8Array) => {
           this.nwscript_nss = nss;
-          this.nwScriptParser = new NWScriptParser(this.nwscript_nss.toString());
+          const textDecoder = new TextDecoder();
+          this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
           this.initNWScriptLanguage();
           resolve();
         }

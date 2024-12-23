@@ -1,4 +1,3 @@
-import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 import { TLKManager } from "../managers/TLKManager";
 
@@ -14,12 +13,12 @@ import { TLKManager } from "../managers/TLKManager";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SSFObject {
-  data: Buffer;
+  data: Uint8Array;
   sound_refs: number[];
   FileType: string;
   FileVersion: string;
 
-  constructor( data: Buffer ){
+  constructor( data: Uint8Array ){
     this.data = data;
     this.sound_refs = [];
 
@@ -27,12 +26,12 @@ export class SSFObject {
 
   }
 
-  Open( data: Buffer ){
+  Open( data: Uint8Array ){
 
     this.data = data;
     this.sound_refs = [];
 
-    if(isBuffer(this.data)){
+    if(this.data instanceof Uint8Array){
 
       let reader = new BinaryReader(this.data);
       this.FileType = reader.readChars(4);
@@ -44,7 +43,7 @@ export class SSFObject {
         this.sound_refs.push(reader.readUInt32() & 0xFFFFFFFF);
       }
 
-      this.data = Buffer.allocUnsafe(0);
+      this.data = new Uint8Array(0);
       reader.dispose();
 
     }

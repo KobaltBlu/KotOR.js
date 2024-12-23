@@ -1,4 +1,3 @@
-import isBuffer from "is-buffer";
 import { BinaryReader } from "../BinaryReader";
 
 const LTR_HEADER_LENGTH = 9;
@@ -24,7 +23,7 @@ export class LTRObject {
     28: 'abcdefghijklmnopqrstuvwxyz\'-'
   };
 
-  buffer: Buffer;
+  buffer: Uint8Array;
   file: string;
   fileType: string;
   fileVersion: string;
@@ -33,12 +32,12 @@ export class LTRObject {
   doubleArray: number[][][] = [];
   tripleArray: number[][][][] = [];
 
-  constructor( data: string|Buffer){
+  constructor( data: string|Uint8Array){
 
     if(typeof data === 'string'){
       this.file = data;
       this.openFile(this.file);
-    }else if(isBuffer(data)){
+    }else if(data instanceof Uint8Array){
       this.buffer = data;
       this.readBuffer(this.buffer);
     }
@@ -49,8 +48,8 @@ export class LTRObject {
 
   }
 
-  readBuffer(data: Buffer){
-    if(isBuffer(data)){
+  readBuffer(data: Uint8Array){
+    if(data instanceof Uint8Array){
       const br = new BinaryReader(data);
 
       this.fileType = br.readChars(4);
@@ -117,7 +116,7 @@ export class LTRObject {
         }
       }
 
-      this.buffer = Buffer.allocUnsafe(0);
+      this.buffer = new Uint8Array(0);
       br.dispose();
     }
   }

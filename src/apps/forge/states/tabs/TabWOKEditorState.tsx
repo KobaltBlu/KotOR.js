@@ -96,6 +96,27 @@ export class TabWOKEditorState extends TabState {
 
     this.setContentView(<TabWOKEditor tab={this}></TabWOKEditor>);
     this.openFile();
+
+    this.saveTypes = [
+      {
+        description: 'Odyssey Walk Mesh File',
+        accept: {
+          'application/octet-stream': ['.wok']
+        }
+      },
+      {
+        description: 'Odyssey Door Walk Mesh File',
+        accept: {
+          'application/octet-stream': ['.dwk']
+        }
+      },
+      {
+        description: 'Odyssey Placeable Walk Mesh File',
+        accept: {
+          'application/octet-stream': ['.pwk']
+        }
+      }
+    ];
   }
 
   public openFile(file?: EditorFile){
@@ -338,9 +359,8 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  getExportBuffer(): Buffer {
-    const buffer = this.wok.toExportBuffer();
-    return buffer;
+  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+    return this.wok.toExportBuffer();
   }
 
 }

@@ -20,5 +20,5 @@ export interface IERFObjectHeader {
   buildYear: number;
   buildDay: number;
   DescriptionStrRef: number;
-  reserved: Buffer;
+  reserved: Uint8Array;
 }

@@ -5,8 +5,8 @@ export interface EditorFileOptions {
   path2?: string;
   handle?: FileSystemFileHandle;
   handle2?: FileSystemFileHandle;
-  buffer?: Buffer;
-  buffer2?: Buffer;
+  buffer?: Uint8Array;
+  buffer2?: Uint8Array;
   resref?: string;
   reskey?: number;
   filename?: string;

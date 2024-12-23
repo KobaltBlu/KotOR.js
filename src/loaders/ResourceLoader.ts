@@ -119,7 +119,7 @@ export class ResourceLoader {
       });
   }
 
-  static async loadResource(resId: number, resRef: string): Promise<Buffer> {
+  static async loadResource(resId: number, resRef: string): Promise<Uint8Array> {
 
     if(!resId){
       throw new Error(`Invalid resId ${resId}`);
@@ -160,7 +160,7 @@ export class ResourceLoader {
 
   }
 
-  static loadCachedResource(resId: number, resRef: string): Buffer {
+  static loadCachedResource(resId: number, resRef: string): Uint8Array {
     return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
   }
 
@@ -186,7 +186,7 @@ export class ResourceLoader {
     ResourceLoader.cache = {};
   }
 
-  static getCache(resId: number, resRef: string): Buffer {
+  static getCache(resId: number, resRef: string): Uint8Array {
     if(ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).has(resRef)){
       return ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).get(resRef);
     }
@@ -207,7 +207,7 @@ export class ResourceLoader {
     return null;
   }
 
-  static setCache(type: CacheScope, resId: number, resRef: string, buffer: Buffer){
+  static setCache(type: CacheScope, resId: number, resRef: string, buffer: Uint8Array){
     const cache = ResourceLoader.CacheScopes[type];
     if(cache){
       ResourceLoader.CacheScopes[type].get(resId).set(resRef, buffer);
@@ -220,20 +220,20 @@ export class ResourceLoader {
     ResourceLoader.cache[resId][resRef] = buffer;
   }
 
-  static async searchLocal(resId: number, resRef = ''): Promise<Buffer> {
+  static async searchLocal(resId: number, resRef = ''): Promise<Uint8Array> {
     let data = await this.searchOverride(resId, resRef);
     if(data){
       return data;
     }
   }
 
-  static async searchOverride(resId: number, resRef = ''): Promise<Buffer> {
+  static async searchOverride(resId: number, resRef = ''): Promise<Uint8Array> {
     //TODO
     return;
   }
 
-  static async searchModuleArchives(resId: number, resRef = ''): Promise<Buffer> {
-    let data: Buffer;
+  static async searchModuleArchives(resId: number, resRef = ''): Promise<Uint8Array> {
+    let data: Uint8Array;
     const archiveCount = this.ModuleArchives.length;
 
     for(let i = 0; i < archiveCount; i++){
@@ -253,18 +253,18 @@ export class ResourceLoader {
     return data;
   }
 
-  static async searchKeyTable(resId: number, resRef: string): Promise<Buffer> {
+  static async searchKeyTable(resId: number, resRef: string): Promise<Uint8Array> {
     let keyLookup = KEYManager.Key.getFileKey(resRef, resId);
     if(keyLookup){
       return await KEYManager.Key.getFileBuffer(keyLookup);
     }
   }
 
-  static async searchModules(resId: number, resRef: string): Promise<Buffer> {
+  static async searchModules(resId: number, resRef: string): Promise<Uint8Array> {
     const rims = Array.from(RIMManager.RIMs.values());
     const rimCount = rims.length;
 
-    let data: Buffer;
+    let data: Uint8Array;
     let rim: RIMObject;
     let res: IRIMResource;
     for(let i = 0; i < rimCount; i++){

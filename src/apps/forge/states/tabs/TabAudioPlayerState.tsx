@@ -13,6 +13,27 @@ export class TabAudioPlayerState extends TabState {
     super(options);
     this.setContentView(<TabAudioPlayer tab={this}></TabAudioPlayer>);
     this.openFile();
+
+    // this.saveTypes = [
+    //   {
+    //     description: 'Plain Text File',
+    //     accept: {
+    //       'text/plain': ['.txt']
+    //     }
+    //   },
+    //   {
+    //     description: 'NWScript File',
+    //     accept: {
+    //       'text/plain': ['.nss']
+    //     }
+    //   },
+    //   {
+    //     description: 'NWScript Compiled File',
+    //     accept: {
+    //       'application/octet-stream': ['.ncs']
+    //     }
+    //   }
+    // ];
   }
 
   public openFile(file?: any){

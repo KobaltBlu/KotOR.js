@@ -1,4 +1,3 @@
-import isBuffer from "is-buffer";
 import { ADPCMBlock } from "./ADPCMBlock";
 
 /**
@@ -13,9 +12,9 @@ import { ADPCMBlock } from "./ADPCMBlock";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ADPCMDecoder {
-	adpcm: Buffer;
+	adpcm: Uint8Array;
 	header: any;
-	pcm: Buffer;
+	pcm: Uint8Array;
 	stepIdx: number[];
 	previous: number[];
 	predictor: number[];
@@ -25,7 +24,7 @@ export class ADPCMDecoder {
   constructor( args: any = {} ){
 
     args = Object.assign({
-      data: Buffer.alloc(0),
+      data: new Uint8Array(0),
 			header: {
 				sampleRate: 14400,
 				frameSize: 2048,
@@ -35,7 +34,7 @@ export class ADPCMDecoder {
 
     this.adpcm = args.data;
 		this.header = args.header;
-    this.pcm = Buffer.alloc(0);
+    this.pcm = new Uint8Array(0);
 
 		this.stepIdx = [0, 0];
 		this.previous = [0, 0];
@@ -49,38 +48,52 @@ export class ADPCMDecoder {
 
   }
 
+	concatBuffers(buffers: Uint8Array[]) {
+		let totalLength = 0;
+		for(let i = 0; i < buffers.length; i++){
+			totalLength += buffers[i].length;
+		}
+		const mergedArray = new Uint8Array(totalLength);
+		let offset = 0;
+		for(let i = 0; i < buffers.length; i++){
+			mergedArray.set(buffers[i], offset);
+			offset += buffers[i].length;
+		}
+		return mergedArray;
+	}
+
 	decode(){
 		this.blocks = [];
-		if(isBuffer(this.adpcm)){
+		if(this.adpcm instanceof Uint8Array){
 
 			let blockHeaderSize = 4 * this.header.channels;
 			let count = this.adpcm.length;
 
-			this.pcm = Buffer.alloc(0);
-			let chunks: Buffer[] = [];
+			this.pcm = new Uint8Array(0);
+			let chunks: Uint8Array[] = [];
 
 			console.log('ADPCMDecoder', 'Decode Starting');
 			while( count > 0 ) {
 				let inSamples = (count > this.header.frameSize ? this.header.frameSize : count);
 
 				let samples =  ( (inSamples - blockHeaderSize) * 4 ) + blockHeaderSize / this.header.channels;
-				let buffer = Buffer.alloc( samples );
+				let buffer = new Uint8Array( samples );
 				this.decodeBlock( this.adpcm, buffer, this.inputStreamIndex, samples );
 
-				chunks.push(buffer as Buffer);
+				chunks.push(buffer);
 
 				count -= inSamples;
 				this.inputStreamIndex += inSamples;
 			}
 
-			this.pcm = Buffer.concat(chunks);
+			this.pcm = this.concatBuffers(chunks);
 
 			console.log('ADPCMDecoder', 'Decode Complete');
 
     }
 	}
 
-  decodeBlock( input: Buffer, output: Buffer, index: number, count: number ) {
+  decodeBlock( input: Uint8Array, output: Uint8Array, index: number, count: number ) {
 
 		let inputIdx = index, outputIdx = 0, outputEnd = count, blockIndex = index / this.header.frameSize;
 

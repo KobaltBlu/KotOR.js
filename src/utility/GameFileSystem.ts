@@ -1,6 +1,5 @@
 import * as path from "path";
 import * as fs from "fs";
-import isBuffer from "is-buffer";
 import { ApplicationProfile } from "./ApplicationProfile";
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
@@ -75,13 +74,13 @@ export class GameFileSystem {
     }
   }
 
-  static async read(handle: FileSystemFileHandle|number, output: Buffer, offset: number, length: number, position: number){
+  static async read(handle: FileSystemFileHandle|number, output: Uint8Array, offset: number, length: number, position: number){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<Buffer>( (resolve, reject) => {
+      return new Promise<Uint8Array>( (resolve, reject) => {
         fs.read(handle as number, output, offset, length, position, (err, bytes, buffer) => {
           if(err) reject(err);
-          Buffer.from(buffer).copy(output);
-          resolve(Buffer.from(buffer));
+          output.set(new Uint8Array(buffer), offset);
+          resolve(output);
         })
       });
     }else{
@@ -89,14 +88,14 @@ export class GameFileSystem {
       
       if(!(handle instanceof FileSystemFileHandle)) throw new Error('FileSystemFileHandle expected but one was not supplied!');
       
-      if(!isBuffer(output)) throw new Error('No output buffer supplied!');
+      if(!(output instanceof Uint8Array)) throw new Error('No output buffer supplied!');
 
       const file = await handle.getFile();
       if(!file) throw new Error('Failed to read file from handle!');
 
       let blob = await file.slice(position, position + length);
       let arrayBuffer = await blob.arrayBuffer();
-      Buffer.from(arrayBuffer).copy(output);
+      output.set(new Uint8Array(arrayBuffer), offset);
       // output.copy(new Uint8Array(arrayBuffer));
     }
   }
@@ -115,13 +114,13 @@ export class GameFileSystem {
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
-  static async readFile(filepath: string, options: any = {}): Promise<Buffer> {
+  static async readFile(filepath: string, options: any = {}): Promise<Uint8Array> {
     // console.log('readFile', filepath);
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<Buffer>( (resolve, reject) => {
+      return new Promise<Uint8Array>( (resolve, reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
           if(err) reject(undefined);
-          resolve(Buffer.from(buffer));
+          resolve(new Uint8Array(buffer));
         })
       });
     }else{
@@ -129,7 +128,7 @@ export class GameFileSystem {
       if(!file) throw new Error('Failed to read file');
       
       let handle = await file.getFile();
-      return Buffer.from( await handle.arrayBuffer() );
+      return new Uint8Array( await handle.arrayBuffer() );
     }
   }
 

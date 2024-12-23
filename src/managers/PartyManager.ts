@@ -343,7 +343,7 @@ export class PartyManager {
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
       if(tutorial2DA){
         let byteCount = Math.ceil(tutorial2DA.RowCount / 8);
-        let buffer = Buffer.alloc(byteCount);
+        let buffer = new Uint8Array(byteCount);
         for(let i = 0; i < byteCount; i++){
           let byte = 0;
           for(let j = 0; j < 8; j++){
@@ -353,11 +353,11 @@ export class PartyManager {
               byte |= 1 << j;
             }
           }
-          buffer.writeUInt8(byte, i);
+          buffer[i] = byte;
         }
         partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(buffer);
       }else{
-        partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(Buffer.alloc(0));
+        partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(new Uint8Array(0));
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_XP_POOL'));

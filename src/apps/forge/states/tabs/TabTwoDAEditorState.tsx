@@ -13,6 +13,21 @@ export class TabTwoDAEditorState extends TabState {
 
     this.setContentView(<TabTwoDAEditor tab={this}></TabTwoDAEditor>);
     this.openFile();
+
+    this.saveTypes = [
+      {
+        description: '2-Dimensional Array',
+        accept: {
+          'application/octet-stream': ['.2da']
+        }
+      },
+      {
+        description: 'Comma-separated values',
+        accept: {
+          'text/csv': ['.csv']
+        }
+      }
+    ];
   }
 
   openFile(file?: EditorFile){
@@ -33,6 +48,14 @@ export class TabTwoDAEditorState extends TabState {
       }
     });
 
+  }
+
+  async getExportBuffer(extension: string): Promise<Uint8Array> {
+    if(extension == 'csv'){
+      const textEncoder = new TextEncoder();
+      return textEncoder.encode(this.twoDAObject.toCSV());
+    }
+    return this.twoDAObject.toExportBuffer();
   }
 
 

@@ -2,7 +2,6 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CExoLocString } from "./CExoLocString";
 import { GFFStruct } from "./GFFStruct";
 import * as THREE from "three";
-import isBuffer from "is-buffer";
 
 /**
  * GFFField class.
@@ -17,7 +16,8 @@ export class GFFField {
   uuid: string;
   type: number;
   label: string;
-  data: Buffer;
+  data: Uint8Array;
+  dataView: DataView;
   value: any;
   childStructs: GFFStruct[] = [];
   cexoLocString: CExoLocString;
@@ -31,7 +31,8 @@ export class GFFField {
     this.uuid = crypto.randomUUID();
     this.type = type;
     this.label = label;
-    this.data = Buffer.alloc(0);
+    this.data = new Uint8Array(0);
+    this.dataView = new DataView(this.data.buffer);
     this.value = value;
     this.childStructs = [];
 
@@ -65,7 +66,7 @@ export class GFFField {
         this.childStructs[0] = new GFFStruct();
       break;
       case GFFDataType.VOID:
-        this.data = Buffer.alloc(0);
+        this.data = new Uint8Array(0);
         this.value = 0;
       break;
     }
@@ -89,7 +90,7 @@ export class GFFField {
       case GFFDataType.CEXOLOCSTRING:
         return this.cexoLocString.getValue();
       case GFFDataType.DWORD64:
-        return this.data.readBigUInt64LE();
+        return this.dataView.getBigUint64(0, true);
       default:
         return this.value;
     }
@@ -132,8 +133,9 @@ export class GFFField {
     return this.orientation;
   }
 
-  setData(data: Buffer){
+  setData(data: Uint8Array){
     this.data = data;
+    this.dataView = new DataView(this.data.buffer);
     return this;
   }
 
@@ -237,10 +239,10 @@ export class GFFField {
         }
       break;
       case GFFDataType.VOID:
-        if(isBuffer(val)){
+        if(val instanceof Uint8Array){
           this.value = val;
         }else if(val instanceof ArrayBuffer){
-          this.value = Buffer.from(val);
+          this.value = new Uint8Array(val);
         }
       break;
       default:

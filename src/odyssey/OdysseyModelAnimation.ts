@@ -26,7 +26,7 @@ export class OdysseyModelAnimation {
   nodeCount: number;
   refCount: number;
   geometryType: number;
-  unknown4: Buffer;
+  unknown4: Uint8Array;
   length: number;
   transition: number;
   modelName: string;
@@ -99,7 +99,7 @@ export class OdysseyModelAnimation {
     this.rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
     this.nodeCount = this.odysseyModel.mdlReader.readUInt32();
 
-    this.odysseyModel.mdlReader.movePointerForward(24); //Skip unknown array definitions
+    this.odysseyModel.mdlReader.skip(24); //Skip unknown array definitions
 
     this.refCount = this.odysseyModel.mdlReader.readUInt32();
     this.geometryType = this.odysseyModel.mdlReader.readByte(); //Model Type
@@ -113,7 +113,7 @@ export class OdysseyModelAnimation {
     let _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     //anim.events = OdysseyModelUtility.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
     this.events = new Array(_eventsDef.count);
-    this.odysseyModel.mdlReader.movePointerForward(4); //Unknown uint32
+    this.odysseyModel.mdlReader.skip(4); //Unknown uint32
 
     if (_eventsDef.count > 0) {
       this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + _eventsDef.offset);

@@ -132,7 +132,7 @@ export class TPCLoader {
     if(resKey instanceof Object){
   
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get(archive).getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Buffer) => {
+        ERFManager.ERFs.get(archive).getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Uint8Array) => {
           onComplete(
             new TPCObject({
               filename: tex,
