@@ -67,6 +67,7 @@ export class GameMenu {
   engineMode: EngineMode = EngineMode.GUI;
 
   eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
+  context: any = GameState;
 
   constructor(){
     this._button_a = undefined;
@@ -80,50 +81,52 @@ export class GameMenu {
     return this;
   }
 
-  loadMenu(): Promise<GameMenu> {
-    return new Promise( (resolve: Function, reject: Function) => {
-      this.tGuiPanel = null;
-  
-      //mainmenu16x12
-      this.loadBackground( () => {
-        
-        ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref).then(async (buffer: Uint8Array) => {
-          
-          this.menuGFF = new GFFObject(buffer);
-          
-          this.tGuiPanel = new GUIControl(this, this.menuGFF.RootNode, undefined, this.enablePositionScaling);
-          this.tGuiPanel.allowClick = false;
-          
-          let extent = this.tGuiPanel.extent;
-          this.width = extent.width;
-          this.height = extent.height;
-  
-          let panelControl = this.tGuiPanel.createControl();
-  
-          if(this.voidFill){
-            this.tGuiPanel.widget.add(this.backgroundVoidSprite);
-          }
-  
-          if(this.backgroundSprite){
-            this.tGuiPanel.widget.add(this.backgroundSprite);
-          }
-          
-          panelControl.position.x = 0;
-          panelControl.position.y = 0;
-  
-          //This auto assigns references for the controls to the menu object.
-          //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-          //You can just use this.CONTROL_NAME 
-          this.assignChildControlsToMenu(this.tGuiPanel);
+  async loadMenu(): Promise<GameMenu> {
+    this.tGuiPanel = null;
 
-          await this.menuControlInitializer();
-  
-          TextureLoader.LoadQueue(() => {
-            resolve(this);
-          });
-  
-        }).catch( (e) => {console.error(e)});
-  
+    //mainmenu16x12
+    await this.loadBackground();
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes.gui, this.gui_resref);
+      this.menuGFF = new GFFObject(buffer);
+      await this.buildMenu(this.menuGFF);
+    }catch(e){
+      console.error(e);
+    };
+    return this;
+  }
+
+  async buildMenu(gff: GFFObject){
+    return new Promise( async (resolve: Function, reject: Function) => {
+      this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
+      this.tGuiPanel.allowClick = false;
+      
+      let extent = this.tGuiPanel.extent;
+      this.width = extent.width;
+      this.height = extent.height;
+
+      let panelControl = this.tGuiPanel.createControl();
+
+      if(this.voidFill){
+        this.tGuiPanel.widget.add(this.backgroundVoidSprite);
+      }
+
+      if(this.backgroundSprite){
+        this.tGuiPanel.widget.add(this.backgroundSprite);
+      }
+      
+      panelControl.position.x = 0;
+      panelControl.position.y = 0;
+
+      //This auto assigns references for the controls to the menu object.
+      //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
+      //You can just use this.CONTROL_NAME 
+      this.assignChildControlsToMenu(this.tGuiPanel);
+
+      await this.menuControlInitializer();
+
+      TextureLoader.LoadQueue(() => {
+        resolve(this);
       });
     });
   }
@@ -143,7 +146,10 @@ export class GameMenu {
     }
   }
 
-  loadBackground( onLoad?: Function ){
+  async loadBackground(){
+    /**
+     * Background black void to fill the screen behind the menu
+     */
     if(this.voidFill){
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
@@ -163,32 +169,25 @@ export class GameMenu {
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
     }
 
-
+    /**
+     * Background texture of the menu
+     */
     if(this.background){
-      TextureLoader.tpcLoader.fetch(this.background).then((texture: OdysseyTexture) => {
-        const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
-        this.backgroundMaterial = new THREE.ShaderMaterial({
-          uniforms: THREE.UniformsUtils.merge([
-            ShaderManager.Shaders.get('background-gui').getUniforms()
-          ]),
-          vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
-          fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
-        });
-        this.backgroundMaterial.transparent = true;
-        this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
-        this.backgroundSprite.position.z = -5;
-        this.backgroundSprite.renderOrder = -5;
-        this.backgroundMaterial.uniforms.map.value = texture;
-
-        if(typeof onLoad === 'function')
-          onLoad();
-
+      const texture: OdysseyTexture = await TextureLoader.tpcLoader.fetch(this.background);
+      const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
+      this.backgroundMaterial = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.merge([
+          ShaderManager.Shaders.get('background-gui').getUniforms()
+        ]),
+        vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
+        fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
       });
-    }else{
-      if(typeof onLoad === 'function')
-        onLoad();
+      this.backgroundMaterial.transparent = true;
+      this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
+      this.backgroundSprite.position.z = -5;
+      this.backgroundSprite.renderOrder = -5;
+      this.backgroundMaterial.uniforms.map.value = texture;
     }
-
   }
 
   loadTexture( resRef: string ): Promise<OdysseyTexture> {
@@ -257,13 +256,13 @@ export class GameMenu {
       return;
 
     if(this.voidFill){
-      this.backgroundVoidMaterial.uniforms.u_time.value = GameState.deltaTimeFixed;
+      this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
     }
 
     if(this.background){
-      this.backgroundMaterial.uniforms.u_time.value = GameState.deltaTimeFixed;
+      this.backgroundMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundMaterial.uniforms.u_resolution.value.set(1600, 1200);
     }
 

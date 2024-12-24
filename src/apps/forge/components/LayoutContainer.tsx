@@ -19,7 +19,6 @@ export interface LayoutContainerProps {
 
 export const LayoutContainer = function(props: LayoutContainerProps) {
   const layoutContext = useLayoutContext();
-  console.log('ctx', layoutContext);
   const containerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
   const centerRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;
   const northRef = useRef<HTMLDivElement>() as React.MutableRefObject<HTMLDivElement>;

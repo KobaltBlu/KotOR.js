@@ -167,16 +167,16 @@ export class GUIListBox extends GUIControl {
 
   render(){
     let oldClearColor = new THREE.Color()
-    GameState.renderer.getClearColor(oldClearColor);
-    GameState.renderer.setClearColor(this.clearColor, 1);
-    GameState.renderer.setRenderTarget(this.texture);
-    GameState.renderer.clear(true);
-    GameState.renderer.render(this.scene, this.camera);
+    this.menu.context.renderer.getClearColor(oldClearColor);
+    this.menu.context.renderer.setClearColor(this.clearColor, 1);
+    this.menu.context.renderer.setRenderTarget(this.texture);
+    this.menu.context.renderer.clear(true);
+    this.menu.context.renderer.render(this.scene, this.camera);
     (this.texture as any).needsUpdate = true;
-    GameState.renderer.setRenderTarget(null);
+    this.menu.context.renderer.setRenderTarget(null);
     this.targetMaterial.transparent = true;
     this.targetMaterial.needsUpdate = true;
-    GameState.renderer.setClearColor(oldClearColor, 1);
+    this.menu.context.renderer.setClearColor(oldClearColor, 1);
   }
 
   calculatePosition(){

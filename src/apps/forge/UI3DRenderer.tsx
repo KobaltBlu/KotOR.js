@@ -41,16 +41,19 @@ export class UI3DRenderer extends EventListenerModel {
   
   time: number;
   deltaTime: number;
+  deltaTimeFixed: number = 0;
 
   canvas?: HTMLCanvasElement;
   width: number = 640;
   height: number = 480;
 
+  guiMode: boolean = false;
   clock: THREE.Clock;
   renderer?: THREE.WebGLRenderer;
   clearColor: THREE.Color = new THREE.Color(0x333333);
   scene: THREE.Scene = new THREE.Scene();
   camera: THREE.PerspectiveCamera;
+  guiCamera: THREE.OrthographicCamera;
   currentCamera: THREE.PerspectiveCamera;
   cameras: THREE.PerspectiveCamera[] = [];
   light: THREE.AmbientLight;
@@ -251,6 +254,15 @@ export class UI3DRenderer extends EventListenerModel {
     this.camera.updateProjectionMatrix();
 
     this.currentCamera = this.camera;
+
+    this.guiCamera = new THREE.OrthographicCamera(
+      this.width / -2, this.width / 2,
+      this.height / 2, this.height / -2,
+      1, 1000
+    );
+    this.guiCamera.up = new THREE.Vector3( 0, 0, 1 );
+    this.guiCamera.position.z = 500;
+    this.guiCamera.updateProjectionMatrix();
   }
 
   private buildAmbientLight(){
@@ -320,6 +332,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.depthTarget.setSize( this.width, this.height );
+
+    this.guiCamera.left = this.width / -2;
+    this.guiCamera.right = this.width / 2;
+    this.guiCamera.top = this.height / 2;
+    this.guiCamera.bottom = this.height / -2;
+
+    this.guiCamera.updateProjectionMatrix();
   }
 
   triggerResize(){
@@ -362,6 +381,7 @@ export class UI3DRenderer extends EventListenerModel {
       const delta = this.clock.getDelta();
       this.time += delta;
       this.deltaTime += delta;
+      this.deltaTimeFixed += (1/60);
 
       // if(this.controlsEnabled && this.flyControls){
       //   this.flyControls.update(delta);
@@ -391,7 +411,7 @@ export class UI3DRenderer extends EventListenerModel {
         this.lightManager.update(delta, this.currentCamera);
       }
 
-      this.renderer.render( this.scene, this.currentCamera );
+      this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
 
       if(this.viewHelper){
         this.viewHelper.render(this.renderer);
@@ -412,6 +432,9 @@ export class UI3DRenderer extends EventListenerModel {
     
     if(this.camera){
       this.camera.removeFromParent();
+    }
+    if(this.guiCamera){
+      this.guiCamera.removeFromParent();
     }
     while(this.scene.children.length){
       this.scene.children[0].removeFromParent();

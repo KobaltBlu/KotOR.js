@@ -1,6 +1,7 @@
 export * from "./TabState";
 
 export * from "./TabGFFEditorState";
+export * from "./TabGUIEditorState";
 export * from "./TabImageViewerState";
 export * from "./TabModelViewerState";
 export * from "./TabModuleEditorState";

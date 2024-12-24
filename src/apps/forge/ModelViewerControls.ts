@@ -121,7 +121,6 @@ export class ModelViewerControls {
   }
 
   onKeyDown(event: KeyboardEvent){
-    //console.log(event.which)
     if ( event.which == 87 )
       this.keys['w'] = true;
     if ( event.which == 65 )
@@ -176,56 +175,59 @@ export class ModelViewerControls {
   }
 
   onMouseDown(event: MouseEvent) {
-    if(event.target == this.element){
-      const offset = this.element.getBoundingClientRect();
-      KotOR.Mouse.ButtonState = event.which;
-      KotOR.Mouse.MouseDown = true;
-      KotOR.Mouse.MouseX = event.pageX - offset.left;
-      KotOR.Mouse.MouseY = event.pageY - offset.top;
+    if(event.target != this.element){
+      return;
+    }
 
-      if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
-        //let axisMoverSelected = false;
-        //this.editor.axes.selected = null;
-        this.context.raycaster.setFromCamera( KotOR.Mouse.Vector, this.context.camera );
-        /*let axisMoverIntersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
-        if(axisMoverIntersects.length){
-          this.editor.axes.selected = axisMoverIntersects[0].object.name;
-          axisMoverSelected = true;
-        }*/
+    const offset = this.element.getBoundingClientRect();
+    KotOR.Mouse.ButtonState = event.which;
+    KotOR.Mouse.MouseDown = true;
+    KotOR.Mouse.MouseX = event.pageX - offset.left;
+    KotOR.Mouse.MouseY = event.pageY - offset.top;
 
-        const isObjectTransformControl = (intersection?: THREE.Intersection) => {
-          if(!intersection) return false;
-          return (intersection.object as any).isTransformControls 
-            || (intersection.object as any).isTransformControlsGizmo 
-            || (intersection.object as any).isTransformControlsPlane
+    if(KotOR.Mouse.ButtonState != KotOR.MouseState.LEFT){
+      // Ask the browser to lock the pointer
+      this.element.requestPointerLock();
+      return;
+    }
+
+    if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT){
+      //let axisMoverSelected = false;
+      //this.editor.axes.selected = null;
+      this.context.raycaster.setFromCamera( KotOR.Mouse.Vector, this.context.camera );
+      /*let axisMoverIntersects = this.editor.renderComponent.raycaster.intersectObjects( this.editor.sceneOverlay.children, true );
+      if(axisMoverIntersects.length){
+        this.editor.axes.selected = axisMoverIntersects[0].object.name;
+        axisMoverSelected = true;
+      }*/
+
+      const isObjectTransformControl = (intersection?: THREE.Intersection) => {
+        if(!intersection) return false;
+        return (intersection.object as any).isTransformControls 
+          || (intersection.object as any).isTransformControlsGizmo 
+          || (intersection.object as any).isTransformControlsPlane
+      }
+
+      //if(!axisMoverSelected){
+        const selectable = [...this.context.selectable.children];
+
+        if(this.context.transformControls.visible && this.context.transformControls.enabled){
+          const gizmo = (this.context.transformControls as any)._gizmo.picker[
+            this.context.transformControls.mode
+          ]
+          if(gizmo){
+            selectable.push(gizmo);
+          }
         }
 
-        //if(!axisMoverSelected){
-          const selectable = [...this.context.selectable.children];
-
-          if(this.context.transformControls.visible && this.context.transformControls.enabled){
-            const gizmo = (this.context.transformControls as any)._gizmo.picker[
-              this.context.transformControls.mode
-            ]
-            if(gizmo){
-              selectable.push(gizmo);
-            }
-          }
-
-          let intersects = this.context.raycaster.intersectObjects( selectable, true );
-          if(intersects.length){
-            let intersection = intersects.shift();
-            this.processEventListener('onSelect', intersection);
-          }else{
-            this.processEventListener('onSelect', undefined);
-          }
-        //}
-      }else{
-        // Ask the browser to lock the pointer
-        this.element.requestPointerLock();
-      }
-    }else{
-      //console.log('Invalid Mouse Target', this.element);
+        let intersects = this.context.raycaster.intersectObjects( selectable, true );
+        if(intersects.length){
+          let intersection = intersects.shift();
+          this.processEventListener('onSelect', intersection);
+        }else{
+          this.processEventListener('onSelect', undefined);
+        }
+      //}
     }
   }
 
@@ -243,7 +245,6 @@ export class ModelViewerControls {
   }
 
   update(delta: number = 0){
-    //console.log('Camera.Update')
     let speed = ModelViewerControls.CameraMoveSpeed * delta;
     let speed2 = 0.5 * delta;
 
@@ -261,13 +262,11 @@ export class ModelViewerControls {
     }
 
     if(this.keys['w']){
-      //console.log(this.forceVector, this.forceVector.clone().multiplyScalar(speed));
       this.context.camera.position.add(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
     if(this.keys['s']){
-      //console.log(this.forceVector.clone().multiplyScalar(speed));
       this.context.camera.position.sub(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
