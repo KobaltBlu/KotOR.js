@@ -48,7 +48,7 @@ export class NWScriptStack {
         console.warn('NWScriptStack', data, type);
         //throw 'Cannot push data to the stack with a type of NULL';
 
-      if(type === undefined)
+      if(type === undefined && type != NWScriptDataType.OBJECT)
         console.warn('NWScriptStack', data, type);
 
       if(type == NWScriptDataType.VECTOR){

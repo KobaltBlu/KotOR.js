@@ -253,6 +253,8 @@ export class Action {
     switch (param.type) {
       case ActionParameterType.DWORD:
         return GameState.ModuleObjectManager.GetObjectById(param.value as number) as T;
+      case ActionParameterType.SCRIPT_SITUATION:
+        return param.scriptInstance as T;
       default:
         return param.value as T;
     }
@@ -293,7 +295,7 @@ export class Action {
         break;
       case ActionParameterType.SCRIPT_SITUATION:
         if (value instanceof GameState.NWScript.NWScriptInstance)
-          param.value = value;
+          param.scriptInstance = value;
         break;
       default:
         throw 'setParameter: Invalid type: (' + type + ')';

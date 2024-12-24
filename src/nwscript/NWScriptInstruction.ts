@@ -1,5 +1,6 @@
 import { NWScriptInstructionInfo } from "./NWScriptInstructionInfo";
 import type { NWScriptInstance } from "./NWScriptInstance";
+import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 
 /**
  * NWScriptInstruction class.
@@ -38,6 +39,7 @@ export class NWScriptInstruction {
   sizeOfElementToSave: number;
 
   action: number;
+  actionDefinition: INWScriptDefAction;
   argCount: number;
   arguments: any[];
 

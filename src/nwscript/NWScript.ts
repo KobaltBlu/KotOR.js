@@ -25,6 +25,11 @@ import {
 } from './NWScriptInstructionSet';
 import { IPCMessageType } from "../enums/server/IPCMessageType";
 import type { ModuleObject } from "../module/ModuleObject";
+import { GameState } from "../GameState";
+import { GameEngineType } from "../enums/engine/GameEngineType";
+import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
+import { NWScriptDefK2 } from "./NWScriptDefK2";
+import { NWScriptDefK1 } from "./NWScriptDefK1";
 
 /**
  * NWScript class.
@@ -39,6 +44,7 @@ export class NWScript {
 
   static NWScriptInstance: typeof NWScriptInstance = NWScriptInstance;
   static NWScriptStack: typeof NWScriptStack = NWScriptStack;
+  actionsMap: { [key: number]: INWScriptDefAction; };
   
   name: string;
 
@@ -63,6 +69,11 @@ export class NWScript {
   owner: ModuleObject;
 
   constructor ( dataOrFile?: string|Uint8Array ){
+    if(GameState.GameKey == GameEngineType.TSL){
+      this.actionsMap = NWScriptDefK2.Actions;
+    }else{
+      this.actionsMap = NWScriptDefK1.Actions;
+    }
 
     this.instrIdx = 0;
     this.lastOffset = -1;
@@ -215,6 +226,7 @@ export class NWScript {
         instruction.action = reader.readUInt16();
         instruction.argCount = reader.readByte();
         instruction.arguments = [];
+        instruction.actionDefinition = this.actionsMap[instruction.action];
       break;
       case OP_LOGANDII:
         instruction.opCall = CALL_LOGANDII;

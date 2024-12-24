@@ -1,4 +1,4 @@
-import { GameEngineType } from "../enums/engine";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { IPCDataType } from "../enums/server/IPCDataType";
@@ -6,7 +6,7 @@ import { IPCMessageType } from "../enums/server/IPCMessageType";
 import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
-import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
+// import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
 // import { ModuleObjectManager } from "../managers";
 import type { ModuleObject } from "../module";
@@ -15,8 +15,8 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "../talents";
 import type { NWScript } from "./NWScript";
-import { NWScriptDefK1 } from "./NWScriptDefK1";
-import { NWScriptDefK2 } from "./NWScriptDefK2";
+// import { NWScriptDefK1 } from "./NWScriptDefK1";
+// import { NWScriptDefK2 } from "./NWScriptDefK2";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
 import type { NWScriptStackVariable } from "./NWScriptStackVariable";
@@ -36,7 +36,7 @@ export class NWScriptInstance {
   parentUUID: string;
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
-  actionsMap: { [key: number]: INWScriptDefAction; };
+  // actionsMap: { [key: number]: INWScriptDefAction; };
   globalCache: any = null;
   _disposed: boolean = false;
   isStoreState: boolean = false;
@@ -175,7 +175,7 @@ export class NWScriptInstance {
   dispose(){
     if(this._disposed) return;
     this._disposed = true;
-    
+
     this.sendToDebugger(IPCMessageType.DestroyScript);
 
     //This is used to dispose of STORE_STATE instances once they complete
@@ -226,11 +226,11 @@ export class NWScriptInstance {
     this.stack = undefined;
 
     
-    if(GameState.GameKey == GameEngineType.TSL){
-      this.actionsMap = NWScriptDefK2.Actions;
-    }else{
-      this.actionsMap = NWScriptDefK1.Actions;
-    }
+    // if(GameState.GameKey == GameEngineType.TSL){
+    //   this.actionsMap = NWScriptDefK2.Actions;
+    // }else{
+    //   this.actionsMap = NWScriptDefK1.Actions;
+    // }
 
   }
 

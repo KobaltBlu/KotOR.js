@@ -36,7 +36,7 @@ export class ActionParameter {
    * The value stored in this parameter
    * @remarks Can be a number for basic types or an NWScriptInstance for script situations
    */
-  value: number|string|NWScriptInstance;
+  value: number|string;
 
   scriptInstance: NWScriptInstance;
 

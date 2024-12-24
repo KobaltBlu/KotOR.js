@@ -135,7 +135,7 @@ export const CALL_CONST = function( this: NWScriptInstance, instruction: NWScrip
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  const action_definition: INWScriptDefAction = this.actionsMap[instruction.action];
+  const action_definition: INWScriptDefAction = instruction.actionDefinition;
   const args: any[] = [];
 
   for(let i = 0, len = action_definition.args.length; i < len; i++){
@@ -175,6 +175,9 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
   if(typeof action_definition.action === 'function'){
     const actionValue = action_definition.action.call(this, args);
     if(action_definition.type != NWScriptDataType.VOID){
+      if(typeof actionValue == 'undefined' && action_definition.type != NWScriptDataType.OBJECT){
+        console.warn(`${action_definition.name} returned undefined`);
+      }
       this.stack.push( actionValue, action_definition.type );
     }
   }else{

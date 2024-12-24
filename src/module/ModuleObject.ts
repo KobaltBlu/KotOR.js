@@ -450,7 +450,7 @@ export class ModuleObject {
       if(GameState.module){
         this.triggerHeartbeat();
       }
-      this._heartbeatTimeout = this._heartbeatTimerOffset;
+      this._heartbeatTimeout = 3000;
     }else{
       this._heartbeatTimeout -= 1000*delta;
     }

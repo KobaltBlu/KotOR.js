@@ -67,7 +67,7 @@ export class Debugger {
       return;
     }
 
-    this.window = window.open(`../debugger/index.html?uuid=${this.uuid}`, '_blank', 'width=800,height=600');
+    this.window = window.open(`../debugger/index.html?uuid=${this.uuid}`, '_blank', 'width=1600,height=1200');
     if(this.window) {
       console.log(`Debugger window opened: ${this.uuid}`);
       this.broadcastChannel = new BroadcastChannel(`debugger-${this.uuid}`);
