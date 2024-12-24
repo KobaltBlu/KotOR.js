@@ -3227,6 +3227,7 @@ export class ModuleCreature extends ModuleObject {
       let _script = this.scripts[key];
       if( (typeof _script === 'string' && _script != '') ){
         this.scripts[key] = NWScript.Load(_script);
+        this.scripts[key].caller = this;
       }
     }
 

@@ -67,6 +67,13 @@ export class IngameControls {
     });
 
     window.addEventListener('keyup', (e: KeyboardEvent) => {
+      /**
+       * Debugger Hotkey
+       */
+      if(e.key == 'D' && e.ctrlKey && e.shiftKey){
+        GameState.Debugger.open();
+      }
+
       this.keyboard.onKeyUp(e);
 
       if(GameState.MenuManager.activeGUIElement){

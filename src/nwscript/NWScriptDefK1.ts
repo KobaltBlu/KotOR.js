@@ -156,7 +156,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
       if( args[0] ){
-        let scriptInstance = GameState.NWScript.Load( args[0] );
+        let scriptInstance = GameState.NWScript.Load( args[0], undefined, this );
         if(scriptInstance){
           this.executeScript( scriptInstance, this, args );
         }else{

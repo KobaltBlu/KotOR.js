@@ -64,6 +64,32 @@ export class ApplicationWindow {
       WindowManager.removeWindow(this);
     });
 
+    this.browserWindow.webContents.on("did-create-window", (window, details) => {
+      if(details.url.indexOf(`debugger/index.html`) !== -1){
+        window.webContents.once("dom-ready", () => window.webContents.openDevTools());
+        console.log('Debugger: Launched!');
+      }
+    });
+
+    this.browserWindow.webContents.setWindowOpenHandler(({ url }) => {
+      if (url.indexOf(`debugger/index.html`) !== -1) {
+        console.log('Debugger: Launching...');
+        return {
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            frame: true,
+            fullscreenable: false,
+            backgroundColor: 'black',
+            webPreferences: {
+              preload: path.join(Main.ApplicationPath, 'dist/electron/preload.js'),
+              devTools: true,
+            }
+          }
+        }
+      }
+      return { action: 'deny' }
+    })
+
     WindowManager.hideLauncher();
     WindowManager.addWindow(this);
   }

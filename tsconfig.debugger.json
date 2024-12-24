@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "target": "ESNext",
+    "module": "esnext",
+    "declaration": false,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "sourceMap": false,
+    "listFiles": false,
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "jsx": "react",
+    "types": [
+      "@types/wicg-file-system-access",
+      "node",
+      "offscreencanvas",
+    ],
+    "lib": [
+      "ESNext",
+      "dom",
+      "WebWorker"
+    ],
+    "outDir": "dist",
+  },
+  "include": ["src/apps/debugger/debugger.ts", "src/types", "src/index.d.ts"],
+  "exclude": ["node_modules", "src/**/*.spec.ts"],
+  "paths" :{
+    // "jison":["src/types/jison"],
+  }
+}

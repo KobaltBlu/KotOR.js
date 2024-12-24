@@ -59,6 +59,7 @@ import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 import { ModuleTriggerType } from "./enums";
 import { Planetary } from "./Planetary";
+import { Debugger } from "./Debugger";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -116,6 +117,8 @@ export class GameState implements EngineContext {
 
   static Planetary: typeof Planetary = Planetary;
 
+  static Debugger: typeof Debugger = Debugger;
+
   static Location: any;
 
   static GameKey: GameEngineType = GameEngineType.KOTOR;
@@ -141,7 +144,7 @@ export class GameState implements EngineContext {
     WalkmeshVisible: false,
     CombatEnabled: false
   }
-  
+  static debugMode = false;
   static debug = {
     controls: false,
     selectedObject: false
@@ -292,6 +295,14 @@ export class GameState implements EngineContext {
   }
 
   static Init(){
+    GameState.Debugger.addEventListener('open', () => {
+      console.log('Debugger: Open');
+      GameState.debugMode = true;
+    }); 
+    GameState.Debugger.addEventListener('close', () => {
+      console.log('Debugger: Close');
+      GameState.debugMode = false;
+    });
     GameState.lightManager = new GameState.LightManager();
     GameState.processEventListener('init');
     
@@ -809,6 +820,7 @@ export class GameState implements EngineContext {
   }
 
   static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
+    GameState.Debugger.send('loadModule');
     GameState.Mode = EngineMode.LOADING;
     GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();

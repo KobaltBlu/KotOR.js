@@ -23,6 +23,8 @@ import {
   CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
   CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
 } from './NWScriptInstructionSet';
+import { IPCMessageType } from "../enums/server/IPCMessageType";
+import type { ModuleObject } from "../module/ModuleObject";
 
 /**
  * NWScript class.
@@ -43,6 +45,7 @@ export class NWScript {
   instrIdx: number;
   lastOffset: number;
   instances: NWScriptInstance[];
+  instanceUUIDMap: Map<string, NWScriptInstance> = new Map();
   global: boolean;
   stack: NWScriptStack;
   state: any[];
@@ -57,6 +60,7 @@ export class NWScript {
   prog: number;
   progSize: number;
   code: Uint8Array;
+  owner: ModuleObject;
 
   constructor ( dataOrFile?: string|Uint8Array ){
 
@@ -119,15 +123,16 @@ export class NWScript {
     if(!progSize){
       reader.skip(8);
       this.prog = reader.readByte();
-      this.progSize = reader.readUInt32(); //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
+      //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
+      this.progSize = reader.readUInt32(); 
       
-      //Store a binary code of the code for exporting ScriptSituations
+      //Store a copy of the code for exporting ScriptSituations
       this.code = data.slice( 13, this.progSize );
       this.progSize = this.code.length;
       
       reader = new BinaryReader(this.code, Endians.BIG);
     }else{
-       //Store a binary code of the code for exporting ScriptSituations
+      //Store a copy of the code for exporting ScriptSituations
       this.code = data;
       this.progSize = progSize;
     }
@@ -399,25 +404,33 @@ export class NWScript {
   //This whould reduse memory overhead because only one instance of the large data is created per script
   newInstance(parentInstance?: NWScriptInstance){
 
-    let script = new NWScriptInstance(
+    let instance = new NWScriptInstance(
       this.instructions
     );
 
-    script.name = this.name;
+    instance.name = this.name;
 
-    script.nwscript = this;
+    instance.nwscript = this;
 
     //Add the new instance to the instances array
-    this.instances.push(script);
+    this.instances.push(instance);
 
     if(parentInstance instanceof NWScriptInstance){
-      script.debug = parentInstance.debug;
-      script.debugging = parentInstance.debugging;
-      script.lastPerceived = parentInstance.lastPerceived;
-      script.listenPatternNumber = parentInstance.listenPatternNumber;
+      instance.parentUUID = parentInstance.uuid;
+      instance.debug = parentInstance.debug;
+      instance.debugging = parentInstance.debugging;
+      instance.lastPerceived = parentInstance.lastPerceived;
+      instance.listenPatternNumber = parentInstance.listenPatternNumber;
     }
 
-    return script;
+    instance.sendToDebugger(IPCMessageType.CreateScript);
+
+    this.instanceUUIDMap.set(instance.uuid, instance);
+    instance.addEventListener('dispose', (uuid: string) => {
+      this.instanceUUIDMap.delete(uuid);
+    });
+    
+    return instance;
   }
 
   static SetGlobalScript( scriptName = '', isGlobal = true ){
@@ -427,11 +440,11 @@ export class NWScript {
     }
   }
 
-  static Load( scriptName = '', returnInstance = true ): NWScriptInstance {
+  static Load( scriptName = '', returnInstance = true, parentInstance?: NWScriptInstance ): NWScriptInstance {
     if( NWScript.scripts.has( scriptName ) ){
       let script = NWScript.scripts.get( scriptName );
       //Create a new instance of the script and return it
-      return script.newInstance()
+      return script.newInstance(parentInstance)
     }else{
       if(scriptName){
         //Fetch the script from the game resource list
@@ -445,7 +458,7 @@ export class NWScript {
 
           //Create a new instance of the script and return it
           if(returnInstance){
-            return script.newInstance();
+            return script.newInstance(parentInstance);
           }else{
             return undefined;
           }

@@ -206,7 +206,7 @@ const launcherConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      "buffer": require.resolve("buffer"),
+      // "buffer": require.resolve("buffer"),
     }
   },
   externals: {
@@ -447,7 +447,7 @@ const forgeConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      "buffer": require.resolve("buffer"), 
+      // "buffer": require.resolve("buffer"), 
     }
   },
   externals: {
@@ -471,9 +471,149 @@ const forgeConfig = (name, color) => ({
   },
 });
 
+
+
+const debuggerConfig = (name, color) => ({
+  mode: isProd ? 'production': 'development',
+  entry: {
+    debugger: [
+      './src/apps/debugger/debugger.tsx', 
+      './src/apps/debugger/debugger.scss'
+    ]
+  },
+  stats: {
+    colors: true,
+    hash: false,
+    version: false,
+    timings: false,
+    assets: false,
+    chunks: false,
+    modules: false,
+    reasons: false,
+    children: false,
+    source: false,
+    errors: true,
+    errorDetails: false,
+    warnings: false,
+    publicPath: false
+  },
+  devtool: !isProd ? 'eval-source-map' : undefined,
+  module: {
+    rules: [
+      {
+				test: /\.css$/,
+				use: ['style-loader', 'css-loader']
+			},
+			{
+				test: /\.ttf$/,
+				use: ['file-loader']
+			},
+      {
+        test: /\.tsx?$/,
+        use: [{
+          loader: 'ts-loader',
+          options: {
+            configFile: "tsconfig.debugger.json"
+          }
+        }],
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.scss$/i,
+        use: [
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              publicPath: 'dist/debugger',
+            }
+          },
+          // "style-loader",
+          {
+            loader: 'css-loader',
+            options: {
+              url: false
+            }
+          },
+          // {
+          //   loader: 'resolve-url-loader'
+          // },
+          "sass-loader",
+        ]
+      },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        type: 'asset/resource',
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
+        type: 'asset/resource',
+      },
+      {
+        test: /\.html$/,
+        use: 'raw-loader'
+      },
+    ],
+  },
+  plugins: [
+    new WebpackBar({
+      color,
+      name,
+      reporters: ['fancy'],
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      template: 'src/apps/debugger/debugger.html'
+    }),
+    new CopyPlugin({
+      patterns: [
+        // { from: "src/assets/debugger", to: "" },
+        { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
+      ],
+    }),
+    new MiniCssExtractPlugin({
+      filename: 'debugger.css'
+    }),
+    new MonacoWebpackPlugin({
+      publicPath: '/monaco',
+      globalAPI: true,
+      languages: ['json']
+    }),
+  ],
+  resolve: {
+    alias: {
+      three: path.resolve('./node_modules/three'),
+    },
+    extensions: ['.tsx', '.ts', '.js'],
+    fallback: {
+      "path": require.resolve("path-browserify"),
+      // "buffer": require.resolve("buffer"), 
+    }
+  },
+  externals: {
+    fs: 'window.fs',
+    three: 'THREE',
+    '../../KotOR': 'KotOR',
+  },
+  output: {
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist/debugger'),
+    globalObject: 'this', 
+    assetModuleFilename: (pathData) => {
+      const { filename } = pathData;
+
+      if (filename.endsWith('.ts')) {
+          return '[name].js';
+      } else {
+          return '[name][ext]';
+      }
+    },
+  },
+});
+
 module.exports = [
   libraryConfig('KotOR.js', 'green'),
   launcherConfig('Launcher', 'orange'),
   gameConfig('Game Client', 'blue'),
   forgeConfig('Forge Client', 'yellow'),
+  debuggerConfig('Debugger', 'purple'),
 ];

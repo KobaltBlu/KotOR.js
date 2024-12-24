@@ -48,6 +48,9 @@ const initializeApp = function(){
       KotOR.GameState.Init();
       KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
       document.body.append(KotOR.GameState.stats.domElement);
+      if(env == ApplicationEnvironment.ELECTRON){
+        KotOR.GameState.Debugger.open();
+      }
       window.addEventListener('blur', (e) => {
         KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
         KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = 0;
@@ -164,3 +167,11 @@ async function validateDirectoryHandle(handle: FileSystemDirectoryHandle){
   }
 
 })();
+
+window.addEventListener('beforeunload', (e) => {
+  try{
+    KotOR.GameState.Debugger.close();
+  }catch(e){
+    console.error(e);
+  }
+});

@@ -821,12 +821,13 @@ export class ModuleObject {
       //if(this.getLocalBoolean(28) == true){
         if(this.scripts.onHeartbeat instanceof NWScriptInstance){
           //console.log('heartbeat', this.getName());
-          let instance = this.scripts.onHeartbeat.nwscript.newInstance();
-          if(GameState.PartyManager.party.indexOf(this as any) > -1){
-            instance.run(this, 2001);
-          }else{
-            instance.run(this, 1001);
-          }
+          this.scripts.onHeartbeat.run(this);
+          // let instance = this.scripts.onHeartbeat.nwscript.newInstance();
+          // if(GameState.PartyManager.party.indexOf(this as any) > -1){
+          //   instance.run(this, 2001);
+          // }else{
+          //   instance.run(this, 1001);
+          // }
         }
       //}
     }

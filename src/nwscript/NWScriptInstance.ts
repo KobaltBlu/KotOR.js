@@ -1,6 +1,8 @@
 import { GameEngineType } from "../enums/engine";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { IPCDataType } from "../enums/server/IPCDataType";
+import { IPCMessageType } from "../enums/server/IPCMessageType";
 import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
@@ -30,6 +32,8 @@ import type { NWScriptSubroutine } from "./NWScriptSubroutine";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScriptInstance {
+  uuid: string = crypto.randomUUID();
+  parentUUID: string;
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
   actionsMap: { [key: number]: INWScriptDefAction; };
@@ -99,6 +103,50 @@ export class NWScriptInstance {
   factionMemberIndex: Map<number, number> = new Map<number, number>();
   objectInSphapeIndex: Map<number, number> = new Map<number, number>();
 
+  #eventListener: any = {};
+
+  /**
+   * Adds an event listener to the debugger.
+   * @param event The event to listen for.
+   * @param listener The listener to add.
+   */
+  addEventListener(event: string, listener: any) {
+    if(!Array.isArray(this.#eventListener[event])) {
+      this.#eventListener[event] = [];
+    }
+    const index = this.#eventListener[event].indexOf(listener);
+    if(index == -1) {
+      this.#eventListener[event].push(listener);
+    }
+  }
+
+  /**
+   * Removes an event listener from the debugger.
+   * @param event The event to remove the listener from.
+   * @param listener The listener to remove.
+   */
+  removeEventListener(event: string, listener: any) {
+    if(!Array.isArray(this.#eventListener[event])) {
+      this.#eventListener[event] = [];
+    }
+    const index = this.#eventListener[event].indexOf(listener);
+    if(index >= 0) {
+      this.#eventListener[event].splice(index, 1);
+    }
+  }
+
+  /**
+   * Dispatches an event to the debugger.
+   * @param event The event to dispatch.
+   * @param args The arguments to pass to the event.
+   */
+  dispatchEvent(event: string, ...args: any) {
+    if(!Array.isArray(this.#eventListener[event])) {
+      return;
+    }
+    this.#eventListener[event].forEach((listener: any) => listener(...args));
+  }
+
   constructor( instructions: Map<number, NWScriptInstruction> ){
 
     this.instructions = instructions;
@@ -109,10 +157,26 @@ export class NWScriptInstance {
     this._disposed = false;
 
   }
+  
+  sendToDebugger(type: IPCMessageType){
+    if(!GameState.debugMode) return;
+    const ipcMessage = new GameState.Debugger.IPCMessage(type);
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.uuid));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.parentUUID));
+    ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.STRING, this.nwscript?.name));
+    if(type == IPCMessageType.CreateScript && !!this.nwscript){
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.nwscript?.progSize));
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.nwscript?.code));
+    }
+    GameState.Debugger.send(ipcMessage);
+  }
 
   //Dispose of this NWScriptInstance and any currently running code so it can hopefully be garbage collected
   dispose(){
+    if(this._disposed) return;
     this._disposed = true;
+    
+    this.sendToDebugger(IPCMessageType.DestroyScript);
 
     //This is used to dispose of STORE_STATE instances once they complete
     if(this.isStoreState){
@@ -122,6 +186,7 @@ export class NWScriptInstance {
     this.nwscript = undefined;
     this.instructions = undefined;
     this.init();
+    this.dispatchEvent('dispose', this.uuid);
   }
 
   init(){
@@ -334,12 +399,15 @@ export class NWScriptInstance {
 
   executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){
     //console.log('executeScript', args);
+    // instance.name = parentInstance.name;
+    instance.parentUUID = parentInstance.uuid;
     instance.lastPerceived = parentInstance.lastPerceived;
     instance.debug = parentInstance.debug;
     instance.debugging = parentInstance.debugging;
     instance.listenPatternNumber = parentInstance.listenPatternNumber;
     instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
     instance.talent = parentInstance.talent;
+    instance.isStoreState = true;
     return instance.run( args[1], args[2] );
   }
 
