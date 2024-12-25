@@ -4471,6 +4471,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       GameState.CameraShakeManager.stopRumblePattern(args[0]);
+      return NW_TRUE;
     }
   },
   372:{
@@ -4536,7 +4537,7 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
         return (args[1] as ModuleCreature).getHasSpell(args[0]) ? NW_TRUE : NW_FALSE;
       }else{
-        return 0;
+        return NW_FALSE;
       }
     }
   },
