@@ -85,15 +85,15 @@ const InstructionValue = (props: {instruction: KotOR.NWScriptInstruction}) => {
         setType('void');
         break;  
       case 0x03:
-        setVal(instruction.integer?.toString());
+        setVal(instruction.integer?.toString() || '');
         setType('integer');
         break;
       case 0x04:
-        setVal(instruction.float?.toString());
+        setVal(instruction.float?.toString() || '');
         setType('float');
         break;
       case 0x05:
-        setVal('"'+instruction.string+'"');
+        setVal('"'+instruction.string ? instruction.string : ''+'"');
         setType('string');
         break;
       case 0x06:
