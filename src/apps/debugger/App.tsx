@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useApp } from "./context/AppContext";
 import * as KotOR from "./KotOR";
-import { OP_CONST, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_RSADD } from "../../nwscript/NWScriptOPCodes";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../nwscript/NWScriptOPCodes";
 
 const InstanceNode = (props: {instance: KotOR.NWScriptInstance, onClick: (instance: KotOR.NWScriptInstance) => void}) => {
   const {instance, onClick} = props;
@@ -144,6 +144,13 @@ const InstructionOffset = (props: {instruction: KotOR.NWScriptInstruction}) => {
   </>) : <></>)
 }
 
+const InstructionPointer = (props: {pointer: number}) => {
+  const {pointer} = props;
+  return (pointer ? (<>
+    <span>{pointer}</span>
+  </>) : <></>)
+}
+
 const InstructionNode = (props: {instruction: KotOR.NWScriptInstruction}) => {
   const {instruction} = props;
   return (
@@ -165,6 +172,13 @@ const InstructionNode = (props: {instruction: KotOR.NWScriptInstruction}) => {
         instruction.code == OP_JNZ || 
         instruction.code == OP_JZ
       ) ? <InstructionOffset instruction={instruction} /> : <></>}
+      {(
+        instruction.code == OP_CPDOWNBP || 
+        instruction.code == OP_CPDOWNSP || 
+        instruction.code == OP_CPTOPBP || 
+        instruction.code == OP_CPTOPSP ||
+        instruction.code == OP_MOVSP
+      ) ? (<><InstructionPointer pointer={instruction.offset} /></>) : <></>}
     </li>
   )
 }

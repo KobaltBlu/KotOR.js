@@ -195,10 +195,10 @@ export class NWScript {
       break;
       case OP_CPTOPSP:
         instruction.opCall = CALL_CPTOPSP;
-        instruction.pointer = reader.readInt32();
+        instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-        if(instruction.pointer == undefined){
-          console.warn('CPTOPSP', instruction.pointer, instruction.size, reader.position);
+        if(instruction.offset == undefined){
+          console.warn('CPTOPSP', instruction.offset, instruction.size, reader.position);
         }
         if(instruction.size == undefined){
           console.warn('CPTOPSP', instruction.pointer, instruction.size, reader.position);
@@ -360,7 +360,7 @@ export class NWScript {
       break;
       case OP_CPTOPBP:
         instruction.opCall = CALL_CPTOPBP;
-        instruction.pointer = reader.readInt32();
+        instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
       break;
       case OP_DECIBP:

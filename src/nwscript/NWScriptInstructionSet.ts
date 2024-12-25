@@ -80,7 +80,7 @@ export const CALL_RSADD = function( this: NWScriptInstance, instruction: NWScrip
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_CPTOPSP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  const elements = this.stack.copyAtPointer( instruction.pointer, instruction.size );
+  const elements = this.stack.copyAtPointer( instruction.offset, instruction.size );
   if(elements.length == (instruction.size / 4)){
     this.stack.stack.push( ...elements );
     this.stack.pointer += instruction.size;
@@ -1040,7 +1040,7 @@ export const CALL_CPDOWNBP = function( this: NWScriptInstance, instruction: NWSc
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_CPTOPBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  const elements = this.stack.copyAtBasePointer( instruction.pointer, instruction.size );
+  const elements = this.stack.copyAtBasePointer( instruction.offset, instruction.size );
   if(elements.length == (instruction.size / 4)){
     this.stack.stack.push( ...elements );
     this.stack.pointer += instruction.size;
