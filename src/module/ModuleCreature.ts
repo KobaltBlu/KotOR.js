@@ -3843,12 +3843,6 @@ export class ModuleCreature extends ModuleObject {
         this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
       }
 
-      if(this.template.RootNode.hasField('Animation')){
-        this.setAnimationState(
-          this.template.getFieldByLabel('Animation').getValue()
-        );
-      }
-
       if(this.template.RootNode.hasField('BodyBag'))
         this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
 
@@ -4225,6 +4219,12 @@ export class ModuleCreature extends ModuleObject {
       }
     }catch(e: any){
       console.error(e);
+    }
+
+    if(this.template.RootNode.hasField('Animation')){
+      this.setAnimationState(
+        this.template.getFieldByLabel('Animation').getValue()
+      );
     }
 
     this.initialized = true;
