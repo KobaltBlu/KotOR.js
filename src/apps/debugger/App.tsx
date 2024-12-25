@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useApp } from "./context/AppContext";
 import * as KotOR from "./KotOR";
+import { OP_CONST, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_RSADD } from "../../nwscript/NWScriptOPCodes";
 
 const InstanceNode = (props: {instance: KotOR.NWScriptInstance, onClick: (instance: KotOR.NWScriptInstance) => void}) => {
   const {instance, onClick} = props;
@@ -74,52 +75,98 @@ const InstructionType = (props: {type: number}) => {
 
 const InstructionValue = (props: {instruction: KotOR.NWScriptInstruction}) => {
   const [val, setVal] = useState('');
+  const [type, setType] = useState('');
 
   useEffect(() => {
     const instruction = props.instruction;
     switch(instruction.type){
       case 0x00:
-        setVal('VOID');
+        setVal('');
+        setType('void');
         break;  
       case 0x03:
-        setVal(instruction.integer.toString());
+        setVal(instruction.integer?.toString());
+        setType('integer');
         break;
       case 0x04:
-        setVal(instruction.float.toString());
+        setVal(instruction.float?.toString());
+        setType('float');
         break;
       case 0x05:
-        setVal(instruction.string);
+        setVal('"'+instruction.string+'"');
+        setType('string');
         break;
       case 0x06:
-        setVal(instruction.object.toString());
+        setVal(instruction.object?.toString());
+        setType('object');
         break;
       case 0x10:
-        setVal('EFFECT');
+        setVal('');
+        setType('effect');
         break;
       case 0x11:
-        setVal('EVENT');
+        setVal('');
+        setType('event');
         break;
       case 0x12:
-        setVal('LOCATION');
+        setVal('');
+        setType('location');
         break;
       case 0x13:
-        setVal('TALENT');
+        setVal('');
+        setType('talent');
         break;
       case 0x14:
-        setVal('VECTOR');
+        setVal('');
+        setType('vector');
         break;
       case 0x24:
-        setVal('STRUCTURE');
+        setVal('');
+        setType('structure');
         break;
       case 0xFF:
-        setVal('ACTION');
+        setVal('');
+        setType('action');
         break;
     }
   }, [props.instruction]);
 
   return (val ? (<>
-    <b>[{val}]</b>
+    <b className={`instruction-value ${type}`}>{val}</b>
   </>) : <></>)
+}
+
+const InstructionOffset = (props: {instruction: KotOR.NWScriptInstruction}) => {
+  const {instruction} = props;
+  const [address, setAddress] = useState(instruction.intToHex(instruction.offset + instruction.address, 8));
+  return (instruction.offset ? (<>
+    <a href={`#${address}`}>{address}</a>
+  </>) : <></>)
+}
+
+const InstructionNode = (props: {instruction: KotOR.NWScriptInstruction}) => {
+  const {instruction} = props;
+  return (
+    <li className="instruction-node" key={instruction.address_hex} id={instruction.address_hex}>
+      <span>{instruction.address_hex}</span> - <span>{instruction.codeName.padEnd(8, "\u00a0")}</span> - {instruction.action ? (<>
+        <b className="instruction-name">{instruction.actionDefinition?.name}</b>
+      </>) : <></>}
+      {instruction.type != undefined ? (<>
+        {(
+        instruction.code == OP_CONST || 
+        instruction.code == OP_RSADD
+      ) ? <b className="instruction-datatype"><InstructionType type={instruction.type} /></b> : <></>}&nbsp;
+        {!instruction.action ? <InstructionValue instruction={instruction} /> : <></>}
+      </>) : <></>}
+      {/* Display the offset if the instruction is a jump */}
+      {(
+        instruction.code == OP_JSR || 
+        instruction.code == OP_JMP || 
+        instruction.code == OP_JNZ || 
+        instruction.code == OP_JZ
+      ) ? <InstructionOffset instruction={instruction} /> : <></>}
+    </li>
+  )
 }
 
 export const App = () => {
@@ -155,12 +202,7 @@ export const App = () => {
         <ul style={{fontFamily: 'monospace', fontSize: '12pt'}}>
           {selectedInstance ? (
             [...selectedInstance.instructions.values()].map((instruction) => (
-              <li key={instruction.address}>{instruction.address_hex} - {instruction.codeName} - {instruction.action ? (<>
-                <b>{instruction.actionDefinition?.name}</b>
-              </>) : <></>}
-              {instruction.code == 4 ? (<>
-                <b><InstructionType type={instruction.type} /></b> <InstructionValue instruction={instruction} />
-              </>) : <></>}</li>
+              <InstructionNode instruction={instruction} key={instruction.address_hex} />
             ))
           ) : <></>}
         </ul>
