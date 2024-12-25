@@ -66,7 +66,7 @@ export class ApplicationWindow {
 
     this.browserWindow.webContents.on("did-create-window", (window, details) => {
       if(details.url.indexOf(`debugger/index.html`) !== -1){
-        window.webContents.once("dom-ready", () => window.webContents.openDevTools());
+        // window.webContents.once("dom-ready", () => window.webContents.openDevTools());
         console.log('Debugger: Launched!');
       }
     });

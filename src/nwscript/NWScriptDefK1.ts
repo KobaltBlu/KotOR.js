@@ -4461,6 +4461,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       GameState.CameraShakeManager.playRumblePattern(args[0]);
+      return NW_TRUE;
     }
   },
   371:{

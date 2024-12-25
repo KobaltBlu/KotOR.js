@@ -309,15 +309,15 @@ export class NWScript {
       break;
       case OP_JMP:
         instruction.opCall = CALL_JMP;
-        instruction.offset = reader.readUInt32();
+        instruction.offset = reader.readInt32();
       break;
       case OP_JSR:
         instruction.opCall = CALL_JSR;
-        instruction.offset = reader.readUInt32();
+        instruction.offset = reader.readInt32();
       break;
       case OP_JZ:
         instruction.opCall = CALL_JZ;
-        instruction.offset = reader.readUInt32();
+        instruction.offset = reader.readInt32();
       break;
       case OP_RETN:
         instruction.opCall = CALL_RETN;
@@ -365,11 +365,11 @@ export class NWScript {
       break;
       case OP_DECIBP:
         instruction.opCall = CALL_DECIBP;
-        instruction.offset = reader.readUInt32();
+        instruction.offset = reader.readInt32();
       break;
       case OP_INCIBP:
         instruction.opCall = CALL_INCIBP;
-        instruction.offset = reader.readUInt32();
+        instruction.offset = reader.readInt32();
       break;
       case OP_SAVEBP:
         instruction.opCall = CALL_SAVEBP;
@@ -379,8 +379,8 @@ export class NWScript {
       break;
       case OP_STORE_STATE:
         instruction.opCall = CALL_STORE_STATE;
-        instruction.bpOffset = reader.readUInt32();
-        instruction.spOffset = reader.readUInt32();
+        instruction.bpOffset = reader.readInt32();
+        instruction.spOffset = reader.readInt32();
       break;
       case OP_T:
         instruction.opCall = CALL_NOP;

@@ -1010,7 +1010,7 @@ export const CALL_INCISP = function( this: NWScriptInstance, instruction: NWScri
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_JNZ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let jnzTOS = this.stack.pop()?.value
+  let jnzTOS = this.stack.pop()?.value;
   if(jnzTOS != 0){
     this.seek = instruction.address + instruction.offset;
   }
