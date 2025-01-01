@@ -8,7 +8,6 @@ import { IGUIControlExtent } from "../interface/gui/IGUIControlExtent";
 import { IGUIControlMoveTo } from "../interface/gui/IGUIControlMoveTo";
 import { IGUIControlText } from "../interface/gui/IGUIControlText";
 import { GFFStruct } from "../resource/GFFStruct";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
 import { GameState } from "../GameState";
 import { TextureLoader } from "../loaders";
 import { TextureType } from "../enums/loaders/TextureType";
@@ -18,7 +17,6 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { Mouse } from "../controls";
 import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-// import { ShaderManager, MenuManager, TLKManager, ResolutionManager } from "../managers";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
 import type { GameMenu } from "./GameMenu";
 import { BitWise } from "../utility/BitWise";

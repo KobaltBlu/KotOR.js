@@ -59,3 +59,4 @@ export * from "./three/odyssey";
 export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 export * from "./utility/Utility";
+export * from "./engine/TextSprite3D";

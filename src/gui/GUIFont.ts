@@ -43,8 +43,9 @@ export default class GUIFont {
       this.spaceB = this.txi.spacingb       * 100;
       this.charCount = this.txi.numchars;
 
+      this.chars = new Array(this.charCount);
       for(let i = 0; i < this.charCount; i++){
-        this.chars.push(new GUIFontChar(this, String.fromCharCode(i)))
+        this.chars[i] = new GUIFontChar(this, String.fromCharCode(i));
       }
     }
   }

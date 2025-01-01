@@ -520,7 +520,7 @@ export class GameState implements EngineContext {
     // GameState.scene.add(GameState.group.shadow_lights);
     // GameState.scene.add(GameState.group.path_helpers);
     // GameState.scene.add(GameState.group.emitters);
-    // GameState.scene.add(GameState.group.effects);
+    GameState.scene.add(GameState.group.effects);
 
     GameState.scene.add(GameState.group.party);
     // GameState.scene.add(GameState.group.room_walkmeshes);

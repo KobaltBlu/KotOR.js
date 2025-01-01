@@ -574,17 +574,18 @@ export class CombatRound {
       //process attack results
       for(let i = 0; i < this.currentAttack; i++){
         const attack = this.attackList[i];
-        if(attack){
-          if(
-            attack.attackResult == AttackResult.HIT_SUCCESSFUL || 
-            attack.attackResult == AttackResult.CRITICAL_HIT || 
-            attack.attackResult == AttackResult.AUTOMATIC_HIT 
-          ){
-            attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
-            TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
-          }else if(attack.attackResult == AttackResult.MISS){
-            TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
-          }
+        if(!attack) 
+          continue;
+
+        if(
+          attack.attackResult == AttackResult.HIT_SUCCESSFUL || 
+          attack.attackResult == AttackResult.CRITICAL_HIT || 
+          attack.attackResult == AttackResult.AUTOMATIC_HIT 
+        ){
+          attack.applyDamageEffectToCreature(creature, this.action.target as ModuleCreature);
+          TextSprite3D.CreateOnObject(this.action.target, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
+        }else if(attack.attackResult == AttackResult.MISS){
+          TextSprite3D.CreateOnObject(this.action.target, 'miss', TextSprite3DType.NEUTRAL, 1500);
         }
       }
     }
