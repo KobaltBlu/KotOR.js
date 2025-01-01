@@ -1,4 +1,4 @@
-import { IPCMessageType } from "../../enums/server/IPCMessageType";
+import { IPCMessageType } from "../../enums/server/ipc/IPCMessageType";
 import { IPCMessageParam } from "./IPCMessageParam";
 
 /**
@@ -8,7 +8,7 @@ export class IPCMessage {
   /**
    * The size of the header of the IPCMessage.
    */
-  static HeaderSize = 8;
+  static HeaderSize = 6;
   /**
    * The parameters of the IPCMessage.
    */
@@ -18,6 +18,10 @@ export class IPCMessage {
    */
   type: IPCMessageType;
   /**
+   * The sub type of the IPCMessage
+   */
+  subType: number;
+  /**
    * The size of the data of the IPCMessage.
    */
   dataSize: number = 0;
@@ -26,8 +30,9 @@ export class IPCMessage {
    */
   paramCount: number = 0;
 
-  constructor(type: IPCMessageType){
+  constructor(type: IPCMessageType, subType: number = 0){
     this.type = type;
+    this.subType = subType;
   }
   
   /**
@@ -56,8 +61,9 @@ export class IPCMessage {
   toBuffer(): Uint8Array {
     const buffer = new Uint8Array(IPCMessage.HeaderSize + this.dataSize);
     const view = new DataView(buffer.buffer);
-    view.setInt32(0, this.type, true);
-    view.setInt32(4, this.paramCount, true);
+    view.setUint16(0, this.type, true);
+    view.setUint16(2, this.subType, true);
+    view.setUint16(4, this.paramCount, true);
     let offset = IPCMessage.HeaderSize;
     for(let i = 0; i < this.#params.length; i++){
       const param = this.#params[i];
@@ -74,14 +80,14 @@ export class IPCMessage {
    */
   static fromBuffer(buffer: Uint8Array): IPCMessage {
     const view = new DataView(buffer.buffer);
-    const message = new IPCMessage(view.getInt32(0, true) as IPCMessageType);
-    const paramCount = view.getInt32(4, true);
+    const message = new IPCMessage(view.getUint16(0, true) as IPCMessageType, view.getUint16(2, true));
+    const paramCount = view.getUint16(4, true);
     let offset = IPCMessage.HeaderSize;
     for(let i = 0; i < paramCount; i++){
       /**
        * Extract the data size from the buffer.
        */
-      const dataSize = view.getInt32(offset + 4, true);
+      const dataSize = view.getUint32(offset + 4, true);
       /**
        * Calculate the total size of the parameter.
        */

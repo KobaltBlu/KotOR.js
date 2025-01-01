@@ -63,9 +63,8 @@ export class EventTimedEvent extends GameEvent {
   execute(){
     if(!this.script){ return; }
     this.script.setCaller(this.getCaller());
-    this.script.runScript({
-      seek: this.offset
-    });
+    this.script.seekTo(this.offset);
+    this.script.runScript();
   }
 
   export(){

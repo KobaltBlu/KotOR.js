@@ -11,6 +11,11 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { NWScriptEventFactory } from "./events/NWScriptEventFactory";
 import { NWScriptStackVariable } from "./NWScriptStackVariable";
 
+const STACK_PACKET_CONSTANTS = {
+  STACK_ELEMENT_SIZE: 8,
+  HEADER_SIZE: 16
+}
+
 /**
  * NWScriptStack class.
  * 
@@ -412,5 +417,124 @@ export class NWScriptStack {
     return stack;
   
   };
+
+  /**
+   * Saves the stack for debugging
+   * @returns The stack data
+   */
+  saveForDebugger(){
+    const stackDataSize = (this.stack.length * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE);
+
+    let stringCount = 0;
+    let stringDataSize = 0;
+    let stringPacker = [];
+    for(let i = 0; i < this.stack.length; i++){
+      if(this.stack[i].type != NWScriptDataType.STRING){ continue; }
+      stringCount++;
+      stringPacker.push(this.stack[i].value);
+      stringDataSize += 4 + this.stack[i].value.length;
+    }
+
+    const totalPacketSize = STACK_PACKET_CONSTANTS.HEADER_SIZE + stackDataSize + stringDataSize;
+
+    const stackDataOffset = STACK_PACKET_CONSTANTS.HEADER_SIZE;
+    
+    const data = new Uint8Array(totalPacketSize);
+    const dataView = new DataView(data.buffer);
+
+    /**
+     * Write the stack header data to the packet
+     */
+    dataView.setInt32(0, this.basePointer, true);
+    dataView.setInt32(4, this.pointer, true);
+    dataView.setInt32(8, this.stack.length, true);
+    dataView.setInt32(12, stringPacker.length, true);
+
+    let stringPackerIndex = 0;
+    /**
+     * Write the stack element data to the packet
+     */
+    for(let i = 0; i < this.stack.length; i++){
+      const element = this.stack[i];
+      dataView.setInt32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE), element.type, true);
+      if(element.type == NWScriptDataType.STRING){
+        dataView.setUint32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, stringPackerIndex++, true);
+      }else if(element.type == NWScriptDataType.OBJECT){
+        dataView.setUint32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, (typeof element.value === 'object' ? element.value.id : 2130706432), true);
+      }else if(element.type == NWScriptDataType.FLOAT){
+        dataView.setFloat32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, element.value, true);
+      }else{
+        dataView.setInt32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, element.value, true);
+      }
+    }
+
+    /**
+     * Write the string data to the packet
+     * We have to write these values seperately because of the variable length of the strings
+     */
+    let stringDataOffset = STACK_PACKET_CONSTANTS.HEADER_SIZE + stackDataSize;
+    for(let i = 0; i < stringPacker.length; i++){
+      const str = stringPacker[i];
+      dataView.setInt32(stringDataOffset, str.length, true);
+      stringDataOffset += 4;
+      const chars = str.split('');
+      for(let i = 0; i < chars.length; i++){
+        data[stringDataOffset++] = chars[i].charCodeAt(0) & 0xFF;
+      }
+    }
+
+    return data;
+  }
+
+  static FromDebuggerPacket( data: Uint8Array ): NWScriptStack {
+    const dataView = new DataView(data.buffer);
+
+    const basePointer = dataView.getInt32(0, true);
+    const pointer = dataView.getInt32(4, true);
+    const stackLength = dataView.getInt32(8, true);
+    const stringCount = dataView.getInt32(12, true);
+
+    const stack = new NWScriptStack();
+    stack.basePointer = basePointer;
+    stack.pointer = pointer;
+
+    const stackDataSize = (stackLength * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE);
+    const stackDataOffset = STACK_PACKET_CONSTANTS.HEADER_SIZE;
+    const stackStringOffset = STACK_PACKET_CONSTANTS.HEADER_SIZE + stackDataSize;
+
+    /**
+     * Read the strings from the packet
+     */
+    const stringDataArray = [];
+    const stringDecoder = new TextDecoder();
+    let stringDataOffset = stackStringOffset;
+    for(let i = 0; i < stringCount; i++){
+      const stringLength = dataView.getInt32(stringDataOffset, true);
+      const string = stringDecoder.decode(data.subarray(stringDataOffset + 4, stringDataOffset + 4 + stringLength));
+      stringDataOffset += 4 + stringLength;
+      stringDataArray.push(string);
+    }
+
+    /**
+     * Read the stack elements from the packet
+     */
+    for(let i = 0; i < stackLength; i++){
+      const elementType = dataView.getInt32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE), true);
+      let elementValue = undefined;
+
+      if(elementType == NWScriptDataType.STRING){
+        elementValue = stringDataArray[dataView.getUint32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, true)];
+      }else if(elementType == NWScriptDataType.OBJECT){
+        elementValue = dataView.getUint32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, true);
+      }else if(elementType == NWScriptDataType.FLOAT){
+        elementValue = dataView.getFloat32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, true);
+      }else{
+        elementValue = dataView.getInt32(stackDataOffset + (i * STACK_PACKET_CONSTANTS.STACK_ELEMENT_SIZE) + 4, true);
+      }
+      stack.stack.push(new NWScriptStackVariable({ type: elementType, value: elementValue }));
+    }
+
+    return stack;
+  }
 
 }

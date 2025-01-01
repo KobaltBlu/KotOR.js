@@ -1,29 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App";
-import { IPCMessage } from "../../server/ipc/IPCMessage";
-import { IPCMessageType } from "../../enums/server/IPCMessageType";
-import { NWScriptInstance } from "../../nwscript/NWScriptInstance";
-import { NWScript } from "../../nwscript/NWScript";
-import * as KotOR from "./KotOR";
 import { AppProvider } from "./context/AppContext";
+import { DebuggerState } from "./states/DebuggerState";
 
-const query = new URLSearchParams(window.location.search);
-const channelUUID = query.get('uuid');
+const params = new URLSearchParams(window.location.search);
+const uuid = params.get('uuid');
+if(!uuid) throw new Error('UUID is required');
 
-const channel = new BroadcastChannel(`debugger-${channelUUID}`);
-
-window.onbeforeunload = () => {
-  channel.postMessage('close');
-  channel.close();
-}
+const appState = new DebuggerState(uuid);
+//@ts-ignore
+window.appState = appState;
 
 const loadReactApplication = () => {
   const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
   ( async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider channel={channel}>
+        <AppProvider appState={appState}>
           <App />
         </AppProvider>
       // </React.StrictMode>

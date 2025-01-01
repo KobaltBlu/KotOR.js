@@ -23,7 +23,7 @@ import {
   CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
   CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
 } from './NWScriptInstructionSet';
-import { IPCMessageType } from "../enums/server/IPCMessageType";
+import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
 import type { ModuleObject } from "../module/ModuleObject";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
@@ -44,6 +44,8 @@ export class NWScript {
 
   static NWScriptInstance: typeof NWScriptInstance = NWScriptInstance;
   static NWScriptStack: typeof NWScriptStack = NWScriptStack;
+  static NWScriptInstanceMap: Map<string, NWScriptInstance> = new Map();
+
   actionsMap: { [key: number]: INWScriptDefAction; };
   
   name: string;
@@ -55,8 +57,6 @@ export class NWScript {
   global: boolean;
   stack: NWScriptStack;
   state: any[];
-  debugging: boolean;
-  debug: { action: boolean; build: boolean; equal: boolean; nequal: boolean; };
   params: number[];
   paramString: string;
   verified: boolean;
@@ -82,13 +82,6 @@ export class NWScript {
     this.global = false;
 
     this.stack = new NWScriptStack();
-    this.debugging = false;
-    this.debug = {
-      'action': false,
-      'build': false,
-      'equal': false,
-      'nequal': false
-    };
     this.name = '';
 
     this.params = [0, 0, 0, 0, 0];
@@ -424,22 +417,23 @@ export class NWScript {
 
     instance.nwscript = this;
 
+
     //Add the new instance to the instances array
     this.instances.push(instance);
 
     if(parentInstance instanceof NWScriptInstance){
       instance.parentUUID = parentInstance.uuid;
-      instance.debug = parentInstance.debug;
-      instance.debugging = parentInstance.debugging;
       instance.lastPerceived = parentInstance.lastPerceived;
       instance.listenPatternNumber = parentInstance.listenPatternNumber;
     }
 
     instance.sendToDebugger(IPCMessageType.CreateScript);
 
+    NWScript.NWScriptInstanceMap.set(instance.uuid, instance);
     this.instanceUUIDMap.set(instance.uuid, instance);
     instance.addEventListener('dispose', (uuid: string) => {
       this.instanceUUIDMap.delete(uuid);
+      NWScript.NWScriptInstanceMap.delete(uuid);
     });
     
     return instance;

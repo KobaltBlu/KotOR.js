@@ -1837,7 +1837,6 @@ export class ModuleArea extends ModuleObject {
     if(this.scripts.onEnter instanceof NWScriptInstance){
       console.log('onEnter', this.scripts.onEnter, GameState.PartyManager.party[0])
       this.scripts.onEnter.enteringObject = GameState.PartyManager.party[0];
-      this.scripts.onEnter.debug.action = true;
       this.scripts.onEnter.run(this, 0);
     }
   }

@@ -112,10 +112,8 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
         if(typeof args[1] === 'object'){
           args[1].script.caller = args[0];
-          args[1].script.debug = this.debug;
-          args[1].script.runScript({
-            seek: args[1].offset
-          });
+          args[1].script.seekTo(args[1].offset);
+          args[1].script.runScript();
         }else{
           console.error('AssignCommand', args);
         }

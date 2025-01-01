@@ -1,5 +1,9 @@
+import { NWScriptInstance } from "./nwscript/NWScriptInstance";
+import { NWScriptInstruction } from "./nwscript/NWScriptInstruction";
 import { IPCMessage } from "./server/ipc/IPCMessage";
 import { IPCMessageParam } from "./server/ipc/IPCMessageParam";
+import { DebuggerState } from "./enums/server/DebuggerState";
+import { NWScriptStack } from "./nwscript/NWScriptStack";
 
 /**
  * Debugger class.
@@ -33,6 +37,16 @@ export class Debugger {
   static window: WindowProxy | null;
 
   static #eventListener: any = {};
+
+  static state: DebuggerState = DebuggerState.Idle;
+
+  static currentScript: NWScriptInstance;
+  static currentStack: NWScriptStack;
+  static currentInstruction: NWScriptInstruction;
+  static mainLoopPaused: boolean = false;
+
+  static showFPS: boolean = false;
+  static statsMode: number = 0;
 
   /**
    * Sends a message to the debugger.
@@ -71,11 +85,17 @@ export class Debugger {
     if(this.window) {
       console.log(`Debugger window opened: ${this.uuid}`);
       this.broadcastChannel = new BroadcastChannel(`debugger-${this.uuid}`);
-      this.broadcastChannel.onmessage = (event: any) => {
-        if(event.data == 'close') {
-          Debugger.close();
-        }else{
-          this.dispatchEvent('message', event.data);
+      this.broadcastChannel.onmessage = (event: MessageEvent) => {
+        if(typeof event.data == 'string') {
+          if(event.data == 'close') {
+            Debugger.close();
+          }
+          return;
+        }
+        
+        if(event.data?.constructor == Uint8Array){
+          const msg = IPCMessage.fromBuffer(event.data);
+          this.dispatchEvent('message', msg);
         }
       };
       this.window.addEventListener('close', () => {

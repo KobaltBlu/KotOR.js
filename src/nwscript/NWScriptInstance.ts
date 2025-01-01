@@ -1,8 +1,9 @@
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { IPCDataType } from "../enums/server/IPCDataType";
-import { IPCMessageType } from "../enums/server/IPCMessageType";
+import { DebuggerState } from "../enums/server/DebuggerState";
+import { IPCDataType } from "../enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
 import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
@@ -36,7 +37,6 @@ export class NWScriptInstance {
   parentUUID: string;
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
-  // actionsMap: { [key: number]: INWScriptDefAction; };
   globalCache: any = null;
   _disposed: boolean = false;
   isStoreState: boolean = false;
@@ -45,8 +45,6 @@ export class NWScriptInstance {
   scriptVar: number;
   subRoutines: NWScriptSubroutine[] = [];
   subRoutine: NWScriptSubroutine;
-  debugging: boolean;
-  debug: any = {};
   state: INWScriptStoreState[] = [];
   var1: any;
   var2: any;
@@ -58,7 +56,6 @@ export class NWScriptInstance {
   verified: boolean;
   stack: NWScriptStack;
   delayCommands: EventTimedEvent[] = [];
-  firstLoop: boolean;
   address: number;
   offset: number;
   
@@ -71,7 +68,6 @@ export class NWScriptInstance {
   currentInstruction: NWScriptInstruction;
   prevByteCode: number;
   seek: number;
-  iterations: number = 0;
 
   enteringObject: ModuleObject;
   exitingObject: ModuleObject;
@@ -103,17 +99,29 @@ export class NWScriptInstance {
   factionMemberIndex: Map<number, number> = new Map<number, number>();
   objectInSphapeIndex: Map<number, number> = new Map<number, number>();
 
-  #eventListener: any = {};
+  breakPoints: Map<number, boolean> = new Map<number, boolean>();
+
+  #eventListener: { [key: string]: Function[] } = {};
+
+  constructor( instructions: Map<number, NWScriptInstruction> ){
+    this.instructions = instructions;
+    this.talent = undefined;
+
+    this.init();
+    this.globalCache = null;
+    this._disposed = false;
+  }
 
   /**
    * Adds an event listener to the debugger.
    * @param event The event to listen for.
    * @param listener The listener to add.
    */
-  addEventListener(event: string, listener: any) {
+  addEventListener(event: string, listener: Function) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
+    if(typeof listener !== 'function') return;
     const index = this.#eventListener[event].indexOf(listener);
     if(index == -1) {
       this.#eventListener[event].push(listener);
@@ -125,7 +133,7 @@ export class NWScriptInstance {
    * @param event The event to remove the listener from.
    * @param listener The listener to remove.
    */
-  removeEventListener(event: string, listener: any) {
+  removeEventListener(event: string, listener: Function) {
     if(!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
@@ -144,18 +152,29 @@ export class NWScriptInstance {
     if(!Array.isArray(this.#eventListener[event])) {
       return;
     }
-    this.#eventListener[event].forEach((listener: any) => listener(...args));
+    this.#eventListener[event].forEach((listener: Function) => listener(...args));
   }
 
-  constructor( instructions: Map<number, NWScriptInstruction> ){
+  toggleBreakpoint(address: number){
+    if(!this.breakPoints.has(address)) {
+      this.setBreakpoint(address);
+    }else{
+      this.removeBreakpoint(address);
+    }
+  }
 
-    this.instructions = instructions;
-    this.talent = undefined;
+  setBreakpoint(address: number){
+    if(!this.breakPoints.has(address)) {  
+      this.breakPoints.set(address, true);
+      this.dispatchEvent('breakpoint', address, true);
+    }
+  }
 
-    this.init();
-    this.globalCache = null;
-    this._disposed = false;
-
+  removeBreakpoint(address: number){
+    if(this.breakPoints.has(address)) {  
+      this.breakPoints.delete(address);
+      this.dispatchEvent('breakpoint', address, false);
+    }
   }
   
   sendToDebugger(type: IPCMessageType){
@@ -167,6 +186,10 @@ export class NWScriptInstance {
     if(type == IPCMessageType.CreateScript && !!this.nwscript){
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.nwscript?.progSize));
       ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.nwscript?.code));
+    }
+    if(type == IPCMessageType.UpdateScriptState){
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.INTEGER, this.currentInstruction.address));
+      ipcMessage.addParam(new GameState.Debugger.IPCMessageParam(IPCDataType.VOID, this.stack.saveForDebugger()));
     }
     GameState.Debugger.send(ipcMessage);
   }
@@ -200,13 +223,6 @@ export class NWScriptInstance {
     this.enteringObject = undefined;
     this.exitingObject = undefined;
     this.listenPatternNumber = 1;
-    this.debugging = false;
-    this.debug = {
-      'action': false,
-      'build': false,
-      'equal': false,
-      'nequal': false
-    }
 
     this.state = [];
 
@@ -225,12 +241,16 @@ export class NWScriptInstance {
 
     this.stack = undefined;
 
-    
-    // if(GameState.GameKey == GameEngineType.TSL){
-    //   this.actionsMap = NWScriptDefK2.Actions;
-    // }else{
-    //   this.actionsMap = NWScriptDefK1.Actions;
-    // }
+    this.persistentObjectIndex.clear()
+    this.objectInventoryIndex.clear()
+    this.creatureEffectIndex.clear()
+    this.creatureAttackerIndex.clear()
+    this.factionMemberIndex.clear()
+    this.objectInSphapeIndex.clear()
+
+    this.mgBullet = undefined;
+    this.mgFollower = undefined;
+    this.mgObstacle = undefined;
 
   }
 
@@ -243,7 +263,6 @@ export class NWScriptInstance {
 
   getSpellId(){
     if(!this.talent){ return -1; }
-
     return this.talent.id;
   }
 
@@ -257,7 +276,6 @@ export class NWScriptInstance {
     this.delayCommands = [];
 
     this.lastSpeaker = undefined;
-    this.firstLoop = true;
 
     this.persistentObjectIndex = new Map<number, number>();
     this.objectInventoryIndex = new Map<number, number>();
@@ -277,23 +295,12 @@ export class NWScriptInstance {
       this.stack.pointer = this.globalCache.stack.pointer;
       this.stack.stack = this.globalCache.stack.stack.slice();
       
-      return this.runScript({
-        instruction: this.globalCache.instr,
-        seek: null,
-      });
+      this.seekTo(this.globalCache.instr.address);
+      return this.runScript();
     }else{
-      return this.runScript({
-        instruction: this.instructions.values().next().value,
-        seek: null,
-      });
+      this.seekTo(0);
+      return this.runScript();
     }
-  }
-
-  runAsync(caller: any = null, scriptVar = 0){
-    return new Promise<any>( (resolve, reject) => {
-      const result = this.run(caller, scriptVar);
-      resolve(result);
-    });
   }
 
   getReturnValue(){
@@ -318,35 +325,27 @@ export class NWScriptInstance {
     return this.instructions.get(offset);
   }
 
-  runScript(scope: {
-    seek?: number,
-    instruction?: NWScriptInstruction
-  } = {}){
+  seekTo(address: number){
+    this.seek = address;
+    this.currentInstruction = this.getInstrAtOffset(address);
+  }
 
-    scope = Object.assign({
-      seek: null,
-      instruction: null,
-    }, scope);
+  runScript(ignoreBreakPoint: boolean = false){
+    let executionHalted = false;
+    let stepOver = false;
+
+    if(GameState.debugMode && GameState.Debugger.state == DebuggerState.IntructionStepOver){
+      stepOver = true;
+    }
 
     this.running = true;
-
-    if(scope.instruction){
-      this.currentInstruction = scope.instruction;
-      this.firstLoop = true;
-    }else if(scope.seek != null){
-      this.currentInstruction = this.getInstrAtOffset( scope.seek );
-      this.firstLoop = false;
-    }
     
     //If the currentInstruction is empty start at the first instruction
     if(!this.currentInstruction){
       this.currentInstruction = this.getInstrAtOffset( 0 );
-      this.firstLoop = true;
     }
 
     this.delayCommands = [];
-
-    this.iterations = 0;
 
     while(this.running && !this._disposed){
 
@@ -354,7 +353,7 @@ export class NWScriptInstance {
         this.prevByteCode = this.currentInstruction.code;
 
       if(this.seek != null){
-        this.currentInstruction = this.getInstrAtOffset( this.seek );
+        this.seekTo(this.seek);
         this.seek = null;
       }
 
@@ -362,39 +361,76 @@ export class NWScriptInstance {
 
       this.address = this.currentInstruction.address;
 
-      //Run the instruction's run method
-      if(this.currentInstruction.break_point) debugger;
+      /**
+       * If we are in debug mode and the current instruction has a breakpoint, kill the script and send the state to the debugger
+       */
+      if(GameState.debugMode && (this.breakPoints.get(this.currentInstruction.address) && !ignoreBreakPoint) && !stepOver){
+        GameState.Debugger.currentScript = this;
+        GameState.Debugger.currentInstruction = this.currentInstruction;
+        GameState.Debugger.state = DebuggerState.Paused;
+
+        this.sendToDebugger(IPCMessageType.UpdateScriptState);
+        executionHalted = true;
+        this.running = false;
+        break;
+      }
+
+      /**
+       * Run the current instruction's logic function
+       */
       this.currentInstruction.opCall.call(this, this.currentInstruction);
 
+      /**
+       * If we are in debug mode and we are in stepOver mode, 
+       * Pause execution and send the script's state to the debugger
+       */
+      if(stepOver){
+        stepOver = false;
+        GameState.Debugger.currentScript = this;
+        if(this.seek){
+          GameState.Debugger.currentInstruction = this.getInstrAtOffset(this.seek);
+        }else{
+          GameState.Debugger.currentInstruction = this.currentInstruction.nextInstr;
+        }
+        GameState.Debugger.state = DebuggerState.Paused;
+
+        this.sendToDebugger(IPCMessageType.UpdateScriptState);
+        executionHalted = true;
+        this.running = false;
+        break;
+      }
+
       this.currentInstruction = this.currentInstruction.nextInstr;
-      this.firstLoop = false;
+      ignoreBreakPoint = false;
     }
 
-    //Stop early if disposed
-    if(this._disposed)
+    //Stop early if disposed or execution was halted
+    if(this._disposed || executionHalted)
       return;
 
-    //SCRIPT DONE
+    const returnValue = this.getReturnValue();
 
-    //onScriptEND
-    if(this.isDebugging()){
-      console.log('onScriptEND', this)
-    }else{
-      //console.log('onScriptEND', this.name)
-    }
-
-    let returnValue = this.getReturnValue();
+    /**
+     * Add DelayCommand actions to the module's EventQueue
+     */
     for(let i = 0, len = this.delayCommands.length; i < len; i++){
       GameState.module.eventQueue.push(this.delayCommands[i]);
     }
+
+    /**
+     * Reset the script state by reinitializing it
+     */
     this.init();
 
+    /**
+     * If this instance was generated from a StoreState,
+     * then dispose of it as it won't be used again
+     */
     if(this.isStoreState){
       this.dispose();
     }
 
     return returnValue;
-
   }
 
   executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){
@@ -402,8 +438,6 @@ export class NWScriptInstance {
     // instance.name = parentInstance.name;
     instance.parentUUID = parentInstance.uuid;
     instance.lastPerceived = parentInstance.lastPerceived;
-    instance.debug = parentInstance.debug;
-    instance.debugging = parentInstance.debugging;
     instance.listenPatternNumber = parentInstance.listenPatternNumber;
     instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
     instance.talent = parentInstance.talent;
@@ -446,14 +480,6 @@ export class NWScriptInstance {
 
   setScriptStringParam(value=''){
     this.paramString = value;
-  }
-
-  isDebugging(type = ''){
-    if(type){
-      return GameState.Flags.LogScripts || this.debugging || this.debug[type];
-    }else{
-      return GameState.Flags.LogScripts || this.debugging;
-    }
   }
 
   saveEventSituation(){

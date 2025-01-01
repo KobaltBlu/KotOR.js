@@ -16,6 +16,9 @@ const libraryConfig = (name, color) => ({
   entry: {
     KotOR: [
       './src/KotOR.ts'
+    ],
+    server: [
+      './src/worker/server.ts'
     ]
   },
   stats: {
@@ -225,7 +228,7 @@ const gameConfig = (name, color) => ({
     game: [
       './src/apps/game/game.ts', 
       './src/apps/game/game.scss'
-    ],
+    ]
   },
   stats: {
     colors: true,
@@ -327,9 +330,23 @@ const gameConfig = (name, color) => ({
     three: 'THREE',
     '../../KotOR': 'KotOR',
   },
+  // output: {
+  //   filename: '[name].js',
+  //   path: path.resolve(__dirname, 'dist/game'),
+  // },
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/game'),
+    globalObject: 'this', 
+    assetModuleFilename: (pathData) => {
+      const { filename } = pathData;
+
+      if (filename.endsWith('.ts')) {
+          return '[name].js';
+      } else {
+          return '[name][ext]';
+      }
+    },
   },
 });
 

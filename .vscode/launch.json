@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "KotOR Launcher",
+      "url": "http://localhost:8080/launcher/index.html",
+      "webRoot": "${workspaceFolder}/dist",
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "KotOR",
+      "url": "http://localhost:8080/game/index.html?key=kotor",
+      "webRoot": "${workspaceFolder}/dist"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "TSL",
+      "url": "http://localhost:8080/game/index.html?key=tsl",
+      "webRoot": "${workspaceFolder}/dist"
+    }
+  ]
+}

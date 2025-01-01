@@ -279,7 +279,7 @@ export const CALL_EQUAL= function( this: NWScriptInstance, instruction: NWScript
     this.struct2 = [];
     this.struct1 = [];
 
-    let count = instruction.sizeOfStructure / 4;
+    const count = instruction.sizeOfStructure / 4;
     //populate structure2's variables
     for(let i = 0; i < count; i++){
       this.struct2.push(this.stack.pop()?.value);
@@ -362,7 +362,7 @@ export const CALL_NEQUAL = function( this: NWScriptInstance, instruction: NWScri
     this.struct2 = [];
     this.struct1 = [];
 
-    let count = instruction.sizeOfStructure / 4;
+    const count = instruction.sizeOfStructure / 4;
 
     //populate structure2's variables
     for(let i = 0; i < count; i++){
@@ -871,8 +871,7 @@ export const CALL_JMP = function( this: NWScriptInstance, instruction: NWScriptI
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_JSR = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let pos = instruction.address;
-  this.seek = pos + instruction.offset;
+  this.seek = instruction.address + instruction.offset;
   this.subRoutine = new NWScriptSubroutine(instruction.nextInstr.address);
   this.subRoutines.push( this.subRoutine ); //Where to return to after the subRoutine is done
 
@@ -889,7 +888,7 @@ export const CALL_JSR = function( this: NWScriptInstance, instruction: NWScriptI
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let popped = this.stack.pop()?.value;
+  const popped = this.stack.pop()?.value;
   if(popped == 0){
     this.seek = instruction.address + instruction.offset;
   }
@@ -904,22 +903,23 @@ export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptIn
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  if(this.subRoutines.length){
-    const subRoutine = this.subRoutines.pop();
-    subRoutine.onEnd();
-
-    this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
-
-    if(subRoutine.returnAddress == -1){
-      this.seek = null;
-      instruction.eof = true;
-    }else{
-      this.seek = subRoutine.returnAddress;
-    }
-  }else{
-    this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
+  if(!this.subRoutines.length){
+    this.subRoutine = undefined;
     instruction.eof = true;
     this.running = false;
+    return;
+  }
+  
+  const subRoutine = this.subRoutines.pop();
+  subRoutine.onEnd();
+
+  this.subRoutine = this.subRoutines[this.subRoutines.length - 1];
+
+  if(subRoutine.returnAddress == -1){
+    this.seek = null;
+    instruction.eof = true;
+  }else{
+    this.seek = subRoutine.returnAddress;
   }
 }
 
@@ -1010,7 +1010,7 @@ export const CALL_INCISP = function( this: NWScriptInstance, instruction: NWScri
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_JNZ = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let jnzTOS = this.stack.pop()?.value;
+  const jnzTOS = this.stack.pop()?.value;
   if(jnzTOS != 0){
     this.seek = instruction.address + instruction.offset;
   }
@@ -1108,7 +1108,7 @@ export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWS
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
-  let state: INWScriptStoreState = {
+  const state: INWScriptStoreState = {
     offset: instruction.nextInstr.nextInstr.address,
     base:   [], //this.stack.stack.slice(0, (instr.bpOffset/4)),
     local:  [], //this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)

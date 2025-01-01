@@ -32,9 +32,8 @@ export class ActionDoCommand extends Action {
     }
     
     script.setCaller(this.owner);
-    script.runScript({
-      seek: script.offset
-    });
+    script.seekTo(script.offset);
+    script.runScript();
     return ActionStatus.COMPLETE;
   }
 

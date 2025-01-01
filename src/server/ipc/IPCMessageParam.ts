@@ -1,5 +1,5 @@
 import { BinaryReader } from "../../BinaryReader";
-import { IPCDataType } from "../../enums/server/IPCDataType";
+import { IPCDataType } from "../../enums/server/ipc/IPCDataType";
 
 /**
  * Represents an IPCMessageParam.
@@ -86,8 +86,8 @@ export class IPCMessageParam {
   toBuffer(): Uint8Array {
     const buffer = new Uint8Array(IPCMessageParam.HeaderSize + this.value.length);
     const view = new DataView(buffer.buffer);
-    view.setInt32(0, this.type, true);
-    view.setInt32(4, this.value.length, true);
+    view.setUint32(0, this.type, true);
+    view.setUint32(4, this.value.length, true);
     buffer.set(this.value, IPCMessageParam.HeaderSize);
     return buffer;
   }
@@ -99,8 +99,8 @@ export class IPCMessageParam {
    */
   static fromBuffer(buffer: Uint8Array): IPCMessageParam {
     const view = new DataView(buffer.buffer);
-    const type = view.getInt32(0, true);
-    const size = view.getInt32(4, true);
+    const type = view.getUint32(0, true);
+    const size = view.getUint32(4, true);
     const value = buffer.slice(IPCMessageParam.HeaderSize, IPCMessageParam.HeaderSize + size);
     return new IPCMessageParam(type, value);
   }

@@ -1,4 +1,310 @@
+@import "~bootstrap/scss/bootstrap";
+
+$fa-font-path: "./fonts";
+@import "~@fortawesome/fontawesome-free/scss/fontawesome";  
+
+// our project needs Solid + Brands
+@import "~@fortawesome/fontawesome-free/scss/solid.scss";
+@import "~@fortawesome/fontawesome-free/scss/brands.scss";
+
+@import "styles/menu-top.scss";
+@import "styles/jquery-layout.scss";
+@import "styles/layout-default.scss";
+@import "styles/layout-custom.scss";
+@import "styles/scrollbar.scss";
+
 html, body {
+  background-color: #242424;
   color: #fff;
-  font-family: Arial, Helvetica, sans-serif;
+  // font-family: Arial, Helvetica, sans-serif;
+  font-family: sans-serif;
+}
+
+.app-container {
+
+}
+
+#container {
+  position: absolute;
+  top: 60px;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: initial;
+}
+
+.script-debugger {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+
+  .script-debugger-title {
+    background-color: #4a4a4a;
+    font-size: 24px;
+    font-weight: bold;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 50px;
+  }
+  
+  .script-debugger-container {
+    position: relative;
+    // display: flex;
+    // flex-direction: row;
+    // align-items: flex-start;
+    // position: absolute;
+    // top: 50px;
+    // left: 0;
+    // width: 100%;
+    // height: 100%;
+
+    .script-debugger-scripts {
+      // flex: 0.5;
+      border: 2px solid #4a4a4a;
+      box-sizing: border-box;
+      height: 100%;
+      position: relative;
+      .title {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 25px;
+        background-color: #4a4a4a;
+        padding: 5px;
+        font-size: 12px;
+        font-weight: bold;
+        box-sizing: border-box;
+        display: flex;
+        flex-wrap: wrap;
+        align-content: space-between;
+        flex-direction: column;
+        .title-buttons {
+          // float: right;
+        }
+      }
+      .content {
+        padding: 5px;
+        position: absolute;
+        top: 25px;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 25px);
+        overflow-y: scroll;
+        overflow-x: auto;
+        box-sizing: border-box;
+        .content-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+      }
+    }
+    
+    .script-debugger-instance {
+      // flex: 0.5;
+      border: 2px solid #4a4a4a;
+      box-sizing: border-box;
+      height: 100%;
+      position: relative;
+      .title {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 25px;
+        background-color: #4a4a4a;
+        padding: 5px;
+        font-size: 12px;
+        font-weight: bold;
+        box-sizing: border-box;
+      }
+      .content {
+        padding: 5px;
+        position: absolute;
+        top: 25px;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 25px);
+        overflow-y: scroll;
+        overflow-x: auto;
+        box-sizing: border-box;
+
+        .content-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+        }
+
+        .instruction-list {
+          font-family: monospace;
+          font-size: 14pt;
+          min-height: 100%;
+          .instruction-node {
+            position: relative;
+            list-style-type: none;
+            line-height: 14pt;
+            height: 14pt;
+            white-space: nowrap;
+            &.selected {
+              background-color: #373c45;
+            }
+            &.seeked {
+              background-color: purple;
+            }
+            // &.breakpoint::marker {
+            //   color: red;
+            // }
+
+            &::before {
+              content: '';
+              position: absolute;
+              top:0;
+              left: -18pt;
+              font-size: 14pt;
+              color: grey;
+            }
+
+            &.breakpoint::before {
+              content: '\2299';
+              color: red;
+            }
+
+            &::hover::before {
+              content: '\2299';
+              color: grey;
+            }
+
+            &.breakpoint::hover::before {
+              content: '\2299';
+              color: rgb(255, 45, 45);
+            }
+
+            .breakpoint-clicker {
+              position: absolute;
+              width: 24pt;
+              height: 14pt;
+              // background-color: rgba(12, 40, 19, 0.5);
+              top: 0px;
+              left: -24pt;
+              cursor: pointer;
+            }
+
+            .instruction-offset {
+              color: #2f2ff1;
+            }
+
+            .instruction-codeName {
+              font-weight: bold;
+              &.JMP {
+                color: green;
+              }
+              &.JSR {
+                color: olive;
+              } 
+              &.JZ {
+                color: magenta;
+              } 
+              &.RSADD {
+                color: pink
+              }
+              &.CONST {
+                color: white;
+              }
+              &.CPDOWNSP {
+                color: #2f2ff1;
+              }
+              &.CPDOWNBP {
+                color: blue;
+              }
+              &.CPTOPSP {
+                color: violet;
+              }
+              &.MOVSP {
+                color: red;
+              }
+
+              &.RETN {
+                color: yellow;
+              }
+
+              &.ACTION {
+                color: cyan;
+              }
+              &.EQUAL {
+                color: orange;
+              }
+            }
+
+            .instruction-datatype {
+              &.STRING {
+                color: purple;
+              }
+              &.INTEGER {
+                color: orange;
+              }
+              &.FLOAT {
+                color: yellow;
+              }
+              &.OBJECT {
+                color: green;
+              }
+              &.VECTOR {
+                color: blue;
+              }
+              &.STRUCTURE {
+                color: red;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  
+}
+
+.debugger-buttons {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-align: center;
+  gap: 10px;
+  svg {
+    width: 12pt;
+    color: white;
+  }
+}
+
+.script-browser-list {
+  list-style: none;
+  margin-left: 0;
+  padding-left: 0;
+  white-space: nowrap;
+  font-family: sans-serif;
+
+  .script-browser-list-item {
+    font-weight: normal;
+  }
+
+  > .script-browser-list-item {
+    // font-weight: bold;
+  }
+
+  .script-browser-list-instance-item {
+    &.selected {
+      color: rgb(10 88 202);
+    }
+  }
 }

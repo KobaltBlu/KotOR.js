@@ -60,6 +60,9 @@ import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 import { ModuleTriggerType } from "./enums";
 import { Planetary } from "./Planetary";
 import { Debugger } from "./Debugger";
+import { DebuggerState } from "./enums/server/DebuggerState";
+import type { IPCMessage } from "./server/ipc/IPCMessage";
+import { IPCMessageType } from "./enums/server/ipc/IPCMessageType";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -303,6 +306,44 @@ export class GameState implements EngineContext {
       console.log('Debugger: Close');
       GameState.debugMode = false;
     });
+    GameState.Debugger.addEventListener('message', (msg: IPCMessage) => {
+      if(msg.type == IPCMessageType.SetScriptBreakpoint){
+        const instanceUUID = msg.getParam(0).getString();
+        const address = msg.getParam(1).getInt32();
+        const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
+        if(instance){
+          console.log("Setting breakpoint", address, "on instance", instanceUUID);
+          instance.setBreakpoint(address);
+        }
+      }else if(msg.type == IPCMessageType.RemoveScriptBreakpoint){
+        const instanceUUID = msg.getParam(0).getString();
+        const address = msg.getParam(1).getInt32();
+        const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
+        if(instance){
+          console.log("Removing breakpoint", address, "on instance", instanceUUID);
+          instance.removeBreakpoint(address);
+        }
+      }else if(msg.type == IPCMessageType.ContinueScript){
+        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+          const instruction = GameState.Debugger.currentInstruction;
+          const seek = instruction.address;
+          GameState.Debugger.currentInstruction = undefined;
+          GameState.Debugger.state = DebuggerState.Idle;
+          GameState.Debugger.currentScript.seekTo(seek);
+          GameState.Debugger.currentScript.runScript(true);
+        }
+      }else if(msg.type == IPCMessageType.StepOverInstruction){
+        if(GameState.Debugger.currentScript && GameState.Debugger.currentInstruction){
+          const instruction = GameState.Debugger.currentInstruction;
+          const seek = instruction.address;
+          GameState.Debugger.currentInstruction = undefined;
+          GameState.Debugger.state = DebuggerState.IntructionStepOver;
+          GameState.Debugger.currentScript.seekTo(seek);
+          GameState.Debugger.currentScript.runScript(true);
+        }
+      }
+    });
+
     GameState.lightManager = new GameState.LightManager();
     GameState.processEventListener('init');
     
@@ -982,9 +1023,9 @@ export class GameState implements EngineContext {
     
     requestAnimationFrame( GameState.Update );
 
-    if(!ConfigClient.get('GameState.debug.show_fps')){
-      // GameState.stats.showPanel(false);
-    }
+    // if(GameState.Debugger.showFPS && GameState.stats.m){
+      // GameState.stats.showPanel(GameState.Debugger.showFPS);
+    // }
 
     let delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
@@ -995,6 +1036,14 @@ export class GameState implements EngineContext {
 
     GameState.limiter.now = Date.now();
     GameState.limiter.elapsed = GameState.limiter.now - GameState.limiter.then;
+
+    /**
+     * Pause the main loop if the debugger is active
+     */
+    if(GameState.debugMode && !!GameState.Debugger.state){
+
+      return;
+    }
 
     GameState.controls.Update(delta);
     GameState.VideoEffectManager.Update(delta);
