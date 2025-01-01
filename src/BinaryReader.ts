@@ -182,27 +182,26 @@ export class BinaryReader {
     return this._value;
   }
 
-  readUInt64(): Uint8Array {
+  readUInt64(): bigint {
     if(this.position >= this.buffer.length)
-      return new Uint8Array(0);
+      return BigInt(0);
 
-    this._value = this.buffer.slice(this.position, this.position + 8);
+    this._value = this.bufferView.getBigUint64(this.position, this.isLE);
     this.position += 8;
     return this._value;
   }
 
-  readInt64(): Uint8Array {
+  readInt64(): bigint {
     if(this.position >= this.buffer.length)
-      return new Uint8Array(0);
+      return BigInt(0);
 
-    this._value = this.buffer.slice(this.position, this.position + 8);
+    this._value = this.bufferView.getBigInt64(this.position, this.isLE);
     this.position += 8;
     return this._value;
   }
 
   slice(offset = 0, end = 0): BinaryReader {
-    if(!end)
-      end = this.buffer.length;
+    end = (!!end) ? end : this.buffer.length;
 
     let buffer = this.buffer.slice(offset, end);
     return new BinaryReader(buffer, this.endians)

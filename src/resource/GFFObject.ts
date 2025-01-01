@@ -426,7 +426,8 @@ export class GFFObject {
   getDword64(offset: number){
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    let Dword64 = this.reader.readUInt64();
+    // let Dword64 = this.reader.readUInt64();
+    let Dword64 = this.reader.readBytes(8);
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return Dword64;
   }
@@ -435,7 +436,8 @@ export class GFFObject {
   getInt64(offset: number){
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    let value = this.reader.readInt64();
+    // let value = this.reader.readInt64();
+    let value = this.reader.readBytes(8);
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return value;
   }
