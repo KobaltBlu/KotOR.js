@@ -512,12 +512,25 @@ export class OdysseyWalkMesh {
     let distance = 0;
     for(let i = 0, len = this.walkableFaces.length; i < len; i++){
       distance = point.distanceTo(this.walkableFaces[i].centroid);
-      if(distance < nearest){
-        nearest_point = this.walkableFaces[i].centroid;
-        nearest = distance;
+      if(distance >= nearest){
+        continue;
       }
+      nearest_point = this.walkableFaces[i].centroid;
+      nearest = distance;
     }
     return nearest_point;
+  }
+
+  #tmpTriangle = new THREE.Triangle();
+  #tmpVec3z = new THREE.Vector3();
+
+  isPointInsideTriangle2d(point: THREE.Vector3, triangle: THREE.Triangle): boolean {
+    this.#tmpVec3z.set(point.x, point.y, 0);
+    this.#tmpTriangle.a.set(triangle.a.x, triangle.a.y, 0);
+    this.#tmpTriangle.b.set(triangle.b.x, triangle.b.y, 0);
+    this.#tmpTriangle.c.set(triangle.c.x, triangle.c.y, 0);
+
+    return this.#tmpTriangle.containsPoint(this.#tmpVec3z);
   }
 
   //BSP Tree?

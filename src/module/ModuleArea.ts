@@ -977,7 +977,7 @@ export class ModuleArea extends ModuleObject {
 
   async loadPath(){
     console.log('ModuleArea.loadPath');
-    this.path = new ModulePath(this.name);
+    this.path = new ModulePath(this);
     try{
       await this.path.load();
     }catch(e){
@@ -1852,7 +1852,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  isPointWalkable(point: any){
+  isPointWalkable(point: THREE.Vector3){
     for(let i = 0, len = this.rooms.length; i < len; i++){
       if(this.rooms[i].collisionData.walkmesh && this.rooms[i].collisionData.walkmesh.isPointWalkable(point)){
         return true;
@@ -1861,7 +1861,7 @@ export class ModuleArea extends ModuleObject {
     return false;
   }
 
-  getNearestWalkablePoint(point: any){
+  getNearestWalkablePoint(point: THREE.Vector3){
     let nearest = Infinity;
     let nearest_point = undefined;
 

@@ -102,6 +102,7 @@ export class FileTypeManager {
       case 'git': 
       case 'res': 
       case 'fac': 
+      case 'pth':
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'bik': 

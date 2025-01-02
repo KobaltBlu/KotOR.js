@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPointOptions";
 import { GameState } from '../../GameState';
 import { Utility } from '../../utility/Utility';
+import { GFFStruct } from '../../KotOR';
 
 /**
  * PathPoint class.
@@ -112,6 +113,20 @@ export class PathPoint {
     });
     p.isTemp = true;
     return p;
+  }
+
+  static FromGFFStruct(struct: GFFStruct){
+    return new PathPoint({
+      id: -1,
+      connections: [],
+      first_connection: struct.getFieldByLabel('First_Conection').getValue(),
+      num_connections: struct.getFieldByLabel('Conections').getValue(),
+      vector: new THREE.Vector3(
+        struct.getFieldByLabel('X').getValue(), 
+        struct.getFieldByLabel('Y').getValue(), 
+        0
+      )
+    });
   }
 
 }

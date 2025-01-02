@@ -5,6 +5,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { PathPoint } from "../engine/pathfinding/PathPoint";
 import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
+import type { ModuleArea } from "./ModuleArea";
 
 /**
 * ModulePath class.
@@ -19,6 +20,7 @@ import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestP
 * @memberof KotOR
 */
 export class ModulePath {
+  area: ModuleArea;
   _tmpVector: THREE.Vector3;
   points: PathPoint[];
   template: GFFObject;
@@ -26,87 +28,85 @@ export class ModulePath {
   line: THREE.LineSegments;
   initialized: boolean;
 
-  constructor(pathName = ''){
+  constructor(area: ModuleArea){
     this._tmpVector = new THREE.Vector3(0, 0, 0);
     this.points = [];
     this.template = new GFFObject();
-    this.name = pathName;
+    this.area = area;
+    this.name = area.name;
   }
 
   async load(){
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['pth'], this.name);
     if(buffer){
-      const gff = new GFFObject(buffer);
-      this.template = gff;
-      //console.log(this.template, gff, this)
-      this.initProperties();
-      return this;
+      this.template = new GFFObject(buffer);
     }else{
       console.error('Failed to load ModulePath template');
-      if(this.template instanceof GFFObject){
-        this.initProperties();
-      }
-      return this;
     }
+
+    if(this.template instanceof GFFObject){
+      this.initProperties();
+    }
+    return this;
   }
 
   initProperties(){
-    if(this.template instanceof GFFObject){
-      let _points = this.template.json.fields.Path_Points.structs;
-      for(let i = 0; i < _points.length; i++){
-
-        let _pnt = _points[i];
-        let point: PathPoint = new PathPoint({
-          id: i,
-          connections: [],
-          first_connection: _pnt.fields.First_Conection.value,
-          num_connections: _pnt.fields.Conections.value,
-          vector: new THREE.Vector3(_pnt.fields.X.value, _pnt.fields.Y.value, 0)
-        });
-        this.points.push(point);
-      }
-
-      let material = new THREE.LineBasicMaterial({
-        color: 0x0000ff
-      });
-
-      let geometry = new THREE.BufferGeometry();
-      const points: number[] =[];
-
-      for(let i = 0; i < this.points.length; i++){
-        let point = this.points[i];
-        if(point.num_connections){
-          let connIdx = point.first_connection;
-          for(let j = 0; j < point.num_connections; j++){
-            point.connections.push(
-              this.points[
-                this.template.json.fields.Path_Conections.structs[connIdx + j].fields.Destination.value
-              ]
-            );
-          }
-        }
-
-        for(let i = 0; i < this.points.length; i++){
-          let point = this.points[i];
-          points.push(
-            point.vector.x, point.vector.y, -100,
-            point.vector.x, point.vector.y, 100
-          )
-        }
-
-      }
-
-
-      geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
-          
-      this.line = new THREE.LineSegments( geometry, material );
-      GameState.scene.add( this.line );
-      this.setPathHelpersVisibility(false);
-
+    this.initialized = true;
+    if(!(this.template instanceof GFFObject)){
+      return;
     }
     
-    this.initialized = true;
-    
+    /**
+     * Parse the Path Points
+     */
+    if(this.template.RootNode.hasField('Path_Points')){
+      const pathPoints = this.template.getFieldByLabel('Path_Points').getChildStructs();
+      for(let i = 0, len = pathPoints.length; i < len; i++){
+        this.points[i] = PathPoint.FromGFFStruct(pathPoints[i]);
+        this.points[i].id = i;
+      }
+    }
+
+    /**
+     * Parse the Path Connections
+     */
+    if(this.template.RootNode.hasField('Path_Conections')){
+      const pathConnections = this.template.getFieldByLabel('Path_Conections').getChildStructs();
+      for(let i = 0, len = this.points.length; i < len; i++){
+        const point = this.points[i];
+        if(!point.num_connections) continue;
+        
+        let connIdx = point.first_connection;
+        for(let j = 0; j < point.num_connections; j++){
+          const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
+          point.connections[j] = this.points[pointIdx];
+        }
+      }
+    }
+
+    /**
+     * Build line segments for the visual helper geometry
+     */
+    const material = new THREE.LineBasicMaterial({
+      color: 0x0000ff
+    });
+
+    const geometry = new THREE.BufferGeometry();
+    const points: number[] = [];
+
+    for(let i = 0; i < this.points.length; i++){
+      let point = this.points[i];
+      points.push(
+        point.vector.x, point.vector.y, -100,
+        point.vector.x, point.vector.y, 100
+      )
+    }
+
+    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
+        
+    this.line = new THREE.LineSegments( geometry, material );
+    GameState.scene.add( this.line );
+    this.setPathHelpersVisibility(false);
   }
 
   cleanupConnections(){
