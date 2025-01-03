@@ -49,7 +49,7 @@ const initializeApp = function(){
       KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
       document.body.append(KotOR.GameState.stats.domElement);
       if(env == ApplicationEnvironment.ELECTRON){
-        KotOR.GameState.Debugger.open();
+        // KotOR.GameState.Debugger.open();
       }
       window.addEventListener('blur', (e) => {
         KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
