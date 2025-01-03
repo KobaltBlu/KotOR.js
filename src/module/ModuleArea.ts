@@ -487,6 +487,10 @@ export class ModuleArea extends ModuleObject {
     FollowerCamera.update(delta, this);
 
     this.weather.update(delta);
+
+    if(this.path){
+      this.path.update(delta);
+    }
   }
 
   updatePaused(delta: number = 0){
@@ -961,7 +965,6 @@ export class ModuleArea extends ModuleObject {
 
     await this.loadVis();
     await this.loadLayout();
-    await this.loadPath();
     await this.loadScripts();
     GameState.scene.fog = this.fog;
 
@@ -1113,6 +1116,8 @@ export class ModuleArea extends ModuleObject {
       }
 
       try { await this.loadRooms(); } catch(e){ console.error(e); }
+
+      await this.loadPath();
 
       this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
 

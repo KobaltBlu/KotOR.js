@@ -1,4 +1,5 @@
 import type { PathPoint } from "../../../engine/pathfinding/PathPoint";
+import type { ModuleArea } from "../../../module/ModuleArea";
 
 /**
  * IPathPointOptions interface.
@@ -16,4 +17,5 @@ export interface IPathPointOptions {
   first_connection: number;
   num_connections: number;
   vector: THREE.Vector3;
+  area?: ModuleArea
 }

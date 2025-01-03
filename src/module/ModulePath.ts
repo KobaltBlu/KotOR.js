@@ -4,8 +4,11 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
 import { PathPoint } from "../engine/pathfinding/PathPoint";
+import { BinaryHeap } from "../engine/pathfinding/BinaryHeap";
 import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestPathPointData";
 import type { ModuleArea } from "./ModuleArea";
+import { Utility } from "../utility/Utility";
+import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
 
 /**
 * ModulePath class.
@@ -25,8 +28,19 @@ export class ModulePath {
   points: PathPoint[];
   template: GFFObject;
   name: string;
-  line: THREE.LineSegments;
   initialized: boolean;
+
+  pointCount: number = 0;
+  connectionCount: number = 0;
+
+  helperColors: THREE.Float32BufferAttribute;
+  helperPositions: THREE.Float32BufferAttribute;
+  helperGeometry = new THREE.BufferGeometry();
+  helperMaterial = new THREE.LineBasicMaterial({
+    color: 0xFFFFFF,
+    vertexColors: true
+  });
+  helperMesh: THREE.LineSegments;
 
   constructor(area: ModuleArea){
     this._tmpVector = new THREE.Vector3(0, 0, 0);
@@ -61,9 +75,11 @@ export class ModulePath {
      */
     if(this.template.RootNode.hasField('Path_Points')){
       const pathPoints = this.template.getFieldByLabel('Path_Points').getChildStructs();
+      this.pointCount = pathPoints.length;
       for(let i = 0, len = pathPoints.length; i < len; i++){
         this.points[i] = PathPoint.FromGFFStruct(pathPoints[i]);
         this.points[i].id = i;
+        this.points[i].setArea(this.area);
       }
     }
 
@@ -72,6 +88,7 @@ export class ModulePath {
      */
     if(this.template.RootNode.hasField('Path_Conections')){
       const pathConnections = this.template.getFieldByLabel('Path_Conections').getChildStructs();
+      this.connectionCount = pathConnections.length;
       for(let i = 0, len = this.points.length; i < len; i++){
         const point = this.points[i];
         if(!point.num_connections) continue;
@@ -79,34 +96,220 @@ export class ModulePath {
         let connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
           const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
-          point.connections[j] = this.points[pointIdx];
+          point.addConnection(this.points[pointIdx]);
         }
       }
     }
 
-    /**
-     * Build line segments for the visual helper geometry
-     */
-    const material = new THREE.LineBasicMaterial({
-      color: 0x0000ff
-    });
+    this.connectionCount = this.points.reduce((sum, p) => {
+      return sum + p.connections.length;
+    }, 0);
 
-    const geometry = new THREE.BufferGeometry();
-    const points: number[] = [];
-
-    for(let i = 0; i < this.points.length; i++){
-      let point = this.points[i];
-      points.push(
-        point.vector.x, point.vector.y, -100,
-        point.vector.x, point.vector.y, 100
-      )
+    try{
+      this.generatePathHelper();
+    }catch(e){
+      console.error(e);
     }
 
-    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( points, 3 ) );
-        
-    this.line = new THREE.LineSegments( geometry, material );
-    GameState.scene.add( this.line );
     this.setPathHelpersVisibility(false);
+  }
+
+  /**
+   * Build line segments for the visual helper geometry
+   */
+  generatePathHelper(){
+    const numPoints = this.points.length;
+    const pointDataSize = 6;
+    const connDataSize = 6;
+    const bufferSize = (this.pointCount * pointDataSize) + (this.connectionCount * connDataSize);
+
+    const pointDataStart = 0;
+    let connectionIndexStart = (numPoints * 2);
+
+    if(!this.helperColors){
+      this.helperColors = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    if(!this.helperPositions){
+      this.helperPositions = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperPositions.setX(idx, point.vector.x);
+      this.helperPositions.setY(idx, point.vector.y);
+      this.helperPositions.setZ(idx, point.nearestWalkableVector.z);
+      
+      this.helperPositions.setX(idx2, point.vector.x);
+      this.helperPositions.setY(idx2, point.vector.y);
+      this.helperPositions.setZ(idx2, point.nearestWalkableVector.z + 0.5);
+      this.helperPositions.needsUpdate = true;
+
+      this.helperColors.setX(idx, 1);
+      this.helperColors.setY(idx, 0);
+      this.helperColors.setZ(idx, 1);
+
+      this.helperColors.setX(idx2, 0);
+      this.helperColors.setY(idx2, 0);
+      this.helperColors.setZ(idx2, 1);
+      this.helperColors.needsUpdate = true;
+
+      for(let j = 0; j < point.connections.length; j++){
+        const cPoint = point.connections[j];
+        const idx3 = connectionIndexStart;
+        const idx4 = idx3 + 1;
+
+        this.helperPositions.setX(idx3, point.vector.x);
+        this.helperPositions.setY(idx3, point.vector.y);
+        this.helperPositions.setZ(idx3, point.nearestWalkableVector.z + 0.5);
+        
+        this.helperPositions.setX(idx4, cPoint.vector.x);
+        this.helperPositions.setY(idx4, cPoint.vector.y);
+        this.helperPositions.setZ(idx4, cPoint.nearestWalkableVector.z + 0.5);
+        this.helperPositions.needsUpdate = true;
+  
+        this.helperColors.setX(idx3, 0);
+        this.helperColors.setY(idx3, 0);
+        this.helperColors.setZ(idx3, 1);
+  
+        this.helperColors.setX(idx4, 0);
+        this.helperColors.setY(idx4, 0);
+        this.helperColors.setZ(idx4, 1);
+        this.helperColors.needsUpdate = true;
+        connectionIndexStart += 2;
+      }
+    }
+
+    if(!this.helperMesh){
+      this.helperGeometry.setAttribute( 'position', this.helperPositions );
+      this.helperGeometry.setAttribute( 'color', this.helperColors );
+      
+      this.helperMesh = new THREE.LineSegments( this.helperGeometry, this.helperMaterial );
+      GameState.scene.add( this.helperMesh );
+    }
+  }
+
+  updateTimer: number = 0;
+  update(delta: number){
+    this.updateTimer -= delta;
+    if(this.updateTimer > 0){
+      return;
+    }
+    this.updateTimer = 1;
+
+    if(!this.area || !this.helperMesh?.visible)
+      return;
+
+    const player = this.area.context.getCurrentPlayer();
+    const numPoints = this.points.length;
+    let connectionIndexStart = (numPoints * 2);
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperPositions.setX(idx, point.vector.x);
+      this.helperPositions.setY(idx, point.vector.y);
+      this.helperPositions.setZ(idx, point.nearestWalkableVector.z);
+      
+      this.helperPositions.setX(idx2, point.vector.x);
+      this.helperPositions.setY(idx2, point.vector.y);
+      this.helperPositions.setZ(idx2, point.nearestWalkableVector.z + 0.5);
+      this.helperPositions.needsUpdate = true;
+
+      if(this.checkLOSP2P(player.position, point.vector)){
+        this.helperColors.setX(idx, 0);
+        this.helperColors.setY(idx, 1);
+        this.helperColors.setZ(idx, 0);
+      }else{
+        this.helperColors.setX(idx, 1);
+        this.helperColors.setY(idx, 0);
+        this.helperColors.setZ(idx, 1);
+      }
+
+      this.helperColors.setX(idx2, 0);
+      this.helperColors.setY(idx2, 0);
+      this.helperColors.setZ(idx2, 1);
+      this.helperColors.needsUpdate = true;
+
+      for(let j = 0; j < point.connections.length; j++){
+        const cPoint = point.connections[j];
+        const idx3 = connectionIndexStart;
+        const idx4 = idx3 + 1;
+
+        this.helperPositions.setX(idx3, point.vector.x);
+        this.helperPositions.setY(idx3, point.vector.y);
+        this.helperPositions.setZ(idx3, point.nearestWalkableVector.z + 0.5);
+        
+        this.helperPositions.setX(idx4, cPoint.vector.x);
+        this.helperPositions.setY(idx4, cPoint.vector.y);
+        this.helperPositions.setZ(idx4, cPoint.nearestWalkableVector.z + 0.5);
+        this.helperPositions.needsUpdate = true;
+  
+        this.helperColors.setX(idx3, 0);
+        this.helperColors.setY(idx3, 0);
+        this.helperColors.setZ(idx3, 1);
+  
+        this.helperColors.setX(idx4, 0);
+        this.helperColors.setY(idx4, 0);
+        this.helperColors.setZ(idx4, 1);
+        this.helperColors.needsUpdate = true;
+        connectionIndexStart += 2;
+      }
+    }
+
+  }
+
+  checkLOSP2P(origin: THREE.Vector3, target: THREE.Vector3): boolean {
+    let has_los = true;
+
+    if(!this.area)
+      return has_los;
+
+    const path_line = new THREE.Line3(origin, target);
+    for(let i = 0; i < this.area.rooms.length; i++){
+      const room = this.area.rooms[i];
+      if(!room || !room?.model?.wok)
+        continue;
+
+      const walkmesh = room.model.wok;
+      const edges: WalkmeshEdge[] = [...walkmesh.edges.values()];
+      for(let j = 0; j < edges.length; j++){
+        const edge = edges[j];
+
+        //Ignore transition edges
+        if(edge.transition != -1)
+          continue;
+        
+        if(Utility.LineLineIntersection(path_line.start.x, path_line.start.y, path_line.end.x, path_line.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
+          has_los = false;
+          break;
+        }
+      }
+    }
+    return has_los;
+  }
+
+  dispose(){
+    this.helperGeometry.dispose();
+    this.helperMaterial.dispose();
+    this.helperMesh.removeFromParent();
+
+    this.helperPositions = undefined;
+    this.helperColors = undefined;
+    this.helperMesh = undefined;
+    this.helperGeometry = undefined;
+    this.helperMaterial = undefined;
+  }
+
+  setPathHelpersVisibility(state = false){
+    if(!this.helperMesh) return;
+    this.helperMesh.visible = state;
   }
 
   cleanupConnections(){
@@ -126,10 +329,6 @@ export class ModulePath {
         con.removeConnection(point);
       }
     }
-  }
-
-  setPathHelpersVisibility(state = false){
-    this.line.visible = state;
   }
 
   getClosestPathPointData(target = new THREE.Vector3): IClosestPathPointData {
@@ -184,7 +383,11 @@ export class ModulePath {
     this.reset();
 
     const originPoint = PathPoint.FromVector3(origin);
+    originPoint.setArea(this.area);
+
     const destPoint = PathPoint.FromVector3(dest);
+    destPoint.setArea(this.area);
+
     const fallbackPath = ComputedPath.FromPointsList([destPoint]);
     if(!this.points.length) return fallbackPath;
 
@@ -209,7 +412,7 @@ export class ModulePath {
     path.search();
 
     //clean up tmp point refs
-    for(let i = 0; i < this.points.length; i++){
+    for(let i = 0, len = this.points.length; i < len; i++){
       const p = this.points[i];
       p.removeConnection(originPoint);
       p.removeConnection(destPoint);
@@ -391,139 +594,6 @@ export class ComputedPath {
     const path = new ComputedPath();
     path.points = points;
     return path;
-  }
-
-}
-
-type ScoreFunctionType<T> = (node: T) => void;
-
-//https://github.com/bgrins/javascript-astar
-class BinaryHeap<T> {
-  content: T[];
-  scoreFunction?: ScoreFunctionType<T>;
-
-  constructor(scoreFunction?: ScoreFunctionType<T>){
-    this.content = [];
-    this.scoreFunction = scoreFunction;
-  }
-
-  push(element: T) {
-    // Add the new element to the end of the array.
-    this.content.push(element);
-
-    // Allow it to sink down.
-    this.sinkDown(this.content.length - 1);
-  }
-
-  pop() {
-    // Store the first element so we can return it later.
-    let result = this.content[0];
-    // Get the element at the end of the array.
-    let end = this.content.pop();
-    // If there are any elements left, put the end element at the
-    // start, and let it bubble up.
-    if (this.content.length > 0) {
-      this.content[0] = end;
-      this.bubbleUp(0);
-    }
-    return result;
-  }
-
-  remove(node: T) {
-    let i = this.content.indexOf(node);
-
-    // When it is found, the process seen in 'pop' is repeated
-    // to fill up the hole.
-    let end = this.content.pop();
-
-    if (i !== this.content.length - 1) {
-      this.content[i] = end;
-
-      if (this.scoreFunction(end) < this.scoreFunction(node)) {
-        this.sinkDown(i);
-      } else {
-        this.bubbleUp(i);
-      }
-    }
-  }
-
-  size() {
-    return this.content.length;
-  }
-
-  rescoreElement(node: T) {
-    this.sinkDown(this.content.indexOf(node));
-  }
-
-  sinkDown(n: number) {
-    // Fetch the element that has to be sunk.
-    let element = this.content[n];
-
-    // When at 0, an element can not sink any further.
-    while (n > 0) {
-
-      // Compute the parent element's index, and fetch it.
-      let parentN = ((n + 1) >> 1) - 1;
-      let parent = this.content[parentN];
-      // Swap the elements if the parent is greater.
-      if (this.scoreFunction(element) < this.scoreFunction(parent)) {
-        this.content[parentN] = element;
-        this.content[n] = parent;
-        // Update 'n' to continue at the new position.
-        n = parentN;
-      }
-      // Found a parent that is less, no need to sink any further.
-      else {
-        break;
-      }
-    }
-  }
-
-  bubbleUp(n: number) {
-    // Look up the target element and its score.
-    let length = this.content.length;
-    let element = this.content[n];
-    let elemScore = this.scoreFunction(element);
-
-    while (true) {
-      // Compute the indices of the child elements.
-      let child2N = (n + 1) << 1;
-      let child1N = child2N - 1;
-      // This is used to store the new position of the element, if any.
-      let swap = null;
-      let child1Score;
-      // If the first child exists (is inside the array)...
-      if (child1N < length) {
-        // Look it up and compute its score.
-        let child1 = this.content[child1N];
-        child1Score = this.scoreFunction(child1);
-
-        // If the score is less than our element's, we need to swap.
-        if (child1Score < elemScore) {
-          swap = child1N;
-        }
-      }
-
-      // Do the same checks for the other child.
-      if (child2N < length) {
-        let child2 = this.content[child2N];
-        let child2Score = this.scoreFunction(child2);
-        if (child2Score < (swap === null ? elemScore : child1Score)) {
-          swap = child2N;
-        }
-      }
-
-      // If the element needs to be moved, swap it, and continue.
-      if (swap !== null) {
-        this.content[n] = this.content[swap];
-        this.content[swap] = element;
-        n = swap;
-      }
-      // Otherwise, we are done.
-      else {
-        break;
-      }
-    }
   }
 
 }
