@@ -14,7 +14,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { LYTObject } from "../resource/LYTObject";
 import { Utility } from "../utility/Utility";
 import EngineLocation from "../engine/EngineLocation";
-import { OdysseyWalkMesh } from "../odyssey";
+import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
 import { AudioLoader } from "../audio/AudioLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
@@ -318,6 +318,8 @@ export class ModuleArea extends ModuleObject {
 
   roomWalkmeshes: OdysseyWalkMesh[] = [];
   doorWalkmeshes: OdysseyWalkMesh[] = [];
+
+  walkEdges: WalkmeshEdge[] = [];
 
   constructor(resRef = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
@@ -1421,6 +1423,8 @@ export class ModuleArea extends ModuleObject {
    */
   async loadRooms(): Promise<void> {
     console.log('Loading Rooms');
+    this.walkEdges = [];
+    
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
       const model = await room.loadModel();
@@ -1432,6 +1436,10 @@ export class ModuleArea extends ModuleObject {
 
         if(typeof model.walkmesh != 'undefined'){
           GameState.collisionList.push(model.walkmesh);
+        }
+
+        if(typeof model.wok != 'undefined'){
+          this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
         }
         
         model.name = room.roomName;

@@ -30,6 +30,8 @@ export class ModulePath {
   name: string;
   initialized: boolean;
 
+  walkEdges: WalkmeshEdge[] = [];
+
   pointCount: number = 0;
   connectionCount: number = 0;
 
@@ -265,31 +267,25 @@ export class ModulePath {
 
   }
 
+  #tmpLine = new THREE.Line3();
   checkLOSP2P(origin: THREE.Vector3, target: THREE.Vector3): boolean {
     let has_los = true;
 
     if(!this.area)
       return has_los;
 
-    const path_line = new THREE.Line3(origin, target);
-    for(let i = 0; i < this.area.rooms.length; i++){
-      const room = this.area.rooms[i];
-      if(!room || !room?.model?.wok)
+    this.#tmpLine.start.copy(origin);
+    this.#tmpLine.end.copy(target);
+    for(let j = 0, len = this.area.walkEdges.length; j < len; j++){
+      const edge = this.area.walkEdges[j];
+
+      //Ignore transition edges
+      if(edge.transition != -1)
         continue;
-
-      const walkmesh = room.model.wok;
-      const edges: WalkmeshEdge[] = [...walkmesh.edges.values()];
-      for(let j = 0; j < edges.length; j++){
-        const edge = edges[j];
-
-        //Ignore transition edges
-        if(edge.transition != -1)
-          continue;
-        
-        if(Utility.LineLineIntersection(path_line.start.x, path_line.start.y, path_line.end.x, path_line.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
-          has_los = false;
-          break;
-        }
+      
+      if(Utility.LineLineIntersection(this.#tmpLine.start.x, this.#tmpLine.start.y, this.#tmpLine.end.x, this.#tmpLine.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
+        has_los = false;
+        break;
       }
     }
     return has_los;
