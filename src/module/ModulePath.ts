@@ -384,7 +384,7 @@ export class ModulePath {
     const destPoint = PathPoint.FromVector3(dest);
     destPoint.setArea(this.area);
 
-    const fallbackPath = ComputedPath.FromPointsList([destPoint]);
+    const fallbackPath = ComputedPath.FromPointsList([originPoint, destPoint]);
     if(!this.points.length) return fallbackPath;
 
     if(originPoint.hasLOS(destPoint)) return fallbackPath;
@@ -415,7 +415,14 @@ export class ModulePath {
     }
 
     if(path.points.length){
+      path.smooth();
+      if(this.helperMesh.visible){
+        path.buildHelperLine();
+      }
       return path;
+    }
+    if(this.helperMesh.visible){
+      fallbackPath.buildHelperLine();
     }
     return fallbackPath;
 
@@ -435,7 +442,15 @@ export class ComputedPath {
   destination: PathPoint = undefined;
   realtime: boolean = false;
   timer: number = 0;
-  line: THREE.LineSegments;
+
+  helperColors: THREE.Float32BufferAttribute;
+  helperPositions: THREE.Float32BufferAttribute;
+  helperGeometry = new THREE.BufferGeometry();
+  helperMaterial = new THREE.LineBasicMaterial({
+    color: 0xFFFFFF,
+    vertexColors: true
+  });
+  helperMesh: THREE.LineSegments;
 
   constructor(origin: PathPoint = undefined, destination: PathPoint = undefined){
     this.origin = origin;
@@ -559,31 +574,121 @@ export class ComputedPath {
   }
 
   buildHelperLine(){
-    const material = new THREE.LineBasicMaterial({
-      color: 0x0000ff
-    });
+    const pointCount = this.points.length;
+    const connectionCount = pointCount - 1;
+    const pointDataSize = 6;
+    const connDataSize = 6;
+    const bufferSize = (pointCount * pointDataSize) + (connectionCount * connDataSize);
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( 
-      this.points.map( (p) => {
-        return [
-          p.vector.x, p.vector.y, -100, 
-          p.vector.x, p.vector.y, 100
-        ]
-      }).flat(), 3 ) 
-    );
-          
-    this.line = new THREE.LineSegments( geometry, material );
-    GameState.scene.add( this.line );
+    let connectionIndexStart = (pointCount * 2);
+
+    if(!this.helperColors || bufferSize != this.helperColors.array.length){
+      this.helperColors = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    if(!this.helperPositions || bufferSize != this.helperPositions.array.length){
+      this.helperPositions = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
+    }
+
+    for(let i = 0; i < pointCount; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperPositions.setX(idx, point.vector.x);
+      this.helperPositions.setY(idx, point.vector.y);
+      this.helperPositions.setZ(idx, point.vector.z);
+      
+      this.helperPositions.setX(idx2, point.vector.x);
+      this.helperPositions.setY(idx2, point.vector.y);
+      this.helperPositions.setZ(idx2, point.vector.z + 0.75);
+      this.helperPositions.needsUpdate = true;
+
+      this.helperColors.setX(idx, 1);
+      this.helperColors.setY(idx, 0);
+      this.helperColors.setZ(idx, 1);
+
+      this.helperColors.setX(idx2, 1);
+      this.helperColors.setY(idx2, 0.6470588235294118);
+      this.helperColors.setZ(idx2, 0);
+      this.helperColors.needsUpdate = true;
+
+      if(i >= (pointCount - 1)){
+        continue;
+      }
+
+      const cPoint = this.points[i + 1];
+      const idx3 = connectionIndexStart;
+      const idx4 = idx3 + 1;
+
+      this.helperPositions.setX(idx3, point.vector.x);
+      this.helperPositions.setY(idx3, point.vector.y);
+      this.helperPositions.setZ(idx3, point.vector.z + 0.75);
+      
+      this.helperPositions.setX(idx4, cPoint.vector.x);
+      this.helperPositions.setY(idx4, cPoint.vector.y);
+      this.helperPositions.setZ(idx4, cPoint.vector.z + 0.75);
+      this.helperPositions.needsUpdate = true;
+
+      this.helperColors.setX(idx3, 1);
+      this.helperColors.setY(idx3, 0.6470588235294118);
+      this.helperColors.setZ(idx3, 0);
+
+      this.helperColors.setX(idx4, 1);
+      this.helperColors.setY(idx4, 0.6470588235294118);
+      this.helperColors.setZ(idx4, 0);
+      this.helperColors.needsUpdate = true;
+      connectionIndexStart += 2;
+    }
+
+    this.helperGeometry.setAttribute('position', this.helperPositions);
+    this.helperGeometry.setAttribute('color', this.helperColors);
+    
+    if(!this.helperMesh){
+      this.helperMesh = new THREE.LineSegments( this.helperGeometry, this.helperMaterial );
+      GameState.scene.add( this.helperMesh );
+    }
+  }
+
+  pop(){
+    const p = this.points.shift();
+    this.buildHelperLine();
+    return p;
   }
 
   dispose(){
-    if(this.line){
-      this.line.removeFromParent();
-      const material = this.line.material as THREE.Material;
-      if(material) material.dispose()
-      this.line.geometry.dispose();
-    }
+    if(!this.helperMesh)
+      return;
+
+    this.helperMesh.removeFromParent();
+
+    if(this.helperMaterial)
+      this.helperMaterial.dispose();
+
+    if(this.helperGeometry)
+      this.helperGeometry.dispose();
+
+    this.helperMesh = undefined;
+    this.helperGeometry = undefined;
+    this.helperMaterial = undefined;
+    this.helperColors = undefined;
+    this.helperPositions = undefined;
+  }
+
+  smooth(divisions: number = -1){
+    if(this.points.length < 2)
+      return;
+
+    if(divisions == -1)
+      divisions = this.points.length * 5;
+
+    const preSmooth = this.points.map( (p) => p.vector );
+    const curve = new THREE.CatmullRomCurve3(preSmooth);
+
+    this.points = curve.getPoints( divisions ).map( (v) => {
+      return PathPoint.FromVector3(v);
+    });
   }
 
   static FromPointsList(points: PathPoint[] = []): ComputedPath {

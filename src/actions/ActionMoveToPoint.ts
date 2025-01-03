@@ -106,7 +106,7 @@ export class ActionMoveToPoint extends Action {
           // this.owner.walk = !run;
           this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
         }else{
-          this.owner.computedPath.points.shift();
+          this.owner.computedPath.pop();
         }
       }else{
         // console.warn(`No more points on path`, this.owner.getTag(), this.owner.computedPath);
@@ -170,6 +170,12 @@ export class ActionMoveToPoint extends Action {
       // this.owner.computedPath.buildHelperLine();
       // (this.owner.computedPath.line.material as THREE.LineBasicMaterial).color.copy(this.owner.helperColor);
     }
+  }
+
+  dispose(): void {
+    super.dispose();
+    console.log('ActionMoveToPoint.dispose', this.owner.tag)
+    this.owner.computedPath = undefined;
   }
 
 }

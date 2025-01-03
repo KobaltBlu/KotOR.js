@@ -96,6 +96,13 @@ export class Action {
   }
 
   /**
+   * The destructor for this action
+   */
+  dispose(){
+    //stub
+  }
+
+  /**
    * Sets the owner of this action.
    * 
    * @param owner - The object that will perform this action

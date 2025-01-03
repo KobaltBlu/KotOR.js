@@ -1,6 +1,7 @@
 import { GameState } from "../GameState";
 import { GFFObject } from "../resource/GFFObject";
-import { OdysseyModel3D } from "../three/odyssey";
+import type { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
@@ -14,7 +15,8 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { LYTObject } from "../resource/LYTObject";
 import { Utility } from "../utility/Utility";
 import EngineLocation from "../engine/EngineLocation";
-import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
+import { OdysseyWalkMesh } from "../odyssey/OdysseyWalkMesh";
+import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
 import { AudioLoader } from "../audio/AudioLoader";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { CExoLocString } from "../resource/CExoLocString";
@@ -320,6 +322,7 @@ export class ModuleArea extends ModuleObject {
   doorWalkmeshes: OdysseyWalkMesh[] = [];
 
   walkEdges: WalkmeshEdge[] = [];
+  walkFaces: OdysseyFace3[] = [];
 
   constructor(resRef = '', are = new GFFObject(), git = new GFFObject()){
     super(are);
@@ -1424,6 +1427,7 @@ export class ModuleArea extends ModuleObject {
   async loadRooms(): Promise<void> {
     console.log('Loading Rooms');
     this.walkEdges = [];
+    this.walkFaces = [];
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
@@ -1440,6 +1444,7 @@ export class ModuleArea extends ModuleObject {
 
         if(typeof model.wok != 'undefined'){
           this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
+          this.walkFaces = [...this.walkFaces, ...model.wok.walkableFaces];
         }
         
         model.name = room.roomName;

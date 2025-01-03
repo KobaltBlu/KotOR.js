@@ -160,7 +160,7 @@ export class ActionQueue extends Array {
    *
    */
   clear(){
-    this.splice(0, this.length);
+    this.splice(0, this.length).map( (a: Action) => a.dispose() );
   }
 
   /**
@@ -174,7 +174,7 @@ export class ActionQueue extends Array {
     if(action){
       const index = this.indexOf(action);
       if(index >= 0){
-        this.splice(index, 1);
+        this.splice(index, 1).map( (a: Action) => a.dispose() );
         this.clearActionsByGroupId(action.groupId);
       }
     }
@@ -193,7 +193,7 @@ export class ActionQueue extends Array {
     while(index--){
       const action = this[index];
       if(action && action.groupId == groupId){
-        this.splice(index, 1);
+        this.splice(index, 1).map( (a: Action) => a.dispose() );
       }
     }
   }

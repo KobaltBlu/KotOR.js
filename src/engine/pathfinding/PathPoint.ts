@@ -57,6 +57,7 @@ export class PathPoint {
     this.area = area;
     if(this.area){
       this.nearestWalkableVector = this.area.getNearestWalkablePoint(this.vector);
+      this.vector.z = this.nearestWalkableVector.z;
     }
   }
 

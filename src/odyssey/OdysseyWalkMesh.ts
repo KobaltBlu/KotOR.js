@@ -510,8 +510,10 @@ export class OdysseyWalkMesh {
     let nearest = Infinity;
     let nearest_point = undefined;
     let distance = 0;
+    const target = new THREE.Vector3();
     for(let i = 0, len = this.walkableFaces.length; i < len; i++){
-      distance = point.distanceTo(this.walkableFaces[i].centroid);
+      this.walkableFaces[i].triangle.closestPointToPoint(point, target)
+      distance = point.distanceTo(target);
       if(distance >= nearest){
         continue;
       }
