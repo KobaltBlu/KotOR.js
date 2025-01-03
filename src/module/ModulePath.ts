@@ -443,6 +443,7 @@ export class ComputedPath {
   realtime: boolean = false;
   timer: number = 0;
 
+  color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
   helperColors: THREE.Float32BufferAttribute;
   helperPositions: THREE.Float32BufferAttribute;
   helperGeometry = new THREE.BufferGeometry();
@@ -603,16 +604,16 @@ export class ComputedPath {
       this.helperPositions.setX(idx2, point.vector.x);
       this.helperPositions.setY(idx2, point.vector.y);
       this.helperPositions.setZ(idx2, point.vector.z + 0.75);
-      this.helperPositions.needsUpdate = true;
 
       this.helperColors.setX(idx, 1);
       this.helperColors.setY(idx, 0);
       this.helperColors.setZ(idx, 1);
 
-      this.helperColors.setX(idx2, 1);
-      this.helperColors.setY(idx2, 0.6470588235294118);
-      this.helperColors.setZ(idx2, 0);
-      this.helperColors.needsUpdate = true;
+      //this.helperColor
+
+      this.helperColors.setX(idx2, this.color.r);
+      this.helperColors.setY(idx2, this.color.g);
+      this.helperColors.setZ(idx2, this.color.b);
 
       if(i >= (pointCount - 1)){
         continue;
@@ -629,7 +630,6 @@ export class ComputedPath {
       this.helperPositions.setX(idx4, cPoint.vector.x);
       this.helperPositions.setY(idx4, cPoint.vector.y);
       this.helperPositions.setZ(idx4, cPoint.vector.z + 0.75);
-      this.helperPositions.needsUpdate = true;
 
       this.helperColors.setX(idx3, 1);
       this.helperColors.setY(idx3, 0.6470588235294118);
@@ -638,9 +638,10 @@ export class ComputedPath {
       this.helperColors.setX(idx4, 1);
       this.helperColors.setY(idx4, 0.6470588235294118);
       this.helperColors.setZ(idx4, 0);
-      this.helperColors.needsUpdate = true;
       connectionIndexStart += 2;
     }
+    this.helperPositions.needsUpdate = true;
+    this.helperColors.needsUpdate = true;
 
     this.helperGeometry.setAttribute('position', this.helperPositions);
     this.helperGeometry.setAttribute('color', this.helperColors);
@@ -649,6 +650,49 @@ export class ComputedPath {
       this.helperMesh = new THREE.LineSegments( this.helperGeometry, this.helperMaterial );
       GameState.scene.add( this.helperMesh );
     }
+  }
+
+  setColor(color: THREE.Color){
+    this.color = color;
+    if(!this.helperColors)
+      return;
+
+    const pointCount = this.points.length;
+    let connectionIndexStart = (pointCount * 2);
+    for(let i = 0; i < pointCount; i++){
+      const point = this.points[i];
+
+      const idx = i * 2;
+      const idx2 = idx + 1;
+
+      this.helperColors.setX(idx, 1);
+      this.helperColors.setY(idx, 0);
+      this.helperColors.setZ(idx, 1);
+
+      //this.helperColor
+
+      this.helperColors.setX(idx2, this.color.r);
+      this.helperColors.setY(idx2, this.color.g);
+      this.helperColors.setZ(idx2, this.color.b);
+
+      if(i >= (pointCount - 1)){
+        continue;
+      }
+
+      const cPoint = this.points[i + 1];
+      const idx3 = connectionIndexStart;
+      const idx4 = idx3 + 1;
+
+      this.helperColors.setX(idx3, this.color.r);
+      this.helperColors.setY(idx3, this.color.g);
+      this.helperColors.setZ(idx3, this.color.b);
+
+      this.helperColors.setX(idx4, this.color.r);
+      this.helperColors.setY(idx4, this.color.g);
+      this.helperColors.setZ(idx4, this.color.b);
+      connectionIndexStart += 2;
+    }
+    this.helperColors.needsUpdate = true;
   }
 
   pop(){

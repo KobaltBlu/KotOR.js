@@ -160,6 +160,7 @@ export class ActionMoveToPoint extends Action {
       this.owner.computedPath.realtime = true;
     }else{*/
       this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
+      this.owner.computedPath.setColor(this.owner.helperColor);
       if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
         this.owner.computedPath.realtime = true;
       }
