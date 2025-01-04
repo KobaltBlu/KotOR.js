@@ -224,7 +224,7 @@ export class ModuleObject {
   actionQueue: ActionQueue;
   action: Action;
 
-  computedPath: ComputedPath;
+  #computedPath: ComputedPath;
   
   lipObject: LIPObject;
 
@@ -780,9 +780,9 @@ export class ModuleObject {
   triggerUserDefinedEvent( event: NWScriptEvent ){
     if(event instanceof NWScriptEvent){
       if(this.scripts.onUserDefined instanceof NWScriptInstance){
-        //console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, nValue, this);
-        let instance = this.scripts.onUserDefined.nwscript.newInstance();
-        instance.run(this, parseInt(event.getInt(0)));
+        // console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, event.getInt(0), this);
+        // let instance = this.scripts.onUserDefined.nwscript.newInstance();
+        this.scripts.onUserDefined.run(this, parseInt(event.getInt(0)));
       }
     }
   }
@@ -800,6 +800,7 @@ export class ModuleObject {
   }
 
   scriptEventHandler( event: NWScriptEvent ){
+    // console.log('scriptEventHandler', this.tag, event);
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEventType.EventUserDefined:
@@ -1123,6 +1124,30 @@ export class ModuleObject {
 
   getCurrentRoom(){
     this.collisionData.findWalkableFace();
+  }
+
+  getComputedPath(){
+    return this.#computedPath;
+  }
+
+  setComputedPath(computedPath: ComputedPath){
+    if(!!this.#computedPath){
+      this.#computedPath.dispose();
+    }
+    this.#computedPath = computedPath;
+    if(!this.#computedPath) return;
+
+    this.#computedPath.owner = this;
+    if(this?.area.path?.helperMesh?.visible){
+      this.#computedPath.buildHelperLine();
+    }
+  }
+
+  #tmpLIOVec3 = new THREE.Vector3();
+  checkLineIntersectsObject(line: THREE.Line3){
+    line.closestPointToPoint(this.position, true, this.#tmpLIOVec3);
+    // Check if the closest point is within the radius of the point
+    return this.#tmpLIOVec3.distanceTo(this.position) <= this.getHitDistance();
   }
 
   // findWalkableFace(object?: ModuleObject){

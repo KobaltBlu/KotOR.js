@@ -1113,7 +1113,7 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
     base:   [], //this.stack.stack.slice(0, (instr.bpOffset/4)),
     local:  [], //this.stack.stack.slice(this.stack.stack.length-(instr.spOffset/4), this.stack.stack.length)
     instr:  instruction,
-    script: new GameState.NWScript.NWScriptInstance( this.instructions )
+    script: this.nwscript.newInstance()
   };
 
   //console.log('STORE_STATE', this.stack.stack.length, this.stack.basePointer);
@@ -1125,7 +1125,6 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
   state.script.prevByteCode = 0;
   //state.script.Definition = this.Definition;
   state.script.subRoutines = [];
-  state.script.stack = new NWScriptStack();
 
   state.script.stack.stack = this.stack.stack.slice();
   state.script.stack.basePointer = this.stack.basePointer;

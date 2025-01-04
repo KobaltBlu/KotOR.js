@@ -54,7 +54,7 @@ export class NWScriptInstance {
   params: number[];
   paramString: string;
   verified: boolean;
-  stack: NWScriptStack;
+  stack: NWScriptStack = new NWScriptStack();
   delayCommands: EventTimedEvent[] = [];
   address: number;
   offset: number;
@@ -110,6 +110,10 @@ export class NWScriptInstance {
     this.init();
     this.globalCache = null;
     this._disposed = false;
+  }
+
+  newInstance(){
+    return this.nwscript.newInstance();
   }
 
   /**
@@ -206,7 +210,7 @@ export class NWScriptInstance {
       this.nwscript.disposeInstance(this);
     }
 
-    this.nwscript = undefined;
+    // this.nwscript = undefined;
     this.instructions = undefined;
     this.init();
     this.dispatchEvent('dispose', this.uuid);
@@ -238,8 +242,6 @@ export class NWScriptInstance {
 
     if(this.stack instanceof NWScriptStack)
       this.stack.dispose();
-
-    this.stack = undefined;
 
     this.persistentObjectIndex.clear()
     this.objectInventoryIndex.clear()
@@ -426,9 +428,9 @@ export class NWScriptInstance {
      * If this instance was generated from a StoreState,
      * then dispose of it as it won't be used again
      */
-    if(this.isStoreState){
-      this.dispose();
-    }
+    // if(this.isStoreState){
+      // this.dispose();
+    // }
 
     return returnValue;
   }
