@@ -57,8 +57,7 @@ export class ActionMoveToPoint extends Action {
     if(this.target){
       this.real_target_position.copy(this.target.position);
       if( BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) && this.target.isDead() ){
-        if(this.owner.computedPath) this.owner.computedPath.dispose();
-        this.owner.computedPath = undefined;
+        this.owner.setComputedPath(undefined);
         return ActionStatus.FAILED;
       }
     }
@@ -66,12 +65,15 @@ export class ActionMoveToPoint extends Action {
     const range = this.getParameter<number>(6) || 0.1;
     const run = this.getParameter<number>(5) ? true : false;
 
-    if(this.owner.computedPath == undefined){
+    if(this.owner.getComputedPath() == undefined){
+      this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
       this.calculatePath();
     }
 
+    const computedPath = this.owner.getComputedPath();
+
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
-    if(distance > (this.owner.computedPath.points.length > 1 ? 0.5 : range)){
+    if(distance > (computedPath.points.length > 1 ? 0.5 : range)){
   
       if((this.owner as any).blockingTimer >= 5 || this.owner.collisionTimer >= 1){
         (this.owner as any).blockingTimer = 0;
@@ -84,17 +86,17 @@ export class ActionMoveToPoint extends Action {
         // distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
       // }
   
-      let point = this.owner.computedPath.points[0];
+      let point = computedPath.points[0];
       if(point){
         let pointDistance = Utility.Distance2D(this.owner.position, point.vector);
-        if(pointDistance > (this.owner.computedPath.points.length > 1 ? 0.5 : range)){
+        if(pointDistance > (computedPath.points.length > 1 ? 0.5 : range)){
           let tangent = point.vector.clone().sub(this.owner.position.clone());
           let atan = Math.atan2(-tangent.y, -tangent.x);
           this.owner.setFacing(atan + Math.PI/2, false);
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
     
-          this.runCreatureAvoidance(delta);
+          this.runCreatureAvoidance(delta, this.target_position);
     
           // let arrivalDistance = range;
           // if( this.openSpot ){
@@ -106,20 +108,18 @@ export class ActionMoveToPoint extends Action {
           // this.owner.walk = !run;
           this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
         }else{
-          this.owner.computedPath.pop();
+          computedPath.pop();
         }
       }else{
-        // console.warn(`No more points on path`, this.owner.getTag(), this.owner.computedPath);
+        // console.warn(`No more points on path`, this.owner.getTag(), computedPath);
       }
   
-      if(this.owner.computedPath.timer < 0){
-        if(this.owner.computedPath.realtime){
-          if(this.owner.computedPath) this.owner.computedPath.dispose();
-          this.owner.computedPath = undefined;
-          //console.log('Path invalidated');
+      if(computedPath.timer < 0){
+        if(computedPath.realtime){
+          this.owner.setComputedPath(undefined);
         }
       }else{
-        this.owner.computedPath.timer -= 10*delta;
+        computedPath.timer -= 10*delta;
       }
 
       let timeout = this.getParameter<number>(8) - delta;
@@ -143,40 +143,31 @@ export class ActionMoveToPoint extends Action {
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
-      if(this.owner.computedPath) this.owner.computedPath.dispose();
-      this.owner.computedPath = undefined;
+      this.owner.setComputedPath(undefined);
       return ActionStatus.COMPLETE;
     }
 
-    if(this.owner.computedPath) this.owner.computedPath.dispose();
-    this.owner.computedPath = undefined;
+    this.owner.setComputedPath(undefined);
     return ActionStatus.FAILED;
   }
 
   calculatePath(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
-    /*if(this.owner.openSpot){
-      this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.owner.openSpot.targetVector);
-      this.owner.computedPath.realtime = true;
-    }else{*/
-      this.owner.computedPath = GameState.module.area.path.traverseToPoint(this.owner.position, this.target_position);
-      this.owner.computedPath.setColor(this.owner.helperColor);
-      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
-        this.owner.computedPath.realtime = true;
-      }
-    // }
-    // distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
-    this.owner.computedPath.timer = 20;
-    if(this.owner.computedPath){
-      // this.owner.computedPath.buildHelperLine();
-      // (this.owner.computedPath.line.material as THREE.LineBasicMaterial).color.copy(this.owner.helperColor);
+
+    const path = GameState.module.area.path.traverseToPoint(this.owner, this.owner.position, this.target_position);
+    path.fixWalkEdges(this.owner.getHitDistance());
+    path.setColor(this.owner.helperColor);
+    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+      path.realtime = true;
     }
+    path.timer = 20;
+    this.owner.setComputedPath(path);
   }
 
   dispose(): void {
     super.dispose();
     console.log('ActionMoveToPoint.dispose', this.owner.tag)
-    this.owner.computedPath = undefined;
+    this.owner.setComputedPath(undefined);
   }
 
 }

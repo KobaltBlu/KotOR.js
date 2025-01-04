@@ -9,6 +9,7 @@ import { IClosestPathPointData } from "../interface/engine/pathfinding/IClosestP
 import type { ModuleArea } from "./ModuleArea";
 import { Utility } from "../utility/Utility";
 import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
+import type { ModuleObject } from "./ModuleObject";
 
 /**
 * ModulePath class.
@@ -113,7 +114,7 @@ export class ModulePath {
       console.error(e);
     }
 
-    this.setPathHelpersVisibility(false);
+    this.setPathHelpersVisibility(true);
   }
 
   /**
@@ -375,7 +376,7 @@ export class ModulePath {
     return point;
   }
 
-  traverseToPoint(origin: THREE.Vector3, dest: THREE.Vector3): ComputedPath {
+  traverseToPoint(owner: ModuleObject, origin: THREE.Vector3, dest: THREE.Vector3, smooth: boolean = true): ComputedPath {
     this.reset();
 
     const originPoint = PathPoint.FromVector3(origin);
@@ -387,7 +388,7 @@ export class ModulePath {
     const fallbackPath = ComputedPath.FromPointsList([originPoint, destPoint]);
     if(!this.points.length) return fallbackPath;
 
-    if(originPoint.hasLOS(destPoint)) return fallbackPath;
+    if(originPoint.hasLOS(destPoint, owner)) return fallbackPath;
 
     const closest_origin_point = this.getClosestPathPoint(origin);
     const closest_destination_point = this.getClosestPathPoint(dest);
@@ -401,10 +402,11 @@ export class ModulePath {
     destPoint.addConnection(closest_destination_point);
 
     originPoint.connections = this.points.slice(0).filter( (p) => {
-      return p.hasLOS(originPoint);
+      return p.hasLOS(originPoint, owner);
     });
 
-    const path = new ComputedPath(originPoint, destPoint);
+    const path = new ComputedPath(owner, originPoint, destPoint);
+    path.setOwner(owner);
     path.search();
 
     //clean up tmp point refs
@@ -415,15 +417,11 @@ export class ModulePath {
     }
 
     if(path.points.length){
-      path.smooth();
-      if(this.helperMesh.visible){
-        path.buildHelperLine();
-      }
+      if(smooth)
+        path.smooth();
       return path;
     }
-    if(this.helperMesh.visible){
-      fallbackPath.buildHelperLine();
-    }
+    
     return fallbackPath;
 
   }
@@ -437,6 +435,7 @@ export class ModulePath {
 }
 
 export class ComputedPath {
+  owner: ModuleObject;
   points: PathPoint[] = [];
   origin: PathPoint = undefined;
   destination: PathPoint = undefined;
@@ -453,10 +452,15 @@ export class ComputedPath {
   });
   helperMesh: THREE.LineSegments = new THREE.LineSegments();
 
-  constructor(origin: PathPoint = undefined, destination: PathPoint = undefined){
+  constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
+    this.owner = owner;
     this.origin = origin;
     this.destination = destination;
     this.points = [];
+  }
+
+  setOwner(owner: ModuleObject){
+    this.owner = owner;
   }
 
   getCost( point: PathPoint ){
@@ -464,7 +468,7 @@ export class ComputedPath {
   }
 
   clone(){
-    const clone = new ComputedPath();
+    const clone = new ComputedPath(this.owner);
     clone.points = this.points.slice(0);
     clone.origin = this.origin;
     clone.destination = this.destination;
@@ -501,7 +505,7 @@ export class ComputedPath {
       const neighbors = currentNode.connections;
       for(let i = 0, il = neighbors.length; i < il; i++) {
         let neighbor = neighbors[i];
-        if(neighbor.closed || !neighbor.hasLOS(currentNode)) {
+        if(neighbor.closed || !neighbor.hasLOS(currentNode, this.owner)) {
           continue;
         }
         let gScore = currentNode.g + neighbor.cost;
@@ -525,44 +529,66 @@ export class ComputedPath {
     return this;
   }
 
+  /**
+   * Prunes any unneeded points based of LOS checks between points
+   * @returns void
+   */
   prunePathPoints(){
-    if(this.points.length){
-      const pruneList: number[] = [];
-      let pruneRest = false;
-      for(let i = 0; i < this.points.length; i++){
-        const cPoint = this.points[i];
-        const nPoint = this.points[i+1];
+    return;
+    if(!this.points.length)
+      return;
 
-        if(this.destination == cPoint) continue;
+    const pruneList: number[] = [];
+    let pruneRest = false;
 
-        if(!pruneRest){
-          if(cPoint.hasLOS(this.destination)){
-            pruneRest = true;
-          }else if(nPoint && (cPoint != this.origin)){
-            //Check to see if we have LOS to the next point, which would make the current point useless
-            if(this.origin.hasLOS(nPoint)){
-              //Contine: prune and continue
-              pruneList.push(i);
-            }else{
-              //Exit: prune mode
-              // break;
-            }
-          }
-        }else{
-          pruneList.push(i);
-        }
+    let lastLOSOrigin;
+    for(let i = 0, len = this.points.length; i < len; i++){
+      const cPoint = this.points[i];
+      const nPoint = this.points[i+1];
+      const lPoint = this.points[i-1];
+
+      if(this.destination == cPoint || !nPoint) continue;
+
+      /**
+       * Prune until the end because we already found LOS to the destination
+       */
+      if(pruneRest && nPoint){
+        pruneList.push(i);
+        continue;
       }
 
-      if(pruneList.length){
-        // console.log('ComputedPath:pruneList', pruneList.length, this);
-        while(pruneList.length){
-          const index = pruneList.pop();
-          this.points.splice(index, 1);
-        }
+      if(cPoint.hasLOS(this.destination, this.owner)){
+        pruneRest = true;
+        continue;
+      }
+      
+      if(cPoint == this.origin)
+        continue;
+
+      if(!lPoint)
+        continue;
+
+      if(lastLOSOrigin && lastLOSOrigin.hasLOS(nPoint), this.owner){
+        pruneList.push(i);
+        continue;
       }
 
-      this.reIndex();
+      lastLOSOrigin = undefined;
+
+      if(!!nPoint && lPoint.hasLOS(nPoint, this.owner)){
+        lastLOSOrigin = lPoint;
+        pruneList.push(i);
+        continue;
+      }
     }
+
+    if(pruneList.length){
+      while(pruneList.length){
+        this.points.splice(pruneList.pop(), 1);
+      }
+    }
+
+    this.reIndex();
   }
 
   reIndex(): void {
@@ -729,6 +755,25 @@ export class ComputedPath {
     this.helperPositions = undefined;
   }
 
+  merge(path2: ComputedPath){
+    const endP1 = this.points[this.points.length - 1];
+    const startP2 = path2.points[0];
+    if(endP1.vector.equals(startP2.vector)){
+      path2.points.shift();
+    }
+    this.points = [...this.points, ...path2.points];
+    this.destination = this.points[this.points.length-1];
+  }
+
+  fixWalkEdges(safeDistance = 1.5){
+    if(!this.owner) return;
+    for(let i = 0; i < this.points.length; i++){
+      this.points[i].vector.copy(
+        this.owner.area.getNearestWalkablePoint(this.points[i].vector, safeDistance)
+      );
+    }
+  }
+
   smooth(divisions: number = -1){
     if(this.points.length < 2)
       return;
@@ -739,15 +784,23 @@ export class ComputedPath {
     const preSmooth = this.points.map( (p) => p.vector );
     const curve = new THREE.CatmullRomCurve3(preSmooth);
 
+    const safeDistance = this.owner?.getHitDistance();
+
     this.points = curve.getPoints( divisions ).map( (v) => {
-      return PathPoint.FromVector3(v);
+      return PathPoint.FromVector3(this.owner ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
     });
   }
 
   static FromPointsList(points: PathPoint[] = []): ComputedPath {
-    const path = new ComputedPath();
+    const path = new ComputedPath(undefined, points[0], points[points.length-1]);
     path.points = points;
     return path;
+  }
+
+  static FromVector3List(points: THREE.Vector3[] = []): ComputedPath {
+    return this.FromPointsList(
+      points.map((p) => PathPoint.FromVector3(p))
+    );
   }
 
 }

@@ -61,6 +61,7 @@ export class ActionFollowLeader extends Action {
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
         this.owner.speed = 0;
+        this.owner.setComputedPath(undefined);
         return ActionStatus.COMPLETE;
       }
     }

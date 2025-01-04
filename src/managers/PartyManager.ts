@@ -859,9 +859,9 @@ export class PartyManager {
       0
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
-    
-    return (GameState.module.area.isPointWalkable(this.#tmpFollowPosition)) ?
-      this.#tmpFollowPosition : GameState.module.area.getNearestWalkablePoint(this.#tmpFollowPosition);
+
+    return (creature.area.isPointWalkable(this.#tmpFollowPosition)) ?
+      this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, creature.getHitDistance());
   }
 
   static GiveXP(nXP = 0){

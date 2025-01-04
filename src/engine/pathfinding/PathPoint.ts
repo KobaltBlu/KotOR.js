@@ -4,6 +4,7 @@ import { Utility } from '../../utility/Utility';
 import type { ModuleArea } from '../../module/ModuleArea';
 import type { GFFStruct } from '../../resource/GFFStruct';
 import type { WalkmeshEdge } from '../../odyssey/WalkmeshEdge';
+import type { ModuleObject } from '../../module/ModuleObject';
 
 /**
  * PathPoint class.
@@ -74,13 +75,14 @@ export class PathPoint {
     return false;
   }
 
-  hasLOS(point_b: PathPoint): boolean {
-    let has_los = true;
-
+  hasLOS(point_b: PathPoint, owner?: ModuleObject): boolean {
     if(!this.area)
-      return has_los;
+      return true;
 
     const path_line = new THREE.Line3(this.vector, point_b.vector);
+    /**
+     * Check line intersects walkable edges
+     */
     for(let j = 0, len = this.area.walkEdges.length; j < len; j++){
       const edge = this.area.walkEdges[j];
 
@@ -89,11 +91,24 @@ export class PathPoint {
         continue;
       
       if(Utility.LineLineIntersection(path_line.start.x, path_line.start.y, path_line.end.x, path_line.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
-        has_los = false;
-        break;
+        return false;
       }
     }
-    return has_los;
+
+    /**
+     * Check line intersects creatures
+     */
+    for(let j = 0, len = this.area.creatures.length; j < len; j++){
+      const obj = this.area.creatures[j];
+
+      //Ignore the owner if found in this list
+      if(obj == owner)
+        continue;
+
+      if(obj.checkLineIntersectsObject(path_line))
+        return false;
+    }
+    return true;
   }
 
   addConnection(node: PathPoint) {

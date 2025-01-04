@@ -45,6 +45,8 @@ export class WalkmeshEdge {
 
   setFace(face: OdysseyFace3){
     this.face = face;
+    if(!face) return;
+    face.perimeter[this.index == 0 ? 'a' : this.index == 1 ? 'b' : 'c'] = true;
   }
 
   setSide(side: number){

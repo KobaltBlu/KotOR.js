@@ -1870,6 +1870,25 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
+  /**
+   * Determines the distance score from the edge of all walkable faces
+   * A low score means that the point is near a walkmesh perimiter
+   * A high scror means that the point is further away from all walkmesh pemimiters
+   * @param point point to examine
+   * @returns 
+   */
+  scorePointEdgeDistance(point: THREE.Vector3){
+    let distance = Infinity;
+    const tmpTarget = new THREE.Vector3();
+    for(let i = 0, len = this.walkEdges.length; i < len; i++){
+      const edge = this.walkEdges[i];
+      edge.line.closestPointToPoint(point, true, tmpTarget);
+      const d = tmpTarget.distanceTo(point);
+      distance = (d < distance) ? d : distance;
+    }
+    return distance;
+  }
+
   isPointWalkable(point: THREE.Vector3){
     for(let i = 0, len = this.walkFaces.length; i < len; i++){
       if(this.walkFaces[i].pointInFace2d(point)){
@@ -1879,20 +1898,71 @@ export class ModuleArea extends ModuleObject {
     return false;
   }
 
-  getNearestWalkablePoint(point: THREE.Vector3){
+  getNearestWalkablePoint(point: THREE.Vector3, safeDistance = 1.5){
     let nearest = Infinity;
     let nearest_point = point.clone();
     let distance = 0;
-    const target = new THREE.Vector3();
+    const tmpPoint = new THREE.Vector3();
+
+    const tmp1 = new THREE.Vector3();
+    const tmp2 = new THREE.Vector3();
+    const tmpN = new THREE.Vector3();
+    const inwardDirection = new THREE.Vector3();
+    // const dir = new THREE.Vector3();
+    // const isOOB = this.isPointWalkable(point);
     for(let i = 0, len = this.walkFaces.length; i < len; i++){
-      this.walkFaces[i].triangle.closestPointToPoint(point, target)
-      distance = point.distanceTo(target);
+      const f = this.walkFaces[i];
+      f.triangle.closestPointToPoint(point, tmpPoint);
+
+      // Calculate the normal of the triangle
+      const edge1 = tmp1.subVectors(f.triangle.b, f.triangle.a);
+      const edge2 = tmp2.subVectors(f.triangle.c, f.triangle.a);
+      const normal = tmpN.crossVectors(edge1, edge2).normalize();
+
+      // Determine the inward direction
+      inwardDirection.set(0, 0, 0);
+      if (f.adjacent[0] == -1 && f.pointIsOnEdge(tmpPoint, 'a')) {
+        inwardDirection.add(new THREE.Vector3().crossVectors(normal, edge1).normalize());
+        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
+      } else if (f.adjacent[1] == -1 && f.pointIsOnEdge(tmpPoint, 'b')) {
+        inwardDirection.add(new THREE.Vector3().crossVectors(normal, new THREE.Vector3().subVectors(f.triangle.c, f.triangle.b)).normalize());
+        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
+      } else if (f.adjacent[2] == -1 && f.pointIsOnEdge(tmpPoint, 'c')) {
+        inwardDirection.add(new THREE.Vector3().crossVectors(normal, new THREE.Vector3().subVectors(f.triangle.a, f.triangle.c)).normalize());
+        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
+      }
+
+      distance = point.distanceTo(tmpPoint);
       if(distance >= nearest)
         continue;
       
-      nearest_point.copy(target);//this.walkableFaces[i].centroid;
+      nearest_point.copy(tmpPoint);//this.walkableFaces[i].centroid;
       nearest = distance;
     }
+
+    // const repellingForce = new THREE.Vector3();
+    // const safeDistance = 1;
+
+    // const closestPoint = new THREE.Vector3();
+    // this.walkEdges.forEach(edge => {
+    //   const line = edge.line;
+    //   line.closestPointToPoint(nearest_point, true, closestPoint);
+
+    //   const distance = nearest_point.distanceTo(closestPoint);
+
+    //   if (distance < safeDistance) {
+    //     // Calculate the repelling vector
+    //     const repelDirection = new THREE.Vector3().subVectors(nearest_point, closestPoint).normalize();
+    //     const repelStrength = safeDistance - distance;
+
+    //     // Accumulate the repelling force
+    //     repellingForce.add(repelDirection.multiplyScalar(repelStrength));
+    //   }
+    // });
+
+    // // Update the position by applying the accumulated repelling force
+    // return nearest_point.add(repellingForce);
+
     return nearest_point;
   }
 

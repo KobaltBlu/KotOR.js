@@ -144,6 +144,10 @@ export class OdysseyFace3 {
 	 */
 	materialIndex: number;
 
+	perimeter = {
+		a: false, b: false, c: false
+	};
+
 	pointInFace2d(pt: THREE.Vector3){
     let v1 = this.walkmesh.vertices[this.a];
     let v2 = this.walkmesh.vertices[this.b];
@@ -158,6 +162,28 @@ export class OdysseyFace3 {
 
     return !(has_neg && has_pos);
   }
+
+	#tmpEdge = new THREE.Vector3();
+	#tmpPointToStart = new THREE.Vector3();
+	#tmpPointToEnd = new THREE.Vector3();
+
+	pointIsOnEdge(point: THREE.Vector3, side: 'a'|'b'|'c') {
+		const edgeStart = side == 'a' ? this.walkmesh.vertices[this.a] : 
+			side == 'b' ? this.walkmesh.vertices[this.b] : this.walkmesh.vertices[this.c];
+		const edgeEnd = side == 'a' ? this.walkmesh.vertices[this.b] : 
+			side == 'b' ? this.walkmesh.vertices[this.c] : this.walkmesh.vertices[this.a];
+
+    this.#tmpEdge.set(0, 0, 0).subVectors(edgeEnd, edgeStart);
+    this.#tmpPointToStart.set(0, 0, 0).subVectors(point, edgeStart);
+    this.#tmpPointToEnd.set(0, 0, 0).subVectors(point, edgeEnd);
+
+    // Check if the point lies on the edge segment
+    return (
+			this.#tmpPointToStart.cross(this.#tmpEdge).length() < 1e-6 && // Point is collinear
+			this.#tmpPointToStart.dot(this.#tmpEdge) >= 0 && // Point is not before edgeStart
+			this.#tmpPointToEnd.dot(this.#tmpEdge) <= 0 // Point is not after edgeEnd
+    );
+	}
 
   sign(p1: any, p2: any, p3: any){
     return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);

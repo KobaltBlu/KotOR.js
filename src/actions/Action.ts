@@ -6,12 +6,15 @@ import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
 import { ICombatAction } from "../interface/combat/ICombatAction";
 // import { ModuleObjectManager, PartyManager } from "../managers";
-import type { ModuleCreature, ModuleObject } from "../module";
+import { type ModuleCreature, type ModuleObject } from "../module";
 // import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
 import { ActionParameter } from "./ActionParameter";
 import { ActionQueue } from "./ActionQueue";
+import * as THREE from "three";
+import { ComputedPath } from "../module/ModulePath";
+// import { PathPoint } from "../engine/pathfinding/PathPoint";
 
 /**
  * Base class for all game actions in the engine.
@@ -147,89 +150,160 @@ export class Action {
    * adjusts movement vectors to avoid them. Only applies to creature-type
    * objects that are part of the party.
    */
-  runCreatureAvoidance(delta = 0) {
+  runCreatureAvoidance(delta = 0, finalTarget: THREE.Vector3) {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const owner: ModuleCreature = this.owner as any;
 
-    if(GameState.PartyManager.party.indexOf(owner) >= 0){
+    /**
+     * Don't run avoidance for player controller creatures
+     */
+    if(GameState.PartyManager.party.indexOf(owner) == 0)
+      return;
 
-      //Check Creature Avoidance
-      let threatening = undefined;
-      let threateningDistance = Infinity;
-      let ahead = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1);
-      let ahead2 = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
-      for(let i = 0; i < GameState.module.area.creatures.length; i++){
-        let creature = GameState.module.area.creatures[i];
-        if(creature === owner || creature.isDead())
-          continue;
+    //Check Creature Avoidance
+    let obstacle = undefined;
+    let obstacleDistance = Infinity;
+    let ahead = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1);
+    let ahead2 = owner.position.clone().sub(owner.forceVector.clone().normalize()).multiplyScalar(1).multiplyScalar(0.5);
+    for(let i = 0; i < owner.area.creatures.length; i++){
+      const creature = owner.area.creatures[i];
+      if(creature === owner || creature.isDead())
+        continue;
 
-        let hitDistance = creature.getAppearance().hitdist;
-        let creaturePos = creature.position.clone();
-        let distance = owner.position.distanceTo(creature.position);
+      const hitDistance = creature.getAppearance().hitdist * 1.1;
+      // let creaturePos = creature.position;
+      // let distance = owner.position.distanceTo(creature.position);
 
-        if(ahead.distanceTo(creaturePos) <= hitDistance){
-          if(ahead.distanceTo(creaturePos) < threateningDistance){
-            threatening = creature;
-            threateningDistance = ahead.distanceTo(creaturePos);
-          }
-        }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
-          //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-          if(ahead2.distanceTo(creaturePos) < threateningDistance){
-            threatening = creature;
-            threateningDistance = ahead2.distanceTo(creaturePos);
-          }
-        }   
-      }
-
-      for(let i = 0; i < GameState.PartyManager.party.length; i++){
-        let creature = GameState.PartyManager.party[i];
-        if(creature === owner || creature.isDead())
-          continue;
-
-        let hitDistance = creature.getAppearance().hitdist;
-        let creaturePos = creature.position.clone();
-        let distance = owner.position.distanceTo(creature.position);
-
-        if(ahead.distanceTo(creaturePos) <= hitDistance){
-          if(ahead.distanceTo(creaturePos) < threateningDistance){
-            threatening = creature;
-            threateningDistance = ahead.distanceTo(creaturePos);
-          }
-        }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
-          //console.log('threatening', creature.firstName, ahead.distanceTo(creaturePos), hitDistance)
-          if(ahead2.distanceTo(creaturePos) < threateningDistance){
-            threatening = creature;
-            threateningDistance = ahead2.distanceTo(creaturePos);
-          }
+      if(ahead.distanceTo(creature.position) <= hitDistance){
+        if(ahead.distanceTo(creature.position) < obstacleDistance){
+          obstacle = creature;
+          obstacleDistance = ahead.distanceTo(creature.position);
         }
-      }
-
-      if(BitWise.InstanceOfObject(threatening, ModuleObjectType.ModuleCreature)){
-        //console.log(threatening.getName(), 'is threatening', owner.getName());
-
-        let dVector = threatening.position.clone().sub(owner.position).normalize();
-        
-        let creaturePos = threatening.position.clone();        
-        let avoidance_force = ahead.clone().sub(dVector);
-        avoidance_force.z = 0;
-        let newTarget = owner.position.clone().add(avoidance_force);
-
-        let tangent = newTarget.sub(owner.position.clone());
-        let atan = Math.atan2(-avoidance_force.y, -avoidance_force.x);
-        owner.rotation.z = (atan + Math.PI/2); //(1 - delta) * owner.rotation.z + delta * (atan + Math.PI/2)
-        owner.forceVector.x = Math.cos(atan);
-        owner.forceVector.y = Math.sin(atan);
-
-        owner.blockingTimer += 1;
-      }else{
-        if(owner.blockingTimer > 0){
-          owner.blockingTimer -= 0.5;
+      }else if(ahead2.distanceTo(creature.position) <= hitDistance){
+        if(ahead2.distanceTo(creature.position) < obstacleDistance){
+          obstacle = creature;
+          obstacleDistance = ahead2.distanceTo(creature.position);
         }
-        if(owner.blockingTimer > 0)
-          owner.blockingTimer = 0;
-      }
-
+      }   
     }
+
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const creature = GameState.PartyManager.party[i];
+      if(creature === owner || creature.isDead())
+        continue;
+
+      let hitDistance = creature.getAppearance().hitdist * 1.1;
+      let creaturePos = creature.position.clone();
+      // let distance = owner.position.distanceTo(creature.position);
+
+      if(ahead.distanceTo(creaturePos) <= hitDistance){
+        if(ahead.distanceTo(creaturePos) < obstacleDistance){
+          obstacle = creature;
+          obstacleDistance = ahead.distanceTo(creaturePos);
+        }
+      }else if(ahead2.distanceTo(creaturePos) <= hitDistance){
+        if(ahead2.distanceTo(creaturePos) < obstacleDistance){
+          obstacle = creature;
+          obstacleDistance = ahead2.distanceTo(creaturePos);
+        }
+      }
+    }
+
+    if(!BitWise.InstanceOfObject(obstacle, ModuleObjectType.ModuleCreature)){
+      if(owner.blockingTimer > 0){
+        owner.blockingTimer -= 0.5;
+      }
+      if(owner.blockingTimer < 0)
+        owner.blockingTimer = 0;
+
+      return;
+    }
+
+    const safetyBuffer = 1.5; // Buffer to ensure we steer clear of the obstacle
+    const safeRadius = obstacle.getHitDistance() * safetyBuffer;
+
+    const line_dir = this.owner.forceVector.clone();
+    const line_a = this.owner.position.clone();
+    const line_b = line_a.clone().sub(line_dir.clone().multiplyScalar(obstacleDistance * 2));
+
+    // const avoidRadius = this.owner.position.distanceTo(obstacle.position);//Math.max(safeRadius, this.owner.position.distanceTo(threatening.position) * 2);
+
+    const start = this.owner.position.clone();
+    // const end = this.owner.position.clone().add(this.owner.forceVector);
+    const direction = new THREE.Vector3().subVectors(line_b, start).normalize();
+    // const dir2 = this.owner.forceVector.clone().multiplyScalar(avoidRadius);
+    const perpendicular = new THREE.Vector3(-direction.y, direction.x, direction.z).normalize();
+
+    const detourPoint1 = this.owner.area.getNearestWalkablePoint(
+      obstacle.position.clone().add(perpendicular.clone().multiplyScalar(safeRadius)),
+      this.owner.getHitDistance()
+    );
+    const detourPoint2 = this.owner.area.getNearestWalkablePoint(
+      obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
+      this.owner.getHitDistance()
+    );
+
+    // Determine which detour point is further from a walkable edge
+    const detour1ToEnd = this.owner.area.scorePointEdgeDistance(detourPoint1);
+    const detour2ToEnd = this.owner.area.scorePointEdgeDistance(detourPoint2);
+
+    const useP1 =(detour1ToEnd > detour2ToEnd);
+    const chosenDetourPoint = useP1 ? detourPoint1 : detourPoint2;
+
+    // const endSafe = this.owner.area.getNearestWalkablePoint(line_b, this.owner.getHitDistance());
+
+    const path = ComputedPath.FromVector3List([this.owner.position, chosenDetourPoint]);
+    const path2 = owner.area.path.traverseToPoint(this.owner, chosenDetourPoint, finalTarget, false);
+    path2.prunePathPoints();
+    path.merge(path2);
+    path.fixWalkEdges(this.owner.getHitDistance());
+    path.setOwner(this.owner);
+    path.setColor(this.owner.helperColor);
+    path.smooth();
+    this.owner.setComputedPath(path);
+
+    /**
+     * Have the threatening NPC wait a beat before resuming their MoveToPoint
+     */
+    if(obstacle.action?.type == ActionType.ActionMoveToPoint){
+      const isObstacleMoving = !!obstacle.forceVector.length();
+      const hitDistance = obstacle.getHitDistance() * 1.1;
+      let ahead = obstacle.position.clone().sub(obstacle.forceVector);
+      const obstacleMovingAway = (ahead.distanceTo(owner.position) > hitDistance)
+
+      /**
+       * If the obstacle is moving on a collision course with this NPC
+       * have it take the alternate detour
+       */
+      if(isObstacleMoving && !obstacleMovingAway){
+        const tTarget = new THREE.Vector3(
+          obstacle.action.getParameter<number>(0),
+          obstacle.action.getParameter<number>(1),
+          obstacle.action.getParameter<number>(2),
+        );
+        const chosenDetourPoint = !useP1 ? detourPoint1 : detourPoint2;
+        const path = ComputedPath.FromVector3List([obstacle.position, chosenDetourPoint]);
+        const path2 = obstacle.area.path.traverseToPoint(obstacle, chosenDetourPoint, tTarget, false);
+        path2.prunePathPoints();
+        path.merge(path2);
+        path.fixWalkEdges(obstacle.getHitDistance());
+        path.setOwner(obstacle);
+        path.setColor(obstacle.helperColor);
+        path.smooth();
+        obstacle.setComputedPath(path);
+      }
+      /**
+       * Have the NPC wait a beat before resuming their move action
+       */
+      else if(isObstacleMoving) 
+      {
+        // const w = new GameState.ActionFactory.ActionWait();
+        // w.setParameter(0, ActionParameterType.FLOAT, 2.5);
+        // obstacle.actionQueue.addFront(w);
+      }
+    }
+
+    owner.blockingTimer += 1;
   }
 
   /**
