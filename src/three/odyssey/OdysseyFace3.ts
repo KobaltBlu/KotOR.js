@@ -144,9 +144,29 @@ export class OdysseyFace3 {
 	 */
 	materialIndex: number;
 
+	pointInFace2d(pt: THREE.Vector3){
+    let v1 = this.walkmesh.vertices[this.a];
+    let v2 = this.walkmesh.vertices[this.b];
+    let v3 = this.walkmesh.vertices[this.c];
+
+    let d1 = this.sign(pt, v1, v2);
+    let d2 = this.sign(pt, v2, v3);
+    let d3 = this.sign(pt, v3, v1);
+
+    let has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    let has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+
+    return !(has_neg && has_pos);
+  }
+
+  sign(p1: any, p2: any, p3: any){
+    return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
+  }
+
 	clone(): this {
     return this;
   };
+
 	copy( source: OdysseyFace3 ): this {
     return this;
   };

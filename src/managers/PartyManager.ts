@@ -844,26 +844,24 @@ export class PartyManager {
 
   }
 
+  static #tmpFollowPositionTarget = new THREE.Vector3();
+  static #tmpFollowPosition = new THREE.Vector3();
   static GetFollowPosition(creature: ModuleCreature){
 
     //I think party following is FORMATION_LINE in the formations.2da
 
-    let _targetOffset = 1.5;
-    if(PartyManager.party.indexOf(creature) == 2){
-      _targetOffset = -1.5;
-    }
+    const leader = PartyManager.party[0];
+    const targetOffset = (PartyManager.party.indexOf(creature) == 2) ? -1.5 :1.5;
 
-    let targetPos = PartyManager.party[0].position.clone().sub(
-      new THREE.Vector3(
-        _targetOffset*Math.cos(PartyManager.party[0].rotation.z), 
-        _targetOffset*Math.sin(PartyManager.party[0].rotation.z), 
-        0
-      )
+    this.#tmpFollowPositionTarget.set(
+      targetOffset * Math.cos(leader.rotation.z), 
+      targetOffset * Math.sin(leader.rotation.z), 
+      0
     );
-    if(GameState.module.area.isPointWalkable(targetPos)){
-      return targetPos;
-    }
-    return GameState.module.area.getNearestWalkablePoint(targetPos);
+    this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
+    
+    return (GameState.module.area.isPointWalkable(this.#tmpFollowPosition)) ?
+      this.#tmpFollowPosition : GameState.module.area.getNearestWalkablePoint(this.#tmpFollowPosition);
   }
 
   static GiveXP(nXP = 0){

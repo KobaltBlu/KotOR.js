@@ -451,7 +451,7 @@ export class ComputedPath {
     color: 0xFFFFFF,
     vertexColors: true
   });
-  helperMesh: THREE.LineSegments;
+  helperMesh: THREE.LineSegments = new THREE.LineSegments();
 
   constructor(origin: PathPoint = undefined, destination: PathPoint = undefined){
     this.origin = origin;
@@ -583,6 +583,12 @@ export class ComputedPath {
 
     let connectionIndexStart = (pointCount * 2);
 
+    if(!bufferSize){
+      this.helperMesh.visible = false;
+      this.helperMesh.removeFromParent();
+      return;
+    }
+
     if(!this.helperColors || bufferSize != this.helperColors.array.length){
       this.helperColors = new THREE.Float32BufferAttribute( (new Array(bufferSize)).fill(0), 3 );
     }
@@ -645,11 +651,14 @@ export class ComputedPath {
 
     this.helperGeometry.setAttribute('position', this.helperPositions);
     this.helperGeometry.setAttribute('color', this.helperColors);
+
+    this.helperMesh.geometry = this.helperGeometry;
+    this.helperMesh.material = this.helperMaterial;
     
-    if(!this.helperMesh){
-      this.helperMesh = new THREE.LineSegments( this.helperGeometry, this.helperMaterial );
+    if(!this.helperMesh.parent){
       GameState.scene.add( this.helperMesh );
     }
+    this.helperMesh.visible = true;
   }
 
   setColor(color: THREE.Color){

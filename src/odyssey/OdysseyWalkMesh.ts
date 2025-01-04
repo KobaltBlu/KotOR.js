@@ -484,8 +484,8 @@ export class OdysseyWalkMesh {
 
   pointInFace2d(pt: any, face: any){
     let v1 = this.vertices[face.a];
-    let v2 = this.vertices[face.a];
-    let v3 = this.vertices[face.a];
+    let v2 = this.vertices[face.b];
+    let v3 = this.vertices[face.c];
 
     let d1 = this.sign(pt, v1, v2);
     let d2 = this.sign(pt, v2, v3);
@@ -497,27 +497,27 @@ export class OdysseyWalkMesh {
     return !(has_neg && has_pos);
   }
 
-  isPointWalkable(point: any){
+  isPointWalkable(point: THREE.Vector3){
     for(let i = 0, len = this.walkableFaces.length; i < len; i++){
-      if(this.pointInFace2d(point, this.walkableFaces[i])){
+      if(this.walkableFaces[i].pointInFace2d(point)){
         return true;
       }
     }
     return false;
   }
 
-  getNearestWalkablePoint(point: any){
+  getNearestWalkablePoint(point: THREE.Vector3){
     let nearest = Infinity;
-    let nearest_point = undefined;
+    let nearest_point = point.clone();
     let distance = 0;
     const target = new THREE.Vector3();
     for(let i = 0, len = this.walkableFaces.length; i < len; i++){
       this.walkableFaces[i].triangle.closestPointToPoint(point, target)
       distance = point.distanceTo(target);
-      if(distance >= nearest){
+      if(distance >= nearest)
         continue;
-      }
-      nearest_point = this.walkableFaces[i].centroid;
+      
+      nearest_point.copy(target);//this.walkableFaces[i].centroid;
       nearest = distance;
     }
     return nearest_point;

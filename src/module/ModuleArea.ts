@@ -1871,8 +1871,8 @@ export class ModuleArea extends ModuleObject {
   }
 
   isPointWalkable(point: THREE.Vector3){
-    for(let i = 0, len = this.rooms.length; i < len; i++){
-      if(this.rooms[i].collisionData.walkmesh && this.rooms[i].collisionData.walkmesh.isPointWalkable(point)){
+    for(let i = 0, len = this.walkFaces.length; i < len; i++){
+      if(this.walkFaces[i].pointInFace2d(point)){
         return true;
       }
     }
@@ -1881,21 +1881,17 @@ export class ModuleArea extends ModuleObject {
 
   getNearestWalkablePoint(point: THREE.Vector3){
     let nearest = Infinity;
-    let nearest_point = undefined;
-
-    let p = undefined;
-    let p_dist = 0;
-    for(let i = 0, len = this.rooms.length; i < len; i++){
-      if(this.rooms[i].collisionData.walkmesh){
-        p = this.rooms[i].collisionData.walkmesh.getNearestWalkablePoint(point);
-        if(p){
-          p_dist = p.distanceTo(point);
-          if(p_dist < nearest){
-            nearest_point = p;
-            nearest = p_dist;
-          }
-        }
-      }
+    let nearest_point = point.clone();
+    let distance = 0;
+    const target = new THREE.Vector3();
+    for(let i = 0, len = this.walkFaces.length; i < len; i++){
+      this.walkFaces[i].triangle.closestPointToPoint(point, target)
+      distance = point.distanceTo(target);
+      if(distance >= nearest)
+        continue;
+      
+      nearest_point.copy(target);//this.walkableFaces[i].centroid;
+      nearest = distance;
     }
     return nearest_point;
   }
