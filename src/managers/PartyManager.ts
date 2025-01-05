@@ -280,7 +280,7 @@ export class PartyManager {
       let availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
 
       //TODO: Party Available NPCS
-      let maxPartyMembers = (ApplicationProfile.key == 'kotor') ? 9 : 12;
+      let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
         let pm = GameState.PartyManager.NPCS[i];
         let availStruct = new GFFStruct();
@@ -876,12 +876,20 @@ export class PartyManager {
 
   static async ExportPartyMemberTemplates(){
     return new Promise<void>( async (resolve, reject) => {
-      let maxPartyMembers = (ApplicationProfile.key == 'kotor') ? 9 : 12;
+      let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
         let pm = PartyManager.NPCS[i];
-        if(pm.template instanceof GFFObject){
-          await PartyManager.ExportPartyMemberTemplate(i, pm.template);
+        if(!pm){
+          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. pm was undefined.`);
+          continue;
         }
+
+        if(!(pm.template instanceof GFFObject)){
+          console.warn(`ExportPartyMemberTemplates: Failed to export template for NPC at index [${i}]. template was not an instance of GFFObject`);
+          continue;
+        }
+
+        await PartyManager.ExportPartyMemberTemplate(i, pm.template);
       }
       await PartyManager.ExportPlayerCharacter();
       resolve();
