@@ -53,7 +53,9 @@ import { CombatActionType } from "../enums/combat/CombatActionType";
 import { CombatRoundAction } from "../combat";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
 import type { Action } from "../actions/Action";
-import { ModuleTriggerType } from "../enums";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+import { EngineDebugType } from "../enums/engine/EngineDebugType";
+import { TextSprite3D } from "../engine/TextSprite3D";
 
 /**
 * ModuleCreature class.
@@ -68,6 +70,7 @@ import { ModuleTriggerType } from "../enums";
 * @memberof KotOR
 */
 export class ModuleCreature extends ModuleObject {
+  debugLabel: TextSprite3D;
   pm_IsDisguised: boolean; //polymorphIsDisguised
   pm_Appearance: number; //polymorphAppearance
   anim: any;
@@ -3202,6 +3205,13 @@ export class ModuleCreature extends ModuleObject {
       this.loadScripts();
       GameState.FactionManager.AddCreatureToFaction(this);
     }
+    
+    if(!this.debugLabel){
+      this.debugLabel = new TextSprite3D(`${this.getName()} | ${this.getTag()}`);
+      this.debugLabel.setColor(this.helperColor);
+      this.debugLabel.container.visible = !!this.context?.GetDebugState(EngineDebugType.OBJECT_LABELS);
+      this.container.add(this.debugLabel.container);
+    }
   }
 
   loadScripts (){
@@ -4403,6 +4413,10 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.area) this.area.detachObject(this);
     GameState.FactionManager.RemoveCreatureFromFaction(this);
+
+    if(this.debugLabel){
+      this.debugLabel.dispose();
+    }
   }
 
   save(){

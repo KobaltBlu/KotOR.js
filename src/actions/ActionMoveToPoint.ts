@@ -9,6 +9,7 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
+import type { ComputedPath } from "../module/ModulePath";
 
 /**
  * ActionMoveToPoint class.
@@ -57,7 +58,7 @@ export class ActionMoveToPoint extends Action {
     if(this.target){
       this.real_target_position.copy(this.target.position);
       if( BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) && this.target.isDead() ){
-        this.owner.setComputedPath(undefined);
+        this.setComputedPath(undefined);
         return ActionStatus.FAILED;
       }
     }
@@ -65,66 +66,53 @@ export class ActionMoveToPoint extends Action {
     const range = this.getParameter<number>(6) || 0.1;
     const run = this.getParameter<number>(5) ? true : false;
 
-    if(this.owner.getComputedPath() == undefined){
+    if(!this.computedPath){
       this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
       this.calculatePath();
     }
 
-    const computedPath = this.owner.getComputedPath();
+    // this.computedPath = this.owner.getComputedPath();
 
     const distance = Utility.Distance2D(this.owner.position, this.target_position);
-    if(distance > (computedPath.points.length > 1 ? 0.5 : range)){
+    if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
   
       if((this.owner as any).blockingTimer >= 5 || this.owner.collisionTimer >= 1){
         (this.owner as any).blockingTimer = 0;
         this.owner.collisionTimer = 0;
       }
-
-      // let distanceToTarget = Utility.Distance2D(this.owner.position, this.target_position);
-
-      // if(this.owner.openSpot){
-        // distanceToTarget = Utility.Distance2D(this.owner.position, this.owner.openSpot.targetVector);
-      // }
   
-      let point = computedPath.points[0];
+      const point = this.computedPath.points[0];
       if(point){
         let pointDistance = Utility.Distance2D(this.owner.position, point.vector);
-        if(pointDistance > (computedPath.points.length > 1 ? 0.5 : range)){
-          let tangent = point.vector.clone().sub(this.owner.position.clone());
-          let atan = Math.atan2(-tangent.y, -tangent.x);
+        if(pointDistance > (this.computedPath.points.length > 1 ? 0.5 : range)){
+          const tangent = point.vector.clone().sub(this.owner.position.clone());
+          const atan = Math.atan2(-tangent.y, -tangent.x);
           this.owner.setFacing(atan + Math.PI/2, false);
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
     
           this.runCreatureAvoidance(delta, this.target_position);
-    
-          // let arrivalDistance = range;
-          // if( this.openSpot ){
-          //   arrivalDistance = 1.5;
-          // }
 
           this.owner.forceVector.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
           // this.owner.walk = !run;
           this.owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
         }else{
-          computedPath.pop();
+          this.computedPath.pop();
         }
-      }else{
-        // console.warn(`No more points on path`, this.owner.getTag(), computedPath);
       }
   
-      if(computedPath.timer < 0){
-        if(computedPath.realtime){
-          this.owner.setComputedPath(undefined);
+      if(this.computedPath.timer < 0){
+        if(this.computedPath.realtime){
+          this.setComputedPath(undefined);
         }
       }else{
-        computedPath.timer -= 10*delta;
+        this.computedPath.timer -= 10*delta;
       }
 
-      let timeout = this.getParameter<number>(8) - delta;
+      const timeout = this.getParameter<number>(8) - delta;
       if(timeout <= 0){
-        let fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
+        const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
         fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
         fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
         fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
@@ -143,11 +131,11 @@ export class ActionMoveToPoint extends Action {
       this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
       this.owner.force = 0;
       this.owner.speed = 0;
-      this.owner.setComputedPath(undefined);
+      this.setComputedPath(undefined);
       return ActionStatus.COMPLETE;
     }
 
-    this.owner.setComputedPath(undefined);
+    this.setComputedPath(undefined);
     return ActionStatus.FAILED;
   }
 
@@ -161,13 +149,15 @@ export class ActionMoveToPoint extends Action {
       path.realtime = true;
     }
     path.timer = 20;
-    this.owner.setComputedPath(path);
+    this.setComputedPath(path);
   }
 
   dispose(): void {
     super.dispose();
-    console.log('ActionMoveToPoint.dispose', this.owner.tag)
-    this.owner.setComputedPath(undefined);
+    if(this.owner.getComputedPath() == this.computedPath){
+      this.owner.setComputedPath(undefined);
+    }
+    this.computedPath = undefined;
   }
 
 }

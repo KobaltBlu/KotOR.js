@@ -95,7 +95,7 @@ export class IngameControls {
       Mouse.Update(event.clientX, event.clientY);
       if(event.target == this.element){
         GameState.MenuManager.activeGUIElement = undefined;
-        if(GameState.debug.controls)
+        if(GameState.debug.CONTROLS)
           console.log('Valid Mouse Target');
         Mouse.ButtonState = event.which;
         Mouse.MouseDown = true;
@@ -113,7 +113,7 @@ export class IngameControls {
         //console.log('Invalid Mouse Target', this.element);
       }
 
-      if(GameState.debug.controls)
+      if(GameState.debug.CONTROLS)
         console.log('DOWN');
 
       // GameState.mouse.x = ( event.clientX / ResolutionManager.getViewportWidth() ) * 2 - 1;
@@ -136,7 +136,7 @@ export class IngameControls {
         let control = uiControls[i];
         if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
           clickCaptured = true;
-          if(GameState.debug.controls)
+          if(GameState.debug.CONTROLS)
             console.log('uiControls', control)
           try{
             if(control.processEventListener('mouseDown', [customEvent])){
@@ -151,7 +151,7 @@ export class IngameControls {
             }
             
             //GameState.guiAudioEmitter.playSound('gui_click');
-            if(GameState.debug.controls)
+            if(GameState.debug.CONTROLS)
               console.log('MouseDown', control, Mouse.downItem, Mouse.clickItem, typeof control.onClick);
           }catch(e){
 
@@ -204,7 +204,7 @@ export class IngameControls {
       document.exitPointerLock();
 
       //event.preventDefault();
-      if(GameState.debug.controls)
+      if(GameState.debug.CONTROLS)
         console.log('UP');
 
       if(Mouse.leftDown){
@@ -231,7 +231,7 @@ export class IngameControls {
                 Mouse.downItem.processEventListener('mouseUp', [customEvent]);
                 //Mouse.downItem.onMouseUp(customEvent);
                 //GameState.guiAudioEmitter.playSound('gui_click');
-                if(GameState.debug.controls)
+                if(GameState.debug.CONTROLS)
                   console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
                 Mouse.leftClick = false;
               }catch(e){
@@ -258,7 +258,7 @@ export class IngameControls {
                   GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
                   GameState.guiAudioEmitter.playSound('gui_click');
-                  if(GameState.debug.controls)
+                  if(GameState.debug.CONTROLS)
                     console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;
                 }catch(e){
@@ -298,10 +298,10 @@ export class IngameControls {
                 }
                 GameState.CursorManager.setReticleSelectedObject(moduleObject);
               }
-              if(GameState.debug.selectedObject)
+              if(GameState.debug.SELECTED_OBJECT)
                 console.log('Ingame Object', moduleObject);
             }else{
-              if(GameState.debug.selectedObject)
+              if(GameState.debug.SELECTED_OBJECT)
                 console.log('Object', moduleObject);
             }
 

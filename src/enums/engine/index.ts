@@ -1,4 +1,5 @@
 export * from "./AutoPauseState";
+export * from "./EngineDebugType";
 export * from "./EngineMode";
 export * from "./EngineState";
 export * from "./FadeOverlayState";

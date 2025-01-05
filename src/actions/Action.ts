@@ -72,6 +72,11 @@ export class Action {
   isUserAction: boolean = false;
 
   /**
+   * Used to store a reference for a computed path
+   */
+  computedPath: ComputedPath;
+
+  /**
    * Creates a new action instance.
    * 
    * @param actionId - Unique identifier for this action
@@ -139,6 +144,11 @@ export class Action {
    */
   getTarget() {
     return this.target;
+  }
+
+  setComputedPath(path: ComputedPath){
+    this.computedPath = path;
+    this.owner.setComputedPath(path);
   }
 
   /**
@@ -260,7 +270,7 @@ export class Action {
     path.setOwner(this.owner);
     path.setColor(this.owner.helperColor);
     path.smooth();
-    this.owner.setComputedPath(path);
+    this.setComputedPath(path);
 
     /**
      * Have the threatening NPC wait a beat before resuming their MoveToPoint
@@ -290,7 +300,7 @@ export class Action {
         path.setOwner(obstacle);
         path.setColor(obstacle.helperColor);
         path.smooth();
-        obstacle.setComputedPath(path);
+        obstacle.action.setComputedPath(path);
       }
       /**
        * Have the NPC wait a beat before resuming their move action

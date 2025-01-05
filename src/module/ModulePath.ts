@@ -10,6 +10,7 @@ import type { ModuleArea } from "./ModuleArea";
 import { Utility } from "../utility/Utility";
 import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
 import type { ModuleObject } from "./ModuleObject";
+import { EngineDebugType } from "../enums";
 
 /**
 * ModulePath class.
@@ -114,7 +115,7 @@ export class ModulePath {
       console.error(e);
     }
 
-    this.setPathHelpersVisibility(true);
+    this.setPathHelpersVisibility(GameState.GetDebugState(EngineDebugType.PATH_FINDING));
   }
 
   /**

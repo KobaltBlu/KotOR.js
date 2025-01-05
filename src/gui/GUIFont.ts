@@ -83,7 +83,7 @@ export default class GUIFont {
         const chars = this.getWordChars(word);
         const wordWidth = this.getWordWidth(word);
         const spacing = (w) ? spaceChar.width : 0;
-        if(newLine.width + (wordWidth + spacing) < maxWidth){
+        if(newLine.width + (wordWidth + spacing) < maxWidth || !maxWidth){
           if(w){ chars.unshift(spaceChar); }
           newLine.chars.push(...chars);
           newLine.width += (wordWidth + spacing);

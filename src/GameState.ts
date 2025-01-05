@@ -31,7 +31,7 @@ import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
 import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 
 import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv } from "./enums/engine";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "./enums/engine";
 import { TextureType } from "./enums/loaders/TextureType";
 
 import { EngineContext } from "./engine/EngineContext";
@@ -148,9 +148,15 @@ export class GameState implements EngineContext {
     CombatEnabled: false
   }
   static debugMode = false;
-  static debug = {
-    controls: false,
-    selectedObject: false
+  static debug: {[key in EngineDebugType]: boolean} = {
+    CONTROLS: false,
+    SELECTED_OBJECT: false,
+    OBJECT_LABELS: false,
+    PATH_FINDING: false,
+
+    ROOM_WALKMESH: false,
+    DOOR_WALKMESH: false,
+    PLACEABLE_WALKMESH: false
   };
   
   static IsPaused = false;
@@ -274,6 +280,86 @@ export class GameState implements EngineContext {
   static loadingTextures: boolean;
 
   static ConversationPaused: boolean = false;
+
+  static GetDebugState(type: EngineDebugType){
+    return !!this.debug[type];
+  }
+
+  static ToggleDebugState(type: EngineDebugType){
+    GameState.SetDebugState(type, !this.debug[type]);
+  }
+
+  static SetDebugState(type: EngineDebugType, enabled: boolean){
+    this.debug[type] = enabled;
+    switch(type){
+      case EngineDebugType.PATH_FINDING:
+        if(!GameState?.module?.area?.path)
+          return;
+
+        GameState.module.area.path.setPathHelpersVisibility(enabled);
+
+        for(let i = 0; i < GameState.module.area.creatures.length; i++){
+          const creature = GameState.module.area.creatures[i]
+          if(!creature.getComputedPath()?.helperMesh){
+            continue;
+          }
+          creature.getComputedPath().helperMesh.visible = enabled;
+        }
+
+        for(let i = 0; i < GameState.PartyManager.party.length; i++){
+          const creature = GameState.PartyManager.party[i]
+          if(!creature.getComputedPath()?.helperMesh){
+            continue;
+          }
+          creature.getComputedPath().helperMesh.visible = enabled;
+        }
+      break;
+      case EngineDebugType.OBJECT_LABELS:
+        if(!GameState?.module?.area)
+          return;
+
+        for(let i = 0; i < GameState.module.area.creatures.length; i++){
+          const creature = GameState.module.area.creatures[i]
+          if(!creature.debugLabel){
+            continue;
+          }
+          creature.debugLabel.container.visible = enabled;
+        }
+
+        for(let i = 0; i < GameState.PartyManager.party.length; i++){
+          const creature = GameState.PartyManager.party[i]
+          if(!creature.debugLabel){
+            continue;
+          }
+          creature.debugLabel.container.visible = enabled;
+        }
+
+        // for(let i = 0; i < GameState.module.area.doors.length; i++){
+        //   const creature = GameState.module.area.doors[i]
+        //   if(!creature.debugLabel){
+        //     continue;
+        //   }
+        //   creature.debugLabel.container.visible = enabled;
+        // }
+
+        // for(let i = 0; i < GameState.module.area.placeables.length; i++){
+        //   const creature = GameState.module.area.placeables[i]
+        //   if(!creature.debugLabel){
+        //     continue;
+        //   }
+        //   creature.debugLabel.container.visible = enabled;
+        // }
+
+        // for(let i = 0; i < GameState.module.area.triggers.length; i++){
+        //   const creature = GameState.module.area.triggers[i]
+        //   if(!creature.debugLabel){
+        //     continue;
+        //   }
+        //   creature.debugLabel.container.visible = enabled;
+        // }
+      break;
+    }
+  }
 
   static addEventListener(event: string, callback: Function){
     if(GameState.eventListeners.hasOwnProperty(event)){

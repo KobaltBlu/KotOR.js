@@ -9,6 +9,7 @@ import { TextureLoader } from "../loaders/TextureLoader";
 import { TextureType } from "../enums/loaders/TextureType";
 import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
 import GUIFont from "../gui/GUIFont";
+import { GUIControlAlignment } from "../enums";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -72,7 +73,7 @@ export class TextSprite3D {
       font: '', //fnt_d16x16b
       strref: -1,
       text: text,
-      alignment: 9, //9 //18 //17
+      alignment: GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter, //9 //18 //17
       pulsing: 0,
       geometry: {} as THREE.BufferGeometry,
       mesh: {} as THREE.Mesh,
@@ -125,6 +126,10 @@ export class TextSprite3D {
     });
     
     this.container.add(this.text.mesh);
+  }
+
+  setColor(color: THREE.Color){
+    this.color.copy(color);
   }
 
   setTimer(timer: number = 3000){
@@ -216,6 +221,11 @@ export class TextSprite3D {
       self.computeBox(positions, bbox)
     }
 
+    // this.text.geometry.computeBoundingBox();
+    // this.text.geometry.computeBoundingSphere();
+    // const tSize = new THREE.Vector3();
+    // this.text.geometry.boundingBox.getSize(tSize);
+    // this.text.mesh.position.x = -tSize.x/2;
   }
 
   updateTextGeometry(text: string){
@@ -225,7 +235,7 @@ export class TextSprite3D {
     if(!this.guiFont)
       return;
     
-    this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment, this.maxLineWidth);
+    this.guiFont.buildGeometry(this.text.geometry, text, this.text.alignment);
   }
 
   bounds(positions: number[] = []) {

@@ -508,6 +508,7 @@ export class ModuleObject {
 
   clearAllActions(skipUnclearable = false){
     this.combatRound.clearActions();
+    this.setComputedPath(undefined);
     //Reset the anim state
     //this.animState = 0;
     //this.actionQueue.clear();
