@@ -63,6 +63,7 @@ import { Debugger } from "./Debugger";
 import { DebuggerState } from "./enums/server/DebuggerState";
 import type { IPCMessage } from "./server/ipc/IPCMessage";
 import { IPCMessageType } from "./enums/server/ipc/IPCMessageType";
+import { IPCMessageTypeDebug } from "./enums/server/ipc/IPCMessageTypeDebug";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -427,6 +428,9 @@ export class GameState implements EngineContext {
           GameState.Debugger.currentScript.seekTo(seek);
           GameState.Debugger.currentScript.runScript(true);
         }
+      }else if(msg.type == IPCMessageType.Debug && msg.subType == IPCMessageTypeDebug.ToggleDebugState){
+        const type = msg.getParam(0).getString();
+        GameState.ToggleDebugState(type as EngineDebugType);
       }
     });
 
