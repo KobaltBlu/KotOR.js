@@ -13,8 +13,7 @@ import { BitWise } from "../utility/BitWise";
 import { ActionParameter } from "./ActionParameter";
 import { ActionQueue } from "./ActionQueue";
 import * as THREE from "three";
-import { ComputedPath } from "../module/ModulePath";
-// import { PathPoint } from "../engine/pathfinding/PathPoint";
+import { ComputedPath } from "../engine/pathfinding/ComputedPath";
 
 /**
  * Base class for all game actions in the engine.

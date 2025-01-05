@@ -26,7 +26,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { LIPObject } from "../resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
-import { ComputedPath } from ".";
+import { ComputedPath } from "../engine/pathfinding";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
 import { ICombatAction } from "../interface/combat/ICombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
@@ -48,7 +48,7 @@ import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
-import { ModuleTriggerType, SkillType } from "../enums";
+import { EngineDebugType, ModuleTriggerType, SkillType } from "../enums";
 
 /**
 * ModuleObject class.
@@ -1139,9 +1139,10 @@ export class ModuleObject {
     if(!this.#computedPath) return;
 
     this.#computedPath.owner = this;
-    if(this?.area.path?.helperMesh?.visible){
-      this.#computedPath.buildHelperLine();
+    if(this.context?.debug[EngineDebugType.PATH_FINDING]){
+      this.#computedPath.enableHelper = true;
     }
+    this.#computedPath.buildHelperLine();
   }
 
   #tmpLIOVec3 = new THREE.Vector3();

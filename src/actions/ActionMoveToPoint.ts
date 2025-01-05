@@ -9,7 +9,7 @@ import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
-import type { ComputedPath } from "../module/ModulePath";
+import type { ComputedPath } from "../engine/pathfinding/ComputedPath";
 
 /**
  * ActionMoveToPoint class.
