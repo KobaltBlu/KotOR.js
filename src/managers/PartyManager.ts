@@ -522,6 +522,7 @@ export class PartyManager {
   static AddCreatureToParty(slot = 1, creature: ModuleCreature){
     if(creature instanceof ModuleCreature){
       creature.isPM = true;
+      creature.clearAllActions();
       PartyManager.NPCS[slot].available = true;
       //PartyManager.NPCS[nID].canSelect = true;
       PartyManager.NPCS[slot].template = creature.template;
@@ -561,6 +562,7 @@ export class PartyManager {
       partyMember.isPC = 1;
       partyMember.npcId = npcId;
       partyMember.load();
+      partyMember.clearAllActions();
       partyMember.position.copy(spawn);
       partyMember.quaternion.copy(quaternion);
       partyMember.loadScripts();
@@ -690,6 +692,7 @@ export class PartyManager {
           partyMember.isPM = true;
           partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
           partyMember.load();
+          partyMember.clearAllActions();
           //PartyManager.party[nIdx+1] = partyMember;
 
           /*if(PartyManager.CurrentMembers[nIdx].isLeader){
@@ -747,6 +750,7 @@ export class PartyManager {
     partyMember.npcId = npcId;
     partyMember.isPM = true;
     partyMember.load();
+    partyMember.clearAllActions();
     partyMember.loadModel().then( (model: OdysseyModel3D) => {
       model.userData.moduleObject = partyMember;
       partyMember.onSpawn();

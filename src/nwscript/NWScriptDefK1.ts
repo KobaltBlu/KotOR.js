@@ -3065,6 +3065,7 @@ NWScriptDefK1.Actions = {
           if(buffer){
             const creature = new GameState.Module.ModuleArea.ModuleCreature(new GFFObject(buffer));
             creature.load();
+            creature.clearAllActions();
             creature.position.copy(args[2].position);
             creature.setFacing(args[2].getFacing(), true);
             args[2].area.attachObject(creature);
@@ -7485,6 +7486,7 @@ NWScriptDefK1.Actions = {
       const partyMember = new GameState.Module.ModuleArea.ModuleCreature(template);
       args[1].area.attachObject(partyMember);
       partyMember.load();
+      partyMember.clearAllActions();
       partyMember.loadModel().then( (model: OdysseyModel3D) => {
         partyMember.model.userData.moduleObject = partyMember;
         partyMember.setPosition(args[1].position);
