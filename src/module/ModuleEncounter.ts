@@ -463,7 +463,7 @@ export class ModuleEncounter extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTE ';
 
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Reset') ).setValue( this.reset );
@@ -473,7 +473,7 @@ export class ModuleEncounter extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MaxCreatures') ).setValue(this.maxCreatures);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'RecCreatures') ).setValue(this.recCreatures);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PlayerOnly') ).setValue( this.playerOnly );
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue( this.faction );
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue( this.faction ? this.faction.id : this.factionId );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'DifficultyIndex') ).setValue( this.difficultyIndex );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Difficulty') ).setValue( this.difficulty );
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName);

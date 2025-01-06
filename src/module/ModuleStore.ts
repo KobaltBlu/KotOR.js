@@ -202,7 +202,7 @@ export class ModuleStore extends ModuleObject {
     let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
 
 

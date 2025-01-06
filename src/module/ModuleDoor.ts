@@ -1245,7 +1245,7 @@ export class ModuleDoor extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTD ';
 
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);

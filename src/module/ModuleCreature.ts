@@ -4434,7 +4434,9 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(0);
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+
+    gff.RootNode.addField( this.actionQueueToActionList() );
+
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animationState.index);

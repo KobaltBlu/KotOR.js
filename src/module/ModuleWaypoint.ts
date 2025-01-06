@@ -93,7 +93,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.FileType = 'UTW ';
     gff.RootNode.type = 5;
 
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'ActionList') );
+    gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'LocalizedName') ).setValue(this.locName);

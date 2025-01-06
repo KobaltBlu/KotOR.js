@@ -1,6 +1,8 @@
 import { GameState } from "../GameState";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 
 /**
@@ -125,6 +127,33 @@ export class ActionParameter {
         throw 'ActionParameter.FromStruct: Invalid Type ('+type+')';
     }
     return new ActionParameter(type, value);
+  }
+
+  toStruct(){
+    const struct = new GFFStruct(1);
+    switch(this.type){
+      case ActionParameterType.INT:
+        struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));
+      break;
+      case ActionParameterType.FLOAT:
+        struct.addField(new GFFField(GFFDataType.FLOAT, 'Value', this.value));
+      break;
+      case ActionParameterType.DWORD:
+        struct.addField(new GFFField(GFFDataType.DWORD, 'Value', this.value));
+      break;
+      case ActionParameterType.STRING:
+        struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Value', this.value));
+      break;
+      case ActionParameterType.SCRIPT_SITUATION:
+        struct.addField(new GFFField(GFFDataType.STRUCT, 'Value')).addChildStruct(
+          this.scriptInstance.saveEventSituation()
+        );
+      break;
+      default:
+        throw 'ActionParameter.FromStruct: Invalid Type ('+this.type+')';
+    }
+
+    return struct;
   }
 
 }

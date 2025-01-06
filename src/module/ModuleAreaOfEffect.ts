@@ -248,7 +248,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
       gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Radius') ).setValue(this.radius);
     }
     
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( this.actionQueueToActionList() );
 
     //SWVarTable
     let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );

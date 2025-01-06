@@ -328,7 +328,7 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(1);

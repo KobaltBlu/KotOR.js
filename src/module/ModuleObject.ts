@@ -2812,4 +2812,25 @@ export class ModuleObject {
     return true;
   }
 
+  actionQueueToActionList(){
+    const actionList = new GFFField(GFFDataType.LIST, 'ActionList');
+
+    for(let i = 0, len = this.actionQueue.length; i < len; i++){
+      const action = this.actionQueue[i] as Action;
+      const struct = new GFFStruct(0);
+      struct.addField(new GFFField(GFFDataType.DWORD, 'ActionId', action.type));
+      struct.addField(new GFFField(GFFDataType.WORD, 'GroupActionId', action.groupId));
+      struct.addField(new GFFField(GFFDataType.WORD, 'NumParams', action.parameters.length));
+
+      const params = struct.addField(new GFFField(GFFDataType.LIST, 'Paramaters'));
+      for(let j = 0, len2 = action.parameters.length; j < len2; j++){
+        params.addChildStruct(action.parameters[j].toStruct());
+      }
+
+      actionList.addChildStruct(struct);
+    }
+
+    return actionList;
+  }
+
 }

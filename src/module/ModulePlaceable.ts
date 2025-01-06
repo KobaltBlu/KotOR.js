@@ -977,7 +977,7 @@ export class ModulePlaceable extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTP ';
 
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animState);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);

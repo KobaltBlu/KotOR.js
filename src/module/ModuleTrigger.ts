@@ -646,7 +646,7 @@ export class ModuleTrigger extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTT ';
 
-    let actionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ActionList') );
+    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue( this.commandable );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue(2130706432);
