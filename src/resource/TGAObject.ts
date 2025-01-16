@@ -166,6 +166,7 @@ export class TGAObject {
         tga.header.width = canvas.width;
         tga.header.height = canvas.height;
         tga.header.bitsPerPixel = 32;
+        tga.header.FileType = 2;
         let data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
         tga.pixelData = new Uint8Array(data.length);
@@ -174,10 +175,10 @@ export class TGAObject {
         for(let i = 0; i < tga.header.height; i++){
           let offset = rowByteLength * i;
           for(let j = 0, k = rowByteLength; j < rowByteLength; j += 4, k -= 4){
-            tga.pixelData[offset + j]     = data[offset + (k - 2)]; // red
-            tga.pixelData[offset + j + 1] = data[offset + (k - 3)]; // green
-            tga.pixelData[offset + j + 2] = data[offset + (k - 4)]; // blue
-            tga.pixelData[offset + j + 3] = data[offset + (k - 1)]; // alpha
+            tga.pixelData[offset + j]     = data[offset + j + 2];//(k - 2)]; // red
+            tga.pixelData[offset + j + 1] = data[offset + j + 1];//(k - 3)]; // green
+            tga.pixelData[offset + j + 2] = data[offset + j + 0];//(k - 4)]; // blue
+            tga.pixelData[offset + j + 3] = data[offset + j + 3];//(k - 1)]; // alpha
           }
         }
 
