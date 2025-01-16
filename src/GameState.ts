@@ -1303,16 +1303,14 @@ export class GameState implements EngineContext {
       GameState.renderer.clear();
       GameState.renderer.render(GameState.scene, GameState.currentCamera);
 
-      let ssCallback = GameState.onScreenShot;
-      let screenshot = new Image();
+      const screenshot = new Image();
       screenshot.src = GameState.canvas.toDataURL('image/png');
       screenshot.onload = function() {
-        let ssCanvas = new OffscreenCanvas(256, 256);
-        let ctx = ssCanvas.getContext('2d');
+        const ssCanvas = new OffscreenCanvas(256, 256);
+        const ctx = ssCanvas.getContext('2d');
         ctx.drawImage(screenshot, 0, 0, 256, 256);
 
-        let tga = TGAObject.FromCanvas(ssCanvas);
-        ssCallback(tga);
+        GameState.onScreenShot(TGAObject.FromCanvas(ssCanvas));
       };
       
       GameState.composer.render(delta);
