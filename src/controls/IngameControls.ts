@@ -19,6 +19,8 @@ import { GamePad } from "./GamePad";
 import { Mouse } from "./Mouse";
 import { KeyMapper } from "./KeyMapper";
 import { AnalogInput } from "./AnalogInput";
+import { TGAObject } from "../resource/TGAObject";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
  * IngameControls class.
@@ -72,6 +74,61 @@ export class IngameControls {
        */
       if(e.key == 'D' && e.ctrlKey && e.shiftKey){
         GameState.Debugger.open();
+      }
+
+      /**
+       * Generate a TGA Screenshot of the Game canvas and export it to the game directory
+       */
+      if(e.key == 'PrintScreen'){
+        if(GameState.iniConfig.getProperty('Game Options.EnableScreenShot') != 1){
+          return;
+        }
+        /**
+         * Render the scene
+         */
+        const oldCursorState = GameState.scene_cursor_holder.visible;
+        GameState.scene_cursor_holder.visible = false;
+        GameState.renderer.clear();
+        GameState.composer.render(0);
+        GameState.scene_cursor_holder.visible = oldCursorState;
+
+        /**
+         * Build DOM Image Element
+         */
+        const screenshot = new Image();
+        screenshot.src = GameState.canvas.toDataURL('image/png');
+        screenshot.onload = async function() {
+          /**
+           * Draw the contents of the Image onto an OffscreenCanvas
+           */
+          const width = GameState.ResolutionManager.getViewportWidth();
+          const height = GameState.ResolutionManager.getViewportHeight();
+          const ssCanvas = new OffscreenCanvas(width, height);
+          const ctx = ssCanvas.getContext('2d');
+          ctx.drawImage(screenshot, 0, 0, width, height);
+
+          /**
+           * Build a TGAObject from the canvas element
+           */
+          const tga = TGAObject.FromCanvas(ssCanvas);
+
+          /**
+           * Generate the export filename
+           */
+          const count = (await GameFileSystem.readdir('')).filter( (file) => {
+            return !!file.match(/KotOR\d{4}.tga/);
+          }).length;
+          const isK1 = GameState.GameKey == 'KOTOR';
+          const ssName = isK1 ? 'KotOR' : 'K2_';
+          const ssNumber = "00000" + count;
+          const ssMaxDigits = isK1 ? 4 : 5;
+          const ssFilename = `${ssName}${ssNumber.substring(ssNumber.length-ssMaxDigits)}.tga`;
+
+          /**
+           * Export the generated TGAObject as a TGA Image
+           */
+          GameFileSystem.writeFile(ssFilename, await tga.toExportBuffer());
+        };
       }
 
       this.keyboard.onKeyUp(e);
