@@ -3,7 +3,7 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
-  VideoEffectManager
+  VideoEffectManager, PazaakManager
 } from "./managers";
 
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
@@ -104,6 +104,7 @@ export class GameState implements EngineContext {
   static ShaderManager: typeof ShaderManager;
   static TLKManager: typeof TLKManager;
   static TwoDAManager: typeof TwoDAManager;
+  static PazaakManager: typeof PazaakManager;
 
   static Module: typeof Module;
   static NWScript: typeof NWScript;

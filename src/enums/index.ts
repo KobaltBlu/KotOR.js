@@ -12,6 +12,7 @@ export * from "./events";
 export * from "./graphics";
 export * from "./gui";
 export * from "./loaders";
+export * from "./minigames";
 export * from "./module";
 export * from "./nwscript";
 export * from "./odyssey";

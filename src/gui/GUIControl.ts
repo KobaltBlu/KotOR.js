@@ -1226,16 +1226,16 @@ export class GUIControl {
     return this.border.fill.texture;
   }
 
-  setFillTextureName(name = ''): Promise<OdysseyTexture> {
+  setFillTextureName(name = '', bUpdateHighlight = true): Promise<OdysseyTexture> {
     return new Promise<OdysseyTexture>( (resolve, reject) => {
       this.border.fill.texture = name;
       this.borderFillEnabled = true;
       if(name.length){
-        this.highlightFillEnabled = true;
-        this.highlight.fill.texture = name;
+        if(bUpdateHighlight) this.highlightFillEnabled = true;
+        if(bUpdateHighlight) this.highlight.fill.texture = name;
         TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           this.setFillTexture(texture)
-          this.setHighlightFillTexture(texture);
+          if(bUpdateHighlight) this.setHighlightFillTexture(texture);
           resolve(texture);
         });
       }

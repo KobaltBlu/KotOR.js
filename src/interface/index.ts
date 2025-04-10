@@ -8,6 +8,7 @@ export * from './graphics';
 export * from './gui';
 export * from './input';
 export * from './loaders';
+export * from './minigames';
 export * from './module';
 export * from './nwscript';
 export * from './odyssey';

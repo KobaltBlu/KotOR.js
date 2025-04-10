@@ -1,3 +1,4 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
@@ -26,14 +27,45 @@ export class MenuPazaakWager extends GameMenu {
     this.gui_resref = 'pazaakwager';
     this.background = '';
     this.voidFill = false;
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+
+      this.BTN_QUIT.addEventListener('click', () => {
+        //TODO: Cancel Pazaak game
+        this.close();
+      });
+
+      this.BTN_WAGER.addEventListener('click', () => {
+        //TODO: Start Pazaak game
+        this.close();
+      });
+
+      this.BTN_LESS.addEventListener('click', () => {
+        GameState.PazaakManager.DecreaseWager();
+        this.rebuild();
+      }); 
+
+      this.BTN_MORE.addEventListener('click', () => {
+        GameState.PazaakManager.IncreaseWager();
+        this.rebuild();
+      });
+      
       resolve();
     });
-}
-  
+  }
+
+  show() {
+    super.show();
+    this.tGuiPanel.widget.position.z = 100
+    this.rebuild();
+  }
+
+  rebuild(){
+    this.LBL_WAGERVAL.setText(GameState.PazaakManager.Wager.toString());
+  }
 }

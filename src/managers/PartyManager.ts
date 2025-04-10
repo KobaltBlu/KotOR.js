@@ -21,6 +21,9 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { JournalEntry } from "../engine/JournalEntry";
 import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
+import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
+import { PazaakCards } from "../enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -101,6 +104,10 @@ export class PartyManager {
   static SwoopUpgrade3: number = -1;
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
+
+  static Initialize(){
+    GameState.PazaakManager.Initialize();
+  }
 
   static async Load(gff: GFFObject){
     if(!(gff instanceof GFFObject)){
@@ -259,6 +266,40 @@ export class PartyManager {
         console.log(e);
       }
     }
+
+    /**
+     * Pazaak Cards
+     * PT_PAZAAKCARDS contains the cards that the player has in their deck
+     * struct child index is the card enum value
+     * PT_PAZAAKCOUNT is the number of that card in the deck
+     * - max index is 17
+     * - unknown 18th index always contains a PT_PAZAAKCOUNT of 0 unlike the other 17 PT_PAZAAKCOUNT is a BYTE
+     * - where the other 17 are INTs
+     */
+    if(gff.RootNode.hasField('PT_PAZAAKCARDS')){
+      const list = gff.RootNode.getFieldByLabel('PT_PAZAAKCARDS').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        GameState.PazaakManager.Cards.set(i, {
+          card: i,
+          count: list[i].getFieldByLabel('PT_PAZAAKCOUNT').getValue()
+        });
+      }
+    }
+
+    /**
+     * Pazaak Side Deck
+     * PT_PAZSIDELIST contains the cards that the player has equipped in their side deck
+     * struct child index is the card index in the side deck
+     * PT_PAZSIDECARD is the card enum value
+     * max index is 10
+     */
+    if(gff.RootNode.hasField('PT_PAZSIDELIST')){
+      const list = gff.RootNode.getFieldByLabel('PT_PAZSIDELIST').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        GameState.PazaakManager.SideDeck.set(i, list[i].getFieldByLabel('PT_PAZSIDECARD').getValue());
+      }
+    }
+    
   }
 
   static async Export(directory = ''){
@@ -329,13 +370,36 @@ export class PartyManager {
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS')).setValue(numMembers);
-      partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
 
-      //TODO: Pazaak Cards LIST
+      /**
+       * Pazaak Cards
+       */
+      const pazaakCardsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
+      for(let i = 0; i < PazaakCards.MAX_CARDS + 1; i++){
+        let cardStruct = new GFFStruct(0);
+        const card = GameState.PazaakManager.Cards.get(i);
+        const isUnusedCard = i == PazaakCards.UNUSED_CARD;
+        /**
+         * Pazaak Unused Card
+         * - index 0-17: set the card count
+         * - index 18, unknown card, not sure if it's used at all
+         */
+        cardStruct.addField(new GFFField( isUnusedCard ? GFFDataType.BYTE : GFFDataType.INT, 'PT_PAZAAKCOUNT'))
+          .setValue(isUnusedCard ? 0 : card.count);
+        pazaakCardsList.addChildStruct(cardStruct);
+      }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
-
-      //TODO: Pazaak Side LIST
+      /**
+       * Pazaak Side Deck
+       */
+      const pazaakSideDeckList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
+      for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+        let sideDeckStruct = new GFFStruct(0);
+        const sideDeckCard = GameState.PazaakManager.SideDeck.get(i);
+        sideDeckStruct.addField(new GFFField(GFFDataType.INT, 'PT_PAZSIDECARD'))
+          .setValue(sideDeckCard);
+        pazaakSideDeckList.addChildStruct(sideDeckStruct);
+      }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(0);
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(0);
@@ -851,11 +915,17 @@ export class PartyManager {
   static #tmpFollowPositionTarget = new THREE.Vector3();
   static #tmpFollowPosition = new THREE.Vector3();
   static GetFollowPosition(creature: ModuleCreature){
+    return this.GetFollowPositionAtIndex(PartyManager.party.indexOf(creature));
+  }
 
-    //I think party following is FORMATION_LINE in the formations.2da
-
+  static GetFollowPositionAtIndex(idx: number = 1){
     const leader = PartyManager.party[0];
-    const targetOffset = (PartyManager.party.indexOf(creature) == 2) ? -1.5 :1.5;
+    const creature = PartyManager.party[idx];
+
+    if(!creature)
+      return new THREE.Vector3();
+
+    const targetOffset = (idx == 2) ? -1.5 :1.5;
 
     this.#tmpFollowPositionTarget.set(
       targetOffset * Math.cos(leader.rotation.z), 

@@ -66,6 +66,9 @@ export class MenuManager {
   static MenuMessages: KOTOR.MenuMessages;
   static MenuOptions: KOTOR.MenuOptions;
   static MenuPartySelection: KOTOR.MenuPartySelection;
+  static MenuPazaakWager: KOTOR.MenuPazaakWager;
+  static MenuPazaakGame: KOTOR.MenuPazaakGame;
+  static MenuPazaakSetup: KOTOR.MenuPazaakSetup;
   static MenuResolutions: KOTOR.MenuResolutions;
   static MenuSaveLoad: KOTOR.MenuSaveLoad;
   static MenuSaveName: KOTOR.MenuSaveName;
@@ -256,6 +259,10 @@ export class MenuManager {
         MenuManager.InGameDialog = await MenuManager.GameMenuLoader(KOTOR.InGameDialog) as KOTOR.InGameDialog;
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(KOTOR.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(KOTOR.InGamePause) as KOTOR.InGamePause;
+
+        MenuManager.MenuPazaakWager = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakWager) as KOTOR.MenuPazaakWager;
+        MenuManager.MenuPazaakGame = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakGame) as KOTOR.MenuPazaakGame;
+        MenuManager.MenuPazaakSetup = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakSetup) as KOTOR.MenuPazaakSetup;
       }else if(GameState.GameKey == GameEngineType.TSL){
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(TSL.CharGenAbilities) as KOTOR.CharGenAbilities;
         MenuManager.CharGenClass = await MenuManager.GameMenuLoader(TSL.CharGenClass) as KOTOR.CharGenClass;
@@ -313,6 +320,10 @@ export class MenuManager {
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(TSL.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(TSL.InGamePause) as KOTOR.InGamePause;
         // MenuManager.MenuSwoopUp = await MenuManager.GameMenuLoader(TSL.MenuSwoopUp) as TSL.MenuSwoopUp;
+
+        MenuManager.MenuPazaakWager = await MenuManager.GameMenuLoader(TSL.MenuPazaakWager) as KOTOR.MenuPazaakWager;
+        MenuManager.MenuPazaakGame = await MenuManager.GameMenuLoader(TSL.MenuPazaakGame) as KOTOR.MenuPazaakGame;
+        MenuManager.MenuPazaakSetup = await MenuManager.GameMenuLoader(TSL.MenuPazaakSetup) as KOTOR.MenuPazaakSetup;
       }
     }catch(e){
       console.error(e);

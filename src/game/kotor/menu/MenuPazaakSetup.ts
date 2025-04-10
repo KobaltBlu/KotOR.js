@@ -1,4 +1,9 @@
+import { PazaakCards } from "../../../enums/minigames/PazaakCards";
+import { PazaakSideDeckSlots } from "../../../enums/minigames/PazaakSideDeckSlots";
+import { PazaakCardGUITextures } from "../../../enums/minigames/PazaakCardGUITextures";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
+import type { GUIControl } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
 
 /**
@@ -92,19 +97,186 @@ export class MenuPazaakSetup extends GameMenu {
   BTN_YTEXT: GUIButton;
   BTN_ATEXT: GUIButton;
 
+  selectedCard: PazaakCards = PazaakCards.INVALID;
+  selectedSideCard: PazaakSideDeckSlots = PazaakSideDeckSlots.INVALID;
+
   constructor(){
     super();
     this.gui_resref = 'pazaaksetup';
-    this.background = '';
-    this.voidFill = false;
+    this.background = '1600x1200pazaak';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      /**
+       * Begin the game
+       */
+      this.BTN_ATEXT.addEventListener('click', () => {
+        console.log('PazaakSetup: Begin Game');
+        this.close();
+        GameState.MenuManager.MenuPazaakGame.open();
+      });
+
+      /**
+       * Add card to the side deck
+       */
+      this.BTN_YTEXT.addEventListener('click', () => {
+        console.log('BTN_YTEXT');
+      });
+      this.BTN_YTEXT.hide();
+
+      /**
+       * Main deck cards
+       */
+      for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
+        const card = GameState.PazaakManager.Cards.get(i);
+        if(card){
+          const button = this.getCardButton(i);
+          if(!button){
+            continue;
+          }
+          button.addEventListener('click', () => {
+            this.selectedCard = i;
+            console.log(`PazaakSetup: Selected card ${i}`);
+            if(card.count <= 0){
+              return;
+            }
+            for(let j = 0; j < PazaakSideDeckSlots.MAX_SLOTS; j++){
+              const sideCard = GameState.PazaakManager.SideDeck.get(j);
+              if(sideCard != PazaakCards.INVALID){
+                continue;
+              }
+              GameState.PazaakManager.MoveCardToSideDeck(card.card, j);
+              this.rebuild();
+              break;
+            }
+          });
+        }
+      }
+
+      /**
+       * Side deck cards
+       */
+      for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+        const button = this.getSideCardButton(i);
+        if(!button){
+          continue;
+        }
+        button.addEventListener('click', () => {
+          const card = GameState.PazaakManager.SideDeck.get(i);
+          this.selectedSideCard = i;
+          console.log(`PazaakSetup: Side card ${i} - ${card}`);
+          if(card != PazaakCards.INVALID){
+            GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
+            this.rebuild();
+          }
+        });
+      }
+
       resolve();
     });
-}
-  
+  }
+
+  open(){
+    super.open();
+    GameState.MenuManager.MenuPazaakWager.open();
+    this.rebuild();
+  }
+
+  getCardButton(cardIndex: PazaakCards){
+    const rowIndex = Math.floor(cardIndex / 6);
+    const columnIndex = cardIndex % 6;
+    const buttonTag = `BTN_AVAIL${rowIndex}${columnIndex}`;
+    return (this as any)[buttonTag] as GUIButton;
+  }
+
+  getCardLabel(cardIndex: PazaakCards){
+    const rowIndex = Math.floor(cardIndex / 6);
+    const columnIndex = cardIndex % 6;
+    const labelTag = `LBL_AVAIL${rowIndex}${columnIndex}`;
+    return (this as any)[labelTag] as GUIControl;
+  }
+
+  getCardCountLabel(cardIndex: PazaakCards){
+    const rowIndex = Math.floor(cardIndex / 6);
+    const columnIndex = cardIndex % 6;
+    const labelTag = `LBL_AVAILNUM${rowIndex}${columnIndex}`;
+    return (this as any)[labelTag] as GUIControl;
+  }
+
+  getSideCardButton(cardIndex: PazaakCards){
+    const buttonTag = `BTN_CHOSEN${cardIndex}`;
+    return (this as any)[buttonTag] as GUIButton;
+  }
+
+  getSideCardLabel(cardIndex: PazaakCards){
+    const labelTag = `LBL_CHOSEN${cardIndex}`;
+    return (this as any)[labelTag] as GUIControl;
+  }
+
+  setCardCount(cardIndex: PazaakCards, count: number){
+    const rowIndex = Math.floor(cardIndex / 6);
+    const columnIndex = cardIndex % 6;
+    const labelTag = `LBL_AVAILNUM${rowIndex}${columnIndex}`;
+    const label = (this as any)[labelTag] as GUIControl;
+    if(!label){
+      console.error(`Label ${labelTag} - ${cardIndex} not found`);
+      return;
+    }
+    label.setText(count.toString());
+  }
+
+  rebuild(){
+    for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
+      const card = GameState.PazaakManager.Cards.get(i);
+      if(card){
+        this.setCardCount(i, card.count);
+      }
+
+      const bCardAvailable = card.count > 0;
+
+      const button = this.getCardButton(i);
+      if(button){
+        bCardAvailable ? button.show() : button.hide();
+      }
+      const label = this.getCardCountLabel(i);
+      if(label){
+        bCardAvailable ? label.show() : label.hide();
+      }
+      const label2 = this.getCardLabel(i);
+      if(label2){
+        bCardAvailable ? label2.show() : label2.hide();
+      }
+    }
+
+    for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+      const card = GameState.PazaakManager.SideDeck.get(i);
+      const button = this.getSideCardButton(i);
+      const label = this.getSideCardLabel(i);
+      if(!button || !label){
+        continue;
+      }
+      if(card != PazaakCards.INVALID){
+        label.setText(card.toString());
+        const type = Math.floor(card/6);
+        const modifier = (card % 6) + 1;
+        if(type === 0){
+          button.setFillTextureName(PazaakCardGUITextures.CARD_POS, false);
+          label.setText(`+${modifier}`);
+        }else if(type === 1){
+          button.setFillTextureName(PazaakCardGUITextures.CARD_NEG, false);
+          label.setText(`-${modifier}`);
+        }else if(type === 2){
+          button.setFillTextureName(PazaakCardGUITextures.CARD_TWOSIDED_POS, false);
+          label.setText(`±${modifier}`);
+        }
+      }else{
+        label.setText('');
+        button.setFillTextureName(PazaakCardGUITextures.CARD_BACK, false);
+      }
+    }
+  }
 }

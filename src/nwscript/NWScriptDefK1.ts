@@ -4408,13 +4408,27 @@ NWScriptDefK1.Actions = {
     comment: "364: Starts a game of pazaak.\n- nOpponentPazaakDeck: Index into PazaakDecks.2da; specifies which deck the opponent will use.\n- sEndScript: Script to be run when game finishes.\n- nMaxWager: Max player wager.  If <= 0, the player's credits won't be modified by the result of the game and the wager screen will not show up.\n- bShowTutorial: Plays in tutorial mode (nMaxWager should be 0).\n",
     name: "PlayPazaak",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, string, number, number, ModuleObject]){
+      GameState.PazaakManager.SetOpponentDeck(args[0] || 0);
+      GameState.PazaakManager.SetEndScript(args[1] || '');
+      GameState.PazaakManager.MaxWager = args[2] || 0;
+      GameState.PazaakManager.Wager = args[2] || 0;
+      GameState.PazaakManager.ShowTutorial = !!args[3];
+      GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature);
+      GameState.PazaakManager.Won = false;
+      
+      GameState.PazaakManager.StartGame();
+    }
   },
   365:{
     comment: "365: Returns result of last Pazaak game.  Should be used only in an EndScript sent to PlayPazaak.\n* Returns 0 if player loses, 1 if player wins.\n",
     name: "GetLastPazaakResult",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.PazaakManager.Won ? 1 : 0;
+    }
   },
   366:{
     comment: "366:  displays a feed back string for the object spicified and the constant\nrepersents the string to be displayed see:FeedBackText.2da\n",
