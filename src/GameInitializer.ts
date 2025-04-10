@@ -15,7 +15,8 @@ import {
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,   
   KEYManager,
   RIMManager,
-  ERFManager, VideoEffectManager
+  ERFManager, VideoEffectManager,
+  PazaakManager
 } from "./managers";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
@@ -80,6 +81,7 @@ export class GameInitializer {
     GameState.ShaderManager = ShaderManager;
     GameState.TLKManager = TLKManager;
     GameState.TwoDAManager = TwoDAManager;
+    GameState.PazaakManager = PazaakManager;
 
     GameState.Module = Module;
     GameState.NWScript = NWScript;
