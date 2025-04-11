@@ -9,9 +9,13 @@ import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
 import { IPazaakTable } from "../interface/minigames/IPazaakTable";
 import { ModuleCreature } from "../module/ModuleCreature";
 import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { PazaakConfig as PazaakConfig_TSL } from "../game/tsl/minigames/mg-pazaak-config";
+import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-pazaak-config";
+import { GameEngineType } from "../enums/engine/GameEngineType";
 
 export class PazaakManager {
 
+  static Config: any = PazaakConfig_TSL;
   static Wager: number = 100;
   static MinWager: number = 1;
   static MaxWager: number = 100;
@@ -23,6 +27,8 @@ export class PazaakManager {
   static Cards: Map<PazaakCards, IPTPazaakCard> = new Map<PazaakCards, IPTPazaakCard>();
   static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
   static Won: boolean = false;
+
+  static TotalSideDeckCards: number = 0;
 
   static PlayerTable: IPazaakTable = {
     points: 0,
@@ -52,6 +58,17 @@ export class PazaakManager {
    * Initialize the Pazaak manager
    */
   static Initialize(){
+    /**
+     * Set the config based on the game engine
+     */
+    if(GameState.GameKey == GameEngineType.KOTOR){
+      PazaakManager.Config = PazaakConfig_KOTOR;
+    }else{
+      PazaakManager.Config = PazaakConfig_TSL;
+    }
+
+    this.TotalSideDeckCards = PazaakManager.Config.data.sideDeckCards.length;
+
     /**
      * Pazaak Cards
      * - index 0-4: 2 cards

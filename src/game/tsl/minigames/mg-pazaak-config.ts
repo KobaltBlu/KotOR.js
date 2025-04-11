@@ -42,6 +42,7 @@ export const PazaakConfig = {
         modifier: [1, 0],
         modifierLabel: '1',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -52,6 +53,7 @@ export const PazaakConfig = {
         modifier: [2, 0],
         modifierLabel: '2',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -62,6 +64,7 @@ export const PazaakConfig = {
         modifier: [3, 0],
         modifierLabel: '3',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -72,6 +75,7 @@ export const PazaakConfig = {
         modifier: [4, 0],
         modifierLabel: '4',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -82,6 +86,7 @@ export const PazaakConfig = {
         modifier: [5, 0],
         modifierLabel: '5',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -92,6 +97,7 @@ export const PazaakConfig = {
         modifier: [6, 0],
         modifierLabel: '6',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -102,6 +108,7 @@ export const PazaakConfig = {
         modifier: [7, 0],
         modifierLabel: '7',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -112,6 +119,7 @@ export const PazaakConfig = {
         modifier: [8, 0],
         modifierLabel: '8',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -122,6 +130,7 @@ export const PazaakConfig = {
         modifier: [9, 0],
         modifierLabel: '9',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -132,6 +141,7 @@ export const PazaakConfig = {
         modifier: [10, 0],
         modifierLabel: '10',
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_generic_p',
           'pcards_back_p'
@@ -144,6 +154,7 @@ export const PazaakConfig = {
         modifier: [1, 0],
         modifierLabel: "+1",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -154,6 +165,7 @@ export const PazaakConfig = {
         modifier: [2, 0],
         modifierLabel: "+2",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -164,6 +176,7 @@ export const PazaakConfig = {
         modifier: [3, 0],
         modifierLabel: "+3",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -174,6 +187,7 @@ export const PazaakConfig = {
         modifier: [4, 0],
         modifierLabel: "+4",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -184,6 +198,7 @@ export const PazaakConfig = {
         modifier: [5, 0],
         modifierLabel: "+5",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -194,6 +209,7 @@ export const PazaakConfig = {
         modifier: [6, 0],
         modifierLabel: "+6",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_pos_p',
           'pcards_back_p'
@@ -204,6 +220,7 @@ export const PazaakConfig = {
         modifier: [-1, 0],
         modifierLabel: "-1",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -214,6 +231,7 @@ export const PazaakConfig = {
         modifier: [-2, 0],
         modifierLabel: "-2",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -224,6 +242,7 @@ export const PazaakConfig = {
         modifier: [-3, 0],
         modifierLabel: "-3",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -234,6 +253,7 @@ export const PazaakConfig = {
         modifier: [-4, 0],
         modifierLabel: "-4",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -244,6 +264,7 @@ export const PazaakConfig = {
         modifier: [-5, 0],
         modifierLabel: "-5",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -254,6 +275,7 @@ export const PazaakConfig = {
         modifier: [-6, 0],
         modifierLabel: "-6",
         reversible: false,
+        negateModifier: false,
         textures: [
           'pcards_neg_p',
           'pcards_back_p'
@@ -264,6 +286,7 @@ export const PazaakConfig = {
         modifier: [1, -1],
         modifierLabel: "±1",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p' // negative
@@ -274,6 +297,7 @@ export const PazaakConfig = {
         modifier: [2, -2],
         modifierLabel: "±2",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p' // negative
@@ -284,6 +308,7 @@ export const PazaakConfig = {
         modifier: [3, -3],
         modifierLabel: "±3",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p' // negative
@@ -294,6 +319,7 @@ export const PazaakConfig = {
         modifier: [4, -4],
         modifierLabel: "±4",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p' // negative
@@ -304,6 +330,7 @@ export const PazaakConfig = {
         modifier: [5, -5],
         modifierLabel: "±5",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p' // negative
@@ -314,6 +341,7 @@ export const PazaakConfig = {
         modifier: [6, -6],
         modifierLabel: "±6",
         reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_dblpos_p', // positive
           'pcards_dblneg_p'
@@ -324,6 +352,51 @@ export const PazaakConfig = {
         modifier: [1, 2],
         modifierLabel: "1±2",
         reversible: true,
+        negateModifier: true,
+        textures: [
+          'pcards_gold_p',
+          'pcards_gold_p'
+        ]
+      },
+      {
+        name: "Double",
+        modifier: [1, 0],
+        modifierLabel: "D",
+        reversible: false,
+        negateModifier: false,
+        textures: [
+          'pcards_gold_p',
+          'pcards_gold_p'
+        ]
+      },
+      {
+        name: "Tie Breaker",
+        modifier: [1, 0],
+        modifierLabel: "±1T",
+        reversible: false,
+        negateModifier: false,
+        textures: [
+          'pcards_gold_p',
+          'pcards_gold_p'
+        ]
+      },
+      {
+        name: "Flip2&4",
+        modifier: [-1, -1],
+        modifierLabel: "2&4",
+        reversible: true,
+        negateModifier: false,
+        textures: [
+          'pcards_gold_p',
+          'pcards_gold_p'
+        ]
+      },
+      {
+        name: "Flip 3&6",
+        modifier: [-1, -1],
+        modifierLabel: "3&6",
+        reversible: true,
+        negateModifier: false,
         textures: [
           'pcards_gold_p',
           'pcards_gold_p'
