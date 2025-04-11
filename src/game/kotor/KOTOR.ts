@@ -62,5 +62,6 @@ export * from "./menu/MenuTop";
 export * from "./menu/MenuUpgrade";
 export * from "./menu/MenuUpgradeItems";
 export * from "./menu/MenuUpgradeSelect";
+export * from "./minigames/mg-pazaak-config";
 
 // export as namespace KOTOR;
