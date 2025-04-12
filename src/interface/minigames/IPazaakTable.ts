@@ -3,6 +3,7 @@ import { PazaakHandSlots } from "../../enums/minigames/PazaakHandSlots";
 import { PazaakSideDeckSlots } from "../../enums/minigames/PazaakSideDeckSlots";
 import { PazaakTableSlots } from "../../enums/minigames/PazaakTableSlots";
 import { PazaakTurnState } from "../../enums/minigames/PazaakTurnState";
+import { IPazaakCard } from "./IPazaakCard";
 
 export interface IPazaakTable {
   /**
@@ -20,7 +21,7 @@ export interface IPazaakTable {
   /**
    * Cards on the table
    */
-  cardArea: Map<PazaakTableSlots, PazaakCards>;
+  cardArea: Map<PazaakTableSlots, IPazaakCard>;
   /**
    * Remaining cards in the side deck
    */

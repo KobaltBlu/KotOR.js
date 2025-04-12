@@ -1,3 +1,7 @@
+import { PazaakTurnMode } from "../../../enums/minigames/PazaakTurnMode";
+import { PazaakHandSlots } from "../../../enums/minigames/PazaakHandSlots";
+import { PazaakTableSlots } from "../../../enums/minigames/PazaakTableSlots";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
 
@@ -98,8 +102,288 @@ export class MenuPazaakGame extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      /**
+       * Flip hand cards
+       */
+      this.BTN_FLIP0.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.flipHandCard(0, 0);
+      });
+
+      this.BTN_FLIP1.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.flipHandCard(0, 1);
+      });
+
+      this.BTN_FLIP2.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.flipHandCard(0, 2);
+      });
+
+      this.BTN_FLIP3.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.flipHandCard(0, 3);
+      });
+
+      /**
+       * Play hand cards
+       */
+      this.BTN_PLRSIDE0.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.playHandCard(0, 0);
+      });
+
+      this.BTN_PLRSIDE1.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.playHandCard(0, 1);
+      }); 
+
+      this.BTN_PLRSIDE2.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.playHandCard(0, 2);
+      });
+
+      this.BTN_PLRSIDE3.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.playHandCard(0, 3);
+      });
+      
+      /**
+       * End turn
+       */
+      this.BTN_XTEXT.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.onBtnEndTurn();
+      });
+
+      /**
+       * Stand
+       */
+      this.BTN_YTEXT.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        this.onBtnStand();
+      });
+
       resolve();
     });
-}
+  }
+
+  /**
+   * Flip a hand card
+   * @param tableIndex - The index of the table
+   * @param cardIndex - The index of the card
+   */
+  flipHandCard(tableIndex: number, cardIndex: number){
+    //todo
+    console.warn('flipHandCard not implemented', tableIndex, cardIndex);
+    this.rebuild();
+  }
+
+  /**
+   * Play a hand card
+   * @param tableIndex - The index of the table
+   * @param cardIndex - The index of the card
+   */
+  playHandCard(tableIndex: number, cardIndex: number){
+    GameState.PazaakManager.PlayHandCard(tableIndex, cardIndex);
+    this.rebuild();
+  }
+
+  getTableCardButton(tableIndex: number, cardIndex: number){
+    if(tableIndex == 0){
+      return this.getControlByName(`BTN_PLR${cardIndex}`);
+    }else{
+      return this.getControlByName(`BTN_NPC${cardIndex}`);
+    }
+  }
+
+  onBtnStand(){
+    GameState.PazaakManager.Stand();
+    this.rebuild();
+  }
+
+  onBtnEndTurn(){
+    GameState.PazaakManager.EndTurn();
+    this.rebuild();
+  }
+
+  /**
+   * Get the card label for a table
+   * @param tableIndex - The index of the table
+   * @param cardIndex - The index of the card
+   * @returns The card label
+   */
+  getTableCardLabel(tableIndex: number, cardIndex: number){
+    if(tableIndex == 0){
+      return this.getControlByName(`LBL_PLR${cardIndex}`);
+    }else{
+      return this.getControlByName(`LBL_NPC${cardIndex}`);
+    }
+  }
+
+  getHandCardButton(tableIndex: number, cardIndex: number){
+    if(tableIndex == 0){
+      return this.getControlByName(`BTN_PLRSIDE${cardIndex}`);
+    }else{
+      return this.getControlByName(`BTN_NPCSIDE${cardIndex}`);
+    }
+  }
+
+  getHandCardLabel(tableIndex: number, cardIndex: number){
+    if(tableIndex == 0){
+      return this.getControlByName(`LBL_PLRSIDE${cardIndex}`);
+    }else{
+      return this.getControlByName(`LBL_NPCSIDE${cardIndex}`);
+    }
+  }
+
+  getHandCardFlipButton(tableIndex: number, cardIndex: number){
+    if(tableIndex == 0){
+      return this.getControlByName(`BTN_PLRFLIP${cardIndex}`);
+    }else{
+      return this.getControlByName(`BTN_NPCFLIP${cardIndex}`);
+    }
+  }
+
+  /**
+   * Set the turn indicator
+   * @param turn - The turn number
+   */
+  setTurnIndicator(turn: number){
+    if(turn == 0){
+      this.LBL_PLRTURN.show();
+      this.LBL_NPCTURN.hide();
+    }else{
+      this.LBL_PLRTURN.hide();
+      this.LBL_NPCTURN.show();
+    }
+  }
+
+  /**
+   * Set the win counter for a table
+   * @param tableIndex - The index of the table
+   * @param winCount - The number of wins
+   * @param score - The score of the table
+   */
+  setTableWinCounter(tableIndex: number, winCount: number, score: number = 0){
+    if(tableIndex == 0){
+      this.LBL_PLRTOTAL.setText(score.toString());
+      for(let i = 0; i < 3; i++){
+        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i < winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
+      }
+    }else{
+      this.LBL_NPCTOTAL.setText(score.toString());
+      for(let i = 0; i < 3; i++){
+        this.getControlByName(`LBL_NPCSCORE${i}`)?.setFillTextureName(i < winCount ? 'lbl_winmark01' : 'lbl_winmark02');
+      }
+    }
+  }
+
+  /**
+   * Check if the player can click
+   * @returns True if the player can click, false otherwise
+   */
+  noClicks(){
+    return (
+      GameState.PazaakManager.Actions.length > 0 || 
+      GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER
+    );
+  }
+
+  /**
+   * Update the menu
+   * @param delta - The delta time
+   */
+  update(delta: number){
+    super.update(delta);
+    GameState.PazaakManager.ProcessActionQueue(delta);
+  }
+
+  /**
+   * Rebuild the menu
+   */
+  rebuild(){
+    this.setTurnIndicator(GameState.PazaakManager.TurnMode);
+
+    for(let i = 0; i < 2; i++){
+      const table = GameState.PazaakManager.Tables[i];
+
+      this.setTableWinCounter(i, table.winCount, table.points);
+
+      /**
+       * Update table card area
+       */
+      for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+        const slot = table.cardArea.get(j);
+        const tableCardButton = this.getTableCardButton(i, j);
+        const tableCardLabel = this.getTableCardLabel(i, j);
+        if(slot == undefined){
+          tableCardButton.hide();
+          tableCardLabel.hide();
+          continue;
+        };
+
+        tableCardButton.show();
+        tableCardButton.setFillTextureName(slot.textures[0]);
+
+        tableCardLabel.show();
+        tableCardLabel.setText(slot.modifierLabel);
+      }
+
+      /**
+       * Update player hand cards
+       */
+      for(let j = 0; j < PazaakHandSlots.MAX_SLOTS; j++){
+        const slot = table.handCards.get(j);
+        const handCardButton = this.getHandCardButton(i, j);
+        const handCardLabel = this.getHandCardLabel(i, j);
+        const handCardFlipButton = this.getHandCardFlipButton(i, j);
+        if(slot == undefined){
+          handCardButton.hide();
+          handCardLabel.hide();
+          if(handCardFlipButton){
+            handCardFlipButton.hide();
+          }
+          continue;
+        }
+
+        const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
+
+        if(i == PazaakTurnMode.OPPONENT){
+          handCardButton.disableHighlight();
+        }else{
+          handCardButton.enableHighlight();
+        }
+
+        handCardButton.show();
+        handCardLabel.show();
+        handCardLabel.setText(card.modifierLabel);
+        if(handCardFlipButton && card.reversible){
+          handCardFlipButton.show();
+        }
+      }
+    }
+
+  }
   
 }

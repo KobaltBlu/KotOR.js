@@ -35,6 +35,7 @@ export const PazaakConfig = {
     mainDeckCards: [
       {
         name: "Base 1",
+        type: 0,
         modifier: 1,
         modifierLabel: '1',
         reversible: false,
@@ -45,6 +46,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 2",
+        type: 0,
         modifier: 2,
         modifierLabel: '2',
         reversible: false,
@@ -55,6 +57,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 3",
+        type: 0,
         modifier: 3,
         modifierLabel: '3',
         reversible: false,
@@ -65,6 +68,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 4",
+        type: 0,
         modifier: 4,
         modifierLabel: '4',
         reversible: false,
@@ -75,6 +79,7 @@ export const PazaakConfig = {
       },  
       {
         name: "Base 5",
+        type: 0,
         modifier: 5,
         modifierLabel: '5',
         reversible: false,
@@ -85,6 +90,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 6",
+        type: 0,
         modifier: 6,
         modifierLabel: '6',
         reversible: false,
@@ -95,6 +101,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 7",
+        type: 0,
         modifier: 7,
         modifierLabel: '7',
         reversible: false,
@@ -105,6 +112,7 @@ export const PazaakConfig = {
       }, 
       {
         name: "Base 8",
+        type: 0,
         modifier: 8,
         modifierLabel: '8',
         reversible: false,
@@ -115,6 +123,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 9",
+        type: 0,
         modifier: 9,
         modifierLabel: '9',
         reversible: false,
@@ -125,6 +134,7 @@ export const PazaakConfig = {
       },
       {
         name: "Base 10",
+        type: 0,
         modifier: 10,
         modifierLabel: '10',
         reversible: false,
@@ -137,6 +147,7 @@ export const PazaakConfig = {
     sideDeckCards: [
       {
         name: "Plus 1",
+        type: 1,
         modifier: 1,
         modifierLabel: "+1",
         reversible: false,
@@ -147,6 +158,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus 2",
+        type: 1,
         modifier: 2,
         modifierLabel: "+2",
         reversible: false,
@@ -157,6 +169,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus 3",
+        type: 1,
         modifier: 3,
         modifierLabel: "+3",
         reversible: false,
@@ -167,6 +180,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus 4",
+        type: 1,
         modifier: 4,
         modifierLabel: "+4",
         reversible: false,
@@ -177,6 +191,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus 5",
+        type: 1,
         modifier: 5,
         modifierLabel: "+5",
         reversible: false,
@@ -187,6 +202,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus 6",
+        type: 1,
         modifier: 6,
         modifierLabel: "+6",
         reversible: false,
@@ -197,6 +213,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 1",
+        type: 1,
         modifier: -1,
         modifierLabel: "-1",
         reversible: false,
@@ -207,6 +224,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 2",
+        type: 1,
         modifier: -2,
         modifierLabel: "-2",
         reversible: false,
@@ -217,6 +235,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 3",
+        type: 1,
         modifier: -3,
         modifierLabel: "-3",
         reversible: false,
@@ -227,6 +246,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 4",
+        type: 1,
         modifier: -4,
         modifierLabel: "-4",
         reversible: false,
@@ -237,6 +257,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 5",
+        type: 1,
         modifier: -5,
         modifierLabel: "-5",
         reversible: false,
@@ -247,6 +268,7 @@ export const PazaakConfig = {
       },
       {
         name: "Minus 6",
+        type: 1,
         modifier: -6,
         modifierLabel: "-6",
         reversible: false,
@@ -257,6 +279,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 1",
+        type: 1,
         modifier: 1,
         modifierLabel: "±1",
         reversible: true,
@@ -267,6 +290,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 2",
+        type: 1,
         modifier: 2,
         modifierLabel: "±2",
         reversible: true,
@@ -277,6 +301,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 3",
+        type: 1,
         modifier: 3,
         modifierLabel: "±3",
         reversible: true,
@@ -287,6 +312,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 4",
+        type: 1,
         modifier: 4,
         modifierLabel: "±4",
         reversible: true,
@@ -297,6 +323,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 5",
+        type: 1,
         modifier: 5,
         modifierLabel: "±5",
         reversible: true,
@@ -307,6 +334,7 @@ export const PazaakConfig = {
       },
       {
         name: "Plus/Minus 6",
+        type: 1,
         modifier: 6,
         modifierLabel: "±6",
         reversible: true,

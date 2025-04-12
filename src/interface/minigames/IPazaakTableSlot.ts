@@ -1,6 +1,6 @@
-import { PazaakCards } from "../../enums/minigames/PazaakCards";
+import { IPazaakCard } from "./IPazaakCard";
 
 export interface IPazaakTableSlot {
-  card: PazaakCards;
+  card: IPazaakCard;
   flipped: boolean;
 }
