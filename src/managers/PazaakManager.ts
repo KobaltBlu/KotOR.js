@@ -13,6 +13,7 @@ import { PazaakConfig as PazaakConfig_TSL } from "../game/tsl/minigames/mg-pazaa
 import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-pazaak-config";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { IPazaakCard } from "../interface/minigames/IPazaakCard";
+import { ActionStatus } from "../enums/actions/ActionStatus";
 
 /**
  * [Sound Effects]
@@ -34,7 +35,8 @@ enum PazaakActionType {
   END_TURN = 5,
   BEGIN_ROUND = 6,
   END_ROUND = 7,
-  END_GAME = 8
+  END_GAME = 8,
+  AI_DETERMINE_MOVE = 9
 }
 
 enum PazaakActionPropertyType {
@@ -105,18 +107,6 @@ export class PazaakManager {
    */
   static Initialize(){
     /**
-     * Set the config based on the game engine
-     */
-    if(GameState.GameKey == GameEngineType.KOTOR){
-      PazaakManager.Config = PazaakConfig_KOTOR;
-    }else{
-      PazaakManager.Config = PazaakConfig_TSL;
-    }
-  
-    this.TotalMainDeckCards = PazaakManager.Config.data.mainCards.length;
-    this.TotalSideDeckCards = PazaakManager.Config.data.sideDeckCards.length;
-
-    /**
      * Pazaak Cards
      * - index 0-4: 2 cards
      * - index 5-17: 0 cards
@@ -143,6 +133,16 @@ export class PazaakManager {
   }
 
   static StartGame(){
+    /**
+     * Set the config based on the game engine
+     */
+    if(GameState.GameKey == GameEngineType.KOTOR){
+      PazaakManager.Config = PazaakConfig_KOTOR;
+    }else{
+      PazaakManager.Config = PazaakConfig_TSL;
+    }
+    this.TotalMainDeckCards = PazaakManager.Config.data.mainDeckCards.length;
+    this.TotalSideDeckCards = PazaakManager.Config.data.sideDeckCards.length;
     this.Won = false;
     this.Tables[0].points = 0;
     this.Tables[1].points = 0;
@@ -286,7 +286,7 @@ export class PazaakManager {
   }
 
   static GetRandomCard(){
-    const totalMainCards = PazaakManager.Config.data.mainCards.length;
+    const totalMainCards = PazaakManager.Config.data.mainDeckCards.length;
     const card = Math.floor(Math.random() * totalMainCards);
     if(card == 0){
       return PazaakCards.MAIN_CARD_1;
@@ -424,15 +424,16 @@ export class PazaakManager {
     }
 
     const action = this.Actions[0];
-    let actionStatus:number = 0;  
+    let actionStatus: ActionStatus = ActionStatus.IN_PROGRESS;  
     /**
      * Wait for a specified amount of time
      */
     if(action.type == PazaakActionType.WAIT){
-      this.WaitTimer += delta;
-      if(this.WaitTimer >= (action.properties[0].value as number)){
-        this.WaitTimer = 0;
-        actionStatus = 1;
+      let time = (action.properties[1].value as number) || 0;
+      time += delta;
+      action.properties[1].value = time;
+      if(time >= (action.properties[0].value as number)){
+        actionStatus = ActionStatus.COMPLETE;
       }
     }
     /**
@@ -440,7 +441,7 @@ export class PazaakManager {
      */
     else if(action.type == PazaakActionType.PLAY_GUI_SOUND){
       GameState.guiAudioEmitter.playSound(this.GetActionPropertyAsString(0, 0));
-      actionStatus = 1;
+      actionStatus = ActionStatus.COMPLETE;
     }
     /**
      * End the turn
@@ -464,7 +465,7 @@ export class PazaakManager {
           this.AddAction(this.TurnMode, PazaakActionType.END_ROUND);
         }
       }
-      actionStatus = 1;
+      actionStatus = ActionStatus.COMPLETE;
     }
     /**
      * End the round
@@ -520,7 +521,7 @@ export class PazaakManager {
         this.AddActionFront(this.TurnMode, PazaakActionType.BEGIN_ROUND);
       }
     }
-    if(actionStatus == 1){
+    if(actionStatus == ActionStatus.COMPLETE){
       this.Actions.shift();
     }
   }
@@ -609,8 +610,8 @@ export class PazaakManager {
       if(card != undefined){
         continue;
       }
-      const randomCardIdx = Math.floor(Math.random() * this.Config.data.mainCards.length);
-      table.cardArea.set(i, this.Config.data.mainCards[randomCardIdx]);
+      const randomCardIdx = Math.floor(Math.random() * this.Config.data.mainDeckCards.length);
+      table.cardArea.set(i, this.Config.data.mainDeckCards[randomCardIdx]);
       cardDrawn = true;
       break;
     }
