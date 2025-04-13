@@ -3849,9 +3849,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleItem]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
-        if(args[0].getBaseItemId() == 57){
-          return args[0].getStackSize();
-        }
+        return args[0].cost || 0 + args[0].addCost || 0;
       }
       return 0;
     }

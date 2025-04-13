@@ -6,3 +6,4 @@ export * from "./RoundTypes";
 export * from "./WeaponSize";
 export * from "./WeaponType";
 export * from "./WeaponWield";
+export * from "./BaseItemType";

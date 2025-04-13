@@ -5,6 +5,7 @@ import * as path from "path";
 import { CurrentGame } from "../CurrentGame";
 import type { ModuleCreature, ModuleItem } from "../module";
 import { GameState } from "../GameState";
+import { BaseItemType } from "../enums/combat/BaseItemType";
 // import { PartyManager } from "./PartyManager";
 
 /**
@@ -114,9 +115,9 @@ export class InventoryManager {
     }
 
     item.initProperties();
-    if(item.getBaseItemId() == 57){ //Credits
+    if(item.getBaseItemId() == BaseItemType.CREDITS){
       GameState.PartyManager.Gold += item.getStackSize();
-    }else if(item.getBaseItemId() == 86){ //Pazaak Card
+    }else if(item.getBaseItemId() == BaseItemType.PAZAAK_CARD){
       GameState.PazaakManager.AddCard(item.getModelVariation(), item.getStackSize());
     }else{
       item.load();
