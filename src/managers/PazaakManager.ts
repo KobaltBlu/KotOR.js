@@ -508,6 +508,9 @@ export class PazaakManager {
       this.Won = winner == PazaakTurnMode.PLAYER;
       console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins!`);
       GameState.MenuManager.MenuPazaakGame.close();
+      if(this.EndScriptInstance){
+        this.EndScriptInstance.run(this.Opponent);
+      }
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
