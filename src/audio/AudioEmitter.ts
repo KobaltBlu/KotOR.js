@@ -122,6 +122,45 @@ export class AudioEmitter {
     }
   }
 
+  ffsounds: AudioBufferSourceNode[] = [];
+
+  async playSoundFireAndForget(resRef = ''): Promise<AudioBufferSourceNode>{
+    if(resRef == '****' || !resRef?.length){ return; }
+    try{
+      const sound: AudioBufferSourceNode = this.engine.audioCtx.createBufferSource();
+      (sound as any).name = resRef;
+      let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
+      if(!buffer){
+        let data = await AudioLoader.LoadSound(resRef);
+        buffer = await this.addSound(resRef, data);
+        this.buffers.set(resRef, buffer);
+      }
+
+      if(!buffer){
+        console.error('AudioEmitter', 'Sound not found', resRef);
+        return;
+      }
+
+      this.ffsounds.push(sound);
+
+      sound.buffer = buffer;
+      sound.connect(this.mainNode);
+      sound.start(0, 0);
+
+      sound.onended = () => {
+        console.log('AudioEmitter', 'Sound ended', resRef);
+        sound.disconnect();
+        sound.stop(0);
+        this.ffsounds.splice(this.ffsounds.indexOf(sound), 1);
+      }
+      return sound;
+    }catch(e){
+      console.error('AudioEmitter', 'Failed to play sound', resRef);
+      console.error(e);
+    }
+    return;
+  }
+
   async playSound(resRef = ''): Promise<AudioBufferSourceNode>{
     if(resRef == '****' || !resRef?.length){ return; }
     if(!!this.currentSound){
