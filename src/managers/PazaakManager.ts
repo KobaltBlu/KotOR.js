@@ -16,6 +16,11 @@ import { IPazaakCard } from "../interface/minigames/IPazaakCard";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import type { PazaakDeck } from "../engine/minigames/PazaakDeck";
 
+const MSG_CONFIRM_SIDE_DECK = 32322;
+const MSG_YOU_WIN = 32334;
+const MSG_TIED = 32338;
+const MSG_YOU_LOSE = 32335;
+
 /**
  * Find the best index for a number in an array
  * @param numbers - The array of numbers
@@ -58,7 +63,8 @@ enum PazaakActionType {
   BEGIN_ROUND = 6,
   END_ROUND = 7,
   END_GAME = 8,
-  AI_DETERMINE_MOVE = 9
+  AI_DETERMINE_MOVE = 9,
+  SHOW_MESSAGE = 10
 }
 
 enum PazaakActionPropertyType {
@@ -484,6 +490,14 @@ export class PazaakManager {
         }
       }
 
+      if(result == -1){
+        this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_TIED]);
+      }else if(result == PazaakTurnMode.PLAYER){
+        this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_YOU_WIN]);
+      }else{
+        this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_YOU_LOSE]);
+      }
+
       this.AddAction(this.TurnMode, PazaakActionType.WAIT, [1, 0]);
 
       if(result == PazaakTurnMode.PLAYER){
@@ -720,6 +734,14 @@ export class PazaakManager {
       {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
       }
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
+     * Show a message
+     */
+    else if(action.type == PazaakActionType.SHOW_MESSAGE){
+      const tlkId = this.GetActionPropertyAsNumber(0, 0);
+      GameState.MenuManager.InGameConfirm.fromStringRef(tlkId);
       actionStatus = ActionStatus.COMPLETE;
     }
     if(actionStatus == ActionStatus.COMPLETE){

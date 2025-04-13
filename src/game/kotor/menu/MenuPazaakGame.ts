@@ -321,7 +321,9 @@ export class MenuPazaakGame extends GameMenu {
    */
   update(delta: number){
     super.update(delta);
-    GameState.PazaakManager.ProcessActionQueue(delta);
+    if(!GameState.MenuManager.InGameConfirm.isVisible()){
+      GameState.PazaakManager.ProcessActionQueue(delta);
+    }
     this.rebuild();
   }
 
