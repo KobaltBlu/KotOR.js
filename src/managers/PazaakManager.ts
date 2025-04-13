@@ -375,7 +375,7 @@ export class PazaakManager {
      * Play a GUI sound
      */
     else if(action.type == PazaakActionType.PLAY_GUI_SOUND){
-      GameState.guiAudioEmitter.playSound(this.GetActionPropertyAsString(0, 0));
+      GameState.guiAudioEmitter.playSoundFireAndForget(this.GetActionPropertyAsString(0, 0));
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
@@ -410,6 +410,8 @@ export class PazaakManager {
        */
       else{
         this.AddActionFront(tableIndex, PazaakActionType.DRAW_CARD, [tableIndex]);
+        this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.5, 0]);
+        this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_startturn']);
       }
       actionStatus = ActionStatus.COMPLETE;
     }
