@@ -296,7 +296,7 @@ export class PartyManager {
     if(gff.RootNode.hasField('PT_PAZSIDELIST')){
       const list = gff.RootNode.getFieldByLabel('PT_PAZSIDELIST').getChildStructs();
       for(let i = 0; i < list.length; i++){
-        GameState.PazaakManager.SideDeck.set(i, list[i].getFieldByLabel('PT_PAZSIDECARD').getValue());
+        GameState.PazaakManager.PlayerSideDeck.set(i, list[i].getFieldByLabel('PT_PAZSIDECARD').getValue());
       }
     }
     
@@ -395,7 +395,7 @@ export class PartyManager {
       const pazaakSideDeckList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZSIDELIST'));
       for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
         let sideDeckStruct = new GFFStruct(0);
-        const sideDeckCard = GameState.PazaakManager.SideDeck.get(i);
+        const sideDeckCard = GameState.PazaakManager.PlayerSideDeck.get(i);
         sideDeckStruct.addField(new GFFField(GFFDataType.INT, 'PT_PAZSIDECARD'))
           .setValue(sideDeckCard);
         pazaakSideDeckList.addChildStruct(sideDeckStruct);

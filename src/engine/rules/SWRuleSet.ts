@@ -3,6 +3,7 @@ import { CreatureClass } from "../../combat/CreatureClass";
 import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
 import { SWItemPropsDef } from "./SWItemPropsDef";
+import { PazaakDeck } from "../minigames/PazaakDeck";
 import { GameState } from "../../GameState";
 
 /**
@@ -27,8 +28,14 @@ export class SWRuleSet {
 
   static itemPropsDef: SWItemPropsDef[] = [];
 
+  static pazaakDecks: PazaakDeck[] = [];
+  static pazaakDeckCount: number = 0;
+
   static Init(){
 
+    /**
+     * Initialize Classes
+     */
     const classes = GameState.TwoDAManager.datatables.get('classes');
     if(classes){
       SWRuleSet.classCount = classes.RowCount;
@@ -38,6 +45,9 @@ export class SWRuleSet {
       }
     }
 
+    /**
+     * Initialize Racial Types
+     */
     const racialtypes = GameState.TwoDAManager.datatables.get('racialtypes');
     if(racialtypes){
       SWRuleSet.racialTypeCount = racialtypes.RowCount;
@@ -47,6 +57,9 @@ export class SWRuleSet {
       }
     }
 
+    /**
+     * Initialize Effect Icons
+     */
     const effectIcons = GameState.TwoDAManager.datatables.get('effecticon');
     if(effectIcons){
       SWRuleSet.effectIconCount = effectIcons.RowCount;
@@ -56,12 +69,27 @@ export class SWRuleSet {
       }
     }
 
+    /**
+     * Initialize Item Properties
+     */
     const itemProps = GameState.TwoDAManager.datatables.get('itempropsdef');
     if(itemProps){
       SWRuleSet.itemPropsDef = new Array(itemProps.RowCount);
       for(let i = 0; i < itemProps.RowCount; i++){
         SWRuleSet.itemPropsDef[i] = SWItemPropsDef.From2DA(itemProps.rows[i]);
       }
+    }
+
+    /**
+     * Initialize Pazaak Decks
+     */
+    const pazaakdecks = GameState.TwoDAManager.datatables.get('pazaakdecks');
+    if(pazaakdecks){
+      SWRuleSet.pazaakDecks = new Array(pazaakdecks.RowCount);
+      for(let i = 0; i < pazaakdecks.RowCount; i++){
+        SWRuleSet.pazaakDecks[i] = PazaakDeck.From2DA(pazaakdecks.rows[i]);
+      }
+      SWRuleSet.pazaakDeckCount = pazaakdecks.RowCount;
     }
 
   }

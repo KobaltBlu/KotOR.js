@@ -6,4 +6,5 @@ export interface IPazaakCard {
   reversible: boolean;
   negateModifier: boolean;
   textures: string[];
+  flipped?: boolean;
 }

@@ -6,6 +6,8 @@ import {
   VideoEffectManager, PazaakManager
 } from "./managers";
 
+import type { SWRuleSet } from "./engine/rules/SWRuleSet";
+
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
 import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "./module";
 import type { NWScript } from "./nwscript/NWScript";
@@ -80,6 +82,7 @@ export class GameState implements EngineContext {
 
     "beforeRender": [],
     "afterRender": [],
+    // "mgPazaakStart": []
   };
 
   static AppearanceManager: typeof AppearanceManager;
@@ -105,6 +108,8 @@ export class GameState implements EngineContext {
   static TLKManager: typeof TLKManager;
   static TwoDAManager: typeof TwoDAManager;
   static PazaakManager: typeof PazaakManager;
+
+  static SWRuleSet: typeof SWRuleSet;
 
   static Module: typeof Module;
   static NWScript: typeof NWScript;

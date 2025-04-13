@@ -205,7 +205,7 @@ export class MenuPazaakGame extends GameMenu {
    * @param cardIndex - The index of the card
    */
   playHandCard(tableIndex: number, cardIndex: number){
-    GameState.PazaakManager.PlayHandCard(tableIndex, cardIndex);
+    GameState.PazaakManager.PlayHandCard(tableIndex, cardIndex, false);
     this.rebuild();
   }
 
@@ -218,12 +218,12 @@ export class MenuPazaakGame extends GameMenu {
   }
 
   onBtnStand(){
-    GameState.PazaakManager.Stand();
+    GameState.PazaakManager.AddStandAction(0);
     this.rebuild();
   }
 
   onBtnEndTurn(){
-    GameState.PazaakManager.EndTurn();
+    GameState.PazaakManager.AddEndTurnAction(0);
     this.rebuild();
   }
 
@@ -259,9 +259,9 @@ export class MenuPazaakGame extends GameMenu {
 
   getHandCardFlipButton(tableIndex: number, cardIndex: number){
     if(tableIndex == 0){
-      return this.getControlByName(`BTN_PLRFLIP${cardIndex}`);
+      return this.getControlByName(`BTN_FLIP${cardIndex}`);
     }else{
-      return this.getControlByName(`BTN_NPCFLIP${cardIndex}`);
+      return undefined;
     }
   }
 
@@ -289,12 +289,12 @@ export class MenuPazaakGame extends GameMenu {
     if(tableIndex == 0){
       this.LBL_PLRTOTAL.setText(score.toString());
       for(let i = 0; i < 3; i++){
-        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i < winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
+        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
       }
     }else{
       this.LBL_NPCTOTAL.setText(score.toString());
       for(let i = 0; i < 3; i++){
-        this.getControlByName(`LBL_NPCSCORE${i}`)?.setFillTextureName(i < winCount ? 'lbl_winmark01' : 'lbl_winmark02');
+        this.getControlByName(`LBL_NPCSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02');
       }
     }
   }
@@ -310,6 +310,11 @@ export class MenuPazaakGame extends GameMenu {
     );
   }
 
+  open(){
+    super.open();
+    GameState.PazaakManager.BeginGame();
+  }
+
   /**
    * Update the menu
    * @param delta - The delta time
@@ -317,6 +322,7 @@ export class MenuPazaakGame extends GameMenu {
   update(delta: number){
     super.update(delta);
     GameState.PazaakManager.ProcessActionQueue(delta);
+    this.rebuild();
   }
 
   /**
@@ -358,7 +364,7 @@ export class MenuPazaakGame extends GameMenu {
         const handCardButton = this.getHandCardButton(i, j);
         const handCardLabel = this.getHandCardLabel(i, j);
         const handCardFlipButton = this.getHandCardFlipButton(i, j);
-        if(slot == undefined){
+        if(slot == undefined || slot == -1){
           handCardButton.hide();
           handCardLabel.hide();
           if(handCardFlipButton){
@@ -369,17 +375,22 @@ export class MenuPazaakGame extends GameMenu {
 
         const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
 
-        if(i == PazaakTurnMode.OPPONENT){
-          handCardButton.disableHighlight();
-        }else{
-          handCardButton.enableHighlight();
+        handCardButton.disableSelection = (i == PazaakTurnMode.OPPONENT);
+        if(i == PazaakTurnMode.PLAYER){
+          
         }
+        
+        handCardButton.setFillTextureName(card.textures[0], false);
 
         handCardButton.show();
         handCardLabel.show();
         handCardLabel.setText(card.modifierLabel);
-        if(handCardFlipButton && card.reversible){
-          handCardFlipButton.show();
+        if(handCardFlipButton){
+          if(card.reversible){
+            handCardFlipButton.show();
+          }else{
+            handCardFlipButton.hide();
+          }
         }
       }
     }

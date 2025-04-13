@@ -129,7 +129,7 @@ export class MenuPazaakSetup extends GameMenu {
       this.BTN_YTEXT.hide();
 
       /**
-       * Main deck cards
+       * Available cards
        */
       for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
         const card = GameState.PazaakManager.Cards.get(i);
@@ -140,12 +140,12 @@ export class MenuPazaakSetup extends GameMenu {
           }
           button.addEventListener('click', () => {
             this.selectedCard = i;
-            console.log(`PazaakSetup: Selected card ${i}`);
+            console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
             if(card.count <= 0){
               return;
             }
             for(let j = 0; j < PazaakSideDeckSlots.MAX_SLOTS; j++){
-              const sideCard = GameState.PazaakManager.SideDeck.get(j);
+              const sideCard = GameState.PazaakManager.PlayerSideDeck.get(j);
               if(sideCard != PazaakCards.INVALID){
                 continue;
               }
@@ -166,7 +166,7 @@ export class MenuPazaakSetup extends GameMenu {
           continue;
         }
         button.addEventListener('click', () => {
-          const card = GameState.PazaakManager.SideDeck.get(i);
+          const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
           console.log(`PazaakSetup: Side card ${i} - ${card}`);
           if(card != PazaakCards.INVALID){
@@ -253,13 +253,13 @@ export class MenuPazaakSetup extends GameMenu {
     }
 
     for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
-      const card = GameState.PazaakManager.SideDeck.get(i);
+      const card = GameState.PazaakManager.PlayerSideDeck.get(i);
       const button = this.getSideCardButton(i);
       const label = this.getSideCardLabel(i);
       if(!button || !label){
         continue;
       }
-      if(card != PazaakCards.INVALID){
+      if(typeof card === 'number' && card != PazaakCards.INVALID){
         label.setText(card.toString());
         const type = Math.floor(card/6);
         const modifier = (card % 6) + 1;

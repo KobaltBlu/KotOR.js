@@ -18,6 +18,7 @@ import {
   ERFManager, VideoEffectManager,
   PazaakManager
 } from "./managers";
+import { SWRuleSet } from "./engine/rules/SWRuleSet";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
 import { SaveGame } from "./SaveGame";
@@ -83,6 +84,8 @@ export class GameInitializer {
     GameState.TwoDAManager = TwoDAManager;
     GameState.PazaakManager = PazaakManager;
 
+    GameState.SWRuleSet = SWRuleSet;
+
     GameState.Module = Module;
     GameState.NWScript = NWScript;
 
@@ -132,6 +135,11 @@ export class GameInitializer {
      */
     KeyMapper.Init();
     GamePad.Init();
+
+    /**
+     * Initialize SWRuleSet
+     */
+    GameState.SWRuleSet.Init();
 
     /**
      * Initialize INIConfig

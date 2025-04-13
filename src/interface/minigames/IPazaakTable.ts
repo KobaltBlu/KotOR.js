@@ -19,6 +19,10 @@ export interface IPazaakTable {
    */
   turnState: PazaakTurnState;
   /**
+   * Stand state
+   */
+  stand: boolean;
+  /**
    * Cards on the table
    */
   cardArea: Map<PazaakTableSlots, IPazaakCard>;

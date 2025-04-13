@@ -14,6 +14,28 @@ import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-p
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { IPazaakCard } from "../interface/minigames/IPazaakCard";
 import { ActionStatus } from "../enums/actions/ActionStatus";
+import type { PazaakDeck } from "../engine/minigames/PazaakDeck";
+
+/**
+ * Find the best index for a number in an array
+ * @param numbers - The array of numbers
+ * @param target - The target number
+ * @returns The index of the best number
+ */
+function findBestIndex(numbers: number[], target: number): number {
+  let bestIndex = -1;
+  let bestDiff = Infinity;
+
+  numbers.forEach((num, index) => {
+    const diff = target - num;
+    if (diff >= 0 && diff < bestDiff) {
+      bestDiff = diff;
+      bestIndex = index;
+    }
+  });
+
+  return bestIndex;
+}
 
 /**
  * [Sound Effects]
@@ -29,7 +51,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 enum PazaakActionType {
   WAIT = 0,
   DRAW_CARD = 1,
-  PLAY_SIDE_CARD = 2,
+  PLAY_HAND_CARD = 2,
   PLAY_GUI_SOUND = 3,
   BEGIN_TURN = 4,
   END_TURN = 5,
@@ -55,9 +77,19 @@ interface IPazaakAction {
   properties: IPazaakActionProperty[];
 }
 
+interface IPazaakConfig {
+  name: string;
+  textures: {name: string, file: string}[];
+  data: {
+    rounds: number;
+    mainDeckCards: IPazaakCard[];
+    sideDeckCards: IPazaakCard[];
+  }
+}
+
 export class PazaakManager {
 
-  static Config: any = PazaakConfig_TSL;
+  static Config: IPazaakConfig = PazaakConfig_TSL;
   static Wager: number = 100;
   static MinWager: number = 1;
   static MaxWager: number = 100;
@@ -65,9 +97,9 @@ export class PazaakManager {
   static EndScriptInstance: NWScriptInstance = undefined;
   static ShowTutorial: boolean = false;
   static Opponent: ModuleCreature = undefined;
-  static OpponentDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+  // static OpponentDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
   static Cards: Map<PazaakCards, IPTPazaakCard> = new Map<PazaakCards, IPTPazaakCard>();
-  static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+  // static SideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
   static Won: boolean = false;
 
   static TotalSideDeckCards: number = 0;
@@ -75,10 +107,14 @@ export class PazaakManager {
   static WaitTimer: number = 0;
   static TargetPoints: number = 20;
 
+  static PlayerSideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+  static OpponentSideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
+
   static Tables: IPazaakTable[] = [
     {
       points: 0,
       winCount: 0,
+      stand: false,
       turnState: PazaakTurnState.INVALID,
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
@@ -87,6 +123,7 @@ export class PazaakManager {
     {
       points: 0,
       winCount: 0,
+      stand: false,
       turnState: PazaakTurnState.INVALID,
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
@@ -106,6 +143,7 @@ export class PazaakManager {
    * Initialize the Pazaak manager
    */
   static Initialize(){
+    console.log(`PazaakManager: Initializing`);
     /**
      * Pazaak Cards
      * - index 0-4: 2 cards
@@ -125,7 +163,14 @@ export class PazaakManager {
      * - the value of the card is the index of the card in the PazaakCards enum
      */
     for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
-      this.SideDeck.set(i, PazaakCards.INVALID);
+      this.Tables[0].sideDeck.set(i, PazaakCards.INVALID);
+    }
+
+    /**
+     * Pazaak Player Side Deck
+     */
+    for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+      this.PlayerSideDeck.set(i, PazaakCards.INVALID);
     }
 
     this.Won = false;
@@ -148,11 +193,28 @@ export class PazaakManager {
     this.Tables[1].points = 0;
     this.Tables[0].winCount = 0;
     this.Tables[1].winCount = 0;
+    this.Tables[0].stand = false;
+    this.Tables[1].stand = false;
     this.TurnMode = PazaakTurnMode.PLAYER;
-    for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
-      this.Tables[0].cardArea.set(i, undefined);
-      this.Tables[1].cardArea.set(i, undefined);
+    for(let j = 0; j < 2; j++){
+      /**
+       * Pazaak Card Area
+       * - A pazaak table can have up to 9 cards on the table
+       */
+      for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
+        this.Tables[j].cardArea.set(i, undefined);
+      }
+
+      /**
+       * Pazaak Side Deck
+       * - index 0-9: unset equals INVALID card (-1)
+       * - the value of the card is the index of the card in the PazaakCards enum
+       */
+      for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+        this.Tables[j].sideDeck.set(i, PazaakCards.INVALID);
+      }
     }
+
     this.Actions = [];
     GameState.MenuManager.MenuPazaakSetup.open();
   }
@@ -179,155 +241,21 @@ export class PazaakManager {
   }
 
   /**
-   * Convert a card modifier to a card
-   * @param cardModifier - The card modifier to convert
-   * @returns The card
-   */
-  static CardModifierToCard(cardModifier: string){
-    if(cardModifier == '+1'){
-      return PazaakCards.PLUS_1;
-    }else if(cardModifier == '+2'){
-      return PazaakCards.PLUS_2;
-    }else if(cardModifier == '+3'){
-      return PazaakCards.PLUS_3;
-    }else if(cardModifier == '+4'){
-      return PazaakCards.PLUS_4;
-    }else if(cardModifier == '+5'){
-      return PazaakCards.PLUS_5;
-    }else if(cardModifier == '+6'){
-      return PazaakCards.PLUS_6;
-    }else if(cardModifier == '-1'){
-      return PazaakCards.MINUS_1;
-    }else if(cardModifier == '-2'){
-      return PazaakCards.MINUS_2;
-    }else if(cardModifier == '-3'){
-      return PazaakCards.MINUS_3;
-    }else if(cardModifier == '-4'){
-      return PazaakCards.MINUS_4;
-    }else if(cardModifier == '-5'){
-      return PazaakCards.MINUS_5;
-    }else if(cardModifier == '-6'){
-      return PazaakCards.MINUS_6;
-    }else if(cardModifier == '+-1'){
-      return PazaakCards.PLUS_MINUS_1;
-    }else if(cardModifier == '+-2'){
-      return PazaakCards.PLUS_MINUS_2;
-    }else if(cardModifier == '+-3'){
-      return PazaakCards.PLUS_MINUS_3;
-    }else if(cardModifier == '+-4'){
-      return PazaakCards.PLUS_MINUS_4;
-    }else if(cardModifier == '+-5'){
-      return PazaakCards.PLUS_MINUS_5;
-    }else if(cardModifier == '+-6'){
-      return PazaakCards.PLUS_MINUS_6;
-    }
-    return PazaakCards.INVALID;
-  }
-
-  static GetCardScore(card: PazaakCards, bFlipped: boolean = false){
-    if(card == PazaakCards.PLUS_1){
-      return 1;
-    }else if(card == PazaakCards.PLUS_2){
-      return 2;
-    }else if(card == PazaakCards.PLUS_3){
-      return 3;
-    }else if(card == PazaakCards.PLUS_4){
-      return 4;
-    }else if(card == PazaakCards.PLUS_5){
-      return 5;
-    }else if(card == PazaakCards.PLUS_6){
-      return 6;
-    }else if(card == PazaakCards.MINUS_1){
-      return -1;
-    }else if(card == PazaakCards.MINUS_2){
-      return -2;
-    }else if(card == PazaakCards.MINUS_3){
-      return -3;
-    }else if(card == PazaakCards.MINUS_4){
-      return -4;
-    }else if(card == PazaakCards.MINUS_5){
-      return -5;
-    }else if(card == PazaakCards.MINUS_6){
-      return -6;
-    }else if(card == PazaakCards.PLUS_MINUS_1){
-      return bFlipped ? -1 : 1;
-    }else if(card == PazaakCards.PLUS_MINUS_2){
-      return bFlipped ? -2 : 2;
-    }else if(card == PazaakCards.PLUS_MINUS_3){
-      return bFlipped ? -3 : 3;
-    }else if(card == PazaakCards.PLUS_MINUS_4){
-      return bFlipped ? -4 : 4;
-    }else if(card == PazaakCards.PLUS_MINUS_5){
-      return bFlipped ? -5 : 5;
-    }else if(card == PazaakCards.PLUS_MINUS_6){
-      return bFlipped ? -6 : 6;
-    }else if(card == PazaakCards.MAIN_CARD_1){
-      return 1;
-    }else if(card == PazaakCards.MAIN_CARD_2){
-      return 2;
-    }else if(card == PazaakCards.MAIN_CARD_3){
-      return 3;
-    }else if(card == PazaakCards.MAIN_CARD_4){
-      return 4;
-    }else if(card == PazaakCards.MAIN_CARD_5){
-      return 5;
-    }else if(card == PazaakCards.MAIN_CARD_6){
-      return 6;
-    }else if(card == PazaakCards.MAIN_CARD_7){
-      return 7;
-    }else if(card == PazaakCards.MAIN_CARD_8){
-      return 8;
-    }else if(card == PazaakCards.MAIN_CARD_9){
-      return 9;
-    }else if(card == PazaakCards.MAIN_CARD_10){
-      return 10;
-    }
-    return 0;
-  }
-
-  static GetRandomCard(){
-    const totalMainCards = PazaakManager.Config.data.mainDeckCards.length;
-    const card = Math.floor(Math.random() * totalMainCards);
-    if(card == 0){
-      return PazaakCards.MAIN_CARD_1;
-    }else if(card == 1){
-      return PazaakCards.MAIN_CARD_2;
-    }else if(card == 2){
-      return PazaakCards.MAIN_CARD_3;
-    }else if(card == 3){
-      return PazaakCards.MAIN_CARD_4;
-    }else if(card == 4){
-      return PazaakCards.MAIN_CARD_5;
-    }else if(card == 5){
-      return PazaakCards.MAIN_CARD_6;
-    }else if(card == 6){
-      return PazaakCards.MAIN_CARD_7;
-    }else if(card == 7){
-      return PazaakCards.MAIN_CARD_8;
-    }else if(card == 8){
-      return PazaakCards.MAIN_CARD_9;
-    }else if(card == 9){
-      return PazaakCards.MAIN_CARD_10;
-    }
-    return PazaakCards.INVALID;
-  }
-
-  /**
    * Set the opponent's deck
    * @param deckIndex - The index of the deck to set
    */
   static SetOpponentDeck(deckIndex: number){
-    const deckConfig = GameState.TwoDAManager.datatables.get('pazaakdecks').rows[deckIndex] ||
-      GameState.TwoDAManager.datatables.get('pazaak_decks').rows[0];
+    const deckConfig = GameState.SWRuleSet.pazaakDecks[deckIndex] ||
+      GameState.SWRuleSet.pazaakDecks[0];
     const deck = new Map<PazaakSideDeckSlots, PazaakCards>();
     for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
-      const card = this.CardModifierToCard(deckConfig[`card${i}`]);
+      const card = deckConfig.cards[i];
       if(card == PazaakCards.INVALID){
-        console.error(`PazaakManager: Invalid card modifier ${deckConfig[`card${i}`]} for deck ${deckIndex}`);
+        console.error(`PazaakManager: Invalid card modifier ${deckConfig.cards[i]} for deck ${deckIndex}`);
       }
       deck.set(i, card != PazaakCards.INVALID ? card : PazaakCards.PLUS_1);
     }
-    this.OpponentDeck = deck;
+    this.OpponentSideDeck = deck;
   }
 
   /**
@@ -373,13 +301,14 @@ export class PazaakManager {
    * @param sideDeckIndex - The index of the side deck card to move
    */
   static MoveCardToSideDeck(card: PazaakCards, sideDeckIndex: number){
-    const currentSDCard = this.SideDeck.get(sideDeckIndex);
+    const currentSDCard = this.PlayerSideDeck.get(sideDeckIndex);
     //If the side deck card is valid, add it to the main deck
     if(currentSDCard != PazaakCards.INVALID && currentSDCard < PazaakCards.MAX_CARDS){
       this.AddCard(currentSDCard, 1);
     }
     //Set the side deck card to the new card
-    this.SideDeck.set(sideDeckIndex, card);
+    this.PlayerSideDeck.set(sideDeckIndex, card);
+    this.RemoveCard(card, 1);
   }
 
   /**
@@ -387,13 +316,13 @@ export class PazaakManager {
    * @param sideDeckIndex - The index of the side deck card to move
    */
   static MoveSideDeckCardToMainDeck(sideDeckIndex: number){
-    const card = this.SideDeck.get(sideDeckIndex);
+    const card = this.PlayerSideDeck.get(sideDeckIndex);
     //If the side deck card is valid, add it to the main deck
     if(card != PazaakCards.INVALID && card < PazaakCards.MAX_CARDS){
       this.AddCard(card, 1);
     }
     //Set the side deck card to an invalid value to clear the slot
-    this.SideDeck.set(sideDeckIndex, PazaakCards.INVALID);
+    this.PlayerSideDeck.set(sideDeckIndex, PazaakCards.INVALID);
   }
 
   /**
@@ -444,25 +373,72 @@ export class PazaakManager {
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
+     * Begin the round
+     */
+    else if(action.type == PazaakActionType.BEGIN_ROUND){
+      console.log(`PazaakManager: Begin round... Player starts first.`);
+      this.TurnMode = PazaakTurnMode.PLAYER;
+      for(let i = 0; i < this.Tables.length; i++){
+        this.Tables[i].points = 0;
+        this.Tables[i].stand = false;
+        for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+          this.Tables[i].cardArea.set(j, undefined);
+        }
+      }
+      //Begin the player's turn
+      this.AddActionFront(this.TurnMode, PazaakActionType.BEGIN_TURN, [PazaakTurnMode.PLAYER]);
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
+     * Begin the turn
+     */
+    else if(action.type == PazaakActionType.BEGIN_TURN){
+      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
+      console.log(`PazaakManager: Begin turn ${tableIndex == 0 ? `Player` : `Opponent`}`);
+      const table = this.Tables[tableIndex];
+      if(table.stand){
+        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
+      }
+      /**
+       * Draw a card from the main deck
+       */
+      else{
+        this.AddActionFront(tableIndex, PazaakActionType.DRAW_CARD, [tableIndex]);
+      }
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
      * End the turn
      * end early if the player busted 
      * if it was the players turn, begin the opponent's turn
      * else end the round
      */
     else if(action.type == PazaakActionType.END_TURN){
+      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
+      const bStanding = this.GetActionPropertyAsNumber(0, 1) == 1;
+      console.log(`PazaakManager: End turn ${tableIndex == 0 ? 'Player' : 'Opponent'} [${bStanding ? 'standing' : 'not standing'}]`);
+      const table = this.Tables[tableIndex];
+      table.stand = bStanding;
+
       //check to see if either player busted
+      const playerStand = this.Tables[0].stand;
+      const opponentStand = this.Tables[1].stand;
       const playerPoints = this.Tables[0].points;
       const opponentPoints = this.Tables[1].points;
-      let busted = (playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints);
-      if(busted){
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
+      const bBusted = (playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints);
+      const bTied = (playerPoints == this.TargetPoints && opponentPoints == this.TargetPoints);
+      const bAllStand = (playerStand && opponentStand);
+      //if the players are tied or both busted or both stood, end the round
+      if(bTied || bBusted || bAllStand){
+        this.AddAction(this.TurnMode, PazaakActionType.END_ROUND);
       }else{
+        //if the players are not tied or both busted or both stood, begin the next turn
         if(this.TurnMode == PazaakTurnMode.PLAYER){
           this.TurnMode = PazaakTurnMode.OPPONENT;
-          this.AddAction(this.TurnMode, PazaakActionType.BEGIN_ROUND, [PazaakTurnMode.OPPONENT]);
+          this.AddAction(this.TurnMode, PazaakActionType.BEGIN_TURN, [PazaakTurnMode.OPPONENT]);
         }else{
           this.TurnMode = PazaakTurnMode.PLAYER;
-          this.AddAction(this.TurnMode, PazaakActionType.END_ROUND);
+          this.AddAction(this.TurnMode, PazaakActionType.BEGIN_TURN, [PazaakTurnMode.PLAYER]);
         }
       }
       actionStatus = ActionStatus.COMPLETE;
@@ -473,8 +449,9 @@ export class PazaakManager {
      */
     else if(action.type == PazaakActionType.END_ROUND){
       //calculate the result of the round
-      const playerPoints = this.Tables[0].points;
-      const opponentPoints = this.Tables[1].points;
+      const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
+      const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
+      console.log(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
       //[Results]:
       // -1 - tied
       //  0 - player wins
@@ -506,23 +483,237 @@ export class PazaakManager {
           result = -1;
         }
       }
+
+      this.AddAction(this.TurnMode, PazaakActionType.WAIT, [1, 0]);
+
       if(result == PazaakTurnMode.PLAYER){
-        this.Tables[0].winCount++;
+        this.Tables[PazaakTurnMode.PLAYER].winCount++;
       }else if(result == PazaakTurnMode.OPPONENT){
-        this.Tables[1].winCount++;
+        this.Tables[PazaakTurnMode.OPPONENT].winCount++;
       }
-      if(this.Tables[0].winCount >= this.TargetWins){
+
+      if(this.Tables[PazaakTurnMode.PLAYER].winCount >= this.TargetWins){
         this.AddAction(this.TurnMode, PazaakActionType.END_GAME, [PazaakTurnMode.PLAYER]);
-      }else if(this.Tables[1].winCount >= this.TargetWins){
+      }else if(this.Tables[PazaakTurnMode.OPPONENT].winCount >= this.TargetWins){
         this.AddAction(this.TurnMode, PazaakActionType.END_GAME, [PazaakTurnMode.OPPONENT]);
       }else{
         //The player always starts the next round
         this.TurnMode = PazaakTurnMode.PLAYER;
-        this.AddActionFront(this.TurnMode, PazaakActionType.BEGIN_ROUND);
+        this.AddAction(this.TurnMode, PazaakActionType.BEGIN_ROUND, [PazaakTurnMode.PLAYER]);
       }
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
+     * Draw a random card from the main deck
+     */
+    else if(action.type == PazaakActionType.DRAW_CARD){
+      let cardDrawn = false;
+      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
+      const table = this.Tables[tableIndex];
+      console.log(`PazaakManager: Draw card ${tableIndex == 0 ? 'Player' : 'Opponent'}`);
+
+      /**
+       * Draw a card from the main deck
+       */
+      for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
+        const card = table.cardArea.get(i);
+        if(card != undefined){
+          continue;
+        }
+        const randomCardIdx = Math.floor(Math.random() * this.Config.data.mainDeckCards.length);
+        table.cardArea.set(i, this.Config.data.mainDeckCards[randomCardIdx]);
+        table.points += this.Config.data.mainDeckCards[randomCardIdx].modifier[0];
+        cardDrawn = true;
+        break;
+      }
+
+      /**
+       * Find the best card to play next
+       */
+      let bestCardIndex = -1;
+      let bestCardFlipped = false;
+      let scoreAfterBestCard = table.points;
+      for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
+        const sdCardIndex = table.handCards.get(i);
+        if(sdCardIndex == PazaakCards.INVALID){
+          continue;
+        }
+        const card = this.Config.data.sideDeckCards[sdCardIndex];
+        const scoreAfterCard = table.points + card.modifier[0];
+
+        const scores = [table.points, scoreAfterBestCard, scoreAfterCard];
+        if(card.reversible){
+          scores.push(table.points + card.modifier[1]);
+        }
+
+        const bestIndex = findBestIndex(scores, this.TargetPoints);
+
+        if(bestIndex == 2){
+          bestCardIndex = i;
+          scoreAfterBestCard = table.points + card.modifier[0];
+          bestCardFlipped = false;
+        }else if(bestIndex == 3){
+          bestCardIndex = i;
+          scoreAfterBestCard = table.points + card.modifier[1];
+          bestCardFlipped = true;
+        }
+      }
+
+      /**
+       * If the player has more than 20 points, they will end their turn because they busted
+       */
+      if(table.points > this.TargetPoints){
+        this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
+      }
+      /**
+       * If the player has no space left on the table, they will end their turn
+       */
+      else if(!cardDrawn){
+        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex]);
+      }
+      /**
+       * If the player has cards to draw, draw a card
+       */
+      else{
+        if(tableIndex == 1){
+          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);  
+        }
+        this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
+        this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
+      }
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
+     * Play a hand card
+     */
+    else if(action.type == PazaakActionType.PLAY_HAND_CARD){
+      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
+      const cardIndex = this.GetActionPropertyAsNumber(0, 1);
+      const flipped = this.GetActionPropertyAsNumber(0, 2) == 1;
+      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${cardIndex} ${flipped ? 'flipped' : 'not flipped'}`);
+      
+      const table = this.Tables[tableIndex];
+
+      this.PlayHandCard(tableIndex, cardIndex, flipped);
+      this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
+      this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_playside']);
+
+      /**
+       * If this action is from the opponent, determine if they should stand or not
+       */
+      if(tableIndex == PazaakTurnMode.OPPONENT){
+        const stand = table.points >= 18 && table.points <= this.TargetPoints;
+        this.AddAction(tableIndex, PazaakActionType.END_TURN, [tableIndex, stand ? 1 : 0]);
+      }
+
+      actionStatus = ActionStatus.COMPLETE;
+    }
+    /**
+     * AI determines a move
+     */
+    else if(action.type == PazaakActionType.AI_DETERMINE_MOVE){
+      console.log(`PazaakManager: AI determining move...`);
+      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
+      const aiTable = this.Tables[tableIndex];
+      const playerTable = this.Tables[PazaakTurnMode.PLAYER];
+      
+      /**
+       * Find the best card to play next
+       */
+      let bestCardIndex = -1;
+      let bestCardFlipped = false;
+      let scoreAfterBestCard = aiTable.points;
+      for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
+        const sdCardIndex = aiTable.handCards.get(i);
+        if(sdCardIndex == PazaakCards.INVALID){
+          continue;
+        }
+        const card = this.Config.data.sideDeckCards[sdCardIndex];
+        const scoreAfterCard = aiTable.points + card.modifier[0];
+
+        const scores = [aiTable.points, scoreAfterBestCard, scoreAfterCard];
+        if(card.reversible){
+          scores.push(aiTable.points + card.modifier[1]);
+        }
+
+        const bestIndex = findBestIndex(scores, this.TargetPoints);
+
+        if(bestIndex == 2){
+          bestCardIndex = i;
+          scoreAfterBestCard = aiTable.points + card.modifier[0];
+          bestCardFlipped = false;
+        }else if(bestIndex == 3){
+          bestCardIndex = i;
+          scoreAfterBestCard = aiTable.points + card.modifier[1];
+          bestCardFlipped = true;
+        }
+      }
+      
+      /**
+       * If the AI has 20 points, they will stand to end their turn
+       * there is no better move at this point
+       */
+      if(aiTable.points == 20){
+        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
+      }
+      /**
+       * The AI will stand on 19 or 18 
+       * unless they have a better card to play that will put them equal to 20 
+       * to consolidate their potential win
+       */
+      if((aiTable.points == 19 || aiTable.points == 18)){
+        if(bestCardIndex > -1){
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
+        }else{
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
+        }
+      }
+      /**
+       * If the AI has more than 20 points, they will end their turn because they busted
+       */
+      else if(aiTable.points > 20){
+        //if the AI has more than 20 points, 
+        // they will play a hand card to try to get just under or equal to 20 
+        // but not less than 18
+        if(bestCardIndex != -1 && scoreAfterBestCard >= 18){
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
+        }else{
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
+        }
+      }
+      /**
+       * If the AI has less than 18 points, they will play a hand card
+       */
+      else if(aiTable.points < 18){
+        //if the AI has less than 15 points, they will end their turn
+        //this is to prevent the AI from playing a card that will cause them to use up all their hand cards too early
+        if(aiTable.points < 15){
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
+        }
+        /**
+         * If the AI has a valid card to play, play it
+         */
+        else if(bestCardIndex != -1){
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
+        }
+        /**
+         * If the AI has no valid cards to play, end their turn in hopes of not busting after the next draw
+         */
+        else{
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
+        }
+      }
+      /**
+       * If the AI has between 18 and 20 points, they will auto stand to end their turn
+       */
+      else 
+      {
+        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
+      }
+      actionStatus = ActionStatus.COMPLETE;
     }
     if(actionStatus == ActionStatus.COMPLETE){
-      this.Actions.shift();
+      this.Actions.splice(this.Actions.indexOf(action), 1);
     }
   }
 
@@ -578,88 +769,57 @@ export class PazaakManager {
   static BeginGame(){
     this.Tables[0].turnState = PazaakTurnState.DRAW_CARD;
     this.Tables[1].turnState = PazaakTurnState.WAITING;
+    this.TurnMode = PazaakTurnMode.PLAYER;
 
-    //Copy the side decks to the player and opponent tables
-    for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
-      this.Tables[0].sideDeck.set(i, this.SideDeck.get(i));
-      this.Tables[1].sideDeck.set(i, this.OpponentDeck.get(i));
-    }
-
-    //Initialize the player's hand  
-    for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
-      this.Tables[0].handCards.set(i, PazaakCards.INVALID);
-      this.Tables[1].handCards.set(i, PazaakCards.INVALID);
-    }
-
-    //Initialize the player's table
-    for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
-      this.Tables[0].cardArea.set(i, undefined);
-      this.Tables[1].cardArea.set(i, undefined);
-    }
-  }
-
-  /**
-   * Begin the turn
-   */
-  static BeginTurn(){
-    const table = this.GetCurrentTable();
-
-    let cardDrawn = false;
-    for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
-      const card = table.cardArea.get(i);
-      if(card != undefined){
-        continue;
-      }
-      const randomCardIdx = Math.floor(Math.random() * this.Config.data.mainDeckCards.length);
-      table.cardArea.set(i, this.Config.data.mainDeckCards[randomCardIdx]);
-      cardDrawn = true;
-      break;
-    }
-    if(!cardDrawn){
-      this.AddAction(this.TurnMode, PazaakActionType.END_TURN);
-      return;
-    }else{
-      this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
-      this.AddAction(this.TurnMode, PazaakActionType.WAIT, [1, 0]);
-    }
-
-    /**
-     * Draw a card from the side deck until this player has 4 cards in their hand
-     */
-    for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
-      const card = table.handCards.get(i);
-      if(card != PazaakCards.INVALID){
-        continue;
-      }
-      //Get the available side deck cards
-      const availableSideDeckCards = Array.from(table.sideDeck.values()).filter(card => card != PazaakCards.INVALID);
-      //If there are no available side deck cards, break
-      if(availableSideDeckCards.length == 0){
-        console.warn(`PazaakManager: No available side deck cards for player ${this.TurnMode}`);
-        break;
-      }
-      //Get a random side deck card
-      const sideCardIndex = Math.floor(Math.random() * availableSideDeckCards.length);
-      const randomSideDeckCard = availableSideDeckCards[sideCardIndex];
-
-      //Remove the card from the side deck
-      for (let [key, value] of table.sideDeck.entries()) {
-        if (value === randomSideDeckCard){
-          table.sideDeck.set(key, PazaakCards.INVALID);
-          break;
-        }
-      }
+    const tableCount = this.Tables.length;
+    for(let i = 0; i < tableCount; i++){
+      const table = this.Tables[i];
+      const sideDeck = !i ? this.PlayerSideDeck : this.OpponentSideDeck;
       
-      //Add the card to the player's hand
-      table.handCards.set(i, randomSideDeckCard);
+      //Copy the side decks to the player and opponent tables
+      for(let j = 0; j < PazaakSideDeckSlots.MAX_SLOTS; j++){
+        table.sideDeck.set(j, sideDeck.get(j));
+      }
+
+      //Initialize the player's table
+      for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+        table.cardArea.set(j, undefined);
+      }
+
+      /**
+       * Draw a card from the side deck until this player has 4 cards in their hand
+       */
+      const usedSideDeckCards: number[] = [];
+      for(let j = 0; j < PazaakHandSlots.MAX_SLOTS; j++){
+        table.handCards.set(j, PazaakCards.INVALID);
+        //Get the available side deck cards
+        const availableSideDeckCards = Array.from(table.sideDeck.values()).filter(
+          (card) => card != PazaakCards.INVALID && !usedSideDeckCards.includes(card)
+        );
+        //If there are no available side deck cards, break
+        if(availableSideDeckCards.length == 0){
+          console.warn(`PazaakManager: No available side deck cards for player ${i}`);
+          continue;
+        }
+
+        //Get a random side deck card
+        const sideCardIndex = Math.floor(Math.random() * availableSideDeckCards.length);
+        const randomSideDeckCard = availableSideDeckCards[sideCardIndex];
+        
+        //Add the card to the player's hand
+        table.handCards.set(j, randomSideDeckCard);
+      }
     }
+
+    this.ClearActions();
+    this.AddAction(this.TurnMode, PazaakActionType.BEGIN_ROUND, [PazaakTurnMode.PLAYER]);
   }
 
   /**
    * Play a card from the player's hand
    * @param handIndex - The index of the card to play
    */
-  static PlayHandCard(tableIndex: number, handIndex: number){
+  static PlayHandCard(tableIndex: number, handIndex: number, flipped: boolean = false){
     const table = this.Tables[tableIndex];
     const cardIndex = table.handCards.get(handIndex);
     if(cardIndex == PazaakCards.INVALID){
@@ -672,30 +832,32 @@ export class PazaakManager {
       if(tableCard != undefined){
         continue;
       }
+      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
       const card: IPazaakCard = this.Config.data.sideDeckCards[cardIndex];
+      card.flipped = flipped;
       //Play the card
       table.cardArea.set(i, card);
       //Remove the card from the player's hand
       table.handCards.set(handIndex, PazaakCards.INVALID);
+      table.points += card.modifier[!flipped ? 0 : 1];
       break;
     }
-    this.AddAction(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_playside']);
-    this.AddAction(tableIndex, PazaakActionType.WAIT, [1, 0]);
   }
 
   /**
    * End the turn
    */
-  static EndTurn(){
-    this.AddAction(this.TurnMode, PazaakActionType.END_TURN);
+  static AddEndTurnAction(tableIndex: number){
+    this.ClearActions();
+    this.AddAction(tableIndex, PazaakActionType.END_TURN, [tableIndex, 0]);
   }
 
   /**
    * Player stands
    */
-  static Stand(){
-    const table = this.GetCurrentTable();
-    table.turnState = PazaakTurnState.STAND;
+  static AddStandAction(tableIndex: number  ){
+    this.ClearActions();
+    this.AddAction(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
   }
 
 }
