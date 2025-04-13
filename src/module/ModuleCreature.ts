@@ -3839,7 +3839,9 @@ export class ModuleCreature extends ModuleObject {
       this.skills = [new TalentSkill(0), new TalentSkill(1), new TalentSkill(2), new TalentSkill(3), new TalentSkill(4), new TalentSkill(5), new TalentSkill(6), new TalentSkill(7)];
       
       if(!this.initialized){
-        if(this.template.RootNode.hasField('ObjectId')){
+        if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)){
+          this.id = GameState.ModuleObjectManager.GetNextPlayerId();
+        }else if(this.template.RootNode.hasField('ObjectId')){
           this.id = this.template.getFieldByLabel('ObjectId').getValue();
         }else if(this.template.RootNode.hasField('ID')){
           this.id = this.template.getFieldByLabel('ID').getValue();
