@@ -4415,7 +4415,7 @@ NWScriptDefK1.Actions = {
       GameState.PazaakManager.MaxWager = args[2] || 0;
       GameState.PazaakManager.Wager = args[2] || 0;
       GameState.PazaakManager.ShowTutorial = !!args[3];
-      GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature);
+      GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature || this.caller as ModuleCreature);
       GameState.PazaakManager.Won = false;
       
       GameState.PazaakManager.StartGame();
