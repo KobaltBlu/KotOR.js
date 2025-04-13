@@ -614,13 +614,33 @@ export class PazaakManager {
      */
     else if(action.type == PazaakActionType.PLAY_HAND_CARD){
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
-      const cardIndex = this.GetActionPropertyAsNumber(0, 1);
+      const handIndex = this.GetActionPropertyAsNumber(0, 1);
       const flipped = this.GetActionPropertyAsNumber(0, 2) == 1;
-      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${cardIndex} ${flipped ? 'flipped' : 'not flipped'}`);
+      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${handIndex} ${flipped ? 'flipped' : 'not flipped'}`);
       
       const table = this.Tables[tableIndex];
+      const cardIndex = table.handCards.get(handIndex);
+      if(cardIndex == PazaakCards.INVALID){
+        console.error(`PazaakManager: Invalid hand card ${handIndex}`);
+        return;
+      }
 
-      this.PlayHandCard(tableIndex, cardIndex, flipped);
+      for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
+        const tableCard = table.cardArea.get(i);
+        if(tableCard != undefined){
+          continue;
+        }
+        console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
+        const card: IPazaakCard = this.Config.data.sideDeckCards[cardIndex];
+        card.flipped = flipped;
+        //Play the card
+        table.cardArea.set(i, card);
+        //Remove the card from the player's hand
+        table.handCards.set(handIndex, PazaakCards.INVALID);
+        table.points += card.modifier[!flipped ? 0 : 1];
+        break;
+      }
+
       this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
       this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_playside']);
 
@@ -853,29 +873,8 @@ export class PazaakManager {
    * Play a card from the player's hand
    * @param handIndex - The index of the card to play
    */
-  static PlayHandCard(tableIndex: number, handIndex: number, flipped: boolean = false){
-    const table = this.Tables[tableIndex];
-    const cardIndex = table.handCards.get(handIndex);
-    if(cardIndex == PazaakCards.INVALID){
-      console.error(`PazaakManager: Invalid hand card ${handIndex}`);
-      return;
-    }
-
-    for(let i = 0; i < PazaakTableSlots.MAX_SLOTS; i++){
-      const tableCard = table.cardArea.get(i);
-      if(tableCard != undefined){
-        continue;
-      }
-      console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${i + 1} ${flipped ? 'flipped' : 'not flipped'}`);
-      const card: IPazaakCard = this.Config.data.sideDeckCards[cardIndex];
-      card.flipped = flipped;
-      //Play the card
-      table.cardArea.set(i, card);
-      //Remove the card from the player's hand
-      table.handCards.set(handIndex, PazaakCards.INVALID);
-      table.points += card.modifier[!flipped ? 0 : 1];
-      break;
-    }
+  static AddPlayHandCardAction(tableIndex: number, handIndex: number, flipped: boolean = false){
+    this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, handIndex, flipped ? 1 : 0]);
   }
 
   /**

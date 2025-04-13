@@ -196,7 +196,6 @@ export class MenuPazaakGame extends GameMenu {
   flipHandCard(tableIndex: number, cardIndex: number){
     //todo
     console.warn('flipHandCard not implemented', tableIndex, cardIndex);
-    this.rebuild();
   }
 
   /**
@@ -205,8 +204,7 @@ export class MenuPazaakGame extends GameMenu {
    * @param cardIndex - The index of the card
    */
   playHandCard(tableIndex: number, cardIndex: number){
-    GameState.PazaakManager.PlayHandCard(tableIndex, cardIndex, false);
-    this.rebuild();
+    GameState.PazaakManager.AddPlayHandCardAction(tableIndex, cardIndex, false);
   }
 
   getTableCardButton(tableIndex: number, cardIndex: number){
@@ -219,12 +217,10 @@ export class MenuPazaakGame extends GameMenu {
 
   onBtnStand(){
     GameState.PazaakManager.AddStandAction(0);
-    this.rebuild();
   }
 
   onBtnEndTurn(){
     GameState.PazaakManager.AddEndTurnAction(0);
-    this.rebuild();
   }
 
   /**
