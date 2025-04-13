@@ -503,6 +503,13 @@ export class PazaakManager {
       }
       actionStatus = ActionStatus.COMPLETE;
     }
+    else if(action.type == PazaakActionType.END_GAME){
+      const winner = this.GetActionPropertyAsNumber(0, 0);
+      this.Won = winner == PazaakTurnMode.PLAYER;
+      console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins!`);
+      GameState.MenuManager.MenuPazaakGame.close();
+      actionStatus = ActionStatus.COMPLETE;
+    }
     /**
      * Draw a random card from the main deck
      */
