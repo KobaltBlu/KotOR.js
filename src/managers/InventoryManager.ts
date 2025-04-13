@@ -116,6 +116,8 @@ export class InventoryManager {
     item.initProperties();
     if(item.getBaseItemId() == 57){ //Credits
       GameState.PartyManager.Gold += item.getStackSize();
+    }else if(item.getBaseItemId() == 86){ //Pazaak Card
+      GameState.PazaakManager.AddCard(item.getModelVariation(), item.getStackSize());
     }else{
       item.load();
       let hasItem = InventoryManager.getItemByTag(item.getTag());
