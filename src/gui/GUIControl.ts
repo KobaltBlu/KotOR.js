@@ -117,6 +117,7 @@ export class GUIControl {
   pulse: number = 1;
   opacity: number = 1;
   hover: boolean;
+  swapBorderAndHighliteOnHover = true;
 
   extent: IGUIControlExtent = {
     top: 0,
@@ -870,10 +871,15 @@ export class GUIControl {
     if(typeof this.onMouseOut === 'function')
       this.onMouseOut();
 
-    this.hideHighlight();
+    if(this.swapBorderAndHighliteOnHover){
+      this.hideHighlight();
 
-    if(this.border.edge != '')
+      if(this.border.edge != '')
+        this.showBorder();
+    }else{
       this.showBorder();
+      this.hideHighlight();
+    }
 
     this.processEventListener('mouseOut');
   }
@@ -888,11 +894,16 @@ export class GUIControl {
     if(typeof this.onMouseIn === 'function')
       this.onMouseIn();
 
-    if(this.highlight.edge != '' || this.highlight.fill.texture != '')
-      this.showHighlight();
+    if(this.swapBorderAndHighliteOnHover){
+      if(this.highlight.edge != '' || this.highlight.fill.texture != '')
+        this.showHighlight();
 
-    if(this.highlight.edge)
-      this.hideBorder();
+      if(this.highlight.edge != '')
+        this.hideBorder();
+    }else{
+      this.showBorder();
+      this.showHighlight();
+    }
 
     if(this.isClickable()){
       GameState.guiAudioEmitter.playSound('gui_scroll');

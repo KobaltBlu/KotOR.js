@@ -22,7 +22,13 @@ export class GUIButton extends GUIControl {
 
   onHoverIn(){
     super.onHoverIn();
-    this.hideBorder();
+    if(this.swapBorderAndHighliteOnHover){
+      this.hideBorder();
+      this.showHighlight();
+    }else{
+      this.showBorder();
+      this.showHighlight();
+    }
 
     // this.pulsing = true;
     this.text.color.set(this.defaultHighlightColor);
@@ -33,7 +39,13 @@ export class GUIButton extends GUIControl {
 
   onHoverOut(){
     super.onHoverOut();
-    this.showBorder();
+    if(this.swapBorderAndHighliteOnHover){
+      this.showBorder();
+      this.hideHighlight();
+    }else{
+      this.showBorder();
+      this.hideHighlight();
+    }
 
     // this.pulsing = false;
     this.text.color.set(this.defaultColor);

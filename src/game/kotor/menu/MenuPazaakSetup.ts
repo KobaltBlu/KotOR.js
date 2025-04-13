@@ -6,6 +6,11 @@ import { GameMenu } from "../../../gui";
 import type { GUIControl } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
 
+const MSG_CONFIRM_SIDE_DECK = 32322;
+const MSG_YOU_WIN = 32334;
+const MSG_TIED = 32338;
+const MSG_YOU_LOSE = 32335;
+
 /**
  * MenuPazaakSetup class.
  * 
@@ -138,6 +143,7 @@ export class MenuPazaakSetup extends GameMenu {
           if(!button){
             continue;
           }
+          button.swapBorderAndHighliteOnHover = false;
           button.addEventListener('click', () => {
             this.selectedCard = i;
             console.log(`PazaakSetup: Selected card ${i}, count: ${card.count}`);
@@ -165,6 +171,7 @@ export class MenuPazaakSetup extends GameMenu {
         if(!button){
           continue;
         }
+        button.swapBorderAndHighliteOnHover = false;
         button.addEventListener('click', () => {
           const card = GameState.PazaakManager.PlayerSideDeck.get(i);
           this.selectedSideCard = i;
@@ -240,6 +247,7 @@ export class MenuPazaakSetup extends GameMenu {
 
       const button = this.getCardButton(i);
       if(button){
+        button.swapBorderAndHighliteOnHover = false;
         bCardAvailable ? button.show() : button.hide();
       }
       const label = this.getCardCountLabel(i);
@@ -259,6 +267,7 @@ export class MenuPazaakSetup extends GameMenu {
       if(!button || !label){
         continue;
       }
+      button.swapBorderAndHighliteOnHover = false;
       if(typeof card === 'number' && card != PazaakCards.INVALID){
         label.setText(card.toString());
         const type = Math.floor(card/6);
