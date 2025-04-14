@@ -535,7 +535,9 @@ export class PazaakManager {
       const winner = this.GetActionPropertyAsNumber(0, 0);
       this.Won = winner == PazaakTurnMode.PLAYER;
       const winnings = this.Won ? this.Wager * 2 : -this.Wager * 2;
-      GameState.PartyManager.Player.addGold(winnings);
+      if(GameState.PartyManager.Player){
+        GameState.PartyManager.Player.addGold(winnings);
+      }
       console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | ${winnings} gold`);
       GameState.MenuManager.MenuPazaakGame.close();
       if(this.EndScriptInstance){
