@@ -218,7 +218,7 @@ export class MenuPazaakGame extends GameMenu {
   }
 
   getTableCardButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       return this.getControlByName(`BTN_PLR${cardIndex}`);
     }else{
       return this.getControlByName(`BTN_NPC${cardIndex}`);
@@ -240,7 +240,7 @@ export class MenuPazaakGame extends GameMenu {
    * @returns The card label
    */
   getTableCardLabel(tableIndex: number, cardIndex: number){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       return this.getControlByName(`LBL_PLR${cardIndex}`);
     }else{
       return this.getControlByName(`LBL_NPC${cardIndex}`);
@@ -248,7 +248,7 @@ export class MenuPazaakGame extends GameMenu {
   }
 
   getHandCardButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       return this.getControlByName(`BTN_PLRSIDE${cardIndex}`);
     }else{
       return this.getControlByName(`BTN_NPCSIDE${cardIndex}`);
@@ -256,7 +256,7 @@ export class MenuPazaakGame extends GameMenu {
   }
 
   getHandCardLabel(tableIndex: number, cardIndex: number){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       return this.getControlByName(`LBL_PLRSIDE${cardIndex}`);
     }else{
       return this.getControlByName(`LBL_NPCSIDE${cardIndex}`);
@@ -264,7 +264,7 @@ export class MenuPazaakGame extends GameMenu {
   }
 
   getHandCardFlipButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       return this.getControlByName(`BTN_FLIP${cardIndex}`);
     }else{
       return undefined;
@@ -292,7 +292,7 @@ export class MenuPazaakGame extends GameMenu {
    * @param score - The score of the table
    */
   setTableWinCounter(tableIndex: number, winCount: number, score: number = 0){
-    if(tableIndex == 0){
+    if(tableIndex == PazaakTurnMode.PLAYER){
       this.LBL_PLRTOTAL.setText(score.toString());
       for(let i = 0; i < 3; i++){
         this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
