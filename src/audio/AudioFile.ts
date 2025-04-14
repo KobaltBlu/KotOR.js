@@ -291,11 +291,11 @@ export class AudioFile {
     bWriter.writeChars('fmt ');
     bWriter.writeUInt32(16);
     bWriter.writeUInt16(1);
-    bWriter.writeUInt16( header.channels );
-    bWriter.writeUInt32( header.sampleRate );
+    bWriter.writeUInt16(header.channels);
+    bWriter.writeUInt32(header.sampleRate);
     bWriter.writeUInt32(header.sampleRate * 4);
-    bWriter.writeUInt16( (header.bits*header.channels) / 8 );
-    bWriter.writeUInt16( header.bits );
+    bWriter.writeUInt16((header.bits * header.channels) / 8);
+    bWriter.writeUInt16(header.bits);
     //bWriter.WriteUInt16(0);
     bWriter.writeChars('data');
     bWriter.writeUInt32(data.length);
