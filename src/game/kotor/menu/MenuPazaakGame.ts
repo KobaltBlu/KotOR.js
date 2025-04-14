@@ -4,6 +4,7 @@ import { PazaakTableSlots } from "../../../enums/minigames/PazaakTableSlots";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
+import { PazaakTurnState } from "../../../enums/minigames/PazaakTurnState";
 
 /**
  * MenuPazaakGame class.
@@ -106,28 +107,28 @@ export class MenuPazaakGame extends GameMenu {
        * Flip hand cards
        */
       this.BTN_FLIP0.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.flipHandCard(0, 0);
       });
 
       this.BTN_FLIP1.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.flipHandCard(0, 1);
       });
 
       this.BTN_FLIP2.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.flipHandCard(0, 2);
       });
 
       this.BTN_FLIP3.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.flipHandCard(0, 3);
@@ -138,7 +139,7 @@ export class MenuPazaakGame extends GameMenu {
        */
       this.BTN_PLRSIDE0.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE0.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.playHandCard(0, 0);
@@ -146,7 +147,7 @@ export class MenuPazaakGame extends GameMenu {
 
       this.BTN_PLRSIDE1.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE1.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.playHandCard(0, 1);
@@ -154,7 +155,7 @@ export class MenuPazaakGame extends GameMenu {
 
       this.BTN_PLRSIDE2.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE2.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.playHandCard(0, 2);
@@ -162,7 +163,7 @@ export class MenuPazaakGame extends GameMenu {
 
       this.BTN_PLRSIDE3.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE3.addEventListener('click', () => {
-        if(this.noClicks()){
+        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
           return;
         }
         this.playHandCard(0, 3);
@@ -180,7 +181,7 @@ export class MenuPazaakGame extends GameMenu {
         if(this.noClicks()){
           return;
         }
-        this.onBtnEndTurn();
+        GameState.PazaakManager.AddEndTurnAction(PazaakTurnMode.PLAYER);
       });
 
       /**
@@ -190,7 +191,7 @@ export class MenuPazaakGame extends GameMenu {
         if(this.noClicks()){
           return;
         }
-        this.onBtnStand();
+        GameState.PazaakManager.AddStandAction(PazaakTurnMode.PLAYER);
       });
 
       resolve();
@@ -223,14 +224,6 @@ export class MenuPazaakGame extends GameMenu {
     }else{
       return this.getControlByName(`BTN_NPC${cardIndex}`);
     }
-  }
-
-  onBtnStand(){
-    GameState.PazaakManager.AddStandAction(0);
-  }
-
-  onBtnEndTurn(){
-    GameState.PazaakManager.AddEndTurnAction(0);
   }
 
   /**
@@ -339,6 +332,42 @@ export class MenuPazaakGame extends GameMenu {
   rebuild(){
     this.setTurnIndicator(GameState.PazaakManager.TurnMode);
 
+    if(GameState.PartyManager.Player){
+      this.LBL_PLRNAME.setText(GameState.PartyManager.Player.name);
+    }
+    // this.LBL_NPCNAME.setText(GameState.PazaakManager.Opponent.name);
+
+    this.BTN_XTEXT.pulsing = (GameState.PazaakManager.TurnState == PazaakTurnState.END_TURN);
+    this.BTN_XTEXT.disableSelection = this.noClicks();
+    this.BTN_YTEXT.pulsing = (GameState.PazaakManager.TurnState == PazaakTurnState.STAND);
+    this.BTN_YTEXT.disableSelection = this.noClicks();
+
+    if(this.BTN_XTEXT.pulsing){
+      if(GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER){
+        this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
+        this.BTN_XTEXT.defaultHighlightColor.setRGB(0, 0.658824, 0.980392);
+      }else{
+        this.BTN_XTEXT.defaultColor.setRGB(1, 0, 0);
+        this.BTN_XTEXT.defaultHighlightColor.setRGB(1, 0, 0);
+      }
+    }else{
+      this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
+      this.BTN_XTEXT.defaultHighlightColor.setRGB(1, 1, 0);
+    }
+
+    if(this.BTN_YTEXT.pulsing){
+      if(GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER){
+        this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
+        this.BTN_YTEXT.defaultHighlightColor.setRGB(0, 0.658824, 0.980392);
+      }else{
+        this.BTN_XTEXT.defaultColor.setRGB(1, 0, 0);
+        this.BTN_YTEXT.defaultHighlightColor.setRGB(1, 0, 0);
+      }
+    }else{
+      this.BTN_YTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
+      this.BTN_YTEXT.defaultHighlightColor.setRGB(1, 1, 0);
+    }
+
     for(let i = 0; i < 2; i++){
       const table = GameState.PazaakManager.Tables[i];
 
@@ -385,21 +414,23 @@ export class MenuPazaakGame extends GameMenu {
 
         const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
 
-        handCardButton.disableSelection = (i == PazaakTurnMode.OPPONENT);
         if(i == PazaakTurnMode.PLAYER){
           handCardButton.setFillTextureName(card.textures[!flipped ? 0 : 1], false);
           handCardLabel.show();
           handCardLabel.setText(card.modifierLabel);
+          handCardButton.disableSelection = this.noClicks() || table.handCardPlayed;
         }else{
           handCardButton.setFillTextureName('lbl_cardback', false);
           handCardLabel.hide();
           handCardLabel.setText('');
+          handCardButton.disableSelection = true;
         }
         handCardButton.show();
         
         if(handCardFlipButton){
           if(card.reversible){
             handCardFlipButton.show();
+            handCardFlipButton.disableSelection = this.noClicks() || table.handCardPlayed;
           }else{
             handCardFlipButton.hide();
           }

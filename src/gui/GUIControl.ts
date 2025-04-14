@@ -1122,6 +1122,10 @@ export class GUIControl {
     
     if(this.border.fill.material)
       this.border.fill.material.uniforms.opacity.value = 1 * opacity;
+    
+    if(this.disableSelection){
+      this.hideHighlight();
+    }
   }
 
   setHovering(bState: boolean = false){

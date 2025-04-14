@@ -105,6 +105,8 @@ export class MenuPazaakSetup extends GameMenu {
   selectedCard: PazaakCards = PazaakCards.INVALID;
   selectedSideCard: PazaakSideDeckSlots = PazaakSideDeckSlots.INVALID;
 
+  knownCards: Map<number, boolean> = new Map();
+
   constructor(){
     super();
     this.gui_resref = 'pazaaksetup';
@@ -190,6 +192,21 @@ export class MenuPazaakSetup extends GameMenu {
   open(){
     super.open();
     GameState.MenuManager.MenuPazaakWager.open();
+    this.knownCards.clear();
+    for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
+      const card = GameState.PazaakManager.Cards.get(i);
+      if(card && card.count > 0){
+        this.knownCards.set(i, true);
+      }else{
+        this.knownCards.set(i, false);
+      }
+    }
+    for(let i = 0; i < PazaakSideDeckSlots.MAX_SLOTS; i++){
+      const card = GameState.PazaakManager.PlayerSideDeck.get(i);
+      if(card && card != PazaakCards.INVALID){
+        this.knownCards.set(card, true);
+      }
+    }
     this.rebuild();
   }
 
@@ -244,19 +261,21 @@ export class MenuPazaakSetup extends GameMenu {
       }
 
       const bCardAvailable = card.count > 0;
+      const bCardKnown = this.knownCards.get(i);
 
       const button = this.getCardButton(i);
       if(button){
         button.swapBorderAndHighliteOnHover = false;
-        bCardAvailable ? button.show() : button.hide();
+        button.disableSelection = !bCardAvailable;
+        bCardAvailable || bCardKnown ? button.show() : button.hide();
       }
       const label = this.getCardCountLabel(i);
       if(label){
-        bCardAvailable ? label.show() : label.hide();
+        bCardAvailable || bCardKnown ? label.show() : label.hide();
       }
       const label2 = this.getCardLabel(i);
       if(label2){
-        bCardAvailable ? label2.show() : label2.hide();
+        bCardAvailable || bCardKnown ? label2.show() : label2.hide();
       }
     }
 

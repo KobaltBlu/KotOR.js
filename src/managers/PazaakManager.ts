@@ -167,7 +167,7 @@ export class PazaakManager {
     for(let i = 0; i < PazaakCards.MAX_CARDS + 1; i++){
       this.Cards.set(i, {
         card: i,
-        count: (i < 5) ? 2 : 2
+        count: (i < 5) ? 2 : 0
       });
     }
 
