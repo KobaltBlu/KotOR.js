@@ -124,7 +124,9 @@ export class PazaakManager {
       turnState: PazaakTurnState.INVALID,
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
-      handCards: new Map<PazaakHandSlots, PazaakCards>()
+      handCards: new Map<PazaakHandSlots, PazaakCards>(),
+      flipCards: new Map<PazaakHandSlots, boolean>(),
+      swapValueCards: new Map<PazaakHandSlots, boolean>()
     },
     {
       points: 0,
@@ -133,7 +135,9 @@ export class PazaakManager {
       turnState: PazaakTurnState.INVALID,
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
-      handCards: new Map<PazaakHandSlots, PazaakCards>()
+      handCards: new Map<PazaakHandSlots, PazaakCards>(),
+      flipCards: new Map<PazaakHandSlots, boolean>(),
+      swapValueCards: new Map<PazaakHandSlots, boolean>()
     }
   ];
   
@@ -159,7 +163,7 @@ export class PazaakManager {
     for(let i = 0; i < PazaakCards.MAX_CARDS + 1; i++){
       this.Cards.set(i, {
         card: i,
-        count: (i < 5) ? 2 : 0
+        count: (i < 5) ? 2 : 2
       });
     }
 
@@ -862,6 +866,10 @@ export class PazaakManager {
         
         //Add the card to the player's hand
         table.handCards.set(j, randomSideDeckCard);
+        //Set the card to not flipped
+        table.flipCards.set(j, false);
+        //Set the card to not swapped
+        table.swapValueCards.set(j, false);
       }
     }
 

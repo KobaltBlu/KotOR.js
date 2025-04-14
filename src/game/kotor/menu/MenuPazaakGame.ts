@@ -203,8 +203,8 @@ export class MenuPazaakGame extends GameMenu {
    * @param cardIndex - The index of the card
    */
   flipHandCard(tableIndex: number, cardIndex: number){
-    //todo
-    console.warn('flipHandCard not implemented', tableIndex, cardIndex);
+    const flipped = GameState.PazaakManager.Tables[tableIndex].flipCards.get(cardIndex);
+    GameState.PazaakManager.Tables[tableIndex].flipCards.set(cardIndex, !flipped);
   }
 
   /**
@@ -213,7 +213,8 @@ export class MenuPazaakGame extends GameMenu {
    * @param cardIndex - The index of the card
    */
   playHandCard(tableIndex: number, cardIndex: number){
-    GameState.PazaakManager.AddPlayHandCardAction(tableIndex, cardIndex, false);
+    const flipped = GameState.PazaakManager.Tables[tableIndex].flipCards.get(cardIndex);
+    GameState.PazaakManager.AddPlayHandCardAction(tableIndex, cardIndex, flipped);
   }
 
   getTableCardButton(tableIndex: number, cardIndex: number){
@@ -357,7 +358,7 @@ export class MenuPazaakGame extends GameMenu {
         };
 
         tableCardButton.show();
-        tableCardButton.setFillTextureName(slot.textures[0]);
+        tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);
 
         tableCardLabel.show();
         tableCardLabel.setText(slot.modifierLabel);
@@ -371,6 +372,8 @@ export class MenuPazaakGame extends GameMenu {
         const handCardButton = this.getHandCardButton(i, j);
         const handCardLabel = this.getHandCardLabel(i, j);
         const handCardFlipButton = this.getHandCardFlipButton(i, j);
+        const flipped = table.flipCards.get(j);
+        const swapped = table.swapValueCards.get(j);
         if(slot == undefined || slot == -1){
           handCardButton.hide();
           handCardLabel.hide();
@@ -384,7 +387,7 @@ export class MenuPazaakGame extends GameMenu {
 
         handCardButton.disableSelection = (i == PazaakTurnMode.OPPONENT);
         if(i == PazaakTurnMode.PLAYER){
-          handCardButton.setFillTextureName(card.textures[0], false);
+          handCardButton.setFillTextureName(card.textures[!flipped ? 0 : 1], false);
           handCardLabel.show();
           handCardLabel.setText(card.modifierLabel);
         }else{

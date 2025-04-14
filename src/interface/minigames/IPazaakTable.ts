@@ -34,4 +34,12 @@ export interface IPazaakTable {
    * Cards in the player's hand
    */
   handCards: Map<PazaakHandSlots, PazaakCards>;
+  /**
+   * Cards flipped in the player's hand
+   */
+  flipCards: Map<PazaakHandSlots, boolean>;
+  /**
+   * Cards with swapped values in the player's hand (TSL Only)
+   */
+  swapValueCards: Map<PazaakHandSlots, boolean>;
 }
