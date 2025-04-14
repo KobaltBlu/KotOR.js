@@ -34,6 +34,7 @@ import { ResourceLoader } from "../loaders";
 import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import { CombatRound } from "../combat/CombatRound";
 import { BitWise } from "../utility/BitWise";
+import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 
 /**
  * NWScriptDefK1 class.
@@ -2507,7 +2508,12 @@ NWScriptDefK1.Actions = {
     comment: "201: Adjust the alignment of oSubject.\n- oSubject\n- nAlignment:\n-> ALIGNMENT_LIGHT_SIDE/ALIGNMENT_DARK_SIDE: oSubject's\nalignment will be shifted in the direction specified\n-> ALIGNMENT_NEUTRAL: nShift is applied to oSubject's dark side/light side\nalignment value in the direction which is towards neutrality.\ne.g. If oSubject has an alignment value of 80 (i.e. light side)\nthen if nShift is 15, the alignment value will become (80-15)=65\nFurthermore, the shift will at most take the alignment value to 50 and\nnot beyond.\ne.g. If oSubject has an alignment value of 40 then if nShift is 15,\nthe aligment value will become 50\n- nShift: this is the desired shift in alignment\n* No return value\n",
     name: "AdjustAlignment",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleCreature, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        args[0].adjustAlignment(args[2], args[1]);
+      }
+    }
   },
   202:{
     comment: "202: Do nothing for fSeconds seconds.\n",
@@ -8063,7 +8069,7 @@ NWScriptDefK1.Actions = {
       if(args[1] < 0) args[1] = 0;
 
       if(args[0]){
-        args[0].goodEvil = args[1];
+        args[0].setGoodEvil(args[1]);
       }
     }
   },

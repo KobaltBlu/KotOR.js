@@ -16,3 +16,4 @@ export * from "./TutorialMessage";
 export * from "./TalentObjectType";
 export * from "./FeedbackMessageColor";
 export * from "./FeedbackOption";
+export * from "./UIIconTimerType";

@@ -3,7 +3,7 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
-  VideoEffectManager, PazaakManager
+  VideoEffectManager, PazaakManager, UINotificationManager
 } from "./managers";
 
 import type { SWRuleSet } from "./engine/rules/SWRuleSet";
@@ -108,6 +108,7 @@ export class GameState implements EngineContext {
   static TLKManager: typeof TLKManager;
   static TwoDAManager: typeof TwoDAManager;
   static PazaakManager: typeof PazaakManager;
+  static UINotificationManager: typeof UINotificationManager;
 
   static SWRuleSet: typeof SWRuleSet;
 

@@ -71,7 +71,7 @@ export class MenuStore extends K1_MenuStore {
             //Buy Mode
             let price = this.getItemBuyPrice(item);
             if(GameState.PartyManager.Gold >= price){
-              GameState.PartyManager.Gold -= price;
+              GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
               GameState.InventoryManager.addItem(item.template, true);
               if(!item.isInfinite()){

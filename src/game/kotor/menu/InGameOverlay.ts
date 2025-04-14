@@ -1,4 +1,3 @@
-import { ActionMenuManager } from "../../../ActionMenuManager";
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, LBL_MapView } from "../../../gui";
@@ -331,43 +330,43 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
-      for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
+      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
 
         this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.onTargetMenuAction(i);
+          GameState.ActionMenuManager.onTargetMenuAction(i);
         });
 
         this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
+          GameState.ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
         this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
+          GameState.ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
         });
 
       }
 
-      for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
+      for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
 
         this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.onSelfMenuAction(i);
+          GameState.ActionMenuManager.onSelfMenuAction(i);
         });
 
         this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
+          GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
         this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
-          ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
+          GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
         });
 
@@ -477,14 +476,14 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_TARGET' + index);
-    if (!ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
+    if (!GameState.ActionMenuManager.ActionPanels.targetPanels[index].actions.length) {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
       guiControl.setFillTextureName('');
       return;
     }
 
-    const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
+    const action = GameState.ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if (!action) {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
@@ -507,8 +506,8 @@ export class InGameOverlay extends GameMenu {
 
   UpdateSelfUIIcon(index = 0) {
     const guiControl = this.getControlByName('LBL_ACTION' + index);
-    if (ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
-      const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
+    if (GameState.ActionMenuManager.ActionPanels.selfPanels[index].actions.length) {
+      const action = GameState.ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
       if (action && guiControl.getFillTextureName() != action.icon) {
         guiControl.setFillTextureName(action.icon);
         guiControl.setHighlightFillTexture(action.icon);
@@ -533,7 +532,7 @@ export class InGameOverlay extends GameMenu {
 
   UpdateTargetUIPanels() {
     if (!this._canShowTargetUI()) {
-      ActionMenuManager.SetTarget(undefined);
+      GameState.ActionMenuManager.SetTarget(undefined);
       this.LBL_NAME?.hide();
       this.LBL_NAMEBG?.hide();
       this.PB_HEALTH?.hide();
@@ -624,8 +623,8 @@ export class InGameOverlay extends GameMenu {
     this.LBL_NAMEBG.recalculate();
     this.PB_HEALTH.recalculate();
     this.LBL_HEALTHBG.recalculate();
-    if (!!ActionMenuManager.targetActionCount()) {
-      for (let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++) {
+    if (!!GameState.ActionMenuManager.targetActionCount()) {
+      for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
         let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
         this.getControlByName('BTN_TARGET' + i).scale = false;
         this.getControlByName('BTN_TARGET' + i).extent.left = targetScreenPosition.x + xPos;
@@ -652,7 +651,7 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
         
-        if(ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
+        if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
           this.getControlByName('BTN_TARGETUP' + i)?.hide();
           this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
         }else{
@@ -671,18 +670,121 @@ export class InGameOverlay extends GameMenu {
   }
 
   UpdateSelfUIPanels(delta = 0) {
-    for (let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++) {
+    for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
         
-      if(ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+      if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
       }else{
         this.getControlByName('BTN_ACTIONUP' + i)?.show();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.show();
       }
+    }
+  }
+
+  /**
+   * Update HUD Notification Icons
+   * 
+   * @param delta 
+   */
+  UpdateHUDNotificationIcons(delta = 0){
+    /**
+     * Item Lost
+     */
+    if(GameState.UINotificationManager.ItemLostTimer > 0){
+      this.LBL_ITEMLOST.show();
+      this.LBL_ITEMLOST.pulsing = true;
+      GameState.UINotificationManager.ItemLostTimer -= delta;
+    }else{
+      GameState.UINotificationManager.ItemLostTimer = 0;
+      this.LBL_ITEMLOST.hide();
+    }
+
+    /**
+     * Item Received
+     */
+    if(GameState.UINotificationManager.ItemReceivedTimer > 0){
+      this.LBL_ITEMRCVD.show();
+      this.LBL_ITEMRCVD.pulsing = true;
+      GameState.UINotificationManager.ItemReceivedTimer -= delta;
+    }else{
+      GameState.UINotificationManager.ItemReceivedTimer = 0;
+      this.LBL_ITEMRCVD.hide();
+    }
+
+    /**
+     * Credits Received
+     */
+    if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
+      this.LBL_CASH.show();   
+      this.LBL_CASH.pulsing = true;
+      GameState.UINotificationManager.CreditsReceivedTimer -= delta;
+    }else{
+      GameState.UINotificationManager.CreditsReceivedTimer = 0;
+      this.LBL_CASH.hide();
+    }
+
+    /**
+     * Journal Entry Added
+     */
+    if(GameState.UINotificationManager.JournalEntryAddedTimer > 0){
+      this.LBL_JOURNAL.show();
+      this.LBL_JOURNAL.pulsing = true;
+      GameState.UINotificationManager.JournalEntryAddedTimer -= delta;
+    }else{
+      GameState.UINotificationManager.JournalEntryAddedTimer = 0;
+      this.LBL_JOURNAL.hide();
+    }
+
+    /**
+     * Light Shift
+     */
+    if(GameState.UINotificationManager.LightShiftTimer > 0){
+      this.LBL_LIGHTSHIFT.show();
+      this.LBL_LIGHTSHIFT.pulsing = true;
+      GameState.UINotificationManager.LightShiftTimer -= delta;
+    }else{
+      GameState.UINotificationManager.LightShiftTimer = 0;
+      this.LBL_LIGHTSHIFT.hide();
+    }
+
+    /**
+     * Dark Shift
+     */
+    if(GameState.UINotificationManager.DarkShiftTimer > 0){
+      this.LBL_DARKSHIFT.show();
+      this.LBL_DARKSHIFT.pulsing = true;
+      GameState.UINotificationManager.DarkShiftTimer -= delta;
+    }else{
+      GameState.UINotificationManager.DarkShiftTimer = 0;
+      this.LBL_DARKSHIFT.hide();
+    }
+
+    /**
+     * Plot XP Received
+     */
+    if(GameState.UINotificationManager.PlotXPReceivedTimer > 0){
+      this.LBL_PLOTXP.show();
+      this.LBL_PLOTXP.pulsing = true;
+      GameState.UINotificationManager.PlotXPReceivedTimer -= delta;
+    }else{
+      GameState.UINotificationManager.PlotXPReceivedTimer = 0;
+      this.LBL_PLOTXP.hide();
+    }
+
+    /**
+     * Stealth XP Received
+     */
+    if(GameState.UINotificationManager.StealthXPReceivedTimer > 0){
+      this.LBL_STEALTHXP.show();
+      this.LBL_STEALTHXP.pulsing = true;
+      GameState.UINotificationManager.StealthXPReceivedTimer -= delta;
+    }else{
+      GameState.UINotificationManager.StealthXPReceivedTimer = 0;
+      this.LBL_STEALTHXP.hide();
     }
   }
 
@@ -694,11 +796,12 @@ export class InGameOverlay extends GameMenu {
     if (GameState.module.area.miniGame) { return; }
 
     const oPC = GameState.getCurrentPlayer();
-    ActionMenuManager.SetPC(oPC);
-    ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
-    ActionMenuManager.UpdateMenuActions();
+    GameState.ActionMenuManager.SetPC(oPC);
+    GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
+    GameState.ActionMenuManager.UpdateMenuActions();
     this.UpdateTargetUIPanels();
     this.UpdateSelfUIPanels();
+    this.UpdateHUDNotificationIcons(delta);
 
     //update minimap
     this.miniMap.setPosition(oPC.position.x, oPC.position.y);

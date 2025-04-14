@@ -14,7 +14,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "../loaders";
-import { GameEngineType } from "../enums/engine";
+import { GameEngineType, UIIconTimerType } from "../enums/engine";
 import { PartyManagerEvent } from "../types/PartyManagerEvent";
 import { ModulePlayer } from "../module/ModulePlayer";
 import { GameFileSystem } from "../utility/GameFileSystem";
@@ -433,6 +433,17 @@ export class PartyManager {
         reject();
       });
     });
+  }
+
+  static AddGold(amount: number){
+    if(!amount) return;
+    this.Gold += amount;
+    
+    if(this.Gold < 0){
+      this.Gold = 0;
+    }
+
+    GameState.UINotificationManager.EnableUINotificationIconType(amount > 0 ? UIIconTimerType.CREDITS_RECEIVED : UIIconTimerType.CREDITS_RECEIVED);
   }
 
   static SwitchLeaderAtIndex(index: number = 0){
@@ -939,7 +950,8 @@ export class PartyManager {
   }
 
   static GiveXP(nXP = 0){
-
+    this.Player.experience += nXP;
+    GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
   }
 
   static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){

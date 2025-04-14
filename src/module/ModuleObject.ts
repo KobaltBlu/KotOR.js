@@ -975,21 +975,15 @@ export class ModuleObject {
 
   addGold(nGold = 0): void {
     if(this.isPartyMember()){
-      GameState.PartyManager.Gold += nGold;
+      GameState.PartyManager.AddGold(nGold);
       return;
     }
   }
 
-  removeGold(nGold = 0): number {
+  removeGold(nGold = 0): void {
     if(this.isPartyMember()){
-      if(nGold > GameState.PartyManager.Gold){
-        nGold = GameState.PartyManager.Gold;
-      }
-      GameState.PartyManager.Gold -= nGold;
-      if(GameState.PartyManager.Gold < 0){
-        GameState.PartyManager.Gold = 0;
-      }
-      return nGold;
+      GameState.PartyManager.AddGold(-Math.abs(nGold));
+      return;
     }
   }
 

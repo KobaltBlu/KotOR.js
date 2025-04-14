@@ -6,6 +6,7 @@ import { CurrentGame } from "../CurrentGame";
 import type { ModuleCreature, ModuleItem } from "../module";
 import { GameState } from "../GameState";
 import { BaseItemType } from "../enums/combat/BaseItemType";
+import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 // import { PartyManager } from "./PartyManager";
 
 /**
@@ -116,10 +117,13 @@ export class InventoryManager {
 
     item.initProperties();
     if(item.getBaseItemId() == BaseItemType.CREDITS){
-      GameState.PartyManager.Gold += item.getStackSize();
+      GameState.PartyManager.AddGold(item.getStackSize());
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.CREDITS_RECEIVED);
     }else if(item.getBaseItemId() == BaseItemType.PAZAAK_CARD){
       GameState.PazaakManager.AddCard(item.getModelVariation(), item.getStackSize());
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
     }else{
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
       let hasItem = InventoryManager.getItemByTag(item.getTag());
       if(hasItem){
@@ -146,6 +150,7 @@ export class InventoryManager {
   static removeItemByResRef(resRef = '', nCount = 1){
     let item = InventoryManager.getItemByTag(resRef);
     if(item){
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
       let idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
         item.setStackSize( (item.getStackSize() - nCount) || 1 );
@@ -161,6 +166,7 @@ export class InventoryManager {
     }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
       let idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
+        GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
         if(nCount >= item.getStackSize()){
           InventoryManager.inventory.splice(idx, 1);
         }else{

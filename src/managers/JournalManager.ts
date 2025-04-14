@@ -8,6 +8,8 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import { TwoDAManager } from "./TwoDAManager";
 import { JournalCategory } from "../engine/JournalCategory";
 import { JournalEntry } from "../engine/JournalEntry";
+import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
+import { GameState } from "../GameState";
 
 /**
  * JournalManager class.
@@ -63,6 +65,7 @@ export class JournalManager {
 
   static AddJournalQuestEntry(szPlotID: string = '', state: number = 0, allowOverrideHigher: boolean = false): boolean {
     if(JournalManager.PlotExists(szPlotID)){
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
       let entry = JournalManager.GeJournalEntryByTag(szPlotID);
       if(entry){
         if(entry.state > state && allowOverrideHigher){

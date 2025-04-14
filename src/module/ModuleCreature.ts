@@ -56,6 +56,7 @@ import type { Action } from "../actions/Action";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { EngineDebugType } from "../enums/engine/EngineDebugType";
 import { TextSprite3D } from "../engine/TextSprite3D";
+import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 
 /**
 * ModuleCreature class.
@@ -2498,10 +2499,92 @@ export class ModuleCreature extends ModuleObject {
 
   addXP(value = 0){
     this.experience += parseInt(value.toString());
+    if(this.isPartyMember()){
+      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
+    }
   }
 
   getGoodEvil(){
     return this.goodEvil;
+  }
+
+  /**
+   * Sets the alignment of the creature.
+   * @param value - The alignment to set the creature to.
+   */
+  setGoodEvil(value: number = 0){
+    const oldValue = this.goodEvil;
+    this.goodEvil = value;
+    if(this.goodEvil < 0) this.goodEvil = 0;
+    if(this.goodEvil > 100) this.goodEvil = 100;
+    if(this.isPartyMember()){
+      GameState.UINotificationManager.EnableUINotificationIconType(value >= oldValue ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
+    }
+  }
+
+  /**
+   * Adds to the alignment of the creature.
+   * @param value - The amount to add to the alignment.
+   */
+  addGoodEvil(value: number = 0){
+    this.goodEvil += value;
+    if(this.goodEvil < 0) this.goodEvil = 0;
+    if(this.goodEvil > 100) this.goodEvil = 100;
+    if(this.isPartyMember()){
+      GameState.UINotificationManager.EnableUINotificationIconType(value >= 0 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
+    }
+  }
+
+  /**
+   * Adjusts the alignment of the creature.
+   * @param value - The amount to adjust the alignment by.
+   * @param alignment - The alignment to adjust the creature's alignment to. 1 = NEUTRAL, 2 = LIGHT, 3 = DARK
+   */
+  adjustAlignment(value: number = 0, alignment: number = 0){
+    value = Math.abs(value);
+    const oldValue = this.goodEvil;
+    let alignmentShifted = 0
+    if(alignment == 1){
+      /**
+       * Shifted to DARK
+       */
+      if(this.goodEvil > 50){
+        this.goodEvil -= value;
+        if(this.goodEvil < 50){
+          this.goodEvil = 50;
+        }
+        alignmentShifted = 3;
+      }
+      /**
+       * Shifted to LIGHT
+       */
+      else{
+        this.goodEvil += value;
+        if(this.goodEvil > 50){
+          this.goodEvil = 50;
+        }
+        alignmentShifted = 2;
+      }
+    }
+    /**
+     * Shift light
+     */
+    else if(alignment == 2){
+      this.goodEvil += value;
+      alignmentShifted = 2;
+    }
+    /**
+     * Shift dark
+     */
+    else if(alignment == 3){
+      this.goodEvil -= value;
+      alignmentShifted = 3;
+    }
+    if(this.goodEvil < 0) this.goodEvil = 0;
+    if(this.goodEvil > 100) this.goodEvil = 100;
+    if(this.isPartyMember() && (alignmentShifted == 2 || alignmentShifted == 3)){
+      GameState.UINotificationManager.EnableUINotificationIconType(alignmentShifted == 2 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
+    }
   }
 
   getSubraceIndex(){

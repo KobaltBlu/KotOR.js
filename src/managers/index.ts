@@ -27,3 +27,4 @@ export * from "./TwoDAManager";
 export * from "./ResolutionManager";
 export * from "./VideoEffectManager";
 export * from "./PazaakManager";
+export * from "./UINotificationManager";
