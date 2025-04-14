@@ -613,7 +613,7 @@ export class GUIControl {
           }
 
           if(typeof this.text.color === 'undefined'){
-            this.text.color = this.defaultColor;
+            this.text.color = this.defaultColor.clone();
           }
         }
       }
@@ -857,7 +857,7 @@ export class GUIControl {
   }
 
   isClickable(){
-    return this.eventListeners['click'].length && this.isVisible();
+    return (this.eventListeners['click'].length || this.onClick) && this.isVisible() && !this.disableSelection;
   }
 
   isVisible(){
@@ -865,8 +865,10 @@ export class GUIControl {
   }
 
   onHoverOut(){
-
     this.hover = false;
+    if(this.disableSelection){
+      return;
+    }
 
     if(typeof this.onMouseOut === 'function')
       this.onMouseOut();
@@ -885,6 +887,10 @@ export class GUIControl {
   }
 
   onHoverIn(){
+    if(this.disableSelection){
+      this.hover = false;
+      return;
+    }
 
     if(!this.hover && typeof this.onHover === 'function')
       this.onHover();
@@ -1023,29 +1029,46 @@ export class GUIControl {
   }
 
   update(delta: number){
-    if(this.pulsing || (this.hover && this.onClick) || this.selected){
+    const opacity = this.disableSelection ? 0.5 : 1;
+    if(this.pulsing || (this.hover && this.isClickable()) || this.selected){
+      const pulseOpacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity) * opacity;
+      /**
+       * Border
+       */
       if(this.border.edge_material){
-        this.border.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+        this.border.edge_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
 
       if(this.border.corner_material){
-        this.border.corner_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+        this.border.corner_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
+      }
+  
+      if(this.border.fill.material){
+        this.border.fill.material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
       }
 
+      /**
+       * Highlight
+       */
       if(this.highlight.edge_material){
-        this.highlight.edge_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+        this.highlight.edge_material.uniforms.opacity.value = pulseOpacity;
       }
 
       if(this.highlight.corner_material){
-        this.highlight.corner_material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+        this.highlight.corner_material.uniforms.opacity.value = pulseOpacity;
       }
 
-      if(this.text.material){
-        this.text.material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+      if(this.highlight.fill.material){
+        this.highlight.fill.material.uniforms.opacity.value = pulseOpacity;
       }
-  
-      if(this.border.fill.material)
-        this.border.fill.material.uniforms.opacity.value = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+
+      /**
+       * Text
+       */
+      if(this.text.material){
+        this.text.material.uniforms.opacity.value = !this.hover ? 1 : pulseOpacity;
+        this.setTextColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
+      }
     }else{
       this.resetPulse();
     }
@@ -1075,28 +1098,30 @@ export class GUIControl {
   }
 
   resetPulse(){
+    const opacity = this.disableSelection ? 0.5 : 1;
     if(this.border.edge_material){
-      this.border.edge_material.uniforms.opacity.value = 1;
+      this.border.edge_material.uniforms.opacity.value = 1 * opacity;
     }
 
     if(this.border.corner_material){
-      this.border.corner_material.uniforms.opacity.value = 1;
+      this.border.corner_material.uniforms.opacity.value = 1 * opacity;
     }
 
     if(this.highlight.edge_material){
-      this.highlight.edge_material.uniforms.opacity.value = 1;
+      this.highlight.edge_material.uniforms.opacity.value = 1 * opacity;
     }
 
     if(this.highlight.corner_material){
-      this.highlight.corner_material.uniforms.opacity.value = 1;
+      this.highlight.corner_material.uniforms.opacity.value = 1 * opacity;
     }
 
     if(this.text.material){
-      this.text.material.uniforms.opacity.value = 1;
+      this.text.material.uniforms.opacity.value = 1 * opacity;
+      this.setTextColor(this.text.color.r, this.text.color.g, this.text.color.b);
     }
     
     if(this.border.fill.material)
-      this.border.fill.material.uniforms.opacity.value = 1;
+      this.border.fill.material.uniforms.opacity.value = 1 * opacity;
   }
 
   setHovering(bState: boolean = false){
@@ -1153,7 +1178,9 @@ export class GUIControl {
 
   setTextColor(r = 1, g = 1, b = 1){
     //0.0, 0.658824, 0.980392
-    this.text.material.uniforms.diffuse.value.setRGB(r, g, b);
+    this.text.color.setRGB(r, g, b);
+    this.text.material.uniforms.diffuse.value = this.text.color;
+    this.text.material.needsUpdate = true;
   }
 
   /*setText(text = '', renderOrder){
@@ -2353,6 +2380,10 @@ export class GUIControl {
   }
 
   click(){
+    if(this.disableSelection){
+      return;
+    }
+
     this.processEventListener('click');
   }
 

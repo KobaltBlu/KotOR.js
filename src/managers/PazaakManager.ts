@@ -116,6 +116,8 @@ export class PazaakManager {
   static PlayerSideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
   static OpponentSideDeck: Map<PazaakSideDeckSlots, PazaakCards> = new Map<PazaakSideDeckSlots, PazaakCards>();
 
+  static TurnState: PazaakTurnState = PazaakTurnState.INVALID;
+
   static Tables: IPazaakTable[] = [
     {
       points: 0,
@@ -125,6 +127,7 @@ export class PazaakManager {
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
       handCards: new Map<PazaakHandSlots, PazaakCards>(),
+      handCardPlayed: false,
       flipCards: new Map<PazaakHandSlots, boolean>(),
       swapValueCards: new Map<PazaakHandSlots, boolean>()
     },
@@ -136,6 +139,7 @@ export class PazaakManager {
       cardArea: new Map<PazaakTableSlots, IPazaakCard>(),
       sideDeck: new Map<PazaakSideDeckSlots, PazaakCards>(),
       handCards: new Map<PazaakHandSlots, PazaakCards>(),
+      handCardPlayed: false,
       flipCards: new Map<PazaakHandSlots, boolean>(),
       swapValueCards: new Map<PazaakHandSlots, boolean>()
     }
@@ -199,14 +203,11 @@ export class PazaakManager {
     this.TotalMainDeckCards = PazaakManager.Config.data.mainDeckCards.length;
     this.TotalSideDeckCards = PazaakManager.Config.data.sideDeckCards.length;
     this.Won = false;
-    this.Tables[0].points = 0;
-    this.Tables[1].points = 0;
-    this.Tables[0].winCount = 0;
-    this.Tables[1].winCount = 0;
-    this.Tables[0].stand = false;
-    this.Tables[1].stand = false;
     this.TurnMode = PazaakTurnMode.PLAYER;
     for(let j = 0; j < 2; j++){
+      this.Tables[j].points = 0;
+      this.Tables[j].winCount = 0;
+      this.Tables[j].stand = false;
       /**
        * Pazaak Card Area
        * - A pazaak table can have up to 9 cards on the table
@@ -406,6 +407,7 @@ export class PazaakManager {
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       console.log(`PazaakManager: Begin turn ${tableIndex == 0 ? `Player` : `Opponent`}`);
       const table = this.Tables[tableIndex];
+      table.handCardPlayed = false;
       if(table.stand){
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
       }
@@ -431,6 +433,12 @@ export class PazaakManager {
       console.log(`PazaakManager: End turn ${tableIndex == 0 ? 'Player' : 'Opponent'} [${bStanding ? 'standing' : 'not standing'}]`);
       const table = this.Tables[tableIndex];
       table.stand = bStanding;
+
+      if(bStanding){
+        this.TurnState = PazaakTurnState.STAND;
+      }else{
+        this.TurnState = PazaakTurnState.END_TURN;
+      }
 
       //check to see if either player busted
       const playerStand = this.Tables[0].stand;
@@ -537,6 +545,7 @@ export class PazaakManager {
      * Draw a random card from the main deck
      */
     else if(action.type == PazaakActionType.DRAW_CARD){
+      this.TurnState = PazaakTurnState.DRAW_CARD;
       let cardDrawn = false;
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const table = this.Tables[tableIndex];
@@ -617,6 +626,7 @@ export class PazaakManager {
      * Play a hand card
      */
     else if(action.type == PazaakActionType.PLAY_HAND_CARD){
+      this.TurnState = PazaakTurnState.PLAY_HAND_CARD;
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const handIndex = this.GetActionPropertyAsNumber(0, 1);
       const flipped = this.GetActionPropertyAsNumber(0, 2) == 1;
@@ -642,6 +652,7 @@ export class PazaakManager {
         //Remove the card from the player's hand
         table.handCards.set(handIndex, PazaakCards.INVALID);
         table.points += card.modifier[!flipped ? 0 : 1];
+        table.handCardPlayed = true;
         break;
       }
 
@@ -786,10 +797,6 @@ export class PazaakManager {
   //-----------------//
   // Turn Management //
   //-----------------//
-
-  static GetCurrentTable(){
-    return this.Tables[this.TurnMode];
-  }
 
   static BuildAction(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
     const props: IPazaakActionProperty[] = [];

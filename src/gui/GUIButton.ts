@@ -22,36 +22,43 @@ export class GUIButton extends GUIControl {
 
   onHoverIn(){
     super.onHoverIn();
-    if(this.swapBorderAndHighliteOnHover){
-      this.hideBorder();
-      this.showHighlight();
+    if(!this.disableSelection){
+      if(this.swapBorderAndHighliteOnHover){
+        this.hideBorder();
+        this.showHighlight();
+      }else{
+        this.showBorder();
+        this.showHighlight();
+      }
+      // this.pulsing = true;
+      this.setTextColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
+      this.text.material.needsUpdate = true;
     }else{
-      this.showBorder();
-      this.showHighlight();
+      this.hover = false;
+      this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
+      this.text.material.needsUpdate = true;
     }
-
-    // this.pulsing = true;
-    this.text.color.set(this.defaultHighlightColor);
-    (this.text.material as any).color = this.text.color;
-    this.text.material.needsUpdate = true;
-    
   }
 
   onHoverOut(){
     super.onHoverOut();
-    if(this.swapBorderAndHighliteOnHover){
-      this.showBorder();
-      this.hideHighlight();
-    }else{
-      this.showBorder();
-      this.hideHighlight();
-    }
+    if(!this.disableSelection){
+      if(this.swapBorderAndHighliteOnHover){
+        this.showBorder();
+        this.hideHighlight();
+      }else{
+        this.showBorder();
+        this.hideHighlight();
+      }
 
-    // this.pulsing = false;
-    this.text.color.set(this.defaultColor);
-    (this.text.material as any).color = this.text.color;
-    this.text.material.needsUpdate = true;
-    
+      // this.pulsing = false;
+      this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
+      this.text.material.needsUpdate = true;
+    }else{
+      this.hover = false;
+      this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
+      this.text.material.needsUpdate = true;
+    }
   }
 
 }

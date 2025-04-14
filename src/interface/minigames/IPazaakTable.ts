@@ -31,6 +31,10 @@ export interface IPazaakTable {
    */
   sideDeck: Map<PazaakSideDeckSlots, PazaakCards>;
   /**
+   * Whether a hand card has been played this turn
+   */
+  handCardPlayed: boolean;
+  /**
    * Cards in the player's hand
    */
   handCards: Map<PazaakHandSlots, PazaakCards>;

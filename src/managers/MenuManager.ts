@@ -152,20 +152,26 @@ export class MenuManager {
     GameState.CursorManager.cursor.material.depthTest = false;
     GameState.CursorManager.cursor.material.depthWrite = false;
     GameState.CursorManager.cursor.renderOrder = 9999999;
-    MenuManager.pulse += 1.25 * delta;
-    if(MenuManager.pulse > 2){
-      MenuManager.pulse = 0;
-    }
 
-    if(this.pulse > 2){
-      MenuManager.pulseOpacity = 0;
-    }
+    MenuManager.pulse += 5 * delta;
+    // Map time * speed to a full sine wave cycle (0 to 2π)
+    const wave = Math.sin(MenuManager.pulse);
+    // Convert sine range (-1 to 1) to 0 to 1
+    MenuManager.pulseOpacity = (wave + 1) / 2;
 
-    if(this.pulse > 1){
-      MenuManager.pulseOpacity = this.pulse - 1;
-    }else{
-      MenuManager.pulseOpacity = 1 - this.pulse;
-    }
+    // if(MenuManager.pulse > 2){
+    //   MenuManager.pulse = 0;
+    // }
+
+    // if(this.pulse > 2){
+    //   MenuManager.pulseOpacity = 0;
+    // }
+
+    // if(this.pulse > 1){
+    //   MenuManager.pulseOpacity = this.pulse - 1;
+    // }else{
+    //   MenuManager.pulseOpacity = 1 - this.pulse;
+    // }
 
     if(MenuManager.InGameOverlay.bVisible){
       MenuManager.InGameOverlay.update(delta);
