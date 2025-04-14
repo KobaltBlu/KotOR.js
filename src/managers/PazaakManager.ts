@@ -599,9 +599,15 @@ export class PazaakManager {
       }
 
       /**
+       * If the player has 20 points after drawing a card, they will end their turn by standing
+       */
+      if(table.points == this.TargetPoints){
+        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
+      }
+      /**
        * If the player has more than 20 points, they will end their turn because they busted
        */
-      if(table.points > this.TargetPoints){
+      else if(table.points > this.TargetPoints){
         this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
       }
       /**
