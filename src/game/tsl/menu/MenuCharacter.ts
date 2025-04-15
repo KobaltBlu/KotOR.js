@@ -162,16 +162,15 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.BTN_CHANGE2?.hide();
       for (let i = 0; i < GameState.PartyManager.party.length; i++) {
         let partyMember = GameState.PartyManager.party[i];
-        let portraitId = partyMember.getPortraitId();
-        let portrait = GameState.TwoDAManager.datatables.get('portraits')?.rows[portraitId];
+        const portraitResRef = partyMember.getPortraitResRef();
         if (!i) {
           
         } else {
           const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
           if(BTN_CHANGE){
             BTN_CHANGE.show();
-            if (BTN_CHANGE.getFillTextureName() != portrait.baseresref) {
-              BTN_CHANGE.setFillTextureName(portrait.baseresref);
+            if (BTN_CHANGE.getFillTextureName() != portraitResRef) {
+              BTN_CHANGE.setFillTextureName(portraitResRef);
             }
           }
         }

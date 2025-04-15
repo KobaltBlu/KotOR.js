@@ -174,7 +174,6 @@ export class ModuleCreature extends ModuleObject {
   deathStarted: boolean;
   getUpAnimationPlayed: boolean;
   animSpeed: number;
-  portrait: number;
   selectedNPC: number;
   creatureAppearance: CreatureAppearance;
 
@@ -293,7 +292,7 @@ export class ModuleCreature extends ModuleObject {
     this.perceptionRange = 0;
     this.phenotype = 0;
     this.plot = false;
-    this.portraidId = 0;
+    this.portraitId = 0;
     this.race = 0;
 
     this.scripts = {
@@ -2851,36 +2850,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPortraitId(){
-    return this.portraidId;
+    return this.portraitId;
   }
 
   getPortraitResRef(){
-    const _2DA = GameState.TwoDAManager.datatables.get('portraits');
-    if(_2DA){
-      let portrait = _2DA.rows[this.getPortraitId()];
-      if(portrait){
-
-        if(this.getGoodEvil() >= 41){
-          return portrait.baseresref;
-        }else if(this.getGoodEvil() >= 31 && this.getGoodEvil() <= 40){
-          if(portrait.baseresrefe != '****')
-            return portrait.baseresrefe;
-        }else if(this.getGoodEvil() >= 21 && this.getGoodEvil() <= 30){
-          if(portrait.baseresrefve != '****')
-            return portrait.baseresrefve;
-        }else if(this.getGoodEvil() >= 11 && this.getGoodEvil() <= 20){
-          if(portrait.baseresrefvve != '****')
-            return portrait.baseresrefvve;
-        }else if(this.getGoodEvil() >= 0 && this.getGoodEvil() <= 10){
-          if(portrait.baseresrefvvve != '****')
-            return portrait.baseresrefvvve;
-        }
-
-        return portrait.baseresref;
-
-      }
-    }
-    return '';
+    if(!this.portrait) return '';
+    return this.portrait.getPortraitGoodEvil(this.goodEvil);
   }
 
   getWalkRateId(){
@@ -4079,8 +4054,10 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('Plot'))
         this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-      if(this.template.RootNode.hasField('PortraitId'))
-        this.portraidId = this.template.getFieldByLabel('PortraitId').getValue();
+      if(this.template.RootNode.hasField('PortraitId')){
+        this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+        this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+      }
     
       if(this.template.RootNode.hasField('Race'))
         this.race = this.template.RootNode.getFieldByLabel('Race').getValue();
@@ -4740,7 +4717,7 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraidId);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(28);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).setValue(this.reflexSaveThrow);

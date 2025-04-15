@@ -61,20 +61,17 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         }
         creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
-        const portraits2DA = GameState.TwoDAManager.datatables.get('portraits');
-        if(portraits2DA){
-          for(let i = 0; i < portraits2DA.RowCount; i++){
-            let port = portraits2DA.rows[i];
-            if(parseInt(port['appearancenumber']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }else if(parseInt(port['appearance_l']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }else if(parseInt(port['appearance_s']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }
+        for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
+          let port = GameState.SWRuleSet.portraits[i];
+          if(port.appearancenumber == creature.appearance){
+            creature.portraitId = i;
+            break;
+          }else if(port.appearance_l == creature.appearance){
+            creature.portraitId = i;
+            break;
+          }else if(port.appearance_s == creature.appearance){
+            creature.portraitId = i;
+            break;
           }
         }
 
@@ -103,20 +100,17 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         }
         creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
-        const portraits2DA = GameState.TwoDAManager.datatables.get('portraits');
-        if(portraits2DA){
-          for(let i = 0; i < portraits2DA.RowCount; i++){
-            let port = portraits2DA.rows[i];
-            if(parseInt(port['appearancenumber']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }else if(parseInt(port['appearance_l']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }else if(parseInt(port['appearance_s']) == creature.appearance){
-              creature.portraidId = i;
-              break;
-            }
+        for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
+          let port = GameState.SWRuleSet.portraits[i];
+          if(port.appearancenumber == creature.appearance){
+            creature.portraitId = i;
+            break;
+          }else if(port.appearance_l == creature.appearance){
+            creature.portraitId = i;
+            break;
+          }else if(port.appearance_s == creature.appearance){
+            creature.portraitId = i;
+            break;
           }
         }
 
@@ -139,7 +133,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
           this.exiting = true;
           //Restore previous appearance
           creature.appearance = this.appearance;
-          creature.portraidId = this.portraidId;
+          creature.portraitId = this.portraitId;
           creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
           creature.loadModel().then( (model: any) => {
             this.exiting = false;
@@ -154,7 +148,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         
         //Save appearance choice
         creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
-        creature.template.getFieldByLabel('PortraitId').setValue(creature.portraidId);
+        creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
         this.manager.CharGenQuickPanel.step1 = true;
         this.close();
       });

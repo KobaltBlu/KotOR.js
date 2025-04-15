@@ -99,16 +99,15 @@ export class MenuInventory extends GameMenu {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(btn_change){
         let partyMember = GameState.PartyManager.party[i];
-        let portraitId = partyMember.getPortraitId();
-        let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
+        const portraitResRef = partyMember.getPortraitResRef();
         if (!i) {
-          if (this.LBL_PORT.getFillTextureName() != portrait.baseresref) {
-            this.LBL_PORT.setFillTextureName(portrait.baseresref);
+          if (this.LBL_PORT.getFillTextureName() != portraitResRef) {
+            this.LBL_PORT.setFillTextureName(portraitResRef);
           }
         } else {
           btn_change.show();
-          if (btn_change.getFillTextureName() != portrait.baseresref) {
-            btn_change.setFillTextureName(portrait.baseresref);
+          if (btn_change.getFillTextureName() != portraitResRef) {
+            btn_change.setFillTextureName(portraitResRef);
           }
         }
       }

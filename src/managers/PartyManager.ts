@@ -24,6 +24,7 @@ import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
 import { PazaakCards } from "../enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
+import { type SWPortrait } from "../engine/rules/SWPortrait";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -499,15 +500,16 @@ export class PartyManager {
     }
   }
 
-  static GetPortraitByIndex(nID = 0, onLoad?: Function){
+  static GetPortraitByIndex(nID = 0){
 
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
       let pm = PartyManager.NPCS[nID].template;
       if(pm.RootNode.hasField('PortraitId')){
-        const portrait2DA = GameState.TwoDAManager.datatables.get('portraits');
         const portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
-        if(portrait2DA.rows[portraitId]){
-          return GameState.TwoDAManager.datatables.get('portraits').rows[portraitId].baseresref;
+        const portrait = GameState.SWRuleSet.portraits[portraitId];
+        const goodEvil = pm.RootNode.getFieldByLabel('GoodEvil').getValue();
+        if(portrait){
+          return portrait.getPortraitGoodEvil(goodEvil);
         }
       }
     }
@@ -523,15 +525,18 @@ export class PartyManager {
     }
   }
 
-  static GetPortraitByResRef( resref = '' ){
-    const portrait2DA = GameState.TwoDAManager.datatables.get('portraits');
-    if(portrait2DA instanceof TwoDAObject){
-      for(let i = 0, len = portrait2DA.RowCount; i < len; i++){
-        if(portrait2DA.rows[i].baseresref.toLowerCase() == resref.toLowerCase()){
-          return portrait2DA.rows[i];
-        }
-      }
+  static GetPortraitByResRef( resref = '' ): SWPortrait{
+    const portrait2DA = GameState.SWRuleSet.portraits;
+    if(!portrait2DA || !portrait2DA.length){
+      return null;
     }
+    for(let i = 0, len = portrait2DA.length; i < len; i++){
+      if(portrait2DA[i].baseresref.toLowerCase() != resref.toLowerCase()){
+        continue;
+      }
+      return portrait2DA[i];    
+    }
+    return null;
   }
 
   static AddPortraitToOrder( resref = '' ){

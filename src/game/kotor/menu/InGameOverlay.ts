@@ -818,8 +818,6 @@ export class InGameOverlay extends GameMenu {
     
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       let partyMember = GameState.PartyManager.party[i];
-      let portraitId = partyMember.getPortraitId();
-      let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
       let id = i;
       switch (i) {
       case 1:
@@ -831,9 +829,10 @@ export class InGameOverlay extends GameMenu {
       }
       this.TogglePartyMember(id, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
-      if (pmBG.getFillTextureName() != portrait.baseresref) {
-        pmBG.setFillTextureName(portrait.baseresref);
-        TextureLoader.tpcLoader.fetch(portrait.baseresref).then((texture: OdysseyTexture) => {
+      const portraitResRef = partyMember.getPortraitResRef();
+      if (pmBG.getFillTextureName() != portraitResRef) {
+        pmBG.setFillTextureName(portraitResRef);
+        TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
           pmBG.setFillTexture(texture);
         });
       }

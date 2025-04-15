@@ -134,12 +134,11 @@ export class CharGenMain extends GameMenu {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
-    let portraitId = GameState.CharGenManager.selectedCreature.getPortraitId();
-    let portrait = GameState.TwoDAManager.datatables.get('portraits').rows[portraitId];
+    const portraitResRef = GameState.CharGenManager.selectedCreature.getPortraitResRef();
     this.PORTRAIT_LBL.show();
-    if (this.PORTRAIT_LBL.getFillTextureName() != portrait.baseresref) {
-      this.PORTRAIT_LBL.setFillTextureName(portrait.baseresref);
-      TextureLoader.tpcLoader.fetch(portrait.baseresref).then((texture: OdysseyTexture) => {
+    if (this.PORTRAIT_LBL.getFillTextureName() != portraitResRef) {
+      this.PORTRAIT_LBL.setFillTextureName(portraitResRef);
+      TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
         this.PORTRAIT_LBL.setFillTexture(texture);
       });
     }

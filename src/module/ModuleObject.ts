@@ -49,6 +49,7 @@ import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
 import { EngineDebugType, ModuleTriggerType, SkillType } from "../enums";
+import { type SWPortrait } from "../engine/rules/SWPortrait";
 
 /**
 * ModuleObject class.
@@ -196,7 +197,8 @@ export class ModuleObject {
   hasMapNote: boolean;
   mapNote: CExoLocString;
   mapNoteEnabled: boolean;
-  portraidId: any;
+  portraitId: number;
+  portrait: SWPortrait;
   setByPlayerParty: any;
   highlightHeight: any;
   appearance: number = -1;
@@ -2067,8 +2069,10 @@ export class ModuleObject {
     if(this.template.RootNode.hasField('MapNoteEnabled'))
       this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
 
-    if(this.template.RootNode.hasField('PortraidId'))
-      this.portraidId = this.template.getFieldByLabel('PortraidId').getValue();
+    if(this.template.RootNode.hasField('PortraidId')){
+      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }
 
     if(this.template.RootNode.hasField('SetByPlayerParty'))
       this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();

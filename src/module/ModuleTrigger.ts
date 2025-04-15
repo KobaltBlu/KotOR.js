@@ -548,8 +548,10 @@ export class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.hasField('LocalizedName'))
       this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
 
-    if(this.template.RootNode.hasField('PortraidId'))
-      this.portraidId = this.template.getFieldByLabel('PortraidId').getValue();
+    if(this.template.RootNode.hasField('PortraidId')){
+      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }
 
     if(this.template.RootNode.hasField('SetByPlayerParty'))
       this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
@@ -676,7 +678,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDisarm') ).setValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnTrapTriggered') ).setValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
     
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraidId);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
 
     //SWVarTable
     let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );

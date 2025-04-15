@@ -73,7 +73,6 @@ export class ModuleDoor extends ModuleObject {
   locked: boolean;
   openLockDC: number;
   paletteID: number;
-  portraitId: number;
   ref: number;
   static: boolean;
   will: number;
@@ -1140,8 +1139,11 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('Plot'))
       this.plot = this.template.getFieldByLabel('Plot').getValue();
 
-    if(this.template.RootNode.hasField('PortraidId'))
-      this.portraidId = this.template.getFieldByLabel('PortraidId').getValue();
+    if(this.template.RootNode.hasField('PortraidId')){
+      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }
+
 
     if(this.template.RootNode.hasField('Ref'))
       this.ref = this.template.getFieldByLabel('Ref').getValue();
@@ -1300,7 +1302,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraidId);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable

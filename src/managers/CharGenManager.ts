@@ -184,17 +184,17 @@ export class CharGenManager {
     }
     let portraitId = 0;
     let appearanceIdx = CharGenClasses[nth].appearances[idx];
-    const portraits2DA = TwoDAManager.datatables.get('portraits');
+    const portraits2DA = GameState.SWRuleSet.portraits;
     if(portraits2DA){
-      for (let i = 0; i < portraits2DA.RowCount; i++) {
-        let port = portraits2DA.rows[i];
-        if (parseInt(port['appearancenumber']) == appearanceIdx) {
+      for (let i = 0; i < portraits2DA.length; i++) {
+        let port = portraits2DA[i];
+        if (port.appearancenumber == appearanceIdx) {
           portraitId = i;
           break;
-        } else if (parseInt(port['appearance_l']) == appearanceIdx) {
+        } else if (port.appearance_l == appearanceIdx) {
           portraitId = i;
           break;
-        } else if (parseInt(port['appearance_s']) == appearanceIdx) {
+        } else if (port.appearance_s == appearanceIdx) {
           portraitId = i;
           break;
         }
