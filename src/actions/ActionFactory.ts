@@ -181,7 +181,23 @@ export class ActionFactory {
         action = new ActionExamineMine(actionId, groupId);
       break;
       default:
-        console.log('ActionList Unhandled Action', '0x'+(actionId.toString(16).toUpperCase()), action, this);
+        console.log('ActionList Unhandled Action', '0x' + (actionId.toString(16).toUpperCase()), paramCount);
+        for(let i = 0; i < paramCount; i++){
+          const struct = paramStructs[i];
+          const type = struct.getFieldByLabel('Type').getValue();
+          
+          if(type == 1){
+            console.log('INT', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 2){
+            console.log('FLOAT', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 3){
+            console.log('DWORD', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 4){
+            console.log('STRING', struct.getFieldByLabel('Value').getValue());
+          }else if(type == 5){
+            console.log('SCRIPT', struct.getFieldByLabel('Value'));
+          }
+        }
       break;
     }
 
