@@ -12,7 +12,6 @@ const UI_TIMER_DURATION = 10;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class UINotificationManager {
-  static notifications: any[] = [];
 
   static ItemLostTimer: number = 0;
   static ItemReceivedTimer: number = 0;
@@ -23,7 +22,10 @@ export class UINotificationManager {
   static LightShiftTimer: number = 0;
   static DarkShiftTimer: number = 0;
 
+  static bNotificationSoundQueued: boolean = false;
+
   static EnableUINotificationIconType(type: UIIconTimerType) {
+    this.bNotificationSoundQueued = true;
     switch(type) {
       case UIIconTimerType.ITEM_LOST:
         this.ItemLostTimer = UI_TIMER_DURATION;
