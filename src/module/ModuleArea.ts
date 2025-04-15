@@ -279,19 +279,25 @@ export class ModuleArea extends ModuleObject {
   shadowOpacity = 0;
 
   /**
-   * @remarks unimplemented
+   * Determines if the Stealth XP mechanic is enabled for this area
    */
   stealthXPEnabled = 0;
 
   /**
-   * @remarks unimplemented
+   * The amount of XP that will be subtracted from the stealthXP if the player is perceived by an enemy
+   * If a player is able to successfully hide from an enemy, the stealthXPLoss will be added to the player's stealthXP after it's divided by two
    */
   stealthXPLoss = 0;
 
   /**
-   * @remarks unimplemented
+   * The maximum amount of stealth XP that can be gained in this area
    */
   stealthXPMax = 0;
+
+  /**
+   * The amount of stealth XP that the player has gained in this area
+   */
+  stealthXP = 0;
 
   /**
    * Tag of the area, used for scripting
@@ -1968,6 +1974,24 @@ export class ModuleArea extends ModuleObject {
 
   setRestrictMode( restrictMode = 0 ){
     this.restrictMode = restrictMode;
+  }
+
+  setStealthXPEnabled( stealthXPEnabled: boolean ){
+    this.stealthXPEnabled = stealthXPEnabled ? 1 : 0;
+  }
+
+  addStealthXP(){
+    this.stealthXP += Math.floor(this.stealthXPLoss/2);
+    if(this.stealthXP > this.stealthXPMax){
+      this.stealthXP = this.stealthXPMax;
+    }
+  }
+
+  subtractStealthXP(){
+    this.stealthXP -= this.stealthXPLoss;
+    if(this.stealthXP < 0){
+      this.stealthXP = 0;
+    }
   }
 
   toolsetExportARE(){

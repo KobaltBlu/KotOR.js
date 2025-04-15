@@ -5,6 +5,7 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { KEYManager } from "./KEYManager";
+import { ExperienceType } from "../enums/engine/ExperienceType";
 
 /**
  * CheatConsoleManager class.
@@ -32,7 +33,7 @@ export class CheatConsoleManager {
     points = Math.abs(points);
     const player = GameState.getCurrentPlayer();
     if(player){
-      player.addXP(points);
+      player.addXP(points, ExperienceType.PLOT);
     }
   }
 

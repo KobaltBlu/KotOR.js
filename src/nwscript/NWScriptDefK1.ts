@@ -35,6 +35,7 @@ import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
 import { CombatRound } from "../combat/CombatRound";
 import { BitWise } from "../utility/BitWise";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
+import { ExperienceType } from "../enums/engine/ExperienceType";
 
 /**
  * NWScriptDefK1 class.
@@ -4719,7 +4720,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleCreature, number]){
-      args[0].addXP(args[1]);
+      args[0].addXP(args[1], ExperienceType.PLOT);
     }
   },
   394:{
@@ -5528,7 +5529,10 @@ NWScriptDefK1.Actions = {
     comment: "464:\nReturns the maximum amount of stealth xp available in the area.\n",
     name: "GetMaxStealthXP",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.stealthXPMax || 0;
+    }
   },
   465:{
     comment: "465: Create a True Seeing effect.\n",
@@ -5552,7 +5556,10 @@ NWScriptDefK1.Actions = {
     comment: "468:\nSet the maximum amount of stealth xp available in the area.\n",
     name: "SetMaxStealthXP",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.module.area.stealthXPMax = args[0] || 0;
+    }
   },
   469:{
     comment: "469: Increase the blaster deflection rate, i think...\n",
@@ -5610,7 +5617,10 @@ NWScriptDefK1.Actions = {
     comment: "474:\nReturns the current amount of stealth xp available in the area.\n",
     name: "GetCurrentStealthXP",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.stealthXPMax || 0;
+    }
   },
   475:{
     comment: "475: Get the number of stacked items that oItem comprises.\n",
@@ -5649,7 +5659,10 @@ NWScriptDefK1.Actions = {
     comment: "478:\nSet the current amount of stealth xp available in the area.\n",
     name: "SetCurrentStealthXP",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.module.area.stealthXP = args[0] || 0;
+    }
   },
   479:{
     comment: "479: Get the size (CREATURE_SIZE_*) of oCreature.\n",
@@ -5666,19 +5679,30 @@ NWScriptDefK1.Actions = {
     comment: "480:\nAward the stealth xp to the given oTarget.  This will only work on creatures.\n",
     name: "AwardStealthXP",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).addXP(GameState.module.area.stealthXP, ExperienceType.STEALTH);
+      }
+    }
   },
   481:{
     comment: "481:\nReturns whether or not the stealth xp bonus is enabled (ie. whether or not\nAwardStealthXP() will actually award any available stealth xp).\n",
     name: "GetStealthXPEnabled",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.stealthXPEnabled ? 1 : 0;
+    }
   },
   482:{
     comment: "482:\nSets whether or not the stealth xp bonus is enabled (ie. whether or not\nAwardStealthXP() will actually award any available stealth xp).\n",
     name: "SetStealthXPEnabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.module.area.setStealthXPEnabled(!!args[0]);
+    }
   },
   483:{
     comment: "483: The action subject will unlock oTarget, which can be a door or a placeable\nobject.\n",
@@ -5805,13 +5829,19 @@ NWScriptDefK1.Actions = {
     comment: "498:\nReturns the amount the stealth xp bonus gets decreased each time the player is detected.\n",
     name: "GetStealthXPDecrement",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.stealthXPLoss || 0;
+    }
   },
   499:{
     comment: "499:\nSets the amount the stealth xp bonus gets decreased each time the player is detected.\n",
     name: "SetStealthXPDecrement",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.module.area.stealthXPLoss = args[0] || 0;
+    }
   },
   500:{
     comment: "500:\n",

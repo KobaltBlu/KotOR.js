@@ -1799,6 +1799,13 @@ export class ModuleObject {
         this.perceptionList.push(newObject);
         perceptionObject = newObject;
         triggerOnNotice = true;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
       }
     }
 
@@ -1831,6 +1838,13 @@ export class ModuleObject {
         this.perceptionList.push(newObject);
         perceptionObject = newObject;
         triggerOnNotice = true;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
       }
     }
 

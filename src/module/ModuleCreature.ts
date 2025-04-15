@@ -57,6 +57,7 @@ import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { EngineDebugType } from "../enums/engine/EngineDebugType";
 import { TextSprite3D } from "../engine/TextSprite3D";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
+import { ExperienceType } from "../enums/engine/ExperienceType";
 
 /**
 * ModuleCreature class.
@@ -855,26 +856,30 @@ export class ModuleCreature extends ModuleObject {
     let creatureLen = GameState.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++ ){
       let creature = GameState.module.area.creatures[i];
-      if(this != creature){
-        if(!creature.isDead()){
-          let distance = this.position.distanceTo(creature.position);
-          if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-            if(GameState.PartyManager.party.indexOf(this) == -1){
-              if(this.isHostile(creature)){
-                this.resetExcitedDuration();
-                if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
-                  GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
-                }
-              }
+      //creature cannot perceive itself
+      if(this == creature){
+        continue;
+      }
+
+      if(creature.isDead()){
+        this.notifyPerceptionSeenObject(creature, false);
+        continue;
+      }
+
+      let distance = this.position.distanceTo(creature.position);
+      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+        if(GameState.PartyManager.party.indexOf(this) == -1){
+          if(this.isHostile(creature)){
+            this.resetExcitedDuration();
+            if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
+              GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
             }
-            
-            this.notifyPerceptionSeenObject(creature, true);
-          }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
-            this.notifyPerceptionHeardObject(creature, true);
           }
-        }else{
-          this.notifyPerceptionSeenObject(creature, false);
         }
+        
+        this.notifyPerceptionSeenObject(creature, true);
+      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+        this.notifyPerceptionHeardObject(creature, true);
       }
     }
 
@@ -882,24 +887,27 @@ export class ModuleCreature extends ModuleObject {
     let partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++ ){
       let creature = GameState.PartyManager.party[i];
-      if(this != creature){
-        if(!creature.isDead()){
-          let distance = this.position.distanceTo(creature.position);
-          if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
-            if(GameState.PartyManager.party.indexOf(this) == -1){
+      //creature cannot perceive itself
+      if(this == creature){
+        continue;
+      }
 
-              if(this.isHostile(creature)){
-                this.resetExcitedDuration();
-              }
+      if(creature.isDead()){
+        this.notifyPerceptionSeenObject(creature, false);
+        continue;
+      }
 
-              this.notifyPerceptionSeenObject(creature, true);
-            }
-          }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
-            this.notifyPerceptionHeardObject(creature, true);
+      let distance = this.position.distanceTo(creature.position);
+      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+        if(GameState.PartyManager.party.indexOf(this) == -1){
+          if(this.isHostile(creature)){
+            this.resetExcitedDuration();
           }
-        }else{
-          this.notifyPerceptionSeenObject(creature, false);
+
+          this.notifyPerceptionSeenObject(creature, true);
         }
+      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+        this.notifyPerceptionHeardObject(creature, true);
       }
     }
 
@@ -2497,10 +2505,10 @@ export class ModuleCreature extends ModuleObject {
     this.experience = value;
   }
 
-  addXP(value = 0){
+  addXP(value = 0, xpType: ExperienceType = ExperienceType.PLOT){
     this.experience += parseInt(value.toString());
     if(this.isPartyMember()){
-      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
+      GameState.UINotificationManager.EnableUINotificationIconType(xpType == ExperienceType.PLOT ? UIIconTimerType.PLOT_XP_RECEIVED : UIIconTimerType.STEALTH_XP_RECEIVED);
     }
   }
 
