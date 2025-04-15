@@ -4,6 +4,8 @@ import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
 import { SWItemPropsDef } from "./SWItemPropsDef";
 import { PazaakDeck } from "../minigames/PazaakDeck";
+import { SWXPTableEntry } from "./SWXPTableEntry";
+import { SWPortrait } from "./SWPortrait";
 import { GameState } from "../../GameState";
 
 /**
@@ -30,6 +32,9 @@ export class SWRuleSet {
 
   static pazaakDecks: PazaakDeck[] = [];
   static pazaakDeckCount: number = 0;
+
+  static xpTable: SWXPTableEntry[] = [];
+  static portraits: SWPortrait[] = [];
 
   static Init(){
 
@@ -90,6 +95,28 @@ export class SWRuleSet {
         SWRuleSet.pazaakDecks[i] = PazaakDeck.From2DA(pazaakdecks.rows[i]);
       }
       SWRuleSet.pazaakDeckCount = pazaakdecks.RowCount;
+    }
+
+    /**
+     * Initialize XP Table
+     */
+    const xpTable = GameState.TwoDAManager.datatables.get('xptable'); 
+    if(xpTable){
+      SWRuleSet.xpTable = new Array(xpTable.RowCount);
+      for(let i = 0; i < xpTable.RowCount; i++){
+        SWRuleSet.xpTable[i] = SWXPTableEntry.From2DA(xpTable.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Portraits
+     */
+    const portraits = GameState.TwoDAManager.datatables.get('portraits');
+    if(portraits){
+      SWRuleSet.portraits = new Array(portraits.RowCount);
+      for(let i = 0; i < portraits.RowCount; i++){
+        SWRuleSet.portraits[i] = SWPortrait.From2DA(portraits.rows[i]);
+      }
     }
 
   }
