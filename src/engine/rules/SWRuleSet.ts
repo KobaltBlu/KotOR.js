@@ -68,7 +68,7 @@ export class SWRuleSet {
     const effectIcons = GameState.TwoDAManager.datatables.get('effecticon');
     if(effectIcons){
       SWRuleSet.effectIconCount = effectIcons.RowCount;
-      SWRuleSet.racialtypes = new Array(SWRuleSet.effectIconCount);
+      SWRuleSet.effectIcons = new Array(SWRuleSet.effectIconCount);
       for(let i = 0; i < effectIcons.RowCount; i++){
         SWRuleSet.effectIcons[i] = SWEffectIcon.From2DA(effectIcons.rows[i]);
       }

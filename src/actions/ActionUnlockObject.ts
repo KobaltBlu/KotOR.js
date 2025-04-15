@@ -89,7 +89,7 @@ export class ActionUnlockObject extends Action {
             effect.setSpellId(-1);
             effect.setInt(0, SkillType.SECURITY);
             effect.setInt(1, property.getValue());
-            effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+            effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
             this.owner.addEffect(effect.initialize(), GameEffectDurationType.TEMPORARY, 3);
           }
         }

@@ -1436,7 +1436,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       effect.setInt(5, args[2]);
       return effect.initialize();
     }
@@ -1468,7 +1468,7 @@ NWScriptDefK1.Actions = {
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
       effect.setInt(2, args[2]);
-      effect.setInt(3, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(3, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -1512,7 +1512,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -4311,7 +4311,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5331,7 +5331,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5360,7 +5360,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       effect.setInt(5, args[2]);
       return effect.initialize();
     }
@@ -5390,7 +5390,7 @@ NWScriptDefK1.Actions = {
       effect.setInt(0, args[1]);
       effect.setInt(1, args[0]);
       effect.setInt(2, args[2]);
-      effect.setInt(3, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(3, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5405,7 +5405,7 @@ NWScriptDefK1.Actions = {
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
       effect.setInt(1, args[1]);
-      effect.setInt(2, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(2, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
@@ -5651,7 +5651,7 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
-      effect.setInt(1, GameState.TwoDAManager.datatables.get('racialtypes').RowCount);
+      effect.setInt(1, GameState.SWRuleSet.racialTypeCount);
       return effect.initialize();
     }
   },
