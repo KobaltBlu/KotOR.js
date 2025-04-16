@@ -5,6 +5,7 @@ import { MenuAbilities as K1_MenuAbilities } from "../../kotor/KOTOR";
 import { GUICreatureSkill } from "../gui/GUICreatureSkill";
 import { GUISpellItem } from "../gui/GUISpellItem";
 import { GUIFeatItem } from "../gui/GUIFeatItem";
+import { type TalentFeat } from "../../../talents/TalentFeat";
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -105,25 +106,21 @@ export class MenuAbilities extends K1_MenuAbilities {
   }
 
   buildFeatList(creature: ModuleCreature): any[][] {
-    const featTable = GameState.TwoDAManager.datatables.get('feat');
-    let feats = featTable.rows;
-    let featCount = featTable.RowCount;
-    let knownFeats = [];
-    if(creature){
-      knownFeats = creature.getFeats();
-    }
-    let groups = [];
+    const feats = GameState.SWRuleSet.feats;
+    const featCount = feats.length;
+    const knownFeats: TalentFeat[] = creature ? creature.feats : [];
+    const groups = [];
     for (let i = 0; i < knownFeats.length; i++) {
-      let feat = knownFeats[i];
-      let group = [];
-      let prereqfeat1 = featTable.rows[feat.prereqfeat1];
-      let prereqfeat2 = featTable.rows[feat.prereqfeat2];
+      const feat = knownFeats[i];
+      const group: TalentFeat[] = [];
+      const prereqfeat1 = feats[feat.prereqFeat1];
+      const prereqfeat2 = feats[feat.prereqFeat2];
       if (!prereqfeat1 && !prereqfeat2) {
         group.push(feat);
         for (let j = 0; j < featCount; j++) {
-          let chainFeat = feats[j];
-          if (chainFeat.prereqfeat1 == feat.__index || chainFeat.prereqfeat2 == feat.__index) {
-            if (chainFeat.prereqfeat1 != '****' && chainFeat.prereqfeat2 != '****') {
+          const chainFeat = feats[j];
+          if (chainFeat.prereqFeat1 == i || chainFeat.prereqFeat2 == i) {
+            if (chainFeat.prereqFeat1 != -1 && chainFeat.prereqFeat2 != -1) {
               group[2] = chainFeat;
             } else {
               group[1] = chainFeat;

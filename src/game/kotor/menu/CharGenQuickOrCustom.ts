@@ -35,31 +35,30 @@ export class CharGenQuickOrCustom extends GameMenu {
       this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
-          let class_data = GameState.TwoDAManager.datatables.get('classes').rows[GameState.CharGenManager.selectedClass];
-          let saving_throw_label = class_data['savingthrowtable'].toLowerCase();
-          let saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
-          let feats_table = GameState.TwoDAManager.datatables.get('feat');
+          const class_data = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
+          const saving_throw_label = class_data['savingthrowtable'].toLowerCase();
+          const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
+          const feats_table = GameState.SWRuleSet.feats;
 
-          GameState.CharGenManager.selectedCreature.str = parseInt(class_data.str);
-          GameState.CharGenManager.selectedCreature.dex = parseInt(class_data.dex);
-          GameState.CharGenManager.selectedCreature.con = parseInt(class_data.con);
-          GameState.CharGenManager.selectedCreature.wis = parseInt(class_data.wis);
-          GameState.CharGenManager.selectedCreature.int = parseInt(class_data.int);
-          GameState.CharGenManager.selectedCreature.cha = parseInt(class_data.cha);
-          GameState.CharGenManager.selectedCreature.str = parseInt(class_data.str);
+          GameState.CharGenManager.selectedCreature.str = class_data.str;
+          GameState.CharGenManager.selectedCreature.dex = class_data.dex;
+          GameState.CharGenManager.selectedCreature.con = class_data.con;
+          GameState.CharGenManager.selectedCreature.wis = class_data.wis;
+          GameState.CharGenManager.selectedCreature.int = class_data.int;
+          GameState.CharGenManager.selectedCreature.cha = class_data.cha;
+          GameState.CharGenManager.selectedCreature.str = class_data.str;
 
           GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
           GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
           GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
 
-          let featstable_key = class_data['featstable'].toLowerCase();
-
-          for(let i = 0, len = feats_table.rows.length; i < len; i++){
-            let feat_data = feats_table.rows[i];
-            if(feat_data[featstable_key+'_granted'] == 1){
+          for(let i = 0, len = feats_table.length; i < len; i++){
+            const feat_data = feats_table[i];
+            if(feat_data.getGranted(class_data) == 1){
               GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
             }
           }
+          
           this.manager.CharGenMain.close();
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
           this.manager.CharGenQuickPanel.tGuiPanel.widget.position.x = 142.5;

@@ -95,7 +95,7 @@ export class ModuleCreature extends ModuleObject {
   disarmable: number;
   isHologram: boolean;
   experience: number;
-  feats: any[];
+  feats: TalentFeat[];
   firstName: string;
   forcePoints: number;
   gender: number;

@@ -1,4 +1,5 @@
 import { CreatureClass } from "../../combat/CreatureClass";
+import { TalentFeat } from "../../talents/TalentFeat";
 // import { TwoDAManager } from "../../managers/TwoDAManager";
 import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
@@ -36,6 +37,9 @@ export class SWRuleSet {
   static xpTable: SWXPTableEntry[] = [];
   static portraits: SWPortrait[] = [];
 
+  static feats: TalentFeat[] = [];
+  static featCount: number = 0;
+
   static Init(){
 
     /**
@@ -71,6 +75,18 @@ export class SWRuleSet {
       SWRuleSet.effectIcons = new Array(SWRuleSet.effectIconCount);
       for(let i = 0; i < effectIcons.RowCount; i++){
         SWRuleSet.effectIcons[i] = SWEffectIcon.From2DA(effectIcons.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Feats
+     */
+    const feats = GameState.TwoDAManager.datatables.get('feat');
+    if(feats){
+      SWRuleSet.featCount = feats.RowCount;
+      SWRuleSet.feats = new Array(SWRuleSet.featCount);
+      for(let i = 0; i < feats.RowCount; i++){
+        SWRuleSet.feats[i] = TalentFeat.From2DA(feats.rows[i]);
       }
     }
 

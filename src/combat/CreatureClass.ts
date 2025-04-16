@@ -77,7 +77,8 @@ export class CreatureClass {
     this.id = id;
     this.level = 0;
     this.spells = [];
-    if(id >= 0) Object.assign(this, GameState.TwoDAManager.datatables.get('classes').rows[this.id]);
+    if(id >= 0)
+      this.apply2DA(GameState.TwoDAManager.datatables.get('classes').rows[this.id]);
   }
 
   getName(){
@@ -182,14 +183,94 @@ export class CreatureClass {
     return undefined;
   }
 
-  static From2DA(row: any){
-    const cls = new CreatureClass();
-
-    cls.id = parseInt(row.__index);
+  apply2DA(row: any){
+    this.id = parseInt(row.__index);
 
     if(row.hasOwnProperty('label'))
-      cls.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+      this.label = TwoDAObject.normalizeValue(row.label, 'string', '');
 
+    if(row.hasOwnProperty('name'))
+      this.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
+
+    if(row.hasOwnProperty('description'))
+      this.description = TwoDAObject.normalizeValue(row.description, 'number', -1);
+
+    if(row.hasOwnProperty('icon'))
+      this.icon = TwoDAObject.normalizeValue(row.icon, 'string', '');
+
+    if(row.hasOwnProperty('hitdie'))
+      this.hitdie = TwoDAObject.normalizeValue(row.hitdie, 'number', 8);
+
+    if(row.hasOwnProperty('attackbonustable'))
+      this.attackbonustable = TwoDAObject.normalizeValue(row.attackbonustable, 'string', 'CLS_ATK_1');
+
+    if(row.hasOwnProperty('featstable'))
+      this.featstable = TwoDAObject.normalizeValue(row.featstable, 'string', 'SOL');
+
+    if(row.hasOwnProperty('savingthrowtable'))
+      this.savingthrowtable = TwoDAObject.normalizeValue(row.savingthrowtable, 'string', 'CLS_ST_SOL');
+
+    if(row.hasOwnProperty('skillstable'))
+      this.skillstable = TwoDAObject.normalizeValue(row.skillstable, 'string', 'CLS_SK_SOL');
+
+    if(row.hasOwnProperty('skillpointbase'))
+      this.skillpointbase = TwoDAObject.normalizeValue(row.skillpointbase, 'number', 1);
+
+    if(row.hasOwnProperty('spellgaintable'))
+      this.spellgaintable = TwoDAObject.normalizeValue(row.spellgaintable, 'string', ''); 
+
+    if(row.hasOwnProperty('spellknowntable'))
+      this.spellknowntable = TwoDAObject.normalizeValue(row.spellknowntable, 'string', '');
+
+    if(row.hasOwnProperty('playerclass'))
+      this.playerclass = TwoDAObject.normalizeValue(row.playerclass, 'boolean', false);
+
+    if(row.hasOwnProperty('spellcaster'))
+      this.spellcaster = TwoDAObject.normalizeValue(row.spellcaster, 'boolean', false);
+
+    if(row.hasOwnProperty('str'))
+      this.str = TwoDAObject.normalizeValue(row.str, 'number', 10);
+
+    if(row.hasOwnProperty('dex'))
+      this.dex = TwoDAObject.normalizeValue(row.dex, 'number', 10);
+
+    if(row.hasOwnProperty('con'))
+      this.con = TwoDAObject.normalizeValue(row.con, 'number', 10); 
+
+    if(row.hasOwnProperty('wis'))
+      this.wis = TwoDAObject.normalizeValue(row.wis, 'number', 10);
+
+    if(row.hasOwnProperty('int'))
+      this.int = TwoDAObject.normalizeValue(row.int, 'number', 10); 
+
+    if(row.hasOwnProperty('cha'))
+      this.cha = TwoDAObject.normalizeValue(row.cha, 'number', 10);
+
+    if(row.hasOwnProperty('primaryabil'))
+      this.primaryabil = TwoDAObject.normalizeValue(row.primaryabil, 'string', 'STR');  
+
+    if(row.hasOwnProperty('alignrestrict'))
+      this.alignrestrict = TwoDAObject.normalizeValue(row.alignrestrict, 'number', 0);
+
+    if(row.hasOwnProperty('alignrstrcttype'))
+      this.alignrstrcttype = TwoDAObject.normalizeValue(row.alignrstrcttype, 'number', 0);  
+
+    if(row.hasOwnProperty('constant'))
+      this.constant = TwoDAObject.normalizeValue(row.constant, 'string', 'CCLASS_SOLDIER');
+
+    if(row.hasOwnProperty('forcedie'))
+      this.forcedie = TwoDAObject.normalizeValue(row.forcedie, 'number', 0);
+
+    if(row.hasOwnProperty('armorclasscolumn'))
+      this.armorclasscolumn = TwoDAObject.normalizeValue(row.armorclasscolumn, 'string', 'SOL');
+
+    if(row.hasOwnProperty('featgain'))
+      this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL');
+  } 
+
+  static From2DA(row: any){
+    const cls = new CreatureClass();
+    cls.apply2DA(row);
     return cls;
   }
 

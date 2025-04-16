@@ -61,18 +61,17 @@ export class CharGenFeats extends GameMenu {
   }
 
   addGrantedFeats() {
-    let feats = GameState.TwoDAManager.datatables.get('feat').rows;
-    let featCount = GameState.TwoDAManager.datatables.get('feat').RowCount;
+    const featCount = GameState.SWRuleSet.featCount;
     let granted = [];
     for (let i = 0; i < featCount; i++) {
-      let feat = feats[i];
+      const feat = GameState.SWRuleSet.feats[i];
       if(this.creature){
-        let mainClass = this.creature.getMainClass();
+        const mainClass = this.creature.getMainClass();
         if (mainClass && feat.constant != '****') {
           if (mainClass.isFeatAvailable(feat)) {
-            let status = mainClass.getFeatStatus(feat);
+            const status = mainClass.getFeatStatus(feat);
             if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
-              if (!this.creature.getHasFeat(feat.__index)) {
+              if (!this.creature.getHasFeat(i)) {
                 console.log('Feat Granted', feat);
                 this.creature.addFeat(TalentFeat.From2DA(feat));
                 granted.push(feat);
@@ -85,18 +84,18 @@ export class CharGenFeats extends GameMenu {
   }
 
   buildFeatList() {
-    let feats = GameState.TwoDAManager.datatables.get('feat').rows;
-    let featCount = GameState.TwoDAManager.datatables.get('feat').RowCount;
+    const feats = GameState.SWRuleSet.feats;
+    const featCount = GameState.SWRuleSet.featCount;
     let list = [];
     if(this.creature){
-      let mainClass = this.creature.getMainClass();
+      const mainClass = this.creature.getMainClass();
       if(mainClass){
         for (let i = 0; i < featCount; i++) {
-          let feat = feats[i];
+          const feat = feats[i];
           if (feat.constant != '****') {
             if (mainClass.isFeatAvailable(feat)) {
-              let status = mainClass.getFeatStatus(feat);
-              if (this.creature.getHasFeat(feat.__index) || status == 0 || status == 1) {
+              const status = mainClass.getFeatStatus(feat);
+              if (this.creature.getHasFeat(i) || status == 0 || status == 1) {
                 list.push(feat);
               }
             }
@@ -106,16 +105,16 @@ export class CharGenFeats extends GameMenu {
     }
     let groups = [];
     for (let i = 0; i < list.length; i++) {
-      let feat = list[i];
-      let group = [];
-      let prereqfeat1 = GameState.TwoDAManager.datatables.get('feat').rows[feat.prereqfeat1];
-      let prereqfeat2 = GameState.TwoDAManager.datatables.get('feat').rows[feat.prereqfeat2];
+      const feat = list[i];
+      const group = [];
+      const prereqfeat1 = GameState.SWRuleSet.feats[feat.prereqFeat1];
+      const prereqfeat2 = GameState.SWRuleSet.feats[feat.prereqFeat2];
       if (!prereqfeat1 && !prereqfeat2) {
         group.push(feat);
         for (let j = 0; j < featCount; j++) {
-          let chainFeat = feats[j];
-          if (chainFeat.prereqfeat1 == feat.__index || chainFeat.prereqfeat2 == feat.__index) {
-            if (chainFeat.prereqfeat1 != '****' && chainFeat.prereqfeat2 != '****') {
+          const chainFeat = GameState.SWRuleSet.feats[j];
+          if (chainFeat.prereqFeat1 == i || chainFeat.prereqFeat2 == i) {
+            if (chainFeat.prereqFeat1 != -1 && chainFeat.prereqFeat2 != -1) {
               group[2] = chainFeat;
             } else {
               group[1] = chainFeat;
@@ -126,7 +125,7 @@ export class CharGenFeats extends GameMenu {
       }
       groups.push(group);
     }
-    groups.sort((groupa, groupb) => groupa[0].toolscategories > groupb[0].toolscategories ? 1 : -1);
+    groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
     console.log(groups);
   }
   
