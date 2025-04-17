@@ -79,6 +79,7 @@ export class CreatureClass {
   attackBonuses: SWAttackBonus[] = [];
   featGainPoints: number[] = [];
   spellGainPoints: number[] = [];
+  acbonuses: number[] = [];
 
   constructor(id = -1){
     this.id = id;
@@ -110,11 +111,11 @@ export class CreatureClass {
   }
 
   getBaseAttackBonus(){
-    return parseInt(GameState.TwoDAManager.datatables.get(this.attackbonustable.toLowerCase()).rows[this.level].bab)
+    return this.attackBonuses[this.level].bab;
   }
 
   getACBonus(){
-    return parseInt(GameState.TwoDAManager.datatables.get('acbonus').rows[this.level][this.armorclasscolumn.toLowerCase()]);
+    return this.acbonuses[this.level];
   }
 
   isFeatAvailable( feat: any ){
@@ -296,6 +297,14 @@ export class CreatureClass {
     let spellGain = GameState.SWRuleSet.spellGains;
     if(spellGain){
       this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
+    }
+
+    const acbonuses = GameState.TwoDAManager.datatables.get('acbonus');
+    if(acbonuses){
+      this.acbonuses = Object.values(acbonuses.rows).map((row: any) => {
+        const col = row[this.armorclasscolumn.toLowerCase()];
+        return col ? TwoDAObject.normalizeValue(col, 'number', 0) : 0;
+      });
     }
 
   }
