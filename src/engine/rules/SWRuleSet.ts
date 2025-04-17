@@ -7,6 +7,8 @@ import { SWItemPropsDef } from "./SWItemPropsDef";
 import { PazaakDeck } from "../minigames/PazaakDeck";
 import { SWXPTableEntry } from "./SWXPTableEntry";
 import { SWPortrait } from "./SWPortrait";
+import { SWFeatGain } from "./SWFeatGain";
+import { SWSpellGain } from "./SWSpellGain";
 import { GameState } from "../../GameState";
 
 /**
@@ -39,8 +41,32 @@ export class SWRuleSet {
 
   static feats: TalentFeat[] = [];
   static featCount: number = 0;
+  static featGains: SWFeatGain;
+  static featGainCount: number = 0;
+
+  static spellGains: SWSpellGain;
+  static spellGainCount: number = 0;
 
   static Init(){
+
+    /**
+     * Initialize Feat Gains
+     * - required by CreatureClass.apply2DA()
+     */
+    const featGains = GameState.TwoDAManager.datatables.get('featgain');
+    if(featGains){
+      SWRuleSet.featGainCount = featGains.RowCount;
+      SWRuleSet.featGains = SWFeatGain.From2DA(featGains);
+    }
+
+    /**
+     * Initialize Spell Gains
+     */
+    const spellGains = GameState.TwoDAManager.datatables.get('classpowergain');
+    if(spellGains){
+      SWRuleSet.spellGainCount = spellGains.RowCount;
+      SWRuleSet.spellGains = SWSpellGain.From2DA(spellGains);
+    }
 
     /**
      * Initialize Classes

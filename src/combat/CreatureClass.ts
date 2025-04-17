@@ -5,6 +5,8 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import type { TalentSpell } from "../talents/TalentSpell";
+import { SWSavingThrow } from "../engine/rules/SWSavingThrow";
+import { SWAttackBonus } from "../engine/rules/SWAttackBonus";
 
 /**
  * CreatureClass class.
@@ -25,7 +27,7 @@ export class CreatureClass {
   description: number = -1;
   icon: string = '';
   hitdie: number = 8;
-  attackbonustable: 'CLS_ATK_1'|'CLS_ATK_2' = 'CLS_ATK_1';
+  attackbonustable: 'CLS_ATK_1'|'CLS_ATK_2'|'CLS_ATK_3' = 'CLS_ATK_1';
   featstable: string = '';
   savingthrowtable: string = '';
   skillstable: string = '';
@@ -72,6 +74,11 @@ export class CreatureClass {
 
   level: number;
   spells: TalentSpell[] = [];
+
+  savingThrows: SWSavingThrow[] = [];
+  attackBonuses: SWAttackBonus[] = [];
+  featGainPoints: number[] = [];
+  spellGainPoints: number[] = [];
 
   constructor(id = -1){
     this.id = id;
@@ -266,7 +273,32 @@ export class CreatureClass {
 
     if(row.hasOwnProperty('featgain'))
       this.featgain = TwoDAObject.normalizeValue(row.featgain, 'string', 'SOL');
-  } 
+
+    if(this.savingthrowtable){
+      const savingThrows = GameState.TwoDAManager.datatables.get(this.savingthrowtable.toLowerCase());
+      if(savingThrows){
+        this.savingThrows = Object.values(savingThrows.rows).map((row: any) => SWSavingThrow.From2DA(row));
+      }
+    }
+
+    if(this.attackbonustable){
+      const attackBonuses = GameState.TwoDAManager.datatables.get(this.attackbonustable.toLowerCase());
+      if(attackBonuses){
+        this.attackBonuses = Object.values(attackBonuses.rows).map((row: any) => SWAttackBonus.From2DA(row));
+      }
+    }
+
+    let featGain = GameState.SWRuleSet.featGains;
+    if(featGain){
+      this.featGainPoints = featGain.getRegular(this.featgain);
+    }
+
+    let spellGain = GameState.SWRuleSet.spellGains;
+    if(spellGain){
+      this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
+    }
+
+  }
 
   static From2DA(row: any){
     const cls = new CreatureClass();
