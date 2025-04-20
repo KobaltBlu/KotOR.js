@@ -5954,9 +5954,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      try {
-        return parseInt(GameState.iniConfig.options['Game Options']['Difficulty Level']);
-      } catch(e){  }
+      return GameState.SWRuleSet.currentDifficulty;
     }
   },
   514:{
@@ -6098,11 +6096,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.FLOAT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let difficulty = 0;
-      try {
-        difficulty = parseInt(GameState.iniConfig.options['Game Options']['Difficulty Level']);
-      } catch(e){  }
-      parseFloat(GameState.TwoDAManager.datatables.get('difficultyopt').rows[difficulty].multiplier);
+      const multiplier = GameState.SWRuleSet.difficulty[GameState.SWRuleSet.currentDifficulty]?.multiplier;
+      return !isNaN(multiplier) ? multiplier : 1;
     }
   },
   524:{

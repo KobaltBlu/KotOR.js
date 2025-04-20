@@ -58,10 +58,10 @@ const initializeApp = function(){
         KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = 0;
       });
       window.addEventListener('focus', (e) => {
-          KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = KotOR.AudioEngine.GAIN_MUSIC;
-          KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = KotOR.AudioEngine.GAIN_VO;
-          KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
-          KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
+        KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = KotOR.AudioEngine.GAIN_MUSIC;
+        KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = KotOR.AudioEngine.GAIN_VO;
+        KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
+        KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
       });
     }
   });

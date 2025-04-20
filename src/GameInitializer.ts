@@ -56,6 +56,9 @@ export class GameInitializer {
 
     ResourceLoader.InitCache();
 
+    /**
+     * Initialize Managers
+     */
     GameState.AppearanceManager = AppearanceManager;
     GameState.AutoPauseManager = AutoPauseManager;
     GameState.CameraShakeManager = CameraShakeManager;
@@ -98,6 +101,8 @@ export class GameInitializer {
     GameState.VideoEffectManager = VideoEffectManager;
 
     await CurrentGame.CleanGameInProgressFolder();
+
+    //Keeps the initializer from loading the same game twice if it's already loaded
     if(GameInitializer.currentGame == props.game){
       if(props.onLoad != null)
         props.onLoad();
@@ -147,6 +152,7 @@ export class GameInitializer {
       GameState.iniConfig = new INIConfig('swkotor.ini', INIConfig.defaultConfigs.swKotOR);
     }
     await GameState.iniConfig.load();
+    GameState.SWRuleSet.setIniConfig(GameState.iniConfig);
     AutoPauseManager.INIConfig = GameState.iniConfig;
 
     /**

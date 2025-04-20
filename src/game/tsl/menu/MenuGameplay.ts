@@ -1,4 +1,5 @@
 import { GameState } from "../../../GameState";
+import type { SWDifficulty } from "../../../engine/rules/SWDifficulty";
 import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "../../../gui";
 import { MenuGameplay as K1_MenuGameplay } from "../../kotor/KOTOR";
 
@@ -33,8 +34,8 @@ export class MenuGameplay extends K1_MenuGameplay {
   declare BTN_DEFAULT: GUIButton;
   declare CB_REVERSE_INGAME: GUICheckBox;
 
-  difficultyList: any[] = [];
-  selectedDifficulty: any;
+  declare difficultyList: SWDifficulty[];
+  declare selectedDifficulty: SWDifficulty;
 
   constructor(){
     super();
@@ -48,11 +49,11 @@ export class MenuGameplay extends K1_MenuGameplay {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      const difficultyTable = GameState.TwoDAManager.datatables.get('difficultyopt');
+      const difficultyTable = GameState.SWRuleSet.difficulty;
 
-      for(let i = 0; i < difficultyTable.RowCount; i++){
-        const row = difficultyTable.rows[i];
-        if(row.name == '****'){
+      for(let i = 0; i < difficultyTable.length; i++){
+        const row = difficultyTable[i];
+        if(row.name == -1){
           continue;
         }
         
@@ -81,8 +82,8 @@ export class MenuGameplay extends K1_MenuGameplay {
         if(idx == -1){ idx = 1; }
         idx += 1;
 
-        if(idx >= this.selectedDifficulty.length){ 
-          idx = this.selectedDifficulty.length - 1; 
+        if(idx >= this.difficultyList.length){ 
+          idx = this.difficultyList.length - 1; 
         }
         this.selectedDifficulty = this.difficultyList[idx];
         this.updateSelectedDifficulty();
@@ -97,6 +98,8 @@ export class MenuGameplay extends K1_MenuGameplay {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        GameState.SWRuleSet.currentDifficulty = this.difficultyList.indexOf(this.selectedDifficulty);
+        GameState.iniConfig.setProperty('Game Options.Difficulty Level', GameState.SWRuleSet.currentDifficulty);
         this.close();
       });
 

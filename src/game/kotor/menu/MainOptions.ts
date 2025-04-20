@@ -39,6 +39,7 @@ export class MainOptions extends GameMenu {
 
       this.BTN_GAMEPLAY.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.manager.MenuGameplay.open();
       });
 
       this.BTN_AUTOPAUSE.addEventListener('click', (e) => {
@@ -48,13 +49,11 @@ export class MainOptions extends GameMenu {
 
       this.BTN_GRAPHICS.addEventListener('click', (e) => {
         e.stopPropagation();
-        //this.Hide();
         this.manager.MenuGraphics.open();
       });
 
       this.BTN_SOUND.addEventListener('click', (e) => {
         e.stopPropagation();
-        //this.Hide();
         this.manager.MenuSound.open();
       });
 

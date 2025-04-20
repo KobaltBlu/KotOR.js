@@ -1,6 +1,5 @@
 import { CreatureClass } from "../../combat/CreatureClass";
 import { TalentFeat } from "../../talents/TalentFeat";
-// import { TwoDAManager } from "../../managers/TwoDAManager";
 import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
 import { SWItemPropsDef } from "./SWItemPropsDef";
@@ -9,7 +8,10 @@ import { SWXPTableEntry } from "./SWXPTableEntry";
 import { SWPortrait } from "./SWPortrait";
 import { SWFeatGain } from "./SWFeatGain";
 import { SWSpellGain } from "./SWSpellGain";
+import { SWEXPTable } from "./SWEXPTable";
+import { SWDifficulty } from "./SWDifficulty";
 import { GameState } from "../../GameState";
+import type { INIConfig } from "../../INIConfig";
 
 /**
  * SWRuleSet class.
@@ -46,8 +48,45 @@ export class SWRuleSet {
 
   static spellGains: SWSpellGain;
   static spellGainCount: number = 0;
+  static expTable: SWEXPTable;
+  static difficulty: SWDifficulty[] = [];
+  static currentDifficulty: number = 0;
 
   static Init(){
+
+    /**
+     * Initialize Difficulty
+     */
+    const difficulty = GameState.TwoDAManager.datatables.get('difficultyopt');
+    if(difficulty){
+      for(let i = 0; i < difficulty.RowCount; i++){
+        SWRuleSet.difficulty[i] = SWDifficulty.From2DA(difficulty.rows[i]);
+        if(SWRuleSet.difficulty[i].desc == 'Default'){
+          SWRuleSet.currentDifficulty = i;
+        }
+      }
+    }
+
+    /**
+     * Initialize EXP Table
+     *  - Used to calculate the level of a creature based on the amount of experience they have
+     */
+    const expTable = GameState.TwoDAManager.datatables.get('exptable');
+    if(expTable){
+      SWRuleSet.expTable = SWEXPTable.From2DA(expTable);
+    }
+
+    /**
+     * Initialize XP Table
+     *  - Used to calculate the amount of experience to grant to a creature when they defeat an enemy
+     */
+    const xpTable = GameState.TwoDAManager.datatables.get('xptable'); 
+    if(xpTable){
+      SWRuleSet.xpTable = new Array(xpTable.RowCount);
+      for(let i = 0; i < xpTable.RowCount; i++){
+        SWRuleSet.xpTable[i] = SWXPTableEntry.From2DA(xpTable.rows[i]);
+      }
+    }
 
     /**
      * Initialize Feat Gains
@@ -140,17 +179,6 @@ export class SWRuleSet {
     }
 
     /**
-     * Initialize XP Table
-     */
-    const xpTable = GameState.TwoDAManager.datatables.get('xptable'); 
-    if(xpTable){
-      SWRuleSet.xpTable = new Array(xpTable.RowCount);
-      for(let i = 0; i < xpTable.RowCount; i++){
-        SWRuleSet.xpTable[i] = SWXPTableEntry.From2DA(xpTable.rows[i]);
-      }
-    }
-
-    /**
      * Initialize Portraits
      */
     const portraits = GameState.TwoDAManager.datatables.get('portraits');
@@ -161,6 +189,19 @@ export class SWRuleSet {
       }
     }
 
+  }
+
+  /**
+   * Loads values from the INIConfig
+   * @param iniConfig - The INIConfig
+   */
+  static setIniConfig(iniConfig: INIConfig) {
+    if(iniConfig.getProperty('Game Options.Difficulty Level')){
+      const difficulty = iniConfig.getProperty('Game Options.Difficulty Level');
+      if(SWRuleSet.difficulty[difficulty]){
+        SWRuleSet.currentDifficulty = difficulty;
+      }
+    }
   }
 
 }
