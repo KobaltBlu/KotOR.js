@@ -73,6 +73,24 @@ export class OdysseyObject3D extends THREE.Object3D {
     throw new Error("Method not implemented.");
   }
 
+  traverseIgnore( ignoreName: string = '', callback?: Function ){
+
+    if(this.name == ignoreName)
+      return;
+  
+    if(typeof callback == 'function')
+      callback( this );
+  
+    var children = this.children;
+  
+    for ( var i = 0, l = children.length; i < l; i ++ ) {
+      if(typeof (children[ i ] as any).traverseIgnore === 'function'){
+        (children[ i ] as any).traverseIgnore( ignoreName, callback );
+      }
+    }
+  
+  }
+
   static getUUIDs(object: THREE.Object3D): string[] {
     const uuids: string[] = [];
 

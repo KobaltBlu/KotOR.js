@@ -872,7 +872,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //console.log('pruneList', pruneList, pruneCount);
           while(pruneCount--){
             let node = pruneList.splice(0, 1)[0];
-            node.parent.remove(node);
+            node.removeFromParent();
           }
 
         }
