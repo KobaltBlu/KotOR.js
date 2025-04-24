@@ -129,4 +129,45 @@ export class CheatConsoleManager {
     }
   }
 
+  static processCommand(command: string){
+    const args = command.trim().toLowerCase().split(' ');
+    const cmd = args.shift();
+    const params = args;
+    switch(cmd){  
+      case 'adddark':
+        CheatConsoleManager.addDarkSide(parseInt(params[0]));
+        break;
+      case 'addlight':
+        CheatConsoleManager.addLightSide(parseInt(params[0]));
+        break;
+      case 'addlevel':
+        CheatConsoleManager.addLevel(parseInt(params[0]));
+        break;
+      case 'addxp':
+        CheatConsoleManager.addEXP(parseInt(params[0]));
+        break;  
+      case 'giveitem':
+        CheatConsoleManager.giveItem(params[0], parseInt(params[1]));
+        break;
+      case 'givecredits':
+        CheatConsoleManager.giveCredits(parseInt(params[0]));
+        break;  
+      case 'heal':
+        CheatConsoleManager.heal();
+        break;
+      case 'revealmap':
+        CheatConsoleManager.revealmap();
+        break;  
+      case 'warp':
+        CheatConsoleManager.warp(params[0]);
+        break;
+      case 'whereami':
+        CheatConsoleManager.whereami();
+        break;  
+      case 'giverandomloot':
+        CheatConsoleManager.giveRandomLoot(parseInt(params[0]));
+        break;
+    }
+  }
+
 }

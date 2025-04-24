@@ -8,12 +8,18 @@ export class AppState {
   static appProfile: any;
   static env: ApplicationEnvironment;
 
+  /**
+   * getProfile
+   */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
     return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
   }
 
+  /**
+   * initApp
+   */
   static async initApp(){
     if(window.location.origin === 'file://'){
       AppState.env = ApplicationEnvironment.ELECTRON;
@@ -57,12 +63,19 @@ export class AppState {
     AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
   }
 
+  /**
+   * acceptEULA
+   */
   static async acceptEULA(){
     AppState.eulaAccepted = true;
     await AppState.loadGameDirectory();
     AppState.processEventListener('on-preload', []);
   }
 
+  /**
+   * loadGameDirectory
+   * - Used for Electron and Browser
+   */
   static async loadGameDirectory(){
     AppState.showLoader();
     KotOR.LoadingScreen.main.SetMessage('Locating Game Directory...');
@@ -91,6 +104,10 @@ export class AppState {
     AppState.processEventListener('on-preload', []);
   }
 
+  /**
+   * checkGameDirectory
+   * - Used for Electron and Browser
+   */
   static async checkGameDirectory(){
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
@@ -107,16 +124,25 @@ export class AppState {
     return false;
   }
 
+  /**
+   * showLoader
+   */
   static showLoader(){
     KotOR.LoadingScreen.main.SetLogo(AppState.appProfile.logo);
     KotOR.LoadingScreen.main.SetBackgroundImage(AppState.appProfile.background);
     KotOR.LoadingScreen.main.Show();
   }
 
+  /**
+   * hideLoader
+   */
   static hideLoader(){
     KotOR.LoadingScreen.main.Hide();
   }
 
+  /**
+   * beginGame
+   */
   static async beginGame(){
     KotOR.ApplicationProfile.ENV = AppState.env;
     if(AppState.env == ApplicationEnvironment.ELECTRON){
@@ -153,6 +179,7 @@ export class AppState {
           KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
           KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
         });
+        AppState.processEventListener('on-game-loaded', []);
       }
     });
   }
@@ -193,6 +220,11 @@ export class AppState {
       console.error(e);
       return false;
     }
+  }
+
+  static consoleCommand(command: string){
+    console.log(command);
+    KotOR.GameState.CheatConsoleManager.processCommand(command);
   }
 
   /**
