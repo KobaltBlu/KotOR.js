@@ -1,0 +1,105 @@
+
+.kotor-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+
+  &.visible {
+    display: flex;
+  }
+
+  .kotor-modal {
+    background: #0f1a24;
+    border: 2px solid #d4a03d;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    color: #e6b35c;
+    box-shadow: 0 0 20px #000;
+    border-radius: 8px;
+  }
+
+  .modal-heading {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    color: #e6b35c;
+  }
+  
+  .modal-content {
+    overflow-y: auto;
+    flex: 1;
+    margin-bottom: 2rem;
+  }
+  
+  .modal-text {
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #d5b88a;
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+  }
+  
+  .modal-button {
+    background: transparent;
+    border: 2px solid #d4a03d;
+    color: #e6b35c;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    box-shadow: 0 0 4px #000;
+  
+    &:hover {
+      background: #1c2c38;
+    }
+  
+    &:active {
+      background: #2c3e50;
+    }
+  }
+
+  &.TSL .kotor-modal {
+    background: #0d1b14;
+    border-color: #1a5f4e;
+    color: #33ffcc;
+    box-shadow: inset 0 0 0 1px #1a5f4e, 0 0 2px #002b1e;
+
+    .modal-heading {
+      color: #66ccb5;
+    }
+
+    .modal-text {
+      color: #0cc597;
+    }
+
+    .modal-button {
+      border-color: #1a5f4e;
+      color: #00ffcc;
+      background-color: transparent;
+
+      &:hover {
+        background: rgba(0, 255, 204, 0.1);
+      }
+
+      &:active {
+        background: rgba(0, 255, 204, 0.2);
+      }
+    }
+  }
+}

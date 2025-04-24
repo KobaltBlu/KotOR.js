@@ -226,7 +226,7 @@ const gameConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     game: [
-      './src/apps/game/game.ts', 
+      './src/apps/game/game.tsx', 
       './src/apps/game/game.scss'
     ]
   },

@@ -15,6 +15,7 @@
     "strictNullChecks": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "jsx": "react",
     "types": [
       "@types/wicg-file-system-access",
       "node",
@@ -27,7 +28,7 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/game/game.ts", "src/types", "src/index.d.ts"],
+  "include": ["src/apps/game/game.tsx", "src/types", "src/index.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts"],
   "paths" :{
     "jison":["src/types/jison"],
