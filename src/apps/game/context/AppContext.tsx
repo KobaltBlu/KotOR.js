@@ -10,6 +10,7 @@ export interface AppProviderValues {
   showEULAModal: [boolean, React.Dispatch<boolean>];
   showGrantModal: [boolean, React.Dispatch<boolean>];
   showCheatConsole: [boolean, React.Dispatch<boolean>];
+  showPerformanceMonitor: [boolean, React.Dispatch<boolean>];
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -24,6 +25,7 @@ export const AppProvider = (props: any) => {
   const [showEULAModal, setShowEULAModal] = useState<boolean>(props.showEULAModal || false);
   const [showGrantModal, setShowGrantModal] = useState<boolean>(props.showGrantModal || false);
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
+  const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
   const onAppReady = () => {
     console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
@@ -45,7 +47,10 @@ export const AppProvider = (props: any) => {
 
   const onKeyPress = (e: KeyboardEvent) => {
     if(e.key === '`'){
+      e.preventDefault();
+      e.stopPropagation();
       setShowCheatConsole(!showCheatConsole);
+      return false;
     }
   }
 
@@ -77,7 +82,8 @@ export const AppProvider = (props: any) => {
     gameLoaded: [gameLoaded, setGameLoaded],
     showEULAModal: [showEULAModal, setShowEULAModal],
     showGrantModal: [showGrantModal, setShowGrantModal],
-    showCheatConsole: [showCheatConsole, setShowCheatConsole]
+    showCheatConsole: [showCheatConsole, setShowCheatConsole],
+    showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor]
   };
 
   return (

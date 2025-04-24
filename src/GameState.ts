@@ -495,6 +495,7 @@ export class GameState implements EngineContext {
 
     GameState.clock = new THREE.Clock();
     GameState.stats = Stats();
+    GameState.stats.showPanel(undefined);
 
     GameState.limiter = {
       fps : 30,

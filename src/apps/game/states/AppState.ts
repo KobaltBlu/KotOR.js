@@ -7,6 +7,7 @@ export class AppState {
   static gameKey: KotOR.GameEngineType = KotOR.GameEngineType.KOTOR;
   static appProfile: any;
   static env: ApplicationEnvironment;
+  static statsMode: number|undefined = undefined;
 
   /**
    * getProfile
@@ -223,8 +224,22 @@ export class AppState {
   }
 
   static consoleCommand(command: string){
-    console.log(command);
+    console.log('consoleCommand', command);
     KotOR.GameState.CheatConsoleManager.processCommand(command);
+  }
+
+  static togglePerformanceMonitor(){
+    let mode: number|undefined = AppState.statsMode;
+    if(mode == undefined){
+      mode = 0;
+    }else{
+      mode++;
+    }
+    if(mode > 2){
+      mode = undefined;
+    }
+    AppState.statsMode = mode;
+    KotOR.GameState.stats.showPanel(mode as any);
   }
 
   /**

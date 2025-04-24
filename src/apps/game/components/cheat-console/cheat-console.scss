@@ -1,0 +1,75 @@
+.console {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  display: none;
+
+  &.on {
+    display: block;
+  }
+  
+  &:before {
+    content: '>';
+    position: absolute;
+    bottom: 0;
+    font-size: 18pt;
+    height: 41px;
+    /* line-height: 41px; */
+    font-weight: bolder;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    left: 10px;
+    color: gold;
+  }
+  
+  & > input[type="text"] {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid cornflowerblue;
+    width: calc(100%);
+    font-size: 18pt;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+    color: gold;
+    text-indent: 30px;
+  }
+
+  .console-buttons {
+    padding: 10px;
+    text-align: right;
+  }
+  
+  .console-btn {
+    background: transparent;
+    border: 2px solid #d4a03d;
+    color: #e6b35c;
+    padding: 0.5rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+    box-shadow: 0 0 4px #000;
+  
+    &:hover {
+      background: #1c2c38;
+    }
+  
+    &:active {
+      background: #2c3e50;
+    }
+  }
+
+  &.TSL {
+    .console-btn {
+      border-color: #1a5f4e;
+      color: #00ffcc;
+      background-color: transparent;
+
+      &:hover {
+        background: rgba(0, 255, 204, 0.1);
+      }
+
+      &:active {
+        background: rgba(0, 255, 204, 0.2);
+      }
+    }
+  }
+}
