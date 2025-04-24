@@ -50,9 +50,9 @@ export class AppState {
 
     console.log('gameEULAConfig', gameEULAConfig);
     console.log('eulaState', eulaState);
-    AppState.directoryLocated = false;//await AppState.checkGameDirectory();
+    AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
-      // await AppState.loadApp();
+      await AppState.loadApp();
     }
     AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
   }
