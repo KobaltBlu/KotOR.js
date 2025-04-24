@@ -52,18 +52,18 @@ export class AppState {
     console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
-      await AppState.loadApp();
+      await AppState.loadGameDirectory();
     }
     AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
   }
 
   static async acceptEULA(){
     AppState.eulaAccepted = true;
-    await AppState.loadApp();
+    await AppState.loadGameDirectory();
     AppState.processEventListener('on-preload', []);
   }
 
-  static async loadApp(){
+  static async loadGameDirectory(){
     AppState.showLoader();
     KotOR.LoadingScreen.main.SetMessage('Locating Game Directory...');
   
@@ -74,15 +74,17 @@ export class AppState {
         AppState.beginGame();
         return;
       }
+      alert('Unable to locate chitin.key in the selected directory. Please try again.');
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
         const validated = await AppState.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
-        if(validated){
+        if(validated && await KotOR.GameFileSystem.exists('chitin.key')){
           AppState.directoryLocated = true;
           AppState.processEventListener('on-preload', []);
           AppState.beginGame();
           return;
         }
+        alert('Unable to locate chitin.key in the selected directory. Please try again.');
       }
     }
     AppState.directoryLocated = false;
@@ -97,7 +99,7 @@ export class AppState {
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
         const validated = await AppState.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
-        if(validated){
+        if(validated && await KotOR.GameFileSystem.exists('chitin.key')){
           return true;
         }
       }
@@ -155,20 +157,32 @@ export class AppState {
     });
   }
 
+  /**
+   * attachDirectoryPath
+   * - Used for Electron
+   */
   static attachDirectoryPath(path: string){
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory`, path);
     AppState.appProfile.directory = path;
     AppState.directoryLocated = true;
-    AppState.loadApp();
+    AppState.loadGameDirectory();
   }
 
+  /**
+   * attachDirectoryHandle
+   * - Used for Browser
+   */
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
-    AppState.loadApp();
+    AppState.loadGameDirectory();
   }
-  
+
+  /**
+   * validateDirectoryHandle
+   * - Used for Browser
+   */
   static async validateDirectoryHandle(handle: FileSystemDirectoryHandle){
     try{
       if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {

@@ -13,15 +13,32 @@ export const ModalGrantAccess = () => {
     window.close();
   }
   
-  const showRequestDirectoryDialog = async () => {
+  const showBrowserDirectoryPicker = async () => {
     let handle = await window.showDirectoryPicker({
       mode: "readwrite"
     });
     if(!handle) return;
 
-    if ((await handle.requestPermission({ mode: 'readwrite' })) === 'granted') {
-      return handle;
+    if (!(await appState.validateDirectoryHandle(handle))) {
+      return;
     }
+
+    return handle;
+  }
+
+  const showElectronDirectoryPicker = async () => {
+    try{
+      const directory = await(window as any).electron.locate_game_directory(appState.appProfile);
+      if(directory){
+        appState.attachDirectoryPath(directory);
+        return directory;
+      }
+    }catch(e){
+      appState.attachDirectoryPath('');
+      console.error(e);
+      alert("Unable to access your local game directory. Please try again.");
+    }
+    return;
   }
 
   const onOk = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -29,27 +46,20 @@ export const ModalGrantAccess = () => {
 
     // Electron
     if(appState.env == ApplicationEnvironment.ELECTRON){
-      (window as any).electron.locate_game_directory(appState.appProfile).then( (directory: string) => {
-        console.log('directory', directory);
-        if(directory){
-          appState.attachDirectoryPath(directory);
-        }
-      }).catch( (e: any) => {
-        appState.attachDirectoryPath('');
-        console.error(e);
-        alert("Unable to access your local game directory. Please try again.");
-      });
+      await showElectronDirectoryPicker();
       return;
     }
 
     // Browser
-    const handle = await showRequestDirectoryDialog();
-    if(!handle){
-      console.log("File System: access denied");
-      alert("Unable to access your local game directory. Please try again.");
-      return;
+    if(appState.env == ApplicationEnvironment.BROWSER){
+      const handle = await showBrowserDirectoryPicker();
+      if(!handle){
+        console.log("File System: access denied");
+        alert("Unable to access your local game directory. Please try again.");
+        return;
+      }
+      appState.attachDirectoryHandle(handle);
     }
-    appState.attachDirectoryHandle(handle)
   }
 
   return (
