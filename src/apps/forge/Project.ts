@@ -165,21 +165,18 @@ export class Project {
 
           let project = this;
 
-          KotOR.GameInitializer.Init({
-            game: this.settings.game,
-            onLoad: () => {
-              //This is where we initialize ProjectType specific operations
-              if(!deferInit){
-                project.initializeProject( () => {
-                  // ForgeState.loader.SetMessage("Loading Complete");
-                  //When everything is done
-                  if(typeof onSuccess == 'function')
-                    onSuccess();
-                });
-              }else{
+          KotOR.GameInitializer.Init(this.settings.game).then( () => {
+            //This is where we initialize ProjectType specific operations
+            if(!deferInit){
+              project.initializeProject( () => {
+                // ForgeState.loader.SetMessage("Loading Complete");
+                //When everything is done
                 if(typeof onSuccess == 'function')
                   onSuccess();
-              }
+              });
+            }else{
+              if(typeof onSuccess == 'function')
+                onSuccess();
             }
           });
 
