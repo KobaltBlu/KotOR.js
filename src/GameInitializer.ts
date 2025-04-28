@@ -4,7 +4,6 @@ import { LoadingScreen } from "./LoadingScreen";
 import { ERFObject } from "./resource/ERFObject";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { RIMObject } from "./resource/RIMObject";
-import { AsyncLoop } from "./utility/AsyncLoop";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { GamePad, KeyMapper } from "./controls";
 import { CurrentGame } from "./CurrentGame";
@@ -18,7 +17,7 @@ import { SWRuleSet } from "./engine/rules/SWRuleSet";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
 import { SaveGame } from "./SaveGame";
-import { Planetary } from "./Planetary";
+// import { Planetary } from "./Planetary";
 import { Module } from "./module/Module";
 import { NWScript } from "./nwscript/NWScript";
 
@@ -43,16 +42,9 @@ import { CacheScope } from "./enums";
  */
 export class GameInitializer {
 
-  static currentGame: any;
-  static files: string[] = [];
+  static currentGame: GameEngineType;
 
-  static async Init(props: any){
-
-    props = Object.assign({
-      game: null,
-      onLoad: null,
-      onError: null
-    }, props);
+  static async Init(game: GameEngineType){
 
     ResourceLoader.InitCache();
 
@@ -103,14 +95,11 @@ export class GameInitializer {
     await CurrentGame.CleanGameInProgressFolder();
 
     //Keeps the initializer from loading the same game twice if it's already loaded
-    if(GameInitializer.currentGame == props.game){
-      if(props.onLoad != null)
-        props.onLoad();
-
+    if(GameInitializer.currentGame == game){
       return;
     }
 
-    GameInitializer.currentGame = props.game;
+    GameInitializer.currentGame = game;
 
     await ConfigClient.Init();
     
@@ -153,12 +142,12 @@ export class GameInitializer {
     }
     await GameState.iniConfig.load();
     GameState.SWRuleSet.setIniConfig(GameState.iniConfig);
-    AutoPauseManager.INIConfig = GameState.iniConfig;
+    GameState.AutoPauseManager.INIConfig = GameState.iniConfig;
 
     /**
      * Initialize AutoPauseManager
      */
-    AutoPauseManager.Init();
+    GameState.AutoPauseManager.Init();
 
     /**
      * Initialize GLobal Variabled
@@ -168,277 +157,198 @@ export class GameInitializer {
     /**
      * Initialize Planetary
      */
-    await Planetary.Init()
+    await GameState.Planetary.Init()
 
     /**
      * Initialize SaveGame Folder
      */
     await SaveGame.GetSaveGames();
 
-    VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects'));
-
-    /**
-     * Initialize Complete
-     */
-    if(typeof props.onLoad === 'function'){
-      props.onLoad();
-    }
-
+    VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects') as any);
   }
 
-  static LoadGameResources(){
-    return new Promise<void>(async (resolve, reject) => {
-      LoadingScreen.main.SetMessage("Loading Override");
-      await GameInitializer.LoadOverride();
+  static async LoadGameResources(){
+    LoadingScreen.main.SetMessage("Loading Override");
+    await GameInitializer.LoadOverride();
 
-      LoadingScreen.main.SetMessage("Loading BIF's");
+    LoadingScreen.main.SetMessage("Loading BIF's");
 
-      LoadingScreen.main.SetMessage("Loading RIM's");
-      GameInitializer.LoadRIMs( () => {
-        GameInitializer.LoadModules( () => {
+    LoadingScreen.main.SetMessage("Loading RIM's");
+    await GameInitializer.LoadRIMs();
 
-          //Load all of the 2da files into memory
-          GameInitializer.Load2DAs( () => {
-            LoadingScreen.main.SetMessage('Loading: Texture Packs');
-            GameInitializer.LoadTexturePacks( () => {
-              GameInitializer.LoadGameAudioResources( {
-                folder: 'streammusic',
-                name: 'StreamMusic',
-                onSuccess: () => {
-                  GameInitializer.LoadGameAudioResources( {
-                    folder: 'streamsounds',
-                    name: 'StreamSounds',
-                    onSuccess: () => {
-                      if(GameState.GameKey != GameEngineType.TSL){
-                        GameInitializer.LoadGameAudioResources( {
-                          folder: 'streamwaves',
-                          name: 'StreamWaves',
-                          onSuccess: () => {
+    LoadingScreen.main.SetMessage("Loading Modules");
+    await GameInitializer.LoadModules();
 
-                            resolve();
-                          }
-                        });
-                      }else{
-                        GameInitializer.LoadGameAudioResources( {
-                          folder: 'streamvoice',
-                          name: 'StreamSounds',
-                          onSuccess: () => {
+    LoadingScreen.main.SetMessage("Loading Lips");
+    await GameInitializer.LoadLips();
 
-                            resolve();
-                          }
-                        });
-                      }
-                    }
-                  });
-                }
-              });
-            });
-          });
-        });
-      });
-    });
-  }
+    LoadingScreen.main.SetMessage('Loading: 2DA\'s');
+    await GameInitializer.Load2DAs();
 
-  static LoadRIMs(onSuccess?: Function){
+    LoadingScreen.main.SetMessage('Loading: Texture Packs');
+    await GameInitializer.LoadTexturePacks();
+
+    LoadingScreen.main.SetMessage('Loading: Stream Music');
+    await GameInitializer.LoadGameAudioResources('streammusic');
+
+    LoadingScreen.main.SetMessage('Loading: Stream Sounds');
+    await GameInitializer.LoadGameAudioResources('streamsounds');
+
     if(GameState.GameKey != GameEngineType.TSL){
-      LoadingScreen.main.SetMessage('Loading: RIM Archives');
-
-      RIMManager.Load().then( () => {
-        if(typeof onSuccess === 'function')
-          onSuccess();
-      });
+      LoadingScreen.main.SetMessage('Loading: Stream Waves');
+      await GameInitializer.LoadGameAudioResources('streamwaves');
     }else{
-      if(onSuccess != null)
-        onSuccess();
+      LoadingScreen.main.SetMessage('Loading: Stream Voice');
+      await GameInitializer.LoadGameAudioResources('streamvoice');
     }
   }
 
-  static LoadLips(){
-    let data_dir = 'lips';
-    return new Promise<void>( (resolve, reject) => {
-      GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
-        let modules = filenames.map(function(file) {
-          let filename = file.split(path.sep).pop();
-          let args = filename.split('.');
-          return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
-        }).filter(function(file_obj){
-          return file_obj.ext == 'mod';
-        });
-        let loop = new AsyncLoop({
-          array: modules,
-          onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
-            switch(module_obj.ext){
-              case 'mod':
-                const mod = new ERFObject(path.join(data_dir, module_obj.filename));
-                mod.load().then( (mod: ERFObject) => {
-                  if(mod instanceof ERFObject){
-                    mod.group = 'Lips';
-                    ERFManager.addERF(module_obj.name, mod);
-                  }
-                  asyncLoop.next();
-                });
-              break;
-              default:
-                console.warn('GameInitializer.LoadLips', 'Encountered incorrect filetype', module_obj);
-                asyncLoop.next();
-              break;
-            }
-          }
-        });
-        loop.iterate(() => {
-          resolve();
-        });
-      }).catch( (err) => {
-        console.warn('GameInitializer.LoadLips', err);
-        resolve();
-      });
-    });
+  static async LoadRIMs(){
+    if(GameState.GameKey == GameEngineType.TSL){
+      return;
+    }
+    LoadingScreen.main.SetMessage('Loading: RIM Archives');
+    await RIMManager.Load();
   }
 
-  static LoadModules(onSuccess?: Function){
+  static async LoadLips(){
+    const data_dir = 'lips';
+    const filenames = await GameFileSystem.readdir(data_dir);
+    const modules = filenames.map(function(file) {
+      const filename = file.split(path.sep).pop() as string;
+      const args = filename.split('.');
+      return {
+        ext: args[1].toLowerCase(), 
+        name: args[0], 
+        filename: filename
+      };
+    }).filter(function(file_obj){
+      return file_obj.ext == 'mod';
+    });
+    for(let i = 0, len = modules.length; i < len; i++){
+      const module_obj = modules[i];
+      switch(module_obj.ext){
+        case 'mod':
+          const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+          await mod.load();
+          if(mod instanceof ERFObject){
+            mod.group = 'Lips';
+            ERFManager.addERF(module_obj.name, mod);
+          }
+        break;
+        default:
+          console.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
+          console.log(module_obj);
+        break;
+      }
+    }
+  }
+
+  static async LoadModules(){
     let data_dir = 'modules';
     LoadingScreen.main.SetMessage('Loading: Module Archives');
-
-    GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
-      let modules = filenames.map(function(file) {
-        let filename = file.split(path.sep).pop();
-        let args = filename.split('.');
-        return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+    try{
+      const filenames = await GameFileSystem.readdir(data_dir);
+      const modules = filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(), 
+          name: args[0], 
+          filename: filename
+        };
       }).filter(function(file_obj){
         return file_obj.ext == 'rim' || file_obj.ext == 'mod';
       });
 
-      let loop = new AsyncLoop({
-        array: modules,
-        onLoop: (module_obj: any, asyncLoop: AsyncLoop) => {
-          switch(module_obj.ext){
-            case 'rim':
-              const rim = new RIMObject(path.join(data_dir, module_obj.filename));
-              rim.load().then((rim: RIMObject) => {
-                if(rim instanceof RIMObject){
-                  rim.group = 'Module';
-                  RIMManager.addRIM(module_obj.name, rim);
-                }
-                asyncLoop.next();
-              });
-            break;
-            case 'mod':
-              const mod = new ERFObject(path.join(data_dir, module_obj.filename));
-              mod.load().then((mod: ERFObject) => {
-                if(mod instanceof ERFObject){
-                  mod.group = 'Module';
-                  ERFManager.addERF(module_obj.name, mod);
-                }
-                asyncLoop.next();
-              });
-            break;
-            default:
-              console.warn('GameInitializer.LoadModules', 'Encountered incorrect filetype', module_obj);
-              asyncLoop.next();
-            break;
-          }
+      for(let i = 0, len = modules.length; i < len; i++){
+        const module_obj = modules[i];
+        switch(module_obj.ext){
+          case 'rim':
+            const rim = new RIMObject(path.join(data_dir, module_obj.filename));
+            await rim.load();
+            if(rim instanceof RIMObject){
+              rim.group = 'Module';
+              RIMManager.addRIM(module_obj.name, rim);
+            }
+          break;
+          case 'mod':
+            const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+            await mod.load();
+            if(mod instanceof ERFObject){
+              mod.group = 'Module';
+              ERFManager.addERF(module_obj.name, mod);
+            }
+          break;
+          default:
+            console.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
+            console.log(module_obj);
+          break;
         }
-      });
-      loop.iterate(() => {
-        GameInitializer.LoadLips().then( () => {
-          if(typeof onSuccess === 'function')
-            onSuccess();
-        });
-      });
-    }).catch( (err) => {
-      console.warn('GameInitializer.LoadModules', err);
-      if(typeof onSuccess === 'function')
-        onSuccess();
-    });
-
+      }
+    }catch(e){
+      console.warn('GameInitializer.LoadModules: Failed to load modules');
+      console.error(e);
+    }
   }
 
-  static Load2DAs(onSuccess?: Function){
+  static async Load2DAs(){
     LoadingScreen.main.SetMessage('Loading: 2DA\'s');
-    TwoDAManager.Load2DATables(() => {
-      AppearanceManager.Init();
-      if(typeof onSuccess === 'function')
-        onSuccess();
-    });
+    await GameState.TwoDAManager.Load2DATables();
+    GameState.AppearanceManager.Init();
   }
 
-  static LoadTexturePacks(onSuccess?: Function){
+  static async LoadTexturePacks(){
     let data_dir = 'TexturePacks';
-
-    GameFileSystem.readdir(data_dir).then( (filenames: string[]) => {
-      let erfs = filenames.map(function(file) {
-        let filename = file.split(path.sep).pop();
-        let args = filename.split('.');
-        return {ext: args[1].toLowerCase(), name: args[0], filename: filename};
+    try{
+      const filenames = await GameFileSystem.readdir(data_dir)
+      const erfs = filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(), 
+          name: args[0], 
+          filename: filename
+        };
       }).filter(function(file_obj){
         return file_obj.ext == 'erf';
       });
 
-      let loop = new AsyncLoop({
-        array: erfs,
-        onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {
-          const erf = new ERFObject(path.join(data_dir, erf_obj.filename));
-          erf.load().then((erf: ERFObject) => {
-            if(erf instanceof ERFObject){
-              erf.group = 'Textures';
-              ERFManager.addERF(erf_obj.name, erf);
-            }
-            asyncLoop.next();
-          });
+      for(let i = 0, len = erfs.length; i < len; i++){
+        const erf = new ERFObject(path.join(data_dir, erfs[i].filename));
+        await erf.load();
+        if(erf instanceof ERFObject){
+          erf.group = 'Textures';
+          ERFManager.addERF(erfs[i].name, erf);
         }
-      });
-      loop.iterate(() => {
-        if(typeof onSuccess === 'function')
-          onSuccess();
-      });
-    }).catch( (err) => {
-      if (err)
-        console.warn('GameInitializer.LoadTexturePacks', err);
-
-      if(typeof onSuccess === 'function')
-        onSuccess();
-    });
+      }
+    }catch(e){
+      console.warn('GameInitializer.LoadTexturePacks: Failed to load texture packs');
+      console.error(e);
+    }
   }
 
-  static LoadGameAudioResources( args: any = {} ){
+  static async LoadGameAudioResources( folder: string ){
 
-    args = Object.assign({
-      folder: null,
-      name: null,
-      onSuccess: null,
-    }, args);
+    const files = await GameFileSystem.readdir(folder, {recursive: true})
+    for(let i = 0, len = files.length; i < len; i++){
+      let f = files[i];
+      let _parsed = path.parse(f);
+      let ext = _parsed.ext.substr(1,  _parsed.ext.length);
 
-    //console.log('Searching For Audio Files', args);
-    let dir: any = {name: args.folder, dirs: [], files: []};
-
-    GameFileSystem.readdir(args.folder, {recursive: true}).then( (files) => {
-      // Files is an array of filename
-      GameInitializer.files = files;
-      for(let i = 0, len = files.length; i < len; i++){
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1,  _parsed.ext.length);
-
-        if(typeof ResourceTypes[ext] != 'undefined'){
-          ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
-            inArchive: false,
-            file: f,
-            resref: _parsed.name,
-            resid: ResourceTypes[ext],
-            ext: ext,
-            offset: 0,
-            length: 0
-          });
-        }
-
+      if(typeof ResourceTypes[ext] != 'undefined'){
+        ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
+          inArchive: false,
+          file: f,
+          resref: _parsed.name,
+          resid: ResourceTypes[ext],
+          ext: ext,
+          offset: 0,
+          length: 0
+        });
       }
+    }
 
-      if(typeof args.onSuccess === 'function')
-        args.onSuccess();
-    }).catch( (e) => {
-      if(typeof args.onSuccess === 'function')
-        args.onSuccess();
-    });
   }
 
   static async LoadOverride(){
@@ -454,7 +364,7 @@ export class GameInitializer {
       }
 
       const buffer = await GameFileSystem.readFile(f);
-      if(!buffer && !buffer.length){ continue; }
+      if(!buffer || !buffer.length){ continue; }
 
       ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
     }

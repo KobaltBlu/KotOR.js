@@ -13,7 +13,7 @@ export * from "./BinaryWriter";
 
 export * from "./combat";
 
-export * from "./controls/Mouse";
+export * from "./controls";
 
 export * from "./enums";
 
@@ -60,3 +60,15 @@ export * from "./utility/ApplicationProfile";
 export * from "./utility/GameFileSystem";
 export * from "./utility/Utility";
 export * from "./engine/TextSprite3D";
+
+export * from "./INIConfig";
+export * from "./CurrentGame";
+export * from "./engine/rules/SWRuleSet";
+
+export * from "./talents";
+export * from "./ActionMenuManager";
+export * from "./actions/ActionFactory";
+export * from "./effects/GameEffectFactory";
+export * from "./events/GameEventFactory";
+
+

@@ -19,26 +19,21 @@ export class TwoDAManager {
 
   static datatables: Map<string, TwoDAObject> = new Map();
 
-  static Load2DATables(onComplete?: Function){
+  static async Load2DATables(){
     TwoDAManager.datatables = new Map();
     const resources: IBIFResource[] = KEYManager.Key.getFilesByResType(ResourceTypes['2da']);
     
     let key: IKEYEntry = undefined;
-    let loop = new AsyncLoop({
-      array: resources,
-      onLoop: (resource: IBIFResource, asyncLoop: AsyncLoop) => {
-        key = KEYManager.Key.getFileKeyByRes(resource);
-        //Load 2da's with the resource loader so it can pick up ones in the override folder
-        ResourceLoader.loadResource(ResourceTypes['2da'], key.resRef).then((d: Uint8Array) => {
-          TwoDAManager.datatables.set(key.resRef, new TwoDAObject(d));
-          asyncLoop.next();
-        }).catch( (e) => {console.error(e); asyncLoop.next();});
+    for(let i = 0; i < resources.length; i++){
+      key = KEYManager.Key.getFileKeyByRes(resources[i]);
+      //Load 2da's with the resource loader so it can pick up ones in the override folder
+      try{
+        const d = await ResourceLoader.loadResource(ResourceTypes['2da'], key.resRef);
+        TwoDAManager.datatables.set(key.resRef, new TwoDAObject(d));
+      }catch(e){
+        console.error(e);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onComplete === 'function')
-        onComplete();
-    });
+    }
 
   }
 

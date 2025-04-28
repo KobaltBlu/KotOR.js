@@ -155,34 +155,31 @@ export class AppState {
     AppState.showLoader();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
-    KotOR.GameInitializer.Init({
-      game: AppState.gameKey,
-      onLoad: () => {
-        console.log('loaded')
-        KotOR.GameState.OpeningMoviesComplete = true;
-        KotOR.GUIListBox.InitTextures();
-        KotOR.OdysseyWalkMesh.Init();
-        KotOR.GameState.Init();
-        KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
-        document.body.append(KotOR.GameState.stats.domElement);
-        if(AppState.env == ApplicationEnvironment.ELECTRON){
-          // KotOR.GameState.Debugger.open();
-        }
-        window.addEventListener('blur', (e) => {
-          KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
-          KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = 0;
-          KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = 0;
-          KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = 0;
-        });
-        window.addEventListener('focus', (e) => {
-          KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = KotOR.AudioEngine.GAIN_MUSIC;
-          KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = KotOR.AudioEngine.GAIN_VO;
-          KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
-          KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
-        });
-        AppState.processEventListener('on-game-loaded', []);
-      }
+    await KotOR.GameInitializer.Init(AppState.gameKey);
+
+    console.log('loaded')
+    KotOR.GameState.OpeningMoviesComplete = true;
+    KotOR.GUIListBox.InitTextures();
+    KotOR.OdysseyWalkMesh.Init();
+    KotOR.GameState.Init();
+    KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
+    document.body.append(KotOR.GameState.stats.domElement);
+    if(AppState.env == ApplicationEnvironment.ELECTRON){
+      // KotOR.GameState.Debugger.open();
+    }
+    window.addEventListener('blur', (e) => {
+      KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
+      KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = 0;
+      KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = 0;
+      KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = 0;
     });
+    window.addEventListener('focus', (e) => {
+      KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = KotOR.AudioEngine.GAIN_MUSIC;
+      KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = KotOR.AudioEngine.GAIN_VO;
+      KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
+      KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
+    });
+    AppState.processEventListener('on-game-loaded', []);
   }
 
   /**

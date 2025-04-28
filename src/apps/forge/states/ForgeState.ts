@@ -96,52 +96,49 @@ export class ForgeState {
       KotOR.LoadingScreen.main.SetBackgroundImage(KotOR.ApplicationProfile.profile.background);
       KotOR.LoadingScreen.main.Show();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
-      KotOR.GameInitializer.Init({
-        game: KotOR.ApplicationProfile.GameKey,
-        onLoad: async () => {
-          await this.initNWScriptParser();
-          KotOR.OdysseyWalkMesh.Init();
-          //ConfigClient.get('Game.debug.light_helpers') ? true : false
-          // KotOR.LightManager.toggleLightHelpers();
-          // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
+      KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
+        await this.initNWScriptParser();
+        KotOR.OdysseyWalkMesh.Init();
+        //ConfigClient.get('Game.debug.light_helpers') ? true : false
+        // KotOR.LightManager.toggleLightHelpers();
+        // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
 
-          ForgeState.recentFiles = ForgeState.getRecentFiles();
-          this.processEventListener('onRecentProjectsUpdated', []);
+        ForgeState.recentFiles = ForgeState.getRecentFiles();
+        this.processEventListener('onRecentProjectsUpdated', []);
 
-          ForgeState.recentProjects = ForgeState.getRecentProjects();
-          this.processEventListener('onRecentFilesUpdated', []);
-          
-          const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
-          if(tabStates.length){
-            for(let i = 0; i < tabStates.length; i++){
-              const tabState = tabStates[i];
-              this.tabManager.restoreTabState(tabState);
-            }
-          }else{
-            ForgeState.tabManager.addTab(new TabQuickStartState());
+        ForgeState.recentProjects = ForgeState.getRecentProjects();
+        this.processEventListener('onRecentFilesUpdated', []);
+        
+        const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
+        if(tabStates.length){
+          for(let i = 0; i < tabStates.length; i++){
+            const tabState = tabStates[i];
+            this.tabManager.restoreTabState(tabState);
           }
-
-          ForgeState.tabManager.addEventListener('onTabAdded', () => {
-            ForgeState.saveOpenTabsState();
-          });
-
-          ForgeState.tabManager.addEventListener('onTabRemoved', () => {
-            ForgeState.saveOpenTabsState();
-          });
-
-          ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
-          ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
-          ForgeState.resourceExplorerTab.show();
-
-          TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
-            KotOR.LoadingScreen.main.Hide();
-            setTimeout( () => {
-              KotOR.LoadingScreen.main.loader.style.display = 'none';
-              resolve();
-            }, 500);
-            // ScriptEditorTab.InitNWScriptLanguage();
-          });
+        }else{
+          ForgeState.tabManager.addTab(new TabQuickStartState());
         }
+
+        ForgeState.tabManager.addEventListener('onTabAdded', () => {
+          ForgeState.saveOpenTabsState();
+        });
+
+        ForgeState.tabManager.addEventListener('onTabRemoved', () => {
+          ForgeState.saveOpenTabsState();
+        });
+
+        ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
+        ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
+        ForgeState.resourceExplorerTab.show();
+
+        TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
+          KotOR.LoadingScreen.main.Hide();
+          setTimeout( () => {
+            KotOR.LoadingScreen.main.loader.style.display = 'none';
+            resolve();
+          }, 500);
+          // ScriptEditorTab.InitNWScriptLanguage();
+        });
       });
     });
   }
@@ -153,7 +150,7 @@ export class ForgeState {
         onVerified();
       }else{
         try{
-          let dir = await window.dialog.locateDirectoryDialog();
+          let dir = await (window as any).dialog.locateDirectoryDialog();
           if(dir){
             KotOR.ApplicationProfile.profile.directory = dir;
             onVerified();
@@ -780,7 +777,7 @@ export class ForgeState {
           let parsed = pathParse(file_path);
           let fileParts = parsed.name.split('.');
           if(parsed.ext == '.mdl'){
-            window.dialog.showOpenDialog({
+            (window as any).dialog.showOpenDialog({
               title: `Open MDX File (${fileParts[0]}.mdx)`,
               filters: [
                 {name: 'Model File', extensions: ['mdx']},
