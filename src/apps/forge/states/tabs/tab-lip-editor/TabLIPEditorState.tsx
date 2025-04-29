@@ -14,6 +14,8 @@ import { ForgeFileSystem, ForgeFileSystemResponse } from "../../../ForgeFileSyst
 import * as KotOR from "../../../KotOR";
 import * as THREE from 'three';
 
+const DEFAULT_HEAD = 'p_bastilah';
+
 export type TabLIPEditorStateEventListenerTypes =
 TabStateEventListenerTypes & 
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
@@ -59,7 +61,7 @@ export class TabLIPEditorState extends TabState {
   scrubbing: boolean = false;
   preScrubbingPlayState: boolean = false;
   scrubbingTimeout: NodeJS.Timeout|number;
-  current_head: string;
+  current_head: string = DEFAULT_HEAD;
   audio_name: string;
   selected_frame: ILIPKeyFrame;
   dragging_frame: ILIPKeyFrame|undefined;
@@ -96,7 +98,7 @@ export class TabLIPEditorState extends TabState {
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
-    this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : '';
+    this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : DEFAULT_HEAD;
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
@@ -170,7 +172,7 @@ export class TabLIPEditorState extends TabState {
     });
   }
 
-  loadHead(model_name = 'p_bastilah'){
+  loadHead(model_name = DEFAULT_HEAD){
     return new Promise<void>( (resolve, reject) => {
       KotOR.MDLLoader.loader.load(model_name)
       .then((mdl: KotOR.OdysseyModel) => {
