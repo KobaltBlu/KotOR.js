@@ -3489,64 +3489,59 @@ export class ModuleCreature extends ModuleObject {
     });
   }
 
-  loadHead(): Promise<OdysseyModel3D> {
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      let appearance = this.creatureAppearance;
-      let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      this.headModel = undefined;
-      if(headId >= 0 && appearance.modeltype == 'B'){
-        const heads2DA = GameState.TwoDAManager.datatables.get('heads');
-        if(heads2DA){
-          let head = heads2DA.rows[headId];
-          this.headModel = head.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
-          MDLLoader.loader.load(this.headModel).then(
-            (mdl: OdysseyModel) => {
-              OdysseyModel3D.FromMDL(mdl, {
-                context: this.context,
-                castShadow: true,
-                receiveShadow: true,
-                isHologram: this.isHologram,
-              }).then((head: OdysseyModel3D) => {
-                try{
-                  if(this.head instanceof OdysseyModel3D && this.head.parent){
-                    this.head.parent.remove(this.head);
-                    this.head.dispose();
-                  }
+  async loadHead(): Promise<OdysseyModel3D> {
+    let appearance = this.creatureAppearance;
+    let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.headModel = undefined;
+    if(!( headId >= 0 && appearance.modeltype == 'B' )){
+      return;
+    }
 
-                  this.head = head;
-                  this.head.userData.moduleObject = this;
-                  this.model.attachHead(head);
-
-                  try{
-                    if(this.head.gogglehook instanceof THREE.Object3D){
-                      if(this.equipment.HEAD && this.equipment.HEAD.model instanceof OdysseyModel3D){
-                        this.head.gogglehook.add(this.equipment.HEAD.model);
-                      }
-                    }
-                  }catch(e){
-                    console.error('ModuleCreature', e);
-                  }
-                  
-                  resolve(this.head);
-                  this.head.disableMatrixUpdate();
-                }catch(e){
-                  console.error(e);
-                  resolve(this.head);
-                }
-              }).catch(() => {
-                resolve(this.head);
-              });
-            }
-          ).catch( () => {
-            resolve(this.head);
-          });
-        }else{
-          resolve(this.head);
-        }
-      }else{
-        resolve(this.head);
-      }
+    const headDetails = GameState.SWRuleSet.heads[headId];
+    if(!headDetails){
+      return;
+    }
+    
+    const headTexture = headDetails.getTextureGoodEvil(this.getGoodEvil());
+    this.headModel = headDetails.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    const mdl = await MDLLoader.loader.load(this.headModel);
+ 
+    const head = await OdysseyModel3D.FromMDL(mdl, {
+      context: this.context,
+      castShadow: true,
+      receiveShadow: true,
+      isHologram: this.isHologram,
+      textureVar: headTexture,
     });
+
+    try
+    {
+      if(this.head instanceof OdysseyModel3D && this.head.parent){
+        this.head.parent.remove(this.head);
+        this.head.dispose();
+      }
+
+      this.head = head;
+      this.head.userData.moduleObject = this;
+      this.model.attachHead(head);
+
+      try{
+        if(this.head.gogglehook instanceof THREE.Object3D){
+          if(this.equipment.HEAD && this.equipment.HEAD.model instanceof OdysseyModel3D){
+            this.head.gogglehook.add(this.equipment.HEAD.model);
+          }
+        }
+      }catch(e){
+        console.error('ModuleCreature', e);
+      }
+      
+      this.head.disableMatrixUpdate();
+      return this.head;
+    }
+    catch(e)
+    {
+      console.error(e);
+    }
   }
 
   /*getEquip_ItemList(){

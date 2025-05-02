@@ -10,6 +10,7 @@ import { SWFeatGain } from "./SWFeatGain";
 import { SWSpellGain } from "./SWSpellGain";
 import { SWEXPTable } from "./SWEXPTable";
 import { SWDifficulty } from "./SWDifficulty";
+import { SWHead } from "./SWHead";
 import { GameState } from "../../GameState";
 import type { INIConfig } from "../../INIConfig";
 
@@ -40,6 +41,7 @@ export class SWRuleSet {
 
   static xpTable: SWXPTableEntry[] = [];
   static portraits: SWPortrait[] = [];
+  static heads: SWHead[] = [];
 
   static feats: TalentFeat[] = [];
   static featCount: number = 0;
@@ -188,6 +190,18 @@ export class SWRuleSet {
         SWRuleSet.portraits[i] = SWPortrait.From2DA(portraits.rows[i]);
       }
     }
+
+    /**
+     * Initialize Heads
+     */
+    const heads = GameState.TwoDAManager.datatables.get('heads');
+    if(heads){
+      SWRuleSet.heads = new Array(heads.RowCount);
+      for(let i = 0; i < heads.RowCount; i++){
+        SWRuleSet.heads[i] = SWHead.From2DA(heads.rows[i]);
+      }
+    }
+    
 
   }
 
