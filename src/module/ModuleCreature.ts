@@ -3501,9 +3501,9 @@ export class ModuleCreature extends ModuleObject {
     if(!headDetails){
       return;
     }
-    
+
     const headTexture = headDetails.getTextureGoodEvil(this.getGoodEvil());
-    this.headModel = headDetails.head.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.headModel = headDetails.head;
     const mdl = await MDLLoader.loader.load(this.headModel);
  
     const head = await OdysseyModel3D.FromMDL(mdl, {

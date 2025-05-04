@@ -41,13 +41,13 @@ export class SWHead {
   static From2DA(row:any){
     const head = new SWHead();
     head.id = TwoDAObject.normalizeValue(row.__index, "number", -1);
-    head.head = TwoDAObject.normalizeValue(row.head, "string", "") as string;
-    head.headtexvvve = TwoDAObject.normalizeValue(row.headtexvvve, "string", "") as string;
-    head.headtexvve = TwoDAObject.normalizeValue(row.headtexvve, "string", "") as string;
-    head.headtexve = TwoDAObject.normalizeValue(row.headtexve, "string", "") as string;
-    head.headtexe = TwoDAObject.normalizeValue(row.headtexe, "string", "") as string;
-    head.headtexg = TwoDAObject.normalizeValue(row.headtexg, "string", "") as string;
-    head.headtexvg = TwoDAObject.normalizeValue(row.headtexvg, "string", "") as string;
+    head.head = (TwoDAObject.normalizeValue(row.head, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexvvve = (TwoDAObject.normalizeValue(row.headtexvvve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexvve = (TwoDAObject.normalizeValue(row.headtexvve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexve = (TwoDAObject.normalizeValue(row.headtexve, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexe = (TwoDAObject.normalizeValue(row.headtexe, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexg = (TwoDAObject.normalizeValue(row.headtexg, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    head.headtexvg = (TwoDAObject.normalizeValue(row.headtexvg, "string", "") as string).replace(/\0[\s\S]*$/g,'').toLowerCase();
     return head;
   }
 
