@@ -154,8 +154,7 @@ export class OdysseyWalkMesh {
         face.centroid.divideScalar( 3 );
       }
 
-      this.detectFacePerimiterLines(face);
-
+      const perimeter = this.detectFacePerimiterLines(face);
     }
 
     this.matrixWorld = new THREE.Matrix4();
@@ -356,65 +355,63 @@ export class OdysseyWalkMesh {
   }
 
   detectFacePerimiterLines( face: OdysseyFace3 ){
-    if(this.header.walkMeshType == OdysseyWalkMeshType.NONE){
-      let aEdge = true;
-      let bEdge = true;
-      let cEdge = true;
+    if(this.header.walkMeshType != OdysseyWalkMeshType.NONE){
+      return;
+    }
 
-      for(let i = 0; i < this.faces.length; i++){
-        let adjFace = this.faces[i];
-        if(adjFace == face)
-          continue;
-        
-        for(let j = 0; j < 3; j++){
-          if(j == 0 && aEdge){
-            if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
-              (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
-              (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
-              aEdge = false;
-            }
-          }else if(j == 1 && bEdge){
-            if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
-              (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
-              (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
-              bEdge = false;
-            }
-          }else if(j == 2 && cEdge){
-            if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
-              (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
-              (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
-              cEdge = false;
-            }
+    let aEdge = true;
+    let bEdge = true;
+    let cEdge = true;
+
+    for(let i = 0; i < this.faces.length; i++){
+      const adjFace = this.faces[i];
+      if(adjFace == face)
+        continue;
+      
+      for(let j = 0; j < 3; j++){
+        if(j == 0 && aEdge){
+          if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
+            (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
+            (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
+            aEdge = false;
+          }
+        }else if(j == 1 && bEdge){
+          if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
+            (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
+            (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
+            bEdge = false;
+          }
+        }else if(j == 2 && cEdge){
+          if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
+            (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
+            (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
+            cEdge = false;
           }
         }
-
       }
 
-      if(aEdge){
-        this.generateFaceWalkmeshEdge(face, 0); 
-      }
-
-      if(bEdge){
-        this.generateFaceWalkmeshEdge(face, 1); 
-      }
-
-      if(cEdge){
-        this.generateFaceWalkmeshEdge(face, 2); 
-      }
     }
+
+    return {
+      a: aEdge ? this.generateFaceWalkmeshEdge(face, 0) : undefined,
+      b: bEdge ? this.generateFaceWalkmeshEdge(face, 1) : undefined,
+      c: cEdge ? this.generateFaceWalkmeshEdge(face, 2) : undefined,
+    };
   }
 
   generateFaceWalkmeshEdge(face: OdysseyFace3, index: number = 0){
-    if(face){
-      let edge = new WalkmeshEdge(-1);
-      edge.setWalkmesh(this);
-      edge.setSide(index);
-      edge.setFace(face);
-      edge.update();
-      edge.exportable = false;
-      const f_idx = this.faces.indexOf(face);
-      this.edges.set(f_idx + index, edge);
+    if(!face){
+      return;
     }
+    const edge = new WalkmeshEdge(-1);
+    edge.setWalkmesh(this);
+    edge.setSide(index);
+    edge.setFace(face);
+    edge.update();
+    edge.exportable = false;
+    const f_idx = this.faces.indexOf(face);
+    this.edges.set((f_idx * 3) + index, edge);
+    return edge;
   }
 
   dispose(){

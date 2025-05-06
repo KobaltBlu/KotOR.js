@@ -140,6 +140,10 @@ export class TabWOKEditorState extends TabState {
           this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.ui3DRenderer.unselectable.add(this.wireframe);
           this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
+          this.wok.edges.forEach( (edge, index) => {
+            const arrowHelper = new THREE.ArrowHelper( edge.normal, edge.center_point, 0.5, 0xFF0000 );
+            this.ui3DRenderer.unselectable.add(arrowHelper);
+          });
           this.buildVertexHelpers();
           this.recenterCamera();
 
