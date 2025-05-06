@@ -13,6 +13,28 @@ export enum TabWOKEditorControlMode {
   EDGE = 2,
 };
 
+/**
+ * Get the complementary color of a given hex color
+ * @param hexColor 
+ * @returns 
+ */
+const getComplementaryColor = (hexColor: number) => {
+  // Extract RGB components from 0xRRGGBB
+  const r = (hexColor >> 16) & 0xff;
+  const g = (hexColor >> 8) & 0xff;
+  const b = hexColor & 0xff;
+
+  // Invert each channel
+  const invertedR = 255 - r;
+  const invertedG = 255 - g;
+  const invertedB = 255 - b;
+
+  // Combine back into a 0xRRGGBB number
+  const complementary = (invertedR << 16) | (invertedG << 8) | invertedB;
+
+  return complementary;
+}
+
 export class TabWOKEditorState extends TabState {
   tabName: string = `WOK`;
 
@@ -140,8 +162,23 @@ export class TabWOKEditorState extends TabState {
           this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.ui3DRenderer.unselectable.add(this.wireframe);
           this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
+          const center = new THREE.Vector3(0, 0, 0);
+
+          /**
+           * Center the mesh and wireframe if the walkmesh type is AABB
+           */
+          if(this.wok.header.walkMeshType == KotOR.OdysseyWalkMeshType.AABB){
+            this.wok.box.getCenter(center);
+            center.z = this.wok.getMinZ();;
+            this.wok.mesh.position.sub(center);
+            this.wireframe.position.sub(center);
+          }
+
+          const arrowPosition = new THREE.Vector3();
           this.wok.edges.forEach( (edge, index) => {
-            const arrowHelper = new THREE.ArrowHelper( edge.normal, edge.center_point, 0.5, 0xFF0000 );
+            arrowPosition.copy(edge.center_point).sub(center);
+            const arrowHelper = new THREE.ArrowHelper( edge.normal, arrowPosition, 0.5, getComplementaryColor(edge.face.color.getHex()) );
+            arrowHelper.layers.set(2);
             this.ui3DRenderer.unselectable.add(arrowHelper);
           });
           this.buildVertexHelpers();

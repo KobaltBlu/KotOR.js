@@ -781,6 +781,17 @@ export class OdysseyWalkMesh {
     return perimeters;
   }
 
+  public getMinZ(){
+    const minZ = this.vertices.reduce((minZ, vec) => {
+      return vec.z < minZ ? vec.z : minZ;
+    }, Infinity);
+    return isFinite(minZ) ? minZ : 0;
+  }
+
+  public getBoundingSize(){
+    return this.box.getSize(new THREE.Vector3());
+  }
+
   public toExportBuffer(){
 
     const perimeters = this.buildPerimeters();
