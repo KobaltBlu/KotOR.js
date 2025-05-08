@@ -16,6 +16,9 @@ export class ModelViewerControls {
   pointerLockVector: THREE.Vector2 = new THREE.Vector2();
   currentTool: EditorControlsTool;
 
+  enableMovement: boolean = false;
+  enablePointerLock: boolean = false;
+
   static CameraMoveSpeed: number = 10;
 
   _onKeyDown: (this: HTMLCanvasElement, ev: KeyboardEvent) => any;
@@ -185,7 +188,7 @@ export class ModelViewerControls {
     KotOR.Mouse.MouseX = event.pageX - offset.left;
     KotOR.Mouse.MouseY = event.pageY - offset.top;
 
-    if(KotOR.Mouse.ButtonState != KotOR.MouseState.LEFT){
+    if(KotOR.Mouse.ButtonState != KotOR.MouseState.LEFT && this.enablePointerLock){
       // Ask the browser to lock the pointer
       this.element.requestPointerLock();
       return;
@@ -236,8 +239,9 @@ export class ModelViewerControls {
     KotOR.Mouse.Dragging = false;
     KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
 
-    // Ask the browser to release the pointer
-    document.exitPointerLock();
+    if(this.enablePointerLock){
+      document.exitPointerLock();
+    }
   }
 
   dispose(){
@@ -261,34 +265,34 @@ export class ModelViewerControls {
       KotOR.Mouse.OffsetX = KotOR.Mouse.OffsetY = 0;
     }
 
-    if(this.keys['w']){
+    if(this.keys['w'] && this.enableMovement){
       this.context.camera.position.add(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
-    if(this.keys['s']){
+    if(this.keys['s'] && this.enableMovement){
       this.context.camera.position.sub(this.axisFront.clone().multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
-    if(this.keys['a']){
+    if(this.keys['a'] && this.enableMovement){
       this.context.camera.position.sub((new THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
-    if(this.keys['d']){
+    if(this.keys['d'] && this.enableMovement){
       this.context.camera.position.add((new THREE.Vector3().crossVectors(this.axisFront, this.context.camera.up)).multiplyScalar(speed));
       this.context.camera.updateProjectionMatrix();
     }
 
     this.context.camera.position.z = _cacheZ;
 
-    if(this.keys['space']){
+    if(this.keys['space'] && this.enableMovement){
       this.context.camera.position.z += speed/2;
       this.context.camera.updateProjectionMatrix();
     }
 
-    if(this.keys['shift']){
+    if(this.keys['shift'] && this.enableMovement){
       this.context.camera.position.z -= speed/2;
       this.context.camera.updateProjectionMatrix();
     }
@@ -301,7 +305,7 @@ export class ModelViewerControls {
       // }
     }
 
-    if(this.currentTool == EditorControlsTool.CAMERA_MOVE){
+    if(this.currentTool == EditorControlsTool.CAMERA_MOVE && this.enableMovement){
 
       if(xoffset != 0 || yoffset != 0){
         let sensitivity = 0.05;

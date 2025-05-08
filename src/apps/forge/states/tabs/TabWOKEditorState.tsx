@@ -62,6 +62,8 @@ export class TabWOKEditorState extends TabState {
   selectedVertexIndex: number = -1;
   selectedEdgeIndex: number = -1;
 
+  center: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     
@@ -69,6 +71,20 @@ export class TabWOKEditorState extends TabState {
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+
+    const grid1 = new THREE.GridHelper( 250, 26, 0x00FF00 );
+    grid1.rotation.x = -Math.PI / 2;
+
+    // center line
+    const grid2 = new THREE.GridHelper( 250, 2, 0xFF0000 );
+    grid2.rotation.x = -Math.PI / 2;
+    // (grid2.material as THREE.Material).depthFunc = THREE.AlwaysDepth;
+
+    (grid2.material as THREE.Material).onBeforeCompile = function ( shader ) {
+      // Emulate GL_POLYGON_OFFSET_LINE
+      shader.vertexShader = shader.vertexShader.replace( '<worldpos_vertex>', '<worldpos_vertex>\ngl_Position.z -= 0.0001;' );
+    };
+    
 
     this.faceHelperGeometry = new THREE.BufferGeometry();
     this.faceHelperGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
@@ -81,8 +97,10 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.scene.add(this.groundMesh);
+    this.ui3DRenderer.scene.add(grid1);
+    this.ui3DRenderer.scene.add(grid2);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
+    this.ui3DRenderer.group.light_helpers.visible = false;
     
     this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: THREE.Intersection) => {
       this.ui3DRenderer.selectionBox.visible = false;
@@ -156,27 +174,30 @@ export class TabWOKEditorState extends TabState {
           this.wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(response.buffer));
           this.wok.material.visible = true;
           this.wok.material.side = THREE.DoubleSide;
+          this.wok.material.opacity = 0.75;
+          this.wok.material.transparent = true;
           this.ui3DRenderer.selectable.add(this.wok.mesh);
 
-          this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true } );
+          
+
+          this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true, wireframeLinewidth: 2 } );
           this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.ui3DRenderer.unselectable.add(this.wireframe);
           this.ui3DRenderer.selectable.add(this.vertexHelpersGroup);
-          const center = new THREE.Vector3(0, 0, 0);
 
           /**
            * Center the mesh and wireframe if the walkmesh type is AABB
            */
           if(this.wok.header.walkMeshType == KotOR.OdysseyWalkMeshType.AABB){
-            this.wok.box.getCenter(center);
-            center.z = this.wok.getMinZ();;
-            this.wok.mesh.position.sub(center);
-            this.wireframe.position.sub(center);
+            this.wok.box.getCenter(this.center);
+            this.center.z = this.wok.getMinZ();
+            this.wok.mesh.position.sub(this.center);
+            this.wireframe.position.sub(this.center);
           }
 
           const arrowPosition = new THREE.Vector3();
           this.wok.edges.forEach( (edge, index) => {
-            arrowPosition.copy(edge.center_point).sub(center);
+            arrowPosition.copy(edge.center_point).sub(this.center);
             const arrowHelper = new THREE.ArrowHelper( edge.normal, arrowPosition, 0.5, getComplementaryColor(edge.face.color.getHex()) );
             arrowHelper.layers.set(2);
             this.ui3DRenderer.unselectable.add(arrowHelper);
@@ -270,21 +291,21 @@ export class TabWOKEditorState extends TabState {
             for(let i = 0; i < this.wok.faces.length; i++){
               const face = this.wok.faces[i];
               if(face.a == this.selectedVertexIndex){
-                position.setX( (i * 3) + 0, selectedVertex.x);
-                position.setY( (i * 3) + 0, selectedVertex.y);
-                position.setZ( (i * 3) + 0, selectedVertex.z);
+                position.setX( (i * 3) + 0, selectedVertex.x + this.center.x);
+                position.setY( (i * 3) + 0, selectedVertex.y + this.center.y);
+                position.setZ( (i * 3) + 0, selectedVertex.z + this.center.z);
               }
 
               if(face.b == this.selectedVertexIndex){
-                position.setX( (i * 3) + 1, selectedVertex.x);
-                position.setY( (i * 3) + 1, selectedVertex.y);
-                position.setZ( (i * 3) + 1, selectedVertex.z);
+                position.setX( (i * 3) + 1, selectedVertex.x + this.center.x);
+                position.setY( (i * 3) + 1, selectedVertex.y + this.center.y);
+                position.setZ( (i * 3) + 1, selectedVertex.z + this.center.z);
               }
 
               if(face.c == this.selectedVertexIndex){
-                position.setX( (i * 3) + 2, selectedVertex.x);
-                position.setY( (i * 3) + 2, selectedVertex.y);
-                position.setZ( (i * 3) + 2, selectedVertex.z);
+                position.setX( (i * 3) + 2, selectedVertex.x + this.center.x);
+                position.setY( (i * 3) + 2, selectedVertex.y + this.center.y);
+                position.setZ( (i * 3) + 2, selectedVertex.z + this.center.z);
               }
             }
             position.needsUpdate = true;
@@ -317,7 +338,7 @@ export class TabWOKEditorState extends TabState {
     for(let i = 0; i < this.wok.vertices.length; i++){
       const vertex = this.wok.vertices[i];
       const helper = this.vertexHelpers[i];
-      helper.position.copy(vertex);
+      helper.position.copy(vertex).sub(this.center);
       helper.scale.setScalar(this.vertexHelperSize);
     }
   }

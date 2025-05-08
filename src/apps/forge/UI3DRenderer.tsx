@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { ModelViewerControls } from "./ModelViewerControls";
 import { SceneGraphNode } from "./SceneGraphNode";
 import { FlyControls } from 'three/examples/jsm/controls/FlyControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
@@ -20,6 +21,8 @@ export interface UI3DRendererEventListeners {
   onResize:       Function[],
   onCanvasAttached: Function[],
 }
+
+const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({color: 0x00ff00}));
 
 /**
  * UI3DRenderer class.
@@ -61,6 +64,7 @@ export class UI3DRenderer extends EventListenerModel {
   globalLight: THREE.Light;
   depthTarget: THREE.WebGLRenderTarget;
   raycaster: THREE.Raycaster = new THREE.Raycaster();
+  orbitControls: OrbitControls;
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 
@@ -150,6 +154,15 @@ export class UI3DRenderer extends EventListenerModel {
       this.transformControls.removeFromParent();
     }
     if(this.canvas){
+      if(this.orbitControls){
+        this.orbitControls.dispose();
+      }
+      this.orbitControls = new OrbitControls(this.currentCamera, this.canvas);
+      this.orbitControls.enableDamping = true;
+      this.orbitControls.enableZoom = true;
+      this.orbitControls.enablePan = true;
+      this.orbitControls.enableRotate = true;
+      this.orbitControls.panSpeed = 2;
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
       this.transformControls.visible = false;
       this.unselectable.add(this.transformControls);
@@ -213,11 +226,30 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   selectObject(object: THREE.Object3D){
-    if(object){
-      this.selectionBox.setFromObject(object);
-      this.selectionBox.visible = true;
-    }else{
+    if(!object){
       this.selectionBox.visible = false;
+      return;
+    }
+
+    console.log(object);
+    const nodeType: KotOR.OdysseyModelNodeType = (object as any).odysseyModelNode?.nodeType || 1;
+    const isGeometry = (object instanceof THREE.Mesh) || (object instanceof THREE.Line) || (object instanceof THREE.Points) || ((nodeType & KotOR.OdysseyModelNodeType.Mesh) == KotOR.OdysseyModelNodeType.Mesh);
+    const arr = ((this.selectionBox.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array)
+    arr.fill(0);
+    this.selectionBox.geometry.attributes.position.needsUpdate = true;
+
+    this.selectionBox.setFromObject(object);
+    this.selectionBox.visible = true;
+
+    const size = arr.reduce( (a, b) => a + b, 0 );
+
+    if(!size || !isGeometry){
+      dummyMesh.position.copy(object.position);
+      // object.getWorldPosition(dummyMesh.position);
+      object.getWorldQuaternion(dummyMesh.quaternion);
+      // dummyMesh.scale.copy(object.scale);
+      this.selectionBox.setFromObject(dummyMesh);
+      this.selectionBox.visible = true;
     }
   }
 
@@ -297,7 +329,7 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.renderer) this.renderer.dispose();
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
-      antialias: false,
+      antialias: true,
       // autoClear: false,
       depth: true,
       alpha: true,
@@ -395,6 +427,11 @@ export class UI3DRenderer extends EventListenerModel {
         this.controls.update(delta);
       }
 
+      if(this.orbitControls){
+        //@ts-ignore
+        this.orbitControls.update(delta);
+      }
+
       //Custom render logic can run here
       this.processEventListener('onBeforeRender', [delta]);
 
@@ -429,7 +466,11 @@ export class UI3DRenderer extends EventListenerModel {
     this.renderer = undefined;
 
     this.controls.dispose();
-    
+
+    if(this.orbitControls){
+      this.orbitControls.dispose();
+    }
+
     if(this.camera){
       this.camera.removeFromParent();
     }
