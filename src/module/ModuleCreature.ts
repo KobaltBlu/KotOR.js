@@ -83,25 +83,32 @@ export class ModuleCreature extends ModuleObject {
   lookAtMatrix: THREE.Matrix4;
   bodyBag: number;
   bodyVariation: number;
+
   cha: number;
+  con: number;
+  dex: number;
+  int: number;
+  str: number;
+  wis: number;
+  fortbonus: number;
+  refbonus: number;
+  willbonus: number;
+
   challengeRating: number;
   classes: CreatureClass[];
   comment: string;
-  con: number;
   currentForce: number;
   currentHitPoints: number;
   deity: string;
-  dec: number;
   disarmable: number;
   isHologram: boolean;
   experience: number;
   feats: TalentFeat[];
   firstName: string;
   forcePoints: number;
-  gender: number;
-  goodEvil: number;
+  gender: number = 0;
+  goodEvil: number = 50;
   hitPoints: number;
-  int: number;
   interruptable: number;
   isPC: number;
   lastName: string;
@@ -116,16 +123,11 @@ export class ModuleCreature extends ModuleObject {
   skills: TalentSkill[];
   soundSetFile: number;
   specialAbilities: any[];
-  str: number;
   subrace: number;
   subraceIndex: number;
   templateList: any[];
   textureVar: number;
   walkRate: number;
-  wis: number;
-  fortbonus: number;
-  refbonus: number;
-  willbonus: number;
   blockingTimer: number;
   groundTilt: THREE.Vector3;
   up: THREE.Vector3;
@@ -136,7 +138,6 @@ export class ModuleCreature extends ModuleObject {
   declare footstepEmitter: AudioEmitter;
   props: any;
   maxForcePoints: any;
-  dex: any;
   bodyModel: any;
   bodyTexture: any;
   headModel: any;
@@ -230,23 +231,30 @@ export class ModuleCreature extends ModuleObject {
 
     this.excitedDuration = 0;
 
+    this.cha = 0;
+    this.con = 0;
+    this.dex = 0; 
+    this.int = 0;
+    this.str = 0;
+    this.wis = 0;
+    this.fortbonus = 0;
+    this.refbonus = 0;
+    this.willbonus = 0;
+
     this.appearance = 0;
     this.pm_Appearance = 0;
     this.pm_IsDisguised = false;
     this.bodyBag = 0;
     this.bodyVariation = 0;
-    this.cha = 0;
     this.challengeRating = 0;
     this.classes = [];
     this.comment = '';
-    this.con = 0;
     this.currentForce = 0;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.regenTimer = 0;
     this.regenTimerMax = 6;
     this.deity = '';
     this.description = '';
-    this.dec = 0;
     this.disarmable = 0;
     this.isHologram = false;
     this.resetAnimationState();
@@ -277,8 +285,7 @@ export class ModuleCreature extends ModuleObject {
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
-    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.    
-    this.int = 0;
+    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.   
     this.interruptable = 1;
     this.isPC = 0;
     this.lastName = '';
@@ -316,7 +323,6 @@ export class ModuleCreature extends ModuleObject {
 
     this.soundSetFile = 0;
     this.specialAbilities = [];
-    this.str = 0;
     this.subrace = 0;
     this.subraceIndex = 0;
     this.tag = '';
@@ -324,10 +330,6 @@ export class ModuleCreature extends ModuleObject {
     this.templateResRef = '';
     this.textureVar = 1;
     this.walkRate = 7;
-    this.wis = 0;
-    this.fortbonus = 0;
-    this.refbonus = 0;
-    this.willbonus = 0;
 
     this.xOrientation = 0;
     this.yOrientation = 0;
