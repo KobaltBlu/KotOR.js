@@ -6,6 +6,7 @@ export const CheatConsole = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
+  const [showCheatConsole, setShowCheatConsole] = appContext.showCheatConsole;
   const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
   const [consoleInput, setConsoleInput] = useState('');
 
@@ -17,6 +18,7 @@ export const CheatConsole = () => {
     if (e.key === 'Enter') {
       appState.consoleCommand(consoleInput);
       setConsoleInput('');
+      setShowCheatConsole(false);
     }
   }
 
