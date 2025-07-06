@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app } from 'electron';
 import Main from "./Main";
 
 console.log('args', process.argv, __dirname, app.getAppPath());
