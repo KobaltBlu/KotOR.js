@@ -25,6 +25,7 @@ export const CheatConsole = () => {
   return (
     <div className={`console on ${gameKey}`}>
       <div className="console-buttons">
+        <button className="console-btn" onClick={() => appState.toggleDebugger()}>Debugger</button>
         <button className="console-btn" onClick={() => appState.togglePerformanceMonitor()}>Toggle Stats</button>
       </div>
       <input className="console-input" type="text" value={consoleInput} onChange={handleConsoleInput} onKeyDown={handleConsoleSubmit} />

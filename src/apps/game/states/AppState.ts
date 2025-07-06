@@ -239,6 +239,10 @@ export class AppState {
     KotOR.GameState.stats.showPanel(mode as any);
   }
 
+  static toggleDebugger(){
+    KotOR.GameState.Debugger.open();
+  }
+
   /**
    * Event Listeners
    */
