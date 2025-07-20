@@ -31,11 +31,63 @@ export class OdysseyFace3 {
 		b: undefined,
 		c: undefined,
 	};
+	
   distance: number;
-  materialId: number;
-  nAdjacentFaces1: number;
-  nAdjacentFaces2: number;
-  nAdjacentFaces3: number;
+
+	/**
+	 * Vertex A index.
+	 */
+	a: number;
+
+	/**
+	 * Vertex B index.
+	 */
+	b: number;
+
+	/**
+	 * Vertex C index.
+	 */
+	c: number;
+
+	/**
+	 * Face normal.
+	 * @default new THREE.THREE.Vector3()
+	 */
+	normal: THREE.Vector3 = new THREE.Vector3();
+
+	/**
+	 * Array of 3 vertex normals.
+	 * @default []
+	 */
+	vertexNormals: THREE.Vector3[];
+
+	/**
+	 * Face centroid
+	 * @default []
+	 */
+	centroid: THREE.Vector3 = new THREE.Vector3();
+
+	/**
+	 * Face color.
+	 * @default new THREE.Color()
+	 */
+	color: THREE.Color = new THREE.Color();
+
+	/**
+	 * Array of 3 vertex colors.
+	 * @default []
+	 */
+	vertexColors: THREE.Color[];
+
+	/**
+	 * Material index (points to {@link Mesh.material}).
+	 * @default 0
+	 */
+	materialIndex: number;
+
+	perimeter = {
+		a: false, b: false, c: false
+	};
 
 	/**
 	 * @param a Vertex A index.
@@ -96,61 +148,6 @@ export class OdysseyFace3 {
 			this.color = vertexColors || new THREE.Color();
 		}
   }
-
-	/**
-	 * Vertex A index.
-	 */
-	a: number;
-
-	/**
-	 * Vertex B index.
-	 */
-	b: number;
-
-	/**
-	 * Vertex C index.
-	 */
-	c: number;
-
-	/**
-	 * Face normal.
-	 * @default new THREE.THREE.Vector3()
-	 */
-	normal: THREE.Vector3 = new THREE.Vector3();
-
-	/**
-	 * Array of 3 vertex normals.
-	 * @default []
-	 */
-	vertexNormals: THREE.Vector3[];
-
-	/**
-	 * Face centroid
-	 * @default []
-	 */
-	centroid: THREE.Vector3 = new THREE.Vector3();
-
-	/**
-	 * Face color.
-	 * @default new THREE.Color()
-	 */
-	color: THREE.Color = new THREE.Color();
-
-	/**
-	 * Array of 3 vertex colors.
-	 * @default []
-	 */
-	vertexColors: THREE.Color[];
-
-	/**
-	 * Material index (points to {@link Mesh.material}).
-	 * @default 0
-	 */
-	materialIndex: number;
-
-	perimeter = {
-		a: false, b: false, c: false
-	};
 
 	pointInFace2d(pt: THREE.Vector3){
     let v1 = this.walkmesh.vertices[this.a];

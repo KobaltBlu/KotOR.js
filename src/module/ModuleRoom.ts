@@ -271,82 +271,6 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  /**
-   * Get the barycentric weights of a point in a triangle
-   * @param p - The point to get the barycentric weights of
-   * @param a - The first vertex of the triangle
-   * @param b - The second vertex of the triangle
-   * @param c - The third vertex of the triangle
-   * @returns The barycentric weights of the point
-   */
-  getBarycentricWeights(p: THREE.Vector3, a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3) {
-    const v0 = b.clone().sub(a);
-    const v1 = c.clone().sub(a);
-    const v2 = p.clone().sub(a);
-  
-    const d00 = v0.dot(v0);
-    const d01 = v0.dot(v1);
-    const d11 = v1.dot(v1);
-    const d20 = v2.dot(v0);
-    const d21 = v2.dot(v1);
-  
-    const denom = d00 * d11 - d01 * d01;
-    const v = (d11 * d20 - d01 * d21) / denom;
-    const w = (d00 * d21 - d01 * d20) / denom;
-    const u = 1 - v - w;
-    return { u, v, w };
-  }
-
-  /**
-   * Sample the lightmap color of a point
-   * @param position - The position to sample the lightmap color at
-   * @returns The lightmap color of the point
-   */
-  sampleLightmapColor(position: THREE.Vector3){
-    if(!this.collisionData.walkmesh){
-      return new THREE.Color(1, 1, 1);
-    }
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.set(position, new THREE.Vector3(0, -1, 0)); // or normal direction
-    
-    const intersects = raycaster.intersectObject(this.model, true);
-    
-    if (intersects.length > 0) {
-      const intersect = intersects[0];
-      const obj = intersect.object as THREE.Mesh;
-      const geometry = obj.geometry;
-      const face = intersect.face;
-      const positions: THREE.BufferAttribute = geometry.attributes.position as THREE.BufferAttribute;
-      const uv2s: THREE.BufferAttribute = geometry.attributes.uv2 as THREE.BufferAttribute;
-    
-      const a = face.a, b = face.b, c = face.c;
-
-      const pA = new THREE.Vector3().fromBufferAttribute(positions, a);
-      const pB = new THREE.Vector3().fromBufferAttribute(positions, b);
-      const pC = new THREE.Vector3().fromBufferAttribute(positions, c);
-    
-      // Barycentric weights
-      const { u, v, w } = this.getBarycentricWeights(intersect.point, pA, pB, pC);
-    
-      // Get UV2 coordinates of each triangle vertex
-      const uvA = new THREE.Vector2().fromBufferAttribute(uv2s, a);
-      const uvB = new THREE.Vector2().fromBufferAttribute(uv2s, b);
-      const uvC = new THREE.Vector2().fromBufferAttribute(uv2s, c);
-    
-      // Interpolate UV2
-      const uv2 = new THREE.Vector2()
-        .addScaledVector(uvA, u)
-        .addScaledVector(uvB, v)
-        .addScaledVector(uvC, w);
-    
-      // You can now use uv2 to sample from the lightmap
-      return new THREE.Color(1, 1, 1);
-    }
-
-    return new THREE.Color(1, 1, 1);
-  }
-
   buildGrass(){
     if(!this.area.grass.textureName){
       console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
@@ -387,13 +311,6 @@ export class ModuleRoom extends ModuleObject {
       
       grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
     }
-
-    // const constraint = new Float32Array([
-    //   1, 0, 0, 0, 0, 0,
-    //   0, 0, 0, 0, 0, 0,
-    //   0, 0, 0, 0, 0, 0,
-    //   0, 0, 0, 0, 0, 0
-    // ]);
 
     //The constraint array is a per vertex array to determine if the current vertex in the vertex shader
     //can be affected by wind. 1 = Wind 0 = No Wind
@@ -443,17 +360,9 @@ export class ModuleRoom extends ModuleObject {
       ]),
       vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
-      visible: true,
-      side: THREE.DoubleSide,
-      //color: new THREE.Color( 1, 1, 1 ),
-      // side: THREE.DoubleSide,
-      // transparent: false,
-      // fog: true,
-      // visible: true,//GameState.iniConfig.getProperty('Graphics Options.Grass'),
-      //blending: 5
+      visible: true,//GameState.iniConfig.getProperty('Graphics Options.Grass'),
+      side: THREE.DoubleSide
     });
-
-    // grass_material.defines.USE_FOG = '';
 
     //FACE A
     const FA = new THREE.Vector3(0, 0, 0);
@@ -498,13 +407,9 @@ export class ModuleRoom extends ModuleObject {
     this.grass.frustumCulled = false;
     const objForMatrix = new THREE.Object3D();
 
-    // per instance data
-    const lmUVs: number[] = [];
-    const vector = new THREE.Vector3();
+    const tmpVec3 = new THREE.Vector3();
 
     lm_texture = aabb.textureMap2;
-
-    const grassPosition = new THREE.Vector3(0, 0, 0);
 
     /**
      * emulate gl_InstanceID with an instanced buffer attribute
@@ -513,7 +418,6 @@ export class ModuleRoom extends ModuleObject {
     for(let i = 0; i < totalGrassCount; i++){
       instanceIndices[i] = i;
     }
-    geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
 
     let instanceIndex = 0;
     for(let k = 0; k < aabb.grassFaces.length; k++){
@@ -536,12 +440,6 @@ export class ModuleRoom extends ModuleObject {
       uvB.set(aabb.tvectors[1][tvI2], aabb.tvectors[1][tvI2 + 1]);
       uvC.set(aabb.tvectors[1][tvI3], aabb.tvectors[1][tvI3 + 1]);
       for(let j = 0; j < grassCount; j++){
-        // let instance: any = {
-        //   position: {x: 0, y: 0, z: 0},
-        //   orientation: {x: 0, y: 0, z: 0, w: 0},
-        //   uvs: {uv1: this.getRandomGrassUVIndex(), uv2: this.getRandomGrassUVIndex(), uv3: this.getRandomGrassUVIndex(), uv4: this.getRandomGrassUVIndex()}
-        // };
-
         // offsets
         let a = Math.random();
         let b = Math.random();
@@ -553,23 +451,16 @@ export class ModuleRoom extends ModuleObject {
 
         const c = 1 - a - b;
 
-        vector.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
-        vector.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
-        vector.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
-
-        // const lm_uv = THREE.Triangle.getUV( vector, FA, FB, FC, uvA, uvB, uvC, new THREE.Vector2() );
-
-        grassPosition.set(
-          this.position.x + aabb.position.x + vector.x, 
-          this.position.y + aabb.position.y + vector.y, 
-          this.position.z + aabb.position.z + vector.z + quadOffsetZ
-        );
-
-
-        // lmUVs.push(lm_uv.x, lm_uv.y);
+        tmpVec3.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
+        tmpVec3.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
+        tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
 
         objForMatrix.rotation.z =  Math.floor(Math.random() * 360) + 0;
-        objForMatrix.position.set(grassPosition.x, grassPosition.y, grassPosition.z);
+        objForMatrix.position.set(
+          this.position.x + aabb.position.x + tmpVec3.x, 
+          this.position.y + aabb.position.y + tmpVec3.y, 
+          this.position.z + aabb.position.z + tmpVec3.z + quadOffsetZ
+        );
         objForMatrix.updateMatrix();
 
         this.grass.setMatrixAt(instanceIndex, objForMatrix.matrix);
@@ -577,47 +468,35 @@ export class ModuleRoom extends ModuleObject {
       }
     }
     this.grass.instanceMatrix.needsUpdate = true;
+    geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
 
-    // const lmUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( lmUVs ), 2 ).setUsage( THREE.StaticDrawUsage );
-    // geometry.setAttribute( 'lmUV', lmUVAttribute );
     GameState.group.grass.add(this.grass);
 
     //Load in the grass texture
-    TextureLoader.Load(this.area.grass.textureName).then((grassTexture: OdysseyTexture) => {
-      if(grassTexture){
-        grassTexture.minFilter = THREE.LinearFilter;
-        grassTexture.magFilter = THREE.LinearFilter;
-        grass_material.uniforms.map.value = grassTexture;
-        grass_material.uniformsNeedUpdate = true;
-        grass_material.needsUpdate = true;
-        grass_material.defines.USE_MAP = '';
-        grass_material.defines.USE_UV = '';
-        //Load in the grass lm texture
-        TextureLoader.Load(lm_texture).then((lmTexture: OdysseyTexture) => {
-          if(lmTexture){
-            lmTexture.minFilter = THREE.LinearFilter;
-            lmTexture.magFilter = THREE.LinearFilter;
-            grass_material.uniforms.lightMap.value = lmTexture;
-            grass_material.uniformsNeedUpdate = true;
-            grass_material.needsUpdate = true;
-            grass_material.defines.USE_LIGHTMAP = '';
-          }
-        });
+    TextureLoader.Load(this.area.grass.textureName).then((diffuseMap: OdysseyTexture) => {
+      if(!diffuseMap){
+        return;
       }
+      diffuseMap.minFilter = THREE.LinearFilter;
+      diffuseMap.magFilter = THREE.LinearFilter;
+      grass_material.uniforms.map.value = diffuseMap;
+      grass_material.uniformsNeedUpdate = true;
+      grass_material.defines.USE_MAP = '';
+      grass_material.defines.USE_UV = '';
+      grass_material.needsUpdate = true;
+      //Load in the grass lm texture
+      TextureLoader.Load(lm_texture).then((lightMap: OdysseyTexture) => {
+        if(!lightMap){
+          return;
+        }
+        lightMap.minFilter = THREE.LinearFilter;
+        lightMap.magFilter = THREE.LinearFilter;
+        grass_material.uniforms.lightMap.value = lightMap;
+        grass_material.uniformsNeedUpdate = true;
+        grass_material.defines.USE_LIGHTMAP = '';
+        grass_material.needsUpdate = true;
+      });
     });
-  }
-
-  getRandomGrassUVIndex(){
-    let rnd = Math.random();
-    if(rnd < this.area.grass.probability.upperLeft){
-      return 0;
-    }else if(rnd < this.area.grass.probability.upperLeft + this.area.grass.probability.upperRight){
-      return 1;
-    }else if(rnd < this.area.grass.probability.upperLeft + this.area.grass.probability.upperRight + this.area.grass.probability.lowerLeft){
-      return 2;
-    }else{
-      return 3;
-    }
   }
   
   containsPoint2d(point: any){
@@ -639,9 +518,9 @@ export class ModuleRoom extends ModuleObject {
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
   }
 
-  findWalkableFace( object?: ModuleObject ){
+  findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
     let face;
-    if(object instanceof ModuleObject && this.collisionData.walkmesh){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionData.walkmesh){
       for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
         face = this.collisionData.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){

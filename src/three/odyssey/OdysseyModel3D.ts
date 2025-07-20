@@ -1132,7 +1132,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) ); //Works with indices
 
             //Normals
-            // const normals = new Float32Array( odysseyNode.normals.length ); //Works with indices
             geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( odysseyNode.normals, 3 ) );//.copyArray( odysseyNode.normals ) ); //Works with indices
 
             //Color
@@ -1140,11 +1139,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
             // geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) );//.copyArray( new Array(odysseyNode.vertices.length).fill(1, 0, odysseyNode.vertices.length) ) ); //Works with indices
             
             //UV1
-            // const uv1 = new Float32Array( odysseyNode.tvectors[0].length ); //Works with indices
             geometry.setAttribute(  'uv', new THREE.Float32BufferAttribute( odysseyNode.tvectors[0], 2 ) );//.copyArray( odysseyNode.tvectors[0] ) ); //Works with indices
             
             //UV2
-            // const uv2 = new Float32Array( odysseyNode.tvectors[1].length ); //Works with indices
             geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( odysseyNode.tvectors[1], 2 ) );//.copyArray( odysseyNode.tvectors[1] ) ); //Works with indices
             
             //--------------------------//
@@ -1152,11 +1149,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
             //--------------------------//
             if((odysseyNode.nodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin){
               //Skin Index
-              // const boneIdx = Float32Array.from((odysseyNode as OdysseyModelNodeSkin).boneIdx);
               geometry.setAttribute( 'skinIndex', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeSkin).boneIdx, 4 ) )
 
               //Skin Weight
-              // const weights = Float32Array.from((odysseyNode as OdysseyModelNodeSkin).weights);
               geometry.setAttribute( 'skinWeight', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeSkin).weights, 4 ) );
             }
 
@@ -1165,7 +1160,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             //----------------------------//
             if((odysseyNode.nodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly){
               //Contstraint
-              // const constraints = new Float32Array( (odysseyNode as OdysseyModelNodeDangly).danglyVec4.length ); //Works with indices
               geometry.setAttribute( 'constraint', new THREE.Float32BufferAttribute( (odysseyNode as OdysseyModelNodeDangly).danglyVec4, 4 ) );//.copyArray( (odysseyNode as OdysseyModelNodeDangly).danglyVec4 ) ); //Works with indices
             }
             
@@ -1186,7 +1180,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }).flat();
 
             //Positions
-            // const vertices32 = new Float32Array( vertices );
             geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
 
             const normals = odysseyNode.faces.map( f => {
@@ -1194,7 +1187,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }).flat();
 
             //Normals
-            // const normals32 = new Float32Array( normals );
             geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
 
             const colors = odysseyNode.faces.map( f => {
@@ -1206,7 +1198,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
             }).flat();
 
             //Color
-            // const colors32 = new Float32Array( colors );
             geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( colors, 3 ) ); 
           }
 
