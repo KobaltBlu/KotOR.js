@@ -54,6 +54,7 @@ import { ModuleMiniGame } from "./ModuleMiniGame";
 import { ModuleMGTrack } from "./ModuleMGTrack";
 import { ModuleMGPlayer } from "./ModuleMGPlayer";
 import type { Module } from "./Module";
+import { IVISRoom } from "../interface/module/IVISRoom";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -585,7 +586,7 @@ export class ModuleArea extends ModuleObject {
         for(let i = 0, il = this.rooms.length; i < il; i++){
           const room = this.rooms[i];
           const inCamera = GameState.viewportFrustum.intersectsBox(room.box);
-          if(!room.hasVISObject || room.box.containsPoint(pos) || inCamera){
+          if(!room.visObject || room.box.containsPoint(pos) || inCamera){
             roomList.push(room);
           }
         }
@@ -612,7 +613,7 @@ export class ModuleArea extends ModuleObject {
         if(player){
           for(let i = 0, len = this.rooms.length; i < len; i++){
             let room = this.rooms[i];
-            if(!room.hasVISObject || room.box.containsPoint(player.position)){
+            if(!room.visObject || room.box.containsPoint(player.position)){
               //Show the room, but don't recursively show it's children
               room.show(false);
             }
@@ -774,12 +775,13 @@ export class ModuleArea extends ModuleObject {
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       let strt = rooms.childStructs[i];
-      const room = new ModuleRoom({
-        ambientScale: this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue(),
-        envAudio: this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue(),
-        roomName: this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase()
-      });
+      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
+      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
+      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
+      const room = new ModuleRoom(roomName, this);
       room.area = this;
+      room.setAmbientScale(ambientScale);
+      room.setEnvAudio(envAudio);
       this.rooms.push(room);
     }
 
@@ -1003,12 +1005,14 @@ export class ModuleArea extends ModuleObject {
     console.log('ModuleArea.loadVis');
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes.vis, this.name);
-      this.visObject = new VISObject(buffer, this);
+      this.visObject = new VISObject(buffer);
+      this.visObject.read();
       return;
     }catch(e){
+      this.visObject = new VISObject();
       console.error(e);
     }
-    this.visObject = new VISObject(null, this);
+    this.visObject.attachArea(this);
   }
 
   async loadLayout(){
@@ -1045,16 +1049,6 @@ export class ModuleArea extends ModuleObject {
         for(let i = 0; i < this.layout.obstacles.length; i++){
           this.miniGame.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
         }
-      }
-
-      //Room Linking Pass 1
-      for(let ri = 0; ri < this.rooms.length; ri++ ){
-        let room = this.rooms[ri];
-        let linked_rooms = [];
-        if(this.visObject.GetRoom(room.roomName)){
-          linked_rooms = this.visObject.GetRoom(room.roomName).rooms;
-        }
-        room.setLinkedRooms(linked_rooms);
       }
     }catch(e){
       console.error(e);
@@ -1462,7 +1456,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     for(let j = 0; j < this.rooms.length; j++){
-      this.rooms[j].link_rooms(this.rooms);
+      this.rooms[j].linkRooms();
     }
 
     //Room Linking Pass 2
@@ -1474,21 +1468,23 @@ export class ModuleArea extends ModuleObject {
         let room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ModuleRoom){
-          let room2_links_to_room1 = room2.linked_rooms.indexOf(room1) >= 0;
-          let room1_links_to_room2 = room1.linked_rooms.indexOf(room2) >= 0;
+          const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
+          const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
+          const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
+          const room1_links_to_room2 = room1_room_links.indexOf(room2.roomName) >= 0;
 
-          let should_link = room2_links_to_room1 || room1_links_to_room2;
+          const should_link = room2_links_to_room1 || room1_links_to_room2;
           //console.log('room', room1.roomName, room2.roomName, should_link);
-          if(should_link && room1.linked_rooms.indexOf(room2) == -1 ){
-            room1.linked_rooms.push(room2);
+          if(should_link && !room1.linkedRooms.has(room2.roomName)){
+            room1.linkedRooms.set(room2.roomName, room2);
           }
 
-          if(should_link && room2.linked_rooms.indexOf(room1) == -1 ){
-            room2.linked_rooms.push(room1);
+          if(should_link && !room2.linkedRooms.has(room1.roomName)){
+            room2.linkedRooms.set(room1.roomName, room1);
           }
         }
       }
-      this.walkmesh_rooms = [room1].concat(room1.linked_rooms);
+      this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
     }
   }
 

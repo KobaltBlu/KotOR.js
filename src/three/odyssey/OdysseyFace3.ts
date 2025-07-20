@@ -13,7 +13,6 @@ import { IAdjacentWalkableFaces } from "../../interface/odyssey";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyFace3 {
-
 	walkIndex:number = 0;
 	coeff: number = 0;
 	walkmesh: OdysseyWalkMesh;
@@ -32,6 +31,11 @@ export class OdysseyFace3 {
 		b: undefined,
 		c: undefined,
 	};
+  distance: number;
+  materialId: number;
+  nAdjacentFaces1: number;
+  nAdjacentFaces2: number;
+  nAdjacentFaces3: number;
 
 	/**
 	 * @param a Vertex A index.

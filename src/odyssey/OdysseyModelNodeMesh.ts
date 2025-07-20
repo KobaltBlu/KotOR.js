@@ -26,7 +26,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   tangents: any[][];
   indexArray: any[];
   uvs: any[];
-  faces: any[];
+  faces: OdysseyFace3[];
   indices: any[];
   functionPointer0: number;
   functionPointer1: number;

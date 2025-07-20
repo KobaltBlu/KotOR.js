@@ -81,6 +81,12 @@ export class Utility {
     return s.substr(s.length-size);
   }
 
+  /**
+   * Determine if the string is NULL
+   * 
+   * @param str - The string to check
+   * @returns True if the string is NULL, false otherwise
+   */
   static is2daNULL(str:string): boolean{
 
     if(str === null)
