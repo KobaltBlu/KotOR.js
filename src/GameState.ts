@@ -603,7 +603,7 @@ export class GameState implements EngineContext {
     GameState.weather_effects = [];
 
     GameState.scene.add(GameState.group.rooms);
-    // GameState.scene.add(GameState.group.grass);
+    GameState.scene.add(GameState.group.grass);
     GameState.scene.add(GameState.group.placeables);
     GameState.scene.add(GameState.group.doors);
     GameState.scene.add(GameState.group.creatures);
