@@ -361,7 +361,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
         this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialIndex];
-        this.faces[i].color = (OdysseyWalkMesh.TILECOLORS[this.faces[i].materialIndex] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
+        // this.faces[i].color = (OdysseyWalkMesh.TILECOLORS[this.faces[i].materialIndex] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 

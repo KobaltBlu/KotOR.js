@@ -360,7 +360,7 @@ export class ModuleRoom extends ModuleObject {
       ]),
       vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
       fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
-      visible: true,//GameState.iniConfig.getProperty('Graphics Options.Grass'),
+      visible: true,
       side: THREE.DoubleSide
     });
 

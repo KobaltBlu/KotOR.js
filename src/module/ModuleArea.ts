@@ -1185,6 +1185,10 @@ export class ModuleArea extends ModuleObject {
 
       this.cleanupUninitializedObjects();
       this.detectRoomObjects();
+
+      if(GameState.group.grass){
+        GameState.group.grass.visible = !!GameState.iniConfig.getProperty('Graphics Options.Grass');
+      }
     }catch(e){
       console.error(e);
     }
