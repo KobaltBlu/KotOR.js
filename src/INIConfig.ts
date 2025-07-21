@@ -135,7 +135,8 @@ export class INIConfig {
   async save(){
     try{
       console.log(`INIConfig saving: ${this.ini_path}`);
-      await GameFileSystem.writeFile(this.ini_path, Buffer.from(this.toString()));
+      const encoder = new TextEncoder();
+      await GameFileSystem.writeFile(this.ini_path, encoder.encode(this.toString()));
       console.log(`INIConfig saved: ${this.ini_path}`);
     }catch(e){
       console.error(e);
