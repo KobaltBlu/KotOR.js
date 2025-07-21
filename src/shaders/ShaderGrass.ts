@@ -24,7 +24,12 @@ export class ShaderGrass extends Shader {
         ambientColor: { value: new THREE.Color() },
         windPower: { value: 0 },
         playerPosition: { value: new THREE.Vector3() },
-        alphaTest: { value: 1 }
+        alphaTest: { value: 1 },
+        // Camera distance fade uniforms
+        cameraPosition: { value: new THREE.Vector3() },
+        fadeStartDistance: { value: 50.0 }, // Distance where fade starts
+        fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
+        useDistanceFade: { value: true }    // Toggle for distance fade
       }
     ]);
     this.vertex = `
@@ -52,6 +57,13 @@ export class ShaderGrass extends Shader {
     
     attribute vec2 lightmapUV;
     varying vec2 vLightmapUV;
+
+    // Camera distance fade
+    // uniform vec3 cameraPosition;
+    uniform float fadeStartDistance;
+    uniform float fadeEndDistance;
+    uniform bool useDistanceFade;
+    varying float vDistanceFade;
 
     // Deterministic random from instanceID
     float rand01(float x) {
@@ -109,6 +121,28 @@ export class ShaderGrass extends Shader {
       vec3 windOffset = rotationComponent * vec3(cos(wind), sin(wind), 0.0);
       transformed.xyz += windOffset;
 
+      // Calculate distance from camera for fade effect
+      if (useDistanceFade) {
+        vec4 distancePosition = vec4( transformed, 1.0 );
+        #ifdef USE_INSTANCING
+          distancePosition = instanceMatrix * distancePosition;
+        #endif
+        distancePosition = modelMatrix * distancePosition;
+        float distanceFromCamera = distance(distancePosition.xyz, cameraPosition);
+        
+        // Calculate fade factor (1.0 = fully visible, 0.0 = invisible)
+        if (distanceFromCamera <= fadeStartDistance) {
+          vDistanceFade = 1.0;
+        } else if (distanceFromCamera >= fadeEndDistance) {
+          vDistanceFade = 0.0;
+        } else {
+          // Linear interpolation between fadeStartDistance and fadeEndDistance
+          vDistanceFade = 1.0 - ((distanceFromCamera - fadeStartDistance) / (fadeEndDistance - fadeStartDistance));
+        }
+      } else {
+        vDistanceFade = 1.0;
+      }
+
       //project_vertex (THREE.js)
       #include <project_vertex>
 
@@ -130,6 +164,7 @@ export class ShaderGrass extends Shader {
     #include <logdepthbuf_pars_fragment>
     varying float vInstanceID;
     varying vec4 vSpriteSheet;
+    varying float vDistanceFade;
     #ifdef USE_LIGHTMAP
       uniform sampler2D lightMap;
       varying vec2 vLightmapUV;
@@ -147,6 +182,9 @@ export class ShaderGrass extends Shader {
       #endif
 
       texelColor.rgb *= lightmapColor.rgb;
+
+      // Apply distance fade to alpha
+      texelColor.a *= vDistanceFade;
 
       if (texelColor[3] < alphaTest) {
         discard;
