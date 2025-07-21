@@ -415,6 +415,7 @@ export class ModuleRoom extends ModuleObject {
      * emulate gl_InstanceID with an instanced buffer attribute
      */
     const instanceIndices = new Float32Array(totalGrassCount);
+    const lightmapUV = new Float32Array(totalGrassCount * 2);
     for(let i = 0; i < totalGrassCount; i++){
       instanceIndices[i] = i;
     }
@@ -456,12 +457,15 @@ export class ModuleRoom extends ModuleObject {
         tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
 
         objForMatrix.rotation.z =  Math.floor(Math.random() * 360) + 0;
-        objForMatrix.position.set(
-          this.position.x + aabb.position.x + tmpVec3.x, 
-          this.position.y + aabb.position.y + tmpVec3.y, 
-          this.position.z + aabb.position.z + tmpVec3.z + quadOffsetZ
-        );
+        objForMatrix.position.copy(tmpVec3);
+        objForMatrix.position.z += quadOffsetZ;
         objForMatrix.updateMatrix();
+
+        if(lm_texture){
+          const uv = this.calculateGrassUV(tmpVec3, null);
+          lightmapUV[(instanceIndex * 2) + 0] = uv ? uv.x : 0.00;
+          lightmapUV[(instanceIndex * 2) + 1] = uv ? uv.y : 0.00; 
+        }
 
         this.grass.setMatrixAt(instanceIndex, objForMatrix.matrix);
         instanceIndex++;
@@ -469,10 +473,17 @@ export class ModuleRoom extends ModuleObject {
     }
     this.grass.instanceMatrix.needsUpdate = true;
     geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
+    geometry.setAttribute('lightmapUV', new THREE.InstancedBufferAttribute(lightmapUV, 2));
+
+    this.grass.position.copy(this.position).add(aabb.position);
 
     GameState.group.grass.add(this.grass);
 
     //Load in the grass texture
+    if(!this.area.grass.textureName){
+      console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
+      return;
+    }
     TextureLoader.Load(this.area.grass.textureName).then((diffuseMap: OdysseyTexture) => {
       if(!diffuseMap){
         return;
@@ -484,6 +495,10 @@ export class ModuleRoom extends ModuleObject {
       grass_material.defines.USE_MAP = '';
       grass_material.defines.USE_UV = '';
       grass_material.needsUpdate = true;
+      if(!lm_texture){
+        console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
+        return;
+      }
       //Load in the grass lm texture
       TextureLoader.Load(lm_texture).then((lightMap: OdysseyTexture) => {
         if(!lightMap){
@@ -497,6 +512,79 @@ export class ModuleRoom extends ModuleObject {
         grass_material.needsUpdate = true;
       });
     });
+  }
+
+  /**
+   * Calculate the UV coordinates for the grass
+   * @param point - The point to calculate the UV for
+   * @param tri - The triangle to calculate the UV for
+   * @returns The UV coordinates for the grass
+   */
+  calculateGrassUV(point: THREE.Vector3, tri: THREE.Triangle){
+    if(!this.model || typeof this.model.aabb?.nodeType === 'undefined')
+      return null;
+
+    const pos = this.model.aabb.vertices
+    const uv2 = this.model.aabb.tvectors[1];
+    const index = this.model.aabb.indices;
+
+    const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+    const bary = new THREE.Vector3();
+    const bTriangePassed = !!tri;
+    tri = bTriangePassed ? tri : new THREE.Triangle();
+
+    const triangleCount = index ? index.length / 3 : pos.length / 3;
+    let found = false;
+    let triIndex = -1;
+
+    for (let i = 0; i < triangleCount; i++) {
+      const i0 = index ? index[i * 3 + 0] : i * 3 + 0;
+      const i1 = index ? index[i * 3 + 1] : i * 3 + 1;
+      const i2 = index ? index[i * 3 + 2] : i * 3 + 2;
+    
+      a.set(pos[i0 * 3], pos[i0 * 3 + 1], pos[i0 * 3 + 2]);//fromBufferAttribute(pos, i0);
+      b.set(pos[i1 * 3], pos[i1 * 3 + 1], pos[i1 * 3 + 2]);//fromBufferAttribute(pos, i1);
+      c.set(pos[i2 * 3], pos[i2 * 3 + 1], pos[i2 * 3 + 2]);//fromBufferAttribute(pos, i2);
+    
+      tri.set(a, b, c);
+      const closest = tri.closestPointToPoint(point, new THREE.Vector3());
+    
+      // Only accept if the point is very close to the triangle's surface
+      if (closest.distanceToSquared(point) > 1e-10) continue;
+    
+      THREE.Triangle.getBarycoord(closest, a, b, c, bary);
+    
+      // Accept the triangle if point is inside (or very close to inside)
+      if (bary.x >= -1e-6 && bary.y >= -1e-6 && bary.z >= -1e-6) {
+        found = true;
+        triIndex = i;
+        break;
+      }
+    }
+
+    if (!found) {
+      console.warn("Point is not on geometry surface");
+      return null;
+    }
+    
+    const i0 = index ? index[triIndex * 3 + 0] : triIndex * 3 + 0;
+    const i1 = index ? index[triIndex * 3 + 1] : triIndex * 3 + 1;
+    const i2 = index ? index[triIndex * 3 + 2] : triIndex * 3 + 2;
+    
+    const uvA = new THREE.Vector2();
+    const uvB = new THREE.Vector2();
+    const uvC = new THREE.Vector2();
+    
+    uvA.set(uv2[i0 * 2], uv2[i0 * 2 + 1]);
+    uvB.set(uv2[i1 * 2], uv2[i1 * 2 + 1]);
+    uvC.set(uv2[i2 * 2], uv2[i2 * 2 + 1]);
+    
+    const interpolatedUV2 = new THREE.Vector2()
+      .addScaledVector(uvA, bary.x)
+      .addScaledVector(uvB, bary.y)
+      .addScaledVector(uvC, bary.z);
+    
+    return interpolatedUV2;
   }
   
   containsPoint2d(point: any){

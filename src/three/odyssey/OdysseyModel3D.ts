@@ -53,7 +53,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   odysseyAnimations: OdysseyModelAnimation[] = [];
   emitters: OdysseyEmitter3D[] = [];
   lights: any = [];
-  aabb: any = {};
+  aabb: OdysseyModelNodeAABB = {} as any;
   materials: THREE.Material[] = [];
   parentModel: any = undefined;
 
@@ -250,7 +250,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       this.odysseyAnimations = [];
       this.emitters = [];
       this.lights = [];
-      this.aabb = {};
+      this.aabb = {} as any;
       this.materials = [];
       this.skins = [];
 
@@ -914,7 +914,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     node.NodeType = odysseyNode.nodeType;
 
     if((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB){
-      odysseyModel.aabb = odysseyNode;
+      odysseyModel.aabb = odysseyNode as OdysseyModelNodeAABB;
     }
 
     node.controllers = odysseyNode.controllers;

@@ -49,6 +49,9 @@ export class ShaderGrass extends Shader {
 
     attribute float quadIdx;
     varying vec4 vSpriteSheet;
+    
+    attribute vec2 lightmapUV;
+    varying vec2 vLightmapUV;
 
     // Deterministic random from instanceID
     float rand01(float x) {
@@ -72,6 +75,8 @@ export class ShaderGrass extends Shader {
     void main() {
       //instanceID
       vInstanceID = instanceID;
+      
+      vLightmapUV = lightmapUV;
 
       //uv (THREE.js)
       #include <uv_vertex>
@@ -125,12 +130,24 @@ export class ShaderGrass extends Shader {
     #include <logdepthbuf_pars_fragment>
     varying float vInstanceID;
     varying vec4 vSpriteSheet;
+    #ifdef USE_LIGHTMAP
+      uniform sampler2D lightMap;
+      varying vec2 vLightmapUV;
+    #endif
     void main() {
       vec2 uvTransform = vec2(
         vSpriteSheet.x + (vSpriteSheet.z * vUv.x), 
         vSpriteSheet.y + (vSpriteSheet.w * vUv.y)
       );
       vec4 texelColor = texture2D( map, uvTransform );
+      vec4 lightmapColor = vec4(1.0, 1.0, 1.0, 1.0);
+
+      #ifdef USE_LIGHTMAP
+        lightmapColor = texture2D( lightMap, vLightmapUV );
+      #endif
+
+      texelColor.rgb *= lightmapColor.rgb;
+
       if (texelColor[3] < alphaTest) {
         discard;
       }
