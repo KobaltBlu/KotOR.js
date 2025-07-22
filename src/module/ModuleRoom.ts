@@ -127,16 +127,15 @@ export class ModuleRoom extends ModuleObject {
 
     if(this.grass){
       this.grass.material.uniforms.time.value += delta;
-      let c_player = GameState.getCurrentPlayer();
-      if(c_player){
-        this.grass.material.uniforms.playerPosition.value.copy(c_player.position);
-      }
       
-      // Update camera position for distance fade
+      // Update camera position for distance fade and player position for trample
       if(GameState.getCurrentPlayer()?.position){
-        this.grass.material.uniforms.cameraPosition.value.copy(GameState.getCurrentPlayer()?.position);
+        this.grass.material.uniforms.playerPosition.value.copy(GameState.getCurrentPlayer()?.position);
         this.grass.material.uniforms.useDistanceFade.value = (GameState.Mode == EngineMode.DIALOG) ? false : true;
       }
+      
+      // Update entity positions in texture for multi-entity trample
+      this.updatePositionDataTexture();
       
       this.grass.material.uniformsNeedUpdate = true;
     }
@@ -314,12 +313,18 @@ export class ModuleRoom extends ModuleObject {
     geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
     geometry.attributes.uv = grassGeometry.attributes.uv;
 
+    // Create position data texture for multi-entity trample
+    const positionTexture = this.createPositionDataTexture(64); // 64 entities max
+
     const grass_material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         THREE.UniformsLib["common"],
         {
           map: { value: null },
           lightMap: { value: null },
+          positionMap: { value: positionTexture },
+          positionMapSize: { value: new THREE.Vector2(8, 8) }, // 8x8 texture = 64 entities
+          maxEntities: { value: 64 },
           time: { value: 0 },
           ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(this.area.sun.fogColor).toString(16))) },
           windPower: { value: this.area.windPower },
@@ -331,11 +336,13 @@ export class ModuleRoom extends ModuleObject {
             this.area.grass.probability.upperLeft,
             this.area.grass.probability.upperRight
           ) },
-          // Camera distance fade uniforms
-          cameraPosition: { value: new THREE.Vector3() },
+          // Fade distance uniforms
           fadeStartDistance: { value: 25.0 },
           fadeEndDistance: { value: 100.0 },
-          useDistanceFade: { value: true }
+          useDistanceFade: { value: true },
+          // Trample effect uniforms
+          trampleRadius: { value: 3.0 },    // Radius around player where grass gets trampled
+          trampleStrength: { value: 1.0 }   // Strength of the trample effect
         }
       ]),
       vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
@@ -426,7 +433,7 @@ export class ModuleRoom extends ModuleObject {
         // Set matrix
         objForMatrix.rotation.z = Math.floor(Math.random() * 360);
         objForMatrix.position.copy(tmpVec3);
-        objForMatrix.position.z += quadOffsetZ;
+        objForMatrix.position.z += quadOffsetZ * 0.90;
         objForMatrix.updateMatrix();
 
         // Calculate lightmap UV using current face's barycentric coordinates
@@ -525,6 +532,66 @@ export class ModuleRoom extends ModuleObject {
     }
     
     return { totalGrassCount, faceGrassCounts };
+  }
+
+  /**
+   * Create a data texture to store entity positions for trample effects
+   */
+  private createPositionDataTexture(maxEntities: number = 64): THREE.DataTexture {
+    // Create a texture to store entity positions
+    // Format: RGBA where R=X, G=Y, B=Z, A=active flag
+    const textureSize = Math.ceil(Math.sqrt(maxEntities));
+    const data = new Float32Array(textureSize * textureSize * 4);
+    
+    // Initialize all positions to (0,0,0,0) - inactive
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 0;     // X
+      data[i + 1] = 0; // Y  
+      data[i + 2] = 0; // Z
+      data[i + 3] = 0; // Active flag (0 = inactive, 1 = active)
+    }
+    
+    const texture = new THREE.DataTexture(
+      data,
+      textureSize,
+      textureSize,
+      THREE.RGBAFormat,
+      THREE.FloatType
+    );
+    
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  /**
+   * Update entity positions in the position data texture
+   */
+  private updatePositionDataTexture(): void {
+    if (!this.grass || !this.grass.material.uniforms.positionMap.value) return;
+    
+    const texture = this.grass.material.uniforms.positionMap.value;
+    const data = texture.image.data;
+    const textureSize = texture.image.width;
+    let entityIndex = 0;
+    
+    // Clear all positions
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 3] = 0; // Set all to inactive
+    }
+    
+    // Add creature positions
+    for (const creature of this.creatures) {
+      if (entityIndex >= textureSize * textureSize) break;
+      
+      const pixelIndex = entityIndex * 4;
+      data[pixelIndex] = creature.position.x;
+      data[pixelIndex + 1] = creature.position.y;
+      data[pixelIndex + 2] = creature.position.z;
+      data[pixelIndex + 3] = 1.0; // Active
+      entityIndex++;
+    }
+    
+    texture.needsUpdate = true;
   }
 
   /**

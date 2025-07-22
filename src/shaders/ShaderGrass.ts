@@ -25,8 +25,7 @@ export class ShaderGrass extends Shader {
         windPower: { value: 0 },
         playerPosition: { value: new THREE.Vector3() },
         alphaTest: { value: 1 },
-        // Camera distance fade uniforms
-        cameraPosition: { value: new THREE.Vector3() },
+        // Fade distance uniforms
         fadeStartDistance: { value: 50.0 }, // Distance where fade starts
         fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
         useDistanceFade: { value: true }    // Toggle for distance fade
@@ -59,11 +58,21 @@ export class ShaderGrass extends Shader {
     varying vec2 vLightmapUV;
 
     // Camera distance fade
-    // uniform vec3 cameraPosition;
     uniform float fadeStartDistance;
     uniform float fadeEndDistance;
     uniform bool useDistanceFade;
     varying float vDistanceFade;
+
+    // Trample effect
+    uniform vec3 playerPosition;
+    uniform float trampleRadius;
+    uniform float trampleStrength;
+    varying float vTrampleEffect;
+    
+    // Multi-entity trample using position texture
+    uniform sampler2D positionMap;
+    uniform vec2 positionMapSize;
+    uniform int maxEntities;
 
     // Deterministic random from instanceID
     float rand01(float x) {
@@ -82,6 +91,38 @@ export class ShaderGrass extends Shader {
       else if (r < t1) return 1.0;  // LR
       else if (r < t2) return 2.0;  // UL
       else return 3.0;              // UR
+    }
+
+    void calculateMultiEntityTrample(vec3 worldPosition, out float totalTrampleEffect) {
+      totalTrampleEffect = 0.0;
+      
+      // Sample all entities from the position texture (using constant loop bound)
+      for (int i = 0; i < 64; i++) {
+        // Convert index to texture coordinates (avoiding modulo operator)
+        float x = float(i) - float(int(positionMapSize.x)) * floor(float(i) / positionMapSize.x);
+        float y = floor(float(i) / positionMapSize.x);
+        vec2 texCoord = vec2(x / positionMapSize.x, y / positionMapSize.y);
+        
+        // Sample entity data
+        vec4 entityData = texture2D(positionMap, texCoord);
+        vec3 entityPosition = entityData.xyz;
+        float isActive = entityData.w;
+        
+        // Skip inactive entities
+        if (isActive < 0.5) continue;
+        
+        // Calculate distance to this entity
+        float distanceToEntity = distance(worldPosition, entityPosition);
+        
+        if (distanceToEntity <= trampleRadius) {
+          // Calculate trample strength based on distance
+          float trampleFactor = 1.0 - (distanceToEntity / trampleRadius);
+          totalTrampleEffect += trampleFactor * trampleStrength;
+        }
+      }
+      
+      // Clamp total effect
+      totalTrampleEffect = min(totalTrampleEffect, 2.0);
     }
 
     void main() {
@@ -121,26 +162,64 @@ export class ShaderGrass extends Shader {
       vec3 windOffset = rotationComponent * vec3(cos(wind), sin(wind), 0.0);
       transformed.xyz += windOffset;
 
-      // Calculate distance from camera for fade effect
+      // Calculate world position for both distance fade and trample effects
+      vec4 worldPosition = vec4( transformed, 1.0 );
+      #ifdef USE_INSTANCING
+        worldPosition = instanceMatrix * worldPosition;
+      #endif
+      worldPosition = modelMatrix * worldPosition;
+
+      // Calculate distance fade effect (still using player position for camera distance)
+      float distanceFromPlayer = distance(worldPosition.xyz, playerPosition);
       if (useDistanceFade) {
-        vec4 distancePosition = vec4( transformed, 1.0 );
-        #ifdef USE_INSTANCING
-          distancePosition = instanceMatrix * distancePosition;
-        #endif
-        distancePosition = modelMatrix * distancePosition;
-        float distanceFromCamera = distance(distancePosition.xyz, cameraPosition);
-        
         // Calculate fade factor (1.0 = fully visible, 0.0 = invisible)
-        if (distanceFromCamera <= fadeStartDistance) {
+        if (distanceFromPlayer <= fadeStartDistance) {
           vDistanceFade = 1.0;
-        } else if (distanceFromCamera >= fadeEndDistance) {
+        } else if (distanceFromPlayer >= fadeEndDistance) {
           vDistanceFade = 0.0;
         } else {
           // Linear interpolation between fadeStartDistance and fadeEndDistance
-          vDistanceFade = 1.0 - ((distanceFromCamera - fadeStartDistance) / (fadeEndDistance - fadeStartDistance));
+          vDistanceFade = 1.0 - ((distanceFromPlayer - fadeStartDistance) / (fadeEndDistance - fadeStartDistance));
         }
       } else {
         vDistanceFade = 1.0;
+      }
+      
+      // Calculate multi-entity trample effect
+      calculateMultiEntityTrample(worldPosition.xyz, vTrampleEffect);
+
+      // Apply trample effect - bend grass away from all affecting entities
+      if (vTrampleEffect > 0.0 && constraint > 0.0) {
+        // Calculate average direction from all affecting entities
+        vec3 averageDirection = vec3(0.0);
+        float directionWeight = 0.0;
+        
+        for (int i = 0; i < 64; i++) {
+          // Convert index to texture coordinates (avoiding modulo operator)
+          float x = float(i) - float(int(positionMapSize.x)) * floor(float(i) / positionMapSize.x);
+          float y = floor(float(i) / positionMapSize.x);
+          vec2 texCoord = vec2(x / positionMapSize.x, y / positionMapSize.y);
+          
+          vec4 entityData = texture2D(positionMap, texCoord);
+          vec3 entityPosition = entityData.xyz;
+          float isActive = entityData.w;
+          
+          if (isActive < 0.5) continue;
+          
+          float distanceToEntity = distance(worldPosition.xyz, entityPosition);
+          if (distanceToEntity <= trampleRadius) {
+            vec3 directionFromEntity = normalize(worldPosition.xyz - entityPosition);
+            float weight = 1.0 - (distanceToEntity / trampleRadius);
+            averageDirection += directionFromEntity * weight;
+            directionWeight += weight;
+          }
+        }
+        
+        if (directionWeight > 0.0) {
+          averageDirection = normalize(averageDirection / directionWeight);
+          vec3 trampleOffset = rotationComponent * averageDirection * vTrampleEffect * 0.5;
+          transformed.xyz += trampleOffset;
+        }
       }
 
       //project_vertex (THREE.js)
@@ -165,6 +244,7 @@ export class ShaderGrass extends Shader {
     varying float vInstanceID;
     varying vec4 vSpriteSheet;
     varying float vDistanceFade;
+    varying float vTrampleEffect;
     #ifdef USE_LIGHTMAP
       uniform sampler2D lightMap;
       varying vec2 vLightmapUV;
@@ -185,6 +265,11 @@ export class ShaderGrass extends Shader {
 
       // Apply distance fade to alpha
       texelColor.a *= vDistanceFade;
+
+      // Apply trample effect to alpha (make trampled grass slightly more transparent)
+      if (vTrampleEffect > 0.0) {
+        texelColor.a *= (1.0 - vTrampleEffect * 0.3);
+      }
 
       if (texelColor[3] < alphaTest) {
         discard;
