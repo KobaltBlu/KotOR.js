@@ -218,7 +218,7 @@ export class ShaderGrass extends Shader {
         if (directionWeight > 0.0) {
           averageDirection = normalize(averageDirection / directionWeight);
           vec3 trampleOffset = rotationComponent * averageDirection * vTrampleEffect * 0.5;
-          transformed.xyz += trampleOffset;
+          transformed.xyz -= trampleOffset;
         }
       }
 
