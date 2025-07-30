@@ -67,27 +67,27 @@ export class LYTObject {
           case MODES.ROOMS:
             this.rooms.push({
               name: params[0].toLowerCase(),
-              position: new THREE.Vector3(params[1], params[2], params[3])
+              position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3]))
             });
           break;
           case MODES.TRACKS:
             this.tracks.push({
               name: params[0].toLowerCase(),
-              position: new THREE.Vector3(params[1], params[2], params[3])
+              position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3]))
             });
           break;
           case MODES.OBSTACLES:
             this.obstacles.push({
               name: params[0].toLowerCase(),
-              position: new THREE.Vector3(params[1], params[2], params[3])
+              position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3]))
             });
           break;
           case MODES.DOORS:
             this.doorhooks.push({
               room: params[0].toLowerCase(),
               name: params[1].toLowerCase(),
-              position: new THREE.Vector3(params[1], params[2], params[3]),
-              quaternion: new THREE.Quaternion(params[4], params[5], params[6], params[7])
+              position: new THREE.Vector3(parseFloat(params[1]), parseFloat(params[2]), parseFloat(params[3])),
+              quaternion: new THREE.Quaternion(parseFloat(params[4]), parseFloat(params[5]), parseFloat(params[6]), parseFloat(params[7]))
             });
           break;
         }

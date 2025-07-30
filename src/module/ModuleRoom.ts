@@ -1,8 +1,8 @@
 import { ModuleObject } from "./ModuleObject";
-import type { ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
-import { OdysseyModel3D } from "../three/odyssey";
+import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
 import { BinaryReader } from "../BinaryReader";
@@ -16,6 +16,9 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 // import { ShaderManager } from "../managers";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
+import { VISObject } from "../resource/VISObject";
+import { IVISRoom } from "../interface";
+import { EngineMode } from "../enums/engine/EngineMode";
 
 /**
 * ModuleRoom class.
@@ -30,48 +33,37 @@ import { BitWise } from "../utility/BitWise";
 * @memberof KotOR
 */
 export class ModuleRoom extends ModuleObject {
-  ambientScale: any;
-  envAudio: any;
-  roomName: any;
-  linked_rooms: any;
-  hasVISObject: boolean;
-  doors: ModuleDoor[];
-  placeables: ModulePlaceable[];
-  creatures: ModuleCreature[];
-  triggers: ModuleTrigger[];
-  encounters: ModuleEncounter[];
-  grass: THREE.Mesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+  ambientScale: number = 0;
+  envAudio: number = 0;
+  roomName: string;
+  visObject: VISObject;
 
-  constructor( args: any = {} ){
+  doors: ModuleDoor[] = [];
+  placeables: ModulePlaceable[] = [];
+  creatures: ModuleCreature[] = [];
+  triggers: ModuleTrigger[] = [];
+  encounters: ModuleEncounter[] = [];
+  grass: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
+
+  linkedRoomData: IVISRoom[] = [];
+  linkedRoomNames: string[] = [];
+  linkedRooms: Map<string, ModuleRoom> = new Map<string, ModuleRoom>();
+
+  constructor( roomName: string, area: ModuleArea ){
     super();
     this.objectType |= ModuleObjectType.ModuleRoom;
-    args = Object.assign({
-      ambientScale: 0,
-      envAudio: 0,
-      roomName: '',
-      model: undefined,
-      walkmesh: undefined,
-      linked_rooms: []
-    }, args);
 
     this.id = -1;
+    this.roomName = roomName?.toLocaleLowerCase();
+    this.area = area;
+  }
 
-    this.ambientScale = args.ambientScale;
-    this.envAudio = args.envAudio;
-    this.roomName = args.roomName;
+  setAmbientScale(scale: number){
+    this.ambientScale = scale;
+  }
 
-    this.room = args.room;
-    this.model = args.model;
-    this.collisionData.walkmesh = args.walkmesh;
-    this.linked_rooms = args.linked_rooms;
-    this.hasVISObject = false;
-
-    this.doors = [];
-    this.placeables = [];
-    this.creatures = [];
-    this.triggers = [];
-    this.encounters = [];
-
+  setEnvAudio(audio: number){
+    this.envAudio = audio;
   }
 
   detectChildObjects(){
@@ -80,15 +72,15 @@ export class ModuleRoom extends ModuleObject {
     let box = this.box.clone().expandByVector(v);
     this.doors = [];
     this.placeables = [];
-    for(let i = 0, len = GameState.module.area.doors.length; i < len; i++){
-      let object = GameState.module.area.doors[i];
+    for(let i = 0, len = this.area.doors.length; i < len; i++){
+      let object = this.area.doors[i];
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
         this.attachChildObject(object);
       }
     }
 
-    for(let i = 0, len = GameState.module.area.placeables.length; i < len; i++){
-      let object = GameState.module.area.placeables[i];
+    for(let i = 0, len = this.area.placeables.length; i < len; i++){
+      let object = this.area.placeables[i];
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
         this.attachChildObject(object);
       }
@@ -108,8 +100,9 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  setLinkedRooms(array: any[] = []){
-    this.linked_rooms = array;
+  setLinkedRooms(array: IVISRoom[] = []){
+    this.linkedRoomData = array;
+    this.linkedRoomNames = array.map(room => room.name);
   }
 
   setPosition(x = 0, y = 0, z = 0){
@@ -134,10 +127,16 @@ export class ModuleRoom extends ModuleObject {
 
     if(this.grass){
       this.grass.material.uniforms.time.value += delta;
-      let c_player = GameState.getCurrentPlayer();
-      if(c_player){
-        this.grass.material.uniforms.playerPosition.value.copy(c_player.position);
+      
+      // Update camera position for distance fade and player position for trample
+      if(GameState.getCurrentPlayer()?.position){
+        this.grass.material.uniforms.playerPosition.value.copy(GameState.getCurrentPlayer()?.position);
+        this.grass.material.uniforms.useDistanceFade.value = (GameState.Mode == EngineMode.DIALOG) ? false : true;
       }
+      
+      // Update entity positions in texture for multi-entity trample
+      this.updatePositionDataTexture();
+      
       this.grass.material.uniformsNeedUpdate = true;
     }
   }
@@ -152,11 +151,12 @@ export class ModuleRoom extends ModuleObject {
     }
 
     if(recurse){
-      for(let i = 0, rLen = this.linked_rooms.length; i < rLen; i++){
-        if(this.linked_rooms[i] instanceof ModuleRoom){
-          if(typeof this.linked_rooms[i].model == 'object')
-            this.linked_rooms[i].model.visible = true;
+      const linkedRooms = Array.from(this.linkedRooms.values());
+      for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
+        if(typeof linkedRooms[i].model != 'object'){
+          continue;
         }
+        linkedRooms[i].model.visible = true;
       }
     }
 
@@ -178,9 +178,12 @@ export class ModuleRoom extends ModuleObject {
       this.grass.visible = false;
     }
 
-    for(let i = 0; i < this.linked_rooms.length; i++){
-      if(typeof this.linked_rooms[i] == 'object')
-        this.linked_rooms[i].model.visible = false;
+    const linkedRooms = Array.from(this.linkedRooms.values());
+    for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
+      if(typeof linkedRooms[i].model != 'object'){
+        continue;
+      }
+      linkedRooms[i].model.visible = false;
     }
     
     //Remove the walkmesh back to the scene
@@ -189,76 +192,77 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  link_rooms(rooms: any[] = []){
-    for(let i = 0; i < this.linked_rooms.length; i++){
-      for(let j = 0; j < rooms.length; j++){
-        if(this.linked_rooms[i] == rooms[j].roomName.toLowerCase()){
-          this.linked_rooms[i] = rooms[j];
-        }
-      }
+  /**
+   * Link the rooms
+   * @param rooms - The rooms to link
+   */
+  linkRooms(){
+    for(let i = 0, iLen = this.linkedRoomData.length; i < iLen; i++){
+      this.linkedRooms.set(this.linkedRoomData[i].name, this.area.visObject.getRoomByName(this.linkedRoomData[i].name));
     }
   }
 
-  loadModel(): Promise<OdysseyModel3D> {
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      if(!Utility.is2daNULL(this.roomName)){
-        MDLLoader.loader.load(this.roomName).then( (roomFile) => {
-          OdysseyModel3D.FromMDL(roomFile, {
-            context: this.context,
-            castShadow: false,
-            receiveShadow: true,
-            //Merge Static Geometry *Experimental*
-            mergeStatic: !GameState.module.area.miniGame ? true : false
-          }).then( (room: OdysseyModel3D) => {
-            if(this.model instanceof OdysseyModel3D){
-              this.model.removeFromParent();
-              try{ this.model.dispose(); }catch(e){}
-            }
+  async loadModel(): Promise<OdysseyModel3D> {
+    //Check if the room name is NULL
+    if(Utility.is2daNULL(this.roomName)){
+      return this.model;
+    }
 
-            this.model = room;
-            this.model.userData.moduleObject = this;
-            this.container.add(this.model);
-            this.box.setFromObject(this.container);
-
-            if(this.model.odysseyAnimations.length){
-              for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
-                if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
-                  this.model.animLoops.push(
-                    this.model.odysseyAnimations[animI]
-                  );
-                }
-              }
-            }
-
-            if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
-              this.loadWalkmesh(this.roomName).then((wok: OdysseyWalkMesh) => {
-                if(wok){
-                  this.collisionData.walkmesh = wok;
-                  this.collisionData.walkmesh.mesh.position.z += 0.001;
-                  this.buildGrass();
-                  resolve(this.model);
-                }else{
-                  resolve(this.model);
-                }
-              });
-            }else{
-              resolve(this.model);
-            }
-
-            //Disable matrix update for static objects
-            //room.disableMatrixUpdate();
-            this.buildGrass();
-          }).catch( () => {
-            resolve(this.model);
-          })
-        }).catch( () => {
-          resolve(this.model);
-        })
-      }else{
-        resolve(this.model);
-      }
+    //Load the model
+    const roomFile = await MDLLoader.loader.load(this.roomName);
+    const room: OdysseyModel3D = await OdysseyModel3D.FromMDL(roomFile, {
+      context: this.context,
+      castShadow: false,
+      receiveShadow: true,
+      //Merge Static Geometry *Experimental*
+      mergeStatic: !this.area.miniGame ? true : false
     });
 
+    //Remove the old model
+    if(this.model instanceof OdysseyModel3D){
+      this.model.removeFromParent();
+      try{ this.model.dispose(); }catch(e){}
+    }
+
+    this.model = room;
+    this.model.userData.moduleObject = this;
+    this.container.add(this.model);
+    this.box.setFromObject(this.container);
+
+    //Load the animations
+    if(this.model.odysseyAnimations.length){
+      for(let animI = 0; animI < this.model.odysseyAnimations.length; animI++){
+        if(this.model.odysseyAnimations[animI].name.indexOf('animloop') >= 0){
+          this.model.animLoops.push(
+            this.model.odysseyAnimations[animI]
+          );
+        }
+      }
+    }
+
+    //Load the walkmesh
+    try{
+      if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
+        const wok = await this.loadWalkmesh(this.roomName);
+        if(wok){
+          this.collisionData.walkmesh = wok;
+          this.collisionData.walkmesh.mesh.position.z += 0.001;
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
+
+    //Disable matrix update for static objects
+    //room.disableMatrixUpdate();
+
+    try{
+      this.buildGrass();
+    }catch(e){
+      console.error(e);
+    }
+
+    return this.model;
   }
 
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
@@ -275,205 +279,361 @@ export class ModuleRoom extends ModuleObject {
   }
 
   buildGrass(){
-    if(GameState.module.area.grass.textureName){
-      let density = GameState.module.area.grass.density;
-      let quadOffsetZ = GameState.module.area.grass.quadSize/2;
-      if(this.model){
-        let aabb = this.model.aabb;
-        if(aabb instanceof OdysseyModelNodeAABB){
-          if(aabb.grassFaces.length){
+    if(!this.area.grass.textureName){
+      console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
+      return;
+    }
 
-            //Build the grass instance
-            let grassGeometry = undefined;
-            let lm_texture: any = null;
-            
-            for(let i = 0; i < 4; i++){
-              let blade = new THREE.PlaneGeometry(GameState.module.area.grass.quadSize, GameState.module.area.grass.quadSize, 1, 1);
-              blade.rotateX(Math.PI/2);
-              blade.rotateZ(Math.PI/4 * i);
-              if(grassGeometry){
-                grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
-              }else{
-                grassGeometry = blade;
-              }
-            }
-      
-            //The constraint array is a per vertex array to determine if the current vertex in the vertex shader
-            //can be affected by wind. 1 = Wind 0 = No Wind
-            let constraint = new Float32Array([
-              1, 0, 1, 0, 0, 1,
-              1, 0, 1, 0, 0, 1,
-              1, 0, 1, 0, 0, 1,
-              1, 0, 1, 0, 0, 1
-            ]);
-            grassGeometry.setAttribute('constraint', new THREE.BufferAttribute( constraint, 1) );
-      
-            //QuadIdx is used to track the current quad index inside the vertex shader
-            let quadIdx = new Float32Array([
-              0, 0, 0, 0, 0, 0,
-              1, 1, 1, 1, 1, 1,
-              2, 2, 2, 2, 2, 2,
-              3, 3, 3, 3, 3, 3,
-            ]);
-            grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute( quadIdx, 1) );
-          
-            let geometry = new THREE.InstancedBufferGeometry();
-            geometry.index = grassGeometry.index;
-            geometry.attributes.position = grassGeometry.attributes.position;
-            geometry.attributes.constraint = grassGeometry.attributes.constraint;
-            geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
-            geometry.attributes.uv = grassGeometry.attributes.uv;
-      
-            // per instance data
-            let offsets = [];
-            let grassUVs = [];
-            let lmUVs = [];
-            let vector = new THREE.Vector3();
+    const density = this.area.grass.density;
+    const quadOffsetZ = this.area.grass.quadSize/2;
+    if(!this.model){
+      console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
+      return;
+    }
 
-            let grass_material = new THREE.ShaderMaterial({
-              uniforms: THREE.UniformsUtils.merge([
-                THREE.UniformsLib[ "fog" ],
-                {
-                  map: { value: null },
-                  lightMap: { value: null },
-                  time: { value: 0 },
-                  ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(GameState.module.area.sun.fogColor).toString(16))) },
-                  windPower: { value: GameState.module.area.windPower },
-                  playerPosition: { value: new THREE.Vector3 },
-                  alphaTest: { value: GameState.module.area.alphaTest }
-                }
-              ]),
-              vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
-              fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
-              //color: new THREE.Color( 1, 1, 1 ),
-              side: THREE.DoubleSide,
-              transparent: false,
-              fog: true,
-              visible: GameState.iniConfig.getProperty('Graphics Options.Grass'),
-              //blending: 5
-            });
-        
-            grass_material.defines.USE_FOG = '';
+    const aabb = this.model.aabb;
+    if(!(aabb instanceof OdysseyModelNodeAABB)){
+      console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      return;
+    }
 
-            lm_texture = aabb.textureMap2;
+    if(!aabb.grassFaces.length){
+      console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      return;
+    }
 
-            for(let k = 0; k < aabb.grassFaces.length; k++){
-              let face = aabb.grassFaces[k];
+    // Pre-calculate grass blade geometry once
+    const grassGeometry = this.createGrassBladeGeometry();
+    
+    const geometry = new THREE.InstancedBufferGeometry();
+    geometry.index = grassGeometry.index;
+    geometry.attributes.position = grassGeometry.attributes.position;
+    geometry.attributes.normal = grassGeometry.attributes.normal;
+    geometry.attributes.constraint = grassGeometry.attributes.constraint;
+    geometry.attributes.quadIdx = grassGeometry.attributes.quadIdx;
+    geometry.attributes.uv = grassGeometry.attributes.uv;
 
-              //FACE A
-              let FA = new THREE.Vector3(aabb.vertices[face.a * 3], aabb.vertices[(face.a * 3) + 1], aabb.vertices[(face.a * 3) + 2]);
-              //FACE B
-              let FB = new THREE.Vector3(aabb.vertices[face.b * 3], aabb.vertices[(face.b * 3) + 1], aabb.vertices[(face.b * 3) + 2]);
-              //FACE C
-              let FC = new THREE.Vector3(aabb.vertices[face.c * 3], aabb.vertices[(face.c * 3) + 1], aabb.vertices[(face.c * 3) + 2]);
+    // Create position data texture for multi-entity trample
+    const positionTexture = this.createPositionDataTexture(64); // 64 entities max
 
-              let tvI1 = (face.a * 2)
-              let tvI2 = (face.a * 2)
-              let tvI3 = (face.a * 2)
-
-              let uvA = new THREE.Vector2(aabb.tvectors[1][tvI1], aabb.tvectors[1][tvI1 + 1]);
-              let uvB = new THREE.Vector2(aabb.tvectors[1][tvI2], aabb.tvectors[1][tvI2 + 1]);
-              let uvC = new THREE.Vector2(aabb.tvectors[1][tvI3], aabb.tvectors[1][tvI3 + 1]);
-
-              let triangle = new THREE.Triangle(FA,FB,FC);
-              let area = triangle.getArea();
-              let grassCount = ((area) * density)*.25;
-
-              if(grassCount < 1){
-                grassCount = 1;
-              }
-
-              for(let j = 0; j < grassCount; j++){
-                let instance: any = {
-                  position: {x: 0, y: 0, z: 0},
-                  orientation: {x: 0, y: 0, z: 0, w: 0},
-                  uvs: {uv1: this.getRandomGrassUVIndex(), uv2: this.getRandomGrassUVIndex(), uv3: this.getRandomGrassUVIndex(), uv4: this.getRandomGrassUVIndex()}
-                };
-
-                // offsets
-                let a = Math.random();
-                let b = Math.random();
-
-                if (a + b > 1) {
-                  a = 1 - a;
-                  b = 1 - b;
-                }
-
-                let c = 1 - a - b;
-
-                vector.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
-                vector.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
-                vector.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
-
-                let lm_uv = THREE.Triangle.getUV( vector, FA, FB, FC, uvA, uvB, uvC, new THREE.Vector2() );
-
-                instance.position = {
-                  x: this.position.x + aabb.position.x + vector.x, 
-                  y: this.position.y + aabb.position.y + vector.y, 
-                  z: this.position.z + aabb.position.z + vector.z + quadOffsetZ
-                };
-
-                // orientations
-                let r = Math.floor(Math.random() * 360) + 0;
-
-                instance.orientation = r;
-
-                //this.grassInstances.push(instance);
-                offsets.push( instance.position.x, instance.position.y, instance.position.z, instance.orientation );
-                grassUVs.push(instance.uvs.uv1, instance.uvs.uv2, instance.uvs.uv3, instance.uvs.uv4);
-                lmUVs.push(lm_uv.x, lm_uv.y);
-              }
-            }
-
-            let offsetAttribute = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 4 ).setUsage( THREE.StaticDrawUsage );
-            let grassUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( grassUVs ), 4 ).setUsage( THREE.StaticDrawUsage );
-            let lmUVAttribute = new THREE.InstancedBufferAttribute( new Float32Array( lmUVs ), 2 ).setUsage( THREE.StaticDrawUsage );
-            geometry.setAttribute( 'offset', offsetAttribute );
-            geometry.setAttribute( 'grassUV', grassUVAttribute );
-            geometry.setAttribute( 'lmUV', lmUVAttribute );
-            this.grass = new THREE.Mesh( geometry, grass_material );
-            this.grass.frustumCulled = false;
-            GameState.group.grass.add(this.grass);
-
-            //Load in the grass texture
-            TextureLoader.Load(GameState.module.area.grass.textureName).then((grassTexture: OdysseyTexture) => {
-              if(grassTexture){
-                grassTexture.minFilter = THREE.LinearFilter;
-                grassTexture.magFilter = THREE.LinearFilter;
-                grass_material.uniforms.map.value = grassTexture;
-                grass_material.uniformsNeedUpdate = true;
-                grass_material.needsUpdate = true;
-                //Load in the grass lm texture
-                TextureLoader.Load(lm_texture).then((lmTexture: OdysseyTexture) => {
-                  if(lmTexture){
-                    lmTexture.minFilter = THREE.LinearFilter;
-                    lmTexture.magFilter = THREE.LinearFilter;
-                    grass_material.uniforms.lightMap.value = lmTexture;
-                    grass_material.uniformsNeedUpdate = true;
-                    grass_material.needsUpdate = true;
-                    grass_material.defines.USE_LIGHTMAP = '';
-                  }
-                });
-              }
-            });
-          }
+    const grass_material = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.merge([
+        THREE.UniformsLib["common"],
+        {
+          map: { value: null },
+          lightMap: { value: null },
+          positionMap: { value: positionTexture },
+          positionMapSize: { value: new THREE.Vector2(8, 8) }, // 8x8 texture = 64 entities
+          maxEntities: { value: 64 },
+          time: { value: 0 },
+          ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(this.area.sun.fogColor).toString(16))) },
+          windPower: { value: this.area.windPower },
+          playerPosition: { value: new THREE.Vector3 },
+          alphaTest: { value: this.area.alphaTest },
+          probability: { value: new THREE.Vector4(
+            this.area.grass.probability.lowerLeft,
+            this.area.grass.probability.lowerRight,
+            this.area.grass.probability.upperLeft,
+            this.area.grass.probability.upperRight
+          ) },
+          // Fade distance uniforms
+          fadeStartDistance: { value: 25.0 },
+          fadeEndDistance: { value: 100.0 },
+          useDistanceFade: { value: true },
+          // Trample effect uniforms
+          trampleRadius: { value: 3.0 },    // Radius around player where grass gets trampled
+          trampleStrength: { value: 1.0 }   // Strength of the trample effect
         }
+      ]),
+      vertexShader: GameState.ShaderManager.Shaders.get('grass').getVertex(),
+      fragmentShader: GameState.ShaderManager.Shaders.get('grass').getFragment(),
+      visible: true,
+      side: THREE.DoubleSide
+    });
+
+    // Pre-calculate face data and grass counts
+    const faceData = this.precalculateFaceData(aabb, density);
+    const totalGrassCount = faceData.totalGrassCount;
+    
+    if(totalGrassCount === 0){
+      console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
+      return;
+    }
+
+    this.grass = new THREE.InstancedMesh(geometry, grass_material, totalGrassCount);
+    this.grass.frustumCulled = false;
+    
+    // Pre-allocate reusable objects
+    const objForMatrix = new THREE.Object3D();
+    const tmpVec3 = new THREE.Vector3();
+    const FA = new THREE.Vector3();
+    const FB = new THREE.Vector3();
+    const FC = new THREE.Vector3();
+    const uvA = new THREE.Vector2();
+    const uvB = new THREE.Vector2();
+    const uvC = new THREE.Vector2();
+
+
+    const lm_texture = aabb.textureMap2;
+
+    // Pre-allocate arrays
+    const instanceIndices = new Float32Array(totalGrassCount);
+    const lightmapUV = new Float32Array(totalGrassCount * 2);
+    
+    // Initialize instance indices
+    for(let i = 0; i < totalGrassCount; i++){
+      instanceIndices[i] = i;
+    }
+
+    // Pre-cache model data for UV calculation
+    const pos = aabb.vertices;
+    const uv2 = aabb.tvectors[1];
+
+    let instanceIndex = 0;
+    
+    // Process each face
+    for(let k = 0; k < aabb.grassFaces.length; k++){
+      const face = aabb.grassFaces[k];
+      const grassCount = faceData.faceGrassCounts[k];
+      
+      if(grassCount < 1) continue;
+
+      // Set face vertices
+      FA.set(pos[face.a * 3], pos[(face.a * 3) + 1], pos[(face.a * 3) + 2]);
+      FB.set(pos[face.b * 3], pos[(face.b * 3) + 1], pos[(face.b * 3) + 2]);
+      FC.set(pos[face.c * 3], pos[(face.c * 3) + 1], pos[(face.c * 3) + 2]);
+
+      // Set UV coordinates
+      const tvI1 = face.a * 2;
+      const tvI2 = face.b * 2;
+      const tvI3 = face.c * 2;
+      
+      uvA.set(uv2[tvI1], uv2[tvI1 + 1]);
+      uvB.set(uv2[tvI2], uv2[tvI2 + 1]);
+      uvC.set(uv2[tvI3], uv2[tvI3 + 1]);
+
+      // Generate grass instances for this face
+      for(let j = 0; j < grassCount; j++){
+        // Generate random barycentric coordinates
+        let a = Math.random();
+        let b = Math.random();
+
+        if (a + b > 1) {
+          a = 1 - a;
+          b = 1 - b;
+        }
+
+        const c = 1 - a - b;
+
+        // Calculate position
+        tmpVec3.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
+        tmpVec3.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
+        tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
+
+        // Set matrix
+        objForMatrix.rotation.z = Math.floor(Math.random() * 360);
+        objForMatrix.position.copy(tmpVec3);
+        objForMatrix.position.z += quadOffsetZ * 0.90;
+        objForMatrix.updateMatrix();
+
+        // Calculate lightmap UV using current face's barycentric coordinates
+        if(lm_texture){
+          // Use the barycentric coordinates (a, b, c) we already calculated for positioning
+          // to interpolate the UV coordinates from the current face
+          const uv = new THREE.Vector2()
+            .addScaledVector(uvA, a)
+            .addScaledVector(uvB, b)
+            .addScaledVector(uvC, c);
+          
+          lightmapUV[(instanceIndex * 2) + 0] = uv.x;
+          lightmapUV[(instanceIndex * 2) + 1] = uv.y; 
+        }
+
+        this.grass.setMatrixAt(instanceIndex, objForMatrix.matrix);
+        instanceIndex++;
       }
     }
+    
+    this.grass.instanceMatrix.needsUpdate = true;
+    geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
+    geometry.setAttribute('lightmapUV', new THREE.InstancedBufferAttribute(lightmapUV, 2));
+
+    this.grass.position.copy(this.position).add(aabb.position);
+    GameState.group.grass.add(this.grass);
+
+    // Load textures asynchronously
+    this.loadGrassTextures(grass_material, lm_texture);
   }
 
-  getRandomGrassUVIndex(){
-    let rnd = Math.random();
-    if(rnd < GameState.module.area.grass.probability.upperLeft){
-      return 0;
-    }else if(rnd < GameState.module.area.grass.probability.upperLeft + GameState.module.area.grass.probability.upperRight){
-      return 1;
-    }else if(rnd < GameState.module.area.grass.probability.upperLeft + GameState.module.area.grass.probability.upperRight + GameState.module.area.grass.probability.lowerLeft){
-      return 2;
-    }else{
-      return 3;
+  /**
+   * Create the grass blade geometry with all four orientations
+   */
+  private createGrassBladeGeometry(): THREE.BufferGeometry {
+    let grassGeometry: THREE.BufferGeometry | undefined = undefined;
+    
+    for(let i = 0; i < 4; i++){
+      const blade = new THREE.PlaneGeometry(this.area.grass.quadSize, this.area.grass.quadSize, 1, 1);
+      blade.rotateX(Math.PI/2);
+      blade.rotateZ(Math.PI/4 * i);
+
+      if(!grassGeometry){
+        grassGeometry = blade;
+        continue;
+      }
+      
+      grassGeometry = BufferGeometryUtils.mergeBufferGeometries([grassGeometry, blade]);
     }
+
+    // Set constraint array for wind effect
+    const constraint = new Float32Array([
+      1, 1, 0, 0, 
+      1, 1, 0, 0, 
+      1, 1, 0, 0,
+      1, 1, 0, 0
+    ]);
+    grassGeometry.setAttribute('constraint', new THREE.BufferAttribute(constraint, 1));
+
+    // Set quad index for vertex shader
+    const quadIdx = new Float32Array([
+      0, 0, 0, 0,
+      1, 1, 1, 1,
+      2, 2, 2, 2,
+      3, 3, 3, 3,
+    ]);
+    grassGeometry.setAttribute('quadIdx', new THREE.BufferAttribute(quadIdx, 1));
+    
+    return grassGeometry;
   }
+
+  /**
+   * Pre-calculate face data and grass counts
+   */
+  private precalculateFaceData(aabb: OdysseyModelNodeAABB, density: number): { totalGrassCount: number, faceGrassCounts: number[] } {
+    const faceGrassCounts: number[] = [];
+    let totalGrassCount = 0;
+    
+    const FA = new THREE.Vector3();
+    const FB = new THREE.Vector3();
+    const FC = new THREE.Vector3();
+    
+    for(let i = 0; i < aabb.grassFaces.length; i++){
+      const face = aabb.grassFaces[i];
+
+      FA.set(aabb.vertices[face.a * 3], aabb.vertices[(face.a * 3) + 1], aabb.vertices[(face.a * 3) + 2]);
+      FB.set(aabb.vertices[face.b * 3], aabb.vertices[(face.b * 3) + 1], aabb.vertices[(face.b * 3) + 2]);
+      FC.set(aabb.vertices[face.c * 3], aabb.vertices[(face.c * 3) + 1], aabb.vertices[(face.c * 3) + 2]);
+
+      const triangle = new THREE.Triangle(FA, FB, FC);
+      const tArea = triangle.getArea();
+      let grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
+
+      totalGrassCount += grassCount;
+      faceGrassCounts.push(grassCount);
+    }
+    
+    return { totalGrassCount, faceGrassCounts };
+  }
+
+  /**
+   * Create a data texture to store entity positions for trample effects
+   */
+  private createPositionDataTexture(maxEntities: number = 64): THREE.DataTexture {
+    // Create a texture to store entity positions
+    // Format: RGBA where R=X, G=Y, B=Z, A=active flag
+    const textureSize = Math.ceil(Math.sqrt(maxEntities));
+    const data = new Float32Array(textureSize * textureSize * 4);
+    
+    // Initialize all positions to (0,0,0,0) - inactive
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = 0;     // X
+      data[i + 1] = 0; // Y  
+      data[i + 2] = 0; // Z
+      data[i + 3] = 0; // Active flag (0 = inactive, 1 = active)
+    }
+    
+    const texture = new THREE.DataTexture(
+      data,
+      textureSize,
+      textureSize,
+      THREE.RGBAFormat,
+      THREE.FloatType
+    );
+    
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  /**
+   * Update entity positions in the position data texture
+   */
+  private updatePositionDataTexture(): void {
+    if (!this.grass || !this.grass.material.uniforms.positionMap.value) return;
+    
+    const texture = this.grass.material.uniforms.positionMap.value;
+    const data = texture.image.data;
+    const textureSize = texture.image.width;
+    let entityIndex = 0;
+    
+    // Clear all positions
+    for (let i = 0; i < data.length; i += 4) {
+      data[i + 3] = 0; // Set all to inactive
+    }
+    
+    // Add creature positions
+    for (const creature of this.creatures) {
+      if (entityIndex >= textureSize * textureSize) break;
+      
+      const pixelIndex = entityIndex * 4;
+      data[pixelIndex] = creature.position.x;
+      data[pixelIndex + 1] = creature.position.y;
+      data[pixelIndex + 2] = creature.position.z;
+      data[pixelIndex + 3] = 1.0; // Active
+      entityIndex++;
+    }
+    
+    texture.needsUpdate = true;
+  }
+
+  /**
+   * Load grass textures asynchronously
+   */
+  private loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): void {
+    if(!this.area.grass.textureName){
+      console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
+      return;
+    }
+    
+    TextureLoader.Load(this.area.grass.textureName).then((diffuseMap: OdysseyTexture) => {
+      if(!diffuseMap) return;
+      
+      diffuseMap.minFilter = THREE.LinearFilter;
+      diffuseMap.magFilter = THREE.LinearFilter;
+      grass_material.uniforms.map.value = diffuseMap;
+      grass_material.uniformsNeedUpdate = true;
+      grass_material.defines.USE_MAP = '';
+      grass_material.defines.USE_UV = '';
+      grass_material.needsUpdate = true;
+      
+      if(!lm_texture){
+        console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
+        return;
+      }
+      
+      // Load lightmap texture
+      TextureLoader.Load(lm_texture).then((lightMap: OdysseyTexture) => {
+        if(!lightMap) return;
+        
+        lightMap.minFilter = THREE.LinearFilter;
+        lightMap.magFilter = THREE.LinearFilter;
+        grass_material.uniforms.lightMap.value = lightMap;
+        grass_material.uniformsNeedUpdate = true;
+        grass_material.defines.USE_LIGHTMAP = '';
+        grass_material.needsUpdate = true;
+      });
+    });
+  }
+
+
   
   containsPoint2d(point: any){
 
@@ -494,9 +654,9 @@ export class ModuleRoom extends ModuleObject {
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
   }
 
-  findWalkableFace( object?: ModuleObject ){
+  findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
     let face;
-    if(object instanceof ModuleObject && this.collisionData.walkmesh){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionData.walkmesh){
       for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
         face = this.collisionData.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){

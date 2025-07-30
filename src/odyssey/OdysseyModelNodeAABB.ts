@@ -4,6 +4,7 @@ import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
 import type { OdysseyModelNode } from "./OdysseyModelNode";
 import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
 
 /**
  * OdysseyModelNodeAABB class.
@@ -16,7 +17,7 @@ import type { OdysseyModel } from "./OdysseyModel";
  */
 export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
 
-  grassFaces: any[] = [];
+  grassFaces: OdysseyFace3[] = [];
   rootAABBNode: IOdysseyModelAABBNode;
 
   constructor(parent: OdysseyModelNode){
@@ -38,7 +39,7 @@ export class OdysseyModelNodeAABB extends OdysseyModelNodeMesh {
       face = this.faces[i];
       if(face && face.surfacemat){
         //Is this face grassy
-        if(face.surfacemat.grass == 1){
+        if(face.surfacemat.grass){
           this.grassFaces.push(face);
         }
       }

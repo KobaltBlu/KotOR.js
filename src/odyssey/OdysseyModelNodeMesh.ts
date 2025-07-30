@@ -7,6 +7,7 @@ import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
 import { OdysseyModelNode } from "./OdysseyModelNode";
 import type { OdysseyModel } from "./OdysseyModel";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
+import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
 
 /**
  * OdysseyModelNodeMesh class.
@@ -26,7 +27,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   tangents: any[][];
   indexArray: any[];
   uvs: any[];
-  faces: any[];
+  faces: OdysseyFace3[];
   indices: any[];
   functionPointer0: number;
   functionPointer1: number;
@@ -352,14 +353,15 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
         this.faces[i].normal.y = this.odysseyModel.mdlReader.readSingle();
         this.faces[i].normal.z = this.odysseyModel.mdlReader.readSingle();
         this.faces[i].distance = this.odysseyModel.mdlReader.readSingle();
-        this.faces[i].materialId = this.odysseyModel.mdlReader.readUInt32();
-        this.faces[i].nAdjacentFaces1 = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].nAdjacentFaces2 = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].nAdjacentFaces3 = this.odysseyModel.mdlReader.readUInt16();
+        this.faces[i].materialIndex = this.odysseyModel.mdlReader.readUInt32();
+        this.faces[i].adjacent[0] = this.odysseyModel.mdlReader.readInt16();
+        this.faces[i].adjacent[1] = this.odysseyModel.mdlReader.readInt16();
+        this.faces[i].adjacent[2] = this.odysseyModel.mdlReader.readInt16();
         this.faces[i].a = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
-        this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialId];
+        this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialIndex];
+        // this.faces[i].color = (OdysseyWalkMesh.TILECOLORS[this.faces[i].materialIndex] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 

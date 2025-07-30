@@ -71,8 +71,8 @@ export class MenuGraphics extends K1_MenuGraphics {
 
       this.CB_GRASS.onValueChanged = (value: any) => {
         //Toggle Grass
-        if(GameState.module){
-          //GameState.module.grassMaterial.visible = value;
+        if(GameState.group.grass){
+          GameState.group.grass.visible = !!value;
         }
       };
       this.CB_GRASS.attachINIProperty('Graphics Options.Grass');
@@ -83,6 +83,11 @@ export class MenuGraphics extends K1_MenuGraphics {
       this.CB_SHADOWS.attachINIProperty('Graphics Options.Shadows');
       resolve();
     });
+  }
+
+  close(){
+    super.close();
+    GameState.iniConfig.save();
   }
   
 }
