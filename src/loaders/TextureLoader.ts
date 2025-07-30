@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import * as path from "path";
-import { AsyncLoop } from '../utility/AsyncLoop';
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { TextureType } from '../enums/loaders/TextureType';
 import { ITextureLoaderQueuedRef } from '../interface/loaders/ITextureLoaderQueuedRef';
@@ -160,23 +159,16 @@ export class TextureLoader {
     TextureLoader.queue.push({ name: name, partGroup: partGroup, type: TextureType.PARTICLE, onLoad: onLoad });
   }
 
-  static LoadQueue(onLoad?: Function, onProgress?: onProgressCallback){
+  static async LoadQueue(onProgress?: onProgressCallback){
     let queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
-    let loop = new AsyncLoop({
-      array: queue,
-      onLoop: async (tex: ITextureLoaderQueuedRef, asyncLoop: AsyncLoop, index: number, count: number) => {
-        await TextureLoader.UpdateMaterial(tex);
-        if(typeof onProgress == 'function'){
-          onProgress(tex, index, count);
-        }
-        asyncLoop.next();
+    for(let i = 0; i < queue.length; i++){
+      const tex = queue[i];
+      await TextureLoader.UpdateMaterial(tex);
+      if(typeof onProgress == 'function'){
+        onProgress(tex, i, queue.length);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
   }
 
   static async UpdateMaterial(tex: ITextureLoaderQueuedRef){

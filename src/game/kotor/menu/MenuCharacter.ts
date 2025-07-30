@@ -156,7 +156,7 @@ export class MenuCharacter extends GameMenu {
             model.camerahook.quaternion
           );
 
-          TextureLoader.LoadQueue(() => {
+          TextureLoader.LoadQueue().then(() => {
             this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
             this._3dViewModel.playAnimation(0, true);
             resolve();
@@ -319,7 +319,7 @@ export class MenuCharacter extends GameMenu {
         model.box = new THREE.Box3().setFromObject(model);
         this.char = model;
         this._3dViewModel.children[0].children[0].add(this.char);
-        TextureLoader.LoadQueue(() => {
+        TextureLoader.LoadQueue().then(() => {
           if (clone.goodEvil >= 95) {
             this.char.playAnimation('good', true);
           } else if (clone.goodEvil >= 90) {

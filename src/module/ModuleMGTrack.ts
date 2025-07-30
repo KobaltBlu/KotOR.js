@@ -20,7 +20,7 @@ import { MDLLoader } from "../loaders";
 */
 export class ModuleMGTrack extends ModuleObject {
   index: number;
-  track: any;
+  track: string;
   layout: ILayoutTrack;
 
   constructor(layout: ILayoutTrack){
@@ -42,32 +42,26 @@ export class ModuleMGTrack extends ModuleObject {
     
   }
 
-  load( onLoad?: Function ){
-    if(typeof onLoad == 'function')
-      onLoad();
+  async load(){
+    //stub
   }
 
-  loadModel (onLoad?: Function){
-    MDLLoader.loader.load(this.track).then((mdl: OdysseyModel) => {
-      OdysseyModel3D.FromMDL(mdl, {
-        onComplete: (model: OdysseyModel3D) => {
-          try{
-            console.log('track', model);
-            this.model = model;
-            model.name = this.track;
-            if(typeof onLoad == 'function')
-              onLoad(this.model);
-          }catch(e){
-            console.error(e);
-            if(typeof onLoad == 'function')
-              onLoad(this.model);
-          }
-        },
-        context: this.context,
-        castShadow: false,
-        receiveShadow: false
-      });
+  async loadModel (){
+    const mdl = await MDLLoader.loader.load(this.track);
+    const model = await OdysseyModel3D.FromMDL(mdl, {
+      context: this.context,
+      castShadow: false,
+      receiveShadow: false
     });
+
+    try{
+      console.log('track', model);
+      this.model = model;
+      model.name = this.track;
+    }catch(e){
+      console.error(e);
+    }
+    return this.model;
   }
 
 }

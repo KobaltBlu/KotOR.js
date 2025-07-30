@@ -103,10 +103,9 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
           this._3dView.addModel(this._3dViewModel);
-          TextureLoader.LoadQueue(() => {
+          TextureLoader.LoadQueue().then(() => {
             resolve();
           });
-
         }).catch(resolve);
       }).catch(resolve);
     });

@@ -125,9 +125,8 @@ export class GameMenu {
 
       await this.menuControlInitializer();
 
-      TextureLoader.LoadQueue(() => {
-        resolve(this);
-      });
+      await TextureLoader.LoadQueue();
+      resolve(this);
     });
   }
 

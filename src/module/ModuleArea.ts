@@ -5,7 +5,6 @@ import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
 import { AreaMap } from "./AreaMap";
 import { AreaWeather } from "./AreaWeather";
 import * as THREE from "three";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -622,7 +621,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  reloadTextures(){
+  async reloadTextures(){
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.LBL_HINT.setText('');
     GameState.loadingTextures = true;
@@ -638,58 +637,38 @@ export class ModuleArea extends ModuleObject {
       //room.LoadModel();
     }
 
-    new AsyncLoop({
-      array: this.creatures,
-      onLoop: (creature: ModuleCreature, asyncLoop: AsyncLoop) => {
-        creature.loadModel().then(() => {
-          asyncLoop.next();
-        });
-      }
-    }).iterate(() => {
-      new AsyncLoop({
-        array: GameState.PartyManager.party,
-        onLoop: (partyMember: ModuleCreature, asyncLoop: AsyncLoop) => {
-          partyMember.loadModel().then(() => {
-            asyncLoop.next();
-          });
-        }
-      }).iterate(() => {
-        new AsyncLoop({
-          array: this.placeables,
-          onLoop: (placeable: ModulePlaceable, asyncLoop: AsyncLoop) => {
-            placeable.loadModel().then(() => {
-              asyncLoop.next();
-            });
-          }
-        }).iterate(() => {
-          new AsyncLoop({
-            array: this.doors,
-            onLoop: (door: ModuleDoor, asyncLoop: AsyncLoop) => {
-              door.loadModel().then(() => {
-                asyncLoop.next();
-              });
-            }
-          }).iterate(() => {
-            new AsyncLoop({
-              array: this.rooms,
-              onLoop: (room: ModuleRoom, asyncLoop: AsyncLoop) => {
-                room.loadModel().then(() => {
-                  asyncLoop.next();
-                });
-              }
-            }).iterate(() => {
-              TextureLoader.LoadQueue(() => {
-                GameState.MenuManager.LoadScreen.close();
-                GameState.loadingTextures = false;
-              }, (ref: ITextureLoaderQueuedRef, index: number, count: number) => {
-                GameState.MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
-                GameState.MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
-                //console.log('tex', textureName, index, count);
-              });
-            });
-          });
-        });
-      });
+    for(let i = 0; i < this.creatures.length; i++){
+      const creature = this.creatures[i];
+      await creature.loadModel();
+    }
+
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const creature = GameState.PartyManager.party[i];
+      await creature.loadModel();
+    }
+
+    for(let i = 0; i < this.placeables.length; i++){
+      const placeable = this.placeables[i];
+      await placeable.loadModel();
+    }
+
+    for(let i = 0; i < this.doors.length; i++){   
+      const door = this.doors[i];
+      await door.loadModel();
+    }
+
+    for(let i = 0; i < this.rooms.length; i++){
+      const room = this.rooms[i];
+      await room.loadModel();
+    }
+
+    TextureLoader.LoadQueue((ref: ITextureLoaderQueuedRef, index: number, count: number) => {
+      GameState.MenuManager.LoadScreen.setProgress((index/count + 1) * 100);
+      GameState.MenuManager.LoadScreen.LBL_HINT.setText('Loading: '+ref.name);
+      //console.log('tex', textureName, index, count);
+    }).then(() => {
+      GameState.MenuManager.LoadScreen.close();
+      GameState.loadingTextures = false;
     });
   }
 

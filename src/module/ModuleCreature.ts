@@ -23,7 +23,6 @@ import { TalentObject } from "../talents/TalentObject";
 import { TalentSkill } from "../talents/TalentSkill";
 import { TalentSpell } from "../talents/TalentSpell";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "../resource/LIPObject";
@@ -4308,28 +4307,19 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  loadEquipmentModels(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-      let loop = new AsyncLoop({
-        array: Object.keys(this.equipment),
-        onLoop: (slot_key: string, asyncLoop: AsyncLoop) => {
-          let slot: ModuleItem = (this.equipment as any)[slot_key];
-          if(slot){
-            slot.loadModel().then( () => {
-              if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
-                slot.model.playAnimation('off', true);
-              }
-              asyncLoop.next();
-            });
-          }else{
-            asyncLoop.next();
-          }
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    })
+  async loadEquipmentModels(): Promise<void> {
+    const array =  Object.keys(this.equipment);
+    for(let i = 0; i < array.length; i++){
+      const slot_key = array[i];
+      let slot: ModuleItem = (this.equipment as any)[slot_key];
+      if(!slot){
+        continue;
+      }
+      const model = await slot.loadModel();
+      if(slot_key == 'RIGHTHAND' || slot_key == 'LEFTHAND'){
+        model.playAnimation('off', true);
+      }
+    }
   }
 
   parseEquipmentSlots(){

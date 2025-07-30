@@ -163,7 +163,7 @@ export class CursorManager {
 
     CursorManager.sphere = new THREE.Mesh( CursorManager.sphereGeometry, CursorManager.sphereMaterial );
 
-    TextureLoader.LoadQueue(() => {
+    TextureLoader.LoadQueue().then(() => {
       CursorManager.reticleF.depthTest = false;
       CursorManager.reticleF2.depthTest = false;
       CursorManager.reticleH.depthTest = false;

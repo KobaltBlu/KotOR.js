@@ -5,7 +5,6 @@ import { GameState } from "../GameState";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 // import { NWScript } from "../nwscript/NWScript";
 import { IModelListItem } from "../interface/module/minigame/IModelListItem";
@@ -726,63 +725,46 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  loadModel (onLoad?: Function){
-    let loop = new AsyncLoop({
-      array: this.modelProps,
-      onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
+  async loadModel (){
+    for(let i = 0; i < this.modelProps.length; i++){
+      try{
+        const item = this.modelProps[i];
         const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        MDLLoader.loader.load(resref).then((mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model: OdysseyModel3D) => {
-              try{
-                if(item.rotating){
-                  this.container.add(model);
-                }else{
-                  this.no_rotate.add(model);
-                }
-                this.models.push(model);
-                model.name = item.model;
+        const mdl = await MDLLoader.loader.load(resref);
+        const model = await OdysseyModel3D.FromMDL(mdl, {
+          context: this.context,
+          castShadow: true,
+          receiveShadow: true
+        });
+        if(item.rotating){
+          this.container.add(model);
+        }else{
+          this.no_rotate.add(model);
+        }
+        this.models.push(model);
+        model.name = item.model;
 
-                if(this.camera && model.name == this.camera.name)
-                  model.visible = false;
-
-                asyncLoop.next();
-              }catch(e){
-                console.error(e);
-                asyncLoop.next();
-              }
-            },
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true
-          });
-        })
+        if(this.camera && model.name == this.camera.name)
+          model.visible = false;
+      }catch(e){
+        console.error(e);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
-
+    }
   }
 
-  loadGunBanks(onLoad?: Function){
-    let loop = new AsyncLoop({
-      array: this.gunBanks,
-      onLoop: (gunbank: ModuleMGGunBank, asyncLoop: AsyncLoop) => {
-        gunbank.load().then( () => {
-          this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
-          if(this.gun_hook instanceof THREE.Object3D){
-            this.gun_hook.add(gunbank.model);
-          }
-          asyncLoop.next();
-        });
+  getGunHook(bankID: number): THREE.Object3D | undefined {
+    return this.container.getObjectByName('gunbank'+bankID) as THREE.Object3D;
+  }
+
+  async loadGunBanks(){
+    for(let i = 0; i < this.gunBanks.length; i++){
+      const gunbank = this.gunBanks[i];
+      await gunbank.load();
+      this.gun_hook = this.getGunHook(gunbank.bankID);
+      if(this.gun_hook instanceof THREE.Object3D){
+        this.gun_hook.add(gunbank.model);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
   }
 
   onAnimEvent(){

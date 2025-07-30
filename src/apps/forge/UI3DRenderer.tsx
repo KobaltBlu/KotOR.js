@@ -437,7 +437,7 @@ export class UI3DRenderer extends EventListenerModel {
 
       if(!this.loadingTextures && KotOR.TextureLoader.queue.length){
         this.loadingTextures = true;
-        KotOR.TextureLoader.LoadQueue( () => {
+        KotOR.TextureLoader.LoadQueue().then( () => {
           this.loadingTextures = false;
         });
       }

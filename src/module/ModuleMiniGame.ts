@@ -3,8 +3,6 @@ import { MiniGameType } from "../enums/engine/MiniGameType";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { OdysseyModel3D } from "../three/odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { ModuleMGEnemy } from "./ModuleMGEnemy";
 import type { ModuleMGObstacle } from "./ModuleMGObstacle";
 import type { ModuleMGPlayer } from "./ModuleMGPlayer";
@@ -115,83 +113,46 @@ export class ModuleMiniGame {
     this.player.onCreate();
   }
 
-  async loadMGPlayer(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      console.log('Loading MG Player')
-      let player: ModuleMGPlayer = this.player;
-      player.load();
-      player.loadCamera( () => {
-        player.loadModel( () => {
-          player.loadGunBanks( () => {
-            let track = this.tracks.find(o => o.track === player.trackName);
-            // model.userData.moduleObject = player;
-            // model.hasCollision = true;
-            player.setTrack(track.model);
-  
-            player.getCurrentRoom();
-            // player.computeBoundingBox();
-  
-            resolve();
-          });
-        });
-      });
-    });
+  async loadMGPlayer(): Promise<void> {
+    console.log('Loading MG Player')
+    const player: ModuleMGPlayer = this.player;
+      await player.load();
+      await player.loadCamera();
+      await player.loadModel();
+      await player.loadGunBanks();
+      const track = this.tracks.find(o => o.track === player.trackName);
+      player.setTrack(track.model);
+      player.getCurrentRoom();
   }
 
   async loadMGTracks(): Promise<void>{
-    return new Promise<void>( (resolve, reject) => {
-      let trackIndex = 0;
-      let loop = new AsyncLoop({
-        array: this.tracks,
-        onLoop: (track: ModuleMGTrack, asyncLoop: AsyncLoop) => {
-          track.load( () => {
-            track.loadModel( (model: OdysseyModel3D) => {
-              track.model = model;
-              model.userData.moduleObject = track;
-              model.userData.index = trackIndex;
-              //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
-              model.hasCollision = true;
-              GameState.group.creatures.add( track.model );
-    
-              track.computeBoundingBox();
-              track.getCurrentRoom();
-              trackIndex++;
-              asyncLoop.next();
-            });
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
+    for(let i = 0; i < this.tracks.length; i++){
+      const track = this.tracks[i];
+      await track.load();
+      const model = await track.loadModel();
+      track.model = model;
+      model.userData.moduleObject = track;
+      model.userData.index = i;
+      //model.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
+      model.hasCollision = true;
+      GameState.group.creatures.add( track.model );
+
+      track.computeBoundingBox();
+      track.getCurrentRoom();
+    }
   }
 
   async loadMGEnemies(): Promise<void> {
-    return new Promise<void>( (resolve, reject) => {
-    
-      let loop = new AsyncLoop({
-        array: this.enemies,
-        onLoop: (enemy: ModuleMGEnemy, asyncLoop: AsyncLoop) => {
-          enemy.load();
-          enemy.loadModel( () => {
-            enemy.loadGunBanks( () => {
-              let track = this.tracks.find(o => o.track === enemy.trackName);
-              // model.userData.moduleObject = enemy;
-              // model.hasCollision = true;
-              enemy.setTrack(track.model);
-              enemy.computeBoundingBox();
-              enemy.getCurrentRoom();
-              asyncLoop.next();
-
-            });
-          });
-        }
-      });
-      loop.iterate(() => {
-        resolve();
-      });
-    });
+    for(let i = 0; i < this.enemies.length; i++){
+      const enemy = this.enemies[i];
+      await enemy.load();
+      await enemy.loadModel();
+      await enemy.loadGunBanks();
+      const track = this.tracks.find(o => o.track === enemy.trackName);
+      enemy.setTrack(track.model);
+      enemy.computeBoundingBox();
+      enemy.getCurrentRoom();
+    }
   }
 
   runMiniGameScripts(){

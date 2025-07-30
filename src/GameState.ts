@@ -761,7 +761,7 @@ export class GameState implements EngineContext {
           TextureType.TEXTURE
         );
 
-        TextureLoader.LoadQueue(() => {
+        TextureLoader.LoadQueue().then(() => {
           GameState.Ready = true;
           LoadingScreen.main.Hide();
           if(GameState.OpeningMoviesComplete){
@@ -1001,7 +1001,7 @@ export class GameState implements EngineContext {
 
     console.log('Module.loadScene');
     await module.loadScene();
-    TextureLoader.LoadQueue( () => {
+    TextureLoader.LoadQueue().then( () => {
       module.initEventQueue();
       console.log('Module.initScripts');
       module.initScripts().then(() => {
@@ -1151,7 +1151,7 @@ export class GameState implements EngineContext {
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
-      TextureLoader.LoadQueue( () => {
+      TextureLoader.LoadQueue().then( () => {
         GameState.loadingTextures = false;
       });
     } 

@@ -346,7 +346,7 @@ export class TabModelViewerState extends TabState {
           )
         }
         this.ui3DRenderer.sceneGraphManager.rebuild();
-        KotOR.TextureLoader.LoadQueue(() => {
+        KotOR.TextureLoader.LoadQueue().then(() => {
           if(this.ui3DRenderer.renderer)
             this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
           // this.tab.tabLoader.Hide();

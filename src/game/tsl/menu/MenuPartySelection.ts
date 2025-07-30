@@ -401,7 +401,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         LBL_CHAR.show();
       }
     }
-    TextureLoader.LoadQueue(() => { });
+    TextureLoader.LoadQueue();
     if (scriptName != '' || scriptName != null) {
       this.onCloseScript = NWScript.Load(scriptName);
     }

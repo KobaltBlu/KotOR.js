@@ -968,7 +968,7 @@ export class GUIControl {
     this.buildChildren();
 
     //Load any textures in the queue
-    TextureLoader.LoadQueue(() => {});
+    TextureLoader.LoadQueue();
     return this.widget;
 
   }

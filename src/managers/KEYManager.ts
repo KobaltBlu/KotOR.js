@@ -1,4 +1,3 @@
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { BIFObject } from "../resource/BIFObject";
 import { KEYObject } from "../resource/KEYObject";
 import * as path from 'path';

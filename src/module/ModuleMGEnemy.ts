@@ -5,7 +5,6 @@ import { OdysseyModel3D } from "../three/odyssey";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GameState } from "../GameState";
 import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { NWScript } from "../nwscript/NWScript";
 import { IModelListItem } from "../interface/module/minigame/IModelListItem";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
@@ -254,64 +253,46 @@ export class ModuleMGEnemy extends ModuleObject {
     this.track.updateMatrixWorld();
   }
 
-  load( onLoad?: Function ){
+  async load(){
     this.initProperties();
     GameState.scene.add(this.sphere_geom);
-    if(onLoad != null)
-      onLoad(this.template);
+    return this.template;
   }
 
-  loadModel (onLoad?: Function){
+  async loadModel (){
+    for(let i = 0; i < this.modelProps.length; i++){
+      const item = this.modelProps[i];
+      const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      const mdl = await MDLLoader.loader.load(resref);
+      const model = await OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        castShadow: true,
+        receiveShadow: true
+      });
+      try{
+        this.models.push(model);
+        this.container.add(model);  
+        model.name = item.model;
 
-    let loop = new AsyncLoop({
-      array: this.modelProps,
-      onLoop: (item: IModelListItem, asyncLoop: AsyncLoop) => {
-        const resref = item.model.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        MDLLoader.loader.load(resref).then((mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            onComplete: (model: OdysseyModel3D) => {
-              try{
-                this.models.push(model);
-                this.container.add(model);  
-                model.name = item.model;
-
-                asyncLoop.next();
-              }catch(e){
-                console.error(e);
-                asyncLoop.next();
-              }
-            },
-            context: this.context,
-            castShadow: true,
-            receiveShadow: true
-          });
-        });
+      }catch(e){
+        console.error(e);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
-
+    }
   }
 
-  loadGunBanks(onLoad?: Function){
-    let loop = new AsyncLoop({
-      array: this.gunBanks,
-      onLoop: (gunbank: any, asyncLoop: AsyncLoop) => {
-        gunbank.load().then( () => {
-          this.gun_hook = this.container.getObjectByName('gunbank'+gunbank.bankID);
-          if(this.gun_hook instanceof THREE.Object3D){
-            this.gun_hook.add(gunbank.model);
-          }
-          asyncLoop.next();
-        });
+  async loadGunBanks(){
+    for(let i = 0; i < this.gunBanks.length; i++){
+      const gunbank = this.gunBanks[i];
+      await gunbank.load();
+      this.gun_hook = this.getGunHook(gunbank.bankID);
+      if(this.gun_hook instanceof THREE.Object3D){
+        this.gun_hook.add(gunbank.model);
       }
-    });
-    loop.iterate(() => {
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    }
+  }
+
+  getGunHook(bankID: number): THREE.Object3D | undefined {
+    return this.container.getObjectByName('gunbank'+bankID) as THREE.Object3D;
   }
 
   onAnimEvent(){
