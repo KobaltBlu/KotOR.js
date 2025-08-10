@@ -11,6 +11,58 @@ const isProd = (process.env.NODE_ENV?.trim() === 'production');
 console.log('NODE_ENV', process.env.NODE_ENV);
 console.log('isProd', isProd ? 'true' : 'false');
 
+// Common SCSS rule for all configs
+const scssRule = {
+  test: /\.scss$/i,
+  use: [
+    isProd ? MiniCssExtractPlugin.loader : 'style-loader',
+    {
+      loader: 'css-loader',
+      options: {
+        url: false,
+        sourceMap: !isProd
+      }
+    },
+    {
+      loader: 'sass-loader',
+      options: {
+        sourceMap: !isProd
+      }
+    }
+  ]
+};
+
+// Common CSS rule for Monaco Editor and other CSS files
+const cssRule = {
+  test: /\.css$/i,
+  use: [
+    isProd ? MiniCssExtractPlugin.loader : 'style-loader',
+    {
+      loader: 'css-loader',
+      options: {
+        url: false,
+        sourceMap: !isProd
+      }
+    }
+  ]
+};
+
+// Common asset rules
+const assetRules = [
+  {
+    test: /\.(png|svg|jpg|jpeg|gif)$/i,
+    type: 'asset/resource',
+  },
+  {
+    test: /\.(woff|woff2|eot|ttf|otf)$/i,
+    type: 'asset/resource',
+  },
+  {
+    test: /\.html$/,
+    use: 'raw-loader'
+  }
+];
+
 const libraryConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
@@ -37,7 +89,7 @@ const libraryConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: !isProd ? 'eval-source-map' : undefined,
+  devtool: !isProd ? 'eval-source-map' : 'source-map',
   module: {
     rules: [
       {
@@ -60,19 +112,6 @@ const libraryConfig = (name, color) => ({
     ],
   },
   plugins: [
-    // new CircularDependencyPlugin({
-    //   // exclude detection of files based on a RegExp
-    //   exclude: /a\.js|node_modules/,
-    //   // include specific files based on a RegExp
-    //   include: /src/,
-    //   // add errors to webpack instead of warnings
-    //   failOnError: true,
-    //   // allow import cycles that include an asyncronous import,
-    //   // e.g. via import(/* webpackMode: "weak" */ './file.js')
-    //   allowAsyncCycles: false,
-    //   // set the current working directory for displaying module paths
-    //   cwd: process.cwd(),
-    // }),
     new WebpackBar({
       color,
       name,
@@ -94,7 +133,6 @@ const libraryConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"),
     }
   },
   externals: {
@@ -113,8 +151,7 @@ const launcherConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     launcher: [
-      './src/apps/launcher/launcher.tsx', 
-      './src/apps/launcher/app.scss'
+      './src/apps/launcher/index.tsx'
     ],
   },
   stats: {
@@ -133,55 +170,24 @@ const launcherConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: !isProd ? 'eval-source-map' : undefined,
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: [{
-          loader: 'ts-loader',
-          options: {
-            configFile: "tsconfig.launcher.json"
-          }
-        }],
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.scss$/i,
-        use: [
+  devtool: !isProd ? 'eval-source-map' : 'source-map',
+        module: {
+        rules: [
           {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              publicPath: 'dist/launcher',
-            }
+            test: /\.tsx?$/,
+            use: [{
+              loader: 'ts-loader',
+              options: {
+                configFile: "tsconfig.launcher.json"
+              }
+            }],
+            exclude: /node_modules/,
           },
-          // "style-loader",
-          {
-            loader: 'css-loader',
-            options: {
-              url: false
-            }
-          },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
-          "sass-loader",
-        ]
+          cssRule,
+          scssRule,
+          ...assetRules
+        ],
       },
-      {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.html$/,
-        use: 'raw-loader'
-      },
-    ],
-  },
   plugins: [
     new WebpackBar({
       color,
@@ -190,7 +196,7 @@ const launcherConfig = (name, color) => ({
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'src/apps/launcher/launcher.html'
+      template: 'src/apps/launcher/index.html'
     }),
     new CopyPlugin({
       patterns: [
@@ -198,9 +204,9 @@ const launcherConfig = (name, color) => ({
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
-    new MiniCssExtractPlugin({
-      filename: 'launcher.css'
-    }),
+    ...(isProd ? [new MiniCssExtractPlugin({
+      filename: 'style.css'
+    })] : []),
   ],
   resolve: {
     alias: {
@@ -209,7 +215,6 @@ const launcherConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"),
     }
   },
   externals: {
@@ -226,8 +231,7 @@ const gameConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     game: [
-      './src/apps/game/game.tsx', 
-      './src/apps/game/game.scss'
+      './src/apps/game/index.tsx'
     ]
   },
   stats: {
@@ -246,55 +250,24 @@ const gameConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: !isProd ? 'eval-source-map' : undefined,
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: [{
-          loader: 'ts-loader',
-          options: {
-            configFile: "tsconfig.game.json"
-          }
-        }],
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.scss$/i,
-        use: [
+  devtool: !isProd ? 'eval-source-map' : 'source-map',
+        module: {
+        rules: [
           {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              publicPath: 'dist/game',
-            }
+            test: /\.tsx?$/,
+            use: [{
+              loader: 'ts-loader',
+              options: {
+                configFile: "tsconfig.game.json"
+              }
+            }],
+            exclude: /node_modules/,
           },
-          // "style-loader",
-          {
-            loader: 'css-loader',
-            options: {
-              url: false
-            }
-          },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
-          "sass-loader",
-        ]
+          cssRule,
+          scssRule,
+          ...assetRules
+        ],
       },
-      {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.html$/,
-        use: 'raw-loader'
-      },
-    ],
-  },
   plugins: [
     new WebpackBar({
       color,
@@ -303,17 +276,16 @@ const gameConfig = (name, color) => ({
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'src/apps/game/game.html'
+      template: 'src/apps/game/index.html'
     }),
     new CopyPlugin({
       patterns: [
-        // { from: "src/assets/game", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
-    new MiniCssExtractPlugin({
-      filename: 'game.css'
-    }),
+    ...(isProd ? [new MiniCssExtractPlugin({
+      filename: 'style.css'
+    })] : []),
   ],
   resolve: {
     alias: {
@@ -322,7 +294,6 @@ const gameConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"), 
     }
   },
   externals: {
@@ -330,17 +301,12 @@ const gameConfig = (name, color) => ({
     three: 'THREE',
     '../../KotOR': 'KotOR',
   },
-  // output: {
-  //   filename: '[name].js',
-  //   path: path.resolve(__dirname, 'dist/game'),
-  // },
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist/game'),
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
-
       if (filename.endsWith('.ts')) {
           return '[name].js';
       } else {
@@ -354,8 +320,7 @@ const forgeConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     forge: [
-      './src/apps/forge/forge.tsx', 
-      './src/apps/forge/forge.scss',
+      './src/apps/forge/index.tsx', 
       './src/worker/worker-tex.ts'
     ]
   },
@@ -375,63 +340,24 @@ const forgeConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: !isProd ? 'eval-source-map' : undefined,
-  module: {
-    rules: [
-      {
-				test: /\.css$/,
-				use: ['style-loader', 'css-loader']
-			},
-			{
-				test: /\.ttf$/,
-				use: ['file-loader']
-			},
-      {
-        test: /\.tsx?$/,
-        use: [{
-          loader: 'ts-loader',
-          options: {
-            configFile: "tsconfig.forge.json"
-          }
-        }],
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.scss$/i,
-        use: [
+  devtool: !isProd ? 'eval-source-map' : 'source-map',
+        module: {
+        rules: [
           {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              publicPath: 'dist/forge',
-            }
+            test: /\.tsx?$/,
+            use: [{
+              loader: 'ts-loader',
+              options: {
+                configFile: "tsconfig.forge.json"
+              }
+            }],
+            exclude: /node_modules/,
           },
-          // "style-loader",
-          {
-            loader: 'css-loader',
-            options: {
-              url: false
-            }
-          },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
-          "sass-loader",
-        ]
+          cssRule,
+          scssRule,
+          ...assetRules
+        ],
       },
-      {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.html$/,
-        use: 'raw-loader'
-      },
-    ],
-  },
   plugins: [
     new WebpackBar({
       color,
@@ -440,7 +366,7 @@ const forgeConfig = (name, color) => ({
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'src/apps/forge/forge.html'
+      template: 'src/apps/forge/index.html'
     }),
     new CopyPlugin({
       patterns: [
@@ -448,9 +374,9 @@ const forgeConfig = (name, color) => ({
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
-    new MiniCssExtractPlugin({
-      filename: 'forge.css'
-    }),
+    ...(isProd ? [new MiniCssExtractPlugin({
+      filename: 'style.css'
+    })] : []),
     new MonacoWebpackPlugin({
       publicPath: '/monaco',
       globalAPI: true,
@@ -464,7 +390,6 @@ const forgeConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"), 
     }
   },
   externals: {
@@ -478,7 +403,6 @@ const forgeConfig = (name, color) => ({
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
-
       if (filename.endsWith('.ts')) {
           return '[name].js';
       } else {
@@ -488,14 +412,11 @@ const forgeConfig = (name, color) => ({
   },
 });
 
-
-
 const debuggerConfig = (name, color) => ({
   mode: isProd ? 'production': 'development',
   entry: {
     debugger: [
-      './src/apps/debugger/debugger.tsx', 
-      './src/apps/debugger/debugger.scss'
+      './src/apps/debugger/index.tsx'
     ]
   },
   stats: {
@@ -514,63 +435,24 @@ const debuggerConfig = (name, color) => ({
     warnings: false,
     publicPath: false
   },
-  devtool: !isProd ? 'eval-source-map' : undefined,
-  module: {
-    rules: [
-      {
-				test: /\.css$/,
-				use: ['style-loader', 'css-loader']
-			},
-			{
-				test: /\.ttf$/,
-				use: ['file-loader']
-			},
-      {
-        test: /\.tsx?$/,
-        use: [{
-          loader: 'ts-loader',
-          options: {
-            configFile: "tsconfig.debugger.json"
-          }
-        }],
-        exclude: /node_modules/,
-      },
-      {
-        test: /\.scss$/i,
-        use: [
+  devtool: !isProd ? 'eval-source-map' : 'source-map',
+        module: {
+        rules: [
           {
-            loader: MiniCssExtractPlugin.loader,
-            options: {
-              publicPath: 'dist/debugger',
-            }
+            test: /\.tsx?$/,
+            use: [{
+              loader: 'ts-loader',
+              options: {
+                configFile: "tsconfig.debugger.json"
+              }
+            }],
+            exclude: /node_modules/,
           },
-          // "style-loader",
-          {
-            loader: 'css-loader',
-            options: {
-              url: false
-            }
-          },
-          // {
-          //   loader: 'resolve-url-loader'
-          // },
-          "sass-loader",
-        ]
+          cssRule,
+          scssRule,
+          ...assetRules
+        ],
       },
-      {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|otf)$/i,
-        type: 'asset/resource',
-      },
-      {
-        test: /\.html$/,
-        use: 'raw-loader'
-      },
-    ],
-  },
   plugins: [
     new WebpackBar({
       color,
@@ -579,17 +461,16 @@ const debuggerConfig = (name, color) => ({
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
-      template: 'src/apps/debugger/debugger.html'
+      template: 'src/apps/debugger/index.html'
     }),
     new CopyPlugin({
       patterns: [
-        // { from: "src/assets/debugger", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),
-    new MiniCssExtractPlugin({
-      filename: 'debugger.css'
-    }),
+    ...(isProd ? [new MiniCssExtractPlugin({
+      filename: 'style.css'
+    })] : []),
     new MonacoWebpackPlugin({
       publicPath: '/monaco',
       globalAPI: true,
@@ -603,7 +484,6 @@ const debuggerConfig = (name, color) => ({
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {
       "path": require.resolve("path-browserify"),
-      // "buffer": require.resolve("buffer"), 
     }
   },
   externals: {
@@ -617,7 +497,6 @@ const debuggerConfig = (name, color) => ({
     globalObject: 'this', 
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
-
       if (filename.endsWith('.ts')) {
           return '[name].js';
       } else {

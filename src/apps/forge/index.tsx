@@ -4,7 +4,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import 'bootstrap';
-import './forge.scss';
+import './app.scss';
 import { AppProvider, useApp } from './context/AppContext';
 import * as KotOR from "./KotOR";
 import { App } from './App';
