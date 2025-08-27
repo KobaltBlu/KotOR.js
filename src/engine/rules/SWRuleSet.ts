@@ -12,7 +12,7 @@ import { SWEXPTable } from "./SWEXPTable";
 import { SWDifficulty } from "./SWDifficulty";
 import { SWHead } from "./SWHead";
 import { GameState } from "../../GameState";
-import type { INIConfig } from "../../INIConfig";
+import type { INIConfig } from "../../engine/INIConfig";
 
 /**
  * SWRuleSet class.

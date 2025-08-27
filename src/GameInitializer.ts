@@ -26,7 +26,7 @@ import { ActionMenuManager } from "./ActionMenuManager";
 import { ActionFactory } from "./actions/ActionFactory";
 import { GameEffectFactory } from "./effects/GameEffectFactory";
 import { GameEventFactory } from "./events/GameEventFactory";
-import { INIConfig } from "./INIConfig";
+import { INIConfig } from "./engine/INIConfig";
 import { CacheScope } from "./enums";
 
 /**

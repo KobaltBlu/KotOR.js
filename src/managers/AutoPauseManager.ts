@@ -1,5 +1,5 @@
 import { GameState } from "../GameState";
-import { INIConfig } from "../INIConfig";
+import type { INIConfig } from "../engine/INIConfig";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
 import { EngineState } from "../enums/engine/EngineState";
 

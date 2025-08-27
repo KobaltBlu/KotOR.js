@@ -21,7 +21,7 @@ import type { ActionFactory } from "./actions/ActionFactory";
 import { IngameControls } from "./controls/IngameControls";
 // import { Mouse } from "./controls/Mouse";
 
-import { INIConfig } from "./INIConfig";
+import { INIConfig } from "./engine/INIConfig";
 import { LoadingScreen } from "./LoadingScreen";
 import { VideoPlayer } from "./VideoPlayer";
 

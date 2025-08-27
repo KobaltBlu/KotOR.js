@@ -6,7 +6,7 @@ import { KeyInput } from "./KeyInput";
 import { Keyboard } from "./Keyboard";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { TwoDAManager } from "../managers/TwoDAManager";
-import type { INIConfig } from "../INIConfig";
+import type { INIConfig } from "../engine/INIConfig";
 
 type KeymapProcessorCallback = (map: Keymap, delta: number) => void;
 

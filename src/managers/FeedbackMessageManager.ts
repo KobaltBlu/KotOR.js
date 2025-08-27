@@ -1,4 +1,4 @@
-import { INIConfig } from "../INIConfig";
+import type { INIConfig } from "../engine/INIConfig";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
 import { FeedbackOption } from "../enums/engine/FeedbackOption";
 
