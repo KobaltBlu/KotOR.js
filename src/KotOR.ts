@@ -61,7 +61,7 @@ export * from "./utility/GameFileSystem";
 export * from "./utility/Utility";
 export * from "./engine/TextSprite3D";
 
-export * from "./INIConfig";
+export * from "./engine/INIConfig";
 export * from "./CurrentGame";
 export * from "./engine/rules/SWRuleSet";
 
