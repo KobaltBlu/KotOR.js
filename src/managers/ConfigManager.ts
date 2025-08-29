@@ -1,5 +1,5 @@
 import * as fs from 'fs';
-import { DeepObject } from "../DeepObject";
+import { DeepObject } from "../utility/DeepObject";
 
 /**
  * ConfigManager class.

@@ -1,5 +1,5 @@
 import { EditorFile } from "./EditorFile";
-import { DeepObject } from "../../DeepObject";
+import { DeepObject } from "../../utility/DeepObject";
 import { ForgeState } from "./states/ForgeState";
 import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
 
