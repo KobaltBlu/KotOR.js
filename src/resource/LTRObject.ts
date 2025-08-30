@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 
 const LTR_HEADER_LENGTH = 9;
 

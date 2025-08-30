@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 

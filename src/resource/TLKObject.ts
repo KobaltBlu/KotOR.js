@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { TLKString } from "./TLKString";
 import { GameFileSystem } from "../utility/GameFileSystem";
 

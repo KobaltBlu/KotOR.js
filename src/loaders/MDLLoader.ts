@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { OdysseyModel } from "../odyssey";
 import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";

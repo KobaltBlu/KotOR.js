@@ -8,7 +8,7 @@ import { GameState } from "../GameState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
 import { ERFObject } from "../resource/ERFObject";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { Utility } from "../utility/Utility";
 import EngineLocation from "./EngineLocation";
 import { GameFileSystem } from "../utility/GameFileSystem";

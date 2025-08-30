@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { WalkmeshEdge } from "./WalkmeshEdge";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
 import { IOdysseyModelAABBNode } from "../interface/odyssey/IOdysseyModelAABBNode";
 import { TwoDAManager } from "../managers/TwoDAManager";

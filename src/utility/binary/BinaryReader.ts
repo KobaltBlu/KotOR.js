@@ -1,4 +1,4 @@
-import { Endians } from "./enums/resource/Endians";
+import { Endians } from "../../enums/resource/Endians";
 
 /**
  * BinaryReader class.

@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CExoLocString } from "./CExoLocString";

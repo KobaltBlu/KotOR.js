@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import * as path from 'path';
 import { KEYManager } from "../managers/KEYManager";
 import { GameFileSystem } from "../utility/GameFileSystem";

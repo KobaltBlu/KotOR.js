@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BinaryReader } from '../BinaryReader';
+import { BinaryReader } from '../utility/binary/BinaryReader';
 import { BIFObject } from './BIFObject';
 import { BIFManager } from '../managers/BIFManager';
 import { GameFileSystem } from '../utility/GameFileSystem';

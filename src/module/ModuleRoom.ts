@@ -5,7 +5,7 @@ import { GameState } from "../GameState";
 import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";

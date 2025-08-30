@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { Endians } from "../enums/resource/Endians";
 import { ResourceLoader } from "../loaders";

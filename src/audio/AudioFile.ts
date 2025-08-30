@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
 import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";

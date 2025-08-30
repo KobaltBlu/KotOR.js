@@ -8,7 +8,7 @@ export * from "./GameInitializer";
 export * from "./GameState";
 export * from "./managers";
 
-export * from "./BinaryReader";
+export * from "./utility/binary/BinaryReader";
 export * from "./BinaryWriter";
 
 export * from "./combat";

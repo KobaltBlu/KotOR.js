@@ -1,6 +1,6 @@
 import type { ModuleRoom } from "./ModuleRoom";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { ModulePlaceableAnimState } from "../enums/module/ModulePlaceableAnimState";
 import { ModulePlaceableState } from "../enums/module/ModulePlaceableState";
 import { GFFDataType } from "../enums/resource/GFFDataType";

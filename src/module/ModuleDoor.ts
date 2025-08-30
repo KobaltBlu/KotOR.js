@@ -12,7 +12,7 @@ import * as THREE from "three";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel, OdysseyWalkMesh } from "../odyssey";
 import { NWScript } from "../nwscript/NWScript";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";

@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ITGAObjectOptions } from "../interface/graphics/tga/ITGAObjectOptions";
 import { ITGAHeader } from "../interface/graphics/tga/ITGAHeader";

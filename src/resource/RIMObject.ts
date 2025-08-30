@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { BinaryReader } from '../BinaryReader';
+import { BinaryReader } from '../utility/binary/BinaryReader';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { ResourceTypes } from './ResourceTypes';
 import { IRIMResource } from '../interface/resource/IRIMResource';

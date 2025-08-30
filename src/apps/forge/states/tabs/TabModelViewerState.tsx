@@ -7,7 +7,7 @@ import { TabModelViewer } from "../../components/tabs/TabModelViewer";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import { UI3DRendererView } from "../../components/UI3DRendererView";
 import { EditorFile } from "../../EditorFile";
-import { BinaryReader } from "../../../../BinaryReader";
+import { BinaryReader } from "../../../../utility/binary/BinaryReader";
 import { ModelViewerControls } from "../../ModelViewerControls";
 import { SceneGraphNode } from "../../SceneGraphNode";
 import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";

@@ -1,6 +1,6 @@
 import { ILIPHeader } from "../interface/resource/ILIPHeader";
 import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../BinaryWriter";
 import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "./ResourceTypes";

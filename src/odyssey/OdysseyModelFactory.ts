@@ -1,4 +1,4 @@
-import { BinaryReader } from "../BinaryReader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelNode } from "./OdysseyModelNode";
 import { OdysseyModelNodeAABB } from "./OdysseyModelNodeAABB";
