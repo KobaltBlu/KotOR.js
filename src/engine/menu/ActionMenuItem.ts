@@ -1,5 +1,5 @@
-import { GameState } from "./GameState";
-import type { ModuleItem } from "./module/ModuleItem";
+import { GameState } from "../../GameState";
+import type { ModuleItem } from "../../module/ModuleItem";
 
 /**
  * ActionMenuItem class.

@@ -1,14 +1,14 @@
-import { GameState } from "./GameState";
+import { GameState } from "../../GameState";
 import { ActionMenuPanel } from "./ActionMenuPanel";
 import { ActionMenuItem } from "./ActionMenuItem";
-import type { ModuleObject } from "./module/ModuleObject";
-import type { ModuleCreature } from "./module/ModuleCreature";
-import { IActionPanelLists } from "./interface/gui/IActionPanelLists";
-import { GameEngineType } from "./enums/engine/GameEngineType";
-import { ActionType } from "./enums/actions/ActionType";
-import { SkillType } from "./enums/nwscript/SkillType";
-import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "./enums";
-import { TalentObject } from "./talents/TalentObject";
+import type { ModuleObject } from "../../module/ModuleObject";
+import type { ModuleCreature } from "../../module/ModuleCreature";
+import { IActionPanelLists } from "../../interface/gui/IActionPanelLists";
+import { GameEngineType } from "../../enums/engine/GameEngineType";
+import { ActionType } from "../../enums/actions/ActionType";
+import { SkillType } from "../../enums/nwscript/SkillType";
+import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "../../enums";
+import { TalentObject } from "../../talents/TalentObject";
 
 /**
  * ActionMenuManager class.
@@ -79,7 +79,7 @@ export class ActionMenuManager {
         if(ActionMenuManager.oTarget.isLocked()){
           if(bHasSecuritySkill){
             const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
@@ -96,7 +96,7 @@ export class ActionMenuManager {
             const item = securityTunnelers[0];
             
             const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
@@ -123,8 +123,8 @@ export class ActionMenuManager {
             for(let i = 0, len = mineList.length; i < len; i++){
               const item = mineList[i];
               const setMine = new GameState.ActionFactory.ActionSetMine();
-              setMine.setOwner(ActionMenuManager.oPC);
-              setMine.setTarget(ActionMenuManager.oTarget);
+              setMine.setOwner(ActionMenuManager.oPC as ModuleObject);
+              setMine.setTarget(ActionMenuManager.oTarget as ModuleObject);
               setMine.setParameter(0, ActionParameterType.DWORD, item);
               setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
               setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
@@ -141,7 +141,7 @@ export class ActionMenuManager {
         if(ActionMenuManager.oTarget.isLocked()){
           if(bHasSecuritySkill){
             const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
 
@@ -159,7 +159,7 @@ export class ActionMenuManager {
             const item = securityTunnelers[0];
             
             const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
@@ -187,8 +187,8 @@ export class ActionMenuManager {
             for(let i = 0, len = mineList.length; i < len; i++){
               const item = mineList[i];
               const setMine = new GameState.ActionFactory.ActionSetMine();
-              setMine.setOwner(ActionMenuManager.oPC);
-              setMine.setTarget(ActionMenuManager.oTarget);
+              setMine.setOwner(ActionMenuManager.oPC as ModuleObject);
+              setMine.setTarget(ActionMenuManager.oTarget as ModuleObject);
               setMine.setParameter(0, ActionParameterType.DWORD, item);
               setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
               setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
@@ -201,7 +201,7 @@ export class ActionMenuManager {
             }
           }
         }
-      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0])){
+      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0] as ModuleObject)){
         ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
           action: {
             type: ActionType.ActionPhysicalAttacks,
@@ -268,7 +268,7 @@ export class ActionMenuManager {
            */
           if(bHasDemolitionsSkill && ActionMenuManager.oTarget.trapDisarmable){
             const action = new GameState.ActionFactory.ActionDisarmMine();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
@@ -281,7 +281,7 @@ export class ActionMenuManager {
            */
           if(bHasDemolitionsSkill){
             const action = new GameState.ActionFactory.ActionRecoverMine();
-            action.setOwner(ActionMenuManager.oPC);
+            action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,

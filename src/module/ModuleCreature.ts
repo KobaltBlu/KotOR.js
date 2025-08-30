@@ -3151,8 +3151,8 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  getSpells(){
-    const spells = [];
+  getSpells(): TalentSpell[] {
+    const spells: TalentSpell[] = [];
 
     for(let i = 0, len = this.classes.length; i < len; i++){
       spells.push(...this.classes[i].getSpells());

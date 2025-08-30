@@ -1,4 +1,4 @@
-import type { ActionMenuPanel } from "../../ActionMenuPanel";
+import type { ActionMenuPanel } from "../../engine/menu/ActionMenuPanel";
 
 /**
  * IActionPanelLists interface.

@@ -21,7 +21,7 @@ import { Module } from "./module/Module";
 import { NWScript } from "./nwscript/NWScript";
 
 import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import { ActionMenuManager } from "./ActionMenuManager";
+import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
 import { ActionFactory } from "./actions/ActionFactory";
 import { GameEffectFactory } from "./effects/GameEffectFactory";
 import { GameEventFactory } from "./events/GameEventFactory";

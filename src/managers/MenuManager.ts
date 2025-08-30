@@ -3,7 +3,7 @@ import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine";
 import type { GUIControl, GameMenu } from "../gui";
-import { ActionMenuManager } from "../ActionMenuManager";
+import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
 import { EngineState } from "../enums/engine/EngineState";
 
 /**

@@ -66,7 +66,7 @@ export * from "./engine/CurrentGame";
 export * from "./engine/rules/SWRuleSet";
 
 export * from "./talents";
-export * from "./ActionMenuManager";
+export * from "./engine/menu/ActionMenuManager";
 export * from "./actions/ActionFactory";
 export * from "./effects/GameEffectFactory";
 export * from "./events/GameEventFactory";

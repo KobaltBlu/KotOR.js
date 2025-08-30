@@ -15,7 +15,7 @@ import type { SaveGame } from "./engine/SaveGame";
 import type { GameEffectFactory } from "./effects/GameEffectFactory";
 import type { GameEventFactory } from "./events/GameEventFactory";
 
-import type { ActionMenuManager } from "./ActionMenuManager";
+import type { ActionMenuManager } from "./engine/menu/ActionMenuManager";
 import type { ActionFactory } from "./actions/ActionFactory";
 
 import { IngameControls } from "./controls/IngameControls";
