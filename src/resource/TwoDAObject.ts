@@ -1,6 +1,6 @@
 import { BinaryReader } from "../utility/binary/BinaryReader";
 import { GameFileSystem } from '../utility/GameFileSystem';
-import { BinaryWriter } from '../BinaryWriter';
+import { BinaryWriter } from '../utility/binary/BinaryWriter';
 
 /**
  * TwoDAObject class.

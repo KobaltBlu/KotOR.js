@@ -1,5 +1,5 @@
 import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../BinaryWriter";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
 import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
 import { GameFileSystem } from "../utility/GameFileSystem";

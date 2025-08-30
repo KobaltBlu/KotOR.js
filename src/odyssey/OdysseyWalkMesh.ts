@@ -8,7 +8,7 @@ import { ModuleObject } from "../module";
 import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
 import { SurfaceMaterial } from "../engine/SurfaceMaterial";
 import { TileColor } from "../engine/TileColor";
-import { BinaryWriter } from "../BinaryWriter";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { IPerimeter } from "../interface/odyssey";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 

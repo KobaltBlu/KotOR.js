@@ -1,6 +1,6 @@
 import * as path from "path";
 import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../BinaryWriter";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import { ResourceTypes } from "./ResourceTypes";
 import { IERFLanguage } from "../interface/resource/IERFLanguage";

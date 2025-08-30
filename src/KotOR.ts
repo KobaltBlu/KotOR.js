@@ -9,7 +9,7 @@ export * from "./GameState";
 export * from "./managers";
 
 export * from "./utility/binary/BinaryReader";
-export * from "./BinaryWriter";
+export * from "./utility/binary/BinaryWriter";
 
 export * from "./combat";
 

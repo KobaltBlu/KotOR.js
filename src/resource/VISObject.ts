@@ -1,4 +1,4 @@
-import { BinaryWriter } from "../BinaryWriter";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { ModuleObjectType } from "../enums";
 import type { ModuleArea, ModuleRoom } from "../module";
 import { BitWise } from "../utility/BitWise";
