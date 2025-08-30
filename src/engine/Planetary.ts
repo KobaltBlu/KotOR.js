@@ -1,10 +1,10 @@
-import { MDLLoader } from "./loaders/MDLLoader";
-import { GFFDataType } from "./enums/resource/GFFDataType";
-import { OdysseyModel } from "./odyssey";
-import { GFFField } from "./resource/GFFField";
-import { GFFStruct } from "./resource/GFFStruct";
-import { TwoDAObject } from "./resource/TwoDAObject";
-import { GameState } from "./GameState";
+import { MDLLoader } from "../loaders/MDLLoader";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { OdysseyModel } from "../odyssey";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import { GameState } from "../GameState";
 
 
 /**

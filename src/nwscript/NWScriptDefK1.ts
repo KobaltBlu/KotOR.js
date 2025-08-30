@@ -15,7 +15,7 @@ import type { GameEvent } from "../events/GameEvent";
 import type { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptSubroutine } from "./NWScriptSubroutine";
 import type { OdysseyWalkMesh } from "../odyssey/OdysseyWalkMesh";
-import { Planetary } from "../Planetary";
+import { Planetary } from "../engine/Planetary";
 import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import type { OdysseyModel3D } from "../three/odyssey";

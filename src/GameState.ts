@@ -60,7 +60,7 @@ import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 
 import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 import { ModuleTriggerType } from "./enums";
-import { Planetary } from "./Planetary";
+import { Planetary } from "./engine/Planetary";
 import { Debugger } from "./Debugger";
 import { DebuggerState } from "./enums/server/DebuggerState";
 import type { IPCMessage } from "./server/ipc/IPCMessage";
