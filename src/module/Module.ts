@@ -11,7 +11,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ERFObject } from "../resource/ERFObject";
-import { CurrentGame } from "../CurrentGame";
+import { CurrentGame } from "../engine/CurrentGame";
 import { RIMObject } from "../resource/RIMObject";
 import { GFFStruct } from "../resource/GFFStruct";
 import { GameEventFactory } from "../events/GameEventFactory";

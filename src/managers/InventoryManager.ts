@@ -2,7 +2,7 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import * as path from "path";
-import { CurrentGame } from "../CurrentGame";
+import { CurrentGame } from "../engine/CurrentGame";
 import type { ModuleCreature, ModuleItem } from "../module";
 import { GameState } from "../GameState";
 import { BaseItemType } from "../enums/combat/BaseItemType";

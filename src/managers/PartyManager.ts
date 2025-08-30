@@ -4,7 +4,7 @@ import { ResourceTypes } from "../resource/ResourceTypes";
 import * as path from "path";
 import * as THREE from "three";
 import EngineLocation from "../engine/EngineLocation";
-import { CurrentGame } from "../CurrentGame";
+import { CurrentGame } from "../engine/CurrentGame";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ModuleCreature } from "../module/ModuleCreature";

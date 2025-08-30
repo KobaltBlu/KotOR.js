@@ -1,4 +1,4 @@
-import { CurrentGame } from "../CurrentGame";
+import { CurrentGame } from "../engine/CurrentGame";
 import type { ModuleCreature, ModuleObject } from "../module";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";

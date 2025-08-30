@@ -2,7 +2,7 @@ import * as path from "path";
 import { GFFObject } from "../resource/GFFObject";
 import { TextureLoader } from "../loaders";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { CurrentGame } from "../CurrentGame";
+import { CurrentGame } from "./CurrentGame";
 import { GFFField } from "../resource/GFFField";
 import { GameState } from "../GameState";
 import { GFFDataType } from "../enums/resource/GFFDataType";

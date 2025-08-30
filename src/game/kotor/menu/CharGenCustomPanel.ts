@@ -1,4 +1,4 @@
-import { CurrentGame } from "../../../CurrentGame";
+import { CurrentGame } from "../../../engine/CurrentGame";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";

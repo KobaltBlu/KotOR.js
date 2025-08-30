@@ -1,11 +1,11 @@
 import * as path from "path";
-import { ERFObject } from "./resource/ERFObject";
-import { AsyncLoop } from "./utility/AsyncLoop";
-import { ResourceTypes } from "./resource/ResourceTypes";
-import { ApplicationProfile } from "./utility/ApplicationProfile";
-import { GameFileSystem } from "./utility/GameFileSystem";
-import { ApplicationEnvironment } from "./enums/ApplicationEnvironment";
-import { IERFKeyEntry } from "./interface/resource/IERFKeyEntry";
+import { ERFObject } from "../resource/ERFObject";
+import { AsyncLoop } from "../utility/AsyncLoop";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
+import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
 
 /**
  * CurrentGame class.

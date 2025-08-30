@@ -62,7 +62,7 @@ export * from "./utility/Utility";
 export * from "./engine/TextSprite3D";
 
 export * from "./engine/INIConfig";
-export * from "./CurrentGame";
+export * from "./engine/CurrentGame";
 export * from "./engine/rules/SWRuleSet";
 
 export * from "./talents";

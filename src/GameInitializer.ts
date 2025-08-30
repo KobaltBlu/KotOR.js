@@ -6,7 +6,7 @@ import { ResourceTypes } from "./resource/ResourceTypes";
 import { RIMObject } from "./resource/RIMObject";
 import { GameFileSystem } from "./utility/GameFileSystem";
 import { GamePad, KeyMapper } from "./controls";
-import { CurrentGame } from "./CurrentGame";
+import { CurrentGame } from "./engine/CurrentGame";
 import { ConfigClient } from "./utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 

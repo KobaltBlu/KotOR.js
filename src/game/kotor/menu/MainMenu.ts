@@ -1,5 +1,5 @@
 import { AudioLoader } from "../../../audio/AudioLoader";
-import { CurrentGame } from "../../../CurrentGame";
+import { CurrentGame } from "../../../engine/CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
