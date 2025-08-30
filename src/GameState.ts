@@ -23,7 +23,7 @@ import { IngameControls } from "./controls/IngameControls";
 
 import { INIConfig } from "./engine/INIConfig";
 import { LoadingScreen } from "./LoadingScreen";
-import { VideoPlayer } from "./VideoPlayer";
+import { VideoPlayer } from "./engine/VideoPlayer";
 
 // import { OdysseyObject3D } from "./three/odyssey";
 import { AudioEngine, AudioEmitter } from "./audio";
