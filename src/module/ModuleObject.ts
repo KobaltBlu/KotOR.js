@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Action } from "../actions/Action";
 import { ActionQueue } from "../actions/ActionQueue";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { CollisionData } from "../CollisionData";
+import { CollisionData } from "../engine/CollisionData";
 import { CombatData } from "../combat/CombatData";
 import { EffectLink } from "../effects";
 import { GameEffect } from "../effects/GameEffect";

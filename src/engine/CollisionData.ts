@@ -1,13 +1,13 @@
-import { GameState } from "./GameState";
-import type { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "./module";
-import { OdysseyWalkMesh } from "./odyssey";
+import { GameState } from "../GameState";
+import type { ModuleCreature, ModuleDoor, ModuleObject, ModuleRoom } from "../module";
+import { OdysseyWalkMesh } from "../odyssey";
 import * as THREE from "three";
-import { Utility } from "./utility/Utility";
-import { ConfigClient } from "./utility/ConfigClient";
-import { OdysseyFace3 } from "./three/odyssey";
-import { ModuleDoorAnimState } from "./enums/module/ModuleDoorAnimState";
-import { BitWise } from "./utility/BitWise";
-import { ModuleObjectType } from "./enums";
+import { Utility } from "../utility/Utility";
+import { ConfigClient } from "../utility/ConfigClient";
+import { OdysseyFace3 } from "../three/odyssey";
+import { ModuleDoorAnimState } from "../enums/module/ModuleDoorAnimState";
+import { BitWise } from "../utility/BitWise";
+import { ModuleObjectType } from "../enums";
 
 interface AABBFaceData {
   object: ModuleObject,
