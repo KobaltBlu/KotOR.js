@@ -6,7 +6,7 @@ import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { Module } from "../../../module";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { SaveGame } from "../../../SaveGame";
+import { SaveGame } from "../../../engine/SaveGame";
 
 /**
  * MenuSaveLoad class.

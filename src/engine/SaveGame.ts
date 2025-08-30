@@ -1,18 +1,18 @@
 import * as path from "path";
-import { GFFObject } from "./resource/GFFObject";
-import { TextureLoader } from "./loaders";
-import { OdysseyTexture } from "./three/odyssey/OdysseyTexture";
-import { CurrentGame } from "./CurrentGame";
-import { GFFField } from "./resource/GFFField";
-import { GameState } from "./GameState";
-import { GFFDataType } from "./enums/resource/GFFDataType";
-import { GFFStruct } from "./resource/GFFStruct";
-import { ERFObject } from "./resource/ERFObject";
-import { BinaryReader } from "./BinaryReader";
-import { Utility } from "./utility/Utility";
-import EngineLocation from "./engine/EngineLocation";
-import { GameFileSystem } from "./utility/GameFileSystem";
-import { ResourceTypes } from "./KotOR";
+import { GFFObject } from "../resource/GFFObject";
+import { TextureLoader } from "../loaders";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { CurrentGame } from "../CurrentGame";
+import { GFFField } from "../resource/GFFField";
+import { GameState } from "../GameState";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ERFObject } from "../resource/ERFObject";
+import { BinaryReader } from "../BinaryReader";
+import { Utility } from "../utility/Utility";
+import EngineLocation from "./EngineLocation";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { ResourceTypes } from "../KotOR";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 

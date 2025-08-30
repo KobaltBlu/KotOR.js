@@ -16,8 +16,7 @@ import {
 import { SWRuleSet } from "./engine/rules/SWRuleSet";
 import { ResourceLoader } from "./loaders";
 import { GameEngineType } from "./enums/engine";
-import { SaveGame } from "./SaveGame";
-// import { Planetary } from "./Planetary";
+import { SaveGame } from "./engine/SaveGame";
 import { Module } from "./module/Module";
 import { NWScript } from "./nwscript/NWScript";
 

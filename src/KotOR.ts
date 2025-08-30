@@ -20,7 +20,7 @@ export * from "./enums";
 export * from "./interface";
 
 export * from "./LoadingScreen";
-export * from "./SaveGame";
+export * from "./engine/SaveGame";
 export * from "./utility/ConfigClient";
 
 export * from "./odyssey";

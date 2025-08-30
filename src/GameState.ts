@@ -11,7 +11,7 @@ import type { SWRuleSet } from "./engine/rules/SWRuleSet";
 import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
 import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "./module";
 import type { NWScript } from "./nwscript/NWScript";
-import type { SaveGame } from "./SaveGame";
+import type { SaveGame } from "./engine/SaveGame";
 import type { GameEffectFactory } from "./effects/GameEffectFactory";
 import type { GameEventFactory } from "./events/GameEventFactory";
 

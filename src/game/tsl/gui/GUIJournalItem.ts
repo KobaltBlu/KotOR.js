@@ -1,4 +1,4 @@
-import type { SaveGame } from "../../../SaveGame";
+import type { SaveGame } from "../../../engine/SaveGame";
 import { JournalCategory } from "../../../engine/JournalCategory";
 import { JournalEntry } from "../../../engine/JournalEntry";
 import { GUIProtoItem } from "../../../gui";
