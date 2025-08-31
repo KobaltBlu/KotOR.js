@@ -2115,7 +2115,6 @@ export class GUIControl {
   }
 
   getRendererSize(){
-    //window.renderer;
     return {width: GameState.ResolutionManager.getViewportWidth(), height: GameState.ResolutionManager.getViewportHeight()};
   }
 

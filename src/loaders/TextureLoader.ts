@@ -10,7 +10,6 @@ import { OdysseyTexture } from '../three/odyssey/OdysseyTexture';
 import { GameFileSystem } from '../utility/GameFileSystem';
 import { TXIPROCEDURETYPE } from '../enums/graphics/txi/TXIPROCEDURETYPE';
 import { GameEngineType } from '../enums/engine';
-import { ResourceLoader } from './ResourceLoader';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 

@@ -790,6 +790,7 @@ export class ModuleArea extends ModuleObject {
         this.sun.fogNear,
         this.sun.fogFar
       );
+      GameState.scene.fog = this.fog;
     }else{
       GameState.scene.fog = undefined;
     }

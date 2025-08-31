@@ -81,7 +81,7 @@ export class CursorManager {
 
   }
 
-  static init( onLoad: Function ){
+  static async init(){
 
     CursorManager.default = new THREE.SpriteMaterial();
     CursorManager.defaultD = new THREE.SpriteMaterial();
@@ -163,16 +163,14 @@ export class CursorManager {
 
     CursorManager.sphere = new THREE.Mesh( CursorManager.sphereGeometry, CursorManager.sphereMaterial );
 
-    TextureLoader.LoadQueue().then(() => {
-      CursorManager.reticleF.depthTest = false;
-      CursorManager.reticleF2.depthTest = false;
-      CursorManager.reticleH.depthTest = false;
-      CursorManager.reticleH2.depthTest = false;
-      if(typeof onLoad === 'function')
-        onLoad();
-    });
+    await TextureLoader.LoadQueue();
 
+    CursorManager.reticleF.depthTest = false;
+    CursorManager.reticleF2.depthTest = false;
+    CursorManager.reticleH.depthTest = false;
+    CursorManager.reticleH2.depthTest = false;
   }
+
 
   static setCursor(cursor = 'default'){
 

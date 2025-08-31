@@ -161,7 +161,9 @@ export class AppState {
     KotOR.GameState.OpeningMoviesComplete = true;
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
-    KotOR.GameState.Init();
+    KotOR.GameState.Init().then( () => {
+      KotOR.LoadingScreen.main.Hide();
+    });
     KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
     document.body.append(KotOR.GameState.stats.domElement);
     if(AppState.env == ApplicationEnvironment.ELECTRON){

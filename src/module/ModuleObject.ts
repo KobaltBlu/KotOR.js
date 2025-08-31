@@ -1662,8 +1662,8 @@ export class ModuleObject {
   }
 
   isOnScreen(frustum = GameState.viewportFrustum){
-    if(GameState.scene.fog){
-      if(this.distanceToCamera >= GameState.scene.fog.far){
+    if(this.area && this.area.fog){
+      if(this.distanceToCamera >= this.area.fog.far){
         return false;
       }
     }
