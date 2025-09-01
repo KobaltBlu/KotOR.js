@@ -2,6 +2,12 @@ import { RIMObject } from "../resource/RIMObject";
 import { GameFileSystem } from "../utility/GameFileSystem";
 import * as path from "path";
 
+interface IRIMObject {
+  ext: string;
+  name: string;
+  filename: string;
+}
+
 /**
  * RIMManager class.
  * 
@@ -15,54 +21,42 @@ export class RIMManager {
 
   static RIMs: Map<string, RIMObject> = new Map();
 
-  static Load( ){
+  static async Load(){
     
-    return new Promise<void>( async (resolve, reject) => {
+    try{
+      const filenames = await GameFileSystem.readdir('rims');
 
-      try{
-        const filenames = await GameFileSystem.readdir('rims');
+      const rims: IRIMObject[] = filenames.map(function(file: string) {
+        const filename = file.split(path.sep).pop();
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(), 
+          name: args[0], 
+          filename: path.join('rims', filename)
+        } as IRIMObject;
+      }).filter(function(file_obj: any){
+        return file_obj.ext == 'rim';
+      });
 
-        let rims: any[] = filenames.map(function(file: string) {
-          let filename = file.split(path.sep).pop();
-          let args = filename.split('.');
-          return {
-            ext: args[1].toLowerCase(), 
-            name: args[0], 
-            filename: path.join('rims', filename)
-          } as any;
-        }).filter(function(file_obj: any){
-          return file_obj.ext == 'rim';
-        });
-
-        for(let i = 0, len = rims.length; i < len; i++){
-          try{
-            let rim = await RIMManager.LoadRIMObject(rims[i]);
-            rim.group = 'RIMs';
-          }catch(e){ 
-            console.error(e);
-          }
+      for(let i = 0, len = rims.length; i < len; i++){
+        try{
+          const rim = await RIMManager.LoadRIMObject(rims[i]);
+          rim.group = 'RIMs';
+        }catch(e){ 
+          console.error(e);
         }
-        resolve();
-      }catch(err){
-        console.warn('GameInitializer.LoadRIMs', err);
-        resolve();
       }
-      
-    });
+    }catch(err){
+      console.warn('RIMManager.Load', err);
+    }
 
   }
 
-  static LoadRIMObject( rimObj: any ){
-    //{ext: args[1].toLowerCase(), name: args[0], filename: filename}
-    return new Promise<RIMObject>( async (resolve, reject) => {
-      const rim = new RIMObject(rimObj.filename);
-      rim.load().then( (rim: RIMObject) => {
-        RIMManager.RIMs.set(rimObj.name, rim);
-        resolve(rim);
-      }, (err: any) => {
-        reject(err);
-      })
-    });
+  static async LoadRIMObject( rimObj: IRIMObject ){
+    const rim = new RIMObject(rimObj.filename);
+    await rim.load();
+    RIMManager.RIMs.set(rimObj.name, rim);
+    return rim;
   }
 
   static addRIM( name: string, rim: RIMObject ){
