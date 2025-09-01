@@ -11,5 +11,6 @@
 export enum WeatherCondition {
   CLEAR = 0,
   RAIN = 1,
-  SNOW = 2
+  SNOW = 2,
+  LIGHTNING = 3
 };

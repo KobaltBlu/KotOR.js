@@ -19,8 +19,8 @@ import { MDLLoader } from "../loaders";
 * @memberof KotOR
 */
 export class AreaWeather {
-  area: ModuleArea;
 
+  area: ModuleArea;
   model: OdysseyModel3D;
   chanceSnow: number = 0;
   chanceRain: number = 0;
@@ -32,6 +32,9 @@ export class AreaWeather {
     this.area = area;
   }
 
+  /**
+   * Update the weather model to animate the weather effect
+   */
   update(delta: number = 0){
     if(this.model){
       this.model.position.copy( GameState.getCurrentPlayer().position ).add( new THREE.Vector3(0,0,3) );
@@ -39,54 +42,67 @@ export class AreaWeather {
     }
   }
 
-  async load(){
-    return new Promise<void>( (resolve, reject) => {
-      if(this.chanceSnow == 100){
-        MDLLoader.loader.load('fx_snow')
-        .then((mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: GameState,
-            // manageLighting: false
-          }).then((model: OdysseyModel3D) => {
-            this.model = model;
-            GameState.weather_effects.push(model);
-            GameState.group.weather_effects.add(model);
-            //TextureLoader.LoadQueue();
-            resolve();
-          }).catch(resolve);
-        }).catch(resolve);
-      }else if(this.chanceRain == 100){
-        MDLLoader.loader.load('fx_rain')
-        .then((mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: GameState,
-            // manageLighting: false
-          }).then((model: OdysseyModel3D) => {
-            this.model = model;
-            GameState.weather_effects.push(model);
-            GameState.group.weather_effects.add(model);
-            //TextureLoader.LoadQueue();
-            resolve();
-          }).catch(resolve);
-        }).catch(resolve);
-      }else{
-        resolve();
-      }
-    });
+  /**
+   * Get the weather condition based on the chance of snow, rain, and lightning
+   * @returns WeatherCondition
+   */
+  getWeatherCondition(): WeatherCondition {
+    const random = Math.random() * 100;
+    if (random < this.chanceSnow) {
+      return WeatherCondition.SNOW;
+    } else if (random < this.chanceSnow + this.chanceRain) {
+      return WeatherCondition.RAIN;
+    } else if (random < this.chanceSnow + this.chanceRain + this.chanceLightning) {
+      return WeatherCondition.LIGHTNING;
+    }
+    return WeatherCondition.CLEAR;
   }
 
+  /**
+   * Get the weather model name based on the weather condition
+   * @returns string
+   */
+  getWeatherModelName(): string {
+    switch(this.getWeatherCondition()){
+      case WeatherCondition.SNOW:
+        return 'fx_snow';
+      case WeatherCondition.RAIN:
+        return 'fx_rain';
+      case WeatherCondition.LIGHTNING:
+        return 'fx_lightning';
+    }
+    return '';
+  }
+
+  /**
+   * Load the weather model
+   */
+  async load(){
+    this.currentWeather = this.getWeatherCondition();
+    const weatherModelName = this.getWeatherModelName();
+    try{
+      if(weatherModelName){
+        const mdl = await MDLLoader.loader.load(weatherModelName);
+        const model = await OdysseyModel3D.FromMDL(mdl, {
+          context: GameState
+        });
+        this.model = model;
+        GameState.group.weather_effects.add(model);
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /**
+   * Destroy the weather model
+   */
   destroy(){
-    let index = GameState.weather_effects.indexOf(this.model);
-    if(index >= 1){
+    if(this.model){
       this.model.remove();
       this.model.dispose();
-      GameState.weather_effects.splice(index, 1);
+      this.model = undefined;
     }
-    //Remove all weather effects
-    // while(GameState.weather_effects.length){
-    //   GameState.weather_effects[0].dispose();
-    //   GameState.weather_effects.shift();
-    // }
   }
 
 }

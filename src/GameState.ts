@@ -259,7 +259,7 @@ export class GameState implements EngineContext {
     room_walkmeshes: new THREE.Group,
     spell_instances: new THREE.Group,
   };
-  static weather_effects: any[];
+  
   static interactableObjects: any[];
 
   static scene_cursor_holder: THREE.Group;
@@ -593,8 +593,6 @@ export class GameState implements EngineContext {
       room_walkmeshes: namedGroup('room_walkmeshes'),
       spell_instances: namedGroup('spell_instances'),
     };
-
-    GameState.weather_effects = [];
 
     GameState.scene.add(GameState.group.rooms);
     GameState.scene.add(GameState.group.grass);
