@@ -109,6 +109,11 @@ export class AudioEngine {
       this.bgmMode = BackgroundMusicMode.BATTLE_STINGER;
     });
 
+    this.dialogMusicAudioEmitter.addEventListener('play', () => {
+      this.bgmMode = BackgroundMusicMode.DIALOG;
+      this.areaMusicAudioEmitter.stop();
+    });
+
     this.areaMusicAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
       if(AudioEngine.loopBGM){
@@ -125,9 +130,16 @@ export class AudioEngine {
     });
 
     this.battleStingerAudioEmitter.addEventListener('ended', () => {
+      this.bgmState = BackgroundMusicState.PLAYING;
+      this.areaMusicAudioEmitter.play();
+    });
+
+    this.dialogMusicAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
       this.bgmMode = BackgroundMusicMode.AREA;
-      this.areaMusicAudioEmitter.play();
+      if(AudioEngine.loopBGM){
+        this.bgmTimer = this.bgmLoopTime;
+      }
     });
 
     AudioEngine.engines.push(this);
@@ -229,26 +241,31 @@ export class AudioEngine {
     this.emitters.push(emitter);
   }
 
-  setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer){
+  setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer, name: string){
     switch(type){
       case 'BACKGROUND_MUSIC':
         this.areaMusicAudioEmitter.setData(data);
+        this.areaMusicAudioEmitter.name = name;
         this.areaMusicLoaded = true;
         break;
       case 'BATTLE':
         this.battleMusicAudioEmitter.setData(data);
+        this.battleMusicAudioEmitter.name = name;
         this.battleMusicLoaded = true;
         break;
       case 'BATTLE_STINGER':
         this.battleStingerAudioEmitter.setData(data);
+        this.battleStingerAudioEmitter.name = name;
         this.battleStingerLoaded = true;
         break;
       case 'DIALOG':
         this.dialogMusicAudioEmitter.setData(data);
+        this.dialogMusicAudioEmitter.name = name;
         this.dialogMusicLoaded = true;
         break;
       case 'AMBIENT':
         this.ambientAudioEmitter.setData(data);
+        this.ambientAudioEmitter.name = name;
         this.ambientLoaded = true;
         break;
     }

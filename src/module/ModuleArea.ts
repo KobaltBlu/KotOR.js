@@ -1764,7 +1764,7 @@ export class ModuleArea extends ModuleObject {
         if(bgMusic.resource != '****'){
           console.log('Loading Background Music', bgMusic.resource);
           const data = await AudioLoader.LoadMusic(bgMusic.resource);
-          audioEngine.setAudioBuffer('BACKGROUND_MUSIC', data);
+          audioEngine.setAudioBuffer('BACKGROUND_MUSIC', data, bgMusic.resource);
           audioEngine.areaMusicAudioEmitter.play();
         }
       }catch(e){
@@ -1778,7 +1778,7 @@ export class ModuleArea extends ModuleObject {
         if(battleMusic.resource != '****'){
           console.log('Loading Battle Music', battleMusic.resource);
           const data = await AudioLoader.LoadMusic(battleMusic.resource);
-          audioEngine.setAudioBuffer('BATTLE', data);
+          audioEngine.setAudioBuffer('BATTLE', data, battleMusic.resource);
         }
       }catch(e){
         console.log('Background Music not found', bgMusic);
@@ -1790,7 +1790,7 @@ export class ModuleArea extends ModuleObject {
         if(battleMusic.stinger1 != '****'){
           console.log('Loading Battle Stinger', battleMusic.stinger1);
           const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data);
+          audioEngine.setAudioBuffer('BATTLE_STINGER', data, battleMusic.stinger1);
         }
       }catch(e){
         console.log('Battle Stinger not found', battleMusic.stinger1);
@@ -1808,7 +1808,7 @@ export class ModuleArea extends ModuleObject {
       console.log('Loading Ambient Day Sound', ambientDay.resource);
       try{
         const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT', data);
+        audioEngine.setAudioBuffer('AMBIENT', data, ambientDay.resource);
         audioEngine.ambientAudioEmitter.play();
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);

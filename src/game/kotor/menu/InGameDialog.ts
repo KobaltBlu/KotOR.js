@@ -207,8 +207,7 @@ export class InGameDialog extends GameMenu {
   beginDialog() {
     if (this.dialog.ambientTrack != '') {
       AudioLoader.LoadMusic(this.dialog.ambientTrack).then((data: ArrayBuffer) => {
-        AudioEngine.GetAudioEngine().areaMusicAudioEmitter.stop();
-        AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', data);
+        AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', data, this.dialog.ambientTrack);
         AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.play();
         this.showEntry(this.startingEntry);
       }, () => {
@@ -463,7 +462,6 @@ export class InGameDialog extends GameMenu {
     }
     GameState.VideoEffectManager.SetVideoEffect(-1);
     AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.stop();
-    AudioEngine.GetAudioEngine().areaMusicAudioEmitter.play();
   }
 
   updateEntryAnimations(entry: DLGNode) {

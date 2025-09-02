@@ -16,12 +16,15 @@ export class AmbientAudioEmitter extends EventListener {
   engine: AudioEngine;
 
   data: ArrayBuffer;
+  name: string;
 
   node: AudioBufferSourceNode;
 
   destination: AudioNode;
   loaded: boolean = false;
   playing: boolean = false;
+
+  onendedFired: boolean = false;
 
   constructor(engine: AudioEngine){
     super();
@@ -64,6 +67,7 @@ export class AmbientAudioEmitter extends EventListener {
       this.stop();
     }
 
+    this.onendedFired = false;
     this.loaded = false;
     this.node = this.engine.audioCtx.createBufferSource();
     this.node.buffer = await this.engine.audioCtx.decodeAudioData(this.data.slice(0));
@@ -73,6 +77,7 @@ export class AmbientAudioEmitter extends EventListener {
     this.playing = true;
     this.loaded = true;
     this.node.onended = () => {
+      this.onendedFired = true;
       this.playing = false;
       this.loaded = false;
       this.node = null;
@@ -94,6 +99,10 @@ export class AmbientAudioEmitter extends EventListener {
     }
     if(wasPlaying){
       this.processEventListener('stop');
+    }
+    if(!this.onendedFired){
+      this.onendedFired = true;
+      this.processEventListener('ended');
     }
   }
 
