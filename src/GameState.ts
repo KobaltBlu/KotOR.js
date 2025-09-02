@@ -968,7 +968,14 @@ export class GameState implements EngineContext {
      */
     GameState.Mode = EngineMode.LOADING;
     GameState.MenuManager.ClearMenus();
+
     GameState.UnloadModule();
+
+    GameState.MenuManager.LoadScreen.setProgress(0);
+    await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
+    GameState.MenuManager.LoadScreen.showRandomHint();
+    GameState.MenuManager.LoadScreen.open();
+    
     GameState.VideoEffectManager.SetVideoEffect(-1);
     CursorManager.selectableObjects = [];
     await VideoPlayer.Load(sMovie1);
@@ -999,10 +1006,6 @@ export class GameState implements EngineContext {
     GameState.module = module;
     GameState.scene.visible = false;
 
-    GameState.MenuManager.LoadScreen.setProgress(0);
-    await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
-    GameState.MenuManager.LoadScreen.showRandomHint();
-    GameState.MenuManager.LoadScreen.open();
     GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
     console.log('Module.loadScene');

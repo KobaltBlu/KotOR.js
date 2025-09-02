@@ -1,7 +1,7 @@
 import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
-import { GameEngineType } from "../enums/engine";
+import { EngineMode, GameEngineType } from "../enums/engine";
 import type { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
 import { EngineState } from "../enums/engine/EngineState";
@@ -134,6 +134,9 @@ export class MenuManager {
     }
     while(MenuManager.activeModals.length){
       MenuManager.activeModals[0].close();
+    }
+    if(GameState.Mode == EngineMode.LOADING){
+      GameState.MenuManager.LoadScreen.open();
     }
   }
 

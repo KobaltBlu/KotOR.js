@@ -1,6 +1,5 @@
 import * as path from "path";
 import { ERFObject } from "../resource/ERFObject";
-import { AsyncLoop } from "../utility/AsyncLoop";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { GameFileSystem } from "../utility/GameFileSystem";
@@ -123,24 +122,13 @@ export class CurrentGame {
     }
   }
 
-  static ExtractERFToGameInProgress( erf: ERFObject ){
-    return new Promise<void>( (resolve, reject) => {
-      if(erf instanceof ERFObject){
-        let loop = new AsyncLoop({
-          array: erf.keyList,
-          onLoop: (erf_key: IERFKeyEntry, asyncLoop: AsyncLoop) => {
-            erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType).then(() => {
-              asyncLoop.next();
-            });
-          }
-        });
-        loop.iterate(() => {
-          resolve();
-        });
-      }else{
-        resolve();
+  static async ExtractERFToGameInProgress( erf: ERFObject ){
+    if(erf instanceof ERFObject){
+      for(let i = 0; i < erf.keyList.length; i++){
+        const erf_key = erf.keyList[i];
+        await erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType);
       }
-    });
+    }
   }
 
   static async WriteFile( filename: string, buffer: Uint8Array){
@@ -151,38 +139,28 @@ export class CurrentGame {
     }
   }
 
-  static ExportToSaveFolder( folder: string ){
-    return new Promise( async (resolve, reject) => {
-      let sav = new ERFObject();
-      GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
-        let loop = new AsyncLoop({
-          array: files,
-          onLoop: (file: string, asyncLoop: AsyncLoop) => {
-            let file_path = path.join( file );
-            let file_info = path.parse(file);
-            let ext = file_info.ext.split('.').pop();
-            if(typeof ResourceTypes[ext] != 'undefined'){
-              GameFileSystem.readFile( file_path).then( (data) => {
-                sav.addResource(file_info.name, ResourceTypes[ext], data);
-                asyncLoop.next();
-              }).catch( (err) => {
-                // console.log('ExportCurrentGameFolder', 'file open error', file, err);
-                asyncLoop.next();
-              });
-            }else{
-              // console.log('ExportCurrentGameFolder', 'Unhandled file', file);
-              asyncLoop.next();
-            }
+  static async ExportToSaveFolder( folder: string ){
+    let sav = new ERFObject();
+    try{
+      const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
+      for(let i = 0; i < files.length; i++){
+        const file = files[i];
+        const file_path = path.join( file );
+        const file_info = path.parse(file);
+        const ext = file_info.ext.split('.').pop();
+        if(typeof ResourceTypes[ext] != 'undefined'){
+          try{
+            const data = await GameFileSystem.readFile( file_path);
+            sav.addResource(file_info.name, ResourceTypes[ext], data);
+          }catch(e){
+            console.error(e);
           }
-        });
-        loop.iterate( async () => {
-          await sav.export( path.join(folder, 'SAVEGAME.sav') );
-          resolve(sav);
-        });
-      }).catch((e) => {
-        console.error(e);
-      });
-    });
+        }
+      }
+      await sav.export( path.join(folder, 'SAVEGAME.sav') );
+    }catch(e){
+      console.error(e);
+    }
   }
 
 }
