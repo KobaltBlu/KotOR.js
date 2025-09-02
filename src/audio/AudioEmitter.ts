@@ -324,6 +324,9 @@ export class AudioEmitter {
       return buffer;
     }catch(e){
       console.error('AudioEmitter.addSound: Failed to decodeAudioData');
+      if (e.name === 'DataCloneError') {
+        console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
+      }
       console.error(e);
       throw e;
     }

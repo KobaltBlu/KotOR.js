@@ -1,8 +1,14 @@
 import * as THREE from "three";
-import { EAXPresets } from "./EAXPresets";
 import type { AudioEmitter } from "./AudioEmitter";
 import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
 import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
+import { AmbientAudioEmitter } from "./AmbientAudioEmitter";
+import { EAXPresets } from "./EAXPresets";
+import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
+import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
+
+
+type BackgroundAudioType = 'BACKGROUND_MUSIC' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT'
 
 /**
  * AudioEngine class.
@@ -21,6 +27,8 @@ export class AudioEngine {
   static _gainVoVol: number;
   static Mode: AudioEngineMode = AudioEngineMode.Software;
 
+  static AUDIO_BUFFER_CACHE: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
+
   audioCtx: AudioContext;
   // reverbLF: any;
   // reverbHF: any;
@@ -29,11 +37,23 @@ export class AudioEngine {
   voGain: GainNode;
   movieGain: GainNode;
   emitters: AudioEmitter[];
-  bgm: AudioBufferSourceNode;
-  bgmTimeout: NodeJS.Timeout;
-  bgmBuffer: AudioBuffer;
-  dialogMusicBuffer: AudioBuffer;
-  ambient: AudioBufferSourceNode;
+
+  ambientAudioEmitter: AmbientAudioEmitter;
+  areaMusicAudioEmitter: AmbientAudioEmitter;
+  battleMusicAudioEmitter: AmbientAudioEmitter;
+  battleStingerAudioEmitter: AmbientAudioEmitter;
+  dialogMusicAudioEmitter: AmbientAudioEmitter;
+
+  battleMusicLoaded: boolean = false;
+  battleStingerLoaded: boolean = false;
+  areaMusicLoaded: boolean = false;
+  dialogMusicLoaded: boolean = false;
+  ambientLoaded: boolean = false;
+
+  bgmTimer: number = 0;
+  bgmLoopTime: number = 30000;
+  bgmState: BackgroundMusicState = BackgroundMusicState.UNLOADED;
+  bgmMode: BackgroundMusicMode = BackgroundMusicMode.NONE;
 
   mode: AudioEngineMode = AudioEngine.Mode;
   areaProperies: IAreaAudioProperties;
@@ -64,9 +84,53 @@ export class AudioEngine {
     this.movieGain.connect(this.audioCtx.destination);
 
     this.emitters = [];
-    this.bgm = null;
-    this.bgmTimeout = null;
-    this.ambient = null;
+    this.bgmTimer = 0;
+    this.ambientAudioEmitter = new AmbientAudioEmitter(this);
+    this.areaMusicAudioEmitter = new AmbientAudioEmitter(this);
+    this.battleMusicAudioEmitter = new AmbientAudioEmitter(this);
+    this.battleStingerAudioEmitter = new AmbientAudioEmitter(this);
+    this.dialogMusicAudioEmitter = new AmbientAudioEmitter(this);
+
+    this.ambientAudioEmitter.setDestination(this.sfxGain);
+    this.areaMusicAudioEmitter.setDestination(this.musicGain);
+    this.battleMusicAudioEmitter.setDestination(this.musicGain);
+    this.battleStingerAudioEmitter.setDestination(this.musicGain);
+    this.dialogMusicAudioEmitter.setDestination(this.musicGain);
+
+    this.areaMusicAudioEmitter.addEventListener('play', () => {
+      this.bgmMode = BackgroundMusicMode.AREA;
+    });
+
+    this.battleMusicAudioEmitter.addEventListener('play', () => {
+      this.bgmMode = BackgroundMusicMode.BATTLE;
+    });
+
+    this.battleStingerAudioEmitter.addEventListener('play', () => {
+      this.bgmMode = BackgroundMusicMode.BATTLE_STINGER;
+    });
+
+    this.areaMusicAudioEmitter.addEventListener('ended', () => {
+      this.bgmState = BackgroundMusicState.ENDED;
+      if(AudioEngine.loopBGM){
+        this.bgmTimer = this.bgmLoopTime;
+      }
+    });
+
+    this.battleMusicAudioEmitter.addEventListener('stop', () => {
+      if(this.battleStingerLoaded){
+        this.battleStingerAudioEmitter.play();
+      }else{
+        this.areaMusicAudioEmitter.play();
+      }
+    });
+
+    this.battleStingerAudioEmitter.addEventListener('ended', () => {
+      this.bgmState = BackgroundMusicState.ENDED;
+      this.bgmMode = BackgroundMusicMode.AREA;
+      if(AudioEngine.loopBGM){
+        this.bgmTimer = this.bgmLoopTime;
+      }
+    });
 
     AudioEngine.engines.push(this);
 
@@ -129,7 +193,7 @@ export class AudioEngine {
     }
   }
 
-  update ( position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
+  update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
     if(typeof this.audioCtx.listener.setPosition === 'function'){
       this.audioCtx.listener.setPosition(position.x, position.y, position.z);
     }else{
@@ -149,11 +213,17 @@ export class AudioEngine {
       this.audioCtx.listener.upZ.value = 1;
     }
 
-    /*soundsLen = this.sounds.length;
-    for(let i = 0; i < soundsLen; i++){
-      let sound = sounds[soundsLen];
-      sound.Update();
-    }*/
+    //Handle the background music loop
+    if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
+      if(this.bgmTimer > 0 && AudioEngine.loopBGM){
+        this.bgmTimer -= delta;
+        if(this.bgmTimer <= 0){
+          this.bgmTimer = 0;
+          this.areaMusicAudioEmitter.play();
+          this.bgmState = BackgroundMusicState.PLAYING;
+        }
+      }
+    }
 
   }
 
@@ -161,174 +231,65 @@ export class AudioEngine {
     this.emitters.push(emitter);
   }
 
-  /*AddSound ( options = {} ) {
-
-    options = Object.assign({
-      //Variables
-      data: null,
-      position: new THREE.Vector3(0),
-      rotation: new THREE.Vector3(0),
-      loop: false,
-      vol: 1,
-
-      //Callbacks
-      onLoad: null,
-      onError: null
-    }, options);
-
-    this.audioCtx.decodeAudioData( options.data, ( buffer ) => {
-
-      let sound = this.audioCtx.createBufferSource();
-      let pannerNode = this.audioCtx.createPanner();
-
-      sound.buffer = buffer;
-      sound.loop = options.loop;
-      //sound.start( 0, 0 );
-      sound.volume = options.vol;
-
-      pannerNode.setPosition( options.position.x, options.position.y, options.position.z );
-      pannerNode.setOrientation( options.rotation.x, options.rotation.y, options.rotation.z, 0, 0, 1);
-
-      sound.connect(pannerNode);
-      pannerNode.connect(this.sfxGain);
-
-      this.sounds.push(sound);
-
-    }, (error) => {
-      console.error("decodeAudioData error", error);
-    });
-
-  }*/
-
-  setBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
-      this.bgmBuffer = buffer;
-      this.startBackgroundMusic();
-    });
-  }
-
-  setDialogBackgroundMusic ( data: ArrayBuffer, vol = 1 ) {
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
-      this.dialogMusicBuffer = buffer;
-      this.startBackgroundMusic(this.dialogMusicBuffer);
-    });
-  }
-
-  startBackgroundMusic(buffer?: AudioBuffer){
-
-    if(buffer == undefined)
-      buffer = this.bgmBuffer;
-
-    this.stopBackgroundMusic();
-    //Create the new audio buffer and callbacks
-    this.bgm = this.audioCtx.createBufferSource();
-
-    this.bgm.buffer = buffer;
-    this.bgm.loop = false;
-    this.bgm.start( 0, 0 );
-    this.bgm.connect( this.musicGain );
-
-    this.bgm.onended = () => {
-      if(AudioEngine.loopBGM){
-        this.bgmTimeout = global.setTimeout( () => {
-          this.startBackgroundMusic();
-        }, this.getBackgroundMusicLoopTime());
-      }
-    };
-  }
-
-  stopBackgroundMusic(){
-    try{
-      if (this.bgm != null) {
-        this.bgm.onended = undefined;
-        this.bgm.disconnect();
-        this.bgm.stop(0);
-        this.bgm = null;
-      }
-    }catch(e){}
+  setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer){
+    switch(type){
+      case 'BACKGROUND_MUSIC':
+        this.areaMusicAudioEmitter.setData(data);
+        this.areaMusicLoaded = true;
+        break;
+      case 'BATTLE':
+        this.battleMusicAudioEmitter.setData(data);
+        this.battleMusicLoaded = true;
+        break;
+      case 'BATTLE_STINGER':
+        this.battleStingerAudioEmitter.setData(data);
+        this.battleStingerLoaded = true;
+        break;
+      case 'DIALOG':
+        this.dialogMusicAudioEmitter.setData(data);
+        this.dialogMusicLoaded = true;
+        break;
+      case 'AMBIENT':
+        this.ambientAudioEmitter.setData(data);
+        this.ambientLoaded = true;
+        break;
+    }
   }
 
   setAreaAudioProperties(props: IAreaAudioProperties){
     this.areaProperies = props;
+    this.bgmLoopTime = props.music.delay;
+    this.areaMusicLoaded = false;
+    this.battleMusicLoaded = false;
+    this.battleStingerLoaded = false;
+    this.dialogMusicLoaded = false;
+    this.ambientLoaded = false;
   }
 
-  getBackgroundMusicLoopTime(){
-    if(this.areaProperies){
-      return this.areaProperies.music.delay;
-    }else{
-      return 30000;
-    }
-  }
-
-  setAmbientSound ( data: ArrayBuffer, loop = true, vol = 0.66 ) {
-
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
-
-      if (this.ambient != null) {
-        this.ambient.disconnect();
-        this.ambient.stop(0);
-        this.ambient = null;
-      }
-
-      this.ambient = this.audioCtx.createBufferSource();
-
-      this.ambient.buffer = buffer;
-      this.ambient.loop = loop;
-      this.ambient.start( 0, 0 );
-      this.ambient.connect( this.sfxGain );
-
-    });
-
-  }
-
-  stopAmbientSound(){
-    try{
-      this.ambient.stop()
-      this.ambient.disconnect();
-      this.ambient = null;
-    }catch(e){
-      console.error(e);
-    }
-  }
-
-  getAudioBuffer (data: ArrayBuffer, onBuffered?: Function) {
-
-    this.audioCtx.decodeAudioData(data, (buffer) => {
-      if(onBuffered != null)
-        onBuffered(buffer);
-    });
-
-  }
-
+  /**
+   * Destroy the AudioEngine
+   * call when an area is unloaded
+   */
   destroy(){
-
-    //Clear the BGM repeat timeout just incase it is active
-    global.clearTimeout(this.bgmTimeout);
-
-    for(let i = 0; i < this.emitters.length; i++)
-      this.emitters[i].destroy();
-
-    this.emitters = [];
-
-    this.stopAmbientSound();
-    this.stopBackgroundMusic();
-
+    this.reset();
     this.audioCtx.close();
   }
 
+  /**
+   * Reset the AudioEngine
+   */
   reset(){
-    
-    //Clear the BGM repeat timeout just incase it is active
-    global.clearTimeout(this.bgmTimeout);
-
+    //Clean up the emitters
     for(let i = 0; i < this.emitters.length; i++)
       this.emitters[i].destroy();
 
     this.emitters = [];
 
-    this.stopAmbientSound();
-    this.stopBackgroundMusic();
-
+    //Clean up the background music emitters
+    this.areaMusicAudioEmitter.dispose();
+    this.battleMusicAudioEmitter.dispose();
+    this.battleStingerAudioEmitter.dispose();
+    this.dialogMusicAudioEmitter.dispose();
   }
 
   static GetAudioEngine(){
@@ -422,6 +383,3 @@ export class AudioEngine {
   static isMuted = false;
 
 }
-
-//AudioEngine.ToggleMute();
-

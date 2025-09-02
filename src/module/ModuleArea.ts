@@ -54,6 +54,7 @@ import { ModuleMGTrack } from "./ModuleMGTrack";
 import { ModuleMGPlayer } from "./ModuleMGPlayer";
 import type { Module } from "./Module";
 import { IVISRoom } from "../interface/module/IVISRoom";
+import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -502,6 +503,8 @@ export class ModuleArea extends ModuleObject {
     if(this.path){
       this.path.update(delta);
     }
+
+    this.updateMusic(delta);
   }
 
   updatePaused(delta: number = 0){
@@ -560,6 +563,21 @@ export class ModuleArea extends ModuleObject {
 
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
+
+    this.updateMusic(delta);
+  }
+
+  updateMusic(delta: number = 0){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    const oPC = GameState.getCurrentPlayer();
+    if(oPC.excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
+      audioEngine.bgmMode = BackgroundMusicMode.BATTLE;
+      audioEngine.areaMusicAudioEmitter.stop();
+      audioEngine.battleMusicAudioEmitter.play(true);
+    }else if(oPC.excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
+      audioEngine.bgmMode = audioEngine.battleStingerLoaded ? BackgroundMusicMode.BATTLE_STINGER : BackgroundMusicMode.AREA;
+      audioEngine.battleMusicAudioEmitter.stop();
+    }
   }
 
   attachSpellInstance(spellInstance: SpellCastInstance){
@@ -1152,8 +1170,11 @@ export class ModuleArea extends ModuleObject {
 
       GameState.MenuManager.LoadScreen.setProgress(90);
 
-      try { await this.loadAmbientAudio(); } catch(e){ console.error(e); }
-      try { await this.loadBackgroundMusic(); } catch(e){ console.error(e); }
+      try{
+        await this.loadAreaMusic();
+      }catch(e){
+        console.error(e);
+      }
 
       GameState.MenuManager.LoadScreen.setProgress(100);
 
@@ -1731,37 +1752,67 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Load the area's ambient audio
-   */
-  async loadAmbientAudio(): Promise<void> {
-    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
-    if(!ambientsound2DA){ return; }
-
-    const ambientDay = ambientsound2DA.rows[this.audio.ambient.day].resource;
-    try{
-      const data = await AudioLoader.LoadAmbientSound(ambientDay);
-      //console.log('Loaded Ambient Sound', ambientDay);
-      AudioEngine.GetAudioEngine().setAmbientSound(data);
-    }catch(e){
-      console.error('Ambient Audio not found', ambientDay);
-    }
-  }
-
-  /**
    * Load the area's background music
    */
-  async loadBackgroundMusic(): Promise<void> {
+  async loadAreaMusic(): Promise<void> {
+    const audioEngine = AudioEngine.GetAudioEngine();
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
-    if(!ambientmusic2DA){ return; }
+    if(ambientmusic2DA){
+      //Load the background music
+      const bgMusic = ambientmusic2DA.rows[this.audio.music.day];
+      try{
+        if(bgMusic.resource != '****'){
+          console.log('Loading Background Music', bgMusic.resource);
+          const data = await AudioLoader.LoadMusic(bgMusic.resource);
+          audioEngine.setAudioBuffer('BACKGROUND_MUSIC', data);
+          audioEngine.areaMusicAudioEmitter.play();
+        }
+      }catch(e){
+        console.log('Background Music not found', bgMusic.resource);
+        console.error(e);
+      }
 
-    const bgMusic = ambientmusic2DA.rows[this.audio.music.day].resource;
-    try{
-      const data = await AudioLoader.LoadMusic(bgMusic);
-      //console.log('Loaded Background Music', bgMusic);
-      AudioEngine.GetAudioEngine().setBackgroundMusic(data);
-    }catch(e){
-      console.log('Background Music not found', bgMusic);
-      console.error(e);
+      //Load the battle music
+      const battleMusic = ambientmusic2DA.rows[this.audio.music.battle];
+      try{
+        if(battleMusic.resource != '****'){
+          console.log('Loading Battle Music', battleMusic.resource);
+          const data = await AudioLoader.LoadMusic(battleMusic.resource);
+          audioEngine.setAudioBuffer('BATTLE', data);
+        }
+      }catch(e){
+        console.log('Background Music not found', bgMusic);
+        console.error(e);
+      }
+
+      //Load the battle stinger
+      try{
+        if(battleMusic.stinger1 != '****'){
+          console.log('Loading Battle Stinger', battleMusic.stinger1);
+          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
+          audioEngine.setAudioBuffer('BATTLE_STINGER', data);
+        }
+      }catch(e){
+        console.log('Battle Stinger not found', battleMusic.stinger1);
+        console.error(e);
+      }
+    }
+
+    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
+    if(ambientsound2DA){
+      //Load the ambient day sound
+      const ambientDay = ambientsound2DA.rows[this.audio.ambient.day];
+      if(!ambientDay || ambientDay.resource == '****'){
+        return;
+      }
+      console.log('Loading Ambient Day Sound', ambientDay.resource);
+      try{
+        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
+        audioEngine.setAudioBuffer('AMBIENT', data);
+        audioEngine.ambientAudioEmitter.play();
+      }catch(e){
+        console.error('Ambient Audio not found', ambientDay);
+      } 
     }
   }
 

@@ -1086,7 +1086,6 @@ export class GameState implements EngineContext {
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
     const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.stopBackgroundMusic();
     audioEngine.reset();
 
     GameState.lightManager.clearLights();
@@ -1299,7 +1298,7 @@ export class GameState implements EngineContext {
 
     }
 
-    AudioEngine.GetAudioEngine().update(GameState.currentCamera.position, GameState.currentCamera.rotation);
+    AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation);
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.renderPass.camera = GameState.currentCamera;
