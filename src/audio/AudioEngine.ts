@@ -127,9 +127,7 @@ export class AudioEngine {
     this.battleStingerAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
       this.bgmMode = BackgroundMusicMode.AREA;
-      if(AudioEngine.loopBGM){
-        this.bgmTimer = this.bgmLoopTime;
-      }
+      this.areaMusicAudioEmitter.play();
     });
 
     AudioEngine.engines.push(this);
@@ -216,7 +214,7 @@ export class AudioEngine {
     //Handle the background music loop
     if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
       if(this.bgmTimer > 0 && AudioEngine.loopBGM){
-        this.bgmTimer -= delta;
+        this.bgmTimer -= delta * 1000;
         if(this.bgmTimer <= 0){
           this.bgmTimer = 0;
           this.areaMusicAudioEmitter.play();
