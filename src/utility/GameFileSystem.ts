@@ -534,14 +534,33 @@ export class GameFileSystem {
     return;
   }
 
+  static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
+
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
       const dirs = filepath.split('/');
       const filename = dirs.pop();
-      let currentDirHandle = ApplicationProfile.directoryHandle;
-      for(let i = 0, len = dirs.length; i < len; i++){
-        currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
+      const cacheKey = dirs.join('/');
+      if(this.directoryCache.has(cacheKey)){
+        return this.directoryCache.get(cacheKey)!;
       }
+      let currentDirHandle = ApplicationProfile.directoryHandle;
+      let found = false;
+      for(let i = 0, len = dirs.length; i < len; i++){
+        // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
+        found = false;
+        for await (const entry of currentDirHandle.values()) {
+          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+            found = true;
+            currentDirHandle = entry as FileSystemDirectoryHandle;
+            break;
+          }
+        }
+        if(!found){
+          throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
+        }
+      }
+      this.directoryCache.set(cacheKey, currentDirHandle);
       return currentDirHandle;
     }
     return;
