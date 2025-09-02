@@ -43,7 +43,7 @@ export class ModuleSound extends ModuleObject {
   randomPosition: number;
   randomRangeX: number;
   randomRangeY: number;
-  sounds: any[];
+  soundResRefs: string[] = [];
   times: number;
   volume: number;
   volumeVariation: number;
@@ -75,7 +75,7 @@ export class ModuleSound extends ModuleObject {
     this.randomPosition = 0;
     this.randomRangeX = 0;
     this.randomRangeY = 0;
-    this.sounds = [];
+    this.soundResRefs = [];
     this.times = 3;
     this.volume = 0;
     this.volumeVariation = 0;
@@ -178,29 +178,11 @@ export class ModuleSound extends ModuleObject {
   }
 
   getSounds(){
-    return this.sounds;
+    return this.soundResRefs;
   }
 
 
-  loadSound(onLoad?: Function){
-
-    let template: any = {
-      sounds: [],
-      isActive: this.getActive(),
-      isLooping: this.getLooping(),
-      isRandom: this.getRandom(),
-      isRandomPosition: this.getRandomPosition(),
-      interval: this.getInterval(),
-      intervalVariation: this.getInternalVrtn(),
-      maxDistance: this.getMaxDistance(),
-      volume: this.getVolume(),
-      positional: this.getPositional()
-    };
-
-    let snds = this.getSounds();
-    for(let i = 0; i < snds.length; i++){
-      template.sounds.push(snds[i].getFieldByLabel('Sound').getValue());
-    }
+  async loadSound(){
 
     const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     
@@ -214,11 +196,8 @@ export class ModuleSound extends ModuleObject {
     this.emitter.maxDistance = this.getMaxDistance();
     this.emitter.volume = this.getVolume();
     this.emitter.type = type;
-    this.emitter.load().then( () => {
-      if(typeof onLoad === 'function'){
-        onLoad();
-      }
-    });
+    this.emitter.sounds = this.soundResRefs.slice(0);
+    await this.emitter.load();
 
   }
 
@@ -282,8 +261,12 @@ export class ModuleSound extends ModuleObject {
     if(this.template.RootNode.hasField('RandomRangeY'))
       this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
 
-    if(this.template.RootNode.hasField('Sounds'))
-      this.sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
+    if(this.template.RootNode.hasField('Sounds')){
+      const sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
+      for(let i = 0; i < sounds.length; i++){
+        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
+      }
+    }
 
     if(this.template.RootNode.hasField('Tag'))
       this.tag = this.template.getFieldByLabel('Tag').getValue();
@@ -354,8 +337,10 @@ export class ModuleSound extends ModuleObject {
 
     //Sounds
     let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
-    for(let i = 0; i < this.sounds.length; i++){
-      sounds.addChildStruct(this.sounds[i]);
+    for(let i = 0; i < this.soundResRefs.length; i++){
+      let soundStruct = new GFFStruct();
+      soundStruct.addField( new GFFField(GFFDataType.RESREF, 'Sound', this.soundResRefs[i]) );
+      sounds.addChildStruct(soundStruct);
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
