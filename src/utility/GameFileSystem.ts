@@ -321,6 +321,10 @@ export class GameFileSystem {
       }else{
         if(dirPath.length){
           const dirs = dirPath.length ? dirPath.split(path.sep) : [];
+          const cacheKey = dirs.join('/');
+          if(this.directoryCache.has(cacheKey)){
+            return this.directoryCache.get(cacheKey)!;
+          }
           try{
             let currentDirHandle = ApplicationProfile.directoryHandle; 
             for(let i = 0, len = dirs.length; i < len; i++){
@@ -332,6 +336,7 @@ export class GameFileSystem {
                 resolve(false);
                 return;
               }
+              this.directoryCache.set(cacheKey, currentDirHandle);
             }
             console.log('mkdir', currentDirHandle);
             await spleep(1000);
@@ -377,7 +382,7 @@ export class GameFileSystem {
           if(parentHandle){
             for await (const entry of parentHandle.values()) {
               if(entry.kind == 'file') continue;
-              if(entry.name != details.name) continue;
+              if(entry.name.toLowerCase() != details.name.toLowerCase()) continue;
               await parentHandle.removeEntry(entry.name, {
                 recursive: opts.recursive
               });
@@ -523,12 +528,29 @@ export class GameFileSystem {
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
       const dirs = filepath.length ? filepath.split('/') : [];
+      const cacheKey = dirs.join('/');
+      if(this.directoryCache.has(cacheKey)){
+        return this.directoryCache.get(cacheKey)!;
+      }
       let lastDirectoryHandle = ApplicationProfile.directoryHandle;
       let currentDirHandle = ApplicationProfile.directoryHandle;
+      let found = false;
       for(let i = 0, len = dirs.length; i < len; i++){
         lastDirectoryHandle = currentDirHandle;
-        currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
+        // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
+        found = false;
+        for await (const entry of currentDirHandle.values()) {
+          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+            found = true;
+            currentDirHandle = entry as FileSystemDirectoryHandle;
+            break;
+          }
+        }
+        if(!found){
+          throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
+        }
       }
+      this.directoryCache.set(cacheKey, currentDirHandle);
       return !parent ? currentDirHandle : lastDirectoryHandle;
     }
     return;
