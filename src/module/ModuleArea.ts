@@ -1809,7 +1809,7 @@ export class ModuleArea extends ModuleObject {
       try{
         const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
         audioEngine.setAudioBuffer('AMBIENT', data, ambientDay.resource);
-        audioEngine.ambientAudioEmitter.play();
+        audioEngine.ambientAudioEmitter.play(true);
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);
       } 
