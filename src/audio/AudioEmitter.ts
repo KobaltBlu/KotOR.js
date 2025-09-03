@@ -52,13 +52,6 @@ export class AudioEmitter {
   }
 
   async load(): Promise<void> {
-    for(let i = 0; i < this.sounds.length; i++){
-      await this.loadSounds(i);
-    }
-
-    if(this.isActive){
-      this.start();
-    }
 
     // this.gainNode.gain.value = (Math.PI/2) * ( ( ( this.volume * 100 ) / 127 ) * 0.01 );
 
@@ -80,6 +73,13 @@ export class AudioEmitter {
 
     if(this.engine){
       this.engine.addEmitter(this);
+    }
+
+    for(let i = 0; i < this.sounds.length; i++){
+      await this.loadSounds(i);
+    }
+    if(this.isActive){
+      this.start();
     }
   }
 
