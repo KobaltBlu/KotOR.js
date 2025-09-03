@@ -150,6 +150,7 @@ export class OdysseyModelAnimationManager {
   setCurrentAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     // if(anim) console.log(this.model?.name, anim.name);
     if(typeof state == 'undefined'){
+      console.warn('setCurrentAnimation: state is undefined');
       state = this.createAnimationState();
     }
     if(this.currentAnimation){
@@ -161,6 +162,7 @@ export class OdysseyModelAnimationManager {
 
   setLastAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
+      // console.warn('setLastAnimation: state is undefined');
       state = this.createAnimationState();
     }
     this.transElapsed = 0;
@@ -175,13 +177,18 @@ export class OdysseyModelAnimationManager {
     );
   }
 
-  setOverlayAnimation(anim: OdysseyModelAnimation, state: any = {}){
+  setOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state == 'undefined'){
+      console.warn('setOverlayAnimation: state is undefined');
+      state = this.createAnimationState();
+    }
     this.overlayAnimation = anim;
     this.overlayAnimationState = state;
   }
 
   updateAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
+      console.warn('updateAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -245,6 +252,7 @@ export class OdysseyModelAnimationManager {
 
   updateOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
     if(typeof state == 'undefined'){
+      console.warn('updateOverlayAnimation: state is undefined');
       state = this.createAnimationState();
     }
     state.delta = delta;
@@ -308,6 +316,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationEvents(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     if(typeof state == 'undefined'){
+      console.warn('updateAnimationEvents: state is undefined');
       state = this.createAnimationState();
     }
     if(!anim.events.length)
@@ -344,6 +353,7 @@ export class OdysseyModelAnimationManager {
 
   updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: OdysseyModelAnimationManagerState, canTween: boolean = false){
     if(typeof state == 'undefined'){
+      console.warn('updateAnimationNode: state is undefined');
       state = this.createAnimationState();
     }
     if(!node) return;
