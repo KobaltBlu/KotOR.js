@@ -10,3 +10,4 @@ export * from "./OdysseyModelFlag";
 export * from "./OdysseyModelMDXFlag";
 export * from "./OdysseyModelNodeType";
 export * from "./OdysseyWalkMeshType";
+export * from "./OdysseyModelAnimationManagerState";

@@ -5,6 +5,7 @@ import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
 import { OdysseyController } from "./controllers/OdysseyController";
 import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelAnimationManagerState } from "../enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -18,11 +19,11 @@ import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControl
 export class OdysseyModelAnimationManager {
   model: OdysseyModel3D;
   currentAnimation: OdysseyModelAnimation;
-  currentAnimationState: any;
+  currentAnimationState: OdysseyModelAnimationManagerState;
   lastAnimation: OdysseyModelAnimation;
-  lastAnimationState: any;
+  lastAnimationState: OdysseyModelAnimationManagerState;
   overlayAnimation: OdysseyModelAnimation;
-  overlayAnimationState: any;
+  overlayAnimationState: OdysseyModelAnimationManagerState;
   _vec3: THREE.Vector3 = new THREE.Vector3();
   _quat: THREE.Quaternion = new THREE.Quaternion();
   _animPosition: THREE.Vector3 = new THREE.Vector3();
@@ -38,23 +39,36 @@ export class OdysseyModelAnimationManager {
 
   transElapsed: number = 0;
 
-  animLoopStates: Map<number, any> = new Map();
+  animLoopStates: Map<number, OdysseyModelAnimationManagerState> = new Map();
 
   constructor(model: OdysseyModel3D){
     this.model = model;
 
     this.currentAnimation = undefined;
-    this.currentAnimationState = {};
+    this.currentAnimationState = this.createAnimationState();
 
     this.lastAnimation = undefined;
-    this.lastAnimationState = {};
+    this.lastAnimationState = this.createAnimationState();
 
     this.overlayAnimation = undefined;
-    this.overlayAnimationState = {};
+    this.overlayAnimationState = this.createAnimationState();
 
     this.trans = false;
     this.modelNode = undefined;
 
+  }
+
+  createAnimationState(): OdysseyModelAnimationManagerState {
+    return {
+      loop: false,
+      cFrame: 0,
+      elapsed: 0,
+      elapsedCount: 0,
+      lastTime: 0,
+      delta: 0,
+      lastEvent: -1,
+      events: [],
+    };
   }
 
   destroy(){
@@ -97,6 +111,7 @@ export class OdysseyModelAnimationManager {
             loop: true,
             cFrame: 0,
             elapsed: 0,
+            elapsedCount: 0,
             lastTime: 0,
             delta: 0,
             lastEvent: -1,
@@ -111,25 +126,11 @@ export class OdysseyModelAnimationManager {
 
   stopAnimation(){
     this.currentAnimation = undefined;
-    this.currentAnimationState = {
-      loop: false,
-      cFrame: 0,
-      elapsed: 0,
-      lastTime: 0,
-      delta: 0,
-      lastEvent: -1,
-      events: [],
-    };
+    this.currentAnimationState = this.createAnimationState();
     this.lastAnimation = undefined;
-    this.lastAnimationState = {
-      loop: false,
-      cFrame: 0,
-      elapsed: 0,
-      lastTime: 0,
-      delta: 0,
-      lastEvent: -1,
-      events: [],
-    };
+    this.lastAnimationState = this.createAnimationState();
+    this.lastAnimation = undefined;
+    this.lastAnimationState = this.createAnimationState();
   }
 
   stopOverlayAnimation(){
@@ -138,6 +139,7 @@ export class OdysseyModelAnimationManager {
       loop: false,
       cFrame: 0,
       elapsed: 0,
+      elapsedCount: 0,
       lastTime: 0,
       delta: 0,
       lastEvent: -1,
@@ -145,8 +147,11 @@ export class OdysseyModelAnimationManager {
     };
   }
 
-  setCurrentAnimation(anim: OdysseyModelAnimation, state: any = {}){
+  setCurrentAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
     // if(anim) console.log(this.model?.name, anim.name);
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     if(this.currentAnimation){
       this.setLastAnimation(this.currentAnimation, this.currentAnimationState);
     }
@@ -154,7 +159,10 @@ export class OdysseyModelAnimationManager {
     this.currentAnimationState = state;
   }
 
-  setLastAnimation(anim: OdysseyModelAnimation, state: any = {}){
+  setLastAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     this.transElapsed = 0;
     this.lastAnimation = anim;
     this.lastAnimationState = Object.assign({}, state);
@@ -172,7 +180,10 @@ export class OdysseyModelAnimationManager {
     this.overlayAnimationState = state;
   }
 
-  updateAnimation(anim: OdysseyModelAnimation, state: any = {}, delta: number = 0){
+  updateAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     state.delta = delta;
 
     if(!state.elapsedCount) state.elapsedCount = 0;
@@ -198,15 +209,14 @@ export class OdysseyModelAnimationManager {
 
     //this.updateAnimationNode(anim, anim.rooNode);
     state.lastTime = state.elapsed;
-    state.elapsed += delta;
-    state.elapsed = Math.min(state.elapsed, anim.length);
+    state.elapsed = Math.min(state.elapsed + delta, anim.length);
     
     this.updateAnimationEvents(anim, state);
 
     if(this.lastAnimation && this.lastAnimationState){
       this.lastAnimationState.lastTime = this.lastAnimationState.elapsed;
-      this.lastAnimationState.elapsed += delta;
-      this.transElapsed += delta;
+      this.lastAnimationState.elapsed = Math.min(this.lastAnimationState.elapsed + delta, this.lastAnimation.length);
+      this.transElapsed = Math.min(this.transElapsed + delta, this.currentAnimation.transition);
       if(this.lastAnimationState.elapsed >= this.lastAnimation.length){
         this.lastAnimationState.elapsed = this.lastAnimation.length;
         this.lastAnimationState.lastTime = this.lastAnimation.length;
@@ -233,7 +243,10 @@ export class OdysseyModelAnimationManager {
     return true;
   }
 
-  updateOverlayAnimation(anim: OdysseyModelAnimation, state: any = {}, delta: number = 0){
+  updateOverlayAnimation(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState, delta: number = 0){
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     state.delta = delta;
 
     if(!state.elapsedCount) state.elapsedCount = 0;
@@ -261,7 +274,7 @@ export class OdysseyModelAnimationManager {
 
     //this.updateAnimationNode(anim, anim.rooNode);
     state.lastTime = state.elapsed;
-    state.elapsed += delta;
+    state.elapsed = Math.min(state.elapsed + delta, anim.length);
 
     // if(this.lastAnimation && this.lastAnimationState){
     //   this.lastAnimationState.lastTime = this.lastAnimationState.elapsed;
@@ -282,11 +295,7 @@ export class OdysseyModelAnimationManager {
     // }
 
     if(state.elapsed >= anim.length){
-
-      if(state.elapsed > anim.length){
-        state.elapsed = anim.length;
-        this.updateAnimationEvents(anim, state);
-      }
+      this.updateAnimationEvents(anim, state);
 
       state.lastTime = anim.length;
       state.elapsed = 0;
@@ -297,7 +306,10 @@ export class OdysseyModelAnimationManager {
     return true;
   }
 
-  updateAnimationEvents(anim: OdysseyModelAnimation, state: any = {}){
+  updateAnimationEvents(anim: OdysseyModelAnimation, state: OdysseyModelAnimationManagerState){
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     if(!anim.events.length)
       return;
 
@@ -330,7 +342,10 @@ export class OdysseyModelAnimationManager {
     
   }
 
-  updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: any, canTween: boolean = false){
+  updateAnimationNode(anim: OdysseyModelAnimation, node: OdysseyModelAnimationNode, state: OdysseyModelAnimationManagerState, canTween: boolean = false){
+    if(typeof state == 'undefined'){
+      state = this.createAnimationState();
+    }
     if(!node) return;
     this.modelNode = this.model.nodes.get(node.name);
 
