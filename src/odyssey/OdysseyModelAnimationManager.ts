@@ -181,8 +181,6 @@ export class OdysseyModelAnimationManager {
 
     if(!this.model.bonesInitialized)
       return;
-    
-    this.updateAnimationEvents(anim);
 
     //Update animation nodes if the model is being rendered
     if(this.model.animateFrame){
@@ -201,6 +199,9 @@ export class OdysseyModelAnimationManager {
     //this.updateAnimationNode(anim, anim.rooNode);
     state.lastTime = state.elapsed;
     state.elapsed += delta;
+    state.elapsed = Math.min(state.elapsed, anim.length);
+    
+    this.updateAnimationEvents(anim, state);
 
     if(this.lastAnimation && this.lastAnimationState){
       this.lastAnimationState.lastTime = this.lastAnimationState.elapsed;
@@ -221,17 +222,7 @@ export class OdysseyModelAnimationManager {
     }
 
     if(state.elapsed >= anim.length){
-
-      if(state.elapsed > anim.length){
-        state.elapsed = anim.length;
-        this.updateAnimationEvents(anim, state);
-        //Update animation nodes if the model is being rendered
-        // if(this.model.animateFrame){
-        //   for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-        //     this.updateAnimationNode(anim, anim.nodes[i], state, false);
-        //   }
-        // }
-      }
+      this.updateAnimationEvents(anim, state);
 
       state.lastTime = anim.length;
       state.elapsed = 0;
@@ -252,7 +243,7 @@ export class OdysseyModelAnimationManager {
     if(!this.model.bonesInitialized)
       return;
     
-    this.updateAnimationEvents(anim);
+    this.updateAnimationEvents(anim, state);
 
     //Update animation nodes if the model is being rendered
     if(this.model.animateFrame){
@@ -307,7 +298,6 @@ export class OdysseyModelAnimationManager {
   }
 
   updateAnimationEvents(anim: OdysseyModelAnimation, state: any = {}){
-
     if(!anim.events.length)
       return;
 

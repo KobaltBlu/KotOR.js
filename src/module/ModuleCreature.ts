@@ -1873,16 +1873,16 @@ export class ModuleCreature extends ModuleObject {
           }
 
           if(sound != '****'){
-            this.footstepEmitter.stop();
-            this.footstepEmitter.playSound(sound);
+            // this.footstepEmitter.stop();
+            this.footstepEmitter.playSoundFireAndForget(sound);
           }else if(sndTable['rolling'] != '****'){
             if(!this.footstepEmitter.currentSound){
-              this.footstepEmitter.stop();
+              // this.footstepEmitter.stop();
               this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
             }else if(this.footstepEmitter.currentSound && (this.footstepEmitter.currentSound as any).name != sndTable['rolling']){
-              this.footstepEmitter.stop();
+              // this.footstepEmitter.stop();
               this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
                 buffer.loop = true;
               });
@@ -1892,27 +1892,27 @@ export class ModuleCreature extends ModuleObject {
       break;
       case 'Swingshort':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSound(rhSounds['swingshort'+sndIdx]);
+          this.audioEmitter.playSoundFireAndForget(rhSounds['swingshort'+sndIdx]);
         }
       break;
       case 'Swinglong':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSound(rhSounds['swinglong'+sndIdx]);
+          this.audioEmitter.playSoundFireAndForget(rhSounds['swinglong'+sndIdx]);
         }
       break;
       case 'HitParry':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSound(rhSounds['parry'+sndIdx2]);
+          this.audioEmitter.playSoundFireAndForget(rhSounds['parry'+sndIdx2]);
         }
       break;
       case 'Contact':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSound(rhSounds['clash'+sndIdx2]);
+          this.audioEmitter.playSoundFireAndForget(rhSounds['clash'+sndIdx2]);
         }
       break;
       case 'Clash':
         if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSound(rhSounds['clash'+sndIdx2]);
+          this.audioEmitter.playSoundFireAndForget(rhSounds['clash'+sndIdx2]);
         }
       break;
       case 'Hit':
@@ -1926,7 +1926,7 @@ export class ModuleCreature extends ModuleObject {
 
         if(this.equipment.RIGHTHAND){
           if(this.equipment.RIGHTHAND){
-            this.audioEmitter.playSound(rhSounds['leather'+Math.round(Math.random()*1)]);
+            this.audioEmitter.playSoundFireAndForget(rhSounds['leather'+Math.round(Math.random()*1)]);
           }
         }
       break;
@@ -4371,7 +4371,7 @@ export class ModuleCreature extends ModuleObject {
     const resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
     if(resref != ''){
       if(this.audioEmitter)
-        this.audioEmitter.playSound(resref);
+        this.audioEmitter.playSoundFireAndForget(resref);
     }
   }
 

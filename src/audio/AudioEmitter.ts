@@ -133,7 +133,6 @@ export class AudioEmitter {
       if(!buffer){
         let data = await AudioLoader.LoadSound(resRef);
         buffer = await this.addSound(resRef, data);
-        this.buffers.set(resRef, buffer);
       }
 
       if(!buffer){
@@ -148,7 +147,7 @@ export class AudioEmitter {
       sound.start(0, 0);
 
       sound.onended = () => {
-        console.log('AudioEmitter', 'Sound ended', resRef);
+        // console.log('AudioEmitter', 'Sound ended', resRef);
         sound.disconnect();
         sound.stop(0);
         this.ffsounds.splice(this.ffsounds.indexOf(sound), 1);
@@ -319,7 +318,7 @@ export class AudioEmitter {
     }
     
     try{
-      const buffer = await this.engine.audioCtx.decodeAudioData( data );
+      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData( data );
       this.buffers.set(resRef, buffer);
       return buffer;
     }catch(e){
@@ -348,6 +347,7 @@ export class AudioEmitter {
   }
 
   destroy(): void {
+    this.buffers.clear();
     this.isDestroyed = true;
   }
 
