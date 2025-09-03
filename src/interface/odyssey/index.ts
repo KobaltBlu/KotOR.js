@@ -10,3 +10,4 @@ export * from "./IOdysseyModelEmitterFlags";
 export * from "./IOdysseyModelFlare";
 export * from "./IOdysseyModelHeader";
 export * from "./IPerimeter";
+export * from "./IOdysseyAnimationEvent";
