@@ -115,7 +115,9 @@ export class AmbientAudioEmitter extends EventListener {
     this.data = null;
     if(this.node){
       this.node.onended = undefined;
-      this.stop();
+      this.node.disconnect();
+      try{ this.node.stop(0); }catch(e){}
+      this.node = null;
     }
   }
 }
