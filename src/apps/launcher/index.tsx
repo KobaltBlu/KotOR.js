@@ -35,6 +35,8 @@ const App = function() {
   const [selectedTab, setSelectedTab] = useState('apps');
   const [videos, setVideos] = useState([]);
 
+  const [showMenuTopRight, setShowMenuTopRight] = useState(false);
+
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
   }, 0)).fill(0).map(i=> React.createRef());
@@ -93,6 +95,7 @@ const App = function() {
   useEffect(() => {
     console.log(tabRefs);
     window.addEventListener('resize', onResize);
+    setShowMenuTopRight(!(ApplicationProfile.ENV == ApplicationEnvironment.BROWSER));
     Launcher.InitProfiles().then( () => {
       setProfilesCategories(Launcher.AppCategories);
       setSelectedProfile(
@@ -170,11 +173,13 @@ const App = function() {
             <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
             <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
           </ul>
-          <div id="launcher-menu-top-right" className="launcher-menu-top-right">
-            <div className="launcher-min" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
-            <div className="launcher-max" title="Maximize Window" onClick={onBtnMaximize}><i className="far fa-clone"></i></div>
-            <div className="launcher-close" title="Close Window" onClick={onBtnClose}><i className="fas fa-times"></i></div>
-          </div>
+          {showMenuTopRight && (
+            <div id="launcher-menu-top-right" className="launcher-menu-top-right">
+              <div className="launcher-min" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
+              <div className="launcher-max" title="Maximize Window" onClick={onBtnMaximize}><i className="far fa-clone"></i></div>
+              <div className="launcher-close" title="Close Window" onClick={onBtnClose}><i className="fas fa-times"></i></div>
+            </div>
+          )}
         </div>
         <div className="tab-host">
           {(selectedTab == 'apps' && <div className="tab selected">

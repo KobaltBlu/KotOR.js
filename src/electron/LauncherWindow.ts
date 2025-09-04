@@ -21,7 +21,8 @@ export class LauncherWindow {
       minWidth: 1000,
       frame: false,
       title: 'KotOR Launcher',
-      backgroundColor: "#000000",
+      transparent: true,
+      backgroundColor: '#00FFFFFF',
       webPreferences: {
         preload: path.join(Main.ApplicationPath, 'dist/electron/preload.js'),
         webviewTag: false,
