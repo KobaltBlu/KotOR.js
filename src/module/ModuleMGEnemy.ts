@@ -113,7 +113,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
-      aManager.updateAnimation(aManager.currentAnimation, delta);
+      aManager.updateAnimation(aManager.currentAnimation, aManager.currentAnimationState, delta);
     }
 
     for(let i = 0; i < this.models.length; i++){
@@ -206,17 +206,9 @@ export class ModuleMGEnemy extends ModuleObject {
         if(n3){
           console.log(anim);
           const animManager = new OdysseyModelAnimationManager(model);
-          animManager.setCurrentAnimation(anim, {
-            loop: true,
-            // blend: true,
-            cFrame: 0,
-            elapsed: 0,
-            lastTime: 0,
-            delta: 0,
-            lastEvent: -1,
-            events: [],
-            callback: undefined
-          });
+          const state = animManager.createAnimationState();
+          state.loop = true;
+          animManager.setCurrentAnimation(anim, state);
           this.animationManagers.push(animManager);
         }else{
           model.playAnimation(anim, false);

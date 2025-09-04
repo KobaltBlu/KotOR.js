@@ -97,6 +97,8 @@ export class AudioEngine {
     this.battleStingerAudioEmitter.setDestination(this.musicGain);
     this.dialogMusicAudioEmitter.setDestination(this.musicGain);
 
+    this.ambientAudioEmitter.setVolume(0.5);
+
     this.areaMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.AREA;
     });

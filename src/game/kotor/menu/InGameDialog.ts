@@ -357,7 +357,7 @@ export class InGameDialog extends GameMenu {
         const animationName = this.getCUTAnimationName(entry.cameraAnimation);
         this.currentCameraAnimation = this.dialog.animatedCamera.getAnimationByName(animationName);
         this.dialog.animatedCamera.animationManager.currentAnimation = this.currentCameraAnimation;
-        this.dialog.animatedCamera.animationManager.currentAnimationState = {elapsed: 0, loop: false};
+        this.dialog.animatedCamera.animationManager.currentAnimationState = this.dialog.animatedCamera.animationManager.createAnimationState();
       }else{
         entry.checkList.cameraAnimationComplete = true;
       }

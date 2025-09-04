@@ -189,7 +189,7 @@ export class ModuleMGPlayer extends ModuleObject {
         aManager.currentAnimationState.loop || 
         ( !aManager.currentAnimationState.loop && !aManager.currentAnimationState.elapsedCount )
       ){
-        aManager.updateAnimation(aManager.currentAnimation, delta);
+        aManager.updateAnimation(aManager.currentAnimation, aManager.currentAnimationState, delta);
       }
     }
 
@@ -397,16 +397,9 @@ export class ModuleMGPlayer extends ModuleObject {
 
         if(bOverlay){
           const animManager = new OdysseyModelAnimationManager(model);
-          animManager.setCurrentAnimation(anim, {
-            loop: bLooping ? true : false,
-            // blend: true,
-            cFrame: 0,
-            elapsed: 0,
-            lastTime: 0,
-            delta: 0,
-            lastEvent: -1,
-            events: []
-          })
+          const state = animManager.createAnimationState();
+          state.loop = bLooping ? true : false;
+          animManager.setCurrentAnimation(anim, state);
           this.animationManagers.push(animManager);
         }else{
           model.playAnimation(anim, false);

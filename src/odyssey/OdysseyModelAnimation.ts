@@ -4,6 +4,7 @@ import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
 import { OdysseyModelAnimationNode } from './OdysseyModelAnimationNode';
 import type { OdysseyModel } from './OdysseyModel';
 import { OdysseyModelUtility } from './OdysseyModelUtility';
+import { IOdysseyAnimationEvent } from '../interface/odyssey/IOdysseyAnimationEvent';
 
 /**
  * OdysseyModelAnimation class.
@@ -30,62 +31,19 @@ export class OdysseyModelAnimation {
   length: number;
   transition: number;
   modelName: string;
-  events: {length: number; name: string; }[] = [];
+  events: IOdysseyAnimationEvent[] = [];
   nodes: OdysseyModelAnimationNode[] = [];
   rootNode: OdysseyModelAnimationNode;
-  currentFrame: number = 0;
-  elapsed: number = 0;
-  lastTime: number = 0;
   type: string;
-
-  data: { 
-    loop: boolean; 
-    cFrame: number; 
-    elapsed: number; 
-    lastTime: number; 
-    delta: number; 
-    lastEvent: number; 
-    events: any[]; 
-    callback?: Function; 
-  };
-  anim: { loop: false; cFrame: number; elapsed: number; lastTime: number; delta: number; lastEvent: number; callback: any; };
-  callback: any;
-  lastEvent: number;
-  bezierA: THREE.Vector3;
-  bezierB: THREE.Vector3;
-  bezierC: THREE.Vector3;
-  static _position: THREE.Vector3;
-  static _quaternion: THREE.Quaternion;
+  
   odysseyModel: OdysseyModel;
 
   constructor(){
     this.type = 'OdysseyModelAnimation';
     this.rootNode = new OdysseyModelAnimationNode();
-    //this.currentFrame = 0;
-    //this.elapsed = 0;
-    //this.lastTime = 0;
-    //this.delta = 0;
-    this.data = {
-      loop: false,
-      cFrame: 0,
-      elapsed: 0,
-      lastTime: 0,
-      delta: 0,
-      lastEvent: 0,
-      events: [],
-      callback: undefined
-    };
-    this.callback = null;
-
-    this.lastEvent = 0;
 
     this._position = new THREE.Vector3();
     this._quaternion = new THREE.Quaternion();
-
-    this.bezierA = new THREE.Vector3();
-    this.bezierB = new THREE.Vector3();
-    this.bezierC = new THREE.Vector3();
-
   }
 
   readBinary(odysseyModel: OdysseyModel){
@@ -150,34 +108,14 @@ export class OdysseyModelAnimation {
   }
 
   static From(original: any){
-    let anim = new OdysseyModelAnimation();
-    //anim = Object.assign(Object.create( Object.getPrototypeOf(original)), original);
+    const anim = new OdysseyModelAnimation();
     anim.rootNode = original.rootNode;
-    anim.currentFrame = original.currentFrame;
     anim.nodes = original.nodes;
     anim.modelName = original.ModelName;
     anim.events = original.events;
     anim.name = original.name;
     anim.length = original.length;
     anim.transition = original.transition;
-
-    anim._position = new THREE.Vector3();
-    anim._quaternion = new THREE.Quaternion();
-
-    anim.bezierA = new THREE.Vector3();
-    anim.bezierB = new THREE.Vector3();
-    anim.bezierC = new THREE.Vector3();
-
-    anim.data = {
-      loop: false,
-      cFrame: 0,
-      elapsed: 0,
-      lastTime: 0,
-      delta: 0,
-      lastEvent: 0,
-      events: [],
-      callback: undefined
-    };
 
     return anim;
   }
