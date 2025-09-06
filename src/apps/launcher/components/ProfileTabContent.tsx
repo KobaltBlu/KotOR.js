@@ -1,8 +1,4 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ProfilePromoItem } from "./ProfilePromoItem";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
-import { ApplicationProfile } from "../../../utility/ApplicationProfile";
-import { ConfigClient } from "../../../utility/ConfigClient";
 import { useApp } from "../context/AppContext";
 import { ProfilePromoItems } from "./ProfilePromoItems";
 import { LightboxComponent } from "./LightboxComponenet";
@@ -16,10 +12,7 @@ export interface ProfileTabContentProps {
 };
 
 export const ProfileTabContent = forwardRef(function(props: ProfileTabContentProps, ref: any){
-  const [render, rerender] = useState(false);
   const appContext = useApp();
-  const profileContext = useProfile();
-  const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
   const profile = props.profile;
   const active = props.active;
   const tabRef = useRef<HTMLDivElement>(null);

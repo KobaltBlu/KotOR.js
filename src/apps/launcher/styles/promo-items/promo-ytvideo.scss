@@ -1,0 +1,23 @@
+
+/* VIDEO ELEMENT */
+
+.promo-element.ytvideo {
+  height: 250px;
+  position: relative;
+}
+
+.promo-element.ytvideo img {
+  height: 250px;
+}
+
+.promo-element.ytvideo:hover:after {
+  content: '';
+  background-image: url('./images/play-icon.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}

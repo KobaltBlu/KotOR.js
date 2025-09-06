@@ -22,6 +22,7 @@ body.lightbox_open .launcher-menu {
   background-position: top center;
   background-repeat: no-repeat;
   backdrop-filter: blur(5px);
+  filter: blur(0px); /** hack - causes backdrop-filter to update on resize */
   position: absolute;
   width: 100%;
   height: 100%;

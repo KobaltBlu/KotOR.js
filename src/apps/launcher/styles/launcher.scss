@@ -141,8 +141,19 @@ ul.link-list {
   padding: 0;
   li {
     padding-bottom: 10px;
+    padding-right: 10px;
+    display: inline-block;
     a {
       text-decoration: none;
+      &:link {
+        color: #e2a22b;
+      }
+      &:visited {
+        color: #e2a22b;
+      }
+      &:hover {
+        color: #FFF;
+      }
     }
   }
 }
@@ -177,4 +188,14 @@ a:link {
     padding-top: 56.25%;
     transition: all .25s ease-in-out;
   }
+}
+
+h3.title:after {
+  content: '';
+  border-bottom: 2px solid #e2a22b;
+  // width: 25%;
+  display: block;
+  box-shadow: 0 0 10px #000;
+  margin-top: -4px;
+  opacity:0.5;
 }

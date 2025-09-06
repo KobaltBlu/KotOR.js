@@ -5,6 +5,7 @@
   overflow: visible;
   position: relative;
   height: 250px;
+  user-select: none;
 }
 
 .launcher-content.active .promo-elements {
@@ -28,13 +29,14 @@
   width: 60px;
   height: 150px;
   border-radius: 5px;
-  opacity: 0;
-  background: rgba(0, 0, 0, 0.5);
+  opacity: 0.1;
+  background: rgba(206, 158, 0, 0.75);
   transition: opacity .5s ease-in-out;
   text-align: center;
   vertical-align: middle;
   line-height: 150px;
   z-index: 50;
+  cursor: pointer;
 }
 
 .promo-elements .promo-elements-left:hover {
@@ -48,13 +50,14 @@
   width: 60px;
   height: 150px;
   border-radius: 5px;
-  opacity: 0;
-  background: rgba(0, 0, 0, 0.5);
+  opacity: 0.1;
+  background: rgba(206, 158, 0, 0.75);
   transition: opacity .5s ease-in-out;
   text-align: center;
   vertical-align: middle;
   line-height: 150px;
   z-index: 50;
+  cursor: pointer;
 }
 
 .promo-elements .promo-elements-right:hover {
@@ -83,3 +86,4 @@
 @import "./promo-items/promo-gallery.scss";
 @import "./promo-items/promo-webview.scss";
 @import "./promo-items/promo-video.scss";
+@import "./promo-items/promo-ytvideo.scss";

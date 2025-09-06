@@ -8,114 +8,111 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
   const profile: any = props.profile;
   const tabRef: any = props.tabRef;
   const promoElementsRef = useRef<HTMLDivElement>(null);
+  const promoElementWidthValue: number = props.promoElementWidth || 320;
 
   useImperativeHandle(ref, () => ({
     recalculate() {
-      // console.warn(`showTab: ${profile.name} promo`);
+      // console.warn(`recalculate: ${profile.name} promo`);
       updateScroll();
       updateScrollButtons();
     }
   }));
   
   // let scrollOffset = 0;
-  let canScroll = false;
-  let maxWidth = 0;
-  let scrollLeftVisable = false;
-  let scrollRightVisable = false;
+  const canScroll = useRef<boolean>(false);
+  const scrollLeftVisable = useRef<boolean>(false);
+  const scrollRightVisable = useRef<boolean>(false);
 
   // let [tabWidth, setTabWidth] = useState(0);
-  let [scrollL, setScrollL] = useState(false);
-  let [scrollR, setScrollR] = useState(false);
-  let [scrollOffset, setScrollOffset] = useState(0);
-  let [marginLeft, setMarginLeft] = useState(scrollOffset);
+  const [scrollL, setScrollL] = useState<boolean>(false);
+  const [scrollR, setScrollR] = useState<boolean>(false);
+  const scrollOffset = useRef<number>(0);
 
-  let updateScroll = () => {
-    if(tabRef.current && promoElementsRef.current){
-      // setTabWidth(tabRef.current.clientWidth);
-      let max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
-      maxWidth = max;
-      if(max < 0){
-        canScroll = true;
-      }else{
-        canScroll = false;
-      }
-    }else{
-      // canScroll = false;
-      // scrollOffset = 0;
+  const [marginLeft, setMarginLeft] = useState<number>(scrollOffset.current);
+
+  const updateScroll = () => {
+    if(!tabRef.current || !promoElementsRef.current){
+      return;
     }
-    setScrollOffset(scrollOffset);
+    // setTabWidth(tabRef.current.clientWidth);
+    const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
+    const maxWidth = max;
+    if(max < 0){
+      canScroll.current = true;
+    }else{
+      canScroll.current = false;
+    }
   }
 
-  let updateScrollButtons = () => {
+  const updateScrollButtons = () => {
     if(tabRef.current && promoElementsRef.current){
-      let max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
-      let maxMarginLeft = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth) - tabRef.current.clientWidth;
-      maxWidth = max;
-      scrollLeftVisable = false;
-      scrollRightVisable = false;
-      if(canScroll){
-        if(scrollOffset < 0){
-          scrollLeftVisable = true;
+      const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
+      // const maxMarginLeft = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth);
+      // const maxWidth = max;
+      scrollLeftVisable.current = false;
+      scrollRightVisable.current = false;
+      if(canScroll.current){
+        if(scrollOffset.current < 0){
+          scrollLeftVisable.current = true;
         }
 
-        if(scrollOffset > max){
-          scrollRightVisable = true;
+        if(scrollOffset.current > max){
+          scrollRightVisable.current = true;
         }
       }
     }else{
-      scrollLeftVisable = false;
-      scrollRightVisable = false;
-      canScroll = false;
+      scrollLeftVisable.current = false;
+      scrollRightVisable.current = false;
+      canScroll.current = false;
       // scrollOffset = 0;
     }
-    setScrollL(scrollLeftVisable);
-    setScrollR(scrollRightVisable);
-    setScrollOffset(scrollOffset);
-    setMarginLeft(scrollOffset);
+    setScrollL(scrollLeftVisable.current);
+    setScrollR(scrollRightVisable.current);
+    scrollOffset.current = scrollOffset.current;
+    setMarginLeft(scrollOffset.current);
   }
 
-  let onBtnPromoLeft = () => {
+  const onBtnPromoLeft = () => {
     updateScroll();
-    if(!canScroll)
+    if(!canScroll.current)
       return;
 
     if(!tabRef.current || !promoElementsRef.current)
       return;
 
-    let offset = scrollOffset + 320;
+    const offset = scrollOffset.current + promoElementWidthValue;
 
-    if(offset >= 0)
-      offset = 0;
-
-    scrollOffset = offset;
-    setScrollOffset(scrollOffset);
+    scrollOffset.current = offset >= 0 ? 0 : offset;
     updateScrollButtons();
   }
 
-  let onBtnPromoRight = ()=> {
+  const onBtnPromoRight = ()=> {
     updateScroll();
-    if(!canScroll)
+    if(!canScroll.current)
       return;
 
     if(!tabRef.current || !promoElementsRef.current)
       return;
 
-    let max = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth) - tabRef.current.clientWidth;
+    const max = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth);
+    const offset = scrollOffset.current - promoElementWidthValue;
 
-    let offset = scrollOffset - 320;
-
-    if(Math.abs(offset) >= max)
-      offset = -max;
-
-    scrollOffset = offset;
-    setScrollOffset(scrollOffset);
+    scrollOffset.current = Math.abs(offset) >= max ? -max : offset;
+    setMarginLeft(scrollOffset.current)
     updateScrollButtons();
   }
 
-  
   useEffect(() => {
-    // console.log('canScroll', profile.name, canScroll);
-  }, [canScroll]);
+    updateScroll();
+    updateScrollButtons();
+  }, [tabRef, promoElementsRef]);
+
+  useEffect(() => {
+    setTimeout(() => {
+      updateScroll();
+      updateScrollButtons();
+    }, 100);
+  }, []);
 
   return (
     <div className={`promo-elements ${scrollL ? 'scroll-left': ''} ${scrollR ? 'scroll-right' : ''}`} >
@@ -124,7 +121,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
         {
           profile.elements.map( (element: any, i: number) => {
             return (
-              <ProfilePromoItem element={element} key={`profile-proto-item-${i}`}></ProfilePromoItem>
+              <ProfilePromoItem element={element} key={`profile-proto-item-${i}`} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></ProfilePromoItem>
             )
           })
         }

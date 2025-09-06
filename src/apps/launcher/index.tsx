@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import './app.scss';
+import axios from "axios";
 import { AppProvider, useApp } from "./context/AppContext";
 
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
@@ -8,9 +9,8 @@ import { ConfigClient } from "../../utility/ConfigClient";
 import { CategoryMenuItem } from "./components/CategoryMenuItem";
 import { ProfileTabContent } from "./components/ProfileTabContent";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { LightboxComponent } from "./components/LightboxComponenet";
 import { Launcher } from "./context/Launcher";
-import axios, { Axios } from "axios";
+import { CommunityTabContent } from "./components/CommunityTabContent";
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
@@ -33,7 +33,6 @@ const App = function() {
   const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
 
   const [selectedTab, setSelectedTab] = useState('apps');
-  const [videos, setVideos] = useState([]);
 
   const [showMenuTopRight, setShowMenuTopRight] = useState(false);
 
@@ -109,14 +108,6 @@ const App = function() {
       }, 0)).fill(0).map(i=> React.createRef());
       console.log(tabRefs);
       setAppReady(true);
-    })
-
-    axios.get(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
-      if(res.data?.videos){
-        setVideos(res.data.videos);
-      }
-    }).catch((e) => {
-      console.error(e);
     })
 
     window.addEventListener('focus', onFocus);
@@ -204,29 +195,7 @@ const App = function() {
           </div>)}
           {(selectedTab == 'community' && <div className="tab selected">
             <div className="launcher-contents full-width">
-              <div className="panel">
-                <h4>Helpful Links</h4><br />
-                <ul className="link-list">
-                  <li><a href="https://github.com/KobaltBlu/KotOR.js" target="_new">KotOR.js GitHub Repo</a></li>
-                  <li><a href="https://swkotor.net" target="_new">SWKotOR.net</a></li>
-                  <li><a href="https://www.youtube.com/@KotORjs" target="_new">YouTube Channel</a></li>
-                  <li><a href="https://deadlystream.com" target="_new">Deadly Stream Forum</a></li>
-                </ul>
-
-                <div className="video-wrapper">
-                  {videos.map( (video: any) => {
-                    return (
-                      <div className="youtube-video">
-                        <a href={video.link['@attributes'].href} target="_new" title={video.title}>
-                          <div className="thumbnail" style={{backgroundImage: `url(${video.thumbnail})`}}></div>
-                          <span className="title">{video.title}</span>
-                        </a>
-                      </div>
-                    )
-                  })}
-                </div>
-
-              </div>
+              <CommunityTabContent />
             </div>
           </div>)}
           {(selectedTab == 'buy' && <div className="tab selected">

@@ -27,6 +27,9 @@
 
   position: relative;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
 
   &:hover {
     background: rgba(255,255,255,0.25);
@@ -47,25 +50,28 @@
 
   a {
     display: block;
-    line-height: 50px;
-    color: grey;
+    color: #d5d5d5;
     position: relative;
-    padding-left: 50px;
     text-decoration: none;
     font-family: Trajan;
     font-size: small;
+    text-shadow: 1px 1px 1px #000;
+    font-weight: bold;
+    flex: 1;
+    padding-left: 10px;
+    padding-right: 5px;
   }
 
   .icon {
-    content: '';
-    background-size: contain;
+    content: "";
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
     border-radius: 50%;
     width: 40px;
     height: 40px;
-    position: absolute;
-    left: 5px;
-    top: 5px;
-    display: block;
+    position: relative;
+    margin-left: 5px;
   }
 
   &:hover, &.selected {

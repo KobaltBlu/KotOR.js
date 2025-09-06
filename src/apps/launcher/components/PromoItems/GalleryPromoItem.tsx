@@ -4,6 +4,8 @@ import { useProfile } from "../../context/ProfileContext";
 
 export interface ProfilePromoItemProps {
   element: any;
+  onClick?: (element: any) => void;
+  onDoubleClick?: (element: any) => void;
 }
 
 export const GalleryPromoItem = function(props: ProfilePromoItemProps){

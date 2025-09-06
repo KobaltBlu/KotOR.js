@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ConfigClient } from "../../../utility/ConfigClient";
+import axios from "axios";
 
 
 export interface AppProviderValues {
   profileCategories: [any, React.Dispatch<any>]
   selectedProfile: [any, React.Dispatch<any>],
   backgroundImage: [ any,  React.Dispatch<any>],
+  videos: [ any[], React.Dispatch<any[]>],
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -71,6 +73,7 @@ export const AppProvider = (props: any) => {
   const [profileCategoriesValue, setProfilesCategories] = useState<any>({});
   const [selectedProfileValue, setSelectedProfile] = useState<any|undefined>();
   const [backgroundImageValue, setBackgroundImage] = useState<string>('');
+  const [videos, setVideos] = useState<any[]>([]);
 
   useEffect(() => {
     ConfigClient.set(['Launcher', 'selected_profile'], selectedProfileValue?.key || 'kotor');
@@ -104,12 +107,20 @@ export const AppProvider = (props: any) => {
 
   useEffect(() => {
     // console.log('Global', 'useEffect');
+    axios.get(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
+      if(res.data?.videos){
+        setVideos([...res.data.videos]);
+      }
+    }).catch((e) => {
+      console.error(e);
+    })
   }, [])
 
   const providerValue: AppProviderValues = {
     profileCategories: [profileCategoriesValue, setProfilesCategories], 
     selectedProfile: [selectedProfileValue, setSelectedProfile], 
     backgroundImage: [backgroundImageValue, setBackgroundImage],
+    videos: [videos, setVideos],
   };
 
   return (

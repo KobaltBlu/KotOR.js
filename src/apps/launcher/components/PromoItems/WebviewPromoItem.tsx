@@ -3,6 +3,8 @@ import { useApp } from "../../context/AppContext";
 
 export interface ProfilePromoItemProps {
   element: any;
+  onClick?: (element: any) => void;
+  onDoubleClick?: (element: any) => void;
 }
 
 export const WebviewPromoItem = function(props: ProfilePromoItemProps){
