@@ -81,6 +81,8 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
             <li><i className="fa-brands fa-youtube" />&nbsp;<a href="https://www.youtube.com/@KotORjs" target="_new">YouTube Channel</a></li>
             <li>|</li>
             <li><i className="fa-solid fa-globe" />&nbsp;<a href="https://deadlystream.com" target="_new">Deadly Stream Forum</a></li>
+            <li>|</li>
+            <li><i className="fa-brands fa-discord" />&nbsp;<a href="https://discord.com/invite/QxjqVAuN8T" target="_new">Discord</a></li>
           </ul>
           <div style={{marginTop: '10px'}}>
             <h3 className="title">Latest Videos</h3><br />
