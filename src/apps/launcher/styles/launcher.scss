@@ -84,6 +84,7 @@ div#container:before {
 @import './promo-items';
 @import './launch-buttons';
 @import './lightbox';
+@import './GOGWidget';
 
 
 /* Let's get this party started */
@@ -125,6 +126,10 @@ div#container:before {
   100% { transform: translate3d(0,0,0); opacity: 1.0; }
 }
 
+.d-flex {
+  display: flex;
+}
+
 .panel {
   margin: 10px;
   padding: 10px;
@@ -133,6 +138,13 @@ div#container:before {
   box-shadow: 5px 5px 10px #00000078;
   border: 2px solid #434343;
   font-family: sans-serif;
+  flex: 1;
+  &.scroll-y {
+    overflow-y: scroll;
+  }
+  &.scroll-x {
+    overflow-x: scroll;
+  }
 }
 
 ul.link-list {

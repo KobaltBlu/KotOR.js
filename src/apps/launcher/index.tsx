@@ -11,6 +11,7 @@ import { ProfileTabContent } from "./components/ProfileTabContent";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { Launcher } from "./context/Launcher";
 import { CommunityTabContent } from "./components/CommunityTabContent";
+import { GOGWidget } from "./components/GOGWidget";
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
@@ -199,15 +200,35 @@ const App = function() {
             </div>
           </div>)}
           {(selectedTab == 'buy' && <div className="tab selected">
-            <div className="launcher-contents full-width">
-              <div className="panel">
+            <div className="launcher-contents full-width d-flex">
+              <div className="panel scroll-y">
                 <p>This project does not support piracy. To use this app, you will need to have obtained a legal copy of the supported games that you wish to play.</p>
                 <br />
-                <div className="buy">
-                  <iframe src="https://store.steampowered.com/widget/32370/" frameBorder="0" width="646" height="190"></iframe>
+                
+                <h3 className="title">GOG Store</h3>
+                <div className="buy-widgets" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
+                  <GOGWidget 
+                    productId="1207666283" // KotOR 1 GOG ID
+                    onError={(error) => console.error('GOG Widget Error:', error)}
+                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    showPrice={true}
+                    showDiscount={true}
+                  />
+                  <GOGWidget 
+                    productId="1421404581" // KotOR 2 GOG ID
+                    onError={(error) => console.error('GOG Widget Error:', error)}
+                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    showPrice={true}
+                    showDiscount={true}
+                  />
                 </div>
+                
                 <br />
+                <h3 className="title">Steam Store</h3>
                 <div className="buy">
+                  <br />
+                  <iframe src="https://store.steampowered.com/widget/32370/" frameBorder="0" width="646" height="190"></iframe>
+                  <br />
                   <iframe src="https://store.steampowered.com/widget/208580/" frameBorder="0" width="646" height="190"></iframe>
                 </div>
               </div>
