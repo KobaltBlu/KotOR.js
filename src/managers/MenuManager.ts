@@ -80,6 +80,9 @@ export class MenuManager {
   static MenuMouse: KOTOR.MenuMouse;
   static MenuKeyboardMapping: KOTOR.MenuKeyboardMapping;
   static MenuKeyboardEntry: KOTOR.MenuKeyboardEntry;
+  static MenuUpgrade: KOTOR.MenuUpgrade;
+  static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
+  static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
 
   static Init(){
 
@@ -253,6 +256,9 @@ export class MenuManager {
         MenuManager.MenuSoundAdvanced = await MenuManager.GameMenuLoader(KOTOR.MenuSoundAdvanced) as KOTOR.MenuSoundAdvanced;
         MenuManager.MenuStore = await MenuManager.GameMenuLoader(KOTOR.MenuStore) as KOTOR.MenuStore;
         MenuManager.MenuTop = await MenuManager.GameMenuLoader(KOTOR.MenuTop) as KOTOR.MenuTop;
+        MenuManager.MenuUpgrade = await MenuManager.GameMenuLoader(KOTOR.MenuUpgrade) as KOTOR.MenuUpgrade;
+        MenuManager.MenuUpgradeItems = await MenuManager.GameMenuLoader(KOTOR.MenuUpgradeItems) as KOTOR.MenuUpgradeItems;
+        MenuManager.MenuUpgradeSelect = await MenuManager.GameMenuLoader(KOTOR.MenuUpgradeSelect) as KOTOR.MenuUpgradeSelect;
 
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(KOTOR.MainMenu) as KOTOR.MainMenu;
         MenuManager.MainMovies = await MenuManager.GameMenuLoader(KOTOR.MainMovies) as KOTOR.MainMovies;
@@ -312,6 +318,9 @@ export class MenuManager {
         MenuManager.MenuSoundAdvanced = await MenuManager.GameMenuLoader(TSL.MenuSoundAdvanced) as KOTOR.MenuSoundAdvanced;
         MenuManager.MenuStore = await MenuManager.GameMenuLoader(TSL.MenuStore) as KOTOR.MenuStore;
         MenuManager.MenuTop = await MenuManager.GameMenuLoader(TSL.MenuTop) as KOTOR.MenuTop;
+        MenuManager.MenuUpgrade = await MenuManager.GameMenuLoader(TSL.MenuUpgrade) as KOTOR.MenuUpgrade;
+        MenuManager.MenuUpgradeItems = await MenuManager.GameMenuLoader(TSL.MenuUpgradeItems) as KOTOR.MenuUpgradeItems;
+        MenuManager.MenuUpgradeSelect = await MenuManager.GameMenuLoader(TSL.MenuUpgradeSelect) as KOTOR.MenuUpgradeSelect;
 
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(TSL.MainMenu) as KOTOR.MainMenu;
         MenuManager.MainMovies = await MenuManager.GameMenuLoader(TSL.MainMovies) as KOTOR.MainMovies;

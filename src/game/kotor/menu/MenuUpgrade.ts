@@ -1,5 +1,6 @@
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 
 /**
  * MenuUpgrade class.
@@ -53,8 +54,14 @@ export class MenuUpgrade extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
+      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_b = this.BTN_BACK;
       resolve();
     });
-}
+  }
   
 }

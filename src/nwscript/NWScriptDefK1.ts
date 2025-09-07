@@ -4354,7 +4354,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // GameState.MenuManager.MenuUpgrade.open();
+      GameState.MenuManager.MenuUpgradeSelect.open();
     }
   },
   355:{

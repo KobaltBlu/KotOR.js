@@ -529,14 +529,18 @@ export class GUIListBox extends GUIControl {
     //console.log(!node)
     if(!node){
 
-      if(this.protoItem.control.hasField('EXTENT')){
+      if(this.hasProtoItem && this.protoItem.control.hasField('EXTENT')){
         let extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
         height += extent.getFieldByLabel('HEIGHT').getValue() || 0;
       }
 
-      if(this.protoItem.control.hasField('BORDER')){
+      if(this.hasProtoItem && this.protoItem.control.hasField('BORDER')){
         let border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
         height += (border.getFieldByLabel('DIMENSION').getValue() || 0) / 2;
+      }
+
+      if(!this.hasProtoItem){
+        console.warn('GUIListBox.getNodeHeight', 'No proto item found', `${this.menu.gui_resref}.gui`, this.name);
       }
 
     }else{
