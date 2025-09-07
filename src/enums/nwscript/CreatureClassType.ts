@@ -18,5 +18,5 @@ export enum  CreatureClassType {
   COMBATDROID   =   6,
   EXPERTDROID   =   7,
   MINION        =   8,
-  NVALID        = 255,
+  INVALID        = 255,
 }

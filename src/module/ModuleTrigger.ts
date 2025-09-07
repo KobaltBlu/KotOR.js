@@ -45,6 +45,7 @@ export class ModuleTrigger extends ModuleObject {
   trapTriggered: boolean;
   trapResRef: string;
   trapDetected: boolean = false;
+  declare type: ModuleTriggerType;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);

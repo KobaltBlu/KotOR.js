@@ -8,7 +8,7 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "../enums/nwscript/NWModuleObjectType";
 import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore } from "../module";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "../module";
 import type { TalentObject } from "../talents/TalentObject";
 import type { GameEffect } from "../effects/GameEffect";
 import type { GameEvent } from "../events/GameEvent";
@@ -37,6 +37,8 @@ import { BitWise } from "../utility/BitWise";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 import { ExperienceType } from "../enums/engine/ExperienceType";
 import { AudioEngine } from "../audio/AudioEngine";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
 
 /**
  * NWScriptDefK1 class.
@@ -4156,8 +4158,11 @@ NWScriptDefK1.Actions = {
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor)){
         switch(args[1]){
-          case 0:
-            return !args[0].isLocked();
+          case 0: return !args[0].isLocked();
+          case 1: return args[0].isLocked();
+          case 2: return args[0].isLocked();
+          case 3: return false;
+          case 4: return !args[0].isOpen();
         }
       }
       return 0;
@@ -4176,10 +4181,10 @@ NWScriptDefK1.Actions = {
           //UNLOCK
           case 1: args[0].attemptUnlock(this.caller); break;
           //BASH
-          // case 2: args[0].openDoor(this.caller); break;
-          //IGNORE
+          case 2: this.caller.attackCreature(args[0]); break;
+          //IGNORE (UNUSED?)
           // case 3: args[0].openDoor(this.caller); break;
-          //KNOCK
+          //KNOCK (UNUSED?)
           // case 4: args[0].openDoor(this.caller); break;
         }
       }
@@ -4231,14 +4236,29 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [number, ModuleCreature]){
-      return 0;
+      const creature = args[1] as ModuleCreature;
+      switch(args[0]){
+        case 1: return creature.classes[0]?.id || CreatureClassType.INVALID;
+        case 2: return creature.classes[1]?.id || CreatureClassType.INVALID;
+        case 3: return creature.classes[2]?.id || CreatureClassType.INVALID;
+      }
+      return CreatureClassType.INVALID;
     }
   },
   342:{
     comment: "342: A creature can have up to three classes.  This function determines the\ncreature's class level based on nClass Position.\n- nClassPosition: 1, 2 or 3\n- oCreature\n* Returns 0 if oCreature does not have a class in nClassPosition\n(i.e. a single-class creature will only have a value in nClassLocation=1)\nor if oCreature is not a valid creature.\n",
     name: "GetLevelByPosition",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleCreature]){
+      const creature = args[1] as ModuleCreature;
+      switch(args[0]){
+        case 1: return creature.classes[0]?.level || 0;
+        case 2: return creature.classes[1]?.level || 0;
+        case 3: return creature.classes[2]?.level || 0;
+      }
+      return 0;
+    }
   },
   343:{
     comment: "343: Determine the levels that oCreature holds in nClassType.\n- nClassType: CLASS_TYPE_*\n- oCreature\n",
@@ -4332,7 +4352,10 @@ NWScriptDefK1.Actions = {
     comment: "354: Displays the upgrade screen where the player can modify weapons and armor\n",
     name: "ShowUpgradeScreen",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // GameState.MenuManager.MenuUpgrade.open();
+    }
   },
   355:{
     comment: "355: Set eEffect to be versus a specific alignment.\n- eEffect\n- nLawChaos: ALIGNMENT_LAWFUL/ALIGNMENT_CHAOTIC/ALIGNMENT_ALL\n- nGoodEvil: ALIGNMENT_GOOD/ALIGNMENT_EVIL/ALIGNMENT_ALL\n",
@@ -6333,13 +6356,49 @@ NWScriptDefK1.Actions = {
     comment: "546: - oPlaceable\n- nPlaceableAction: PLACEABLE_ACTION_*\n* Returns TRUE if nPlacebleAction is valid for oPlaceable.\n",
     name: "GetIsPlaceableObjectActionPossible",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        if((args[0] as ModulePlaceable).isDead()){
+          return false;
+        }
+        switch(args[1]){
+          //PLACEABLE_ACTION_OPEN
+          case 0: return !(args[0] as ModulePlaceable).locked;
+          //PLACEABLE_ACTION_UNLOCK_OBJECT
+          case 1: return (args[0] as ModulePlaceable).locked;
+          //PLACEABLE_ACTION_BASH
+          case 2: return (args[0] as ModulePlaceable).locked;
+          //PLACEABLE_ACTION_KNOCK
+          case 3: return (args[0] as ModulePlaceable).locked;
+        }
+      }
+      return 0;
+    }
   },
   547:{
     comment: "547: The caller performs nPlaceableAction on oPlaceable.\n- oPlaceable\n- nPlaceableAction: PLACEABLE_ACTION_*\n",
     name: "DoPlaceableObjectAction",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        switch(args[1]){
+          //PLACEABLE_ACTION_OPEN
+          case 0: (args[0] as ModulePlaceable).use(this.caller); 
+          break;
+          //PLACEABLE_ACTION_UNLOCK_OBJECT
+          case 1: (args[0] as ModulePlaceable).attemptUnlock(this.caller); 
+          break;
+          //PLACEABLE_ACTION_BASH
+          case 2: (this.caller as ModuleCreature).attackCreature(args[0] as ModulePlaceable); break;
+          //PLACEABLE_ACTION_KNOCK
+          case 3: 
+            // (args[0] as ModulePlaceable).actionUseObject(this.caller); 
+          break;
+        }
+      }
+    }
   },
   548:{
     comment: "548: Get the first PC in the player list.\nThis resets the position in the player list for GetNextPC().\n",
@@ -6369,7 +6428,13 @@ NWScriptDefK1.Actions = {
     comment: "551: Note: Only placeables, doors and triggers can be trapped.\n* Returns TRUE if oObject is trapped.\n",
     name: "GetIsTrapped",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        return (args[0] as ModuleTrigger).trapFlag ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
+    }
   },
   552:{
     comment: "552: SetEffectIcon\nThis will link the specified effect icon to the specified effect.  The\neffect returned will contain the link to the effect icon and applying this\neffect will cause an effect icon to appear on the portrait/charsheet gui.\neEffect: The effect which should cause the effect icon to appear.\nnIcon: Index into effecticon.2da of the effect icon to use.\n",
