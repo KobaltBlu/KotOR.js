@@ -36,6 +36,7 @@ import { CombatRound } from "../combat/CombatRound";
 import { BitWise } from "../utility/BitWise";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 import { ExperienceType } from "../enums/engine/ExperienceType";
+import { AudioEngine } from "../audio/AudioEngine";
 
 /**
  * NWScriptDefK1 class.
@@ -5133,7 +5134,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //TODO
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundPlay();
+      }
     }
   },
   426:{
@@ -5142,26 +5145,43 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //TODO
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundStop();
+      }
     }
   },
   427:{
     comment: "427: Set the delay for the background music for oArea.\n- oArea\n- nDelay: delay in milliseconds\n",
     name: "MusicBackgroundSetDelay",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundSetDelay(args[1]);
+      }
+    }
   },
   428:{
     comment: "428: Change the background day track for oArea to nTrack.\n- oArea\n- nTrack\n",
     name: "MusicBackgroundChangeDay",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundDaySet(args[1]);
+      }
+    }
   },
   429:{
     comment: "429: Change the background night track for oArea to nTrack.\n- oArea\n- nTrack\n",
     name: "MusicBackgroundChangeNight",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundNightSet(args[1]);
+      }
+    }
   },
   430:{
     comment: "430: Play the battle music for oArea.\n",
@@ -5169,7 +5189,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //TODO
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBattlePlay();
+      }
     }
   },
   431:{
@@ -5178,38 +5200,65 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //TODO
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBattleStop();
+      }
     }
   },
   432:{
     comment: "432: Change the battle track for oArea.\n- oArea\n- nTrack\n",
     name: "MusicBattleChange",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBattleSet(args[1]);
+      }
+    }
   },
   433:{
     comment: "433: Play the ambient sound for oArea.\n",
     name: "AmbientSoundPlay",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).ambientSoundPlay();
+      }
+    }
   },
   434:{
     comment: "434: Stop the ambient sound for oArea.\n",
     name: "AmbientSoundStop",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).ambientSoundStop();
+      }
+    }
   },
   435:{
     comment: "435: Change the ambient day track for oArea to nTrack.\n- oArea\n- nTrack\n",
     name: "AmbientSoundChangeDay",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).ambientSoundDaySet(args[1]);
+      }
+    }
   },
   436:{
     comment: "436: Change the ambient night track for oArea to nTrack.\n- oArea\n- nTrack\n",
     name: "AmbientSoundChangeNight",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).ambientSoundNightSet(args[1]);
+      }
+    }
   },
   437:{
     comment: "437: Get the object that killed the caller.\n",
@@ -6381,13 +6430,25 @@ NWScriptDefK1.Actions = {
     comment: "558: Get the Day Track for oArea.\n",
     name: "MusicBackgroundGetDayTrack",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        return (args[0] as ModuleArea).audio.music.day;
+      }
+      return -1;
+    }
   },
   559:{
     comment: "559: Get the Night Track for oArea.\n",
     name: "MusicBackgroundGetNightTrack",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        return (args[0] as ModuleArea).audio.music.night;
+      }
+      return -1;
+    }
   },
   560:{
     comment: "560: Write sLogEntry as a timestamped entry into the log file\n",
@@ -6458,19 +6519,37 @@ NWScriptDefK1.Actions = {
     comment: "567: Set the ambient day volume for oArea to nVolume.\n- oArea\n- nVolume: 0 - 100\n",
     name: "AmbientSoundSetDayVolume",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        const audioEngine = AudioEngine.GetAudioEngine();
+        audioEngine.ambientAudioDayEmitter.setVolume(args[1] / 100);
+      }
+    }
   },
   568:{
     comment: "568: Set the ambient night volume for oArea to nVolume.\n- oArea\n- nVolume: 0 - 100\n",
     name: "AmbientSoundSetNightVolume",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        const audioEngine = AudioEngine.GetAudioEngine();
+        audioEngine.ambientAudioDayEmitter.setVolume(args[1] / 100);
+      }
+    }
   },
   569:{
     comment: "569: Get the Battle Track for oArea.\n",
     name: "MusicBackgroundGetBattleTrack",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        return (args[0] as ModuleArea).audio.music.battle;
+      }
+      return -1;
+    }
   },
   570:{
     comment: "570: Determine whether oObject has an inventory.\n* Returns TRUE for creatures and stores, and checks to see if an item or placeable object is a container.\n* Returns FALSE for all other object types.\n",
@@ -8239,7 +8318,11 @@ NWScriptDefK1.Actions = {
     comment: "765. SetMusicVolume\nNEVER USE THIS!\n",
     name: "SetMusicVolume",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      const audioEngine = AudioEngine.GetAudioEngine();
+      audioEngine.musicGain.gain.value = Math.max(0, Math.min(1, args[0] / 100));
+    }
   },
   766:{
     comment: "766. CreateItemOnFloor\nShould only be used for items that have been created on the ground, and will\nbe destroyed without ever being picked up or equipped.  Returns true if successful\n",

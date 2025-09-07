@@ -8,7 +8,7 @@ import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
 import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
 
 
-type BackgroundAudioType = 'BACKGROUND_MUSIC' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT'
+type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
 
 /**
  * AudioEngine class.
@@ -38,8 +38,10 @@ export class AudioEngine {
   movieGain: GainNode;
   emitters: AudioEmitter[];
 
-  ambientAudioEmitter: AmbientAudioEmitter;
-  areaMusicAudioEmitter: AmbientAudioEmitter;
+  ambientAudioDayEmitter: AmbientAudioEmitter;
+  ambientAudioNightEmitter: AmbientAudioEmitter;
+  areaMusicDayAudioEmitter: AmbientAudioEmitter;
+  areaMusicNightAudioEmitter: AmbientAudioEmitter;
   battleMusicAudioEmitter: AmbientAudioEmitter;
   battleStingerAudioEmitter: AmbientAudioEmitter;
   dialogMusicAudioEmitter: AmbientAudioEmitter;
@@ -57,6 +59,8 @@ export class AudioEngine {
 
   mode: AudioEngineMode = AudioEngine.Mode;
   areaProperies: IAreaAudioProperties;
+  areaMusicNightLoaded: boolean;
+  ambientNightLoaded: boolean;
 
   constructor () {
 
@@ -85,21 +89,25 @@ export class AudioEngine {
 
     this.emitters = [];
     this.bgmTimer = 0;
-    this.ambientAudioEmitter = new AmbientAudioEmitter(this);
-    this.areaMusicAudioEmitter = new AmbientAudioEmitter(this);
+    this.ambientAudioDayEmitter = new AmbientAudioEmitter(this);
+    this.ambientAudioNightEmitter = new AmbientAudioEmitter(this);
+    this.areaMusicDayAudioEmitter = new AmbientAudioEmitter(this);
+    this.areaMusicNightAudioEmitter = new AmbientAudioEmitter(this);
     this.battleMusicAudioEmitter = new AmbientAudioEmitter(this);
     this.battleStingerAudioEmitter = new AmbientAudioEmitter(this);
     this.dialogMusicAudioEmitter = new AmbientAudioEmitter(this);
 
-    this.ambientAudioEmitter.setDestination(this.sfxGain);
-    this.areaMusicAudioEmitter.setDestination(this.musicGain);
+    this.ambientAudioDayEmitter.setDestination(this.sfxGain);
+    this.ambientAudioNightEmitter.setDestination(this.sfxGain);
+    this.areaMusicDayAudioEmitter.setDestination(this.musicGain);
+    this.areaMusicNightAudioEmitter.setDestination(this.musicGain);
     this.battleMusicAudioEmitter.setDestination(this.musicGain);
     this.battleStingerAudioEmitter.setDestination(this.musicGain);
     this.dialogMusicAudioEmitter.setDestination(this.musicGain);
 
-    this.ambientAudioEmitter.setVolume(0.5);
+    this.ambientAudioDayEmitter.setVolume(0.5);
 
-    this.areaMusicAudioEmitter.addEventListener('play', () => {
+    this.areaMusicDayAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.AREA;
     });
 
@@ -113,10 +121,10 @@ export class AudioEngine {
 
     this.dialogMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.DIALOG;
-      this.areaMusicAudioEmitter.stop();
+      this.areaMusicDayAudioEmitter.stop();
     });
 
-    this.areaMusicAudioEmitter.addEventListener('ended', () => {
+    this.areaMusicDayAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
       if(AudioEngine.loopBGM){
         this.bgmTimer = this.bgmLoopTime;
@@ -127,13 +135,13 @@ export class AudioEngine {
       if(this.battleStingerLoaded){
         this.battleStingerAudioEmitter.play();
       }else{
-        this.areaMusicAudioEmitter.play();
+        this.areaMusicDayAudioEmitter.play();
       }
     });
 
     this.battleStingerAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.PLAYING;
-      this.areaMusicAudioEmitter.play();
+      this.areaMusicDayAudioEmitter.play();
     });
 
     this.dialogMusicAudioEmitter.addEventListener('ended', () => {
@@ -231,7 +239,7 @@ export class AudioEngine {
         this.bgmTimer -= delta * 1000;
         if(this.bgmTimer <= 0){
           this.bgmTimer = 0;
-          this.areaMusicAudioEmitter.play();
+          this.areaMusicDayAudioEmitter.play();
           this.bgmState = BackgroundMusicState.PLAYING;
         }
       }
@@ -245,10 +253,15 @@ export class AudioEngine {
 
   setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer, name: string){
     switch(type){
-      case 'BACKGROUND_MUSIC':
-        this.areaMusicAudioEmitter.setData(data);
-        this.areaMusicAudioEmitter.name = name;
+      case 'BACKGROUND_MUSIC_DAY':
+        this.areaMusicDayAudioEmitter.setData(data);
+        this.areaMusicDayAudioEmitter.name = name;
         this.areaMusicLoaded = true;
+        break;
+      case 'BACKGROUND_MUSIC_NIGHT':
+        this.areaMusicNightAudioEmitter.setData(data);
+        this.areaMusicNightAudioEmitter.name = name;
+        this.areaMusicNightLoaded = true;
         break;
       case 'BATTLE':
         this.battleMusicAudioEmitter.setData(data);
@@ -265,10 +278,15 @@ export class AudioEngine {
         this.dialogMusicAudioEmitter.name = name;
         this.dialogMusicLoaded = true;
         break;
-      case 'AMBIENT':
-        this.ambientAudioEmitter.setData(data);
-        this.ambientAudioEmitter.name = name;
+      case 'AMBIENT_DAY':
+        this.ambientAudioDayEmitter.setData(data);
+        this.ambientAudioDayEmitter.name = name;
         this.ambientLoaded = true;
+        break;
+      case 'AMBIENT_NIGHT':
+        this.ambientAudioNightEmitter.setData(data);
+        this.ambientAudioNightEmitter.name = name;
+        this.ambientNightLoaded = true;
         break;
     }
   }
@@ -303,7 +321,7 @@ export class AudioEngine {
     this.emitters = [];
 
     //Clean up the background music emitters
-    this.areaMusicAudioEmitter.dispose();
+    this.areaMusicDayAudioEmitter.dispose();
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();

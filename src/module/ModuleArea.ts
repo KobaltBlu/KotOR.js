@@ -572,11 +572,155 @@ export class ModuleArea extends ModuleObject {
     const oPC = GameState.getCurrentPlayer();
     if(oPC.excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
       audioEngine.bgmMode = BackgroundMusicMode.BATTLE;
-      audioEngine.areaMusicAudioEmitter.stop();
+      audioEngine.areaMusicDayAudioEmitter.stop();
       audioEngine.battleMusicAudioEmitter.play(true);
     }else if(oPC.excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
       audioEngine.bgmMode = audioEngine.battleStingerLoaded ? BackgroundMusicMode.BATTLE_STINGER : BackgroundMusicMode.AREA;
       audioEngine.battleMusicAudioEmitter.stop();
+    }
+  }
+
+  musicBackgroundPlay(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.areaMusicDayAudioEmitter.play();
+  }
+
+  musicBackgroundStop(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.areaMusicDayAudioEmitter.stop();
+  }
+
+  musicBackgroundSetDelay(delay: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.bgmLoopTime = delay;
+  }
+
+  async musicBackgroundDaySet(index: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    //Load the background music
+    const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    const bgMusic = ambientmusic2DA.rows[index];
+    this.audio.music.day = index;
+    try{
+      if(bgMusic.resource != '****'){
+        console.log('Loading Background Music', bgMusic.resource);
+        const data = await AudioLoader.LoadMusic(bgMusic.resource);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data, bgMusic.resource);
+      }
+    }catch(e){
+      console.log('Background Music not found', bgMusic);
+      console.error(e);
+    }
+  }
+
+  async musicBackgroundNightSet(index: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    //Load the battle music
+    const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    const bgMusic = ambientmusic2DA.rows[index];
+    this.audio.music.night = index;
+    try{
+      if(bgMusic.resource != '****'){
+        console.log('Loading Background Music', bgMusic.resource);
+        const data = await AudioLoader.LoadMusic(bgMusic.resource);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data, bgMusic.resource);
+      }
+    }catch(e){
+      console.log('Background Music not found', bgMusic);
+      console.error(e);
+    }
+  }
+
+  musicBattlePlay(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.battleMusicAudioEmitter.play();
+  }
+
+  musicBattleStop(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.battleMusicAudioEmitter.stop();
+  }
+
+  async musicBattleSet(index: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    //Load the battle music
+    const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
+    const battleMusic = ambientmusic2DA.rows[index];
+    this.audio.music.battle = index;
+    try{
+      if(battleMusic.resource != '****'){
+        console.log('Loading Battle Music', battleMusic.resource);
+        const data = await AudioLoader.LoadMusic(battleMusic.resource);
+        audioEngine.setAudioBuffer('BATTLE', data, battleMusic.resource);
+      }
+      //Load the battle stinger
+      try{
+        if(battleMusic.stinger1 != '****'){
+          console.log('Loading Battle Stinger', battleMusic.stinger1);
+          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
+          audioEngine.setAudioBuffer('BATTLE_STINGER', data, battleMusic.stinger1);
+        }
+      }catch(e){
+        console.log('Battle Stinger not found', battleMusic.stinger1);
+        console.error(e);
+      }
+    }catch(e){
+      console.log('Background Music not found', battleMusic);
+      console.error(e);
+    }
+  }
+
+  ambientSoundPlay(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.ambientAudioDayEmitter.play();
+  }
+
+  ambientSoundStop(){
+    const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.ambientAudioDayEmitter.stop();
+  }
+
+  async ambientSoundDaySet(index: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+
+    this.audio.ambient.day = index;
+    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
+    if(ambientsound2DA){
+      //Load the ambient day sound
+      const ambientDay = ambientsound2DA.rows[this.audio.ambient.day];
+      if(!ambientDay || ambientDay.resource == '****'){
+        return;
+      }
+      console.log('Loading Ambient Day Sound', ambientDay.resource);
+      try{
+        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
+        audioEngine.setAudioBuffer('AMBIENT_DAY', data, ambientDay.resource);
+        audioEngine.ambientAudioDayEmitter.play(true);
+      }catch(e){
+        console.error('Ambient Audio not found', ambientDay);
+      } 
+    }
+  }
+
+  async ambientSoundNightSet(index: number){
+    const audioEngine = AudioEngine.GetAudioEngine();
+
+    this.audio.ambient.night = index;
+    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
+    if(ambientsound2DA){
+      //Load the ambient day sound
+      const ambientDay = ambientsound2DA.rows[this.audio.ambient.night];
+      if(!ambientDay || ambientDay.resource == '****'){
+        return;
+      }
+      console.log('Loading Ambient Day Sound', ambientDay.resource);
+      try{
+        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
+        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data, ambientDay.resource);
+        audioEngine.ambientAudioNightEmitter.play(true);
+      }catch(e){
+        console.error('Ambient Audio not found', ambientDay);
+      } 
     }
   }
 
@@ -1756,64 +1900,11 @@ export class ModuleArea extends ModuleObject {
    */
   async loadAreaMusic(): Promise<void> {
     const audioEngine = AudioEngine.GetAudioEngine();
-    const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
-    if(ambientmusic2DA){
-      //Load the background music
-      const bgMusic = ambientmusic2DA.rows[this.audio.music.day];
-      try{
-        if(bgMusic.resource != '****'){
-          console.log('Loading Background Music', bgMusic.resource);
-          const data = await AudioLoader.LoadMusic(bgMusic.resource);
-          audioEngine.setAudioBuffer('BACKGROUND_MUSIC', data, bgMusic.resource);
-          audioEngine.areaMusicAudioEmitter.play();
-        }
-      }catch(e){
-        console.log('Background Music not found', bgMusic.resource);
-        console.error(e);
-      }
-
-      //Load the battle music
-      const battleMusic = ambientmusic2DA.rows[this.audio.music.battle];
-      try{
-        if(battleMusic.resource != '****'){
-          console.log('Loading Battle Music', battleMusic.resource);
-          const data = await AudioLoader.LoadMusic(battleMusic.resource);
-          audioEngine.setAudioBuffer('BATTLE', data, battleMusic.resource);
-        }
-      }catch(e){
-        console.log('Background Music not found', bgMusic);
-        console.error(e);
-      }
-
-      //Load the battle stinger
-      try{
-        if(battleMusic.stinger1 != '****'){
-          console.log('Loading Battle Stinger', battleMusic.stinger1);
-          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data, battleMusic.stinger1);
-        }
-      }catch(e){
-        console.log('Battle Stinger not found', battleMusic.stinger1);
-        console.error(e);
-      }
-    }
-
-    const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
-    if(ambientsound2DA){
-      //Load the ambient day sound
-      const ambientDay = ambientsound2DA.rows[this.audio.ambient.day];
-      if(!ambientDay || ambientDay.resource == '****'){
-        return;
-      }
-      console.log('Loading Ambient Day Sound', ambientDay.resource);
-      try{
-        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT', data, ambientDay.resource);
-        audioEngine.ambientAudioEmitter.play(true);
-      }catch(e){
-        console.error('Ambient Audio not found', ambientDay);
-      } 
-    }
+    await this.musicBackgroundDaySet(this.audio.music.day);
+    await this.musicBackgroundNightSet(this.audio.music.night);
+    await this.musicBattleSet(this.audio.music.battle);
+    await this.ambientSoundDaySet(this.audio.ambient.day);
+    await this.ambientSoundNightSet(this.audio.ambient.night);
   }
 
   /**
