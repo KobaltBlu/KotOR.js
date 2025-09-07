@@ -1,6 +1,5 @@
 import * as path from "path";
 import { GameState } from "./GameState";
-import { LoadingScreen } from "./LoadingScreen";
 import { ERFObject } from "./resource/ERFObject";
 import { ResourceTypes } from "./resource/ResourceTypes";
 import { RIMObject } from "./resource/RIMObject";
@@ -42,6 +41,81 @@ import { CacheScope } from "./enums";
 export class GameInitializer {
 
   static currentGame: GameEngineType;
+
+  /**
+   * Event listeners
+   */
+  static #eventListeners: Record<string, Function[]> = {};
+
+  /**
+   * Add an event listener
+   * @param type 
+   * @param cb 
+   */
+  static AddEventListener<T extends string>(type: T, cb: Function): void {
+    if(!Array.isArray(this.#eventListeners[type])){
+      this.#eventListeners[type] = [];
+    }
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index == -1){
+        ev.push(cb);
+      }else{
+        console.warn('Event Listener: Already added', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  /**
+   * Remove an event listener
+   * @param type 
+   * @param cb 
+   */
+  static RemoveEventListener<T extends string>(type: T, cb: Function): void {
+    if(!Array.isArray(this.#eventListeners[type])){
+      this.#eventListeners[type] = [];
+    }
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      let index = ev.indexOf(cb);
+      if(index >= 0){
+        ev.splice(index, 1);
+      }else{
+        console.warn('Event Listener: Already removed', type);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  /**
+   * Process an event listener
+   * @param type 
+   * @param args 
+   */
+  static ProcessEventListener<T extends string>(type: T, args: any[] = []): void {
+    if(!Array.isArray(this.#eventListeners[type])){
+      this.#eventListeners[type] = [];
+    }
+    if(Array.isArray(this.#eventListeners[type])){
+      let ev = this.#eventListeners[type];
+      for(let i = 0; i < ev.length; i++){
+        const callback = ev[i];
+        if(typeof callback === 'function'){
+          callback(...args);
+        }
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  static SetLoadingMessage(message: string){
+    GameInitializer.ProcessEventListener('on-loader-message', [message]);
+  }
 
   static async Init(game: GameEngineType){
 
@@ -102,24 +176,25 @@ export class GameInitializer {
 
     await ConfigClient.Init();
     
-    LoadingScreen.main.SetMessage("Loading Keys");
+    GameInitializer.SetLoadingMessage("Loading Keys");
     await KEYManager.Load('chitin.key');
     await ResourceLoader.InitGlobalCache();
-    LoadingScreen.main.SetMessage("Loading Game Resources");
+    GameInitializer.SetLoadingMessage("Loading Game Resources");
     await GameInitializer.LoadGameResources();
 
     /**
      * Initialize Journal
      */
-    LoadingScreen.main.SetMessage("Loading JRL File");
+    GameInitializer.SetLoadingMessage("Loading JRL File");
     await JournalManager.LoadJournal();
 
     /**
      * Initialize TLK
      */
-    LoadingScreen.main.SetMessage("Loading TLK File");
+    GameInitializer.SetLoadingMessage("Loading TLK File");
     await TLKManager.LoadTalkTable();
 
+    GameInitializer.SetLoadingMessage("Initializing Controls");
     /**
      * Initialize Controls
      */
@@ -131,6 +206,7 @@ export class GameInitializer {
      */
     GameState.SWRuleSet.Init();
 
+    GameInitializer.SetLoadingMessage("Loading INI File");
     /**
      * Initialize INIConfig
      */
@@ -158,6 +234,7 @@ export class GameInitializer {
      */
     await GameState.Planetary.Init()
 
+    GameInitializer.SetLoadingMessage("Initializing SaveGame Folder");
     /**
      * Initialize SaveGame Folder
      */
@@ -167,37 +244,37 @@ export class GameInitializer {
   }
 
   static async LoadGameResources(){
-    LoadingScreen.main.SetMessage("Loading Override");
+    GameInitializer.SetLoadingMessage("Loading Override");
     await GameInitializer.LoadOverride();
 
-    LoadingScreen.main.SetMessage("Loading BIF's");
+    GameInitializer.SetLoadingMessage("Loading BIF's");
 
-    LoadingScreen.main.SetMessage("Loading RIM's");
+    GameInitializer.SetLoadingMessage("Loading RIM's");
     await GameInitializer.LoadRIMs();
 
-    LoadingScreen.main.SetMessage("Loading Modules");
+    GameInitializer.SetLoadingMessage("Loading Modules");
     await GameInitializer.LoadModules();
 
-    LoadingScreen.main.SetMessage("Loading Lips");
+    GameInitializer.SetLoadingMessage("Loading Lips");
     await GameInitializer.LoadLips();
 
-    LoadingScreen.main.SetMessage('Loading: 2DA\'s');
+    GameInitializer.SetLoadingMessage('Loading: 2DA\'s');
     await GameInitializer.Load2DAs();
 
-    LoadingScreen.main.SetMessage('Loading: Texture Packs');
+    GameInitializer.SetLoadingMessage('Loading: Texture Packs');
     await GameInitializer.LoadTexturePacks();
 
-    LoadingScreen.main.SetMessage('Loading: Stream Music');
+    GameInitializer.SetLoadingMessage('Loading: Stream Music');
     await GameInitializer.LoadGameAudioResources('streammusic');
 
-    LoadingScreen.main.SetMessage('Loading: Stream Sounds');
+    GameInitializer.SetLoadingMessage('Loading: Stream Sounds');
     await GameInitializer.LoadGameAudioResources('streamsounds');
 
     if(GameState.GameKey != GameEngineType.TSL){
-      LoadingScreen.main.SetMessage('Loading: Stream Waves');
+      GameInitializer.SetLoadingMessage('Loading: Stream Waves');
       await GameInitializer.LoadGameAudioResources('streamwaves');
     }else{
-      LoadingScreen.main.SetMessage('Loading: Stream Voice');
+      GameInitializer.SetLoadingMessage('Loading: Stream Voice');
       await GameInitializer.LoadGameAudioResources('streamvoice');
     }
   }
@@ -206,7 +283,7 @@ export class GameInitializer {
     if(GameState.GameKey == GameEngineType.TSL){
       return;
     }
-    LoadingScreen.main.SetMessage('Loading: RIM Archives');
+    GameInitializer.SetLoadingMessage('Loading: RIM Archives');
     await RIMManager.Load();
   }
 
@@ -245,7 +322,7 @@ export class GameInitializer {
 
   static async LoadModules(){
     let data_dir = 'modules';
-    LoadingScreen.main.SetMessage('Loading: Module Archives');
+    GameInitializer.SetLoadingMessage('Loading: Module Archives');
     try{
       const filenames = await GameFileSystem.readdir(data_dir);
       const modules = filenames.map(function(file) {
@@ -292,7 +369,7 @@ export class GameInitializer {
   }
 
   static async Load2DAs(){
-    LoadingScreen.main.SetMessage('Loading: 2DA\'s');
+    GameInitializer.SetLoadingMessage('Loading: 2DA\'s');
     await GameState.TwoDAManager.Load2DATables();
     GameState.AppearanceManager.Init();
   }

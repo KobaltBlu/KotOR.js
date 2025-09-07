@@ -11,6 +11,10 @@ export interface AppProviderValues {
   showGrantModal: [boolean, React.Dispatch<boolean>];
   showCheatConsole: [boolean, React.Dispatch<boolean>];
   showPerformanceMonitor: [boolean, React.Dispatch<boolean>];
+  showLoadingScreen: [boolean, React.Dispatch<boolean>];
+  loadingScreenMessage: [string, React.Dispatch<string>];
+  loadingScreenBackgroundURL: [string, React.Dispatch<string>];
+  loadingScreenLogoURL: [string, React.Dispatch<string>];
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -26,6 +30,11 @@ export const AppProvider = (props: any) => {
   const [showGrantModal, setShowGrantModal] = useState<boolean>(props.showGrantModal || false);
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
+
+  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
+  const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('Loading...');
+  const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
+  const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
   const onAppReady = () => {
     console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
@@ -54,17 +63,43 @@ export const AppProvider = (props: any) => {
     }
   }
 
+  const onLoadingScreenShow = () => {
+    setShowLoadingScreen(true);
+  }
+
+  const onLoadingScreenHide = () => {
+    setShowLoadingScreen(false);
+  }
+
+  const onLoadingScreenInit = (backgroundURL: string, logoURL: string, message?: string) => {
+    setLoadingScreenMessage(message || 'Loading...');
+    setLoadingScreenBackgroundURL(backgroundURL);
+    setLoadingScreenLogoURL(logoURL);
+  }
+
+  const onLoadingScreenMessage = (message: string) => {
+    setLoadingScreenMessage(message);
+  }
+
   useEffect(() => { 
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
     AppState.addEventListener('on-ready', onAppReady);  
     AppState.addEventListener('on-game-loaded', onGameLoaded);
+    AppState.addEventListener('on-loader-show', onLoadingScreenShow);
+    AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
+    AppState.addEventListener('on-loader-init', onLoadingScreenInit);
+    AppState.addEventListener('on-loader-message', onLoadingScreenMessage);
     AppState.initApp();
     return () => {
       window.removeEventListener('keypress', onKeyPress);
       AppState.removeEventListener('on-preload', onPreload);
       AppState.removeEventListener('on-ready', onAppReady);
       AppState.removeEventListener('on-game-loaded', onGameLoaded);
+      AppState.removeEventListener('on-loader-show', onLoadingScreenShow);
+      AppState.removeEventListener('on-loader-hide', onLoadingScreenHide);
+      AppState.removeEventListener('on-loader-init', onLoadingScreenInit);
+      AppState.removeEventListener('on-loader-message', onLoadingScreenMessage);
     }
   }, []);
 
@@ -83,7 +118,11 @@ export const AppProvider = (props: any) => {
     showEULAModal: [showEULAModal, setShowEULAModal],
     showGrantModal: [showGrantModal, setShowGrantModal],
     showCheatConsole: [showCheatConsole, setShowCheatConsole],
-    showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor]
+    showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor],
+    showLoadingScreen: [showLoadingScreen, setShowLoadingScreen],
+    loadingScreenMessage: [loadingScreenMessage, setLoadingScreenMessage],
+    loadingScreenBackgroundURL: [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL],
+    loadingScreenLogoURL: [loadingScreenLogoURL, setLoadingScreenLogoURL],
   };
 
   return (

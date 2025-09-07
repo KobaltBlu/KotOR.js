@@ -79,7 +79,8 @@ export class AppState {
    */
   static async loadGameDirectory(){
     AppState.showLoader();
-    KotOR.LoadingScreen.main.SetMessage('Locating Game Directory...');
+    KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
+    // KotOR.LoadingScreen.main.SetMessage('Locating Game Directory...');
   
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
@@ -129,16 +130,19 @@ export class AppState {
    * showLoader
    */
   static showLoader(){
-    KotOR.LoadingScreen.main.SetLogo(AppState.appProfile.logo);
-    KotOR.LoadingScreen.main.SetBackgroundImage(AppState.appProfile.background);
-    KotOR.LoadingScreen.main.Show();
+    // KotOR.LoadingScreen.main.SetLogo(AppState.appProfile.logo);
+    // KotOR.LoadingScreen.main.SetBackgroundImage(AppState.appProfile.background);
+    // KotOR.LoadingScreen.main.Show();
+    AppState.processEventListener('on-loader-init', [AppState.appProfile.background, AppState.appProfile.logo]);
+    AppState.processEventListener('on-loader-show', []);
   }
 
   /**
    * hideLoader
    */
   static hideLoader(){
-    KotOR.LoadingScreen.main.Hide();
+    // KotOR.LoadingScreen.main.Hide();
+    AppState.processEventListener('on-loader-hide', []);
   }
 
   /**
@@ -155,6 +159,18 @@ export class AppState {
     AppState.showLoader();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
+    KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+      console.log('on-loader-message', message);
+      AppState.processEventListener('on-loader-message', [message]);
+    });
+    KotOR.GameInitializer.AddEventListener('on-loader-show', () => {
+      console.log('on-loader-show');
+      AppState.processEventListener('on-loader-show', []);
+    });
+    KotOR.GameInitializer.AddEventListener('on-loader-hide', () => {
+      console.log('on-loader-hide');
+      AppState.processEventListener('on-loader-hide', []);
+    });
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
     console.log('loaded')
@@ -162,11 +178,8 @@ export class AppState {
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
-    KotOR.GameState.Init().then( () => {
-      KotOR.LoadingScreen.main.Hide();
-    });
+
     KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
-    document.body.append(KotOR.GameState.stats.domElement);
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       // KotOR.GameState.Debugger.open();
     }
@@ -183,6 +196,12 @@ export class AppState {
       KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
     });
     AppState.processEventListener('on-game-loaded', []);
+    
+    await KotOR.GameState.Init();
+    document.body.append(KotOR.GameState.stats.domElement);
+    console.log('init complete');
+    AppState.processEventListener('on-loader-hide', []);
+    // KotOR.LoadingScreen.main.Hide();
   }
 
   /**

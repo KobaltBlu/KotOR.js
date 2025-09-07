@@ -96,6 +96,10 @@ export class ForgeState {
       KotOR.LoadingScreen.main.SetBackgroundImage(KotOR.ApplicationProfile.profile.background);
       KotOR.LoadingScreen.main.Show();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
+      KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+        KotOR.LoadingScreen.main.SetMessage(message);
+        // ForgeState.processEventListener('on-loader-message', [message]);
+      });
       KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();
         KotOR.OdysseyWalkMesh.Init();
