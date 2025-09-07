@@ -292,6 +292,8 @@ export class GameState implements EngineContext {
     'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
     'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'];
 
+  static domElement: HTMLElement;
+
   static GetDebugState(type: EngineDebugType){
     return !!this.debug[type];
   }
@@ -394,6 +396,10 @@ export class GameState implements EngineContext {
     }
   }
 
+  static setDOMElement(element: HTMLElement){
+    GameState.domElement = element;
+  }
+
   /**
    * Initialize the GameState
    */
@@ -462,7 +468,9 @@ export class GameState implements EngineContext {
 
     GameState.canvas.classList.add('noselect');
     GameState.canvas.setAttribute('tabindex', '1');
-    document.getElementById('renderer-container').appendChild(GameState.canvas);
+    if(GameState.domElement){
+      GameState.domElement.appendChild(GameState.canvas);
+    }
     
     //transferToOffscreen() causes issues with savegame screenshots
     //GameState.canvas = GameState.canvas.transferControlToOffscreen();

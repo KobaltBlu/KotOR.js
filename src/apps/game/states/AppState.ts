@@ -161,6 +161,7 @@ export class AppState {
     KotOR.GameState.OpeningMoviesComplete = true;
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
+    KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
     KotOR.GameState.Init().then( () => {
       KotOR.LoadingScreen.main.Hide();
     });
