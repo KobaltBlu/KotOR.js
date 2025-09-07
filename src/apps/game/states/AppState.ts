@@ -53,7 +53,7 @@ export class AppState {
     AppState.eulaAccepted = !!gameEULAConfig.accepted;
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
 
-    AppState.showLoader();
+    AppState.loaderShow();
 
     console.log('gameEULAConfig', gameEULAConfig);
     console.log('eulaState', eulaState);
@@ -78,9 +78,8 @@ export class AppState {
    * - Used for Electron and Browser
    */
   static async loadGameDirectory(){
-    AppState.showLoader();
+    AppState.loaderShow();
     KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
-    // KotOR.LoadingScreen.main.SetMessage('Locating Game Directory...');
   
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
@@ -127,22 +126,31 @@ export class AppState {
   }
 
   /**
-   * showLoader
+   * Initializes the loading screen
    */
-  static showLoader(){
-    // KotOR.LoadingScreen.main.SetLogo(AppState.appProfile.logo);
-    // KotOR.LoadingScreen.main.SetBackgroundImage(AppState.appProfile.background);
-    // KotOR.LoadingScreen.main.Show();
-    AppState.processEventListener('on-loader-init', [AppState.appProfile.background, AppState.appProfile.logo]);
+  static loaderInit(backgroundURL: string, logoURL: string): void {
+    AppState.processEventListener('on-loader-init', [backgroundURL, logoURL]);
+  }
+
+  /**
+   * Shows the loading screen
+   */
+  static loaderShow(){
     AppState.processEventListener('on-loader-show', []);
   }
 
   /**
-   * hideLoader
+   * Hides the loading screen
    */
-  static hideLoader(){
-    // KotOR.LoadingScreen.main.Hide();
+  static loaderHide(){
     AppState.processEventListener('on-loader-hide', []);
+  }
+
+  /**
+   * Sets the loading screen message
+   */
+  static loaderMessage(message: string): void {
+    AppState.processEventListener('on-loader-message', [message]);
   }
 
   /**
@@ -156,20 +164,18 @@ export class AppState {
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
     console.log('loading game...');
-    AppState.showLoader();
+    AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
+    AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
     KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
-      console.log('on-loader-message', message);
-      AppState.processEventListener('on-loader-message', [message]);
+      AppState.loaderMessage(message);
     });
     KotOR.GameInitializer.AddEventListener('on-loader-show', () => {
-      console.log('on-loader-show');
-      AppState.processEventListener('on-loader-show', []);
+      AppState.loaderShow();
     });
     KotOR.GameInitializer.AddEventListener('on-loader-hide', () => {
-      console.log('on-loader-hide');
-      AppState.processEventListener('on-loader-hide', []);
+      AppState.loaderHide();
     });
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
@@ -200,8 +206,7 @@ export class AppState {
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
     console.log('init complete');
-    AppState.processEventListener('on-loader-hide', []);
-    // KotOR.LoadingScreen.main.Hide();
+    AppState.loaderHide();
   }
 
   /**

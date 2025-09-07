@@ -12,11 +12,8 @@ export class ProjectFileSystem extends KotOR.GameFileSystem {
   static initializeProjectExplorer() {
     return new Promise<void>( (resolve, reject) => {
       TabProjectExplorerState.GenerateResourceList( ForgeState.projectExplorerTab ).then( (resourceList) => {
-        KotOR.LoadingScreen.main.Hide();
-        setTimeout( () => {
-          KotOR.LoadingScreen.main.loader.style.display = 'none';
-          resolve();
-        }, 500);
+        ForgeState.loaderHide();
+        resolve();
       });
     });
   }

@@ -8,6 +8,7 @@ import { FileBrowserNode } from "./";
 import { ProjectFileSystem } from "../../ProjectFileSystem";
 import * as path from "path";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
+import { ForgeState } from "../ForgeState";
 
 export class TabProjectExplorerState extends TabState {
 
@@ -32,11 +33,11 @@ export class TabProjectExplorerState extends TabState {
 
   static async GenerateResourceList( state: TabProjectExplorerState ){
 
-    KotOR.LoadingScreen.main.Show('Loading [Files]...');
+    ForgeState.loaderShow();
     await TabProjectExplorerState.LoadFiles();
 
     state.reload();
-    KotOR.LoadingScreen.main.Hide();
+    ForgeState.loaderHide();
     return TabProjectExplorerState.Resources;
   }
 

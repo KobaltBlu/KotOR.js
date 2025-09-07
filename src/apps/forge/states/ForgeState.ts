@@ -84,6 +84,34 @@ export class ForgeState {
     this.processEventListener(type, args);
   }
 
+  /**
+   * Initializes the loading screen
+   */
+  static loaderInit(backgroundURL: string, logoURL: string): void {
+    ForgeState.processEventListener('on-loader-init', [backgroundURL, logoURL]);
+  }
+
+  /**
+   * Shows the loading screen
+   */
+  static loaderShow(): void {
+    ForgeState.processEventListener('on-loader-show', []);
+  }
+
+  /**
+   * Hides the loading screen
+   */
+  static loaderHide(): void {
+    ForgeState.processEventListener('on-loader-hide', []);
+  }
+
+  /**
+   * Sets the loading screen message
+   */
+  static loaderMessage(message: string): void {
+    ForgeState.processEventListener('on-loader-message', [message]);
+  }
+
   static async InitializeApp(): Promise<void>{
     return new Promise( (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
@@ -92,13 +120,11 @@ export class ForgeState {
         KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
       }
       console.log('loading game...')
-      KotOR.LoadingScreen.main.SetLogo(KotOR.ApplicationProfile.profile.logo);
-      KotOR.LoadingScreen.main.SetBackgroundImage(KotOR.ApplicationProfile.profile.background);
-      KotOR.LoadingScreen.main.Show();
+      ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
+      ForgeState.loaderShow();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
       KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
-        KotOR.LoadingScreen.main.SetMessage(message);
-        // ForgeState.processEventListener('on-loader-message', [message]);
+        ForgeState.loaderMessage(message);
       });
       KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();
@@ -136,12 +162,9 @@ export class ForgeState {
         ForgeState.resourceExplorerTab.show();
 
         TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
-          KotOR.LoadingScreen.main.Hide();
-          setTimeout( () => {
-            KotOR.LoadingScreen.main.loader.style.display = 'none';
-            resolve();
-          }, 500);
+          ForgeState.loaderHide();
           // ScriptEditorTab.InitNWScriptLanguage();
+          resolve();
         });
       });
     });

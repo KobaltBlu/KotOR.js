@@ -6,6 +6,7 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { AsyncLoop } from "../../../../utility/AsyncLoop";
 import * as KotOR from "../../KotOR";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
+import { ForgeState } from "../ForgeState";
 
 export class FileBrowserNode {
   static NODE_ID = 0;
@@ -88,23 +89,23 @@ export class TabResourceExplorerState extends TabState {
   }
 
   static async GenerateResourceList( state: TabResourceExplorerState ){
-    KotOR.LoadingScreen.main.Show('Loading [BIFs]...');
+    ForgeState.loaderMessage('Loading [BIFs]...');
     const bifs      = await TabResourceExplorerState.LoadBifs();
-    KotOR.LoadingScreen.main.Show('Loading [RIMs]...');
+    ForgeState.loaderMessage('Loading [RIMs]...');
     const rims      = await TabResourceExplorerState.LoadRims();
-    KotOR.LoadingScreen.main.Show('Loading [Modules]...');
+    ForgeState.loaderMessage('Loading [Modules]...');
     const modules   = await TabResourceExplorerState.LoadModules();
-    KotOR.LoadingScreen.main.Show('Loading [LIPs]...');
+    ForgeState.loaderMessage('Loading [LIPs]...');
     const lips      = await TabResourceExplorerState.LoadLips();
-    KotOR.LoadingScreen.main.Show('Loading [Textures]...');
+    ForgeState.loaderMessage('Loading [Textures]...');
     const textures  = await TabResourceExplorerState.LoadTextures();
-    KotOR.LoadingScreen.main.Show('Loading [StreamWaves]...');
+    ForgeState.loaderMessage('Loading [StreamWaves]...');
     const waves     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves');   //KOTOR
-    KotOR.LoadingScreen.main.Show('Loading [StreamSounds]...');
+    ForgeState.loaderMessage('Loading [StreamSounds]...');
     const sounds    = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds');  //KOTOR & TSL
-    KotOR.LoadingScreen.main.Show('Loading [StreamMusic]...');
+    ForgeState.loaderMessage('Loading [StreamMusic]...');
     const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
-    KotOR.LoadingScreen.main.Show('Loading [StreamVoice]...');
+    ForgeState.loaderMessage('Loading [StreamVoice]...');
     const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
 
     bifs.sort();
@@ -123,7 +124,7 @@ export class TabResourceExplorerState extends TabState {
       ].filter((node: FileBrowserNode) => (node instanceof FileBrowserNode && node.nodes.length)) 
     );
     state.reload();
-    KotOR.LoadingScreen.main.Hide();
+    ForgeState.loaderHide();
     return TabResourceExplorerState.Resources;
   }
 

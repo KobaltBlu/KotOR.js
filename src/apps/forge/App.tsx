@@ -10,12 +10,17 @@ import { ModalChangeGame } from "./components/modal/ModalChangeGame";
 import { useEffectOnce } from "./helpers/UseEffectOnce";
 import { useApp } from "./context/AppContext";
 import { ModalManager } from "./components/modal/ModalManager";
+import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
 
 export const App = (props: any) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
   const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
+  const [showLoadingScreen] = appContext.showLoadingScreen;
+  const [loadingScreenMessage] = appContext.loadingScreenMessage;
+  const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
+  const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
 
 
   const onUserGrant = () => {
@@ -86,6 +91,7 @@ export const App = (props: any) => {
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
+      <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
     </>
   );
 
