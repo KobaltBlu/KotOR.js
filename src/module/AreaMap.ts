@@ -91,7 +91,7 @@ export class AreaMap {
     const resX = this.mapResX+1;
     const resY = this.mapResY+1;
     this.fogAlphaPixelData = new Uint8Array(resX * resY);
-    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData, resX, resY, THREE.AlphaFormat);
+    this.fogAlphaTexture = new THREE.DataTexture(this.fogAlphaPixelData as any, resX, resY, THREE.AlphaFormat);
     this.fogAlphaTexture.minFilter = THREE.LinearFilter;
     this.fogAlphaTexture.magFilter = THREE.LinearFilter;
     this.fogAlphaTexture.flipY = true;

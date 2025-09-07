@@ -295,7 +295,7 @@ export class AudioPlayerState {
       } as SaveFilePickerOptions ).then( async (handle: FileSystemFileHandle) => {
         if(handle){
           const writable = await handle.createWritable();
-          await writable.write(AudioPlayerState.audioFile.getExportableData() || new Uint8Array(0));
+          await writable.write(AudioPlayerState.audioFile.getExportableData() as any || new Uint8Array(0) as any);
           await writable.close();
           console.log('AudioFile Saved', handle.name);
         }

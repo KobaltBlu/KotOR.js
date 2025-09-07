@@ -214,7 +214,7 @@ export class TabState extends EventListenerModel {
                 try{
                   let saveBuffer = await this.getExportBuffer(currentFile.handle.name.split('.').pop());
                   let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
-                  await ws.write(saveBuffer);
+                  await ws.write(saveBuffer as any);
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
                   resolve(true);
@@ -236,7 +236,7 @@ export class TabState extends EventListenerModel {
                 try{
                   let ws: FileSystemWritableFileStream = await newHandle.createWritable();
                   let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
-                  await ws.write(saveBuffer || new Uint8Array(0));
+                  await ws.write(saveBuffer as any || new Uint8Array(0) as any);
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
                   resolve(true);
@@ -324,7 +324,7 @@ export class TabState extends EventListenerModel {
               currentFile.setPath(newHandle.name);
               let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
               let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-              await ws.write(saveBuffer || new Uint8Array(0));
+              await ws.write(saveBuffer as any || new Uint8Array(0) as any);
               // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
               // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
               this.file = currentFile;

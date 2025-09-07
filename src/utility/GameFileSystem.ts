@@ -155,7 +155,7 @@ export class GameFileSystem {
 
         try{
           let stream = await newFile.createWritable();
-          await stream.write(data);
+          await stream.write(data as any);
           await stream.close();
           resolve(true);
           return;

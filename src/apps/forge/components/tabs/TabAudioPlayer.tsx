@@ -147,7 +147,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       let secondX = (bufferLength * barWidth) - barWidth/2;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData);
+      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
 
       const totalHeight = 64;
       const maxHeight = 64;
