@@ -46,7 +46,7 @@ export class MenuUpgrade extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'upgrade';
-    this.background = '';
+    this.background = '1600x1200back';
     this.voidFill = false;
   }
 

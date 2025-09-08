@@ -21,7 +21,7 @@ export class MenuUpgradeItems extends K1_MenuUpgradeItems {
   constructor(){
     super();
     this.gui_resref = 'upgradeitems_p';
-    this.background = '';
+    this.background = '1600x1200back';
     this.voidFill = false;
   }
 

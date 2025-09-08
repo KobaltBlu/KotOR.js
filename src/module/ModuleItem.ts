@@ -429,6 +429,16 @@ export class ModuleItem extends ModuleObject {
     return 0;
   }
 
+  isUpgradable(){
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      let property = this.properties[i];
+      if(property.upgradeType >= 0){
+        return true;
+      }
+    }
+    return false;
+  }
+
   castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
     if(typeof oTarget != 'undefined'){
       let ammunitiontype = this.baseItem.ammunitionType;
