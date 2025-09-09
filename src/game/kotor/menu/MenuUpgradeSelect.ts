@@ -28,7 +28,7 @@ export class MenuUpgradeSelect extends GameMenu {
   BTN_UPGRADEITEMS: GUIButton;
   BTN_BACK: GUIButton;
 
-  selected: ItemType = 'NONE';
+  selected: ItemType = 'LIGHTSABER';
   btnNormalColor: THREE.Color;
   btnSelectedColor: THREE.Color;
 
@@ -93,7 +93,7 @@ export class MenuUpgradeSelect extends GameMenu {
 
   show() {
     super.show();
-    this.selected = 'NONE';
+    this.select('LIGHTSABER');
   }
   
 }

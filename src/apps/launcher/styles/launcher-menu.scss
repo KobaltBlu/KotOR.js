@@ -12,6 +12,10 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.25);
 }
 
+.discord_widget_open .launcher-menu {
+  width: calc(100% - 280px);
+}
+
 body.lightbox_open .launcher-menu {
   -webkit-app-region: none;
 }

@@ -8,6 +8,7 @@ export interface AppProviderValues {
   selectedProfile: [any, React.Dispatch<any>],
   backgroundImage: [ any,  React.Dispatch<any>],
   videos: [ any[], React.Dispatch<any[]>],
+  discordWidgetOpen: [ boolean, React.Dispatch<React.SetStateAction<boolean>>],
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
@@ -74,6 +75,7 @@ export const AppProvider = (props: any) => {
   const [selectedProfileValue, setSelectedProfile] = useState<any|undefined>();
   const [backgroundImageValue, setBackgroundImage] = useState<string>('');
   const [videos, setVideos] = useState<any[]>([]);
+  const [discordWidgetOpen, setDiscordWidgetOpen] = useState<boolean>(false);
 
   useEffect(() => {
     ConfigClient.set(['Launcher', 'selected_profile'], selectedProfileValue?.key || 'kotor');
@@ -121,6 +123,7 @@ export const AppProvider = (props: any) => {
     selectedProfile: [selectedProfileValue, setSelectedProfile], 
     backgroundImage: [backgroundImageValue, setBackgroundImage],
     videos: [videos, setVideos],
+    discordWidgetOpen: [discordWidgetOpen, setDiscordWidgetOpen],
   };
 
   return (

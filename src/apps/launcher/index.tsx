@@ -12,6 +12,7 @@ import { ApplicationProfile } from "../../utility/ApplicationProfile";
 import { Launcher } from "./context/Launcher";
 import { CommunityTabContent } from "./components/CommunityTabContent";
 import { GOGWidget } from "./components/GOGWidget";
+import DiscordWidget from "./components/DiscordWidget";
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
@@ -32,6 +33,7 @@ const App = function() {
   const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
   const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
   const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
+  const [discordWidgetOpen, setDiscordWidgetOpen] = appContext.discordWidgetOpen;
 
   const [selectedTab, setSelectedTab] = useState('apps');
 
@@ -153,9 +155,14 @@ const App = function() {
     setSelectedTab(tabId);
   }
 
+  const onDiscordToggle = (e: React.MouseEvent<HTMLLIElement>) => {
+    e.preventDefault();
+    setDiscordWidgetOpen(!discordWidgetOpen);
+  }
+
   return (
     <>
-      <div id="container" className={`${appReady ? 'ready': ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
+      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
           <div className="launcher-menu-background"></div>
           <div className="menu-accent"><div className="inner"></div></div>
@@ -164,6 +171,9 @@ const App = function() {
             <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
             <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
             <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
+            <li className="tab-btn discord-toggle" onClick={onDiscordToggle} title={discordWidgetOpen ? "Hide Discord" : "Show Discord"}>
+              <i className={`fab fa-discord ${discordWidgetOpen ? 'active' : ''}`}></i>
+            </li>
           </ul>
           {showMenuTopRight && (
             <div id="launcher-menu-top-right" className="launcher-menu-top-right">
@@ -235,6 +245,7 @@ const App = function() {
             </div>
           </div>)}
         </div>
+        <DiscordWidget serverId="739590575359262792" />
       </div>
     </>
   );
