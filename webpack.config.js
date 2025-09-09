@@ -7,6 +7,10 @@ const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 
+// Read version from package.json
+const packageJson = require('./package.json');
+const version = packageJson.version;
+
 const isProd = (process.env.NODE_ENV?.trim() === 'production');
 console.log('NODE_ENV', process.env.NODE_ENV);
 console.log('isProd', isProd ? 'true' : 'false');
@@ -117,6 +121,10 @@ const libraryConfig = (name, color) => ({
       name,
       reporters: ['fancy'],
     }),
+    new webpack.DefinePlugin({
+      'process.env.VERSION': JSON.stringify(version),
+      'VERSION': JSON.stringify(version),
+    }),
     new CopyPlugin({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
@@ -193,6 +201,10 @@ const launcherConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
+    }),
+    new webpack.DefinePlugin({
+      'process.env.VERSION': JSON.stringify(version),
+      'VERSION': JSON.stringify(version),
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -273,6 +285,10 @@ const gameConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
+    }),
+    new webpack.DefinePlugin({
+      'process.env.VERSION': JSON.stringify(version),
+      'VERSION': JSON.stringify(version),
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -363,6 +379,10 @@ const forgeConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
+    }),
+    new webpack.DefinePlugin({
+      'process.env.VERSION': JSON.stringify(version),
+      'VERSION': JSON.stringify(version),
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
@@ -458,6 +478,10 @@ const debuggerConfig = (name, color) => ({
       color,
       name,
       reporters: ['fancy'],
+    }),
+    new webpack.DefinePlugin({
+      'process.env.VERSION': JSON.stringify(version),
+      'VERSION': JSON.stringify(version),
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',

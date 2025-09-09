@@ -13,6 +13,7 @@ import { Launcher } from "./context/Launcher";
 import { CommunityTabContent } from "./components/CommunityTabContent";
 import { GOGWidget } from "./components/GOGWidget";
 import DiscordWidget from "./components/DiscordWidget";
+
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
@@ -244,6 +245,7 @@ const App = function() {
               </div>
             </div>
           </div>)}
+          <div className="version">{process.env.VERSION}</div>
         </div>
         <DiscordWidget serverId="739590575359262792" />
       </div>

@@ -211,3 +211,13 @@ h3.title:after {
   margin-top: -4px;
   opacity:0.5;
 }
+
+.version {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  font-family: sans-serif;
+  opacity: 0.5;
+  padding: 5px;
+  user-select: none;
+}

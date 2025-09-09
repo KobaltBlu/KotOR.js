@@ -4,6 +4,7 @@ import axios from "axios";
 
 
 export interface AppProviderValues {
+  version: string,
   profileCategories: [any, React.Dispatch<any>]
   selectedProfile: [any, React.Dispatch<any>],
   backgroundImage: [ any,  React.Dispatch<any>],
@@ -119,6 +120,7 @@ export const AppProvider = (props: any) => {
   }, [])
 
   const providerValue: AppProviderValues = {
+    version: process.env.VERSION || 'N/A',
     profileCategories: [profileCategoriesValue, setProfilesCategories], 
     selectedProfile: [selectedProfileValue, setSelectedProfile], 
     backgroundImage: [backgroundImageValue, setBackgroundImage],
