@@ -68,6 +68,11 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
     setLightboxActive(true);
   }
 
+  const onLightboxClose = () => {
+    setLightboxActive(false);
+    lightboxContentRef.current.innerHTML = '';
+  }
+
   return (
     <CommunityProvider>
       <div ref={tabRef} id="community" className={`launcher-content active`}>
@@ -91,7 +96,7 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
         </div>
         <div id="lightbox" className={`lightbox ${lightboxActiveValue ? 'active' : ''}`}>
           <div className="lightbox-content-wrapper">
-            <div className="lightbox-close" onClick={() => { setLightboxActive(false) }}>
+            <div className="lightbox-close" onClick={onLightboxClose}>
               <i className="fa-solid fa-circle-xmark" />
             </div>
             <div className="lightbox-content">
