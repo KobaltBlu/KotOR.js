@@ -7628,7 +7628,10 @@ NWScriptDefK1.Actions = {
     comment: "694. AddAvailableNPCByObject\nThis adds a NPC to the list of available party members using\na game object as the template\nReturns if true if successful, false if the NPC had already\nbeen added or the object specified is invalid\n",
     name: "AddAvailableNPCByObject",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      return GameState.PartyManager.AddAvailableNPCByObject( args[0], args[1] as ModuleCreature ) ? NW_TRUE : NW_FALSE;
+    }
   },
   695:{
     comment: "695. RemoveAvailableNPC\nThis removes a NPC from the list of available party members\nReturns whether it was successful or not\n",
@@ -7655,7 +7658,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string]){
-      GameState.PartyManager.AddAvailableNPCByTemplate( args[0], args[1] );
+      return GameState.PartyManager.AddAvailableNPCByTemplate( args[0], args[1] ) ? NW_TRUE : NW_FALSE;
     }
   },
   698:{

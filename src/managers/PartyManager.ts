@@ -507,42 +507,57 @@ export class PartyManager {
     return pm;
   }
 
+  static async AddNPCById(npcId = 0){
+    if(PartyManager.IsNPCInParty(npcId)){
+      return;
+    }
+
+    const arrayLength = PartyManager.CurrentMembers.push({
+      isLeader: false,
+      memberID: npcId
+    });
+    PartyManager.RebuildPortraitOrder();
+
+    await PartyManager.LoadPartyMember(arrayLength - 1);
+  }
+
   /**
    * Remove the NPC by the ID
-   * @param nID - The ID of the NPC to remove
+   * @param npcId - The ID of the NPC to remove
    * @param leaveInWorld - Whether to leave the NPC in the world
    * @returns void
    */
-  static RemoveNPCById(nID = 0, leaveInWorld = false){
+  static RemoveNPCById(npcId = 0, leaveInWorld = false){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      let mem = PartyManager.CurrentMembers[i];
-      if(mem.memberID == nID){
-
-        //Remove the partymember from the module
-        for(let j = 0; j < PartyManager.party.length; j++){
-          if(PartyManager.party[j].npcId == nID){
-            let creature = PartyManager.party[j];
-            creature.isPM = false;
-            PartyManager.party.splice(j, 1);
-            PartyManager.RebuildPortraitOrder();
-
-            if(!leaveInWorld){
-              creature.destroy();
-            }else{
-              //console.log('RemoveNPCById leaveInWorld', creature);
-              GameState.group.party.remove(creature.model);
-              GameState.group.creatures.add(creature.model);
-              GameState.module.area.attachObject(creature);
-            }
-
-            break;
-          }
-        }
-
-        //Remove the partymember from the current members list
-        PartyManager.CurrentMembers.splice(i, 1);
-        break;
+      const mem = PartyManager.CurrentMembers[i];
+      if(mem.memberID != npcId){
+        continue;
       }
+
+      //Remove the partymember from the module
+      for(let j = 0; j < PartyManager.party.length; j++){
+        if(PartyManager.party[j].npcId == npcId){
+          const creature = PartyManager.party[j];
+          creature.isPM = false;
+          PartyManager.party.splice(j, 1);
+          PartyManager.RebuildPortraitOrder();
+
+          if(!leaveInWorld){
+            creature.destroy();
+          }else{
+            //console.log('RemoveNPCById leaveInWorld', creature);
+            GameState.group.party.remove(creature.model);
+            GameState.group.creatures.add(creature.model);
+            GameState.module.area.attachObject(creature);
+          }
+
+          break;
+        }
+      }
+
+      //Remove the partymember from the current members list
+      PartyManager.CurrentMembers.splice(i, 1);
+      break;
     }
   }
 
@@ -556,7 +571,7 @@ export class PartyManager {
     let portraitId = 0;
     let goodEvil = 50;
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
-      let pm = PartyManager.NPCS[nID].template;
+      const pm = PartyManager.NPCS[nID].template;
       if(pm.RootNode.hasField('PortraitId')){
         portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
         goodEvil = pm.RootNode.getFieldByLabel('GoodEvil').getValue();
@@ -641,13 +656,13 @@ export class PartyManager {
 
   /**
    * Check if the NPC is in the party
-   * @param nID - The ID of the NPC to check if it is in the party
+   * @param npcId - The ID of the NPC to check if it is in the party
    * @returns boolean
    */
-  static IsNPCInParty(nID: number){
+  static IsNPCInParty(npcId: number){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      let cpm = PartyManager.CurrentMembers[i];
-      if(cpm.memberID == nID){
+      const cpm = PartyManager.CurrentMembers[i];
+      if(cpm.memberID == npcId){
         return true;
       }
     }
@@ -656,43 +671,54 @@ export class PartyManager {
 
   /**
    * Set the PartyMember to unavailable
-   * @param nID - The ID of the NPC to set to unavailable
+   * @param npcId - The ID of the NPC to set to unavailable
    * @returns void
    */
-  static RemoveAvailableNPC(nID = 0){
-    PartyManager.NPCS[nID].available = false;
-    PartyManager.NPCS[nID].canSelect = false;
-    PartyManager.NPCS[nID].template;
+  static RemoveAvailableNPC(npcId = 0){
+    PartyManager.NPCS[npcId].available = false;
+    PartyManager.NPCS[npcId].canSelect = false;
+    PartyManager.NPCS[npcId].template;
   }
 
 
   /**
    * Add a creature template to the list of available PartyMembers
-   * @param nID - The ID of the NPC to add to the list of available PartyMembers
+   * @param npcId - The ID of the NPC to add to the list of available PartyMembers
    * @param template - The template to add to the list of available PartyMembers
-   * @returns void
+   * @returns boolean
    */
-  static AddAvailableNPCByTemplate(nID = 0, template: string|GFFObject = ''){
+  static AddAvailableNPCByTemplate(npcId = 0, template: string|GFFObject = ''): boolean {
     if(typeof template === 'string'){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], template);
       if(buffer){
-        PartyManager.NPCS[nID].available = true;
-        PartyManager.NPCS[nID].canSelect = true;
-        PartyManager.NPCS[nID].template = new GFFObject(buffer);
+        PartyManager.NPCS[npcId].available = true;
+        PartyManager.NPCS[npcId].canSelect = true;
+        PartyManager.NPCS[npcId].template = new GFFObject(buffer);
+        return true;
       }else{
         console.error('Failed to load character template');
       }
     }else if(template instanceof GFFObject){
       //We already have the template (From SAVEGAME)
-      PartyManager.NPCS[nID].available = true;
-      PartyManager.NPCS[nID].canSelect = true;
-      PartyManager.NPCS[nID].template = template;
-      return;
+      PartyManager.NPCS[npcId].available = true;
+      PartyManager.NPCS[npcId].canSelect = true;
+      PartyManager.NPCS[npcId].template = template;
+      return true;
     }else{
       console.error('Failed to load character template');
-      return;
     }
+    return false;
+  }
+
+  static AddAvailableNPCByObject(npcId = 0, object: ModuleCreature): boolean {
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+      return false;
+    }
+    PartyManager.NPCS[npcId].available = true;
+    PartyManager.NPCS[npcId].canSelect = true;
+    PartyManager.NPCS[npcId].template = object.save();
+    return true;
   }
 
   /**
@@ -782,7 +808,7 @@ export class PartyManager {
   static Save(){
     const npcs = PartyManager.party.filter( (pm) => pm.npcId >= 0 );
     for(let i = 0; i < npcs.length; i++){
-      let pm = npcs[i];
+      const pm = npcs[i];
       PartyManager.CurrentMembers[i] = {
         isLeader: i == 0 ? true : false,
         memberID: pm.npcId
@@ -881,54 +907,55 @@ export class PartyManager {
    * @param nIdx - The index of the party member to load
    * @returns void
    */
-  static async LoadPartyMember(nIdx = 0){
+  static async LoadPartyMember(nIdx: number = 0){
     const npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     const template = npc.template;
     template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     const partyMember = new ModuleCreature(template);
 
-    let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
-
-    if(nIdx == 0 || nIdx == 1){
-      try{
-        if(!(currentSlot instanceof ModuleCreature)){
-          partyMember.isPM = true;
-          partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
-          partyMember.load();
-          partyMember.clearAllActions();
-          //PartyManager.party[nIdx+1] = partyMember;
-
-          /*if(PartyManager.CurrentMembers[nIdx].isLeader){
-            PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
-          }*/
-          PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
-          PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
-          let spawn = PartyManager.GetSpawnLocation(partyMember);
-          partyMember.position.copy(spawn.position);
-          partyMember.setFacing(spawn.getFacing(), true);
-          
-          const model = await partyMember.loadModel();
-          model.userData.moduleObject = partyMember;
-
-          partyMember.position.copy(spawn.position);
-          partyMember.setFacing(spawn.getFacing(), true);
-          //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-    
-          model.hasCollision = true;
-          GameState.group.party.add( partyMember.container );
-
-          partyMember.onSpawn();
-        }else{
-          const spawn = PartyManager.GetSpawnLocation(currentSlot);
-          currentSlot.position.copy(spawn.position);
-          currentSlot.setFacing(spawn.getFacing(), true);
-          //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
-        }
-      }catch(e){
-        console.error(e);
-      }
-    }else{
+    if(nIdx < 0 || nIdx > 1){
       console.log('LoadPartyMember', 'Wrong index', nIdx, npc, partyMember);
+      return;
+    }
+
+    let currentSlot: ModuleCreature;
+
+    try{
+      if(!(currentSlot instanceof ModuleCreature)){
+        partyMember.isPM = true;
+        partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
+        partyMember.load();
+        partyMember.clearAllActions();
+        //PartyManager.party[nIdx+1] = partyMember;
+
+        /*if(PartyManager.CurrentMembers[nIdx].isLeader){
+          PartyManager.party.unshift(PartyManager.party.splice(nIdx+1, 1)[0]);
+        }*/
+        PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
+        PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
+        let spawn = PartyManager.GetSpawnLocation(partyMember);
+        partyMember.position.copy(spawn.position);
+        partyMember.setFacing(spawn.getFacing(), true);
+        
+        const model = await partyMember.loadModel();
+        model.userData.moduleObject = partyMember;
+
+        partyMember.position.copy(spawn.position);
+        partyMember.setFacing(spawn.getFacing(), true);
+        //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+  
+        model.hasCollision = true;
+        GameState.group.party.add( partyMember.container );
+
+        partyMember.onSpawn();
+      }else{
+        const spawn = PartyManager.GetSpawnLocation(currentSlot);
+        currentSlot.position.copy(spawn.position);
+        currentSlot.setFacing(spawn.getFacing(), true);
+        //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+      }
+    }catch(e){
+      console.error(e);
     }
   }
 
