@@ -465,6 +465,9 @@ export class CollisionData {
     let objectPos = this.object.position;
     let face;
     let room;
+    if(!this.object.area){
+      return;
+    }
     for(let i = 0, il = this.object.area.rooms.length; i < il; i++){
       room = this.object.area.rooms[i];
       if(!room.collisionData.walkmesh){
