@@ -749,6 +749,8 @@ export class GameState implements EngineContext {
       GameState.scene.add( GameState.CursorManager.testPoints );
       console.log('CursorManager: Complete');
 
+      GameState.PartyManager.Initialize();
+
       /**
        * Initialize the MenuManager
        */

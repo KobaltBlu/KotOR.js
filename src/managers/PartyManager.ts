@@ -5,8 +5,6 @@ import * as path from "path";
 import * as THREE from "three";
 import EngineLocation from "../engine/EngineLocation";
 import { CurrentGame } from "../engine/CurrentGame";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { ModuleCreature } from "../module/ModuleCreature";
 import { OdysseyModel3D } from "../three/odyssey";
 import { GFFDataType } from "../enums/resource/GFFDataType";
@@ -21,10 +19,11 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { JournalEntry } from "../engine/JournalEntry";
 import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { FeedbackMessageEntry } from "../engine/FeedbackMessageEntry";
-import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
 import { PazaakCards } from "../enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "../engine/rules/SWPortrait";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { BitWise } from "../utility/BitWise";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -106,10 +105,36 @@ export class PartyManager {
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
 
+  /**
+   * Initialize the party manager
+   * @returns void
+   */
   static Initialize(){
-    GameState.PazaakManager.Initialize();
+    PartyManager.MaxPartyCount = GameState.GameKey == GameEngineType.TSL ? 12 : 9;
+    PartyManager.MaxPuppetCount = GameState.GameKey == GameEngineType.TSL ? 3 : 0;
+
+    for(let i = 0; i < PartyManager.MaxPartyCount; i++){
+      GameState.PartyManager.InfluenceMap.set(i, -1);
+      GameState.PartyManager.NPCS[i] = {
+        available: false,
+        canSelect: false,
+        spawned: false
+      };
+    }
+
+    for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+      GameState.PartyManager.Puppets[i] = {
+        available: false,
+        select: true
+      };
+    }
   }
 
+  /**
+   * Load the party manager
+   * @param gff - The GFF object to load
+   * @returns void
+   */
   static async Load(gff: GFFObject){
     if(!(gff instanceof GFFObject)){
       console.error('PartyManager.Load', gff);
@@ -303,6 +328,11 @@ export class PartyManager {
     
   }
 
+  /**
+   * Export the party manager
+   * @param directory - The directory to export to
+   * @returns void
+   */
   static async Export(directory = ''){
     return new Promise<void>( (resolve, reject) => {
       //Export PARTYTABLE.res
@@ -436,6 +466,11 @@ export class PartyManager {
     });
   }
 
+  /**
+   * Add gold to the party manager
+   * @param amount - The amount of gold to add
+   * @returns void
+   */
   static AddGold(amount: number){
     if(!amount) return;
     this.Gold += amount;
@@ -447,6 +482,11 @@ export class PartyManager {
     GameState.UINotificationManager.EnableUINotificationIconType(amount > 0 ? UIIconTimerType.CREDITS_RECEIVED : UIIconTimerType.CREDITS_RECEIVED);
   }
 
+  /**
+   * Switch the leader of the party at the index
+   * @param index - The index of the party member to switch the leader of
+   * @returns void
+   */
   static SwitchLeaderAtIndex(index: number = 0){
     index = Math.abs(index);
 
@@ -467,6 +507,12 @@ export class PartyManager {
     return pm;
   }
 
+  /**
+   * Remove the NPC by the ID
+   * @param nID - The ID of the NPC to remove
+   * @param leaveInWorld - Whether to leave the NPC in the world
+   * @returns void
+   */
   static RemoveNPCById(nID = 0, leaveInWorld = false){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
       let mem = PartyManager.CurrentMembers[i];
@@ -500,24 +546,35 @@ export class PartyManager {
     }
   }
 
+  /**
+   * Get the portrait by the index
+   * @param nID - The index of the portrait to get
+   * @returns string
+   */
   static GetPortraitByIndex(nID = 0){
 
+    let portraitId = 0;
+    let goodEvil = 50;
     if(PartyManager.NPCS[nID].template instanceof GFFObject){
       let pm = PartyManager.NPCS[nID].template;
       if(pm.RootNode.hasField('PortraitId')){
-        const portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
-        const portrait = GameState.SWRuleSet.portraits[portraitId];
-        const goodEvil = pm.RootNode.getFieldByLabel('GoodEvil').getValue();
-        if(portrait){
-          return portrait.getPortraitGoodEvil(goodEvil);
-        }
+        portraitId = pm.RootNode.getFieldByLabel('PortraitId').getValue();
+        goodEvil = pm.RootNode.getFieldByLabel('GoodEvil').getValue();
       }
     }
 
-    return null;
+    const portrait = GameState.SWRuleSet.portraits[portraitId];
+    if(!portrait){
+      return;
+    }
 
+    return portrait.getPortraitGoodEvil(goodEvil);
   }
 
+  /**
+   * Rebuild the portrait order
+   * @returns void
+   */
   static RebuildPortraitOrder(){
     PartyManager.PortraitOrder = [];
     for(let i = 0; i < PartyManager.party.length; i++){
@@ -525,6 +582,11 @@ export class PartyManager {
     }
   }
 
+  /**
+   * Get the portrait by the resref
+   * @param resref - The resref of the portrait to get
+   * @returns SWPortrait
+   */
   static GetPortraitByResRef( resref = '' ): SWPortrait{
     const portrait2DA = GameState.SWRuleSet.portraits;
     if(!portrait2DA || !portrait2DA.length){
@@ -539,23 +601,49 @@ export class PartyManager {
     return null;
   }
 
+  /**
+   * Add the portrait to the order
+   * @param resref - The resref of the portrait to add
+   * @returns void
+   */
   static AddPortraitToOrder( resref = '' ){
     if(PartyManager.PortraitOrder.indexOf(resref) == -1 )
       PartyManager.PortraitOrder.push( resref.toLowerCase() );
   }
 
+  /**
+   * Set the selectable state of the NPC
+   * @param nID - The ID of the NPC to set the selectable state of
+   * @param state - The state to set the selectable state to
+   * @returns void
+   */
   static SetSelectable(nID = 0, state = false){
     PartyManager.NPCS[nID].canSelect = state ? true : false;
   }
 
+  /**
+   * Check if the NPC is selectable
+   * @param nID - The ID of the NPC to check if it is selectable
+   * @returns boolean
+   */
   static IsSelectable(nID = 0){
-    return PartyManager.NPCS[nID].canSelect ? true : false;
+    return PartyManager.NPCS[nID]?.canSelect ? true : false;
   }
-
+  
+  /**
+   * Check if the NPC is available
+   * @param nID - The ID of the NPC to check if it is available
+   * @returns boolean
+   */
   static IsAvailable(nID = 0){
-    return PartyManager.NPCS[nID].available ? true : false;
+    return PartyManager.NPCS[nID]?.available ? true : false;
   }
 
+  /**
+   * Check if the NPC is in the party
+   * @param nID - The ID of the NPC to check if it is in the party
+   * @returns boolean
+   */
   static IsNPCInParty(nID: number){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
       let cpm = PartyManager.CurrentMembers[i];
@@ -566,7 +654,11 @@ export class PartyManager {
     return false;
   }
 
-  //Set the PartyMember to unavailable
+  /**
+   * Set the PartyMember to unavailable
+   * @param nID - The ID of the NPC to set to unavailable
+   * @returns void
+   */
   static RemoveAvailableNPC(nID = 0){
     PartyManager.NPCS[nID].available = false;
     PartyManager.NPCS[nID].canSelect = false;
@@ -574,7 +666,12 @@ export class PartyManager {
   }
 
 
-  //Add a creature template to the list of available PartyMembers
+  /**
+   * Add a creature template to the list of available PartyMembers
+   * @param nID - The ID of the NPC to add to the list of available PartyMembers
+   * @param template - The template to add to the list of available PartyMembers
+   * @returns void
+   */
   static AddAvailableNPCByTemplate(nID = 0, template: string|GFFObject = ''){
     if(typeof template === 'string'){
       //Load template and merge fields
@@ -598,25 +695,38 @@ export class PartyManager {
     }
   }
 
-  //Add a world creature to the list of Party Members and remove it from the creatures array
+  /**
+   * Add a world creature to the list of Party Members and remove it from the creatures array
+   * @param slot - The slot to add the creature to
+   * @param creature - The creature to add to the list of Party Members
+   * @returns void
+   */
   static AddCreatureToParty(slot = 1, creature: ModuleCreature){
-    if(creature instanceof ModuleCreature){
-      creature.isPM = true;
-      creature.clearAllActions();
-      PartyManager.NPCS[slot].available = true;
-      //PartyManager.NPCS[nID].canSelect = true;
-      PartyManager.NPCS[slot].template = creature.template;
-      PartyManager.NPCS[slot].moduleObject = creature;
-      //Add the creature to the party array
-      PartyManager.party.push(creature);
-      //Check to see if the creature needs to be removed from the creatures array
-      let cIdx = GameState.module.area.creatures.indexOf(creature);
-      if(cIdx > -1){
-        GameState.module.area.creatures.splice(cIdx, 1);
-      }
+    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+      return;
+    }
+
+    creature = creature as ModuleCreature;
+    creature.isPM = true;
+    creature.clearAllActions();
+    PartyManager.NPCS[slot].available = true;
+    //PartyManager.NPCS[nID].canSelect = true;
+    PartyManager.NPCS[slot].template = creature.template;
+    PartyManager.NPCS[slot].moduleObject = creature;
+    //Add the creature to the party array
+    PartyManager.party.push(creature);
+    //Check to see if the creature needs to be removed from the creatures array
+    let cIdx = GameState.module.area.creatures.indexOf(creature);
+    if(cIdx > -1){
+      GameState.module.area.creatures.splice(cIdx, 1);
     }
   }
 
+  /**
+   * Switch the player character
+   * @param npcId - The ID of the NPC to switch the player character to
+   * @returns ModuleCreature
+   */
   static SwitchPlayerCharacter(npcId = 0){
     let partyMember: ModuleCreature;
     if(npcId == -1){
@@ -665,7 +775,10 @@ export class PartyManager {
     }
   }
 
-  //Save the current party member templates
+  /**
+   * Save the current party member templates
+   * @returns void
+   */
   static Save(){
     const npcs = PartyManager.party.filter( (pm) => pm.npcId >= 0 );
     for(let i = 0; i < npcs.length; i++){
@@ -678,43 +791,58 @@ export class PartyManager {
     }
   }
 
-  //Shift the current leader to the end of the party array
+  /**
+   * Shift the current leader to the end of the party array
+   * @returns void
+   */
   static ShiftLeader(){
     PartyManager.party.push( PartyManager.party.shift() );
     PartyManager.UpdateLeader();
   }
 
-  //Update the party members to see if any of them is the current party leader
+  /**
+   * Update the party members to see if any of them is the current party leader
+   * @returns void
+   */
   static UpdateLeader(){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      if(PartyManager.party[0].npcId == PartyManager.CurrentMembers[i].memberID){
-        PartyManager.CurrentMembers[i].isLeader = true;
-      }else{
-        PartyManager.CurrentMembers[i].isLeader = false;
-      }
+      const isLeader = (PartyManager.party[0].npcId == PartyManager.CurrentMembers[i].memberID);
+      PartyManager.CurrentMembers[i].isLeader = isLeader;
     }
 
     PartyManager.RebuildPortraitOrder();
-
   }
 
-  //Check to see if the current leader is a party member and not the player
+  /**
+   * Check to see if the current leader is a party member and not the player
+   * @returns boolean
+   */
   static IsPartyMemberLeader(){
-    if(PartyManager.party[0].npcId >= 0){
-      return true;
-    }
-    return false;
+    return (PartyManager.party[0].npcId >= 0);
   }
 
-  //Is the player character the leader of the party
+  /**
+   * Check to see if the player character is the leader of the party
+   * @returns boolean
+   */
   static IsPlayerPartyLeader(){
     return !PartyManager.IsPartyMemberLeader();
   }
 
+  /**
+   * Get the party member by the NPC ID
+   * @param npcId - The NPC ID
+   * @returns PartyMember
+   */
   static GetPMByNPCId(npcId: number = -1){
     return PartyManager.party.find( (obj) => obj.npcId == npcId);
   }
 
+  /**
+   * Make the player character the leader of the party
+   * @param swapWorldPositions - Whether to swap the world positions of the player and the party leader
+   * @returns void
+   */
   static MakePlayerLeader(swapWorldPositions: boolean = true){
     const idx = PartyManager.party.indexOf(PartyManager.Player);
     if(idx <= 0){ return; }
@@ -729,7 +857,11 @@ export class PartyManager {
     }
   }
 
-  //Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
+  /**
+   * Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
+   * @param creature - The creature to get the index of
+   * @returns number
+   */
   static GetCreatureStartingPartyIndex(creature: ModuleCreature){
 
     if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
@@ -744,25 +876,16 @@ export class PartyManager {
 
   }
 
-  //Get the creatures reference in the CurrentMembers array
-  // static GetCreatureMemberDetails( creature: ModuleObject ){
-  //   if(creature instanceof ModulePlayer){
-  //     return undefined;
-  //   }
-
-  //   if(creature instanceof ModuleCreature){
-  //     return PartyManager.CurrentMembers[ PartyManager.CurrentMembers.indexOf(creature.npcId) ]
-  //   }
-
-  //   return undefined;
-  // }
-
-  //Load the PartyMember by it's index in the CurrentMembers array.
+  /**
+   * Load the PartyMember by it's index in the CurrentMembers array.
+   * @param nIdx - The index of the party member to load
+   * @returns void
+   */
   static async LoadPartyMember(nIdx = 0){
-    let npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
+    const npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
     const template = npc.template;
     template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
-    let partyMember = new ModuleCreature(template);
+    const partyMember = new ModuleCreature(template);
 
     let currentSlot: ModuleCreature;//PartyManager.party[nIdx+1];
 
@@ -796,7 +919,7 @@ export class PartyManager {
 
           partyMember.onSpawn();
         }else{
-          let spawn = PartyManager.GetSpawnLocation(currentSlot);
+          const spawn = PartyManager.GetSpawnLocation(currentSlot);
           currentSlot.position.copy(spawn.position);
           currentSlot.setFacing(spawn.getFacing(), true);
           //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
@@ -809,7 +932,12 @@ export class PartyManager {
     }
   }
 
-  //Used in the TSL PartySelection menu to load creature for the 3D preview of the selected party member
+  /**
+   * Used in the TSL PartySelection menu to load creature for the 3D preview of the selected party member
+   * @param npcId - The NPC ID
+   * @param onLoad - The function to call when the party member is loaded
+   * @returns void
+   */
   static LoadPartyMemberCreature(npcId = 0, onLoad?: Function){
     const npc = PartyManager.NPCS[npcId];
     if(!npc){
@@ -841,8 +969,13 @@ export class PartyManager {
     
   }
 
+  /**
+   * Get the spawn location of the creature
+   * @param creature - The creature to get the spawn location of
+   * @returns EngineLocation
+   */
   static GetSpawnLocation( creature: ModuleCreature ){
-    if( creature instanceof ModuleCreature ){
+    if( BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
       if( GameState.isLoadingSave ){
         return new EngineLocation(
           creature.position.x, 
@@ -930,10 +1063,20 @@ export class PartyManager {
 
   static #tmpFollowPositionTarget = new THREE.Vector3();
   static #tmpFollowPosition = new THREE.Vector3();
+  /**
+   * Get the follow position of the creature
+   * @param creature - The creature to get the follow position of
+   * @returns THREE.Vector3
+   */
   static GetFollowPosition(creature: ModuleCreature){
     return this.GetFollowPositionAtIndex(PartyManager.party.indexOf(creature));
   }
 
+  /**
+   * Get the follow position of the creature at the index
+   * @param idx - The index of the party member to get the follow position of
+   * @returns THREE.Vector3
+   */
   static GetFollowPositionAtIndex(idx: number = 1){
     const leader = PartyManager.party[0];
     const creature = PartyManager.party[idx];
@@ -954,17 +1097,32 @@ export class PartyManager {
       this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, creature.getHitDistance());
   }
 
+  /**
+   * Give XP to the player
+   * @param nXP - The amount of XP to give
+   * @returns void
+   */
   static GiveXP(nXP = 0){
     this.Player.experience += nXP;
     GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
   }
 
+  /**
+   * Export the party member template
+   * @param index - The index of the party member to export
+   * @param template - The template to export
+   * @returns void
+   */
   static async ExportPartyMemberTemplate( index = 0, template: GFFObject ){
     if(!(template instanceof GFFObject)){ return; }
     template.removeFieldByLabel('TemplateResRef');
     await template.export( path.join( CurrentGame.gameinprogress_dir, 'AVAILNPC'+index+'.utc'));
   }
 
+  /**
+   * Export the party member templates
+   * @returns void
+   */
   static async ExportPartyMemberTemplates(){
     return new Promise<void>( async (resolve, reject) => {
       let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
@@ -987,12 +1145,21 @@ export class PartyManager {
     });
   }
 
+  /**
+   * Export the player character
+   * @returns void
+   */
   static async ExportPlayerCharacter(){
     if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
     const gff = GameState.PartyManager.ActualPlayerTemplate;
     await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));
   }
 
+  /**
+   * Save the party member
+   * @param npcId - The NPC ID
+   * @returns void
+   */
   public static async SavePartyMember(npcId: number = 0){
     const pm = PartyManager.party.find( (pm) => pm.npcId == npcId );
     if(pm) pm.save();
@@ -1003,6 +1170,10 @@ export class PartyManager {
     }
   }
 
+  /**
+   * Generate the player template
+   * @returns GFFObject
+   */
   public static GeneratePlayerTemplate(): GFFObject {
     let pTPL = new GFFObject();
 
@@ -1101,6 +1272,12 @@ export class PartyManager {
     return PartyManager.PlayerTemplate;
   }
 
+  /**
+   * Add an event listener
+   * @param type - The type of event to add
+   * @param cb - The function to call when the event is triggered
+   * @returns void
+   */
   static AddEventListener(type: PartyManagerEvent, cb: Function){
     if(typeof cb !== 'function'){ return; }
 
@@ -1114,6 +1291,12 @@ export class PartyManager {
     }
   }
 
+  /**
+   * Remove an event listener
+   * @param type - The type of event to remove
+   * @param cb - The function to remove
+   * @returns void
+   */
   static RemoveEventListener(type: PartyManagerEvent, cb: Function){
     if(!PartyManager.#eventListeners.has(type)){ return; }
 
@@ -1124,6 +1307,12 @@ export class PartyManager {
     }
   }
 
+  /**
+   * Process an event listener
+   * @param type - The type of event to process
+   * @param args - The arguments to pass to the event listener
+   * @returns void
+   */
   static ProcessEventListener(type: PartyManagerEvent, args: any[]){
     const events: Function[] = PartyManager.#eventListeners.get(type) || [];
     for(let i = 0; i < events.length; i++){
