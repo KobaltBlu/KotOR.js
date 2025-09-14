@@ -88,12 +88,6 @@ export class MenuPartySelection extends K1_MenuPartySelection {
   default11: string;
   char: any;
   LBL_3D_VIEW: any;
-  lbl_count: any;
-  // ignoreUnescapable: boolean;
-  // forceNPC1: number;
-  // forceNPC2: number;
-  // onCloseScript: any;
-  // selectedNPC: number;
   cgmain_light: OdysseyModel;
 
   constructor(){
@@ -124,7 +118,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(0)){
           this.selectedNPC = 0;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -132,7 +126,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(1)){
           this.selectedNPC = 1;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -140,7 +134,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(2)){
           this.selectedNPC = 2;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -148,7 +142,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(3)){
           this.selectedNPC = 3;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -156,7 +150,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(4)){
           this.selectedNPC = 4;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -164,7 +158,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(5)){
           this.selectedNPC = 5;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -172,7 +166,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(6)){
           this.selectedNPC = 6;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -180,7 +174,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(7)){
           this.selectedNPC = 7;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -188,7 +182,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(8)){
           this.selectedNPC = 8;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -196,7 +190,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(9)){
           this.selectedNPC = 9;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -204,7 +198,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(10)){
           this.selectedNPC = 10;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -212,7 +206,7 @@ export class MenuPartySelection extends K1_MenuPartySelection {
         e.stopPropagation();
         if(GameState.PartyManager.IsAvailable(11)){
           this.selectedNPC = 11;
-          this.UpdateSelection();
+          this.updateSelection();
         }
       });
 
@@ -242,13 +236,13 @@ export class MenuPartySelection extends K1_MenuPartySelection {
 
         //Area Unescapable disables party selection as well as transit
         if(!GameState.module.area.unescapable || this.ignoreUnescapable){
-          if(this.npcInParty(this.selectedNPC)){
+          if(GameState.PartyManager.IsNPCInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
-            this.UpdateSelection();
+            this.updateSelection();
           }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
             this.addToParty(this.selectedNPC);
           }
-          this.UpdateCount();
+          this.updateCount();
         }
 
       });
@@ -291,77 +285,20 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     });
   }
 
-  addToParty(selected: number) {
-    let idx = GameState.PartyManager.CurrentMembers.push({
-      isLeader: false,
-      memberID: selected
-    }) - 1;
-    GameState.PartyManager.LoadPartyMember(idx).then(() => {
-      this.UpdateSelection();
-      if (!this.npcInParty(selected)) {
-        GameState.PartyManager.RemoveNPCById(selected);
-      }
-      this.UpdateCount();
-    });
-    this.UpdateSelection();
-  }
-
-  npcInParty(nID: number) {
-    for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
-      let cpm = GameState.PartyManager.CurrentMembers[i];
-      if (cpm.memberID == nID) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  indexOfSelectedNPC(nID: number) {
-    for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
-      let cpm = GameState.PartyManager.CurrentMembers[i];
-      if (cpm.memberID == nID) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  UpdateSelection() {
-    if (this.npcInParty(this.selectedNPC)) {
-      this.BTN_ACCEPT.setText('Remove');
-    } else {
-      this.BTN_ACCEPT.setText('Add');
-    }
-    if (!(this.char instanceof ModuleCreature) || this.char instanceof ModuleCreature && this.char.selectedNPC != this.selectedNPC) {
-      GameState.PartyManager.LoadPartyMemberCreature(this.selectedNPC, (creature: ModuleCreature) => {
-        if (creature instanceof ModuleCreature) {
-          if (this.char instanceof ModuleCreature) {
-            this.char.destroy();
-          }
-          this.char = creature;
-          creature.selectedNPC = this.selectedNPC;
-          creature.position.set(0, 0, 0);
-          creature.model.rotation.z = -Math.PI / 2;
-          this.LBL_3D_VIEW.group.creatures.add(creature.model);
-          this.char.LoadModel();
-        }
-      });
-    }
-  }
-
-  GetCurrentMemberCount() {
-    return GameState.PartyManager.CurrentMembers.length;
-  }
-
-  UpdateCount() {
-    this.lbl_count.setText((GameState.PartyManager.MaxNPCCount - GameState.PartyManager.CurrentMembers.length).toString());
-  }
-
+  /**
+   * Hides the menu.
+   */
   hide() {
     super.hide();
     this.ignoreUnescapable = false;
   }
 
+  /**
+   * Shows the menu.
+   * @param scriptName - The name of the script to run on close.
+   * @param forceNPC1 - The ID of the first NPC to force.
+   * @param forceNPC2 - The ID of the second NPC to force.
+   */
   async show(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
     super.show();
     this.forceNPC1 = forceNPC1;
@@ -373,40 +310,22 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     if (this.ignoreUnescapable) {
       // this.manager.MenuTop.toggleNavUI(false);
     }
-    for (let i = 0; i < 12; i++) {
-      const LBL_CHAR = this.getControlByName('LBL_CHAR' + i);
-      const LBL_NA = this.getControlByName('LBL_NA' + i);
-      LBL_CHAR.hide();
-      LBL_NA.show();
-      if (GameState.PartyManager.IsAvailable(i)) {
-        LBL_NA.hide();
-        let portrait = GameState.PartyManager.GetPortraitByIndex(i);
-        if (LBL_NA.getFillTextureName() != portrait) {
-          LBL_CHAR.setFillTextureName(portrait);
-          TextureLoader.Load(portrait).then((texture: OdysseyTexture) => {
-            LBL_CHAR.setFillTexture(texture);
-            if (this.isSelectable(i)) {
-              (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 1;
-            } else {
-              (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 0.5;
-            }
-          });
-        } else {
-          if (this.isSelectable(i)) {
-            (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 1;
-          } else {
-            (LBL_CHAR.getFill().material as any).uniforms.opacity.value = 0.5;
-          }
-        }
-        LBL_CHAR.show();
-      }
-    }
+
+    this.selectedNPC = this.forceNPC1 > -1 ? this.forceNPC1 : this.forceNPC2 > -1 ? this.forceNPC2 : -1;
+    this.updateSelection();
+    this.updateCount();
+    await this.initPortraits();
+    this.updateSelection();
     TextureLoader.LoadQueue();
     if (scriptName != '' || scriptName != null) {
       this.onCloseScript = NWScript.Load(scriptName);
     }
   }
 
+  /**
+   * Updates the menu.
+   * @param delta - The delta time.
+   */
   update(delta: number) {
     super.update(delta);
     if (!this.bVisible)
@@ -423,20 +342,25 @@ export class MenuPartySelection extends K1_MenuPartySelection {
     }
   }
 
-  canClose() {
-    if (this.forceNPC1 > -1 && this.forceNPC2 > -1 && this.GetCurrentMemberCount() == 2) {
-      return false;
-    } else if ((this.forceNPC1 > -1 || this.forceNPC2 > -1) && this.GetCurrentMemberCount() >= 1) {
-      return false;
-    }
-    return true;
-  }
-
-  isSelectable(index: number) {
-    if (this.forceNPC1 > -1 || this.forceNPC2 > -1) {
-      return (this.forceNPC1 > -1 && this.forceNPC1 == index || this.forceNPC2 > -1 && this.forceNPC2 == index) && GameState.PartyManager.IsSelectable(index);
-    } else {
-      return GameState.PartyManager.IsSelectable(index);
+  /**
+   * Updates the selection of the NPC.
+   */
+  updateSelection() {
+    super.updateSelection();
+    if (!(this.char instanceof ModuleCreature) || this.char instanceof ModuleCreature && this.char.selectedNPC != this.selectedNPC) {
+      GameState.PartyManager.LoadPartyMemberCreature(this.selectedNPC, (creature: ModuleCreature) => {
+        if (creature instanceof ModuleCreature) {
+          if (this.char instanceof ModuleCreature) {
+            this.char.destroy();
+          }
+          this.char = creature;
+          creature.selectedNPC = this.selectedNPC;
+          creature.position.set(0, 0, 0);
+          creature.model.rotation.z = -Math.PI / 2;
+          this.LBL_3D_VIEW.group.creatures.add(creature.model);
+          this.char.LoadModel();
+        }
+      });
     }
   }
   

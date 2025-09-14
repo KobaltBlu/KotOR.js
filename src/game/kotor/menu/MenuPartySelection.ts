@@ -187,11 +187,11 @@ export class MenuPartySelection extends GameMenu {
         if(!GameState.module.area.unescapable || this.ignoreUnescapable){
           if(GameState.PartyManager.IsNPCInParty(this.selectedNPC)){
             GameState.PartyManager.RemoveNPCById(this.selectedNPC);
-            this.UpdateSelection();
+            this.updateSelection();
           }else if(this.isSelectable(this.selectedNPC) && GameState.PartyManager.CurrentMembers.length < GameState.PartyManager.MaxNPCCount){
             this.addToParty(this.selectedNPC);
           }
-          this.UpdateCount();
+          this.updateCount();
         }
 
       });
@@ -199,24 +199,86 @@ export class MenuPartySelection extends GameMenu {
     });
   }
 
+  /**
+   * Hides the menu.
+   */
+  hide() {
+    super.hide();
+    this.ignoreUnescapable = false;
+  }
+
+  /**
+   * Opens the menu.
+   * @param scriptName - The name of the script to run on close.
+   * @param forceNPC1 - The ID of the first NPC to force.
+   * @param forceNPC2 - The ID of the second NPC to force.
+   */
+  open(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
+    this.scriptName = scriptName;
+    this.forceNPC1 = forceNPC1;
+    this.forceNPC2 = forceNPC2;
+    super.open();
+  }
+
+  /**
+   * Shows the menu.
+   */
+  async show() {
+    super.show();
+    if (this.forceNPC1 > -1)
+      await this.addToParty(this.forceNPC1);
+    if (this.forceNPC2 > -1)
+      await this.addToParty(this.forceNPC2);
+
+    this.selectedNPC = this.forceNPC1 > -1 ? this.forceNPC1 : this.forceNPC2 > -1 ? this.forceNPC2 : -1;
+    this.updateSelection();
+    this.updateCount();
+
+    await this.initPortraits();
+    this.updateSelection();
+    TextureLoader.LoadQueue();
+    this.onCloseScript = undefined;
+    if (this.scriptName != '' || this.scriptName != null) {
+      this.onCloseScript = NWScript.Load(this.scriptName);
+    }
+  }
+
+  /**
+   * Selects the NPC.
+   * @param npcId - The ID of the NPC.
+   */
   selectNPC(npcId: number = -1){
     if(npcId < 0 || npcId >= GameState.PartyManager.MaxNPCCount) return;
     // if(PartyManager.CurrentMembers.length >= 2) return;
     this.selectedNPC = npcId;
-    this.UpdateSelection();
+    this.updateSelection();
   }
 
+  /**
+   * Checks if the NPC is required.
+   * @param npcId - The ID of the NPC.
+   * @returns boolean
+   */
   isNPCRequired(npcId: number = -1){
     if(npcId < 0) return;
     return (this.forceNPC1 == npcId || this.forceNPC2 == npcId);
   }
 
+  /**
+   * Adds the NPC to the party.
+   * @param npcId - The ID of the NPC.
+   */
   async addToParty(npcId: number) {
     await GameState.PartyManager.AddNPCById(npcId);
-    this.UpdateCount();
-    this.UpdateSelection();
+    this.updateCount();
+    this.updateSelection();
   }
 
+  /**
+   * Gets the index of the selected NPC.
+   * @param npcId - The ID of the NPC.
+   * @returns number
+   */
   indexOfSelectedNPC(npcId: number) {
     for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
       let cpm = GameState.PartyManager.CurrentMembers[i];
@@ -227,7 +289,10 @@ export class MenuPartySelection extends GameMenu {
     return -1;
   }
 
-  UpdateSelection() {
+  /**
+   * Updates the selection of the NPC.
+   */
+  updateSelection() {
     for (let i = 0; i < GameState.PartyManager.MaxNPCCount; i++) {
       let btn = this.getControlByName('BTN_NPC' + i);
       if (GameState.PartyManager.IsNPCInParty(i)) {
@@ -268,36 +333,22 @@ export class MenuPartySelection extends GameMenu {
     }
   }
 
-  GetCurrentMemberCount() {
+  /**
+   * Gets the count of the current members.
+   * @returns number
+   */
+  getCurrentMemberCount() {
     return GameState.PartyManager.CurrentMembers.length;
   }
 
-  UpdateCount() {
+  /**
+   * Updates the count of the current members.
+   */
+  updateCount() {
     this.LBL_COUNT.setText((GameState.PartyManager.MaxNPCCount - GameState.PartyManager.CurrentMembers.length).toString());
   }
 
-  hide() {
-    super.hide();
-    this.ignoreUnescapable = false;
-  }
-
-  open(scriptName = '', forceNPC1 = -1, forceNPC2 = -1) {
-    this.scriptName = scriptName;
-    this.forceNPC1 = forceNPC1;
-    this.forceNPC2 = forceNPC2;
-    super.open();
-  }
-
-  async show() {
-    super.show();
-    if (this.forceNPC1 > -1)
-      await this.addToParty(this.forceNPC1);
-    if (this.forceNPC2 > -1)
-      await this.addToParty(this.forceNPC2);
-
-    this.selectedNPC = this.forceNPC1 > -1 ? this.forceNPC1 : this.forceNPC2 > -1 ? this.forceNPC2 : -1;
-    this.UpdateSelection();
-
+  async initPortraits() {
     let LBL_CHAR: GUIControl;
     let LBL_NA: GUIControl;
     for (let i = 0; i < GameState.PartyManager.MaxNPCCount; i++) {
@@ -305,44 +356,41 @@ export class MenuPartySelection extends GameMenu {
       LBL_NA = this.getControlByName('LBL_NA' + i);
       LBL_CHAR.hide();
       LBL_NA.show();
-      if (GameState.PartyManager.IsAvailable(i)) {
-        LBL_NA.hide();
-        let portrait = GameState.PartyManager.GetPortraitByIndex(i);
-        if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
-          LBL_CHAR.setFillTextureName(portrait).then( (texture: OdysseyTexture) => {
-            LBL_CHAR.setFillTexture(texture);
-            if (this.isSelectable(i)) {
-              (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
-            } else {
-              (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
-            }
-          });
-        } else {
-          if (this.isSelectable(i)) {
-            (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 1;
-          } else {
-            (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = 0.5;
-          }
-        }
-        LBL_CHAR.show();
+      if (!GameState.PartyManager.IsAvailable(i)) {
+        continue;
       }
-      this.UpdateSelection();
-    }
-    TextureLoader.LoadQueue();
-    this.onCloseScript = undefined;
-    if (this.scriptName != '' || this.scriptName != null) {
-      this.onCloseScript = NWScript.Load(this.scriptName);
+      LBL_NA.hide();
+      let portrait = GameState.PartyManager.GetPortraitByIndex(i);
+      if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
+        LBL_CHAR.setFillTextureName(portrait);
+        const texture = await TextureLoader.Load(portrait);
+        if(texture)LBL_CHAR.setFillTexture(texture);
+      }
+      (LBL_CHAR.getFill().material as THREE.ShaderMaterial).uniforms.opacity.value = this.isSelectable(i) ? 1 : 0.5;
+      LBL_CHAR.show();
     }
   }
 
+  /**
+   * Checks if the menu can remove the selected NPC.
+   * @returns boolean
+   */
   canRemove(npcId: number = -1): boolean {
     return GameState.PartyManager.IsNPCInParty(npcId) && !this.isNPCRequired(npcId);
   }
 
+  /**
+   * Checks if the menu can add the selected NPC.
+   * @returns boolean
+   */
   canAdd(npcId: number = -1): boolean {
     return !GameState.PartyManager.IsNPCInParty(npcId) && !this.isNPCRequired(npcId) && this.isSelectable(npcId);
   }
 
+  /**
+   * Checks if the menu can be closed.
+   * @returns boolean
+   */
   canClose() {
     if (this.forceNPC1 > -1 || this.forceNPC2 > -1) {
       const force1 = this.forceNPC1 == -1 || ( !!GameState.PartyManager.CurrentMembers.find( (cm) => cm.memberID == this.forceNPC1 ) );
@@ -352,19 +400,31 @@ export class MenuPartySelection extends GameMenu {
     return true;
   }
 
+  /**
+   * Checks if the menu can accept the selected NPC.
+   * @returns boolean
+   */
   canAccept() {
-    if (this.forceNPC1 > -1 && this.forceNPC2 > -1 && this.GetCurrentMemberCount() < 2) {
+    if (this.forceNPC1 > -1 && this.forceNPC2 > -1 && this.getCurrentMemberCount() < 2) {
       return false;
-    } else if ((this.forceNPC1 > -1 || this.forceNPC2 > -1) && this.GetCurrentMemberCount() < 1) {
+    } else if ((this.forceNPC1 > -1 || this.forceNPC2 > -1) && this.getCurrentMemberCount() < 1) {
       return false;
     }
     return true;
   }
 
+  /**
+   * Checks if the menu can add the selected NPC.
+   * @returns boolean
+   */
   isAvailable(npcId: number = -1): boolean {
     return GameState.PartyManager.IsAvailable(npcId);
   }
 
+  /**
+   * Checks if the menu can select the selected NPC.
+   * @returns boolean
+   */
   isSelectable(npcId: number = 0) {
     return GameState.PartyManager.IsSelectable(npcId);
   }
