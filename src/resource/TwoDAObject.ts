@@ -24,6 +24,11 @@ export class TwoDAObject {
   columns: string[];
   rows: any = {};
 
+  /**
+   * Constructor for the TwoDAObject class
+   * @param file - The file to read from
+   * @param onComplete - The function to call when the 2DA object is loaded
+   */
   constructor(file: Uint8Array|string|undefined = undefined, onComplete?: Function){
     this.file = file;
     this.columns = ["__rowlabel"];
@@ -57,6 +62,10 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Read the 2DA object from a binary reader
+   * @param br - The binary reader to read from
+   */
   read2DA(br: BinaryReader): void {
     this.FileType = br.readChars(4);
     this.FileVersion = br.readChars(4);
@@ -135,6 +144,10 @@ export class TwoDAObject {
 
   }
 
+  /**
+   * Convert the 2DA object to a buffer
+   * @returns The buffer
+   */
   toExportBuffer(): Uint8Array {
     try{
       const bw = new BinaryWriter();
@@ -191,6 +204,10 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Convert the 2DA object to a CSV string
+   * @returns The CSV string
+   */
   toCSV(): string {
     let csv = '';
     for(let i = 0; i < this.columns.length; i++){
@@ -211,6 +228,11 @@ export class TwoDAObject {
     return csv;
   }
 
+  /**
+   * Get a row by index
+   * @param index - The index to get the row by
+   * @returns The row
+   */
   getRowByIndex(index = -1){
     for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['__index'] == index){
@@ -219,6 +241,11 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Get a row by ID
+   * @param index - The ID to get the row by
+   * @returns The row
+   */
   getByID(index = -1){
     for (let key of Object.keys(this.rows)) {
       if(this.rows[key]['__rowlabel'] == index){
@@ -227,6 +254,12 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Get a row by column and value
+   * @param column - The column to get the row by
+   * @param value - The value to get the row by
+   * @returns The row
+   */
   getRowByColumnAndValue(column: string = '', value: any = undefined){
     for (let key of Object.keys(this.rows)) {
       if(this.rows[key][column] == value){
@@ -235,6 +268,11 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Parse a cell value
+   * @param cell - The cell value to parse
+   * @returns The parsed value
+   */
   static cellParser(cell: any){
     if(cell === '****'){
       return null;
@@ -243,6 +281,13 @@ export class TwoDAObject {
     }
   }
 
+  /**
+   * Normalize a value based on the datatype
+   * @param value - The value to normalize
+   * @param datatype - The datatype to normalize to
+   * @param default_value - The default value to return if the value is null
+   * @returns The normalized value
+   */
   static normalizeValue(value: any, datatype: 'number'|'string'|'boolean', default_value: any){
     switch(datatype){
       case 'number':
