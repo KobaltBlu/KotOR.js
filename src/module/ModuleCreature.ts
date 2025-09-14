@@ -2251,14 +2251,16 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1){
-    if(this.scripts.onDialog instanceof NWScriptInstance){
-      let instance = this.scripts.onDialog.nwscript.newInstance();
-      instance.listenPatternNumber = listenPatternNumber;
-      instance.listenPatternSpeaker = oSpeaker;
-      instance.run(this, 0);
-      return true;
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined){
+    if(!(this.scripts.onDialog instanceof NWScriptInstance)){
+      return false;
     }
+    const instance = this.scripts.onDialog.nwscript.newInstance();
+    instance.listenPatternNumber = listenPatternNumber;
+    instance.listenPatternSpeaker = oSpeaker;
+    instance.conversation = conversation;
+    instance.run(this, 0);
+    return true;
   }
 
   onAttacked(){

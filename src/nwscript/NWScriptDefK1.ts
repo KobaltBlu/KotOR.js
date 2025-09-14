@@ -158,7 +158,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
       if( args[0] ){
-        let scriptInstance = GameState.NWScript.Load( args[0], undefined, this );
+        const scriptInstance = GameState.NWScript.Load( args[0], undefined, this );
         if(scriptInstance){
           this.executeScript( scriptInstance, this, args );
         }else{
@@ -3267,12 +3267,10 @@ NWScriptDefK1.Actions = {
       if(args[0] != ''){
         const dlg = DLGObject.FromResRef(args[0]);
         if(!dlg){ return NW_FALSE; }
-
         GameState.MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
         return NW_TRUE;
       }else if(this.conversation){
         GameState.MenuManager.InGameDialog.StartConversation(this.conversation, this.caller, args[1] as any);
-        this.conversation = undefined;
         return NW_TRUE;
       }else if(this.caller.conversation){
         GameState.MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);

@@ -1,4 +1,4 @@
-import { GameEngineType } from "../enums/engine/GameEngineType";
+import type EngineLocation from "../engine/EngineLocation";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { DebuggerState } from "../enums/server/DebuggerState";
@@ -7,17 +7,13 @@ import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
 import type { EventTimedEvent } from "../events";
 import { GameState } from "../GameState";
 import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
-// import type { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-// import { ModuleObjectManager } from "../managers";
 import type { ModuleObject } from "../module";
 import type { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "../talents";
 import type { NWScript } from "./NWScript";
-// import { NWScriptDefK1 } from "./NWScriptDefK1";
-// import { NWScriptDefK2 } from "./NWScriptDefK2";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
 import type { NWScriptStackVariable } from "./NWScriptStackVariable";
@@ -442,12 +438,23 @@ export class NWScriptInstance {
     instance.lastPerceived = parentInstance.lastPerceived;
     instance.listenPatternNumber = parentInstance.listenPatternNumber;
     instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
+    instance.conversation = parentInstance.conversation;
+    instance.lastSpeaker = parentInstance.lastSpeaker;
+    instance.lastSpellCaster = parentInstance.lastSpellCaster;
+    instance.lastSpellAttacker = parentInstance.lastSpellAttacker;
+    instance.lastSpell = parentInstance.lastSpell;
+    instance.lastSpellHarmful = parentInstance.lastSpellHarmful;
+    instance.healTarget = parentInstance.healTarget;
+    instance.mgFollower = parentInstance.mgFollower;
+    instance.mgObstacle = parentInstance.mgObstacle;
+    instance.mgBullet = parentInstance.mgBullet;
     instance.talent = parentInstance.talent;
-    instance.isStoreState = true;
+    instance.enteringObject = parentInstance.enteringObject;
+    instance.exitingObject = parentInstance.exitingObject;
     return instance.run( args[1], args[2] );
   }
 
-  locationCompare(loc1: any, loc2: any){
+  locationCompare(loc1: EngineLocation, loc2: EngineLocation){
     return loc1.position.x == loc2.position.x && loc1.position.y == loc2.position.y && loc1.position.z == loc2.position.z && loc1.facing == loc2.facing;
   }
 

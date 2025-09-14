@@ -1088,8 +1088,9 @@ export class ModuleObject {
     //stub
   }
 
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1){
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined): boolean {
     //stub
+    return false;
   }
 
   onAttacked(){
