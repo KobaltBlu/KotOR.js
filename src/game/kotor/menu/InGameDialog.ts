@@ -65,12 +65,12 @@ export class InGameDialog extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_MESSAGE.setText('');
+      this.LBL_MESSAGE.setTextColor(this.LBL_MESSAGE.defaultColor.r, this.LBL_MESSAGE.defaultColor.g, this.LBL_MESSAGE.defaultColor.b);
 
       this.LB_REPLIES.extent.left = -(GameState.ResolutionManager.getViewportWidth()/2) + this.LB_REPLIES.extent.width/2 + 16;
       this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
-      this.LB_REPLIES.padding = 5;
 
       this.barHeight = 100;
 
