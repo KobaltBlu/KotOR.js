@@ -230,17 +230,22 @@ export class MenuPartySelection extends GameMenu {
     if (this.forceNPC2 > -1)
       await this.addToParty(this.forceNPC2);
 
+    const selectionRequired = this.forceNPC1 > -1 || this.forceNPC2 > -1;
+
     this.selectedNPC = this.forceNPC1 > -1 ? this.forceNPC1 : this.forceNPC2 > -1 ? this.forceNPC2 : -1;
     this.updateSelection();
     this.updateCount();
 
     await this.initPortraits();
     this.updateSelection();
-    TextureLoader.LoadQueue();
-    this.onCloseScript = undefined;
-    if (this.scriptName != '' || this.scriptName != null) {
-      this.onCloseScript = NWScript.Load(this.scriptName);
+    if(selectionRequired){
+      this.BTN_BACK.hide();
+    }else{
+      this.BTN_BACK.show();
     }
+    TextureLoader.LoadQueue();
+    this.onCloseScript = (this.scriptName != '' || this.scriptName != null) ? 
+      NWScript.Load(this.scriptName) : undefined;
   }
 
   /**
@@ -260,7 +265,7 @@ export class MenuPartySelection extends GameMenu {
    * @returns boolean
    */
   isNPCRequired(npcId: number = -1){
-    if(npcId < 0) return;
+    if(npcId < 0 || npcId >= GameState.PartyManager.MaxNPCCount) return false;
     return (this.forceNPC1 == npcId || this.forceNPC2 == npcId);
   }
 
@@ -293,8 +298,8 @@ export class MenuPartySelection extends GameMenu {
    * Updates the selection of the NPC.
    */
   updateSelection() {
-    for (let i = 0; i < GameState.PartyManager.MaxNPCCount; i++) {
-      let btn = this.getControlByName('BTN_NPC' + i);
+    for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
+      const btn = this.getControlByName('BTN_NPC' + i);
       if (GameState.PartyManager.IsNPCInParty(i)) {
         btn.highlight.edge_material.uniforms.diffuse.value.setRGB(0, 1, 0);
         btn.highlight.corner_material.uniforms.diffuse.value.setRGB(0, 1, 0);
@@ -306,7 +311,7 @@ export class MenuPartySelection extends GameMenu {
       btn.disableHighlight();
       btn.pulsing = false;
     }
-    let btn = this.getControlByName('BTN_NPC' + this.selectedNPC);
+    const btn = this.getControlByName('BTN_NPC' + this.selectedNPC);
     if (btn instanceof GUIControl) {
       btn.enableHighlight();
       btn.pulsing = true;
@@ -326,10 +331,8 @@ export class MenuPartySelection extends GameMenu {
         this.BTN_ACCEPT.show();
       }
     }
-    if(this.selectedNPC == -1){  
+    if(this.selectedNPC == this.forceNPC1 || this.selectedNPC == this.forceNPC2){  
       this.BTN_ACCEPT.hide();
-    } else {
-      this.BTN_ACCEPT.show();
     }
   }
 
@@ -351,7 +354,7 @@ export class MenuPartySelection extends GameMenu {
   async initPortraits() {
     let LBL_CHAR: GUIControl;
     let LBL_NA: GUIControl;
-    for (let i = 0; i < GameState.PartyManager.MaxNPCCount; i++) {
+    for (let i = 0; i < GameState.PartyManager.MaxPartyCount; i++) {
       LBL_CHAR = this.getControlByName('LBL_CHAR' + i);
       LBL_NA = this.getControlByName('LBL_NA' + i);
       LBL_CHAR.hide();
