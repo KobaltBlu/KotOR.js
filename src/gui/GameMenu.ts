@@ -15,6 +15,8 @@ import { BitWise } from "../utility/BitWise";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { Mouse } from "../controls/Mouse";
 import { KeyMapper } from "../controls";
+import type { GUIProtoItem } from "./GUIProtoItem";
+import { GUIControlType } from "../enums/gui/GUIControlType";
 
 /**
  * GameMenu class.
@@ -291,8 +293,15 @@ export class GameMenu {
 
   setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
 
-    if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl) || BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem))
+    if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
       return false;
+
+    if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem) && (
+      typeof (control as GUIProtoItem).list.GUIProtoItemClass !== 'undefined' &&
+      control.type !== GUIControlType.Label && control.type !== GUIControlType.ProtoItem
+    )){
+      return false;
+    }
 
     let idx = this.activeControls.indexOf(control);
 

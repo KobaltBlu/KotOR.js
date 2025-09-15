@@ -30,16 +30,16 @@ export class GUIProtoItem extends GUIControl{
     };
 
     this.addEventListener('mouseIn', (e) => {
-      console.log('mouseIn', this);
+      this.onSelectStateChanged();
     })
 
     this.addEventListener('mouseOut', (e) => {
-      console.log('mouseOut', this);
+      this.onSelectStateChanged();
     })
   }
 
   onSelectStateChanged(){
-    if(this.selected){
+    if(this.selected || this.hover){
       this.showHighlight();
       this.hideBorder();
       this.pulsing = true;
@@ -54,6 +54,13 @@ export class GUIProtoItem extends GUIControl{
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;
     }
+  }
+
+  buildText(){
+    super.buildText();
+    this.text.color.copy( this.selected ? this.defaultHighlightColor : this.defaultColor );
+    this.text.material.uniforms.diffuse.value = this.text.color;
+    this.text.material.needsUpdate = true;
   }
 
   calculatePosition(){
@@ -83,20 +90,17 @@ export class GUIProtoItem extends GUIControl{
   }
 
   getItemHeight(){
-    let height = 0;
-
-    let cHeight = (this.extent.height + (this.getBorderSize()/2));
+    let height = (this.extent.height + (this.getBorderSize()/2));
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
       let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
-      if(tSize.y > cHeight){
-        cHeight = tSize.y/2;
+      if(tSize.y > height){
+        height = tSize.y/2;
       }
     }
-    height += cHeight;
-    // return height;
-    return this.extent.height;
+
+    return height;
   }
 
   calculateBox(){
