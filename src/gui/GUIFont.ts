@@ -115,7 +115,6 @@ export default class GUIFont {
     const positions = new Float32Array(textCharCount * 8);
     const uvs = new Float32Array(textCharCount * 8);
     const horizontal = alignment & GUIControlAlignment.HorizontalMask;
-    const vertical   = alignment & GUIControlAlignment.VerticalMask;
 
     const indices = createIndicies({
       clockwise: true,
@@ -128,10 +127,13 @@ export default class GUIFont {
       const line = lines2[l];
 
       let lineX = 0;
-      if(horizontal == GUIControlAlignment.HorizontalCenter){
-        lineX = (maxWidth - line.width)/2;
+      // Apply horizontal alignment - center the text within the available width
+      if(horizontal == GUIControlAlignment.HorizontalLeft){
+        lineX = 0; // Default left alignment
+      }else if(horizontal == GUIControlAlignment.HorizontalCenter){
+        lineX = (maxWidth - line.width) / 2;
       }else if(horizontal == GUIControlAlignment.HorizontalRight){
-        lineX = (maxWidth - line.width);
+        lineX = maxWidth - line.width;
       }
 
       let char: GUIFontChar;
@@ -144,9 +146,8 @@ export default class GUIFont {
         halfHeight = char.height/2;
         stride = (charIndex * 8);
 
-        if(!c){
-          lineX -= char.width/2;
-        }
+        // Remove the incorrect first character offset
+        // Characters should be positioned normally without special first-character handling
 
         // BL
         positions[stride + 0] = lineX;
