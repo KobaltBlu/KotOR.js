@@ -440,6 +440,11 @@ export class GUIListBox extends GUIControl {
     }
   }
 
+  listMarginTop = 0;
+  listMarginBottom = 0;
+  listItemMarginTop = 0;
+  listItemMarginBottom = 0;
+
   updateList(){
     if(!this.children.length) return;
     
@@ -457,16 +462,18 @@ export class GUIListBox extends GUIControl {
     }
 
     // Position items consistently
-    let currentY = visibleTop;
+    let currentY = visibleTop - this.listMarginTop;
     
     for (let i = 0; i < this.children.length; i++) {
       const node = this.children[i];
       const height = this.getItemHeight(node);
       
       // Calculate item position
-      const itemY = currentY - (i - this.scroll) * itemHeight - height / 2;
+      const itemY = currentY - (i - this.scroll) * itemHeight - height / 2 - this.listItemMarginTop;
       node.widget.position.y = itemY;
       node.updateBounds();
+      // currentY -= this.listItemMarginBottom;
+      // currentY -= this.listItemMarginTop;
     }
     
     this.updateScrollbarVisibility();
