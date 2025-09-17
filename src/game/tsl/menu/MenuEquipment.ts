@@ -91,7 +91,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         if(this.equipmentSelectionActive){
           this.slot = null;
           this.equipmentSelectionActive = false;
-          this.UpdateList();
+          this.updateList();
         }else{
           this.close();
         }
@@ -102,99 +102,99 @@ export class MenuEquipment extends K1_MenuEquipment {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.IMPLANT);
+        this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
       this.BTN_INV_HEAD.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.HEAD;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.HEAD);
+        this.updateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
       this.BTN_INV_HANDS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMS;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.ARMS);
+        this.updateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
       this.BTN_INV_ARM_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
+        this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
       this.BTN_INV_BODY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.ARMOR);
+        this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
       this.BTN_INV_ARM_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
+        this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
       this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND);
+        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
       this.BTN_INV_BELT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.BELT;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.BELT);
+        this.updateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
       this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
+        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
       });
 
       this.BTN_INV_WEAP_L2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND2;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
+        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
       });
 
       this.BTN_INV_WEAP_R2.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND2;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
+        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
       });
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
@@ -203,19 +203,19 @@ export class MenuEquipment extends K1_MenuEquipment {
           //console.log('selectedItem', this.selectedItem, this.slot, );
           let currentPC = GameState.PartyManager.party[0];
           currentPC.equipItem(this.slot, this.selectedItem, () => {
-            this.UpdateSlotIcons();
+            this.updateSlotIcons();
           });
           this.slot = null as any;
           this.equipmentSelectionActive = false;
-          this.UpdateSelected(undefined as any);
-          this.UpdateSlotIcons();
+          this.updateSelected(undefined as any);
+          this.updateSlotIcons();
         }
       });
 
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.padding = 2;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
-        this.UpdateSelected(item);
+        this.updateSelected(item);
       }
 
       this.BTN_SWAPWEAPONS.addEventListener('click', (e) => {
@@ -228,8 +228,8 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(right_1) right_1.destroy();
 
-          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1, () => { this.UpdateSlotIcons(true); });
-          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2, () => { this.UpdateSlotIcons(true); });
+          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1, () => { this.updateSlotIcons(true); });
+          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2, () => { this.updateSlotIcons(true); });
 
           const left_1 = currentPC.equipment.LEFTHAND;
           const left_2 = currentPC.equipment.LEFTHAND2;
@@ -238,9 +238,9 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(left_1) left_1.destroy();
 
-          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1, () => { this.UpdateSlotIcons(true); });
-          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2, () => { this.UpdateSlotIcons(true); });
-          this.UpdateSlotIcons(true);
+          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1, () => { this.updateSlotIcons(true); });
+          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2, () => { this.updateSlotIcons(true); });
+          this.updateSlotIcons(true);
         }
       });
 
@@ -248,8 +248,8 @@ export class MenuEquipment extends K1_MenuEquipment {
     });
   }
 
-  UpdateList() {
-    super.UpdateList();
+  updateList() {
+    super.updateList();
     if (!this.equipmentSelectionActive) {
       this.LBL_BACK1.show();
       this.LBL_ATKL.show();
@@ -297,16 +297,17 @@ export class MenuEquipment extends K1_MenuEquipment {
     }
   }
 
-  UpdateSlotIcons(force: boolean = false) {
-    super.UpdateSlotIcons(force);
-    let currentPC = GameState.PartyManager.party[0];
+  updateSlotIcons(force: boolean = false) {
+    super.updateSlotIcons(force);
+    const currentPC = GameState.PartyManager.party[0];
+    if(!currentPC) return;
+
     if (currentPC.getRace() == 6) {
       let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
       if (l_weap2) {
         let icon = 'i' + l_weap2.baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L2.setFillTextureName(icon);
-
         }
       } else if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != 'iweap_l') {
         this.LBL_INV_WEAP_L2.setFillTextureName('iweap_l');
@@ -326,7 +327,7 @@ export class MenuEquipment extends K1_MenuEquipment {
   show() {
     super.show();
     this.LBL_BACK1.widget.position.z = 0;
-    this.UpdateSlotIcons();
+    this.updateSlotIcons();
   }
   
 }

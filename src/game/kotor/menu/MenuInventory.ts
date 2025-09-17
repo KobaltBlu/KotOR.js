@@ -61,6 +61,24 @@ export class MenuInventory extends GameMenu {
 
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
+
+      this.BTN_CHANGE1.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.PartyManager.party.length > 0){
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+        }
+      });
+      this.BTN_CHANGE2.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.PartyManager.party.length > 1){
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+        }
+      });
+
+      GameState.PartyManager.AddEventListener('change', () => {
+        if(!this.isVisible()) return;
+        this.updateCharacterStats();
+      });
       resolve();
     });
   }
@@ -81,40 +99,45 @@ export class MenuInventory extends GameMenu {
     TextureLoader.LoadQueue();
   }
 
+  updateCharacterStats(){
+    const currentPC = GameState.PartyManager.party[0];
+    if (!currentPC) {
+      return;
+    }
+    this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
+    this.LBL_DEF?.setText(currentPC.getAC());
+    if(this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()){
+      this.LBL_PORT.setFillTextureName(currentPC.getPortraitResRef());
+    }
+    this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold);
+  }
+
+  updatePartyMemberButtons(){
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      if (i == 0) { continue; }
+
+      const btn_change = this.getControlByName('BTN_CHANGE' + i);
+      if(!btn_change){ continue; }
+
+      const partyMember = GameState.PartyManager.party[i];
+      if(!partyMember){ continue; }
+
+      const portraitResRef = partyMember.getPortraitResRef();
+      btn_change.show();
+      if (btn_change.getFillTextureName() != portraitResRef) {
+        btn_change.setFillTextureName(portraitResRef);
+      }
+    }
+  }
+
   show() {
     super.show();
     this.manager.MenuTop.LBLH_INV.onHoverIn();
     this.filterInventory();
-    this.BTN_CHANGE1?.hide();
-    this.BTN_CHANGE2?.hide();
-    let currentPC = GameState.PartyManager.party[0];
-    if (currentPC) {
-      this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
-      this.LBL_DEF?.setText(currentPC.getAC());
-      if(this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()){
-        this.LBL_PORT.setFillTextureName(currentPC.getPortraitResRef());
-      }
-    }
-    this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold);
-
-    let btn_change: GUIControl;
-    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
-        const portraitResRef = partyMember.getPortraitResRef();
-        if (!i) {
-          if (this.LBL_PORT.getFillTextureName() != portraitResRef) {
-            this.LBL_PORT.setFillTextureName(portraitResRef);
-          }
-        } else {
-          btn_change.show();
-          if (btn_change.getFillTextureName() != portraitResRef) {
-            btn_change.setFillTextureName(portraitResRef);
-          }
-        }
-      }
-    }
+    this.updateCharacterStats();
+    this.updatePartyMemberButtons();
   }
 
   triggerControllerBumperLPress() {

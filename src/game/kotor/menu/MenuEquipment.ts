@@ -6,7 +6,8 @@ import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { ModuleItem } from "../../../module";
+import { ModuleItem } from "../../../module/ModuleItem";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
 
 /**
  * MenuEquipment class.
@@ -91,7 +92,7 @@ export class MenuEquipment extends GameMenu {
         if(this.equipmentSelectionActive){
           this.slot = null;
           this.equipmentSelectionActive = false;
-          this.UpdateList();
+          this.updateList();
         }else{
           this.close();
         }
@@ -102,81 +103,81 @@ export class MenuEquipment extends GameMenu {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.IMPLANT;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.IMPLANT);
+        this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
       });
 
       this.BTN_INV_HEAD.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.HEAD;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.HEAD);
+        this.updateListHover(ModuleCreatureArmorSlot.HEAD);
       });
 
       this.BTN_INV_HANDS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMS;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.ARMS);
+        this.updateListHover(ModuleCreatureArmorSlot.ARMS);
       });
 
       this.BTN_INV_ARM_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
+        this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
       });
 
       this.BTN_INV_BODY.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.ARMOR;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.ARMOR);
+        this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
       });
 
       this.BTN_INV_ARM_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
+        this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
       });
 
       this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.LEFTHAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.LEFTHAND);
+        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
       });
 
       this.BTN_INV_BELT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.BELT;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.BELT);
+        this.updateListHover(ModuleCreatureArmorSlot.BELT);
       });
 
       this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
         e.stopPropagation();
         this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
         this.equipmentSelectionActive = true;
-        this.UpdateList();
+        this.updateList();
       }).addEventListener('hover', (e) => {
-        this.UpdateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
+        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
       });
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
@@ -188,26 +189,47 @@ export class MenuEquipment extends GameMenu {
             currentPC.unequipSlot(this.slot);
           }else if(this.selectedItem instanceof ModuleItem){
             currentPC.equipItem(this.slot, this.selectedItem, () => {
-              this.UpdateSlotIcons();
+              this.updateSlotIcons();
             });
           }
           this.slot = null;
           this.equipmentSelectionActive = false;
-          this.UpdateSelected(null);
-          this.UpdateSlotIcons();
-          this.UpdateList();
+          this.updateSelected(null);
+          this.updateSlotIcons();
+          this.updateList();
         }
       });
 
       this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
-        this.UpdateSelected(item);
+        this.updateSelected(item);
       }
+
+      this.BTN_CHANGE1.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.PartyManager.party.length > 0){
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+        }
+      });
+      this.BTN_CHANGE2.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.PartyManager.party.length > 1){
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+        }
+      });
+
+      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+        if(!this.isVisible()) return;
+        this.updateCharacterStats();
+      });
       resolve();
     });
   }
 
-  UpdateListHover(slot: number) {
+  /**
+   * Update the list hover.
+   */
+  updateListHover(slot: number) {
     if (slot) {
       this.LB_ITEMS.clearItems();
       let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
@@ -224,7 +246,10 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  UpdateList() {
+  /**
+   * Update the list.
+   */
+  updateList() {
     if (!this.equipmentSelectionActive) {
       this.BTN_EQUIP?.hide();
       this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(1582).Value);
@@ -283,10 +308,10 @@ export class MenuEquipment extends GameMenu {
     }
     this.LB_ITEMS.clearItems();
     this.selectedItem = null;
-    this.UpdateSelected(null);
-    let currentPC = GameState.PartyManager.party[0];
+    this.updateSelected(null);
+    const currentPC = GameState.PartyManager.party[0];
     if (this.slot) {
-      let inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
+      const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
       this.LB_ITEMS.addItem(new GUIItemNone());
       if(currentPC.GetItemInSlot(this.slot)){
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
@@ -299,7 +324,10 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  UpdateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
+  /**
+   * Update the selected item.
+   */
+  updateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
     this.LB_DESC.clearItems();
     this.selectedItem = undefined;
     if (item instanceof ModuleItem) {
@@ -310,8 +338,13 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
-  UpdateSlotIcons(force: boolean = false) {
-    let currentPC = GameState.PartyManager.party[0];
+  /**
+   * Update the slot icons.
+   */
+  updateSlotIcons(force: boolean = false) {
+    const currentPC = GameState.PartyManager.party[0];
+    if(!currentPC) return;
+
     if (currentPC.getRace() == 6) {
       let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
       if (implant) {
@@ -400,38 +433,58 @@ export class MenuEquipment extends GameMenu {
     }
   }
 
+  /**
+   * Update the character stats.
+   */
+  updateCharacterStats(){
+    this.selectedControl = this.defaultControl;
+    this.equipmentSelectionActive = false;
+    const currentPC = GameState.PartyManager.party[0];
+    if (!currentPC) {
+      return;
+    }
+    this.LB_DESC.clearItems();
+    this.LB_ITEMS.clearItems();
+    this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
+    this.LBL_DEF?.setText(currentPC.getAC());
+    if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){
+      this.LBL_PORTRAIT.setFillTextureName(currentPC.getPortraitResRef());
+    }
+    this.updateSlotIcons(true);
+    this.updateList();
+  }
+
+  /**
+   * Update the party member buttons.
+   */
+  updatePartyMemberButtons(){
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
+    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
+      if (i == 0) { continue; }
+      
+      const btn_change = this.getControlByName('BTN_CHANGE' + i);
+      if(!btn_change){ continue; }
+
+      const partyMember = GameState.PartyManager.party[i];
+      if(!partyMember){ continue; }
+
+      btn_change.show();
+      const portraitResRef = partyMember.getPortraitResRef();
+      if (btn_change.getFillTextureName() != portraitResRef) {
+        btn_change.setFillTextureName(portraitResRef);
+      }
+    }
+  }
+
   show() {
     super.show();
     this.manager.MenuTop.LBLH_EQU.onHoverIn();
     this.equipmentSelectionActive = false;
     this.selectedControl = this.defaultControl;
-    this.UpdateList();
-    this.BTN_CHANGE1?.hide();
-    this.BTN_CHANGE2?.hide();
-    this.UpdateSlotIcons(true);
-    let currentPC = GameState.PartyManager.party[0];
-    if (currentPC) {
-      this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
-      this.LBL_DEF?.setText(currentPC.getAC());
-    }
-    let btn_change: GUIControl;
-    for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
-        const portraitResRef = partyMember.getPortraitResRef();
-        if (!i) {
-          if (this.LBL_PORTRAIT.getFillTextureName() != portraitResRef) {
-            this.LBL_PORTRAIT.setFillTextureName(portraitResRef);
-          }
-        } else {
-          btn_change.show();
-          if (btn_change.getFillTextureName() != portraitResRef) {
-            btn_change.setFillTextureName(portraitResRef);
-          }
-        }
-      }
-    }
+    this.updateList();
+    this.updateCharacterStats();
+    this.updatePartyMemberButtons();
   }
 
   triggerControllerAPress() {
