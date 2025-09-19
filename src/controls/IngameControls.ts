@@ -32,6 +32,8 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class IngameControls {
+  Mouse: Mouse = Mouse;
+
   camera: THREE.Camera;
   element: HTMLElement;
 
@@ -776,6 +778,56 @@ export class IngameControls {
       GameState.updateRendererUpscaleFactor();
     });
 
+    KeyMapper.Actions[KeyMapAction.Equip].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuEquipment.open();
+    });
+
+    KeyMapper.Actions[KeyMapAction.Inventory].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuInventory.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuCharacter.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuAbilities.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuMessages.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuJournal.open();
+    });
+    
+    
+    KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuMap.open();
+    });
+    
+    KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      GameState.MenuManager.MenuOptions.open();
+    });
   }
 
   MenuGetActiveUIElements(): GUIControl[] {
