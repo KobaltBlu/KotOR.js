@@ -77,6 +77,7 @@ export class MenuManager {
   static MenuStore: KOTOR.MenuStore;
   static MenuSwoopUp: TSL.MenuSwoopUp;
   static MenuTop: KOTOR.MenuTop;
+  static MenuToolTip: KOTOR.MenuToolTip;
   static MenuMouse: KOTOR.MenuMouse;
   static MenuKeyboardMapping: KOTOR.MenuKeyboardMapping;
   static MenuKeyboardEntry: KOTOR.MenuKeyboardEntry;
@@ -243,6 +244,7 @@ export class MenuManager {
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(KOTOR.MenuLevelUp) as KOTOR.MenuLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(KOTOR.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(KOTOR.MenuMessages) as KOTOR.MenuMessages;
+        MenuManager.MenuToolTip = await MenuManager.GameMenuLoader(KOTOR.MenuToolTip) as KOTOR.MenuToolTip;
         MenuManager.MenuMouse = await MenuManager.GameMenuLoader(KOTOR.MenuMouse) as KOTOR.MenuMouse;
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
@@ -305,6 +307,7 @@ export class MenuManager {
         MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(TSL.MenuLevelUp) as KOTOR.MenuLevelUp;
         MenuManager.MenuMap = await MenuManager.GameMenuLoader(TSL.MenuMap) as KOTOR.MenuMap;
         MenuManager.MenuMessages = await MenuManager.GameMenuLoader(TSL.MenuMessages) as KOTOR.MenuMessages;
+        MenuManager.MenuToolTip = await MenuManager.GameMenuLoader(TSL.MenuToolTip) as KOTOR.MenuToolTip;
         MenuManager.MenuMouse = await MenuManager.GameMenuLoader(TSL.MenuMouse) as KOTOR.MenuMouse;
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(TSL.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;

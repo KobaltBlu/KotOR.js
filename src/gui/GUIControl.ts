@@ -14,7 +14,7 @@ import { TextureType } from "../enums/loaders/TextureType";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { GameEngineType } from "../enums/engine";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { Mouse } from "../controls";
+import { KeyMapper, Mouse } from "../controls";
 import { IGUIControlColors } from "../interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "./GUIControlEventFactory";
@@ -24,6 +24,7 @@ import { GUIListBox } from "./GUIListBox";
 import GUIFont from "./GUIFont";
 import { GUIControlEvent } from "./GUIControlEvent";
 import { GUIControlType } from "../enums/gui/GUIControlType";
+import { KeyMapAction } from "../enums/controls/KeyMapAction";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -44,6 +45,8 @@ export class GUIControl {
   isProtoItem: boolean;
   node: any;
   visible: boolean = true;
+  keymapAction: KeyMapAction;
+
   calculateBox() {
     return;
   }
@@ -884,6 +887,7 @@ export class GUIControl {
     }
 
     this.processEventListener('mouseOut');
+    this.setTooltipVisible(false);
   }
 
   onHoverIn(){
@@ -918,6 +922,7 @@ export class GUIControl {
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
     
+    this.setTooltipVisible(true);
   }
 
   onFontTextureLoaded(){
@@ -1772,7 +1777,7 @@ export class GUIControl {
   }
 
   buildFill(){
-    let extent = this.getFillExtent();
+    const extent = this.getFillExtent();
     
     if(this.border.fill.mesh){
       this.border.fill.mesh.name = this.widget.name+' center fill';
@@ -1780,18 +1785,18 @@ export class GUIControl {
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
       this.border.fill.mesh.position.z = this.zOffset;
 
-      let shrinkWidth = this.getShrinkWidth();
+      const shrinkWidth = this.getShrinkWidth();
       this.border.fill.mesh.position.x = (this.flipLeft() ? shrinkWidth/2 : -shrinkWidth/2);
     }
   }
 
   buildBorder(){
 
-    let edgeGeometries = 4;
-    let cornerGeometries = 4;
-    let geomCount = edgeGeometries + cornerGeometries;
+    const edgeGeometries = 4;
+    const cornerGeometries = 4;
+    const geomCount = edgeGeometries + cornerGeometries;
 
-    let planes: THREE.BufferGeometry[] = [];
+    const planes: THREE.BufferGeometry[] = [];
     let extent;
 
     for(let i = 0; i < geomCount; i++){
@@ -2118,6 +2123,33 @@ export class GUIControl {
     return {width: GameState.ResolutionManager.getViewportWidth(), height: GameState.ResolutionManager.getViewportHeight()};
   }
 
+  setKeymapAction(action: KeyMapAction){
+    this.keymapAction = action;
+    return this;
+  }
+
+  tooltipText: string = '';
+  tooltipTimer: number = 3000;
+  tooltipVisible: boolean = false;
+  setTooltipText(text: string){
+    if(this.keymapAction){
+      const action = KeyMapper.Actions[this.keymapAction];
+      if(action){
+        text += ` | ${action.character}`;
+      }
+    }
+    this.tooltipText = text;
+    return this;
+  }
+
+  setTooltipVisible(visible: boolean){
+    this.tooltipVisible = visible;
+    if(!this.tooltipVisible){
+      //
+    }
+    return this;
+  }
+
   setText(str: any = '', renderOrder = 5){
     if(typeof str != 'string')
       str = str.toString();
@@ -2143,6 +2175,13 @@ export class GUIControl {
 
   getText(){
     return this.text.text;
+  }
+
+  _textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  getTextSize(){
+    this.text.geometry.computeBoundingBox();
+    this.text.geometry.boundingBox.getSize(this._textSize);
+    return this._textSize;
   }
 
   _onCreate(){

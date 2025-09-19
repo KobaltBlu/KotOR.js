@@ -299,6 +299,7 @@ export class CursorManager {
   }
 
   static updateCursor(){
+    GameState.MenuManager.MenuToolTip.hide();
     let cursorCaptured = false;
     let guiHoverCaptured = false;
 
@@ -329,6 +330,9 @@ export class CursorManager {
         let cMenu = control.menu;
         cMenu.setWidgetHoverActive(control, true);
         guiHoverCaptured = false;
+        if(control.tooltipText != ''){
+          GameState.MenuManager.MenuToolTip.showToolTip(control.tooltipText, Mouse.positionViewport.x, Mouse.positionViewport.y);
+        }
       }
 
       if(typeof control.isClickable == 'function'){

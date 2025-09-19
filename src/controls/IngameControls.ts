@@ -33,6 +33,7 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 export class IngameControls {
   Mouse: Mouse = Mouse;
+  KeyMapper: KeyMapper = KeyMapper;
 
   camera: THREE.Camera;
   element: HTMLElement;

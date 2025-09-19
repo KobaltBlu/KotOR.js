@@ -11,7 +11,27 @@ import { TalentObject } from "../../../talents";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 import { BitWise } from "../../../utility/BitWise";
-import { ModuleObjectType } from "../../../enums";
+import { KeyMapAction, ModuleObjectType } from "../../../enums";
+
+const TLK_TOOLTIP_FULL_HEALTH = 42498;
+
+const TLK_TOOLTIP_SOLOMODE = 48035;
+const TLK_TOOLTIP_STEALTH = 247;
+const TLK_TOOLTIP_PAUSE = 48019;
+
+const TLK_TOOLTIP_EQUIPMENT = 48037;
+const TLK_TOOLTIP_INVENTORY = 48039;
+const TLK_TOOLTIP_CHARACTER = 48041;
+const TLK_TOOLTIP_MESSAGES  = 48045;
+const TLK_TOOLTIP_MAP       = 48048;
+const TLK_TOOLTIP_QUEST     = 48050;
+const TLK_TOOLTIP_OPTIONS   = 48052;
+const TLK_TOOLTIP_ABILITIES = 48224;
+
+const TLK_TOOLTIP_FRIENDLY_POWER = 48486;
+const TLK_TOOLTIP_FRIENDLY_ITEM = 48291;
+const TLK_TOOLTIP_FRIENDLY_NON_MEDICAL_ITEM = 48299;
+const TLK_TOOLTIP_FRIENDLY_MINE = 48295;
 
 /**
  * InGameOverlay class.
@@ -208,42 +228,58 @@ export class InGameOverlay extends GameMenu {
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMessages.open();
-      });
+      }).setKeymapAction(KeyMapAction.Messages).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MESSAGES].Value
+      );
 
       this.BTN_JOU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuJournal.open();
-      });
+      }).setKeymapAction(KeyMapAction.Quests).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_QUEST].Value
+      );
 
       this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMap.open();
-      });
+      }).setKeymapAction(KeyMapAction.Map).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value
+      );
 
       this.BTN_OPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuOptions.open();
-      });
+      }).setKeymapAction(KeyMapAction.Options).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_OPTIONS].Value
+      );
 
       this.BTN_CHAR.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuCharacter.open();
-      });
+      }).setKeymapAction(KeyMapAction.Character).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CHARACTER].Value
+      );
 
       this.BTN_ABI.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAbilities.open();
-      });
+      }).setKeymapAction(KeyMapAction.SkillsAndFeats).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_ABILITIES].Value
+      );
 
       this.BTN_INV.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuInventory.open();
-      });
+      }).setKeymapAction(KeyMapAction.Inventory).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_INVENTORY].Value
+      );
 
       this.BTN_EQU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuEquipment.open();
-      });
+      }).setKeymapAction(KeyMapAction.Equip).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_EQUIPMENT].Value
+      );
 
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -254,16 +290,22 @@ export class InGameOverlay extends GameMenu {
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
-      });
+      }).setKeymapAction(KeyMapAction.Pause).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_PAUSE].Value
+      );
 
       this.TB_SOLO.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.SOLOMODE = !GameState.SOLOMODE;
-      });
+      }).setKeymapAction(KeyMapAction.PartyActive).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_SOLOMODE].Value
+      );
 
       this.TB_STEALTH.addEventListener('click', (e) => {
         e.stopPropagation();
-      });
+      }).setKeymapAction(KeyMapAction.STEALTH).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value
+      );
 
       this.BTN_CHAR1.addEventListener('click', (e) => {
         if(GameState.PartyManager.party[0].canLevelUp()){
@@ -371,6 +413,19 @@ export class InGameOverlay extends GameMenu {
         });
 
       }
+
+      this.BTN_ACTION0.setKeymapAction(KeyMapAction.PersonalPowerAct).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_FRIENDLY_POWER].Value
+      );
+      this.BTN_ACTION1.setKeymapAction(KeyMapAction.PersonalMedicalAct).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_FRIENDLY_ITEM].Value
+      );
+      this.BTN_ACTION2.setKeymapAction(KeyMapAction.PersonalOtherAct).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_FRIENDLY_NON_MEDICAL_ITEM].Value
+      );
+      this.BTN_ACTION3.setKeymapAction(KeyMapAction.PersonalMinesAct).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_FRIENDLY_MINE].Value
+      );
 
       // this.LBL_COMBATBG2.visible = false;
       resolve();
