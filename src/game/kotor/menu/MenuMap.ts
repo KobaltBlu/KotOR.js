@@ -136,6 +136,9 @@ export class MenuMap extends GameMenu {
     if(this.miniMap.mapNoteSelected){
       this.LBL_MapNote.setText(this.miniMap.mapNoteSelected.mapNote.getValue());
     }
+
+    this.BTN_PRTYSLCT.disableSelection = (GameState.module.area.unescapable);
+    this.BTN_RETURN.disableSelection = (GameState.module.area.unescapable);
   }
 
   triggerControllerBumperLPress() {
