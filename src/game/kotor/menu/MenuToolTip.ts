@@ -1,6 +1,6 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
+import type { GUIControl, GUILabel } from "../../../gui";
 
 /**
  * MenuToolTip class.
@@ -38,10 +38,12 @@ export class MenuToolTip extends GameMenu {
     });
   }
 
-  padding: number = 10;
+  padding: number = 5;
+  currentControl: GUIControl;
 
-  showToolTip(text: string, x: number = 0, y: number = 0) {
+  showToolTip(text: string, x: number = 0, y: number = 0, control: GUIControl) {
     if(this.isVisible()) return;
+    this.currentControl = control;
     this.width = GameState.ResolutionManager.getViewportWidth();
     this.height = GameState.ResolutionManager.getViewportHeight();
     this.tGuiPanel.extent.width = this.width;

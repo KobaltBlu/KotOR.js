@@ -867,8 +867,10 @@ export class GUIControl {
     return this.widget.visible;
   }
 
+  mouseOver: boolean = false;
   onHoverOut(){
     this.hover = false;
+    this.mouseOver = false;
     if(this.disableSelection){
       return;
     }
@@ -891,6 +893,7 @@ export class GUIControl {
   }
 
   onHoverIn(){
+    this.mouseOver = true;
     if(this.disableSelection){
       this.hover = false;
       return;
@@ -922,7 +925,7 @@ export class GUIControl {
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
     
-    this.setTooltipVisible(true);
+    // this.setTooltipVisible(true);
   }
 
   onFontTextureLoaded(){
@@ -1099,6 +1102,12 @@ export class GUIControl {
     let len = this.children.length;
     for(let i = 0; i < len; i++){
       this.children[i].update(delta);
+    }
+
+    //Tooltip timer
+    this.tooltipTimer = (this.mouseOver ? this.tooltipTimer + (1000 *delta) : 0);
+    if(this.tooltipTimer > 3000 && this.tooltipText != ''){
+      this.setTooltipVisible(true);
     }
   }
 
@@ -2143,9 +2152,12 @@ export class GUIControl {
   }
 
   setTooltipVisible(visible: boolean){
+    const isChanged = this.tooltipVisible != visible;
     this.tooltipVisible = visible;
-    if(!this.tooltipVisible){
-      //
+    if(this.tooltipVisible && isChanged){
+      GameState.MenuManager.MenuToolTip.showToolTip(this.tooltipText, Mouse.positionViewport.x, Mouse.positionViewport.y, this);
+    }else if(!this.tooltipVisible && isChanged){
+      GameState.MenuManager.MenuToolTip.hide();
     }
     return this;
   }

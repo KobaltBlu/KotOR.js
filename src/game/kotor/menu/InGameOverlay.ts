@@ -19,14 +19,14 @@ const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
 
-const TLK_TOOLTIP_EQUIPMENT = 48037;
-const TLK_TOOLTIP_INVENTORY = 48039;
-const TLK_TOOLTIP_CHARACTER = 48041;
-const TLK_TOOLTIP_MESSAGES  = 48045;
-const TLK_TOOLTIP_MAP       = 48048;
-const TLK_TOOLTIP_QUEST     = 48050;
-const TLK_TOOLTIP_OPTIONS   = 48052;
+const TLK_TOOLTIP_QUEST     = 48218;
+const TLK_TOOLTIP_EQUIPMENT = 48219;
+const TLK_TOOLTIP_INVENTORY = 48220;
+const TLK_TOOLTIP_MAP       = 48221;
+const TLK_TOOLTIP_OPTIONS   = 48222;
+const TLK_TOOLTIP_MESSAGES  = 48223;
 const TLK_TOOLTIP_ABILITIES = 48224;
+const TLK_TOOLTIP_CHARACTER = 48225;
 
 const TLK_TOOLTIP_FRIENDLY_POWER = 48486;
 const TLK_TOOLTIP_FRIENDLY_ITEM = 48291;
@@ -425,6 +425,13 @@ export class InGameOverlay extends GameMenu {
       );
       this.BTN_ACTION3.setKeymapAction(KeyMapAction.PersonalMinesAct).setTooltipText(
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_FRIENDLY_MINE].Value
+      );
+
+      this.BTN_MINIMAP.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuMap.open();
+      }).setKeymapAction(KeyMapAction.Map).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value
       );
 
       // this.LBL_COMBATBG2.visible = false;
