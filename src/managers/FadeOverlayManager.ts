@@ -40,6 +40,7 @@ export class FadeOverlayManager {
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.state = FadeOverlayState.FADING_OUT;
     FadeOverlayManager.wait = nWait;
+    FadeOverlayManager.material.opacity = duration == 0 ? 1 : FadeOverlayManager.material.opacity;
   }
 
   static FadeIn(duration = 0, r = 0, g = 0, b = 0, nWait = 0){
@@ -50,6 +51,7 @@ export class FadeOverlayManager {
     FadeOverlayManager.elapsed = 0;
     FadeOverlayManager.state = FadeOverlayState.FADING_IN;
     FadeOverlayManager.wait = nWait;
+    FadeOverlayManager.material.opacity = duration == 0 ? 0 : FadeOverlayManager.material.opacity;
   }
 
   static FadeInFromCutscene(){

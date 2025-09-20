@@ -972,7 +972,7 @@ export class GameState implements EngineContext {
    * @param sMovie6 - The sixth movie to play
    */
   static async LoadModule(name = '', waypoint: string = null, sMovie1 = '', sMovie2 = '', sMovie3 = '', sMovie4 = '', sMovie5 = '', sMovie6 = ''){
-
+    GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
     /**
      * Set the game mode to loading
      */
@@ -1016,8 +1016,6 @@ export class GameState implements EngineContext {
     GameState.module = module;
     GameState.scene.visible = false;
 
-    GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
-
     console.log('Module.loadScene');
     await module.loadScene();
     await TextureLoader.LoadQueue( (ref: ITextureLoaderQueuedRef) => {
@@ -1029,49 +1027,41 @@ export class GameState implements EngineContext {
     module.initEventQueue();
     console.log('Module.initScripts');
     await module.initScripts();
-    window.setTimeout( async () => {
-      //GameState.scene_gui.background = null;
-      GameState.scene.visible = true;
-      
-      AudioEngine.Unmute();
 
-      const runSpawnScripts = !GameState.isLoadingSave;
-      GameState.isLoadingSave = false;
+    //GameState.scene_gui.background = null;
+    GameState.scene.visible = true;
+    
+    AudioEngine.Unmute();
 
-      GameState.ResetModuleAudio();
+    const runSpawnScripts = !GameState.isLoadingSave;
+    GameState.isLoadingSave = false;
 
-      GameState.MenuManager.InGameOverlay.recalculatePosition();
-      GameState.MenuManager.InGameOverlay.open();
+    GameState.ResetModuleAudio();
 
-      GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-      
-      console.log('ModuleArea.initAreaObjects');
-      await GameState.module.area.initAreaObjects(runSpawnScripts);
-      GameState.RestoreEnginePlayMode();
-      console.log('ModuleArea: ready to play');
-      GameState.module.readyToProcessEvents = true;
+    GameState.MenuManager.InGameOverlay.recalculatePosition();
+    GameState.MenuManager.InGameOverlay.open();
+
+    GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+    GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+    
+    console.log('ModuleArea.initAreaObjects');
+    await GameState.module.area.initAreaObjects(runSpawnScripts);
+    GameState.RestoreEnginePlayMode();
+    console.log('ModuleArea: ready to play');
+    GameState.module.readyToProcessEvents = true;
+    
+    GameState.MenuManager.LoadScreen.close();
+
+    if(GameState.Mode == EngineMode.INGAME){
+
+      const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+      if(anyCanLevel){
+        GameState.audioEmitter.playSound('gui_level');
+      }
 
       if(!GameState.holdWorldFadeInForDialog)
-        GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0);
-      
-      GameState.MenuManager.LoadScreen.close();
-
-      if(GameState.Mode == EngineMode.INGAME){
-
-        let anyCanLevel = false;
-        for(let i = 0; i < GameState.PartyManager.party.length; i++){
-          if(GameState.PartyManager.party[i].canLevelUp()){
-            anyCanLevel = true;
-          }
-        }
-
-        if(anyCanLevel){
-          GameState.audioEmitter.playSound('gui_level');
-        }
-
-      }
-    });
+        GameState.FadeOverlayManager.FadeIn(10, 0, 0, 0);
+    }
   }
 
   static RestoreEnginePlayMode(): void {
