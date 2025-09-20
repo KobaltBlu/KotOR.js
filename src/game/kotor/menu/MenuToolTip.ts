@@ -56,8 +56,8 @@ export class MenuToolTip extends GameMenu {
     const height = textSize.y + (this.padding * 2);
     const maxX = this.width - width;
     const maxY = this.height - height;
-    x += 8;
-    y += 8;
+    x += 16;
+    y += 16;
     this.tooltip.extent.width = width;
     this.tooltip.extent.height = height;
     this.tooltip.extent.left = Math.min(Math.max(0, x), maxX);
