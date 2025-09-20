@@ -75,7 +75,7 @@ export class InGameDialog extends GameMenu {
       this.barHeight = 100;
 
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      const material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+      const material = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.FrontSide });
       this.topBar = new THREE.Mesh( geometry, material );
       this.bottomBar = new THREE.Mesh( geometry, material );
 

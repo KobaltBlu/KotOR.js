@@ -285,14 +285,20 @@ export class DLGNode {
       this.checkList.fadeComplete = true;
       return;
     }
-    if(this.elapsed > this.fade.delay && !this.fade.started){
+    if(!this.fade.started){
       this.fade.started = true;
       switch(this.fade.type){
+        case 1:
+          GameState.FadeOverlayManager.FadeOut(0, this.fade.color.r, this.fade.color.g, this.fade.color.b, this.fade.delay);
+        break;
+        case 2:
+          GameState.FadeOverlayManager.FadeIn(0, this.fade.color.r, this.fade.color.g, this.fade.color.b, this.fade.delay);
+        break;
         case 3:
-          GameState.FadeOverlayManager.FadeIn(this.fade.length, 0, 0, 0);
+          GameState.FadeOverlayManager.FadeIn(this.fade.length, this.fade.color.r, this.fade.color.g, this.fade.color.b, this.fade.delay);
         break;
         case 4:
-          GameState.FadeOverlayManager.FadeOut(this.fade.length, 0, 0, 0);
+          GameState.FadeOverlayManager.FadeOut(this.fade.length, this.fade.color.r, this.fade.color.g, this.fade.color.b, this.fade.delay);
         break;
       }
     }

@@ -1060,7 +1060,7 @@ export class GameState implements EngineContext {
     //Reveal the area
     GameState.MenuManager.LoadScreen.close();
     if(!GameState.holdWorldFadeInForDialog){
-      GameState.FadeOverlayManager.FadeIn(10, 0, 0, 0);
+      GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
     }
   }
 
