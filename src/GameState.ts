@@ -1046,21 +1046,21 @@ export class GameState implements EngineContext {
     
     console.log('ModuleArea.initAreaObjects');
     await GameState.module.area.initAreaObjects(runSpawnScripts);
-    GameState.RestoreEnginePlayMode();
+    GameState.Mode = GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME;
     console.log('ModuleArea: ready to play');
     GameState.module.readyToProcessEvents = true;
-    
-    GameState.MenuManager.LoadScreen.close();
 
     if(GameState.Mode == EngineMode.INGAME){
-
       const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
       if(anyCanLevel){
         GameState.audioEmitter.playSound('gui_level');
       }
+    }
 
-      if(!GameState.holdWorldFadeInForDialog)
-        GameState.FadeOverlayManager.FadeIn(10, 0, 0, 0);
+    //Reveal the area
+    GameState.MenuManager.LoadScreen.close();
+    if(!GameState.holdWorldFadeInForDialog){
+      GameState.FadeOverlayManager.FadeIn(10, 0, 0, 0);
     }
   }
 
