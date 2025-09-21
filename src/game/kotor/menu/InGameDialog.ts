@@ -632,28 +632,29 @@ export class InGameDialog extends GameMenu {
     // Get camera positions for both speaker and listener (with camera hooks if available)
     const speakerCameraPosition = this.currentEntry.speaker.getCameraHookPosition();
     const listenerCameraPosition = this.currentEntry.listener.getCameraHookPosition();
-    const lookAt = speakerCameraPosition.clone();
-
-    // Position camera slightly to the side and forward of the speaker
-    // Offset: -0.5 units to the left, +0.25 units forward, 0 height adjustment
-    speakerCameraPosition.x += -0.5;
-    speakerCameraPosition.y += 0.25;
-
-    // Calculate direction from listener to speaker for proper camera angle
-    const tangent = lookAt.clone().sub(listenerCameraPosition.clone());
-    const atan = Math.atan2(-tangent.y, -tangent.x);
     
-    // Calculate perpendicular direction for final camera positioning
-    this.#tmpVec3.x = Math.cos(atan);
-    this.#tmpVec3.y = Math.sin(atan);
-    this.#tmpVec3.normalize();
+    // Fixed distance for close-up head-on shot - not dependent on listener distance
+    const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
+    const heightOffset = 0; // No height adjustment needed for head-on shot
     
-    // Apply final direction adjustment to camera position
-    speakerCameraPosition.add(this.#tmpVec3);
+    // Position camera for head-on close-up speaker shot
+    // Camera positioned directly in front of the speaker based on their rotation
+    const speakerRotation = this.currentEntry.speaker.rotation.z + Math.PI / 2;
+    
+    // Calculate camera position based on speaker's facing direction
+    const cameraX = speakerCameraPosition.x + Math.cos(speakerRotation) * closeUpDistance;
+    const cameraY = speakerCameraPosition.y + Math.sin(speakerRotation) * closeUpDistance;
+    const cameraZ = speakerCameraPosition.z + heightOffset;
+    
+    // Calculate final camera position - direct frontal shot based on speaker's rotation
+    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    
+    // Calculate lookAt target - at speaker's eye level for proper framing
+    const lookAtTarget = speakerCameraPosition.clone().add(new THREE.Vector3(0, 0, 0.1)); // Lower lookAt target
     
     // Set camera position and look at the speaker
-    GameState.camera_dialog.position.copy(speakerCameraPosition);
-    GameState.camera_dialog.lookAt(lookAt);
+    GameState.camera_dialog.position.copy(cameraPosition);
+    GameState.camera_dialog.lookAt(lookAtTarget);
   }
 
   /**
@@ -665,25 +666,27 @@ export class InGameDialog extends GameMenu {
     const speakerCameraPosition = this.currentEntry.speaker.getCameraHookPosition();
     const listenerCameraPosition = this.currentEntry.listener.getCameraHookPosition();
     
-    // Position camera behind and to the side of the listener
-    // Offset: -1 unit behind, +1 unit to the side, 0 height adjustment
-    listenerCameraPosition.add(new THREE.Vector3(-1, 1, 0));
+    // Calculate midpoint between speaker and listener for lookAt target
+    const midpoint = this.getCameraMidPoint(speakerCameraPosition, listenerCameraPosition, 0.5);
     
-    // Calculate direction from listener to speaker for proper camera angle
-    const tangent = speakerCameraPosition.clone().sub(listenerCameraPosition.clone());
-    const atan = Math.atan2(-tangent.y, -tangent.x);
+    // Get listener's rotation to position camera behind and to the left
+    const listenerRotation = this.currentEntry.listener.rotation.z;
     
-    // Calculate perpendicular direction for final camera positioning
-    this.#tmpVec3.x = Math.cos(atan);
-    this.#tmpVec3.y = Math.sin(atan);
-    this.#tmpVec3.normalize();
+    // Fixed distance for consistent over-the-shoulder positioning
+    const behindDistance = 1.5; // Distance behind listener
+    const leftDistance = 1.0;   // Distance to the left of listener
     
-    // Apply final direction adjustment to camera position
-    listenerCameraPosition.add(this.#tmpVec3);
+    // Calculate camera position behind and to the left of listener
+    const cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - Math.PI/2) * leftDistance;
+    const cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - Math.PI/2) * leftDistance;
+    const cameraZ = listenerCameraPosition.z + 0.2; // Slightly above listener's eye level
     
-    // Set camera position and look at the speaker
-    GameState.camera_dialog.position.copy(listenerCameraPosition);
-    GameState.camera_dialog.lookAt(speakerCameraPosition);
+    // Calculate final camera position
+    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    
+    // Set camera position and look at the midpoint between speaker and listener
+    GameState.camera_dialog.position.copy(cameraPosition);
+    GameState.camera_dialog.lookAt(midpoint);
   }
 
   /**
