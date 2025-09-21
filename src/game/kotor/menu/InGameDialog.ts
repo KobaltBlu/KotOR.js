@@ -659,7 +659,9 @@ export class InGameDialog extends GameMenu {
 
   /**
    * setCameraAngleSpeakerBehindPlayer
-   * Over-the-shoulder: frames the speaker OTS from the listener’s side (classic shot-reverse-shot style)
+   * Over-the-shoulder: frames the speaker OTS from the listener's side (classic shot-reverse-shot style)
+   * Uses collision detection to prevent camera from clipping through walls
+   * Falls back to setCameraAngleSpeaker if camera would collide with walkmesh
    */
   setCameraAngleSpeakerBehindPlayer(){
     // Get camera positions for both speaker and listener (with camera hooks if available)
@@ -676,20 +678,37 @@ export class InGameDialog extends GameMenu {
     const listenerRotation = this.currentEntry.listener.rotation.z;
     
     // Adaptive distances to ensure both participants are framed equally
-    const baseBehindDistance = 2.0; // Base distance behind listener
+    const baseBehindDistance = 1.0; // Base distance behind listener
     const baseLeftDistance = 1.5;   // Base distance to the left of listener
     const distanceMultiplier = Math.max(0.8, Math.min(1.5, participantDistance * 0.4)); // Scale with participant distance
     
-    const behindDistance = baseBehindDistance * distanceMultiplier;
-    const leftDistance = baseLeftDistance * distanceMultiplier;
+    let behindDistance = baseBehindDistance * distanceMultiplier;
+    let leftDistance = baseLeftDistance * distanceMultiplier;
     
-    // Calculate camera position behind and to the left of listener
-    const cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - Math.PI/2) * leftDistance;
-    const cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - Math.PI/2) * leftDistance;
+    // Calculate initial camera position behind and to the left of listener
+    let cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - Math.PI/2) * leftDistance;
+    let cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - Math.PI/2) * leftDistance;
     const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
     
-    // Calculate final camera position
-    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    // Calculate initial camera position
+    let cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    
+    // Adjust camera distance based on collision detection (similar to FollowerCamera)
+    const adjustedDistance = this.adjustCameraDistanceForCollision(cameraPosition, listenerCameraPosition, behindDistance);
+    
+    // Recalculate camera position with adjusted distance
+    if (adjustedDistance < behindDistance) {
+      this.currentEntry.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER;
+      this.setCameraAngleSpeaker();
+      return;
+      const scaleFactor = adjustedDistance / behindDistance;
+      behindDistance = adjustedDistance;
+      leftDistance *= scaleFactor;
+      
+      cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - Math.PI/2) * leftDistance;
+      cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - Math.PI/2) * leftDistance;
+      cameraPosition.set(cameraX, cameraY, cameraZ);
+    }
     
     // Set camera position and look at the midpoint between speaker and listener
     GameState.camera_dialog.position.copy(cameraPosition);
@@ -700,6 +719,7 @@ export class InGameDialog extends GameMenu {
    * setCameraAngleTwoShot
    * True two-shot: frames both speaker and listener in a wide conversational view
    * Camera positioned to show both participants with proper framing and distance
+   * Falls back to setCameraAngleSpeakerBehindPlayer if camera would collide with walkmesh
    */
   setCameraAngleTwoShot(){
     // Get speaker and listener positions with camera height
@@ -730,10 +750,18 @@ export class InGameDialog extends GameMenu {
       .add(perpendicular.multiplyScalar(cameraDistance))
       .add(new THREE.Vector3(0, 0, 0)); // Slightly elevated for better framing
     
+    // Check for walkmesh collision before setting camera position
+    if (this.checkCameraCollision(cameraPosition, speakerPos)) {
+      // Fall back to over-the-shoulder shot if collision detected
+      this.currentEntry.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
+      this.setCameraAngleSpeakerBehindPlayer();
+      return;
+    }
+    
     // Calculate lookAt target - slightly biased toward the speaker
     const speakerBias = 0.5; // 50% bias toward speaker
     const lookAtTarget = this.getCameraMidPoint(listenerPos, speakerPos, speakerBias)
-      .add(new THREE.Vector3(0, 0, 0.4)); // Slightly above midpoint
+      .add(new THREE.Vector3(0, 0, -0.5)); // Slightly above midpoint
     
     // Set camera position and lookAt
     GameState.camera_dialog.position.copy(cameraPosition);
@@ -748,6 +776,154 @@ export class InGameDialog extends GameMenu {
     this.#tmpMPVec3.z = pointA.z + (pointB.z - pointA.z) * percentage;
     
     return this.#tmpMPVec3;
+  }
+
+  /**
+   * checkCameraCollision
+   * Checks if a camera position would collide with walkmesh geometry
+   * @param cameraPosition - The proposed camera position
+   * @param targetPosition - The target position to look at (for ray direction)
+   * @returns true if collision detected, false otherwise
+   */
+  checkCameraCollision(cameraPosition: THREE.Vector3, targetPosition: THREE.Vector3): boolean {
+    if (!GameState.module?.area) {
+      return false;
+    }
+
+    const area = GameState.module.area;
+    const raycaster = GameState.raycaster;
+    
+    // Calculate direction from camera to target
+    const direction = targetPosition.clone().sub(cameraPosition).normalize();
+    
+    // Set up raycaster for collision detection
+    raycaster.set(cameraPosition, direction);
+    raycaster.far = cameraPosition.distanceTo(targetPosition);
+    
+    // Collect walkmesh faces for collision testing
+    const aabbFaces: any[] = [];
+    
+    // Add room walkmesh faces
+    if (this.currentEntry.speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      aabbFaces.push({
+        object: this.currentEntry.speaker.room,
+        faces: this.currentEntry.speaker.room.collisionData.walkmesh.faces
+      });
+    }
+
+    if (this.currentEntry.listener.room !== this.currentEntry.speaker.room) {
+      if (this.currentEntry.listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+        aabbFaces.push({
+          object: this.currentEntry.listener.room,
+          faces: this.currentEntry.listener.room.collisionData.walkmesh.faces
+        });
+      }
+    }
+    
+    // Add door walkmesh faces (closed doors only)
+    for (let j = 0, jl = area.doors.length; j < jl; j++) {
+      const door = area.doors[j];
+      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+        aabbFaces.push({
+          object: door,
+          faces: door.collisionData.walkmesh.faces
+        });
+      }
+    }
+    
+    // Test for collisions
+    for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
+      const castableFaces = aabbFaces[k];
+      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      
+      if (intersects.length > 0) {
+        // Check if any intersection is close to the camera position
+        for (let i = 0; i < intersects.length; i++) {
+          const intersect = intersects[i];
+          // If intersection is very close to camera position, consider it a collision
+          if (intersect.distance < 0.5) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
+  }
+
+  /**
+   * adjustCameraDistanceForCollision
+   * Adjusts camera distance based on walkmesh collision detection (similar to FollowerCamera)
+   * @param cameraPosition - The proposed camera position
+   * @param targetPosition - The target position to look at
+   * @param maxDistance - The maximum desired distance
+   * @returns The adjusted distance (may be less than maxDistance if collision detected)
+   */
+  adjustCameraDistanceForCollision(cameraPosition: THREE.Vector3, targetPosition: THREE.Vector3, maxDistance: number): number {
+    if (!GameState.module?.area) {
+      return maxDistance;
+    }
+
+    const area = GameState.module.area;
+    const raycaster = GameState.raycaster;
+    
+    // Calculate direction from target to camera
+    const direction = cameraPosition.clone().sub(targetPosition).normalize();
+    
+    // Set up raycaster for collision detection
+    raycaster.set(targetPosition, direction);
+    raycaster.far = maxDistance;
+    
+    // Collect walkmesh faces for collision testing
+    const aabbFaces: any[] = [];
+    
+    // Add room walkmesh faces
+    if (this.currentEntry.speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      aabbFaces.push({
+        object: this.currentEntry.speaker.room,
+        faces: this.currentEntry.speaker.room.collisionData.walkmesh.faces
+      });
+    }
+
+    if (this.currentEntry.listener.room !== this.currentEntry.speaker.room) {
+      if (this.currentEntry.listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+        aabbFaces.push({
+          object: this.currentEntry.listener.room,
+          faces: this.currentEntry.listener.room.collisionData.walkmesh.faces
+        });
+      }
+    }
+    
+    // Add door walkmesh faces (closed doors only)
+    for (let j = 0, jl = area.doors.length; j < jl; j++) {
+      const door = area.doors[j];
+      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+        aabbFaces.push({
+          object: door,
+          faces: door.collisionData.walkmesh.faces
+        });
+      }
+    }
+    
+    // Test for collisions and adjust distance (similar to FollowerCamera logic)
+    let adjustedDistance = maxDistance;
+    
+    for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
+      const castableFaces = aabbFaces[k];
+      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      
+      if (intersects.length > 0) {
+        for (let i = 0; i < intersects.length; i++) {
+          const intersect = intersects[i];
+          // If intersection is closer than current distance, adjust it (with 0.75 multiplier like FollowerCamera)
+          if (intersect.distance < adjustedDistance) {
+            adjustedDistance = intersect.distance * 0.75;
+          }
+        }
+      }
+    }
+    
+    return adjustedDistance;
   }
 
   update(delta: number = 0) {
