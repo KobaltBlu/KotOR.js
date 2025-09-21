@@ -603,6 +603,70 @@ export class ModuleObject {
     return false;
   }
 
+  /**
+   * Gets the length (duration) of an animation state in seconds
+   * 
+   * @param animationState - The animation state constant (e.g., ModuleCreatureAnimState.WALKING)
+   * @returns The animation length in seconds, or 0 if not found
+   */
+  getAnimationLength(animationState: number): number {
+    if (!this.model || !(this.model instanceof OdysseyModel3D)) {
+      return 0;
+    }
+
+    // Get the animation data from the 2DA table
+    const animationData = this.animationConstantToAnimation(animationState);
+    if (!animationData || !animationData.name) {
+      return 0;
+    }
+
+    // Find the animation in the model's animation list
+    const animation = this.model.getAnimationByName(animationData.name);
+    if (!animation) {
+      return 0;
+    }
+
+    return animation.length;
+  }
+
+  /**
+   * Gets the length (duration) of an animation by name in seconds
+   * 
+   * @param animationName - The name of the animation (e.g., "walking", "attack")
+   * @returns The animation length in seconds, or 0 if not found
+   */
+  getAnimationLengthByName(animationName: string): number {
+    if (!this.model || !(this.model instanceof OdysseyModel3D)) {
+      return 0;
+    }
+
+    // Find the animation in the model's animation list
+    const animation = this.model.getAnimationByName(animationName);
+    if (!animation) {
+      return 0;
+    }
+
+    return animation.length;
+  }
+
+  /**
+   * Gets the current playing animation length in seconds
+   * 
+   * @returns The current animation length in seconds, or 0 if no animation is playing
+   */
+  getCurrentAnimationLength(): number {
+    if (!this.model || !(this.model instanceof OdysseyModel3D)) {
+      return 0;
+    }
+
+    const currentAnimation = this.model.animationManager.currentAnimation;
+    if (!currentAnimation) {
+      return 0;
+    }
+
+    return currentAnimation.length;
+  }
+
   getAnimationNameById(id = -1){
 
     if(typeof id === 'string')
