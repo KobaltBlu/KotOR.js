@@ -669,17 +669,24 @@ export class InGameDialog extends GameMenu {
     // Calculate midpoint between speaker and listener for lookAt target
     const midpoint = this.getCameraMidPoint(speakerCameraPosition, listenerCameraPosition, 0.5);
     
+    // Calculate distance between participants for adaptive camera positioning
+    const participantDistance = speakerCameraPosition.distanceTo(listenerCameraPosition);
+    
     // Get listener's rotation to position camera behind and to the left
     const listenerRotation = this.currentEntry.listener.rotation.z;
     
-    // Fixed distance for consistent over-the-shoulder positioning
-    const behindDistance = 1.5; // Distance behind listener
-    const leftDistance = 1.0;   // Distance to the left of listener
+    // Adaptive distances to ensure both participants are framed equally
+    const baseBehindDistance = 2.0; // Base distance behind listener
+    const baseLeftDistance = 1.5;   // Base distance to the left of listener
+    const distanceMultiplier = Math.max(0.8, Math.min(1.5, participantDistance * 0.4)); // Scale with participant distance
+    
+    const behindDistance = baseBehindDistance * distanceMultiplier;
+    const leftDistance = baseLeftDistance * distanceMultiplier;
     
     // Calculate camera position behind and to the left of listener
     const cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - Math.PI/2) * leftDistance;
     const cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - Math.PI/2) * leftDistance;
-    const cameraZ = listenerCameraPosition.z + 0.2; // Slightly above listener's eye level
+    const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
     
     // Calculate final camera position
     const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
@@ -733,11 +740,14 @@ export class InGameDialog extends GameMenu {
     GameState.camera_dialog.lookAt(lookAtTarget);
   }
 
-  getCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {
-    let dir = pointB.clone().sub(pointA);
-    let len = dir.length();
-    dir = dir.normalize().multiplyScalar(len * percentage);
-    return pointA.clone().add(dir);
+  #tmpMPVec3 = new THREE.Vector3();
+  getCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5): THREE.Vector3 {
+    // Calculate midpoint without cloning - more efficient
+    this.#tmpMPVec3.x = pointA.x + (pointB.x - pointA.x) * percentage;
+    this.#tmpMPVec3.y = pointA.y + (pointB.y - pointA.y) * percentage;
+    this.#tmpMPVec3.z = pointA.z + (pointB.z - pointA.z) * percentage;
+    
+    return this.#tmpMPVec3;
   }
 
   update(delta: number = 0) {
