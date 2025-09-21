@@ -52,6 +52,9 @@ export class ActionMoveToPoint extends Action {
       this.getParameter<number>(2),
     );
 
+    const range = this.getParameter<number>(6) || 0.1;
+    const run = this.getParameter<number>(5) ? true : false;
+
     this.real_target_position.copy(this.target_position);
 
     this.target = this.getParameter<ModuleObject>(4);
@@ -61,10 +64,12 @@ export class ActionMoveToPoint extends Action {
         this.setComputedPath(undefined);
         return ActionStatus.FAILED;
       }
-    }
 
-    const range = this.getParameter<number>(6) || 0.1;
-    const run = this.getParameter<number>(5) ? true : false;
+      const distanceRT = Utility.Distance2D(this.owner.position, this.target_position);
+      if( distanceRT <= range ){
+        return ActionStatus.COMPLETE;
+      }
+    }
 
     if(!this.computedPath){
       this.target_position.copy(this.owner.area.getNearestWalkablePoint(this.target_position, this.owner.getHitDistance()));
@@ -91,7 +96,7 @@ export class ActionMoveToPoint extends Action {
           this.owner.forceVector.x = Math.cos(atan);
           this.owner.forceVector.y = Math.sin(atan);
     
-          this.runCreatureAvoidance(delta, this.target_position);
+          this.runCreatureAvoidance(delta, this.target_position, this.target);
 
           this.owner.forceVector.negate();
           this.owner.force = 1;//Math.min( 1, Math.max( 0.5, ( ( distanceToTarget - arrivalDistance ) / 1 ) ) );
