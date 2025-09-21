@@ -1235,7 +1235,23 @@ export class ModuleObject {
   //   return face;
   // }
 
+  #tmpCHVec3 = new THREE.Vector3();
+
+  getCameraHookPosition(){
+    if(this.model && this.model.camerahook){
+      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
+      return this.#tmpCHVec3;
+    }
+
+    this.#tmpCHVec3.copy(this.position)
+    this.#tmpCHVec3.z += 1.5;
+    return this.#tmpCHVec3;
+  }
   getCameraHeight(){
+    if(this.model && this.model.camerahook){
+      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
+      return this.#tmpCHVec3.z;
+    }
     return 1.5;
   }
 

@@ -622,50 +622,37 @@ export class InGameDialog extends GameMenu {
     }
   }
 
+  #tmpVec3 = new THREE.Vector3();
+
   /**
    * setCameraAngleSpeaker
    * Speaker front: a standard head-and-shoulders shot of the current speaker.
    */
   setCameraAngleSpeaker(){
-    let position = this.currentEntry.speaker.position.clone();
-    let lposition = this.currentEntry.listener.position.clone();
-    let lookAt = this.currentEntry.speaker.position.clone();
-    if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
-      if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
-        lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-        position = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-      } else {
-        position.add({
-          x: 0,
-          y: 0,
-          z: this.currentEntry.speaker.getCameraHeight()
-        } as THREE.Vector3);
-      }
-    }
-    if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
-      if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
-        lposition = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
-      } else {
-        lposition.add(
-          new THREE.Vector3(
-            0, 0, this.currentEntry.listener.getCameraHeight()
-          )
-        );
-      }
-    }
-    position.add({
-      x: -0.5,
-      y: 0.25,
-      z: 0
-    } as THREE.Vector3);
-    let AxisFront = new THREE.Vector3();
-    let tangent = lookAt.clone().sub(lposition.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
-    AxisFront.x = Math.cos(atan);
-    AxisFront.y = Math.sin(atan);
-    AxisFront.normalize();
-    position.add(AxisFront);
-    GameState.camera_dialog.position.copy(position);
+    // Get camera positions for both speaker and listener (with camera hooks if available)
+    const speakerCameraPosition = this.currentEntry.speaker.getCameraHookPosition();
+    const listenerCameraPosition = this.currentEntry.listener.getCameraHookPosition();
+    const lookAt = speakerCameraPosition.clone();
+
+    // Position camera slightly to the side and forward of the speaker
+    // Offset: -0.5 units to the left, +0.25 units forward, 0 height adjustment
+    speakerCameraPosition.x += -0.5;
+    speakerCameraPosition.y += 0.25;
+
+    // Calculate direction from listener to speaker for proper camera angle
+    const tangent = lookAt.clone().sub(listenerCameraPosition.clone());
+    const atan = Math.atan2(-tangent.y, -tangent.x);
+    
+    // Calculate perpendicular direction for final camera positioning
+    this.#tmpVec3.x = Math.cos(atan);
+    this.#tmpVec3.y = Math.sin(atan);
+    this.#tmpVec3.normalize();
+    
+    // Apply final direction adjustment to camera position
+    speakerCameraPosition.add(this.#tmpVec3);
+    
+    // Set camera position and look at the speaker
+    GameState.camera_dialog.position.copy(speakerCameraPosition);
     GameState.camera_dialog.lookAt(lookAt);
   }
 
@@ -674,37 +661,29 @@ export class InGameDialog extends GameMenu {
    * Over-the-shoulder: frames the speaker OTS from the listener’s side (classic shot-reverse-shot style)
    */
   setCameraAngleSpeakerBehindPlayer(){
-    let position = this.currentEntry.listener.position.clone();
-    let lookAt = this.currentEntry.speaker.position.clone();
-    if (this.currentEntry.speaker.model instanceof OdysseyModel3D) {
-      if (this.currentEntry.speaker.model.camerahook instanceof THREE.Object3D) {
-        lookAt = this.currentEntry.speaker.model.camerahook.getWorldPosition(new THREE.Vector3());
-        lookAt.add({
-          x: 0,
-          y: 0,
-          z: 0.5
-        } as THREE.Vector3);
-      } else {
-        position.add(new THREE.Vector3(0, 0, 1.5));
-      }
-    }
-    if (this.currentEntry.listener.model instanceof OdysseyModel3D) {
-      if (this.currentEntry.listener.model.camerahook instanceof THREE.Object3D) {
-        position = this.currentEntry.listener.model.camerahook.getWorldPosition(new THREE.Vector3());
-      } else {
-        position.add(new THREE.Vector3(0, 0, 1.5));
-      }
-    }
-    position.add(new THREE.Vector3(-1, 1, 0));
-    let AxisFront = new THREE.Vector3();
-    let tangent = lookAt.clone().sub(position.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
-    AxisFront.x = Math.cos(atan);
-    AxisFront.y = Math.sin(atan);
-    AxisFront.normalize();
-    position.add(AxisFront);
-    GameState.camera_dialog.position.copy(position);
-    GameState.camera_dialog.lookAt(lookAt);
+    // Get camera positions for both speaker and listener (with camera hooks if available)
+    const speakerCameraPosition = this.currentEntry.speaker.getCameraHookPosition();
+    const listenerCameraPosition = this.currentEntry.listener.getCameraHookPosition();
+    
+    // Position camera behind and to the side of the listener
+    // Offset: -1 unit behind, +1 unit to the side, 0 height adjustment
+    listenerCameraPosition.add(new THREE.Vector3(-1, 1, 0));
+    
+    // Calculate direction from listener to speaker for proper camera angle
+    const tangent = speakerCameraPosition.clone().sub(listenerCameraPosition.clone());
+    const atan = Math.atan2(-tangent.y, -tangent.x);
+    
+    // Calculate perpendicular direction for final camera positioning
+    this.#tmpVec3.x = Math.cos(atan);
+    this.#tmpVec3.y = Math.sin(atan);
+    this.#tmpVec3.normalize();
+    
+    // Apply final direction adjustment to camera position
+    listenerCameraPosition.add(this.#tmpVec3);
+    
+    // Set camera position and look at the speaker
+    GameState.camera_dialog.position.copy(listenerCameraPosition);
+    GameState.camera_dialog.lookAt(speakerCameraPosition);
   }
 
   /**
