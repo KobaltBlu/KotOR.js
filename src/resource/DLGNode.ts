@@ -436,6 +436,9 @@ export class DLGNode {
 
     if(struct.hasField('CameraAngle')){
       node.cameraAngle = struct.getFieldByLabel('CameraAngle').getValue();
+      if(node.cameraAngle == DLGCameraAngle.ANGLE_RANDOM){
+        node.cameraAngle = Math.floor(Math.random() * 3) + 1;
+      }
     }
 
     if(struct.hasField('CamVidEffect')){

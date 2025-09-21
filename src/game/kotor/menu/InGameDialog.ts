@@ -269,7 +269,7 @@ export class InGameDialog extends GameMenu {
     if (this.currentEntry != null) {
       if(!this.currentEntry.skippable) return;
       this.currentEntry.checkList.isSkipped = true;
-      this.updateCamera();
+      // this.updateCamera();
       this.audioEmitter.stop();
       this.showReplies(this.currentEntry);
     }
@@ -342,7 +342,7 @@ export class InGameDialog extends GameMenu {
     }
     if (!entry.cameraID) {
       GameState.currentCamera = GameState.camera_dialog;
-      this.updateCamera();
+      // this.updateCamera();
     } else {
       GameState.currentCamera = GameState.getCameraById(entry.cameraID);
     }
@@ -365,7 +365,7 @@ export class InGameDialog extends GameMenu {
       this.setPlaceableCamera(entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID);
     } else {
       GameState.currentCamera = GameState.camera_dialog;
-      this.updateCamera();
+      // this.updateCamera();
     }
   }
 
@@ -430,7 +430,7 @@ export class InGameDialog extends GameMenu {
     this.updateTextPosition();
     this.LB_REPLIES.show();
     this.LB_REPLIES.updateList();
-    this.updateCamera();
+    // this.updateCamera();
     this.state = 1;
   }
 
@@ -593,18 +593,13 @@ export class InGameDialog extends GameMenu {
           ) {
             this.setCameraAngleSpeakerBehindPlayer();
           } else {
-            let position = this.currentEntry.speaker.position.clone().sub(new THREE.Vector3(1 * Math.cos(this.currentEntry.speaker.rotation.z - Math.PI / 1.5), 1 * Math.sin(this.currentEntry.speaker.rotation.z - Math.PI / 1.5), -1.75));
-            GameState.camera_dialog.position.set(position.x, position.y, position.z);
-            GameState.camera_dialog.lookAt(this.currentEntry.speaker.position.clone().add({
-              x: 0,
-              y: 0,
-              z: this.currentEntry.speaker.getCameraHeight()
-            } as THREE.Vector3));
+            this.setCameraAngleTwoShot();
           }
         }
       } else {
         GameState.currentCamera = GameState.camera_dialog;
-        let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(-1.5 * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4), -1.5 * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4), -1.75));
+        const distance = 1.5;
+        let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(-distance * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4), -distance * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4), -1.75));
         GameState.camera_dialog.position.set(position.x, position.y, position.z);
         GameState.camera_dialog.lookAt(
           this.getCurrentOwner().position.clone().add(
@@ -615,8 +610,9 @@ export class InGameDialog extends GameMenu {
         );
       }
     } else {
+      const distance = 1.0;
       GameState.currentCamera = GameState.camera_dialog;
-      let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(0.5 * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), 0.5 * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), -1.75));
+      let position = this.getCurrentListener().position.clone().sub(new THREE.Vector3(distance * Math.cos(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), distance * Math.sin(this.getCurrentListener().rotation.z - Math.PI / 4 * 2), -1.75));
       GameState.camera_dialog.position.set(position.x, position.y, position.z);
       GameState.camera_dialog.lookAt(
         this.getCurrentListener().position.clone().add(
@@ -626,6 +622,10 @@ export class InGameDialog extends GameMenu {
     }
   }
 
+  /**
+   * setCameraAngleSpeaker
+   * Speaker front: a standard head-and-shoulders shot of the current speaker.
+   */
   setCameraAngleSpeaker(){
     let position = this.currentEntry.speaker.position.clone();
     let lposition = this.currentEntry.listener.position.clone();
@@ -669,6 +669,10 @@ export class InGameDialog extends GameMenu {
     GameState.camera_dialog.lookAt(lookAt);
   }
 
+  /**
+   * setCameraAngleSpeakerBehindPlayer
+   * Over-the-shoulder: frames the speaker OTS from the listener’s side (classic shot-reverse-shot style)
+   */
   setCameraAngleSpeakerBehindPlayer(){
     let position = this.currentEntry.listener.position.clone();
     let lookAt = this.currentEntry.speaker.position.clone();
@@ -701,6 +705,50 @@ export class InGameDialog extends GameMenu {
     position.add(AxisFront);
     GameState.camera_dialog.position.copy(position);
     GameState.camera_dialog.lookAt(lookAt);
+  }
+
+  /**
+   * setCameraAngleTwoShot
+   * True two-shot: frames both speaker and listener in a wide conversational view
+   * Camera positioned to show both participants with proper framing and distance
+   */
+  setCameraAngleTwoShot(){
+    // Get speaker and listener positions with camera height
+    const speakerPos = this.currentEntry.speaker.position.clone().add(new THREE.Vector3(0, 0, this.currentEntry.speaker.getCameraHeight()));
+    const listenerPos = this.currentEntry.listener.position.clone().add(new THREE.Vector3(0, 0, this.currentEntry.listener.getCameraHeight()));
+    
+    // Calculate midpoint between speaker and listener
+    const midpoint = this.getCameraMidPoint(speakerPos, listenerPos, 0.5);
+    
+    // Calculate direction from listener to speaker
+    const direction = speakerPos.clone().sub(listenerPos).normalize();
+    
+    // Calculate perpendicular direction for camera positioning
+    const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
+    
+    // Calculate distance between participants
+    const participantDistance = speakerPos.distanceTo(listenerPos);
+    
+    // Determine camera distance based on participant separation
+    // Minimum 2.5 units, maximum 10 units, or 1.2x their distance
+    const minDistance = 2.5;
+    const maxDistance = 10.0;
+    const multiplier = 1.2;
+    const cameraDistance = Math.max(minDistance, Math.min(maxDistance, participantDistance * multiplier));
+    
+    // Position camera to the side of both participants
+    const cameraPosition = midpoint.clone()
+      .add(perpendicular.multiplyScalar(cameraDistance))
+      .add(new THREE.Vector3(0, 0, 0)); // Slightly elevated for better framing
+    
+    // Calculate lookAt target - slightly biased toward the speaker
+    const speakerBias = 0.5; // 50% bias toward speaker
+    const lookAtTarget = this.getCameraMidPoint(listenerPos, speakerPos, speakerBias)
+      .add(new THREE.Vector3(0, 0, 0.4)); // Slightly above midpoint
+    
+    // Set camera position and lookAt
+    GameState.camera_dialog.position.copy(cameraPosition);
+    GameState.camera_dialog.lookAt(lookAtTarget);
   }
 
   getCameraMidPoint(pointA: THREE.Vector3, pointB: THREE.Vector3, percentage = 0.5) {

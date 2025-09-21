@@ -10,6 +10,7 @@
  * @enum
  */
 export enum DLGCameraAngle {
+  ANGLE_RANDOM = 0,
   ANGLE_SPEAKER = 1,
   ANGLE_SPEAKER_BEHIND_PLAYER = 2,
   ANGLE_SPEAKER_AND_PLAYER_SIDE = 3,
