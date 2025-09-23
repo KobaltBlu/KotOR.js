@@ -10,7 +10,7 @@ import { ConfigClient } from "./utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
-  ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
 } from "./managers";
 import { SWRuleSet } from "./engine/rules/SWRuleSet";
 import { ResourceLoader } from "./loaders";
@@ -148,6 +148,7 @@ export class GameInitializer {
     GameState.TwoDAManager = TwoDAManager;
     GameState.PazaakManager = PazaakManager;  
     GameState.UINotificationManager = UINotificationManager;
+    GameState.CutsceneManager = CutsceneManager;
 
     GameState.SWRuleSet = SWRuleSet;
 

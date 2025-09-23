@@ -113,6 +113,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   gunhook2: OdysseyObject3D;
   gunhook3: OdysseyObject3D;
   modelhook: OdysseyObject3D;
+  hturn_g: OdysseyObject3D;
   
   bonesInitialized = false;
   Scale: number;
@@ -161,6 +162,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
           if(!this.nodes.has(node.name)){
             this.nodes.set(node.name, node);
           }
+        }
+
+        if(node.name == 'hturn_g'){
+          this.hturn_g = node;
         }
 
       });
@@ -1080,6 +1085,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       break;
       case 'modelhook':
         odysseyModel.modelhook = node;
+      break;
+      case 'hturn_g':
+        odysseyModel.hturn_g = node;
       break;
     }
 

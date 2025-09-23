@@ -13,6 +13,8 @@ import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { MDLLoader, ResourceLoader } from "../loaders";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums";
+import { AudioLoader } from "../audio/AudioLoader";
+import { AudioEngine } from "../audio/AudioEngine";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,
@@ -438,6 +440,17 @@ export class DLGObject {
       }
     });
     this.stuntActors.clear()
+  }
+
+  /**
+   * Load the dialog background music
+   */
+  async loadBackgroundMusic() {
+    if (!this.ambientTrack) { return; }
+    const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
+    if(!bgm){ return; }
+    AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', bgm, this.ambientTrack);
+    AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.play();
   }
 
   async load(){

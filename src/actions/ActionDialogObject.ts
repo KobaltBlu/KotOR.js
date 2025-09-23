@@ -60,7 +60,7 @@ export class ActionDialogObject extends Action {
 
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
+      GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
       return ActionStatus.COMPLETE;
     }
 
@@ -91,7 +91,7 @@ export class ActionDialogObject extends Action {
         // this.target.scripts.onDialog.conversation = this.conversation;
         this.target.onDialog(this.owner, -1, this.conversation);
       }else{
-        GameState.MenuManager.InGameDialog.StartConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
+        GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
       }
       return ActionStatus.COMPLETE;
     }

@@ -40,6 +40,7 @@ export class DLGNode {
   plotXPPercentage: number;
   quest: string;
   questEntry: number;
+  repliesShown: boolean = false;
   replies: DLGNode[] = [];
   entries: DLGNode[] = [];
   script: NWScriptInstance;
@@ -326,6 +327,12 @@ export class DLGNode {
     }
   }
 
+  resetLIP(){
+    if (BitWise.InstanceOfObject(this.speaker, ModuleObjectType.ModuleCreature)) {
+      (this.speaker as ModuleCreature).setLIP(undefined);
+    }
+  }
+
   async playVoiceOver(audioEmitter: AudioEmitter): Promise<boolean> {
     const resref = this.getVoiceResRef();
     if(resref){
@@ -436,9 +443,6 @@ export class DLGNode {
 
     if(struct.hasField('CameraAngle')){
       node.cameraAngle = struct.getFieldByLabel('CameraAngle').getValue();
-      if(node.cameraAngle == DLGCameraAngle.ANGLE_RANDOM){
-        node.cameraAngle = Math.floor(Math.random() * 3) + 1;
-      }
     }
 
     if(struct.hasField('CamVidEffect')){

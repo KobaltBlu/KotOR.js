@@ -88,7 +88,7 @@ export class InGameBark extends GameMenu {
           entry.speaker.setLIP(lip);
         }
       });
-      this.manager.InGameDialog.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
+      GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
         this.audioNode = audioNode;
         this.bHasAudio = true;
         audioNode.onended = () => {

@@ -9,6 +9,7 @@ import { DLGNode } from "../../../resource/DLGNode";
 import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
 import { AudioEngine } from "../../../audio/AudioEngine";
+import { ConversationState } from "../../../enums/dialog/ConversationState";
 
 /**
  * InGameComputer class.
@@ -21,7 +22,6 @@ import { AudioEngine } from "../../../audio/AudioEngine";
  */
 export class InGameComputer extends GameMenu {
 
-  engineMode: EngineMode = EngineMode.DIALOG;
   LBL_STATIC1: GUILabel;
   LBL_STATIC3: GUILabel;
   LBL_STATIC4: GUILabel;
@@ -70,6 +70,28 @@ export class InGameComputer extends GameMenu {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       resolve();
     });
+  }
+
+  show(){
+    super.show();
+    GameState.Mode = EngineMode.DIALOG;
+  }
+
+  setReplies(replies: DLGNode[]) {
+    for (let i = 0; i < replies.length; i++) {
+      let reply = replies[i];
+      if(!GameState.CutsceneManager.isContinueDialog(reply)){
+        this.LB_REPLIES.addItem(
+          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
+          {
+            onClick: (e) => {
+              GameState.CutsceneManager.onReplySelect(reply);
+            }
+          }
+        );
+      }
+    }
+    this.LB_REPLIES.updateList();
   }
 
   StartConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
@@ -134,7 +156,7 @@ export class InGameComputer extends GameMenu {
         case DLGConversationType.CONVERSATION:
         default:
           this.close();
-          this.manager.InGameDialog.StartConversation(dialog, this.owner, this.listener);
+          GameState.CutsceneManager.startConversation(dialog, this.owner, this.listener);
           return false;
         break;
       }
@@ -215,8 +237,21 @@ export class InGameComputer extends GameMenu {
 
   playerSkipEntry(entry: DLGNode) {
     if (this.currentEntry instanceof DLGNode) {
-      this.audioEmitter.stop();
+      GameState.CutsceneManager.audioEmitter.stop();
       this.showReplies(this.currentEntry);
+    }
+  }
+
+  setDialogMode(state: ConversationState) {
+    if(state == ConversationState.LISTENING_TO_SPEAKER){
+      this.LB_MESSAGE.show();
+      this.LB_MESSAGE.clearItems();
+      this.LB_MESSAGE.addItem(this.currentEntry.getCompiledString());
+      this.LB_MESSAGE.updateList();
+    }else{
+      this.LB_MESSAGE.hide();
+      this.LB_MESSAGE.clearItems();
+      this.LB_MESSAGE.updateList();
     }
   }
 
@@ -276,7 +311,7 @@ export class InGameComputer extends GameMenu {
     this.LB_REPLIES.updateList();
   
     //vo
-    entry.playVoiceOver(this.audioEmitter);
+    entry.playVoiceOver(GameState.CutsceneManager.audioEmitter);
     entry.checkList.voiceOverError = true;
     this.state = 0;
   }
@@ -332,7 +367,7 @@ export class InGameComputer extends GameMenu {
     if (GameState.ConversationPaused) {
       this.ended = true;
     }
-    this.audioEmitter.stop();
+    GameState.CutsceneManager.audioEmitter.stop();
     this.close();
     this.state = -1;
     if(this.dialog){

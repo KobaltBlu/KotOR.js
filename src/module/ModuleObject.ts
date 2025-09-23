@@ -1256,7 +1256,7 @@ export class ModuleObject {
   }
 
   isInConversation(){
-    return (GameState.Mode == EngineMode.DIALOG) && (GameState.MenuManager.InGameDialog.owner == this || GameState.MenuManager.InGameDialog.listener == this);
+    return (GameState.Mode == EngineMode.DIALOG) && (GameState.CutsceneManager.owner == this || GameState.CutsceneManager.listener == this);
   }
 
   setCutsceneMode(state: boolean = false){

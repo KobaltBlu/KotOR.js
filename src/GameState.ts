@@ -3,7 +3,7 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager, 
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, 
-  VideoEffectManager, PazaakManager, UINotificationManager
+  VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
 } from "./managers";
 
 import type { SWRuleSet } from "./engine/rules/SWRuleSet";
@@ -114,6 +114,7 @@ export class GameState implements EngineContext {
   static TwoDAManager: typeof TwoDAManager;
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
+  static CutsceneManager: typeof CutsceneManager;
 
   static SWRuleSet: typeof SWRuleSet;
 
@@ -952,8 +953,7 @@ export class GameState implements EngineContext {
   }
 
   static ResetModuleAudio(){                        
-    GameState.MenuManager.InGameComputer.audioEmitter = 
-    GameState.MenuManager.InGameDialog.audioEmitter = 
+    GameState.CutsceneManager.audioEmitter = 
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
     this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
@@ -1232,6 +1232,7 @@ export class GameState implements EngineContext {
         ){
           GameState.scene_cursor_holder.visible = false;
         }
+        GameState.CutsceneManager.update(delta);
       }
 
       if(

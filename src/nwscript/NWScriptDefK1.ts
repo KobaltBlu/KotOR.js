@@ -66,7 +66,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      console.log('PrintString', args[0]);
+      // console.log('PrintString', args[0]);
     }
   },
   2:{
@@ -76,7 +76,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
       const output = args[0].toFixed(args[2]);
-      console.log(output);
+      // console.log(output);
     }
   },
   3:{
@@ -95,7 +95,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      console.log(args[0]);
+      // console.log(args[0]);
     }
   },
   5:{
@@ -104,7 +104,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      console.log(args[0]?.id);
+      // console.log(args[0]?.id);
     }
   },
   6:{
@@ -3267,16 +3267,16 @@ NWScriptDefK1.Actions = {
       if(args[0] != ''){
         const dlg = DLGObject.FromResRef(args[0]);
         if(!dlg){ return NW_FALSE; }
-        GameState.MenuManager.InGameDialog.StartConversation(dlg, this.caller, args[1] as any);
+        GameState.CutsceneManager.startConversation(dlg, this.caller, args[1] as any);
         return NW_TRUE;
       }else if(this.conversation){
-        GameState.MenuManager.InGameDialog.StartConversation(this.conversation, this.caller, args[1] as any);
+        GameState.CutsceneManager.startConversation(this.conversation, this.caller, args[1] as any);
         return NW_TRUE;
       }else if(this.caller.conversation){
-        GameState.MenuManager.InGameDialog.StartConversation(this.caller.conversation, this.caller, args[1] as any);
+        GameState.CutsceneManager.startConversation(this.caller.conversation, this.caller, args[1] as any);
         return NW_TRUE;
       }else if(this.listenPatternSpeaker.conversation){
-        GameState.MenuManager.InGameDialog.StartConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
+        GameState.CutsceneManager.startConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
         return NW_TRUE;
       }else{
         console.warn('BeginConversation', 'no dialog condition met');
@@ -5570,7 +5570,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.MenuManager.InGameDialog.setPlaceableCamera(args[0]);
+      GameState.CutsceneManager.setPlaceableCamera(args[0]);
     }
   },
   462:{

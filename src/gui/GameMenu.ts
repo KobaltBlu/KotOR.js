@@ -3,7 +3,6 @@ import { GFFObject } from "../resource/GFFObject";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { GameState } from "../GameState";
-import { AudioEmitter } from "../audio/AudioEmitter";
 import { EngineMode } from "../enums/engine/EngineMode";
 import type { MenuManager } from "../managers/MenuManager";
 import { ResolutionManager } from "../managers/ResolutionManager";
@@ -63,8 +62,6 @@ export class GameMenu {
   voidFill: boolean = false;
   backgroundVoidSprite: THREE.Mesh;
   backgroundVoidMaterial: THREE.ShaderMaterial;
-
-  audioEmitter: AudioEmitter;
 
   engineMode: EngineMode = EngineMode.GUI;
 
