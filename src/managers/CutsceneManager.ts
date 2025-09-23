@@ -872,6 +872,20 @@ export class CutsceneManager {
   }
 
   /**
+   * Validate the camera participants are in the same room
+   */
+  static validateCameraParticipants(){
+    const listener = this.cameraState.listener.participant;
+    const speaker = this.cameraState.speaker.participant;
+    if(!listener || !speaker){
+      return false;
+    }
+    if(!listener.room || !speaker.room || (listener?.room !== speaker?.room))
+      return false;
+    return true;
+  }
+
+  /**
    * Update the animated camera
    * @param delta - The delta time
    */
@@ -1034,7 +1048,7 @@ export class CutsceneManager {
       .add(new THREE.Vector3(0, 0, 0)); // Slightly elevated for better framing
     
     // Check for walkmesh collision before setting camera position
-    if (this.checkCameraCollision(cameraPosition, speaker.position)) {
+    if (!this.validateCameraParticipants() || this.checkCameraCollision(cameraPosition, speaker.position)) {
       // Fall back to over-the-shoulder shot if collision detected
       this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
       this.updateCameraAngleSpeakerBehindPlayer();
@@ -1117,6 +1131,10 @@ export class CutsceneManager {
 
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
+
+    if(!speaker.room || !listener.room || (speaker.room !== listener.room)){
+      return false;
+    }
 
     const area = GameState.module.area;
     const raycaster = GameState.raycaster;
