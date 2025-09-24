@@ -141,6 +141,7 @@ export class MenuCharacter extends K1_MenuCharacter {
   }
 
   update(delta: number) {
+    super.update(delta);
     if (!this.bVisible)
       return;
     if (this.char)
