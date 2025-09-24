@@ -70,6 +70,7 @@ export class InGameDialog extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
+    this.LB_REPLIES.clearItems();
     for (let i = 0; i < replies.length; i++) {
       const reply = replies[i];
       if(reply.isContinueDialog()){ continue; }

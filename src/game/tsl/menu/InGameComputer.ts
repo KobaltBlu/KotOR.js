@@ -34,7 +34,7 @@ export class InGameComputer extends K1_InGameComputer {
     super();
     this.gui_resref = 'computer_p';
     this.background = 'black';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

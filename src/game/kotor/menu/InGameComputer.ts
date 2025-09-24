@@ -68,6 +68,7 @@ export class InGameComputer extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
+      this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
@@ -81,25 +82,39 @@ export class InGameComputer extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
+    this.LB_REPLIES.clearItems();
     for (let i = 0; i < replies.length; i++) {
       const reply = replies[i];
       if(reply.isContinueDialog()){ continue; }
       this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
     }
     this.LB_REPLIES.updateList();
+    this.LB_REPLIES.show();
+  }
+
+  setEntry(entry: DLGNode) {
+    this.currentEntry = entry;
+    this.LB_MESSAGE.clearItems();
+    if (!!entry.getCompiledString()) {
+      this.LB_MESSAGE.addItem(entry.getCompiledString());
+    }
+    this.LB_MESSAGE.updateList();
+    this.LB_MESSAGE.show();
   }
 
   setDialogMode(state: ConversationState) {
-    if(state == ConversationState.LISTENING_TO_SPEAKER){
-      this.LB_MESSAGE.show();
-      this.LB_MESSAGE.clearItems();
-      this.LB_MESSAGE.addItem(GameState.CutsceneManager.lastSpokenString);
-      this.LB_MESSAGE.updateList();
-    }else{
-      this.LB_MESSAGE.hide();
-      this.LB_MESSAGE.clearItems();
-      this.LB_MESSAGE.updateList();
-    }
+    // if(state == ConversationState.LISTENING_TO_SPEAKER){
+    //   this.LB_MESSAGE.show();
+    //   this.LB_MESSAGE.clearItems();
+    //   if (!!GameState.CutsceneManager.lastSpokenString) {
+    //     this.LB_MESSAGE.addItem(GameState.CutsceneManager.lastSpokenString);
+    //   }
+    //   this.LB_MESSAGE.updateList();
+    // }else{
+    //   this.LB_MESSAGE.show();
+    //   this.LB_MESSAGE.clearItems();
+    //   this.LB_MESSAGE.updateList();
+    // }
   }
   
 }

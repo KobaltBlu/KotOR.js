@@ -75,6 +75,7 @@ export class CutsceneManager {
   }
 
   static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
+    console.log('CutsceneManager.startConversation', dialog, owner, listener);
     this.active = true;
     this.cameraState.currentCameraAnimation = undefined;
     this.owner = owner;
@@ -92,6 +93,13 @@ export class CutsceneManager {
     this.unequipItems = false;
     GameState.Mode = EngineMode.DIALOG;
     this.isListening = true;
+    this.startingEntry = null;
+    this.currentEntry = null;
+    this.currentReplies = [];
+    this.lastSpokenString = '';
+    this.listener = listener;
+    this.owner = owner;
+    this.ended = false;
     
     if (!dialog) {
       dialog = this.owner.getConversation();
@@ -101,8 +109,10 @@ export class CutsceneManager {
       this.endConversation();
     }
 
-    const loaded = this.loadDialog(dialog);
-    if(!loaded) return;
+    this.conversation_name = dialog.resref;
+    this.dialog = dialog;
+    this.dialog.owner = this.owner;
+    this.dialog.listener = this.listener;
     
     //todo trigger updateTextPosition
     this.isListening = true;
@@ -139,30 +149,29 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
+    console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
+
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
     this.dialog.loadStuntCamera().then(() => {
+      console.log('CutsceneManager.startConversation: loadStuntCamera');
       this.dialog.loadStuntActors().then(() => {
+        console.log('CutsceneManager.startConversation: loadStuntActors');
         this.dialog.loadBackgroundMusic().then(() => {
+          console.log('CutsceneManager.startConversation: loadBackgroundMusic');
+          switch (this.dialog.getConversationType()) {
+            case DLGConversationType.COMPUTER:
+              console.log('CutsceneManager.startConversation: Computer');
+              GameState.MenuManager.InGameComputer.open();
+              break;
+            default:
+              console.log('CutsceneManager.startConversation: Conversation');
+              GameState.MenuManager.InGameDialog.open();
+              break;
+          }
           this.showEntry(this.startingEntry);
         });
       });
     });
-  }
-
-  static loadDialog(dialog: DLGObject) {
-    this.conversation_name = ``;
-    if(!dialog){ return false; }
-    this.conversation_name = dialog.resref;
-    this.dialog = dialog;
-    this.dialog.owner = this.owner;
-    this.dialog.listener = this.listener;
-    switch (this.dialog.getConversationType()) {
-      case DLGConversationType.COMPUTER:
-        GameState.MenuManager.InGameComputer.open();
-      default:
-        GameState.MenuManager.InGameDialog.open();
-    }
-    return true;
   }
 
   /**
@@ -203,6 +212,7 @@ export class CutsceneManager {
    */
   static showEntry(entry: DLGNode) {
     this.currentEntry = entry;
+    this.currentEntry.repliesShown = false;
     entry.initProperties();
     this.state = ConversationState.LISTENING_TO_SPEAKER;
     if (GameState.Mode != EngineMode.DIALOG)
@@ -210,6 +220,7 @@ export class CutsceneManager {
     GameState.VideoEffectManager.SetVideoEffect(entry.getVideoEffect());
     this.lastSpokenString = entry.getCompiledString();
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      GameState.MenuManager.InGameComputer.setEntry(entry);
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }else{
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
@@ -239,6 +250,9 @@ export class CutsceneManager {
     //Node Delay
     const nodeDelay = (this.cutsceneMode != CutsceneMode.ANIMATED && entry.delay > -1) ? entry.delay * 1000 : ENTRY_DELAY;
     entry.setNodeDelay(nodeDelay);
+    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      // entry.setNodeDelay(9999);
+    }
 
     //Node camera
     this.setEntryCamera(entry);
@@ -762,6 +776,11 @@ export class CutsceneManager {
   static updateCamera(delta: number = 0) {
     if (!this.dialog) return;
 
+    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      GameState.MenuManager.InGameComputer.show();
+      GameState.MenuManager.InGameComputerCam.hide();
+    }
+
     if (this.cameraState.mode == CameraMode.ANIMATED) {
       this.updateAnimatedCamera(delta);
       return;
@@ -769,6 +788,8 @@ export class CutsceneManager {
 
     if (this.cameraState.mode == CameraMode.PLACEABLE) {
       this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);
+      GameState.MenuManager.InGameComputer.hide();
+      GameState.MenuManager.InGameComputerCam.show();
       return;
     }
 
