@@ -405,7 +405,8 @@ export class CutsceneManager {
     this.audioEmitter.stop();
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.close();
-      GameState.MenuManager.InGameComputerCam.close();
+      // GameState.MenuManager.InGameComputerCam.close();
+      GameState.MenuManager.InGameComputerCam.hide();
     }else{
       GameState.MenuManager.InGameDialog.close();
     }
@@ -779,6 +780,8 @@ export class CutsceneManager {
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.show();
       GameState.MenuManager.InGameComputerCam.hide();
+    }else{
+      GameState.MenuManager.InGameComputerCam.hide();
     }
 
     if (this.cameraState.mode == CameraMode.ANIMATED) {
@@ -788,8 +791,10 @@ export class CutsceneManager {
 
     if (this.cameraState.mode == CameraMode.PLACEABLE) {
       this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);
-      GameState.MenuManager.InGameComputer.hide();
-      GameState.MenuManager.InGameComputerCam.show();
+      if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+        GameState.MenuManager.InGameComputer.hide();
+        GameState.MenuManager.InGameComputerCam.show();
+      }
       return;
     }
 
