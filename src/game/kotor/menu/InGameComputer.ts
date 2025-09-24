@@ -68,6 +68,9 @@ export class InGameComputer extends GameMenu {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
+      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+        GameState.CutsceneManager.selectReplyAtIndex(index);
+      }
       resolve();
     });
   }
@@ -79,17 +82,9 @@ export class InGameComputer extends GameMenu {
 
   setReplies(replies: DLGNode[]) {
     for (let i = 0; i < replies.length; i++) {
-      let reply = replies[i];
-      if(!GameState.CutsceneManager.isContinueDialog(reply)){
-        this.LB_REPLIES.addItem(
-          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-          {
-            onClick: (e) => {
-              GameState.CutsceneManager.onReplySelect(reply);
-            }
-          }
-        );
-      }
+      const reply = replies[i];
+      if(reply.isContinueDialog()){ continue; }
+      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
     }
     this.LB_REPLIES.updateList();
   }

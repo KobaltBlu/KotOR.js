@@ -114,7 +114,7 @@ export class CutsceneManager {
     }
     
     //bark entry
-    const isBarkDialog = this.isBarkDialog(this.startingEntry);
+    const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
       this.cutsceneMode = CutsceneMode.BARK;
       this.endConversation();
@@ -180,42 +180,6 @@ export class CutsceneManager {
     }
     const entryIndex = this.dialog.getNextEntryIndex(entryLinks);
     return this.dialog.getEntryByIndex(entryIndex);
-  }
-
-  /**
-   * Check if a dialog entry is a bark node
-   * @param entry - The entry to check
-   */
-  static isBarkDialog(entry: DLGNode) {
-    return entry.replies.length == 1 /*&& !entry.cameraAngle*/ && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
-  }
-
-  /**
-   * Check if a dialog entry is a continue node
-   * @param node - The entry to check
-   */
-  static isContinueDialog(node: DLGNode) {
-    const parsedText = node.getCompiledString();
-    if (typeof node.entries !== 'undefined') {
-      return parsedText == '' && node.entries.length;
-    } else if (typeof node.replies !== 'undefined') {
-      return parsedText == '' && node.replies.length;
-    }
-    return parsedText == '';
-  }
-
-  /**
-   * Check if a dialog entry is an end node
-   * @param node - The entry to check
-   */
-  static isEndDialog(node: DLGNode) {
-    const parsedText = node.getCompiledString();
-    if (typeof node.entries !== 'undefined') {
-      return parsedText == '' && !node.entries.length;
-    } else if (typeof node.replies !== 'undefined') {
-      return parsedText == '' && !node.replies.length;
-    }
-    return parsedText == '';
   }
 
   /**
@@ -348,9 +312,6 @@ export class CutsceneManager {
     if (GameState.Mode != EngineMode.DIALOG)
       return;
     
-    const isContinueDialog = entry.replies.length == 1 && this.isContinueDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
-    const isEndDialog = entry.replies.length == 1 && this.isEndDialog(this.dialog.getReplyByIndex(entry.replies[0].index));
-    
     //Get First Reply
     const reply = this.dialog.getReplyByIndex(entry.replies[0].index);
     if(!reply){
@@ -358,6 +319,9 @@ export class CutsceneManager {
       this.endConversation();
       return;
     }
+    
+    const isContinueDialog = entry.replies.length == 1 && reply.isContinueDialog();
+    const isEndDialog = entry.replies.length == 1 && reply.isEndDialog();
 
     //End Dialog
     if (isEndDialog || !entry.replies.length) {

@@ -13,6 +13,7 @@ import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
+import type { DLGObject } from "./DLGObject";
 
 /**
  * DLGNode class.
@@ -63,7 +64,7 @@ export class DLGNode {
   elapsed: number = 0;
   fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
   speaker: ModuleObject;
-  dialog: any;
+  dialog: DLGObject;
 
   listener: ModuleObject;
   owner: ModuleObject;
@@ -80,9 +81,9 @@ export class DLGNode {
   recordVO: number = 0;
   voTextChanged: boolean = true;
 
-  constructor(args = {}){
+  constructor(dialog?: DLGObject){
     this.nodeEngineType = DLGNodeEngineType.K1;
-
+    this.dialog = dialog || undefined;
     this.animations = [];
     this.cameraAngle = 0;
     this.cameraID = 0;
@@ -128,6 +129,10 @@ export class DLGNode {
       color: {r:0, g:0, b:0},
       started: false,
     };
+  }
+
+  setDialog(dialog: DLGObject){
+    this.dialog = dialog;
   }
 
   initProperties(){
@@ -398,8 +403,9 @@ export class DLGNode {
     };
   }
 
-  static FromDialogStruct( struct: GFFStruct ){
-    let node = new DLGNode();
+  static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
+    let node = new DLGNode(dialog);
+    node.setDialog(dialog);
 
     if(struct.hasField('Quest')){
       node.quest = struct.getFieldByLabel('Quest').getValue();
@@ -532,8 +538,7 @@ export class DLGNode {
       node.entries = [];
       for(let i = 0; i < structs.length; i++){
         let replyStruct = structs[i];
-        let linkNode = new DLGNode();
-        // linkNode.dialog = this.dialog;
+        let linkNode = new DLGNode(dialog);
 
         if(replyStruct.hasField('Not')){
           linkNode.isActiveParams.Not = replyStruct.getFieldByLabel('Not').getValue();
@@ -629,7 +634,7 @@ export class DLGNode {
       node.replies = [];
       for(let i = 0; i < structs.length; i++){
         let entryStruct = structs[i];
-        let linkNode = new DLGNode();
+        let linkNode = new DLGNode(dialog);
         
         if(entryStruct.hasField('Not')){
           linkNode.isActiveParams.Not = entryStruct.getFieldByLabel('Not').getValue();
@@ -813,38 +818,37 @@ export class DLGNode {
     return text;
   }
 
-  
-
-  isContinueDialog() {
-    let parsedText = this.getCompiledString();
-    switch(this.nodeType){
-      case DLGNodeType.REPLY:
-        return parsedText == '' && this.entries.length == 1;
-      break;
-      case DLGNodeType.ENTRY:
-        return parsedText == '' && this.replies.length == 1;
-      break;
-      default: 
-        return parsedText == '';
-      break;
-    }
-
-    return false;
+  /**
+   * Check if a dialog entry is a bark dialog node
+   */
+  isBarkDialog() {
+    return this.replies.length == 1 /*&& !this.cameraAngle*/ && this.dialog.getReplyByIndex(this.replies[0].index).isEndDialog();
   }
 
-  isEndDialog() {
-    let parsedText = this.getCompiledString();
-    switch(this.nodeType){
-      case DLGNodeType.REPLY:
-        return parsedText == '' && !this.entries.length;
-      break;
-      case DLGNodeType.ENTRY:
-        return parsedText == '' && !this.replies.length;
-      break;
-      default: 
-        return parsedText == '';
-      break;
+  /**
+   * Check if a dialog entry is a continue dialog node
+   */
+  isContinueDialog() {
+    const parsedText = this.getCompiledString();
+    if (this.nodeType == DLGNodeType.REPLY) {
+      return parsedText == '' && this.entries.length;
+    } else if (this.nodeType == DLGNodeType.ENTRY) {
+      return parsedText == '' && this.replies.length;
     }
+    return !parsedText;
+  }
+
+  /**
+   * Check if a dialog entry is an end dialog node
+   */
+  isEndDialog() {
+    const parsedText = this.getCompiledString();
+    if (this.nodeType == DLGNodeType.REPLY) {
+      return parsedText == '' && !this.entries.length;
+    } else if (this.nodeType == DLGNodeType.ENTRY) {
+      return parsedText == '' && !this.replies.length;
+    }
+    return !parsedText;
   }
 
 }

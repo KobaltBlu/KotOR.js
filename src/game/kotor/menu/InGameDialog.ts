@@ -47,6 +47,9 @@ export class InGameDialog extends GameMenu {
       this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
+      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+        GameState.CutsceneManager.selectReplyAtIndex(index);
+      }
 
       const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       const material = new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.FrontSide });
@@ -68,17 +71,9 @@ export class InGameDialog extends GameMenu {
 
   setReplies(replies: DLGNode[]) {
     for (let i = 0; i < replies.length; i++) {
-      let reply = replies[i];
-      if(!GameState.CutsceneManager.isContinueDialog(reply)){
-        this.LB_REPLIES.addItem(
-          this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString(), 
-          {
-            onClick: (e) => {
-              GameState.CutsceneManager.onReplySelect(reply);
-            }
-          }
-        );
-      }
+      const reply = replies[i];
+      if(reply.isContinueDialog()){ continue; }
+      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
     }
     this.LB_REPLIES.updateList();
   }

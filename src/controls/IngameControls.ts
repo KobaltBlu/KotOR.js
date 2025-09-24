@@ -295,7 +295,7 @@ export class IngameControls {
                   console.log('MouseUp', Mouse.downItem, Mouse.downItem.name);
                 Mouse.leftClick = false;
               }catch(e){
-
+                console.error(e);
               }
 
             }
@@ -322,7 +322,7 @@ export class IngameControls {
                     console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;
                 }catch(e){
-
+                  console.error(e);
                 }
               }
             }

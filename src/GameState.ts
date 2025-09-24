@@ -1337,7 +1337,7 @@ export class GameState implements EngineContext {
     GameState.CameraShakeManager.afterRender();
 
     //NoClickTimer: Update
-    if( ((GameState.Mode == EngineMode.MINIGAME) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
+    if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
       if(GameState.noClickTimer){
         GameState.noClickTimer -= (1 * delta);
         if(GameState.noClickTimer < 0){

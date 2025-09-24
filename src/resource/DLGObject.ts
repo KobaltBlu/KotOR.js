@@ -140,8 +140,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('EntryList')){
       const entries = this.gff.RootNode.getFieldByLabel('EntryList').getChildStructs();
       for(let i = 0; i < entries.length; i++){
-        let node = DLGNode.FromDialogStruct(entries[i]);
-        node.dialog = this;
+        let node = DLGNode.FromDialogStruct(entries[i], this);
         node.nodeType = DLGNodeType.ENTRY;
         this.entryList.push( node );
       }
@@ -150,8 +149,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('ReplyList')){
       const replies = this.gff.RootNode.getFieldByLabel('ReplyList').getChildStructs();
       for(let i = 0; i < replies.length; i++){
-        let node = DLGNode.FromDialogStruct(replies[i]);
-        node.dialog = this;
+        let node = DLGNode.FromDialogStruct(replies[i], this);
         node.nodeType = DLGNodeType.REPLY;
         this.replyList.push( node );
       }
@@ -184,8 +182,7 @@ export class DLGObject {
 
       for(let i = 0; i < startingList.length; i++){
         let struct = startingList[i];
-        let linkNode = new DLGNode();
-        linkNode.dialog = this;
+        let linkNode = new DLGNode(this);
         linkNode.nodeType = DLGNodeType.STARTING;
         
         linkNode.entries = [];

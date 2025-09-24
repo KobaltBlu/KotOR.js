@@ -38,7 +38,7 @@ export class GUIListBox extends GUIControl {
   scroll: number;
   maxScroll: number;
   GUIProtoItemClass: typeof GUIProtoItem;
-  onSelected: Function;
+  onSelected: (node: any, control: GUIControl, index: number) => void;
   hasProtoItem: boolean;
   protoItem: GUIControl;
   hasScrollBar: boolean;
@@ -268,7 +268,7 @@ export class GUIListBox extends GUIControl {
           if(typeof options.onClick === 'function'){
             ctrl.addEventListener('click', (e) => {
               e.stopPropagation();
-              
+              this.select(ctrl);
               options.onClick(node, ctrl);
             });
           }
@@ -290,7 +290,7 @@ export class GUIListBox extends GUIControl {
           if(typeof options.onClick === 'function'){
             ctrl.addEventListener('click', (e) => {
               e.stopPropagation();
-
+              this.select(ctrl);
               options.onClick(node, ctrl);
             });
           }
@@ -298,7 +298,6 @@ export class GUIListBox extends GUIControl {
           if(typeof options.onValueChanged === 'function'){
             ctrl.addEventListener('valueChanged', (e) => {
               e.stopPropagation();
-              
               options.onValueChanged(node, ctrl);
             });
           }
@@ -324,7 +323,6 @@ export class GUIListBox extends GUIControl {
               ctrl.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.select(ctrl);
-
                 options.onClick(node, ctrl);
               });
             }
@@ -395,7 +393,7 @@ export class GUIListBox extends GUIControl {
 
   select(control: GUIControl){
     try{
-      let len = this.children.length;
+      const len = this.children.length;
       let bWasSelected = false;
       let bWasItemSelected = false;
 
@@ -421,7 +419,7 @@ export class GUIListBox extends GUIControl {
           // item.processEventListener('select');
         }
         if(!bWasItemSelected && typeof this.onSelected === 'function')
-          this.onSelected(control.node, control);
+          this.onSelected(control.node, control, this.children.indexOf(control));
       }
     }catch(e){
       console.error(e);

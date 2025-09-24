@@ -37,6 +37,9 @@ export class InGameDialog extends K1_InGameDialog {
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
       this.LB_REPLIES.padding = 5;
+      this.LB_REPLIES.onSelected = (entry: any, control: any, index: number) => {
+        GameState.CutsceneManager.selectReplyAtIndex(index);
+      }
 
       let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
