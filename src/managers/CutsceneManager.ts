@@ -214,6 +214,7 @@ export class CutsceneManager {
     this.currentEntry = entry;
     this.currentEntry.repliesShown = false;
     entry.initProperties();
+    const isComputerCameraEntry = this.dialog.getConversationType() == DLGConversationType.COMPUTER && entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA;
     this.state = ConversationState.LISTENING_TO_SPEAKER;
     if (GameState.Mode != EngineMode.DIALOG)
       return;
@@ -250,7 +251,9 @@ export class CutsceneManager {
     //Node Delay
     const nodeDelay = (this.cutsceneMode != CutsceneMode.ANIMATED && entry.delay > -1) ? entry.delay * 1000 : ENTRY_DELAY;
     entry.setNodeDelay(nodeDelay);
-
+    if(isComputerCameraEntry){
+      entry.setNodeDelay(5000);
+    }
     //Node camera
     this.setEntryCamera(entry);
 
@@ -266,7 +269,7 @@ export class CutsceneManager {
 
 
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-      if(entry.isContinueDialog()){
+      if(entry.isContinueDialog() && !isComputerCameraEntry){
         this.onReplySelect(replies[0]);
       }else{
         GameState.MenuManager.InGameComputer.setReplies(replies);
