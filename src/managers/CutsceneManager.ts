@@ -250,9 +250,6 @@ export class CutsceneManager {
     //Node Delay
     const nodeDelay = (this.cutsceneMode != CutsceneMode.ANIMATED && entry.delay > -1) ? entry.delay * 1000 : ENTRY_DELAY;
     entry.setNodeDelay(nodeDelay);
-    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-      // entry.setNodeDelay(9999);
-    }
 
     //Node camera
     this.setEntryCamera(entry);
@@ -263,14 +260,20 @@ export class CutsceneManager {
     //replies
     const replies = this.dialog.getAvailableReplies(entry);
     this.currentReplies = replies;
-    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-      GameState.MenuManager.InGameComputer.setReplies(replies);
-    }else{
-      GameState.MenuManager.InGameDialog.setReplies(replies);
-    }
 
     //vo
     entry.playVoiceOver(this.audioEmitter);
+
+
+    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      if(entry.isContinueDialog()){
+        this.onReplySelect(replies[0]);
+      }else{
+        GameState.MenuManager.InGameComputer.setReplies(replies);
+      }
+    }else{
+      GameState.MenuManager.InGameDialog.setReplies(replies);
+    }
   }
 
   /**
