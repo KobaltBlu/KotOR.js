@@ -191,4 +191,9 @@ export class OdysseyModel {
     return anim;
   }
 
+  static FromBuffers(mdl_buffer: Uint8Array, mdx_buffer: Uint8Array): OdysseyModel {
+    let mdlReader = new BinaryReader(mdl_buffer);
+    let mdxReader = new BinaryReader(mdx_buffer);
+    return new OdysseyModel(mdlReader, mdxReader);
+  }
 }

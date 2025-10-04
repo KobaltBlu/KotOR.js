@@ -1,80 +1,150 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
 import { OdysseyModel } from "../odyssey";
 import { ResourceLoader } from "./ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 
-export interface ModelCacheReference {
-  model: OdysseyModel;
-  // mdl: Uint8Array;
-  // mdx: Uint8Array;
-}
-
+/**
+ * Interface defining the structure of the model cache.
+ * 
+ * This interface provides type safety for the model cache system,
+ * ensuring that models are stored and retrieved using consistent
+ * data structures.
+ * 
+ * @interface ModelCacheInterface
+ */
 export interface ModelCacheInterface {
-  models: Map<string, ModelCacheReference>
+  /** Map storing loaded models with their resource references as keys */
+  models: Map<string, OdysseyModel>
 }
 
+/**
+ * Global model cache instance for storing loaded 3D models.
+ * 
+ * This cache prevents redundant loading of the same models
+ * and improves performance by reusing already loaded model data.
+ * 
+ * @constant {ModelCacheInterface}
+ */
 const ModelCache: ModelCacheInterface = {
-  models: new Map<string, ModelCacheReference>()
+  models: new Map<string, OdysseyModel>()
 };
 
 /**
- * MDLLoader class.
+ * Resource type ID for MDL (Model) files.
  * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * @constant {number}
+ */
+const resMDL: number = ResourceTypes['mdl'];
+
+/**
+ * Resource type ID for MDX (Model Extension) files.
+ * 
+ * @constant {number}
+ */
+const resMDX: number = ResourceTypes['mdx'];
+
+/**
+ * MDLLoader class for loading and caching 3D models from MDL/MDX files.
+ * 
+ * This class handles the loading of 3D models used in the game, including
+ * characters, objects, and environmental elements. It provides caching
+ * functionality to improve performance by avoiding redundant file loads.
+ * 
+ * The loader works with both MDL (Model) and MDX (Model Extension) files,
+ * which together contain the complete 3D model data including geometry,
+ * textures, animations, and other model properties.
+ * 
+ * @class MDLLoader
  * 
  * @file MDLLoader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MDLLoader {
+  /** Static singleton instance of the MDL loader */
   static loader = new MDLLoader();
   
-	load (resref: string = ''): Promise<OdysseyModel> {
-    resref = resref.toLocaleLowerCase();
-    return new Promise<OdysseyModel>( (resolve, reject) => {
-      try{
-        if(ModelCache.models.has(resref)){
-          const ref = ModelCache.models.get(resref);
-          // const mdl = MDLLoader.MDLFromBuffer(ref.mdl, ref.mdx);
-          resolve(ref.model);
-        }else{
-          ResourceLoader.loadResource(ResourceTypes['mdl'], resref).then((mdl_buffer: Uint8Array) => {
-            ResourceLoader.loadResource(ResourceTypes['mdx'], resref).then((mdx_buffer: Uint8Array) => {
-              const mdl = MDLLoader.MDLFromBuffer(mdl_buffer, mdx_buffer);
+  /**
+   * Loads a 3D model from MDL/MDX files with caching support.
+   * 
+   * This method first checks if the model is already cached to avoid
+   * redundant file system operations. If not cached, it loads both
+   * the MDL and MDX files in parallel for optimal performance.
+   * 
+   * The method handles resource validation, error handling, and automatic
+   * caching of successfully loaded models.
+   * 
+   * @async
+   * @param {string} [resref=''] - The resource reference (filename without extension) of the model to load
+   * @returns {Promise<OdysseyModel>} The loaded OdysseyModel instance, or undefined if loading fails
+   * 
+   * @throws {Error} Throws an error if the resource cannot be found or loaded
+   * 
+   * @example
+   * // Load a character model
+   * const model = await MDLLoader.loader.load('p_male01');
+   * if (model) {
+   *   console.log('Model loaded successfully');
+   * }
+   * 
+   * @example
+   * // Load an environmental object
+   * const doorModel = await MDLLoader.loader.load('door_01');
+   * if (doorModel) {
+   *   // Use the model in the game
+   * }
+   */
+	async load (resref: string = ''): Promise<OdysseyModel> {
+    resref = resref?.toLocaleLowerCase();
 
-              ModelCache.models.set(resref, {
-                model: mdl,
-                // mdl: mdl_buffer,
-                // mdx: mdx_buffer
-              });
+    //Validate the resource reference
+    if(!resref){
+      return undefined;
+    }
 
-              resolve(mdl);
-            }).catch( (e) => {
-              console.error(e);
-              console.error('MDX 404', resref);
-              reject(e);
-            });
-          }).catch( (e) => {
-            console.error(e);
-            console.error('MDL 404', resref);
-            reject(e);
-          });
-        }
-      }catch(e: any){
-        console.error('MDLLoader.load', resref, e);
-        reject(e);
+    //Try to load the model
+    try{
+      //Check the cache
+      if(ModelCache.models.has(resref)){
+        return ModelCache.models.get(resref);
       }
-    });
+
+      //Load the resources from disk
+      const mdlPromise = ResourceLoader.loadResource(resMDL, resref);
+      const mdxPromise = ResourceLoader.loadResource(resMDX, resref);
+
+      const [mdl_buffer, mdx_buffer] = await Promise.all([mdlPromise, mdxPromise]);
+      const model = OdysseyModel.FromBuffers(mdl_buffer, mdx_buffer);
+      ModelCache.models.set(resref, model);
+      return model;
+    }catch(e: any){
+      console.warn('MD(L|X) 404', resref);
+      console.error(e);
+      return undefined;
+    }
 	}
 
+  /**
+   * Clears the model cache, freeing up memory and forcing fresh loads.
+   * 
+   * This method removes all cached models from memory, which can be useful
+   * for memory management or when you need to force reload models with
+   * updated data. After calling this method, subsequent load() calls will
+   * need to load models from the file system again.
+   * 
+   * @returns {void}
+   * 
+   * @example
+   * // Clear the cache to free up memory
+   * MDLLoader.loader.reset();
+   * console.log('Model cache cleared');
+   * 
+   * @example
+   * // Force reload a model after cache clear
+   * MDLLoader.loader.reset();
+   * const model = await MDLLoader.loader.load('p_male01'); // Will load from disk
+   */
   reset(){
     ModelCache.models.clear();
-  }
-
-  static MDLFromBuffer(mdl_buffer: Uint8Array, mdx_buffer: Uint8Array): OdysseyModel {
-    let mdlReader = new BinaryReader(mdl_buffer);
-    let mdxReader = new BinaryReader(mdx_buffer);
-    return new OdysseyModel(mdlReader, mdxReader);
   }
 
 }
