@@ -65,6 +65,7 @@ import { DebuggerState } from "./enums/server/DebuggerState";
 import type { IPCMessage } from "./server/ipc/IPCMessage";
 import { IPCMessageType } from "./enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "./enums/server/ipc/IPCMessageTypeDebug";
+import { PerformanceMonitor } from "./utility/PerformanceMonitor";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -706,7 +707,9 @@ export class GameState implements EngineContext {
 
     try{
       //init shaders
+      PerformanceMonitor.start('ShaderManager.Init');
       GameState.ShaderManager.Init();
+      PerformanceMonitor.stop('ShaderManager.Init');
 
       GameState.TutorialWindowTracker = [];
 
@@ -750,13 +753,20 @@ export class GameState implements EngineContext {
       GameState.scene.add( GameState.CursorManager.testPoints );
       console.log('CursorManager: Complete');
 
+      PerformanceMonitor.start('PartyManager.Initialize');
       GameState.PartyManager.Initialize();
+      PerformanceMonitor.stop('PartyManager.Initialize');
 
       /**
        * Initialize the MenuManager
        */
+      PerformanceMonitor.start('MenuManager.Init');
       GameState.MenuManager.Init();
+      PerformanceMonitor.stop('MenuManager.Init');
+
+      PerformanceMonitor.start('MenuManager.LoadGameMenus');
       await GameState.MenuManager.LoadGameMenus();
+      PerformanceMonitor.stop('MenuManager.LoadGameMenus');
 
       GameState.MenuManager.MenuJournal.childMenu = GameState.MenuManager.MenuTop;
       GameState.MenuManager.MenuInventory.childMenu = GameState.MenuManager.MenuTop;
@@ -778,12 +788,15 @@ export class GameState implements EngineContext {
         undefined,
         TextureType.TEXTURE
       );
+      PerformanceMonitor.start('TextureLoader.LoadQueue');
       await TextureLoader.LoadQueue();
+      PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
       GameState.Ready = true;
       if(GameState.OpeningMoviesComplete){
         GameState.Start();
       }
+      console.log(PerformanceMonitor.toString());
     }catch(e){
       console.error(e);
     }

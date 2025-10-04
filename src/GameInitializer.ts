@@ -26,6 +26,7 @@ import { GameEffectFactory } from "./effects/GameEffectFactory";
 import { GameEventFactory } from "./events/GameEventFactory";
 import { INIConfig } from "./engine/INIConfig";
 import { CacheScope } from "./enums";
+import { PerformanceMonitor } from "./utility/PerformanceMonitor";
 
 /**
  * GameInitializer class.
@@ -175,25 +176,39 @@ export class GameInitializer {
 
     GameInitializer.currentGame = game;
 
+    PerformanceMonitor.start('configclient');
     await ConfigClient.Init();
+    PerformanceMonitor.stop('configclient');
     
     GameInitializer.SetLoadingMessage("Loading Keys");
+    PerformanceMonitor.start('keys');
     await KEYManager.Load('chitin.key');
+    PerformanceMonitor.stop('keys');
+
+    PerformanceMonitor.start('globalcache');
     await ResourceLoader.InitGlobalCache();
+    PerformanceMonitor.stop('globalcache');
+
     GameInitializer.SetLoadingMessage("Loading Game Resources");
+    PerformanceMonitor.start('gameresources');
     await GameInitializer.LoadGameResources();
+    PerformanceMonitor.stop('gameresources');
 
     /**
      * Initialize Journal
      */
     GameInitializer.SetLoadingMessage("Loading JRL File");
+    PerformanceMonitor.start('journal');
     await JournalManager.LoadJournal();
+    PerformanceMonitor.stop('journal');
 
     /**
      * Initialize TLK
      */
     GameInitializer.SetLoadingMessage("Loading TLK File");
+    PerformanceMonitor.start('tlk');
     await TLKManager.LoadTalkTable();
+    PerformanceMonitor.stop('tlk');
 
     GameInitializer.SetLoadingMessage("Initializing Controls");
     /**
@@ -239,44 +254,66 @@ export class GameInitializer {
     /**
      * Initialize SaveGame Folder
      */
+    PerformanceMonitor.start('SaveGame.GetSaveGames');
     await SaveGame.GetSaveGames();
+    PerformanceMonitor.stop('SaveGame.GetSaveGames');
 
     VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects') as any);
   }
 
   static async LoadGameResources(){
     GameInitializer.SetLoadingMessage("Loading Override");
+    PerformanceMonitor.start('override');
     await GameInitializer.LoadOverride();
+    PerformanceMonitor.stop('override');
 
     GameInitializer.SetLoadingMessage("Loading BIF's");
 
     GameInitializer.SetLoadingMessage("Loading RIM's");
+    PerformanceMonitor.start('rims');
     await GameInitializer.LoadRIMs();
+    PerformanceMonitor.stop('rims');
 
     GameInitializer.SetLoadingMessage("Loading Modules");
+    PerformanceMonitor.start('modules');
     await GameInitializer.LoadModules();
+    PerformanceMonitor.stop('modules');
 
     GameInitializer.SetLoadingMessage("Loading Lips");
+    PerformanceMonitor.start('lips');
     await GameInitializer.LoadLips();
+    PerformanceMonitor.stop('lips');
 
     GameInitializer.SetLoadingMessage('Loading: 2DA\'s');
+    PerformanceMonitor.start('2das');
     await GameInitializer.Load2DAs();
+    PerformanceMonitor.stop('2das');
 
     GameInitializer.SetLoadingMessage('Loading: Texture Packs');
+    PerformanceMonitor.start('texturepacks');
     await GameInitializer.LoadTexturePacks();
+    PerformanceMonitor.stop('texturepacks');
 
     GameInitializer.SetLoadingMessage('Loading: Stream Music');
+    PerformanceMonitor.start('streammusic');
     await GameInitializer.LoadGameAudioResources('streammusic');
+    PerformanceMonitor.stop('streammusic');
 
     GameInitializer.SetLoadingMessage('Loading: Stream Sounds');
+    PerformanceMonitor.start('streamsounds');
     await GameInitializer.LoadGameAudioResources('streamsounds');
+    PerformanceMonitor.stop('streamsounds');
 
     if(GameState.GameKey != GameEngineType.TSL){
       GameInitializer.SetLoadingMessage('Loading: Stream Waves');
+      PerformanceMonitor.start('streamwaves');
       await GameInitializer.LoadGameAudioResources('streamwaves');
+      PerformanceMonitor.stop('streamwaves');
     }else{
       GameInitializer.SetLoadingMessage('Loading: Stream Voice');
+      PerformanceMonitor.start('streamvoice');
       await GameInitializer.LoadGameAudioResources('streamvoice');
+      PerformanceMonitor.stop('streamvoice');
     }
   }
 
@@ -285,7 +322,9 @@ export class GameInitializer {
       return;
     }
     GameInitializer.SetLoadingMessage('Loading: RIM Archives');
+    PerformanceMonitor.start('RIMManager.Load');
     await RIMManager.Load();
+    PerformanceMonitor.stop('RIMManager.Load');
   }
 
   static async LoadLips(){

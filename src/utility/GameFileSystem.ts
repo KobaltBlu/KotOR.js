@@ -189,23 +189,50 @@ export class GameFileSystem {
       }
 
       if(pathOrHandle instanceof FileSystemDirectoryHandle){
+        // Convert async iterator to array for parallel processing
+        const entries = [];
         for await (const entry of pathOrHandle.values()) {
-          if (entry.kind === "file"){
-            if(!opts.list_dirs){
+          entries.push(entry);
+        }
+
+        // Separate files and directories for parallel processing
+        const fileEntries = [];
+        const directoryEntries = [];
+
+        for (const entry of entries) {
+          if (entry.kind === "file") {
+            if (!opts.list_dirs) {
+              fileEntries.push(entry.name);
+            }
+          } else if (entry.kind === "directory") {
+            if (opts.recursive) {
+              directoryEntries.push(entry);
+            } else {
               files.push(path.join(dirbase, entry.name));
-            }else{
-              //don't push a file when we are only listing directories
             }
           }
-          if (entry.kind === "directory"){
-            let newdirbase = path.join(dirbase, entry.name);
-            // if(!dirbase) dirbase = 
-            // files.push(entry.name);
-            if(opts.recursive){
-              await this.readdir_web(entry, opts, files, newdirbase);
-            }else{
-              files.push(path.join(dirbase, entry.name));
-            }
+        }
+
+        // Add files to results (no async needed)
+        for (const fileName of fileEntries) {
+          files.push(path.join(dirbase, fileName));
+        }
+
+        // Process subdirectories in parallel using Promise.all
+        if (opts.recursive && directoryEntries.length > 0) {
+          const subdirPromises = directoryEntries.map(async (entry) => {
+            const newdirbase = path.join(dirbase, entry.name);
+            const subdirFiles: string[] = [];
+            await this.readdir_web(entry, opts, subdirFiles, newdirbase);
+            return subdirFiles;
+          });
+
+          // Process all subdirectories in parallel
+          const subdirResults = await Promise.all(subdirPromises);
+          
+          // Flatten results
+          for (const subdirFiles of subdirResults) {
+            files.push(...subdirFiles);
           }
         }
       }

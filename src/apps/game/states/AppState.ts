@@ -203,6 +203,7 @@ export class AppState {
     });
     AppState.processEventListener('on-game-loaded', []);
     
+    AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
     console.log('init complete');
