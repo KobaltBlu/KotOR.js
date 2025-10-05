@@ -315,25 +315,25 @@ export class ModuleRoom extends ModuleObject {
 
   buildGrass(){
     if(!this.area.grass.textureName){
-      console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass texture found for room', this.roomName);
       return;
     }
 
     const density = this.area.grass.density;
     const quadOffsetZ = this.area.grass.quadSize/2;
     if(!this.model){
-      console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No model found for room', this.roomName);
       return;
     }
 
     const aabb = this.model.aabb;
     if(!(aabb instanceof OdysseyModelNodeAABB)){
-      console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
     if(!aabb.grassFaces.length){
-      console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
 
@@ -391,7 +391,7 @@ export class ModuleRoom extends ModuleObject {
     const totalGrassCount = faceData.totalGrassCount;
     
     if(totalGrassCount === 0){
-      console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass instances to create for room', this.roomName);
       return;
     }
 
@@ -634,7 +634,7 @@ export class ModuleRoom extends ModuleObject {
    */
   private loadGrassTextures(grass_material: THREE.ShaderMaterial, lm_texture: any): void {
     if(!this.area.grass.textureName){
-      console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
+      // console.warn('ModuleRoom.buildGrass: No grass texture found for room ' + this.roomName);
       return;
     }
     
@@ -650,7 +650,7 @@ export class ModuleRoom extends ModuleObject {
       grass_material.needsUpdate = true;
       
       if(!lm_texture){
-        console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
+        // console.warn('ModuleRoom.buildGrass: No grass lightmap found for room ' + this.roomName);
         return;
       }
       

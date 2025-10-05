@@ -73,8 +73,7 @@ export class ResourceLoader {
     console.log(`InitModuleCache: Start`);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.MODULE];
-    for(let i = 0; i < archives.length; i++){
-      const archive = archives[i];
+    await Promise.all(archives.map(async (archive) => {
       if(archive instanceof RIMObject){
         const resources = archive.resources;
         for(let i = 0; i < resources.length; i++){
@@ -98,7 +97,7 @@ export class ResourceLoader {
           );
         }
       }
-    }
+    }));
 
     let end = Date.now();
     console.log(`InitModuleCache: End - ${((end-start)/1000)}s`);

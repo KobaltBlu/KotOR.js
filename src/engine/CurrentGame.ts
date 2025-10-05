@@ -123,12 +123,10 @@ export class CurrentGame {
   }
 
   static async ExtractERFToGameInProgress( erf: ERFObject ){
-    if(erf instanceof ERFObject){
-      for(let i = 0; i < erf.keyList.length; i++){
-        const erf_key = erf.keyList[i];
-        await erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType);
-      }
-    }
+    if(!(erf instanceof ERFObject)) return;
+    await Promise.all(erf.keyList.map(async (erf_key) => {
+      await erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType);
+    }));
   }
 
   static async WriteFile( filename: string, buffer: Uint8Array){

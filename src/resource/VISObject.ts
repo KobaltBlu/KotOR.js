@@ -50,7 +50,7 @@ export class VISObject {
   }
 
   read(data?: Uint8Array){
-    console.log('VISObject.read');
+    // console.log('VISObject.read');
     if(data){
       this.data = data;
     }
@@ -64,7 +64,7 @@ export class VISObject {
     const lines = text.split('\n');
     const lineCount = lines.length;
 
-    console.log(`VISObject.read: ${lineCount} lines found`);
+    // console.log(`VISObject.read: ${lineCount} lines found`);
 
     this.resetReadContext();
 
@@ -93,7 +93,7 @@ export class VISObject {
        * Child Room parse logic
        */
       if(isChildRoom){
-        console.log(`VISObject.read: Child Room: ${line}`);
+        // console.log(`VISObject.read: Child Room: ${line}`);
         this.readContext.mode = VISReadMode.CHILD_ROOMS;
         //CHILD_ROOMS
         this.readContext.currentRoom.rooms.push(line);
@@ -104,7 +104,7 @@ export class VISObject {
        */
       else
       {
-        console.log(`VISObject.read: Parent Room: ${line}`);
+        // console.log(`VISObject.read: Parent Room: ${line}`);
         //If we are still in CHILD_ROOMS mode and the current line is a room.
         //Push the currentRoom to the rooms array and reset the current room var
         if(this.readContext.mode == VISReadMode.CHILD_ROOMS){
@@ -122,7 +122,7 @@ export class VISObject {
     }
 
     this.resetReadContext();
-    console.log('VISObject.read: Done!');
+    // console.log('VISObject.read: Done!');
   }
 
   /**
@@ -228,7 +228,7 @@ export class VISObject {
    * @param fileName - The name of the file to export to
    */
   export (fileName = 'm01aa') {
-    console.log(`VISObject.export: ${fileName}.vis`);
+    // console.log(`VISObject.export: ${fileName}.vis`);
     const data = new BinaryWriter();
 
     const rooms = Array.from(this.rooms.values());
@@ -240,7 +240,7 @@ export class VISObject {
     for(let i = 0; i < rooms.length; i++){
       const room = rooms[i];
       const roomCount = room.rooms.length;
-      console.log(`VISObject.export: ${room.name} - ${roomCount} child rooms`);
+      // console.log(`VISObject.export: ${room.name} - ${roomCount} child rooms`);
 
       data.writeChars(room.name+' '+roomCount);
 
@@ -251,7 +251,7 @@ export class VISObject {
        * Write the child rooms to the output buffer
        */
       for( let j = 0; j < roomCount; j++ ){
-        console.log(`VISObject.export: ${room.rooms[j]}`);
+        // console.log(`VISObject.export: ${room.rooms[j]}`);
         data.writeChars('  '+room.rooms[j]);
         if(i < ( rooms.length - 1 ) || j < (roomCount - 1)){
           data.writeByte(13); //CarriageReturn
@@ -265,7 +265,7 @@ export class VISObject {
      * Write the output buffer to a file
      */
     GameFileSystem.writeFile(`${fileName}.vis`, data.buffer).then( () => {
-      console.log(`VISObject.export: ${fileName}.vis saved`);
+      // console.log(`VISObject.export: ${fileName}.vis saved`);
     });
 
   }

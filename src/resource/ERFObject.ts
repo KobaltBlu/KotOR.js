@@ -267,7 +267,7 @@ export class ERFObject {
       let buffer = new Uint8Array(resource.size);
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
-      console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
+      // console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
       await GameFileSystem.writeFile(
         path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
       );

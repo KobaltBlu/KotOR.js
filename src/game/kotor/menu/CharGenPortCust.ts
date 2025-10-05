@@ -38,6 +38,8 @@ export class CharGenPortCust extends GameMenu {
   _3dView: LBL_3DView;
   sceneModel3D: OdysseyModel3D;
 
+  isCharLoading: boolean = false;
+
   constructor(){
     super();
     this.gui_resref = 'portcust';
@@ -51,6 +53,8 @@ export class CharGenPortCust extends GameMenu {
     if(skipInit) return;
     this.BTN_ARRL.addEventListener('click', (e) => {
       e.stopPropagation();
+      if(this.isCharLoading) return;
+      this.isCharLoading = true;
       const creature = GameState.CharGenManager.selectedCreature;
     
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
@@ -87,12 +91,15 @@ export class CharGenPortCust extends GameMenu {
           model.removeFromParent();
           this._3dView.addModel(model);
         }
+        this.isCharLoading = false;
       });
 
     });
 
     this.BTN_ARRR.addEventListener('click', (e) => {
       e.stopPropagation();
+      if(this.isCharLoading) return;
+      this.isCharLoading = true;
       const creature = GameState.CharGenManager.selectedCreature;
 
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
@@ -129,6 +136,7 @@ export class CharGenPortCust extends GameMenu {
           model.removeFromParent();
           this._3dView.addModel(model);
         }
+        this.isCharLoading = false;
       });
 
     });
