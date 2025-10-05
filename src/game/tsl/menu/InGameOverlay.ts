@@ -367,7 +367,7 @@ export class InGameOverlay extends K1_InGameOverlay {
 
   show() {
     super.show();
-    GameState.Mode = EngineMode.INGAME;
+    GameState.SetEngineMode(EngineMode.INGAME);
     // this.BTN_ACTIONDOWN0.flipY();
     // this.BTN_ACTIONDOWN1.flipY();
     // this.BTN_ACTIONDOWN2.flipY();

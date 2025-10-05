@@ -91,6 +91,7 @@ export class GameState implements EngineContext {
     // "mgPazaakStart": []
   };
 
+  static PerformanceMonitor: typeof PerformanceMonitor;
   static AppearanceManager: typeof AppearanceManager;
   static AutoPauseManager: typeof AutoPauseManager;
   static CameraShakeManager: typeof CameraShakeManager;
@@ -734,7 +735,7 @@ export class GameState implements EngineContext {
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
       //AudioEngine.Unmute()
-      GameState.Mode = EngineMode.GUI;
+      GameState.SetEngineMode(EngineMode.GUI);
       GameState.State = EngineState.RUNNING;
       GameState.inMenu = false;
 
@@ -764,22 +765,9 @@ export class GameState implements EngineContext {
       GameState.MenuManager.Init();
       PerformanceMonitor.stop('MenuManager.Init');
 
-      PerformanceMonitor.start('MenuManager.LoadGameMenus');
-      await GameState.MenuManager.LoadGameMenus();
-      PerformanceMonitor.stop('MenuManager.LoadGameMenus');
-
-      GameState.MenuManager.MenuJournal.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuInventory.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuEquipment.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuCharacter.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuMessages.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuOptions.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
-      GameState.MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
-
-      if(GameState.GameKey == GameEngineType.TSL){
-        GameState.MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
-      }
+      PerformanceMonitor.start('MenuManager.LoadMainGameMenus');
+      await GameState.MenuManager.LoadMainGameMenus();
+      PerformanceMonitor.stop('MenuManager.LoadMainGameMenus');
 
       /**
        * Preload fx textures
@@ -989,7 +977,7 @@ export class GameState implements EngineContext {
     /**
      * Set the game mode to loading
      */
-    GameState.Mode = EngineMode.LOADING;
+    GameState.SetEngineMode(EngineMode.LOADING);
     GameState.MenuManager.ClearMenus();
 
     GameState.UnloadModule();
@@ -998,6 +986,8 @@ export class GameState implements EngineContext {
     await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
     GameState.MenuManager.LoadScreen.showRandomHint();
     GameState.MenuManager.LoadScreen.open();
+
+    await GameState.MenuManager.LoadInGameMenus();
     
     GameState.VideoEffectManager.SetVideoEffect(-1);
     CursorManager.selectableObjects = [];
@@ -1007,7 +997,7 @@ export class GameState implements EngineContext {
     await VideoPlayer.Load(sMovie4);
     await VideoPlayer.Load(sMovie5);
     await VideoPlayer.Load(sMovie6);
-    GameState.Mode = EngineMode.LOADING;
+    GameState.SetEngineMode(EngineMode.LOADING);
     
     if(GameState.module){
       try{ await GameState.module.save(); }catch(e){
@@ -1059,7 +1049,7 @@ export class GameState implements EngineContext {
     
     console.log('ModuleArea.initAreaObjects');
     await GameState.module.area.initAreaObjects(runSpawnScripts);
-    GameState.Mode = GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME;
+    GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
     console.log('ModuleArea: ready to play');
     GameState.module.readyToProcessEvents = true;
 
@@ -1080,12 +1070,37 @@ export class GameState implements EngineContext {
   static RestoreEnginePlayMode(): void {
     if(GameState.module){
       if(GameState.module.area.miniGame){
-        GameState.Mode = EngineMode.MINIGAME
+        GameState.SetEngineMode(EngineMode.MINIGAME)
       }else{
-        GameState.Mode = EngineMode.INGAME;
+        GameState.SetEngineMode(EngineMode.INGAME);
       }
     }else{
-      GameState.Mode = EngineMode.GUI;
+      GameState.SetEngineMode(EngineMode.GUI);
+    }
+  }
+
+  static SetEngineMode(mode: EngineMode){
+    if(GameState.Mode == mode){
+      return;
+    }
+    GameState.Mode = mode;
+    if(mode == EngineMode.LOADING){
+      if(GameState.MenuManager.LoadScreen){
+        GameState.MenuManager.LoadScreen.setProgress(0);
+        GameState.MenuManager.LoadScreen.open();
+      }
+    }
+
+    if(mode != EngineMode.INGAME){
+      if(GameState.MenuManager.InGameBark)
+        GameState.MenuManager.InGameBark.hide();
+  
+      if(GameState.MenuManager.InGameAreaTransition)
+        GameState.MenuManager.InGameAreaTransition.hide();
+    }
+
+    if(mode == EngineMode.GUI && GameState.FadeOverlayManager.material.visible){
+      GameState.FadeOverlayManager.material.visible = false;
     }
   }
 
@@ -1096,7 +1111,7 @@ export class GameState implements EngineContext {
     ResourceLoader.clearCache();
 
     GameState.scene.visible = false;
-    GameState.Mode = EngineMode.LOADING;
+    GameState.SetEngineMode(EngineMode.LOADING);
     GameState.ModuleObjectManager.Reset();
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
@@ -1113,9 +1128,6 @@ export class GameState implements EngineContext {
 
     GameState.staticCameras = [];
     GameState.ConversationPaused = false;
-
-    GameState.MenuManager.InGameBark.hide();
-    GameState.MenuManager.InGameAreaTransition.hide();
 
     if(!AudioEngine.isMuted)
       AudioEngine.Mute();
@@ -1166,7 +1178,8 @@ export class GameState implements EngineContext {
     GameState.VideoEffectManager.Update(delta);
 
     GameState.MenuManager.Update(delta);
-    GameState.MenuManager.InGameAreaTransition.hide();
+    if(GameState.MenuManager.InGameAreaTransition)
+      GameState.MenuManager.InGameAreaTransition.hide();
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
@@ -1176,7 +1189,8 @@ export class GameState implements EngineContext {
     } 
 
     GameState.scene_cursor_holder.visible = true;
-    GameState.MenuManager.InGamePause.hide();
+    if(GameState.MenuManager.InGamePause)
+      GameState.MenuManager.InGamePause.hide();
 
     if(
       GameState.Mode == EngineMode.MINIGAME || 

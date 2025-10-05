@@ -8,7 +8,7 @@ import { TLKManager } from "../managers/TLKManager";
 import { TextureLoader } from "../loaders/TextureLoader";
 import { TextureType } from "../enums/loaders/TextureType";
 import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import GUIFont from "../gui/GUIFont";
+import { GUIFont } from "../gui/GUIFont";
 import { GUIControlAlignment } from "../enums";
 
 const itemSize = 2

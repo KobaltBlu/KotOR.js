@@ -76,7 +76,9 @@ export class GameMenu {
   }
 
   async load(): Promise<GameMenu> {
+    GameState.PerformanceMonitor.start(this.constructor.name+'.load');
     await this.loadMenu();
+    GameState.PerformanceMonitor.stop(this.constructor.name+'.load');
     return this;
   }
 
@@ -96,37 +98,37 @@ export class GameMenu {
   }
 
   async buildMenu(gff: GFFObject){
-    return new Promise( async (resolve: Function, reject: Function) => {
-      this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
-      this.tGuiPanel.allowClick = false;
-      
-      let extent = this.tGuiPanel.extent;
-      this.width = extent.width;
-      this.height = extent.height;
+    GameState.PerformanceMonitor.start(this.constructor.name+'.buildMenu');
+    this.tGuiPanel = new GUIControl(this, gff.RootNode, undefined, this.enablePositionScaling);
+    this.tGuiPanel.allowClick = false;
+    
+    const extent = this.tGuiPanel.extent;
+    this.width = extent.width;
+    this.height = extent.height;
 
-      let panelControl = this.tGuiPanel.createControl();
+    const panelControl = this.tGuiPanel.createControl();
 
-      if(this.voidFill){
-        this.tGuiPanel.widget.add(this.backgroundVoidSprite);
-      }
+    if(this.voidFill){
+      this.tGuiPanel.widget.add(this.backgroundVoidSprite);
+    }
 
-      if(this.backgroundSprite){
-        this.tGuiPanel.widget.add(this.backgroundSprite);
-      }
-      
-      panelControl.position.x = 0;
-      panelControl.position.y = 0;
+    if(this.backgroundSprite){
+      this.tGuiPanel.widget.add(this.backgroundSprite);
+    }
+    
+    panelControl.position.x = 0;
+    panelControl.position.y = 0;
 
-      //This auto assigns references for the controls to the menu object.
-      //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
-      //You can just use this.CONTROL_NAME 
-      this.assignChildControlsToMenu(this.tGuiPanel);
+    //This auto assigns references for the controls to the menu object.
+    //It is no longer required to use this.getControlByName('CONTROL_NAME') when initializing a menu
+    //You can just use this.CONTROL_NAME 
+    this.assignChildControlsToMenu(this.tGuiPanel);
 
-      await this.menuControlInitializer();
+    await this.menuControlInitializer();
 
-      await TextureLoader.LoadQueue();
-      resolve(this);
-    });
+    await TextureLoader.LoadQueue();
+    GameState.PerformanceMonitor.stop(this.constructor.name+'.buildMenu');
+    return this;
   }
 
   async menuControlInitializer(skipInit: boolean = false): Promise<any> {
@@ -134,13 +136,13 @@ export class GameMenu {
   };
 
   assignChildControlsToMenu(object: GUIControl){
-    if(object){
-      for(let i = 0, len = object.children.length; i < len; i++){
-        let ctrl = object.children[i];
-        if(!isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
-        (this as any)[ctrl.name] = ctrl;
-        this.assignChildControlsToMenu(ctrl);
-      }
+    if(!object){ return; }
+
+    for(let i = 0, len = object.children.length; i < len; i++){
+      const ctrl = object.children[i];
+      if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
+      (this as any)[ctrl.name] = ctrl;
+      this.assignChildControlsToMenu(ctrl);
     }
   }
 
@@ -188,12 +190,8 @@ export class GameMenu {
     }
   }
 
-  loadTexture( resRef: string ): Promise<OdysseyTexture> {
-    return new Promise<OdysseyTexture>( (resolve, reject) => {
-      TextureLoader.Load(resRef).then((texture: OdysseyTexture) => {
-        resolve(texture);
-      });
-    });
+  async loadTexture( resRef: string ): Promise<OdysseyTexture> {
+    return await TextureLoader.Load(resRef);
   }
 
   getControlByName(name: string): GUIControl {
@@ -217,7 +215,7 @@ export class GameMenu {
   show(){
     // this.Hide();
     if(!this.isOverlayGUI)
-      GameState.Mode = this.engineMode;
+      GameState.SetEngineMode(this.engineMode);
       
     this.bVisible = true;
     GameState.scene_gui.add(this.tGuiPanel.getControl());

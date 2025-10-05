@@ -45,10 +45,6 @@ export class ResourceLoader {
 
   static async InitGlobalCache(){
     ResourceLoader.ClearCache(CacheScope.GLOBAL);
-
-    let start = Date.now();
-    console.log(`InitGlobalCache: Start`);
-
     const cacheableTemplates = [
       ResourceTypes['ncs'], ResourceTypes['utc'], ResourceTypes['uti'], 
       ResourceTypes['utd'], ResourceTypes['utp'], ResourceTypes['uts'],
@@ -60,16 +56,13 @@ export class ResourceLoader {
 
     const scope = ResourceLoader.CacheScopes[CacheScope.GLOBAL];
     const keys = KEYManager.Key.keys.filter( k => cacheableTemplates.includes(k.resType) );
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
+    await Promise.all(keys.map(async (key) => {
+      const buffer = await KEYManager.Key.getFileBuffer(key);
       scope.get(key.resType).set(
-        key.resRef.toLocaleLowerCase(), 
-        await KEYManager.Key.getFileBuffer(key)
+        key.resRef.toLocaleLowerCase(),
+        buffer
       );
-    }
-    let end = Date.now();
-    console.log(`InitGlobalCache: End - ${((end-start)/1000)}s`);
-
+    }));
   }
 
   static async InitModuleCache(archives: (RIMObject|ERFObject)[]){

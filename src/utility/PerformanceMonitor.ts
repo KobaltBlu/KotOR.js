@@ -116,6 +116,26 @@ export class PerformanceMonitor {
   /** Private map storing all performance events by name */
   static #events: Map<string, PerformanceMonitorEvent> = new Map();
 
+  /** ANSI color helpers for terminal output */
+  private static readonly ANSI = {
+    reset: "\x1b[0m",
+    bold: "\x1b[1m",
+    dim: "\x1b[2m",
+    red: "\x1b[31m",
+    green: "\x1b[32m",
+    yellow: "\x1b[33m",
+    blue: "\x1b[34m",
+    magenta: "\x1b[35m",
+    cyan: "\x1b[36m",
+    gray: "\x1b[90m"
+  } as const;
+
+  /** Formats a duration in ms to a human-friendly string */
+  private static formatDuration(ms: number): string {
+    if(ms < 1000){ return `${Math.round(ms)}ms`; }
+    return `${(ms / 1000).toFixed(2)}s`;
+  }
+
   /**
    * Starts timing a performance event with the given name.
    * 
@@ -182,6 +202,33 @@ export class PerformanceMonitor {
    * // operation1: 150ms
    */
   static toString(){
-    return Array.from(this.#events.values()).sort((a, b) => b.duration - a.duration).map(ev => ev.toString()).join('\n');
+    const events = Array.from(this.#events.values()).sort((a, b) => b.duration - a.duration);
+    if(events.length === 0){ return "(no performance events)"; }
+
+    const total = events.reduce((sum, ev) => sum + (ev.duration || 0), 0);
+    const nameWidth = Math.max(10, ...events.map(e => e.name.length));
+    const barWidth = 20;
+
+    const { ANSI } = this;
+
+    const header = `${ANSI.cyan}${ANSI.bold}Performance Monitor${ANSI.reset}`;
+    const columns = `${ANSI.dim}${"Name".padEnd(nameWidth)}  Duration   %     Bar${ANSI.reset}`;
+    const divider = `${ANSI.gray}${"-".repeat(nameWidth)}  --------  -----  ${"-".repeat(barWidth)}${ANSI.reset}`;
+
+    const lines = events.map(ev => {
+      const pct = total > 0 ? (ev.duration / total) * 100 : 0;
+      const barLen = Math.max(0, Math.min(barWidth, Math.round((pct / 100) * barWidth)));
+      const durationStr = this.formatDuration(ev.duration);
+      const color = ev.duration >= 500 ? ANSI.red : ev.duration >= 200 ? ANSI.yellow : ANSI.green;
+      const nameCol = `${color}${ev.name.padEnd(nameWidth)}${ANSI.reset}`;
+      const durCol = `${ANSI.bold}${durationStr.padStart(9)}${ANSI.reset}`;
+      const pctCol = `${ANSI.dim}${pct.toFixed(1).padStart(5)}%${ANSI.reset}`;
+      const bar = `${color}[${"#".repeat(barLen).padEnd(barWidth, " ")}]${ANSI.reset}`;
+      return `${nameCol}  ${durCol}  ${pctCol}  ${bar}`;
+    });
+
+    const summary = `${ANSI.dim}Total: ${events.length} events, ${this.formatDuration(total)}${ANSI.reset}`;
+
+    return [header, columns, divider, ...lines, divider, summary].join('\n');
   }
 }

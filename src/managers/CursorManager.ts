@@ -198,19 +198,11 @@ export class CursorManager {
 	 * @param cursor Cursor material key (e.g., "default", "select", "attack")
 	 */
 	static setCursor(cursor = 'default'){
-
-		if(Mouse.MouseDown){
-			cursor+='D';
-		}
-
-		CursorManager.cursor.material = (CursorManager as any)[cursor];
-
-		/*try{
-			cursor.visible = true;
-			CursorManager.reticle.visible = true;
-		}catch(e){
-			CursorManager.default.visible = true;
-		}*/
+		const cursorName = !Mouse.MouseDown ? cursor : cursor+'D';
+    const cursorMaterial = CursorManager.cursorMaterials.get(cursorName);
+    if(CursorManager.cursor.material != cursorMaterial){
+      CursorManager.cursor.material = cursorMaterial;
+    }
 		
 	}
 
@@ -240,8 +232,9 @@ export class CursorManager {
 	 * @param reticle Reticle key (e.g., "reticleF", "reticleH")
 	 */
 	static setReticle(reticle = 'reticleF'){
-		if(CursorManager.reticle.material != (CursorManager as any)[reticle])
-			CursorManager.reticle.material = (CursorManager as any)[reticle];
+    const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
+		if(CursorManager.reticle.material != reticleMaterial)
+			CursorManager.reticle.material = reticleMaterial;
 	}
 
 	/**
@@ -249,8 +242,9 @@ export class CursorManager {
 	 * @param reticle Reticle key (e.g., "reticleF2", "reticleH2")
 	 */
 	static setReticle2(reticle = 'reticleF'){
-		if(CursorManager.reticle2.material != (CursorManager as any)[reticle])
-			CursorManager.reticle2.material = (CursorManager as any)[reticle];
+    const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
+		if(CursorManager.reticle2.material != reticleMaterial)
+			CursorManager.reticle2.material = reticleMaterial;
 	}
 
 	/**

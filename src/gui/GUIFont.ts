@@ -10,7 +10,7 @@ interface Line {
   y: number;
 }
 
-export default class GUIFont {
+export class GUIFont {
 
   texture: OdysseyTexture;
   txi: TXI;
@@ -210,6 +210,10 @@ export class GUIFontChar {
     this.char = letter.charCodeAt(0);
     this.ul = font.txi.upperleftcoords[this.char];
     this.lr = font.txi.lowerrightcoords[this.char];
+    // this.ul.x = Math.min(Math.max(this.ul.x, 0), 1);
+    // this.ul.y = Math.min(Math.max(this.ul.y, 0), 1);
+    // this.lr.x = Math.min(Math.max(this.lr.x, 0), 1);
+    // this.lr.y = Math.min(Math.max(this.lr.y, 0), 1);
     this.width = ((this.lr.x - this.ul.x) * font.texture.image.width) * this.font.scale;
     this.height = ((this.ul.y - this.lr.y) * font.texture.image.height) * this.font.scale;
   }

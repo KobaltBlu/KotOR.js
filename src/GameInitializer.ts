@@ -121,6 +121,7 @@ export class GameInitializer {
   static async Init(game: GameEngineType){
 
     ResourceLoader.InitCache();
+    GameState.PerformanceMonitor = PerformanceMonitor;
 
     /**
      * Initialize Managers
@@ -262,72 +263,32 @@ export class GameInitializer {
   }
 
   static async LoadGameResources(){
-    GameInitializer.SetLoadingMessage("Loading Override");
-    PerformanceMonitor.start('override');
-    await GameInitializer.LoadOverride();
-    PerformanceMonitor.stop('override');
-
-    GameInitializer.SetLoadingMessage("Loading BIF's");
-
-    GameInitializer.SetLoadingMessage("Loading RIM's");
-    PerformanceMonitor.start('rims');
-    await GameInitializer.LoadRIMs();
-    PerformanceMonitor.stop('rims');
-
-    GameInitializer.SetLoadingMessage("Loading Modules");
-    PerformanceMonitor.start('modules');
-    await GameInitializer.LoadModules();
-    PerformanceMonitor.stop('modules');
-
-    GameInitializer.SetLoadingMessage("Loading Lips");
-    PerformanceMonitor.start('lips');
-    await GameInitializer.LoadLips();
-    PerformanceMonitor.stop('lips');
-
-    GameInitializer.SetLoadingMessage('Loading: 2DA\'s');
-    PerformanceMonitor.start('2das');
-    await GameInitializer.Load2DAs();
-    PerformanceMonitor.stop('2das');
-
-    GameInitializer.SetLoadingMessage('Loading: Texture Packs');
-    PerformanceMonitor.start('texturepacks');
-    await GameInitializer.LoadTexturePacks();
-    PerformanceMonitor.stop('texturepacks');
-
-    GameInitializer.SetLoadingMessage('Loading: Stream Music');
-    PerformanceMonitor.start('streammusic');
-    await GameInitializer.LoadGameAudioResources('streammusic');
-    PerformanceMonitor.stop('streammusic');
-
-    GameInitializer.SetLoadingMessage('Loading: Stream Sounds');
-    PerformanceMonitor.start('streamsounds');
-    await GameInitializer.LoadGameAudioResources('streamsounds');
-    PerformanceMonitor.stop('streamsounds');
-
-    if(GameState.GameKey != GameEngineType.TSL){
-      GameInitializer.SetLoadingMessage('Loading: Stream Waves');
-      PerformanceMonitor.start('streamwaves');
-      await GameInitializer.LoadGameAudioResources('streamwaves');
-      PerformanceMonitor.stop('streamwaves');
-    }else{
-      GameInitializer.SetLoadingMessage('Loading: Stream Voice');
-      PerformanceMonitor.start('streamvoice');
-      await GameInitializer.LoadGameAudioResources('streamvoice');
-      PerformanceMonitor.stop('streamvoice');
-    }
+    GameInitializer.SetLoadingMessage("Loading Assets");
+    const promises = [
+      GameInitializer.LoadOverride(), 
+      GameInitializer.LoadRIMs(), 
+      GameInitializer.LoadModules(), 
+      GameInitializer.LoadLips(), 
+      GameInitializer.Load2DAs(), 
+      GameInitializer.LoadTexturePacks(), 
+      GameInitializer.LoadGameAudioResources('streammusic'), 
+      GameInitializer.LoadGameAudioResources('streamsounds'), 
+      GameInitializer.LoadGameAudioResources(GameState.GameKey != GameEngineType.TSL ? 'streamwaves' : 'streamvoice')
+    ];
+    await Promise.all(promises);
   }
 
   static async LoadRIMs(){
     if(GameState.GameKey == GameEngineType.TSL){
       return;
     }
-    GameInitializer.SetLoadingMessage('Loading: RIM Archives');
     PerformanceMonitor.start('RIMManager.Load');
     await RIMManager.Load();
     PerformanceMonitor.stop('RIMManager.Load');
   }
 
   static async LoadLips(){
+    PerformanceMonitor.start('GameInitializer.LoadLips');
     const data_dir = 'lips';
     const filenames = await GameFileSystem.readdir(data_dir);
     const modules = filenames.map(function(file) {
@@ -358,11 +319,12 @@ export class GameInitializer {
         break;
       }
     }
+    PerformanceMonitor.stop('GameInitializer.LoadLips');
   }
 
   static async LoadModules(){
     let data_dir = 'modules';
-    GameInitializer.SetLoadingMessage('Loading: Module Archives');
+    PerformanceMonitor.start('GameInitializer.LoadModules');
     try{
       const filenames = await GameFileSystem.readdir(data_dir);
       const modules = filenames.map(function(file) {
@@ -406,16 +368,19 @@ export class GameInitializer {
       console.warn('GameInitializer.LoadModules: Failed to load modules');
       console.error(e);
     }
+    PerformanceMonitor.stop('GameInitializer.LoadModules');
   }
 
   static async Load2DAs(){
-    GameInitializer.SetLoadingMessage('Loading: 2DA\'s');
+    PerformanceMonitor.start('GameInitializer.Load2DAs');
     await GameState.TwoDAManager.Load2DATables();
     GameState.AppearanceManager.Init();
+    PerformanceMonitor.stop('GameInitializer.Load2DAs');
   }
 
   static async LoadTexturePacks(){
-    let data_dir = 'TexturePacks';
+    PerformanceMonitor.start('GameInitializer.LoadTexturePacks');
+    const data_dir = 'TexturePacks';
     try{
       const filenames = await GameFileSystem.readdir(data_dir)
       const erfs = filenames.map(function(file) {
@@ -430,22 +395,23 @@ export class GameInitializer {
         return file_obj.ext == 'erf';
       });
 
-      for(let i = 0, len = erfs.length; i < len; i++){
-        const erf = new ERFObject(path.join(data_dir, erfs[i].filename));
+      await Promise.all(erfs.map(async (_erf) => {
+        const erf = new ERFObject(path.join(data_dir, _erf.filename));
         await erf.load();
         if(erf instanceof ERFObject){
           erf.group = 'Textures';
-          ERFManager.addERF(erfs[i].name, erf);
+          ERFManager.addERF(_erf.name, erf);
         }
-      }
+      }));
     }catch(e){
       console.warn('GameInitializer.LoadTexturePacks: Failed to load texture packs');
       console.error(e);
     }
+    PerformanceMonitor.stop('GameInitializer.LoadTexturePacks');
   }
 
   static async LoadGameAudioResources( folder: string ){
-
+    PerformanceMonitor.start(`GameInitializer.LoadGameAudioResources[${folder}]`);
     const files = await GameFileSystem.readdir(folder, {recursive: true})
     for(let i = 0, len = files.length; i < len; i++){
       let f = files[i];
@@ -464,26 +430,33 @@ export class GameInitializer {
         });
       }
     }
-
+    PerformanceMonitor.stop(`GameInitializer.LoadGameAudioResources[${folder}]`);
   }
 
   static async LoadOverride(){
-    const files = await GameFileSystem.readdir('Override', {recursive: false});
-    for(let i = 0, len = files.length; i < len; i++){
-      let f = files[i];
-      let _parsed = path.parse(f);
-      let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
-      const resId = ResourceTypes[ext];
+    PerformanceMonitor.start('GameInitializer.LoadOverride');
+    try{
+      const files = await GameFileSystem.readdir('Override', {recursive: false});
+      for(let i = 0, len = files.length; i < len; i++){
+        let f = files[i];
+        let _parsed = path.parse(f);
+        let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
+        const resId = ResourceTypes[ext];
 
-      if(typeof resId === 'undefined'){
-        continue;
+        if(typeof resId === 'undefined'){
+          continue;
+        }
+
+        const buffer = await GameFileSystem.readFile(f);
+        if(!buffer || !buffer.length){ continue; }
+
+        ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
       }
-
-      const buffer = await GameFileSystem.readFile(f);
-      if(!buffer || !buffer.length){ continue; }
-
-      ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
+    }catch(e){
+      console.warn('GameInitializer.LoadOverride: Failed to load override');
+      console.error(e);
     }
+    PerformanceMonitor.stop('GameInitializer.LoadOverride');
   }
 
 }

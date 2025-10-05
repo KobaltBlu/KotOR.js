@@ -90,7 +90,7 @@ export class CutsceneManager {
     }
     this.unequipHeadItem = false;
     this.unequipItems = false;
-    GameState.Mode = EngineMode.DIALOG;
+    GameState.SetEngineMode(EngineMode.DIALOG);
     this.isListening = true;
     this.startingEntry = null;
     this.currentEntry = null;
@@ -127,7 +127,7 @@ export class CutsceneManager {
       this.endConversation();
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
       this.startingEntry.runScripts();
-      const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0].index);
+      const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0]?.index);
       if (reply) {
         reply.runScripts();
       }
@@ -330,7 +330,7 @@ export class CutsceneManager {
       return;
     
     //Get First Reply
-    const reply = this.dialog.getReplyByIndex(entry.replies[0].index);
+    const reply = this.dialog.getReplyByIndex(entry.replies[0]?.index);
     if(!reply){
       console.warn('CutsceneManager.showReplies: No reply found');
       this.endConversation();

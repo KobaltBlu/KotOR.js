@@ -251,6 +251,7 @@ export class GUIListBox extends GUIControl {
         case GUIControlType.Label:
         case GUIControlType.ProtoItem:
           ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
+          ctrl.guiFont = this.protoItem.guiFont;
           ctrl.text.texture = this.protoItem.text.texture;
           ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
           ctrl.isProtoItem = false;
@@ -275,6 +276,7 @@ export class GUIListBox extends GUIControl {
         break;
         case GUIControlType.CheckBox:
           ctrl = new this.menu.factory.GUICheckBox(this.menu, control.control, this, this.scale);
+          ctrl.guiFont = this.protoItem.guiFont;
           ctrl.text.texture = this.protoItem.text.texture;
           ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
           ctrl.isProtoItem = false;
@@ -305,6 +307,7 @@ export class GUIListBox extends GUIControl {
         case GUIControlType.Button:
           try{
             ctrl = new this.menu.factory.GUIButton(this.menu, control.control, this, this.scale);
+            ctrl.guiFont = this.protoItem.guiFont;
             ctrl.isProtoItem = false;
             ctrl.offset = this.offset;
             ctrl.node = node;
@@ -336,6 +339,7 @@ export class GUIListBox extends GUIControl {
       }
     }else{
       ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
+      ctrl.guiFont = this.protoItem.guiFont;
       ctrl.isProtoItem = true;
       ctrl.offset = this.offset;
       ctrl.node = node;

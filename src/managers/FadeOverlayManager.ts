@@ -105,6 +105,7 @@ export class FadeOverlayManager {
 
     // Update material opacity
     FadeOverlayManager.material.opacity = Math.max(0, Math.min(1, targetOpacity));
+    FadeOverlayManager.material.visible = true;
 
     // Handle completion
     if(isComplete){

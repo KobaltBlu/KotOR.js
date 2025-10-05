@@ -78,7 +78,7 @@ export class InGameComputer extends GameMenu {
 
   show(){
     super.show();
-    GameState.Mode = EngineMode.DIALOG;
+    GameState.SetEngineMode(EngineMode.DIALOG);
   }
 
   setReplies(replies: DLGNode[]) {

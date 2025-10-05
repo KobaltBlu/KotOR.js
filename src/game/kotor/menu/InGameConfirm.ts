@@ -80,37 +80,43 @@ export class InGameConfirm extends GameMenu {
 
   ShowTutorialMessage(id = 0, nth = 0) {
     console.log('ShowTutorialMessage', id, nth);
-    if (!GameState.TutorialWindowTracker[id]) {
-      const row = GameState.TwoDAManager.datatables.get('tutorial').rows[id];
-      if(row){
-        this.LB_MESSAGE.extent.top = 0;
-        let tlkId = TwoDAObject.normalizeValue(row[(GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth], 'number', 0);
-        if(tlkId > 0){
-          this.LB_MESSAGE.clearItems();
-          this.LB_MESSAGE.addItem(GameState.TLKManager.GetStringById(tlkId).Value);
-          let messageHeight = this.LB_MESSAGE.getNodeHeight(this.LB_MESSAGE.children[0]);
-          console.log(messageHeight);
-          this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = messageHeight;
-          this.LB_MESSAGE.resizeControl();
-          
-          this.tGuiPanel.extent.height = this.height = 44 + messageHeight;
-          // this.tGuiPanel.extent.left = 0;
-          // this.tGuiPanel.extent.top = -this.tGuiPanel.extent.height/2;
-          this.tGuiPanel.recalculate();
-
-          this.LB_MESSAGE.extent.top = (-this.tGuiPanel.extent.height) + (this.LB_MESSAGE.extent.height) + 50;// + (this.LB_MESSAGE.extent.height/2) + 28;
-          this.LB_MESSAGE.recalculate();
-
-          this.BTN_CANCEL.hide();
-          this.BTN_OK.extent.top = (this.tGuiPanel.extent.height) - (this.BTN_OK.extent.height + 10);// + ((this.LB_MESSAGE.extent.height/2) + 28 + (this.BTN_OK.extent.height/2));
-          this.tGuiPanel.resizeControl();
-          this.LB_MESSAGE.resizeControl();
-          
-          this.open();
-          // GameState.TutorialWindowTracker[id] = 0;
-        }
-      }
+    if(GameState.TutorialWindowTracker[id]){
+      return;
     }
+    const row = GameState.TwoDAManager.datatables.get('tutorial').rows[id];
+    if(!row){
+      return;
+    }
+
+    this.LB_MESSAGE.extent.top = 0;
+    const tlkId = TwoDAObject.normalizeValue(row[(GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth], 'number', 0);
+    if(tlkId <= 0){
+      return;
+    }
+
+    this.LB_MESSAGE.clearItems();
+    this.LB_MESSAGE.addItem(GameState.TLKManager.GetStringById(tlkId).Value);
+    const node = this.LB_MESSAGE.children[0];
+    let messageHeight = node.textSize.y;
+    console.log(messageHeight);
+    this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = messageHeight;
+    this.LB_MESSAGE.resizeControl();
+    
+    this.tGuiPanel.extent.height = this.height = 44 + messageHeight;
+    // this.tGuiPanel.extent.left = 0;
+    // this.tGuiPanel.extent.top = -this.tGuiPanel.extent.height/2;
+    this.tGuiPanel.recalculate();
+
+    this.LB_MESSAGE.extent.top = (-this.tGuiPanel.extent.height) + (this.LB_MESSAGE.extent.height) + 50;// + (this.LB_MESSAGE.extent.height/2) + 28;
+    this.LB_MESSAGE.recalculate();
+
+    this.BTN_CANCEL.hide();
+    this.BTN_OK.extent.top = (this.tGuiPanel.extent.height) - (this.BTN_OK.extent.height + 10);// + ((this.LB_MESSAGE.extent.height/2) + 28 + (this.BTN_OK.extent.height/2));
+    this.tGuiPanel.resizeControl();
+    // this.LB_MESSAGE.resizeControl();
+    
+    this.open();
+    // GameState.TutorialWindowTracker[id] = 0;
   }
 
   fromStringRef(strRef: number){

@@ -21,7 +21,7 @@ import { GUIControlEventFactory } from "./GUIControlEventFactory";
 import type { GameMenu } from "./GameMenu";
 import { BitWise } from "../utility/BitWise";
 import { GUIListBox } from "./GUIListBox";
-import GUIFont from "./GUIFont";
+import { GUIFont } from "./GUIFont";
 import { GUIControlEvent } from "./GUIControlEvent";
 import { GUIControlType } from "../enums/gui/GUIControlType";
 import { KeyMapAction } from "../enums/controls/KeyMapAction";
@@ -679,8 +679,10 @@ export class GUIControl {
     if(this.border.edge != ''){
       this.border.edge_material.visible = false;
       TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.border.edge, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -703,8 +705,10 @@ export class GUIControl {
     if(this.border.corner != ''){
       this.border.corner_material.visible = false;
       TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.border.corner, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -730,18 +734,19 @@ export class GUIControl {
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!(texture)){
           this.border.fill.material.visible = false;
-        }else{
-          texture.anisotropy = 1;
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          if(!this.border.fill.material.transparent){
-            this.border.fill.mesh.renderOrder = 0;
-          }
-          texture.needsUpdate = true;
-          this.border.fill.material.visible = true;
-          if(typeof this.borderFillEnabled == 'undefined')
-            this.borderFillEnabled = true;
+          return;
         }
+
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        if(!this.border.fill.material.transparent){
+          this.border.fill.mesh.renderOrder = 0;
+        }
+        texture.needsUpdate = true;
+        this.border.fill.material.visible = true;
+        if(typeof this.borderFillEnabled == 'undefined')
+          this.borderFillEnabled = true;
       });
     }else{
       this.border.fill.material.visible = false;
@@ -755,8 +760,10 @@ export class GUIControl {
     if(this.highlight.edge != ''){
       this.highlight.edge_material.visible = false;
       TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.highlight.edge, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -779,8 +786,10 @@ export class GUIControl {
     if(this.highlight.corner != ''){
       this.highlight.corner_material.visible = false;
       TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.highlight.corner, texture);
+          return;
+        }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
@@ -834,24 +843,24 @@ export class GUIControl {
     if(this.text.font != ''){
       this.text.material.visible = false;
       TextureLoader.enQueue(this.text.font, this.text.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-        if(!texture)
+        if(!texture){
           console.log('initTextures', this.text.font, texture);
-
-        if(texture){
-          this.text.texture = texture;
-          this.text.material.uniforms.map.value = texture;
-          this.text.material.uniforms.diffuse = { value: this.text.color };
-          this.text.material.alphaTest = 0;
-          this.text.material.transparent = true;
-          this.text.material.needsUpdate = true;
-          texture.anisotropy = 1;
-          texture.minFilter = THREE.LinearFilter;
-          texture.magFilter = THREE.LinearFilter;
-          texture.needsUpdate = true;
-          this.guiFont = new GUIFont(texture);
-          this.onFontTextureLoaded();
-          this.text.material.visible = true;
+          return;
         }
+
+        this.text.texture = texture;
+        this.text.material.uniforms.map.value = texture;
+        this.text.material.uniforms.diffuse = { value: this.text.color };
+        this.text.material.alphaTest = 0;
+        this.text.material.transparent = true;
+        this.text.material.needsUpdate = true;
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
+        this.guiFont = new GUIFont(texture);
+        this.onFontTextureLoaded();
+        this.text.material.visible = true;
       });
     }else{
       this.text.material.visible = false;
@@ -2054,6 +2063,10 @@ export class GUIControl {
       this.alignText();
     }
     
+    if(this.text.geometry && this.text.geometry.boundingBox){
+      this.text.geometry.boundingBox.getSize(this.textSize);
+    }
+    
   }
 
   textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
@@ -2182,6 +2195,10 @@ export class GUIControl {
       //console.log('updateText', this.text.text);
       this.updateTextGeometry(this.text.text);
     }
+    
+    if(this.text.geometry && this.text.geometry.boundingBox){
+      this.text.geometry.boundingBox.getSize(this.textSize);
+    }
 
   }
 
@@ -2189,17 +2206,14 @@ export class GUIControl {
     return this.text.text;
   }
 
-  _textSize: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   getTextSize(){
     this.text.geometry.computeBoundingBox();
-    this.text.geometry.boundingBox.getSize(this._textSize);
-    return this._textSize;
+    this.text.geometry.boundingBox.getSize(this.textSize);
+    return this.textSize;
   }
 
   _onCreate(){
-
     //Dummy Method
-
   }
 
   getHintText(){

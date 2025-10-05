@@ -494,11 +494,7 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      if(GameState.Mode == EngineMode.FREELOOK){
-        GameState.Mode = EngineMode.INGAME;
-      }else{
-        GameState.Mode = EngineMode.FREELOOK;
-      }
+      GameState.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
     });
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
