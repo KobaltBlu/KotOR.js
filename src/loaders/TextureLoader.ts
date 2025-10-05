@@ -161,11 +161,11 @@ export class TextureLoader {
   static async LoadQueue(onProgress?: onProgressCallback){
     let queue = TextureLoader.queue.slice(0);
     TextureLoader.queue = [];
+    const promises = queue.map(tex => TextureLoader.UpdateMaterial(tex));
+    await Promise.all(promises);
     for(let i = 0; i < queue.length; i++){
-      const tex = queue[i];
-      await TextureLoader.UpdateMaterial(tex);
       if(typeof onProgress == 'function'){
-        onProgress(tex, i, queue.length);
+        onProgress(queue[i], i, promises.length);
       }
     }
   }
