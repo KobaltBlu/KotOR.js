@@ -31,8 +31,8 @@ export class CharGenPortCust extends GameMenu {
   BTN_ARRR: GUIButton;
   BTN_ACCEPT: GUIButton;
   BTN_BACK: GUIButton;
-  exiting: any;
-  appearance: any;
+  exiting: boolean;
+  appearance: number;
   portraitId: number;
 
   _3dView: LBL_3DView;
@@ -49,125 +49,128 @@ export class CharGenPortCust extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.BTN_ARRL.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const creature = GameState.CharGenManager.selectedCreature;
-      
-        let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-        let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
-        if(idx <= 0){
-          creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[arrayLength - 1];
-        }else{
-          creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
+    this.BTN_ARRL.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const creature = GameState.CharGenManager.selectedCreature;
+    
+      let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      if(idx <= 0){
+        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[arrayLength - 1];
+      }else{
+        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
+      }
+      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+
+      for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
+        const port = GameState.SWRuleSet.portraits[i];
+        if(port.appearancenumber == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
+        }else if(port.appearance_l == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
+        }else if(port.appearance_s == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
         }
-        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      }
 
-        for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-          let port = GameState.SWRuleSet.portraits[i];
-          if(port.appearancenumber == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }else if(port.appearance_l == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }else if(port.appearance_s == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }
-        }
-
-        creature.loadModel().then( (model: OdysseyModel3D) => {
-          this.updateCamera();
-          this.UpdatePortrait();
-          if(model){
-            model.rotation.z = -Math.PI/2;
-            model.removeFromParent();
-            this._3dView.addModel(model);
-          }
-        });
-
-      });
-
-      this.BTN_ARRR.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const creature = GameState.CharGenManager.selectedCreature;
-
-        let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-        let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
-        if(idx >= arrayLength - 1){
-          creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[0];
-        }else{
-          creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
-        }
-        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
-
-        for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-          let port = GameState.SWRuleSet.portraits[i];
-          if(port.appearancenumber == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }else if(port.appearance_l == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }else if(port.appearance_s == creature.appearance){
-            creature.portraitId = i;
-            break;
-          }
-        }
-
-        creature.loadModel().then( (model: OdysseyModel3D) => {
-          this.updateCamera();
-          this.UpdatePortrait();
-          if(model){
-            model.rotation.z = -Math.PI/2;
-            model.removeFromParent();
-            this._3dView.addModel(model);
-          }
-        });
-
-      });
-
-      this.BTN_BACK.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const creature = GameState.CharGenManager.selectedCreature;
-        if(!this.exiting){
-          this.exiting = true;
-          //Restore previous appearance
-          creature.appearance = this.appearance;
-          creature.portraitId = this.portraitId;
-          creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
-          creature.loadModel().then( (model: OdysseyModel3D) => {
-            model.rotation.z = -Math.PI/2;
-            this.exiting = false;
-            this.close();
-          });
+      creature.loadModel().then( (model: OdysseyModel3D) => {
+        this.updateCamera();
+        this.UpdatePortrait();
+        if(model){
+          model.rotation.z = -Math.PI/2;
+          model.removeFromParent();
+          this._3dView.addModel(model);
         }
       });
 
-      this.BTN_ACCEPT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const creature = GameState.CharGenManager.selectedCreature;
-        
-        //Save appearance choice
-        creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
-        creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
-        this.manager.CharGenQuickPanel.step1 = true;
-
-        this.close();
-      });
-
-      this.tGuiPanel.widget.userData.fill.position.z = -0.5
-
-      this._3dView.visible = true;
-      this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
-      this._3dView.camera.updateProjectionMatrix();
-      this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
-      (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
-
-      this.Init3D();
-      resolve();
     });
+
+    this.BTN_ARRR.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const creature = GameState.CharGenManager.selectedCreature;
+
+      let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      if(idx >= arrayLength - 1){
+        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[0];
+      }else{
+        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
+      }
+      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+
+      for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
+        const port = GameState.SWRuleSet.portraits[i];
+        if(port.appearancenumber == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
+        }else if(port.appearance_l == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
+        }else if(port.appearance_s == creature.appearance){
+          creature.portraitId = i;
+          creature.portrait = GameState.SWRuleSet.portraits[i];
+          break;
+        }
+      }
+
+      creature.loadModel().then( (model: OdysseyModel3D) => {
+        this.updateCamera();
+        this.UpdatePortrait();
+        if(model){
+          model.rotation.z = -Math.PI/2;
+          model.removeFromParent();
+          this._3dView.addModel(model);
+        }
+      });
+
+    });
+
+    this.BTN_BACK.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const creature = GameState.CharGenManager.selectedCreature;
+      if(!this.exiting){
+        this.exiting = true;
+        //Restore previous appearance
+        creature.appearance = this.appearance;
+        creature.portraitId = this.portraitId;
+        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.loadModel().then( (model: OdysseyModel3D) => {
+          model.rotation.z = -Math.PI/2;
+          this.exiting = false;
+          this.close();
+        });
+      }
+    });
+
+    this.BTN_ACCEPT.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const creature = GameState.CharGenManager.selectedCreature;
+      
+      //Save appearance choice
+      creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
+      creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
+      this.manager.CharGenQuickPanel.step1 = true;
+
+      this.close();
+    });
+
+    this.tGuiPanel.widget.userData.fill.position.z = -0.5
+
+    this._3dView.visible = true;
+    this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
+    this._3dView.camera.updateProjectionMatrix();
+    this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
+    (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
+
+    this.Init3D();
   }
 
   Init3D() {
@@ -177,24 +180,22 @@ export class CharGenPortCust extends GameMenu {
       creature.model.removeFromParent();
     }
     OdysseyModel3D.FromMDL(GameState.CharGenManager.cghead_light, {
-      onComplete: (sceneModel3D: OdysseyModel3D) => {
-        try{
-          this.sceneModel3D = sceneModel3D;
-          this._3dView.addModel(this.sceneModel3D);
-          if(creature.getGender()){
-            this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
-            this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
-          }else{
-            this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
-            this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
-          }
-          this.sceneModel3D.playAnimation(0, true);
-        }catch(e){
-          console.error(e);
-        }
-      },
-      // manageLighting: false,
       context: this._3dView
+    }).then( (sceneModel3D: OdysseyModel3D) => {
+      try{
+        this.sceneModel3D = sceneModel3D;
+        this._3dView.addModel(this.sceneModel3D);
+        if(creature.getGender()){
+          this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
+          this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
+        }else{
+          this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
+          this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
+        }
+        this.sceneModel3D.playAnimation(0, true);
+      }catch(e){
+        console.error(e);
+      }
     });
     (control.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
     (control.getFill().material as THREE.ShaderMaterial).transparent = false;

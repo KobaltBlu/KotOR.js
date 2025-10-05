@@ -80,26 +80,20 @@ export class CharGenManager {
     GameState.MenuManager.LoadScreen.setHintMessage('');
     await CharGenManager.StartBackgroundMusic();
     await CharGenManager.Init();
+    await GameState.MenuManager.LoadCharGenGameMenus();
     await GameState.MenuManager.CharGenClass.Init();
     GameState.MenuManager.LoadScreen.close();
     GameState.MenuManager.CharGenClass.open();
   }
 
-  static StartBackgroundMusic(){
-    return new Promise<void>( (resolve, reject) => {
-      let audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
-      AudioLoader.LoadMusic(audioResRef).then((data: ArrayBuffer) => {
-        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data, audioResRef);
-        AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
-        resolve();
-      }, () => {
-        resolve();
-      });
-    });
+  static async StartBackgroundMusic(): Promise<void> {
+    const audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
+    const data = await AudioLoader.LoadMusic(audioResRef);
+    AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data, audioResRef);
+    AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
   }
 
   static async Init(){
-    await GameState.MenuManager.LoadCharGenGameMenus();
     CharGenManager.ltrMaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanm'));
     CharGenManager.ltrFemaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanf'));
     CharGenManager.ltrLastName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanl'));
@@ -107,46 +101,25 @@ export class CharGenManager {
     await CharGenManager.InitCharBackgroundModel();
   }
 
-  static InitCharBackgroundModel(){
-    return new Promise<void>((resolve, reject) => {
-      CharGenManager.LoadCGMainLight().then(() => {
-        CharGenManager.LoadCGBodyLight().then(() => {
-          CharGenManager.LoadCGHeadLight().then(() => {
-            resolve();
-          });
-        });
-      });
-    });
+  static async InitCharBackgroundModel(): Promise<void> {
+    await CharGenManager.LoadCGMainLight();
+    await CharGenManager.LoadCGBodyLight();
+    await CharGenManager.LoadCGHeadLight();
   }
 
-  static LoadCGMainLight(){
-    return new Promise<void>((resolve, reject) => {
-      MDLLoader.loader.load('cgmain_light')
-      .then((mdl: OdysseyModel) => {
-        CharGenManager.cgmain_light = mdl;
-        resolve();
-      }).catch(resolve);
-    });
+  static async LoadCGMainLight(): Promise<void> {
+    const mdl = await MDLLoader.loader.load('cgmain_light')
+    CharGenManager.cgmain_light = mdl;
   }
 
-  static LoadCGBodyLight(){
-    return new Promise<void>((resolve, reject) => {
-      MDLLoader.loader.load('cgbody_light')
-      .then((mdl: OdysseyModel) => {
-        CharGenManager.cgbody_light = mdl;
-        resolve();
-      }).catch(resolve);
-    });
+  static async LoadCGBodyLight(): Promise<void> {
+    const mdl = await MDLLoader.loader.load('cgbody_light')
+    CharGenManager.cgbody_light = mdl;
   }
 
-  static LoadCGHeadLight(){
-    return new Promise<void>((resolve, reject) => {
-      MDLLoader.loader.load('cghead_light')
-      .then((mdl: OdysseyModel) => {
-        CharGenManager.cghead_light = mdl;
-        resolve();
-      }).catch(resolve);
-    });
+  static async LoadCGHeadLight(): Promise<void> {
+    const mdl = await MDLLoader.loader.load('cghead_light')
+    CharGenManager.cghead_light = mdl;
   }
 
   static InitializeCreatureTemplate(){
