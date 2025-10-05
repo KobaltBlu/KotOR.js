@@ -10,6 +10,7 @@ import { SWFeatGain } from "./SWFeatGain";
 import { SWSpellGain } from "./SWSpellGain";
 import { SWEXPTable } from "./SWEXPTable";
 import { SWDifficulty } from "./SWDifficulty";
+import { SWBodyBag } from "./SWBodyBag";
 import { SWHead } from "./SWHead";
 import { GameState } from "../../GameState";
 import type { INIConfig } from "../../engine/INIConfig";
@@ -53,6 +54,7 @@ export class SWRuleSet {
   static expTable: SWEXPTable;
   static difficulty: SWDifficulty[] = [];
   static currentDifficulty: number = 0;
+  static bodyBags: SWBodyBag[] = [];
 
   static Init(){
 
@@ -202,6 +204,13 @@ export class SWRuleSet {
       }
     }
     
+    const bodyBags = GameState.TwoDAManager.datatables.get('bodybag');
+    if(bodyBags){
+      SWRuleSet.bodyBags = new Array(bodyBags.RowCount);
+      for(let i = 0; i < bodyBags.RowCount; i++){
+        SWRuleSet.bodyBags[i] = SWBodyBag.From2DA(bodyBags.rows[i]);
+      }
+    }
 
   }
 
