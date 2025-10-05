@@ -124,13 +124,13 @@ export class CutsceneManager {
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
       this.cutsceneMode = CutsceneMode.BARK;
-      this.endConversation();
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
       this.startingEntry.runScripts();
       const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0]?.index);
       if (reply) {
         reply.runScripts();
       }
+      this.endConversation();
       return;
     }
     
@@ -782,7 +782,7 @@ export class CutsceneManager {
    * @param delta - The delta time
    */
   static updateCamera(delta: number = 0) {
-    if (!this.dialog) return;
+    if (!this.dialog || this.cutsceneMode == CutsceneMode.BARK) return;
 
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.show();
