@@ -189,6 +189,19 @@ export class CursorManager {
     
   }
 
+  static notifyObjectDestroyed(object: ModuleObject){
+    if(CursorManager.selectedObject == object){
+      CursorManager.selectedObject = undefined;
+    }
+    if(CursorManager.hoveredObject == object){
+      CursorManager.hoveredObject = undefined;
+    }
+    const idx = CursorManager.selectableObjects.indexOf(object);
+    if(idx >= 0){
+      CursorManager.selectableObjects.splice(idx, 1);
+    }
+  }
+
   static setReticle(reticle = 'reticleF'){
     if(CursorManager.reticle.material != (CursorManager as any)[reticle])
       CursorManager.reticle.material = (CursorManager as any)[reticle];

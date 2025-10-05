@@ -5,6 +5,7 @@ import { EngineMode, GameEngineType } from "../enums/engine";
 import type { GUIControl, GameMenu } from "../gui";
 import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
 import { EngineState } from "../enums/engine/EngineState";
+import { PerformanceMonitor } from "../utility/PerformanceMonitor";
 
 /**
  * MenuManager class.
@@ -208,12 +209,12 @@ export class MenuManager {
   }
 
   static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
-    return new Promise( async (resolve: Function, reject: Function) => {
-      const menu: GameMenu = new menuConstructor();
-      menu.manager = MenuManager;
-      await menu.load();
-      resolve(menu);
-    });
+    PerformanceMonitor.start(menuConstructor.name+'.GameMenuLoader');
+    const menu: GameMenu = new menuConstructor();
+    menu.manager = MenuManager;
+    await menu.load();
+    PerformanceMonitor.stop(menuConstructor.name+'.GameMenuLoader');
+    return menu;
   }
 
   static async LoadGameMenus(){

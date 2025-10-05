@@ -349,6 +349,8 @@ export class AudioEmitter {
   destroy(): void {
     this.buffers.clear();
     this.isDestroyed = true;
+    if(!this.engine){ return; }
+    this.engine.removeEmitter(this);
   }
 
 }

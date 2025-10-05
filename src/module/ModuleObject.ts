@@ -4,8 +4,8 @@ import { ActionQueue } from "../actions/ActionQueue";
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { CollisionData } from "../engine/CollisionData";
 import { CombatData } from "../combat/CombatData";
-import { EffectLink } from "../effects";
-import { GameEffect } from "../effects/GameEffect";
+import type { EffectLink } from "../effects";
+import type { GameEffect } from "../effects/GameEffect";
 import EngineLocation from "../engine/EngineLocation";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
@@ -28,7 +28,6 @@ import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { Utility } from "../utility/Utility";
 import { ComputedPath } from "../engine/pathfinding";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from ".";
-import { ICombatAction } from "../interface/combat/ICombatAction";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
@@ -49,7 +48,7 @@ import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
 import { EngineDebugType, ModuleTriggerType, SkillType } from "../enums";
-import { type SWPortrait } from "../engine/rules/SWPortrait";
+import type { SWPortrait } from "../engine/rules/SWPortrait";
 
 /**
 * ModuleObject class.
@@ -79,17 +78,17 @@ export class ModuleObject {
   effectIconList: IEffectIconListItem[] = [];
 
   container: OdysseyObject3D;
-  forceVector: THREE.Vector3;
-  position: THREE.Vector3;
-  rotation: THREE.Euler;
-  quaternion: THREE.Quaternion;
-  _triangle: THREE.Triangle;
-  wm_c_point: THREE.Vector3;
-  box: THREE.Box3;
-  sphere: THREE.Sphere;
-  v20: THREE.Vector2;
-  v21: THREE.Vector2;
-  tmpPos: THREE.Vector3;
+  forceVector: THREE.Vector3 = new THREE.Vector3();
+  position: THREE.Vector3 = new THREE.Vector3();
+  rotation: THREE.Euler = new THREE.Euler();
+  quaternion: THREE.Quaternion = new THREE.Quaternion();
+  _triangle: THREE.Triangle = new THREE.Triangle();
+  wm_c_point: THREE.Vector3 = new THREE.Vector3();
+  box: THREE.Box3 = new THREE.Box3();
+  sphere: THREE.Sphere = new THREE.Sphere();
+  v20: THREE.Vector2 = new THREE.Vector2();
+  v21: THREE.Vector2 = new THREE.Vector2();
+  tmpPos: THREE.Vector3 = new THREE.Vector3();
   openSpot: any;
 
   audioEmitter: AudioEmitter;
@@ -229,6 +228,7 @@ export class ModuleObject {
   #computedPath: ComputedPath;
   
   lipObject: LIPObject;
+  lookAtObject: ModuleObject;
 
   //last object effected
   lastTriggerEntered: ModuleObject;
@@ -275,9 +275,6 @@ export class ModuleObject {
     this.quaternion = this.container.quaternion;
     this._triangle = new THREE.Triangle();
     // this.wm_c_point = new THREE.Vector3();
-
-    // this.rotation._onChange( () => { this.onRotationChange } );
-	  // this.quaternion._onChange( () => { this.onQuaternionChange } );
 
     this.box = new THREE.Box3();
     this.sphere = new THREE.Sphere();
@@ -376,34 +373,30 @@ export class ModuleObject {
 
   }
 
-  // onRotationChange() {
-  //   if(this.quaternion){
-  //     this.quaternion.setFromEuler( this.rotation, false );
-  //     if(this.model instanceof THREE.Object3D)
-  //       this.model.quaternion.setFromEuler( this.rotation, false );
-  //   }else{
-  //     console.error('Missing quaternion', this);
-  //   }
-	// }
-
-	// onQuaternionChange() {
-  //   if(this.rotation){
-  //     this.rotation.setFromQuaternion( this.quaternion, undefined, false );
-  //     if(this.model instanceof THREE.Object3D)
-  //       this.model.rotation.setFromQuaternion( this.quaternion, undefined, false );
-  //   }else{
-  //     console.error('Missing rotation', this);
-  //   }
-	// }
-
+  /**
+   * Attach to room
+   * @param room 
+   */
   attachToRoom(room: ModuleRoom){
     this.detachFromRoom(this.room);
     this.room = room;
     this.room.attachChildObject(this);
   }
 
-  detachFromRoom(room: ModuleRoom){ }
+  /**
+   * Detach from room
+   * @param room 
+   */
+  detachFromRoom(room: ModuleRoom){
+    if(!room) return;
+    room.removeChildObject(this); 
+    this.room = undefined;
+  }
 
+  /**
+   * Set the context
+   * @param ctx 
+   */
   setContext(ctx = GameState){
     this.context = ctx;
     if(this.model instanceof OdysseyModel3D){
@@ -413,6 +406,10 @@ export class ModuleObject {
     }
   }
 
+  /**
+   * Get the model
+   * @returns 
+   */
   getModel(){
     if(this.model instanceof THREE.Object3D)
       return this.model;
@@ -420,14 +417,25 @@ export class ModuleObject {
       return this.model = new OdysseyModel3D();
   }
 
+  /**
+   * Check if the object is visible
+   * @returns 
+   */
   isVisible(){
     return this.getModel().visible;
   }
 
+  /**
+   * Get the hit distance
+   * @returns 
+   */
   getHitDistance(){
     return 1;
   }
 
+  /**
+   * Update the movement speed
+   */
   updateMovementSpeed(){
     let movementSpeed = 1.0;
 
@@ -445,6 +453,10 @@ export class ModuleObject {
     this.movementSpeed = movementSpeed;
   }
 
+  /**
+   * Update the object
+   * @param delta 
+   */
   update(delta = 0){
     
     //Process the heartbeat timer
@@ -478,36 +490,49 @@ export class ModuleObject {
 
   }
 
+  /**
+   * Update the paused state
+   * @param delta 
+   */
   updatePaused(delta: number = 0){
     // this.force = 0;
     // this.forceVector.set(0, 0, 0);
     if(this.spawned){
-      this.setModelVisibility();
+      this.updateModelVisibility();
     }
   }
 
-  setModelVisibility(){
-    if(this.model){
-      this.model.wasOffscreen = !this.model.visible;
-      if(GameState.Mode == EngineMode.INGAME){
-        if(!this.room){
-          this.model.visible = true;
-          return;
-        }else{
-          this.model.visible = !!this.room?.model?.visible;
-        }
+  /**
+   * Update the model visibility
+   */
+  updateModelVisibility(){
+    if(!this.model){ return; }
+    this.model.wasOffscreen = !this.model.visible;
 
-        //Check to see if the model is inside the current camera's frustum
-        if(!this.isOnScreen()){
-          this.model.visible = false;
-        }
-      }
-      else if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
+    if(GameState.Mode == EngineMode.INGAME){
+      if(!this.room){
         this.model.visible = true;
+        return;
+      }else{
+        this.model.visible = !!this.room?.model?.visible;
       }
+
+      //Check to see if the model is inside the current camera's frustum
+      if(!this.isOnScreen()){
+        this.model.visible = false;
+      }
+      return;
+    }
+    
+    if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
+      this.model.visible = true;
     }
   }
 
+  /**
+   * Clear all actions
+   * @param skipUnclearable 
+   */
   clearAllActions(skipUnclearable = false){
     this.combatRound.clearActions();
     this.setComputedPath(undefined);
@@ -535,16 +560,31 @@ export class ModuleObject {
     //this.clearTarget();
   }
 
+  /**
+   * Clear the combat action
+   * @param combatAction 
+   * @returns 
+   */
   clearCombatAction(combatAction: CombatRoundAction = undefined){
     return this.combatRound.clearAction(combatAction);
   }
 
+  /**
+   * Clear the combat action at index
+   * @param index 
+   * @returns 
+   */
   clearCombatActionAtIndex(index: number = 0): boolean {
     if(index <= 0) return;
     return !!this.combatRound.scheduledActionList.splice(index, 1).length;
   }
 
-  //Queue an animation to the actionQueue array
+  /**
+   * Action play animation
+   * @param anim 
+   * @param speed 
+   * @param time 
+   */
   actionPlayAnimation(anim = 0, speed = 1, time = 1){
     if(typeof anim === 'string')
       throw 'anim cannot be a string!';
@@ -561,6 +601,15 @@ export class ModuleObject {
     }
   }
 
+  /**
+   * Action dialog object
+   * @param target 
+   * @param dialogResRef 
+   * @param ignoreStartRange 
+   * @param bPrivate 
+   * @param nConvoType 
+   * @param clearable 
+   */
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
     const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
@@ -570,15 +619,24 @@ export class ModuleObject {
     action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
     action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     action.clearable = clearable;
+    console.log('ModuleObject.actionDialogObject', action);
     this.actionQueue.add(action);
   }
 
+  /**
+   * Action use object
+   * @param object 
+   */
   actionUseObject( object: ModuleObject ){
     const action = new GameState.ActionFactory.ActionUseObject();
     action.setParameter(0, ActionParameterType.DWORD, object.id);
     this.actionQueue.add(action);
   }
 
+  /**
+   * Action open door
+   * @param door 
+   */
   actionOpenDoor( door: ModuleObject ){
     const action = new GameState.ActionFactory.ActionOpenDoor();
     action.setParameter(0, ActionParameterType.DWORD, door.id);
@@ -586,6 +644,10 @@ export class ModuleObject {
     this.actionQueue.add(action);
   }
 
+  /**
+   * Action close door
+   * @param door 
+   */
   actionCloseDoor( door: ModuleObject ){
     const action = new GameState.ActionFactory.ActionCloseDoor();
     action.setParameter(0, ActionParameterType.DWORD, door.id);
@@ -593,6 +655,10 @@ export class ModuleObject {
     this.actionQueue.add(action);
   }
 
+  /**
+   * Action wait
+   * @param time 
+   */
   actionWait( time = 0 ){
     const action = new GameState.ActionFactory.ActionWait();
     action.setParameter(0, ActionParameterType.FLOAT, time);
@@ -667,6 +733,11 @@ export class ModuleObject {
     return currentAnimation.length;
   }
 
+  /**
+   * Get the animation name by id
+   * @param id 
+   * @returns 
+   */
   getAnimationNameById(id = -1){
 
     if(typeof id === 'string')
@@ -816,1516 +887,17 @@ export class ModuleObject {
         return ModulePlaceableAnimState.ANIMLOOP09;
       case 213: 
         return ModulePlaceableAnimState.ANIMLOOP10;
-
     }
 
     //console.error('Animation case missing', id);
     return ModuleCreatureAnimState.PAUSE;
   }
 
-  setFacing(facing = 0, instant = false){
-    let diff = this.rotation.z - facing;
-    this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
-    this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
-    this.facingTweenTime = 0;
-    this.facingAnim = true;
-
-    if(instant){
-      this.rotation.z = this.wasFacing = Utility.NormalizeRadian(this.facing);
-      this.facingAnim = false;
-    }
-  }
-
-  onHover(){
-    
-  }
-
-  onClick(callee: ModuleObject){
-
-  }
-
-  triggerUserDefinedEvent( event: NWScriptEvent ){
-    if(event instanceof NWScriptEvent){
-      if(this.scripts.onUserDefined instanceof NWScriptInstance){
-        // console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, event.getInt(0), this);
-        // let instance = this.scripts.onUserDefined.nwscript.newInstance();
-        this.scripts.onUserDefined.run(this, parseInt(event.getInt(0)));
-      }
-    }
-  }
-
-  triggerSpellCastAtEvent( event: NWScriptEvent ){
-    if(event instanceof NWScriptEvent){
-      if(this.scripts.onSpellAt instanceof NWScriptInstance){
-        let instance = this.scripts.onSpellAt.nwscript.newInstance();
-        instance.lastSpellCaster = event.getObject(0);
-        instance.lastSpell = event.getInt(0);
-        instance.lastSpellHarmful = event.getInt(1) ? true : false;
-        instance.run(this);
-      }
-    }
-  }
-
-  scriptEventHandler( event: NWScriptEvent ){
-    // console.log('scriptEventHandler', this.tag, event);
-    if(event instanceof NWScriptEvent){
-      switch(event.type){
-        case NWScriptEventType.EventUserDefined:
-          this.triggerUserDefinedEvent( event );
-        break;
-        case NWScriptEventType.EventSpellCastAt:
-          this.triggerSpellCastAtEvent( event );
-        break;
-        default:
-          console.error('scriptEventHandler', 'Unhandled Event', event, this);
-        break;
-      }
-    }
-  }
-
-  triggerHeartbeat(){
-    //Only allow the heartbeat script to run after the onspawn is called
-    if(this.spawned === true && GameState.module.readyToProcessEvents){
-      //if(this.getLocalBoolean(28) == true){
-        if(this.scripts.onHeartbeat instanceof NWScriptInstance){
-          //console.log('heartbeat', this.getName());
-          this.scripts.onHeartbeat.run(this);
-          // let instance = this.scripts.onHeartbeat.nwscript.newInstance();
-          // if(GameState.PartyManager.party.indexOf(this as any) > -1){
-          //   instance.run(this, 2001);
-          // }else{
-          //   instance.run(this, 1001);
-          // }
-        }
-      //}
-    }
-  }
-
-  getAppearance(): PlaceableAppearance|CreatureAppearance|DoorAppearance {
-    return;
-  }
-
-  initEffects(){
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      let effect = this.effects[i];
-      if(effect instanceof GameEffect){
-        effect.initialize();
-        //effect.setCreator(this);
-        effect.setAttachedObject(this);
-        effect.onApply(this);
-      }
-    }
-  }
-
-  onSpawn(runScript = true){
-
-    if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
-      this.scripts.onSpawn.run(this, 0);
-      console.log('spawned', this.getName());
-    }
-    
-    this.spawned = true;
-    
-    this.initEffects();
-    this.computeBoundingBox();
-  }
-
-  getName(): any {
-    console.warn("Method not implemented.", this.tag);
-    return '';
-  }
-
-  getRace(): any {
-    console.warn("Method not implemented.", this.tag);
-    return 0;
-  }
-
-  //----------------------//
-  // INVENTORY MANAGEMENT
-  //----------------------//
-
-  hasItemByTag(sTag=''){
-    sTag = sTag.toLowerCase();
-    if(this.isPartyMember()){
-      return !!GameState.InventoryManager.getItemByTag(sTag);
-    }
-
-    for(let i = 0; i < this.inventory.length; i++){
-      const cItem = this.inventory[i];
-      if(cItem.tag.toLocaleLowerCase() == sTag)
-        return true;
-    }
-    
-    return false;
-  }
-
-  addItem(item: ModuleItem){
-    item.load();
-    
-    const eItem = this.getItemByTag(item.getTag());
-    if(eItem){
-      eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
-      return eItem;
-    }else{
-      this.inventory.push(item);
-      return item;
-    }
-  }
-
-  removeItem(item: ModuleItem, nCount = 1): ModuleItem {
-    const eItem = this.getItemByTag(item.getTag());
-
-    if(!eItem){
-      return undefined;
-    }
-
-    const idx = this.inventory.indexOf(eItem);
-
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
-      this.inventory.splice(idx, 1);
-    }
-
-    return eItem.clone();
-  }
-
-  removeItemByTag(sTag = '', nCount = 1): ModuleItem {
-    const eItem = this.getItemByTag(sTag);
-
-    if(!eItem){
-      return undefined;
-    }
-
-    const idx = this.inventory.indexOf(eItem);
-
-    if(nCount < eItem.getStackSize()){
-      eItem.setStackSize(eItem.getStackSize() - nCount);
-    }else{
-      this.inventory.splice(idx, 1);
-    }
-
-    return eItem.clone();
-  }
-
-  getItem(oItem: ModuleItem): ModuleItem {
-    if(!oItem){ return undefined; }
-
-    for(let i = 0; i < this.inventory.length; i++){
-      const cItem = this.inventory[i];
-      if(cItem == oItem)
-        return cItem;
-    }
-    return undefined;
-  }
-
-  getItemByTag(sTag = ''): ModuleItem {
-    if(this.isPartyMember()){
-      return GameState.InventoryManager.getItemByTag(sTag) as ModuleItem;
-    }
-
-    for(let i = 0; i < this.inventory.length; i++){
-      let item = this.inventory[i];
-      if(item.getTag() == sTag)
-        return item;
-    }
-    return;
-  }
-
-  getGold(): number {
-    if(this.isPartyMember()){
-      return GameState.PartyManager.Gold;
-    }
-    return 0;
-  }
-
-  addGold(nGold = 0): void {
-    if(this.isPartyMember()){
-      GameState.PartyManager.AddGold(nGold);
-      return;
-    }
-  }
-
-  removeGold(nGold = 0): void {
-    if(this.isPartyMember()){
-      GameState.PartyManager.AddGold(-Math.abs(nGold));
-      return;
-    }
-  }
-
-  updateCollision(delta: number = 0){ }
-
-  doCommand(script: NWScriptInstance){
-    //console.log('doCommand', this.getTag(), script, action, instruction);
-    let action = new GameState.ActionFactory.ActionDoCommand();
-    action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
-    this.actionQueue.add(action);
-  }
-
-  addTrap(nTrapId: number = -1, owner: ModuleObject){
-    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
-    if(!trap){ return; }
-    console.log('addTrap', trap);
-
-    if(trap.trapscript?.length && trap.trapscript != '****'){
-      this.scripts.onTrapTriggered = NWScript.Load(trap.trapscript);
-    }
-
-    this.trapType = nTrapId;
-
-    this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    let d20 = 20;
-
-    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
-    this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
-    this.trapDetectable = true;
-
-    const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
-    this.trapDisarmDC = nDisarmDC + d20 + this.ownerDemolitions;
-    this.trapDisarmable = false;
-
-    const trigger = new GameState.Module.ModuleArea.ModuleTrigger();
-    trigger.initialized = true;
-    trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
-    trigger.factionId = owner.factionId;
-    trigger.type = ModuleTriggerType.TRAP;
-    trigger.trapType = nTrapId;
-    trigger.setByPlayerParty = owner.isPartyMember();
-    trigger.trapDetectDC = this.trapDetectDC;
-    trigger.trapDisarmDC = this.trapDisarmDC
-    trigger.trapDetectable = false;
-    trigger.trapDisarmable = false;
-    trigger.ownerDemolitions = -1;
-    trigger.position.copy(this.position);
-
-    trigger.linkedToObject = this;
-    this.linkedToObject = trigger;
-
-    //Trigger Geomerty
-    trigger.vertices[0] = new THREE.Vector3(-2,  2, 0);
-    trigger.vertices[1] = new THREE.Vector3(-2, -2, 0);
-    trigger.vertices[2] = new THREE.Vector3( 2,  2, 0);
-    trigger.vertices[3] = new THREE.Vector3( 2,  2, 0);
-
-    trigger.load();
-
-    this.area.triggers.push(trigger);
-  }
-
-  //---------------//
-  // STATUS CHECKS
-  //---------------//
-
-  isDead(){
-    return this.getHP() <= 0;
-  }
-
-  isDebilitated() {
-    return false;
-  }
-
-  isStunned() {
-    return false;
-  }
-  isParalyzed() {
-    return false;
-  }
-
-  //---------------//
-  // SCRIPT EVENTS
-  //---------------//
-
-  onDamaged(){
-    if(this.isDead())
-      return true;
-
-    if(this.scripts.onDamaged instanceof NWScriptInstance){
-      this.scripts.onDamaged.run(this);
-    }
-  }
-
-  onDeath(){
-    //stub
-  }
-
-  onCombatRoundEnd() {
-    //stub
-  }
-
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined): boolean {
-    //stub
-    return false;
-  }
-
-  onAttacked(){
-    //stub
-  }
-
-  onBlocked(){
-    //stub
-  }
-  
-  resetExcitedDuration() {
-    console.warn("Method not implemented.", this.tag);
-  }
-
-  setCommadable(arg0: any) {
-    console.warn("Method not implemented.", this.tag);
-  }
-
-  damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0){
-    // if(delayTime){
-    //   this.damageList.push({amount: amount, delay: delayTime});
-    // }else{
-      this.subtractHP(amount);
-    // }
-    this.combatData.lastDamager = oAttacker;
-    this.combatData.lastAttacker = oAttacker;
-    this.onDamaged();
-  }
-
-  getCurrentRoom(){
-    this.collisionData.findWalkableFace();
-  }
-
-  getComputedPath(){
-    return this.#computedPath;
-  }
-
-  setComputedPath(computedPath: ComputedPath){
-    if(!!this.#computedPath){
-      this.#computedPath.dispose();
-    }
-    this.#computedPath = computedPath;
-    if(!this.#computedPath) return;
-
-    this.#computedPath.owner = this;
-    if(this.context?.debug[EngineDebugType.PATH_FINDING]){
-      this.#computedPath.enableHelper = true;
-    }
-    this.#computedPath.buildHelperLine();
-  }
-
-  #tmpLIOVec3 = new THREE.Vector3();
-  checkLineIntersectsObject(line: THREE.Line3){
-    line.closestPointToPoint(this.position, true, this.#tmpLIOVec3);
-    // Check if the closest point is within the radius of the point
-    return this.#tmpLIOVec3.distanceTo(this.position) <= this.getHitDistance();
-  }
-
-  // findWalkableFace(object?: ModuleObject){
-  //   let face;
-  //   let room;
-  //   for(let i = 0, il = this.area.rooms.length; i < il; i++){
-  //     room = this.area.rooms[i];
-  //     if(room.walkmesh){
-  //       for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-  //         face = room.walkmesh.walkableFaces[j];
-  //         if(face.triangle.containsPoint(this.position)){
-  //           this.groundFace = face;
-  //           this.lastGroundFace = this.groundFace;
-  //           this.surfaceId = this.groundFace.walkIndex;
-  //           this.attachToRoom(room);
-  //           face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
-  //           this.position.z = this.collisionData.wm_c_point.z + .005;
-  //         }
-  //       }
-  //     }
-  //   }
-  //   return face;
-  // }
-
-  #tmpCHVec3 = new THREE.Vector3();
-
-  getCameraHookPosition(){
-    if(this.model && this.model.camerahook){
-      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
-      return this.#tmpCHVec3;
-    }
-
-    this.#tmpCHVec3.copy(this.position)
-    this.#tmpCHVec3.z += 1.5;
-    return this.#tmpCHVec3;
-  }
-  getCameraHeight(){
-    if(this.model && this.model.camerahook){
-      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
-      return this.#tmpCHVec3.z;
-    }
-    return 1.5;
-  }
-
-  isInConversation(){
-    return (GameState.Mode == EngineMode.DIALOG) && (GameState.CutsceneManager.owner == this || GameState.CutsceneManager.listener == this);
-  }
-
-  setCutsceneMode(state: boolean = false){
-    console.log('setCutsceneMode', this.getTag(), state);
-    this.cutsceneMode = state;
-    if(this.model && this.model.skins){
-      for(let i = 0, len = this.model.skins.length; i < len; i++){
-        this.model.skins[i].frustumCulled = !state;
-      }
-    }
-  }
-
-  applyVisualEffect(resref = 'v_light'){
-    if(this.model instanceof OdysseyModel3D){
-      MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, { 
-          context: this.context,
-          // manageLighting: false
-        }).then( (effectMDL: OdysseyModel3D) => {
-          if(this.model instanceof OdysseyModel3D){
-            this.model.effects.push(effectMDL);
-            this.model.add(effectMDL);
-            const anim = effectMDL.playAnimation(0, false);
-            setTimeout(() => {
-              effectMDL.stopAnimation();
-              this.model.remove(effectMDL);
-              effectMDL.disableEmitters();
-              setTimeout( () => {
-                if(this.model instanceof OdysseyModel3D){
-                  let index = this.model.effects.indexOf(effectMDL);
-                  effectMDL.dispose();
-                  this.model.effects.splice(index, 1);
-                }
-              }, 5000);
-            }, (anim ? anim.length * 1000 : 1500) )
-          }
-        }).catch(() => {
-
-        });
-      }).catch(() => {
-
-      });
-    }
-  }
-
-  destroy(){
-    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
-    try{
-      this.container.removeFromParent();
-
-      if(this.model instanceof OdysseyModel3D){
-        this.model.removeFromParent();
-        this.model.dispose();
-        this.model = undefined;
-      }
-
-      if(this.mesh instanceof THREE.Mesh){
-        this.mesh.removeFromParent();
-
-        (this.mesh.material as THREE.Material).dispose();
-        this.mesh.geometry.dispose();
-
-        this.mesh.material = undefined;
-        this.mesh.geometry = undefined;
-        this.mesh = undefined;
-      }
-
-      GameState.ModuleObjectManager.RemoveObject(this);
-    }catch(e){
-      console.error('ModuleObject.destroy', e);
-    }
-  }
-
-  setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
-
-    if(x instanceof THREE.Vector3){
-      z = x.z;
-      y = x.y;
-      x = x.x;
-    }
-
-    try{
-      this.position.set(x, y, z);
-      this.computeBoundingBox();
-      this.updateCollision();
-    }catch(e){
-      console.error('ModuleObject.setPosition failed ');
-    }
-  }
-
-  getPosition(){
-    try{
-      return this.position.clone();
-    }catch(e){
-      console.error('ModuleObject', e);
-      return new THREE.Vector3(0);
-    }
-  }
-
-  getOrientation(){
-    try{
-      return this.rotation.clone();
-    }catch(e){
-      return new THREE.Euler();
-    }
-  }
-
-  getFacing(){
-    try{
-      return this.rotation.z;
-    }catch(e){
-      return 0;
-    }
-  }
-
-  setFacingObject( target: ModuleObject ){
-
-  }
-
-  getRotation(){
-    return Math.floor(this.getFacing() * 180) + 180;
-  }
-
-  getLocation(){
-    let rotation = this.getRotationFromBearing();
-
-    let location = new EngineLocation(
-      this.position.x, this.position.y, this.position.z,
-      rotation.x, rotation.y, rotation.z,
-      GameState?.module?.area
-    );
-
-    return location;
-  }
-
-  getRotationFromBearing( bearing: number = undefined ){
-    let theta = this.rotation.z;
-
-    if(typeof bearing == 'number')
-      theta = bearing;
-
-    // console.log(this.tag, theta, Math.cos(theta), Math.sin(theta), this);
-    return new THREE.Vector3(
-      Math.cos(theta),
-      Math.sin(theta),
-      0
-    );
-  }
-
-  lookAt(oObject: ModuleObject){
-    return;
-  }
-
-  isStatic(){
-    return false;
-  }
-
-  isUseable(){
-    return false;
-  }
-
-  getConversation(): DLGObject {
-    return this.conversation;
-  }
-
-  getFortitudeSave(){
-    return this.fortitudeSaveThrow;
-  }
-
-  getReflexSave(){
-    return this.reflexSaveThrow;
-  }
-
-  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getCON());
-    
-    if((roll + this.getFortitudeSave() + bonus) > nDC){
-      return 1
-    }
-
-    return 0;
-  }
-
-  getCON(): number {
-    return 0;;
-  }
-
-  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getDEX());
-    
-    if((roll + this.getReflexSave() + bonus) > nDC){
-      return 1
-    }
-
-    return 0;
-  }
-
-  getDEX(): number {
-    return 0;
-  }
-
-  getWillSave(){
-    return this.willSaveThrow;
-  }
-
-  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getWIS());
-
-    if((roll + this.getWillSave() + bonus) > nDC){
-      return 1
-    }
-
-    return 0;
-  }
-
-  getWIS(): number {
-    return 0;
-  }
-
-  getSkillLevel(value: number = 0): number {
-    return 0;
-  }
-  
-  resistForce(oCaster: ModuleObject){
-    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
-      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
-      //1d20 + their level vs. a DC of your level plus 10
-      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
-      return (roll > 10 + (oCaster as any).getTotalClassLevel());
-    }
-    return 0;
-  }
-
-  addEffect(effect: GameEffect, type = 0, duration = 0){
-    if(effect instanceof GameEffect){
-      if(effect instanceof EffectLink){
-        //EFFECT LEFT
-        //console.log('addEffect', 'LinkEffect->Left', effect.effect1, this);
-        if(effect.effect1 instanceof GameEffect){
-          effect.effect1.setDurationType(type);
-          effect.effect1.setDuration(duration);
-          this.addEffect(effect.effect1, type, duration);
-        }
-
-        //EFFECT RIGHT
-        //console.log('addEffect', 'LinkEffect->Right', effect.effect2, this);
-        if(effect.effect2 instanceof GameEffect){
-          effect.effect2.setDurationType(type);
-          effect.effect2.setDuration(duration);
-          this.addEffect(effect.effect2, type, duration);
-        }
-      }else{
-        //console.log('AddEffect', 'GameEffect', effect, this);
-        //effect.setDurationType(type);
-        //effect.setDuration(duration);
-        //effect.setCreator(this); //Setting creator here causes Item effects to reference the wrong object
-        effect.setAttachedObject(this);
-        effect.loadModel();
-        effect.onApply(this);
-        this.effects.push(effect);
-      }
-    }else{
-      console.warn('AddEffect', 'Invalid GameEffect', effect);
-    }
-  }
-
-  getEffect(type = -1){
-    for(let i = 0; i < this.effects.length; i++){
-      if(this.effects[i].type == type){
-        return this.effects[i];
-      }
-    }
-    return undefined;
-  }
-
-  hasEffect(type = -1){
-    return this.getEffect(type) ? true : false;
-  }
-
-  removeEffectsByCreator( oCreator: ModuleObject ){
-    if(oCreator instanceof ModuleObject){
-      let eIndex = this.effects.length - 1;
-      let effect = this.effects[eIndex];
-      while(effect){
-        if(effect.getCreator() == oCreator){
-          let index = this.effects.indexOf(effect);
-          if(index >= 0){
-            this.effects.splice(index, 1)[0].onRemove();
-          }
-        }
-        effect = this.effects[--eIndex];
-      }
-    }
-  }
-
-  removeEffectsByType(type: number = -1){
-    let effect = this.getEffect(type);
-    while(effect){
-      let index = this.effects.indexOf(effect);
-      if(index >= 0){
-        this.effects.splice(index, 1)[0].onRemove();
-      }
-      effect = this.getEffect(type);
-    }
-  }
-
-  removeEffect(type: number|GameEffect = -1){
-    if(type instanceof GameEffect){
-      let arrIdx = this.effects.indexOf(type);
-      if(arrIdx >= 0){
-        this.effects.splice(arrIdx, 1)[0].onRemove();
-      }
-    }else{
-      this.removeEffectsByType(type);
-    }
-  }
-
-  JumpToLocation(lLocation: EngineLocation){
-    if(lLocation){
-      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-      this.computeBoundingBox();
-
-      this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
-      this.collisionData.groundFace = undefined;
-      this.collisionData.lastGroundFace = undefined;
-    }
-  }
-
-  FacePoint(vPoint=new THREE.Vector3){
-    let tangent = vPoint.clone().sub(this.position.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
-    this.setFacing(atan + Math.PI/2, true);
-  }
-
-  getXOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
-  }
-
-  getYOrientation(){
-    if(this.template.RootNode.hasField('XOrientation')){
-      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-    }
-    return 0;
-  }
-
-  getZOrientation(){
-    if(this.template.RootNode.hasField('ZOrientation')){
-      return this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-    }
-    return 0;
-  }
-
-  getLinkedToModule(){
-    return this.linkedToModule;
-  }
-
-  getLinkedToFlags(){
-    return this.linkedToFlags;
-  }
-
-  getLinkedTo(){
-    return this.linkedTo;
-  }
-
-  getTransitionDestin(){
-    if(this.transitionDestin instanceof CExoLocString){
-      return this.transitionDestin.getValue();
-    }
-    return '';
-  }
-
-  getPortraitId(){
-    if(this.template.RootNode.hasField('PortraitId')){
-      return this.template.RootNode.getFieldByLabel('PortraitId').getValue();
-    }
-    return 0;
-  }
-
-  getKeyName(){
-    if(this.template.RootNode.hasField('KeyName')){
-      return this.template.RootNode.getFieldByLabel('KeyName').getValue();
-    }
-    return null;
-  }
-
-  getTag(){
-
-    if(this.tag){
-      return this.tag
-    }else if(this.template.RootNode.hasField('Tag')){
-      return this.template.RootNode.getFieldByLabel('Tag').getValue()
-    }
-    return '';
-  }
-
-  getTemplateResRef(){
-    if(this.template.RootNode.hasField('TemplateResRef')){
-      return this.template.RootNode.getFieldByLabel('TemplateResRef').getValue()
-    }
-    return null;
-  }
-
-  getResRef(){
-    if(this.template.RootNode.hasField('ResRef')){
-      return this.template.RootNode.getFieldByLabel('ResRef').getValue()
-    }
-    return null;
-  }
-
-  setTemplateResRef(sRef=''){
-    if(this.template.RootNode.hasField('TemplateResRef')){
-      this.template.RootNode.getFieldByLabel('TemplateResRef').setValue(sRef)
-    }else{
-      this.template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(sRef)
-    }
-    
-  }
-
-  setHP(value = 0){
-    this.currentHP = value;
-  }
-
-  addHP(value = 0, ignoreMaxHitPoints = false){
-    this.currentHP = (this.getHP() + value);
-  }
-
-  subtractHP(value = 0){
-    this.setHP(this.getHP() - value);
-  }
-
-  getHP(){
-    return this.currentHP;
-  }
-
-  getMaxHP(){
-    return this.hp;
-  }
-
-  setMaxHP(value = 0){
-    return this.hp = value;
-  }
-
-  setMinOneHP(value: boolean = false){
-    this.min1HP = value;
-  }
-
-  addFP(nAmount = 0, ignoreMaxForcePoints = false){}
-
-  subtractFP(nAmount = 0){}
-
-  getAC(){
-    return 10;
-  }
-
-  isPartyMember(){
-    return this.isPM;//GameState.PartyManager.party.indexOf(this as any) >= 0;
-  }
-
-  computeBoundingBox(force: boolean = false){
-    if(this.container){
-      this.container.updateMatrixWorld(true);
-      this.container.updateMatrix();
-      if(force){
-        this.container.traverse( n => {
-          n.updateMatrixWorld(true);
-          n.updateMatrix();
-        })
-      }
-    }
-
-    if(this.model){
-      this.model.updateMatrixWorld(true);
-      this.model.updateMatrix();
-    }
-    
-    if(this.model instanceof THREE.Object3D)
-      this.box.setFromObject(this.model);
-  }
-
-  isOnScreen(frustum = GameState.viewportFrustum){
-    if(this.area && this.area.fog){
-      if(this.distanceToCamera >= this.area.fog.far){
-        return false;
-      }
-    }
-
-    this.box.getBoundingSphere(this.sphere);
-    return frustum.intersectsSphere(this.sphere);
-  }
-
-  getReticleNode(){
-    if(this.model){
-      if(this.model.talkdummy){
-        return this.model.talkdummy;
-      }else if(this.model.camerahook){
-        return this.model.camerahook;
-      }else if(this.model.lookathook){
-        return this.model.lookathook;
-      }else if(this.model.headhook){
-        return this.model.headhook;
-      }
-      return this.model;
-    }
-    return;
-  }
-
-
-
-  setListening(bListenting = false){
-    this.isListening = bListenting ? true : false;;
-  }
-
-  setListeningPattern(sString = '', iNum = 0){
-    this.listeningPatterns[sString] = iNum;
-  }
-
-  getIsListening(){
-    return this.isListening ? true : false;
-  }
-
-
-
-
-
-
-  getLocalBoolean(index: number){
-    return !!this._locals.Booleans[index];
-  }
-
-  getLocalNumber(index: number){
-    return (this._locals.Numbers as any)[index] ? (this._locals.Numbers as any)[index] as number : 0;
-  }
-
-  setLocalBoolean(index: number, bool: boolean){
-    this._locals.Booleans[index] = !!bool;
-  }
-
-  setLocalNumber(index: number, value: number){
-    (this._locals.Numbers as any)[index] = value;
-  }
-
-  AssignCommand(command = 0){
-
-  }
-
-  isHostile(target: ModuleObject){
-    return GameState.FactionManager.IsHostile(this, target);
-  }
-
-  isNeutral(target: ModuleObject){
-    return GameState.FactionManager.IsNeutral(this, target);
-  }
-
-  isFriendly(target: ModuleObject){
-    return GameState.FactionManager.IsFriendly(this, target);
-  }
-
-  getReputation(target: ModuleObject){
-    return GameState.FactionManager.GetReputation(this, target);
-  }
-
-  getPerceptionRangePrimary(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      let range = ranges2DA.rows[this.perceptionRange];
-      if(range){
-        return parseInt(range.primaryrange);
-      }
-    }
-    return 1;
-  }
-
-  getPerceptionRangeSecondary(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      let range = ranges2DA.rows[this.perceptionRange];
-      if(range){
-        return parseInt(range.secondaryrange);
-      }
-    }
-    return 1;
-  }
-
-  initPerceptionList(){
-    let length = this.perceptionList.length;
-    while(length--){
-      let perceptionObject = this.perceptionList[length];
-      if(perceptionObject){
-        if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
-          if(!(perceptionObject.object instanceof ModuleObject)){
-            this.perceptionList.splice(length, 1);
-          }
-        }
-      }
-    }
-  }
-
-  notifyPerceptionHeardObject(object: ModuleObject, heard = false){
-    if(!object) return;
-
-    let triggerOnNotice = false;
-    let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
-    if(exists.length){
-      let existingObject = exists[0];
-      triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
-      existingObject.data |= 0x02;
-      perceptionObject = existingObject;
-    }else{
-      if(heard){
-        let newObject = {
-          object: object,
-          objectId: object.id,
-          data: 0x02
-        };
-        this.perceptionList.push(newObject);
-        perceptionObject = newObject;
-        triggerOnNotice = true;
-        if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
-        }
-      }else{
-        if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
-        }
-      }
-    }
-
-    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-      //console.log('notifyPerceptionHeardObject', heard, this, object);
-      let instance = this.scripts.onNotice.nwscript.newInstance();
-      instance.lastPerceived = perceptionObject;
-      instance.run(this);
-      return true;
-    }
-  }
-
-  notifyPerceptionSeenObject(object: ModuleObject, seen = false){
-    if(!object) return;
-
-    let triggerOnNotice = false;
-    let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
-    if(exists.length){
-      let existingObject = exists[0];
-      triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
-      perceptionObject = existingObject;
-    }else{
-      if(seen){
-        let newObject = {
-          object: object,
-          objectId: object.id,
-          data: 0x01
-        };
-        this.perceptionList.push(newObject);
-        perceptionObject = newObject;
-        triggerOnNotice = true;
-        if(object.isPlayer && this.isHostile(object)){
-          this.area.subtractStealthXP();
-        }
-      }else{
-        if(object.isPlayer && this.isHostile(object)){
-          this.area.addStealthXP();
-        }
-      }
-    }
-
-    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-      //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
-      let instance = this.scripts.onNotice.nwscript.newInstance();
-      instance.lastPerceived = perceptionObject;
-      instance.run(this);
-      return true;
-    }
-  }
-
-  hasLineOfSight(oTarget: ModuleObject, max_distance = 30){
-    if(!this.spawned || !GameState.module.readyToProcessEvents)
-      return false;
-    //return false;
-    if(oTarget instanceof ModuleObject){
-      let position_a = this.position.clone();
-      let position_b = oTarget.position.clone();
-      position_a.z += 1;
-      position_b.z += 1;
-      let direction = position_b.clone().sub(position_a).normalize();
-      let distance = position_a.distanceTo(position_b);
-
-      if(this.perceptionRange){
-        if(distance > this.getPerceptionRangePrimary()){
-          return;
-        }
-        max_distance = this.getPerceptionRangePrimary();
-      }else{
-        if(distance > 50)
-          return;
-      }
-
-      GameState.raycaster.ray.origin.copy(position_a);
-      GameState.raycaster.ray.direction.copy(direction);
-      GameState.raycaster.far = max_distance;
-
-      let aabbFaces = [];
-      let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-
-      let doors = [];
-
-      for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
-        let room = this.area.rooms[j];
-        if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
-          aabbFaces.push({
-            object: room, 
-            faces: room.collisionData.walkmesh.faces
-          });
-        }
-      }
-
-      for(let j = 0, jl = this.area.doors.length; j < jl; j++){
-        let door = this.area.doors[j];
-        if(door && door != (this as any) && !door.isOpen()){
-          let box3 = door.box;
-          if(box3){
-            if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
-              return false;
-            }
-          }
-        }
-      }
-
-
-      for(let i = 0, il = aabbFaces.length; i < il; i++){
-        let castableFaces = aabbFaces[i];
-        intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
-        if (intersects && intersects.length > 0 ) {
-          for(let j = 0; j < intersects.length; j++){
-            if(intersects[j].distance < distance){
-              return false;
-            }
-          }
-        }
-      }
-
-      return true;
-    }else{
-      return false;
-    }
-  }
-  
-  setAnimationState(animState: any){
-    this.animState = animState;
-  }
-
-  dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
-    console.log('dialogPlayAnimation',anim);
-    if(!this.model){ 
-      console.warn('dialogPlayAnimation failed');
-      console.log(this, anim);
-      return; 
-    }
-
-    const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
-    if(!odysseyAnimation){
-      return;
-    }
-
-    this.dialogAnimation = {
-      animation: odysseyAnimation,
-      data: anim,
-      started: false,
-    };
-  }
-
-  dialogResetAnimationState(){
-    this.dialogAnimationState = {
-      animationIndex: -1,
-      animation: undefined,
-      data: undefined,
-      started: false,
-    };
-  }
-
-  use(object: ModuleObject){
-    console.warn("Method not implemented.", this.tag);
-  }
-
-  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
-    console.warn("Method not implemented.", this.tag, target);
-  }
-  
-  setCommandable(arg0: boolean) {
-    console.warn("Method not implemented.", this.tag);
-  }
-
-  playSoundSet(ssfType: SSFType){
-    console.warn("Method not implemented.", this.tag);
-  }
-  
-  initProperties(){
-
-    if(!this.initialized){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
-      }
-      
-      GameState.ModuleObjectManager.AddObjectById(this);
-    }
-    
-    if(this.template.RootNode.hasField('Animation'))
-      this.animState = this.template.getFieldByLabel('Animation').getValue();
-    
-    if(this.template.RootNode.hasField('Appearance')){
-      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
-    }
-    
-    if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
-    
-    if(this.template.RootNode.hasField('ObjectId'))
-      this.id = this.template.getFieldByLabel('ObjectId').getValue();
-
-    if(this.template.RootNode.hasField('AutoRemoveKey'))
-      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
-
-    if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
-
-    if(this.template.RootNode.hasField('Cursor'))
-      this.cursor = this.template.getFieldByLabel('Cursor').getValue();
-
-    if(this.template.RootNode.hasField('Faction')){
-      this.factionId = this.template.getFieldByLabel('Faction').getValue();
-      if((this.factionId & 0xFFFFFFFF) == -1){
-        this.factionId = 0;
-      }
-      this.faction = GameState.FactionManager.factions.get(this.factionId);
-    }
-
-    if(this.template.RootNode.hasField('Geometry')){
-      this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
-
-      //Push verticies
-      for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
-        this.vertices[i] = new THREE.Vector3( 
-          tgv.getFieldByLabel('PointX').getValue(),
-          tgv.getFieldByLabel('PointY').getValue(),
-          tgv.getFieldByLabel('PointZ').getValue()
-        );
-      }
-    }
-
-    if(this.template.RootNode.hasField('HasMapNote'))
-      this.hasMapNote = this.template.getFieldByLabel('HasMapNote').getValue();
-
-    if(this.template.RootNode.hasField('HighlightHeight'))
-      this.highlightHeight = this.template.getFieldByLabel('HighlightHeight').getValue();
-
-    if(this.template.RootNode.hasField('KeyName'))
-      this.keyName = this.template.getFieldByLabel('KeyName').getValue();
-
-    if(this.template.RootNode.hasField('LinkedTo'))
-      this.linkedTo = this.template.getFieldByLabel('LinkedTo').getValue();
-
-    if(this.template.RootNode.hasField('LinkedToFlags'))
-      this.linkedToFlags = this.template.getFieldByLabel('LinkedToFlags').getValue();
-  
-    if(this.template.RootNode.hasField('LinkedToModule'))
-      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
-        
-    if(this.template.RootNode.hasField('LoadScreenID'))
-      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
-
-    if(this.template.RootNode.hasField('LocName'))
-      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('LocalizedName'))
-      this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
-
-    if(this.template.RootNode.hasField('MapNote'))
-      this.mapNote = this.template.getFieldByLabel('MapNote').getCExoLocString();
-
-    if(this.template.RootNode.hasField('MapNoteEnabled'))
-      this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
-
-    if(this.template.RootNode.hasField('PortraidId')){
-      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-    }
-
-    if(this.template.RootNode.hasField('SetByPlayerParty'))
-      this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
-
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
-
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
-
-    if(this.template.RootNode.hasField('TransitionDestin'))
-      this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
-
-    if(this.template.RootNode.hasField('TrapDetectable'))
-      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
-
-    if(this.template.RootNode.hasField('TrapDisarmable'))
-      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-
-    if(this.template.RootNode.hasField('TrapOneShot'))
-      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
-
-    if(this.template.RootNode.hasField('TrapType'))
-      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
-
-    if(this.template.RootNode.hasField('Type'))
-      this.type = this.template.getFieldByLabel('Type').getValue();
-
-    if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
-
-    if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
-
-    if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-
-    if(this.template.RootNode.hasField('XOrientation'))
-      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
-
-    if(this.template.RootNode.hasField('YOrientation'))
-      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
-
-    if(this.template.RootNode.hasField('ZOrientation'))
-      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
-      
-    if(this.template.RootNode.hasField('FortSaveThrow'))
-      this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
-
-    if(this.template.RootNode.hasField('RefSaveThrow'))
-      this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
-
-    if(this.template.RootNode.hasField('WillSaveThrow'))
-      this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
-
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
-      if(swVarTableStruct){
-        if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
-          for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
-            for(let bit = 0; bit < 32; bit++){
-              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-            }
-          }
-        }
-
-        if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
-          for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
-            this.setLocalNumber(i, data);
-          }
-        }
-      }
-    }
-
-    this.initialized = true;
-
-  }
-
-  Save(){
-    //TODO
-
-    let gff = new GFFObject();
-
-    return gff;
-
-  }
-
-  getSWVarTableSaveStruct(){
-    let swVarTableStruct = new GFFStruct();
-
-    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
-
-    for(let i = 0; i < 3; i++){
-      let varStruct = new GFFStruct();
-      let value = 0;
-      let offset = 32 * i;
-      for(let j = 0; j < 32; j++){
-        if(this.getLocalBoolean(offset + j) == true){
-          value |= 1 << j;
-        }
-      }
-      value = value >>> 0;
-      varStruct.addField( new GFFField(GFFDataType.DWORD, 'Variable') ).setValue( value );
-      swVarTableBitArray.addChildStruct(varStruct);
-    }
-
-    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
-
-    for(let i = 0; i < 8; i++){
-      let varStruct = new GFFStruct();
-      varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
-      swVarTableByteArray.addChildStruct(varStruct);
-    }
-    return swVarTableStruct;
-  }
-
-  static TemplateFromJSON(json: any = {}){
-    let gff = new GFFObject();
-    for(let key in json){
-      let field = json[key];
-      if(field instanceof Array){
-        //TODO
-      }else if(typeof field === 'string'){
-        gff.RootNode.addField(
-          new GFFField(GFFDataType.RESREF, key, field)
-        )
-      }else if(typeof field === 'number'){
-        gff.RootNode.addField(
-          new GFFField(GFFDataType.INT, key, field)
-        )
-      }
-    }
-
-    return gff;
-  }
-
-  toToolsetInstance(){
-
-    let instance = new GFFStruct();
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
-    );
-
-    return instance;
-
-  }
-
+  /**
+   * Get the animation constant to animation
+   * @param animation_constant 
+   * @returns 
+   */
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation{
 
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
@@ -2885,31 +1457,2046 @@ export class ModuleObject {
 
   }
 
+  /**
+   * Set the facing
+   * @param facing 
+   * @param instant 
+   */
+  setFacing(facing = 0, instant = false){
+    let diff = this.rotation.z - facing;
+    this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
+    this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
+    this.facingTweenTime = 0;
+    this.facingAnim = true;
+
+    if(instant){
+      this.rotation.z = this.wasFacing = Utility.NormalizeRadian(this.facing);
+      this.facingAnim = false;
+    }
+  }
+
+  /**
+   * On hover input event
+   */
+  onHover(){
+    
+  }
+
+  /**
+   * On click input event
+   * @param callee 
+   */
+  onClick(callee: ModuleObject){
+
+  }
+
+  /**
+   * Trigger the user defined event
+   * @param event 
+   */
+  triggerUserDefinedEvent( event: NWScriptEvent ){
+    if(event instanceof NWScriptEvent){
+      if(this.scripts.onUserDefined instanceof NWScriptInstance){
+        // console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, event.getInt(0), this);
+        // let instance = this.scripts.onUserDefined.nwscript.newInstance();
+        this.scripts.onUserDefined.run(this, parseInt(event.getInt(0)));
+      }
+    }
+  }
+
+  /**
+   * Trigger the spell cast at event
+   * @param event 
+   */
+  triggerSpellCastAtEvent( event: NWScriptEvent ){
+    if(event instanceof NWScriptEvent){
+      if(this.scripts.onSpellAt instanceof NWScriptInstance){
+        let instance = this.scripts.onSpellAt.nwscript.newInstance();
+        instance.lastSpellCaster = event.getObject(0);
+        instance.lastSpell = event.getInt(0);
+        instance.lastSpellHarmful = event.getInt(1) ? true : false;
+        instance.run(this);
+      }
+    }
+  }
+
+  /**
+   * Script event handler
+   * @param event 
+   */
+  scriptEventHandler( event: NWScriptEvent ){
+    // console.log('scriptEventHandler', this.tag, event);
+    if(event instanceof NWScriptEvent){
+      switch(event.type){
+        case NWScriptEventType.EventUserDefined:
+          this.triggerUserDefinedEvent( event );
+        break;
+        case NWScriptEventType.EventSpellCastAt:
+          this.triggerSpellCastAtEvent( event );
+        break;
+        default:
+          console.error('scriptEventHandler', 'Unhandled Event', event, this);
+        break;
+      }
+    }
+  }
+
+  /**
+   * Trigger the heartbeat
+   */
+  triggerHeartbeat(){
+    //Only allow the heartbeat script to run after the onspawn is called
+    if(!(this.spawned === true && GameState.module.readyToProcessEvents)){
+      return;
+    }
+    if(!this.scripts.onHeartbeat){ return; }
+      this.scripts.onHeartbeat.run(this);
+  }
+
+  /**
+   * Get the appearance
+   * @returns 
+   */
+  getAppearance(): PlaceableAppearance|CreatureAppearance|DoorAppearance {
+    return;
+  }
+
+  /**
+   * On spawn
+   * @param runScript 
+   */
+  onSpawn(runScript = true){
+
+    if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
+      this.scripts.onSpawn.run(this, 0);
+      console.log('spawned', this.getName());
+    }
+    
+    this.spawned = true;
+    
+    this.initEffects();
+    this.computeBoundingBox();
+  }
+
+  /**
+   * Get the name
+   * @returns 
+   */
+  getName(): any {
+    console.warn("Method not implemented.", this.tag);
+    return '';
+  }
+
+  /**
+   * Get the race
+   * @returns 
+   */
+  getRace(): any {
+    console.warn("Method not implemented.", this.tag);
+    return 0;
+  }
+
+  //----------------------//
+  // INVENTORY MANAGEMENT
+  //----------------------//
+
+  /**
+   * Check if the object has the item by tag
+   * @param sTag 
+   * @returns 
+   */
+  hasItemByTag(sTag=''){
+    sTag = sTag.toLowerCase();
+    if(this.isPartyMember()){
+      return !!GameState.InventoryManager.getItemByTag(sTag);
+    }
+
+    for(let i = 0; i < this.inventory.length; i++){
+      const cItem = this.inventory[i];
+      if(cItem.tag.toLocaleLowerCase() == sTag)
+        return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Add the item
+   * @param item 
+   * @returns 
+   */
+  addItem(item: ModuleItem){
+    item.load();
+    
+    const eItem = this.getItemByTag(item.getTag());
+    if(eItem){
+      eItem.setStackSize(eItem.getStackSize() + item.getStackSize());
+      return eItem;
+    }else{
+      this.inventory.push(item);
+      return item;
+    }
+  }
+
+  /**
+   * Remove the item
+   * @param item 
+   * @param nCount 
+   * @returns 
+   */
+  removeItem(item: ModuleItem, nCount = 1): ModuleItem {
+    const eItem = this.getItemByTag(item.getTag());
+
+    if(!eItem){
+      return undefined;
+    }
+
+    const idx = this.inventory.indexOf(eItem);
+
+    if(nCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - nCount);
+    }else{
+      this.inventory.splice(idx, 1);
+    }
+
+    return eItem.clone();
+  }
+
+  /**
+   * Remove the item by tag
+   * @param sTag 
+   * @param nCount 
+   * @returns 
+   */
+  removeItemByTag(sTag = '', nCount = 1): ModuleItem {
+    const eItem = this.getItemByTag(sTag);
+
+    if(!eItem){
+      return undefined;
+    }
+
+    const idx = this.inventory.indexOf(eItem);
+
+    if(nCount < eItem.getStackSize()){
+      eItem.setStackSize(eItem.getStackSize() - nCount);
+    }else{
+      this.inventory.splice(idx, 1);
+    }
+
+    return eItem.clone();
+  }
+
+  /**
+   * Get the item
+   * @param oItem 
+   * @returns 
+   */
+  getItem(oItem: ModuleItem): ModuleItem {
+    if(!oItem){ return undefined; }
+
+    for(let i = 0; i < this.inventory.length; i++){
+      const cItem = this.inventory[i];
+      if(cItem == oItem)
+        return cItem;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get the item by tag
+   * @param sTag 
+   * @returns 
+   */
+  getItemByTag(sTag = ''): ModuleItem {
+    if(this.isPartyMember()){
+      return GameState.InventoryManager.getItemByTag(sTag) as ModuleItem;
+    }
+
+    for(let i = 0; i < this.inventory.length; i++){
+      let item = this.inventory[i];
+      if(item.getTag() == sTag)
+        return item;
+    }
+    return;
+  }
+
+  /**
+   * Get the gold
+   * @returns 
+   */
+  getGold(): number {
+    if(this.isPartyMember()){
+      return GameState.PartyManager.Gold;
+    }
+    return 0;
+  }
+
+  /**
+   * Add gold
+   * @param nGold 
+   */
+  addGold(nGold = 0): void {
+    if(this.isPartyMember()){
+      GameState.PartyManager.AddGold(nGold);
+      return;
+    }
+  }
+
+  /**
+   * Remove gold
+   * @param nGold 
+   */
+  removeGold(nGold = 0): void {
+    if(this.isPartyMember()){
+      GameState.PartyManager.AddGold(-Math.abs(nGold));
+      return;
+    }
+  }
+
+  /**
+   * Update the collision
+   * @param delta 
+   */
+  updateCollision(delta: number = 0){
+    //stub
+  }
+
+  /**
+   * Do a command
+   * @param script 
+   */
+  doCommand(script: NWScriptInstance){
+    //console.log('doCommand', this.getTag(), script, action, instruction);
+    let action = new GameState.ActionFactory.ActionDoCommand();
+    action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
+    this.actionQueue.add(action);
+  }
+
+  /**
+   * Add a trap
+   * @param nTrapId 
+   * @param owner 
+   */
+  addTrap(nTrapId: number = -1, owner: ModuleObject){
+    const trap = GameState.TwoDAManager.datatables.get('traps')?.rows[nTrapId];
+    if(!trap){ return; }
+    console.log('addTrap', trap);
+
+    if(trap.trapscript?.length && trap.trapscript != '****'){
+      this.scripts.onTrapTriggered = NWScript.Load(trap.trapscript);
+    }
+
+    this.trapType = nTrapId;
+
+    this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
+    let d20 = 20;
+
+    const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
+    this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
+    this.trapDetectable = true;
+
+    const nDisarmDC = !isNaN(parseInt(trap.disarmdcmod)) ? parseInt(trap.disarmdcmod) : 0;
+    this.trapDisarmDC = nDisarmDC + d20 + this.ownerDemolitions;
+    this.trapDisarmable = false;
+
+    const trigger = new GameState.Module.ModuleArea.ModuleTrigger();
+    trigger.initialized = true;
+    trigger.name = GameState.TLKManager.GetStringById(parseInt(trap.name))?.Value;
+    trigger.factionId = owner.factionId;
+    trigger.type = ModuleTriggerType.TRAP;
+    trigger.trapType = nTrapId;
+    trigger.setByPlayerParty = owner.isPartyMember();
+    trigger.trapDetectDC = this.trapDetectDC;
+    trigger.trapDisarmDC = this.trapDisarmDC
+    trigger.trapDetectable = false;
+    trigger.trapDisarmable = false;
+    trigger.ownerDemolitions = -1;
+    trigger.position.copy(this.position);
+
+    trigger.linkedToObject = this;
+    this.linkedToObject = trigger;
+
+    //Trigger Geomerty
+    trigger.vertices[0] = new THREE.Vector3(-2,  2, 0);
+    trigger.vertices[1] = new THREE.Vector3(-2, -2, 0);
+    trigger.vertices[2] = new THREE.Vector3( 2,  2, 0);
+    trigger.vertices[3] = new THREE.Vector3( 2,  2, 0);
+
+    trigger.load();
+
+    this.area.triggers.push(trigger);
+  }
+
+  //---------------//
+  // STATUS CHECKS
+  //---------------//
+
+  /**
+   * Check if the object is in conversation
+   * @returns 
+   */
+  isInConversation(){
+    return (GameState.Mode == EngineMode.DIALOG) && (GameState.CutsceneManager.owner == this || GameState.CutsceneManager.listener == this);
+  }
+
+  /**
+   * Check if the object is dead
+   * @returns 
+   */
+  isDead(){
+    return this.getHP() <= 0;
+  }
+
+  /**
+   * Check if the object is debilitated
+   * @returns 
+   */
+  isDebilitated() {
+    return false;
+  }
+
+  /**
+   * Check if the object is stunned
+   * @returns 
+   */
+  isStunned() {
+    return false;
+  }
+
+  /**
+   * Check if the object is paralyzed
+   * @returns 
+   */
+  isParalyzed() {
+    return false;
+  }
+
+  /**
+   * Check if the object is poisoned
+   * @returns 
+   */
   isPoisoned() {
     return false;
   }
 
+  /**
+   * Check if the object is diseased
+   * @returns 
+   */
   isDiseased(): any {
     return false;
   }
 
+  /**
+   * Get the combat animation weapon type
+   * @returns 
+   */
   getCombatAnimationWeaponType() {
     return 0
   }
 
+  /**
+   * Check if the object is dueling
+   * @returns 
+   */
   isDueling(): boolean {
     return false;
   }
 
+  /**
+   * Check if the action is in range
+   * @param action 
+   * @returns 
+   */
   actionInRange(action: Action){
     return true;
   }
 
+  //---------------//
+  // SCRIPT EVENTS
+  //---------------//
+
+  /**
+   * On damaged
+   */
+  onDamaged(){
+    if(this.isDead())
+      return true;
+
+    if(this.scripts.onDamaged instanceof NWScriptInstance){
+      this.scripts.onDamaged.run(this);
+    }
+  }
+
+  /**
+   * On death
+   */
+  onDeath(){
+    //stub
+  }
+
+  /**
+   * On combat round end
+   */
+  onCombatRoundEnd() {
+    //stub
+  }
+
+  /**
+   * On dialog
+   * @param oSpeaker 
+   * @param listenPatternNumber 
+   * @param conversation 
+   * @returns 
+   */
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined): boolean {
+    //stub
+    return false;
+  }
+
+  /**
+   * On attacked
+   */
+  onAttacked(){
+    //stub
+  }
+
+  /**
+   * On blocked
+   */
+  onBlocked(){
+    //stub
+  }
+  
+  /**
+   * Reset the excited duration
+   */
+  resetExcitedDuration() {
+    console.warn("Method not implemented.", this.tag);
+  }
+
+  /**
+   * Set the commadable
+   * @param arg0 
+   */
+  setCommadable(arg0: any) {
+    console.warn("Method not implemented.", this.tag);
+  }
+
+  /**
+   * Damage the object
+   * @param amount 
+   * @param oAttacker 
+   * @param delayTime 
+   */
+  damage(amount = 0, oAttacker?: ModuleObject, delayTime = 0){
+    this.subtractHP(amount);
+    this.combatData.lastDamager = oAttacker;
+    this.combatData.lastAttacker = oAttacker;
+    this.onDamaged();
+  }
+
+  /**
+   * Get the current room
+   * @returns 
+   */
+  getCurrentRoom(){
+    this.collisionData.findWalkableFace();
+  }
+
+  /**
+   * Get the computed path
+   * @returns 
+   */
+  getComputedPath(){
+    return this.#computedPath;
+  }
+
+  /**
+   * Set the computed path
+   * @param computedPath 
+   */
+  setComputedPath(computedPath: ComputedPath){
+    if(!!this.#computedPath){
+      this.#computedPath.dispose();
+    }
+    this.#computedPath = computedPath;
+    if(!this.#computedPath) return;
+
+    this.#computedPath.owner = this;
+    if(this.context?.debug[EngineDebugType.PATH_FINDING]){
+      this.#computedPath.enableHelper = true;
+    }
+    this.#computedPath.buildHelperLine();
+  }
+
+  #tmpLIOVec3 = new THREE.Vector3();
+  /**
+   * Check if a line intersects the object
+   * @param line 
+   * @returns 
+   */
+  checkLineIntersectsObject(line: THREE.Line3){
+    line.closestPointToPoint(this.position, true, this.#tmpLIOVec3);
+    // Check if the closest point is within the radius of the point
+    return this.#tmpLIOVec3.distanceTo(this.position) <= this.getHitDistance();
+  }
+
+  // findWalkableFace(object?: ModuleObject){
+  //   let face;
+  //   let room;
+  //   for(let i = 0, il = this.area.rooms.length; i < il; i++){
+  //     room = this.area.rooms[i];
+  //     if(room.walkmesh){
+  //       for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
+  //         face = room.walkmesh.walkableFaces[j];
+  //         if(face.triangle.containsPoint(this.position)){
+  //           this.groundFace = face;
+  //           this.lastGroundFace = this.groundFace;
+  //           this.surfaceId = this.groundFace.walkIndex;
+  //           this.attachToRoom(room);
+  //           face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
+  //           this.position.z = this.collisionData.wm_c_point.z + .005;
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return face;
+  // }
+
+  #tmpCHVec3 = new THREE.Vector3();
+
+  /**
+   * Get the camera hook position
+   * @returns 
+   */
+  getCameraHookPosition(){
+    if(this.model && this.model.camerahook){
+      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
+      return this.#tmpCHVec3;
+    }
+
+    this.#tmpCHVec3.copy(this.position)
+    this.#tmpCHVec3.z += 1.5;
+    return this.#tmpCHVec3;
+  }
+
+  /**
+   * Get the camera height
+   * @returns 
+   */
+  getCameraHeight(){
+    if(this.model && this.model.camerahook){
+      this.model.camerahook.getWorldPosition(this.#tmpCHVec3);
+      return this.#tmpCHVec3.z;
+    }
+    return 1.5;
+  }
+
+  /**
+   * Set the cutscene mode
+   * @param state 
+   */
+  setCutsceneMode(state: boolean = false){
+    console.log('setCutsceneMode', this.getTag(), state);
+    this.cutsceneMode = state;
+    if(this.model && this.model.skins){
+      for(let i = 0, len = this.model.skins.length; i < len; i++){
+        this.model.skins[i].frustumCulled = !state;
+      }
+    }
+  }
+
+  /**
+   * Apply a visual effect
+   * @param resref 
+   */
+  applyVisualEffect(resref = 'v_light'){
+    if(this.model instanceof OdysseyModel3D){
+      MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
+        OdysseyModel3D.FromMDL(mdl, { 
+          context: this.context,
+          // manageLighting: false
+        }).then( (effectMDL: OdysseyModel3D) => {
+          if(this.model instanceof OdysseyModel3D){
+            this.model.effects.push(effectMDL);
+            this.model.add(effectMDL);
+            const anim = effectMDL.playAnimation(0, false);
+            setTimeout(() => {
+              effectMDL.stopAnimation();
+              this.model.remove(effectMDL);
+              effectMDL.disableEmitters();
+              setTimeout( () => {
+                if(this.model instanceof OdysseyModel3D){
+                  let index = this.model.effects.indexOf(effectMDL);
+                  effectMDL.dispose();
+                  this.model.effects.splice(index, 1);
+                }
+              }, 5000);
+            }, (anim ? anim.length * 1000 : 1500) )
+          }
+        }).catch(() => {
+
+        });
+      }).catch(() => {
+
+      });
+    }
+  }
+
+  /**
+   * Set the position
+   * @param x 
+   * @param y 
+   * @param z 
+   */
+  setPosition(x: THREE.Vector3|number = 0, y = 0, z = 0){
+    if(x instanceof THREE.Vector3){
+      z = x.z;
+      y = x.y;
+      x = x.x;
+    }
+
+    try{
+      this.position.set(x, y, z);
+      this.computeBoundingBox();
+      this.updateCollision();
+    }catch(e){
+      console.error('ModuleObject.setPosition failed ');
+    }
+  }
+
+  /**
+   * Get the position
+   * @returns 
+   */
+  getPosition(){
+    return this.position;
+  }
+
+  /**
+   * Get the orientation
+   * @returns 
+   */
+  getOrientation(){
+    return this.rotation;
+  }
+
+  /**
+   * Get the facing
+   * @returns 
+   */
+  getFacing(){
+    return this.rotation.z;
+  }
+
+  /**
+   * Set the facing object
+   * @param target 
+   */
+  setFacingObject( target: ModuleObject ){
+
+  }
+
+  /**
+   * Get the rotation
+   * @returns 
+   */
+  getRotation(){
+    return Math.floor(this.getFacing() * 180) + 180;
+  }
+
+  /**
+   * Get the location
+   * @returns 
+   */
+  getLocation(){
+    const rotation = this.getRotationFromBearing();
+
+    const location = new EngineLocation(
+      this.position.x, this.position.y, this.position.z,
+      rotation.x, rotation.y, rotation.z,
+      GameState?.module?.area
+    );
+
+    return location;
+  }
+
+  /**
+   * Get the rotation from bearing
+   * @param bearing 
+   * @returns 
+   */
+  getRotationFromBearing( bearing: number = undefined ){
+    const theta = (typeof bearing == 'number') ? bearing : this.rotation.z;
+
+    return new THREE.Vector3(
+      Math.cos(theta),
+      Math.sin(theta),
+      0
+    );
+  }
+
+  /**
+   * Look at an object
+   * @param oObject 
+   */
+  lookAt(oObject: ModuleObject){
+    return;
+  }
+
+  /**
+   * Check if the object is static
+   * @returns 
+   */
+  isStatic(){
+    return false;
+  }
+
+  /**
+   * Check if the object is useable
+   * @returns 
+   */
+  isUseable(){
+    return false;
+  }
+
+  /**
+   * Get the conversation
+   * @returns 
+   */
+  getConversation(): DLGObject {
+    return this.conversation;
+  }
+
+  /**
+   * Get the fortitude save
+   * @returns 
+   */
+  getFortitudeSave(){
+    return this.fortitudeSaveThrow;
+  }
+
+  /**
+   * Get the reflex save
+   * @returns 
+   */
+  getReflexSave(){
+    return this.reflexSaveThrow;
+  }
+
+  /**
+   * Fortitude save
+   * @param nDC 
+   * @param nSaveType 
+   * @param oVersus 
+   * @returns 
+   */
+  fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getCON());
+    
+    if((roll + this.getFortitudeSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
+  /**
+   * Get the CON
+   * @returns 
+   */
+  getCON(): number {
+    return 0;;
+  }
+
+  /**
+   * Reflex save
+   * @param nDC 
+   * @param nSaveType 
+   * @param oVersus 
+   * @returns 
+   */
+  reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getDEX());
+    
+    if((roll + this.getReflexSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
+  /**
+   * Get the DEX
+   * @returns 
+   */
+  getDEX(): number {
+    return 0;
+  }
+
+  /**
+   * Get the will save
+   * @returns 
+   */
+  getWillSave(){
+    return this.willSaveThrow;
+  }
+
+  /**
+   * Will save
+   * @param nDC 
+   * @param nSaveType 
+   * @param oVersus 
+   * @returns 
+   */
+  willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
+    let roll = Dice.roll(1, DiceType.d20);
+    let bonus = CombatRound.GetMod(this.getWIS());
+
+    if((roll + this.getWillSave() + bonus) > nDC){
+      return 1
+    }
+
+    return 0;
+  }
+
+  /**
+   * Get the WIS
+   * @returns 
+   */
+  getWIS(): number {
+    return 0;
+  }
+
+  /**
+   * Get the skill level
+   * @param value 
+   * @returns 
+   */
+  getSkillLevel(value: number = 0): number {
+    return 0;
+  }
+  
+  /**
+   * Resist force
+   * @param oCaster 
+   * @returns 
+   */
+  resistForce(oCaster: ModuleObject){
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
+      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //1d20 + their level vs. a DC of your level plus 10
+      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
+      return (roll > 10 + (oCaster as any).getTotalClassLevel());
+    }
+    return 0;
+  }
+
+  /**
+   * Initialize all effects for the object
+   */
+  initEffects(){
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      const effect = this.effects[i];
+      if(!effect ){ continue; }
+
+      effect.initialize();
+      //effect.setCreator(this);
+      effect.setAttachedObject(this);
+      effect.onApply(this);
+    }
+  }
+
+  /**
+   * Add an effect to the object
+   * @param effect - The effect to add
+   * @param type - The type of effect
+   * @param duration - The duration of the effect
+   */
+  addEffect(effect: GameEffect, type = 0, duration = 0){
+    if(!effect){
+      console.warn('AddEffect', 'Invalid GameEffect', effect);
+      return;
+    }
+
+    if(effect.type == GameEffectType.EffectLink){
+      const e1 = (effect as EffectLink).effect1;
+      const e2 = (effect as EffectLink).effect2;
+      //EFFECT LEFT
+      if(e1){
+        e1.setDurationType(type);
+        e1.setDuration(duration);
+        this.addEffect(e1, type, duration);
+      }
+
+      //EFFECT RIGHT
+      if(e2){
+        e2.setDurationType(type);
+        e2.setDuration(duration);
+        this.addEffect(e2, type, duration);
+      }
+      return;
+    }
+
+    effect.setAttachedObject(this);
+    effect.loadModel();
+    effect.onApply(this);
+    this.effects.push(effect);
+  }
+
+  /**
+   * Get an effect by type
+   * @param type 
+   * @returns 
+   */
+  getEffect(type = -1){
+    for(let i = 0; i < this.effects.length; i++){
+      if(this.effects[i].type == type){
+        return this.effects[i];
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Check if the object has an effect by type
+   * @param type 
+   * @returns 
+   */
+  hasEffect(type = -1){
+    return this.getEffect(type) ? true : false;
+  }
+
+  /**
+   * Remove all effects by creator
+   * @param oCreator 
+   */
+  removeEffectsByCreator( oCreator: ModuleObject ){
+    if(!(oCreator instanceof ModuleObject)){
+      return;
+    }
+    let eIndex = this.effects.length - 1;
+    let effect = this.effects[eIndex];
+    while(effect){
+      if(effect.getCreator() == oCreator){
+        let index = this.effects.indexOf(effect);
+        if(index >= 0){
+          this.effects.splice(index, 1)[0].onRemove();
+        }
+      }
+      effect = this.effects[--eIndex];
+    }
+  }
+
+  /**
+   * Remove all effects by type
+   * @param type 
+   */
+  removeEffectsByType(type: number = -1){
+    let effect = this.getEffect(type);
+    while(effect){
+      let index = this.effects.indexOf(effect);
+      if(index >= 0){
+        this.effects.splice(index, 1)[0].onRemove();
+      }
+      effect = this.getEffect(type);
+    }
+  }
+
+  /**
+   * Remove an effect by type or GameEffect
+   * @param type 
+   */
+  removeEffect(effect: GameEffect){
+    if(!effect){ return; }
+    const arrIdx = this.effects.indexOf(effect);
+    if(arrIdx == -1){ return; }
+    this.effects.splice(arrIdx, 1)[0].onRemove();
+  }
+
+  /**
+   * Jump to an EngineLocation
+   * @param lLocation 
+   */
+  JumpToLocation(lLocation: EngineLocation){
+    if(lLocation){
+      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+      this.computeBoundingBox();
+
+      this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
+      this.collisionData.groundFace = undefined;
+      this.collisionData.lastGroundFace = undefined;
+    }
+  }
+
+  /**
+   * Face a point
+   * @param vPoint 
+   */
+  FacePoint(vPoint=new THREE.Vector3){
+    let tangent = vPoint.clone().sub(this.position.clone());
+    let atan = Math.atan2(-tangent.y, -tangent.x);
+    this.setFacing(atan + Math.PI/2, true);
+  }
+
+  /**
+   * Get the x orientation
+   * @returns 
+   */
+  getXOrientation(){
+    if(this.template.RootNode.hasField('XOrientation')){
+      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
+    }
+    return 0;
+  }
+
+  /**
+   * Get the y orientation
+   * @returns 
+   */
+  getYOrientation(){
+    if(this.template.RootNode.hasField('XOrientation')){
+      return this.template.RootNode.getFieldByLabel('XOrientation').getValue();
+    }
+    return 0;
+  }
+
+  /**
+   * Get the z orientation
+   * @returns 
+   */
+  getZOrientation(){
+    if(this.template.RootNode.hasField('ZOrientation')){
+      return this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
+    }
+    return 0;
+  }
+
+  /**
+   * Get the linked to module
+   * @returns 
+   */
+  getLinkedToModule(){
+    return this.linkedToModule;
+  }
+
+  /**
+   * Get the linked to flags
+   * @returns 
+   */
+  getLinkedToFlags(){
+    return this.linkedToFlags;
+  }
+
+  /**
+   * Get the linked to
+   * @returns 
+   */
+  getLinkedTo(){
+    return this.linkedTo;
+  }
+
+  /**
+   * Get the transition destin
+   * @returns 
+   */
+  getTransitionDestin(){
+    if(this.transitionDestin instanceof CExoLocString){
+      return this.transitionDestin.getValue();
+    }
+    return '';
+  }
+
+  /**
+   * Get the portrait id
+   * @returns 
+   */
+  getPortraitId(){
+    if(this.template.RootNode.hasField('PortraitId')){
+      return this.template.RootNode.getFieldByLabel('PortraitId').getValue();
+    }
+    return 0;
+  }
+
+  /**
+   * Get the key name
+   * @returns 
+   */
+  getKeyName(){
+    if(this.template.RootNode.hasField('KeyName')){
+      return this.template.RootNode.getFieldByLabel('KeyName').getValue();
+    }
+    return null;
+  }
+
+  /**
+   * Get the tag
+   * @returns 
+   */
+  getTag(){
+    if(this.tag){
+      return this.tag
+    }
+    
+    if(this.template && this.template.RootNode && this.template.RootNode.hasField('Tag')){
+      return this.template.RootNode.getFieldByLabel('Tag').getValue()
+    }
+
+    return '';
+  }
+
+  /**
+   * Get the template resref
+   * @returns 
+   */
+  getTemplateResRef(){
+    if(this.template.RootNode.hasField('TemplateResRef')){
+      return this.template.RootNode.getFieldByLabel('TemplateResRef').getValue()
+    }
+    return null;
+  }
+
+  /**
+   * Get the resref
+   * @returns 
+   */
+  getResRef(){
+    if(this.template.RootNode.hasField('ResRef')){
+      return this.template.RootNode.getFieldByLabel('ResRef').getValue()
+    }
+    return null;
+  }
+
+  /**
+   * Set the template resref
+   * @param sRef 
+   */
+  setTemplateResRef(sRef=''){
+    if(this.template.RootNode.hasField('TemplateResRef')){
+      this.template.RootNode.getFieldByLabel('TemplateResRef').setValue(sRef)
+    }else{
+      this.template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(sRef)
+    }
+    
+  }
+
+  /**
+   * Set the HP
+   * @param value 
+   */
+  setHP(value = 0){
+    this.currentHP = value;
+  }
+
+  /**
+   * Add HP
+   * @param value 
+   * @param ignoreMaxHitPoints 
+   */
+  addHP(value = 0, ignoreMaxHitPoints = false){
+    this.currentHP = (this.getHP() + value);
+  }
+
+  /**
+   * Subtract HP
+   * @param value 
+   */
+  subtractHP(value = 0){
+    this.setHP(this.getHP() - value);
+  }
+
+  /**
+   * Get the HP
+   * @returns 
+   */
+  getHP(){
+    return this.currentHP;
+  }
+
+  /**
+   * Get the max HP
+   * @returns 
+   */
+  getMaxHP(){
+    return this.hp;
+  }
+
+  /**
+   * Set the max HP
+   * @param value 
+   */
+  setMaxHP(value = 0){
+    return this.hp = value;
+  }
+
+  /**
+   * Set the min one HP
+   * @param value 
+   */
+  setMinOneHP(value: boolean = false){
+    this.min1HP = value;
+  }
+
+  /**
+   * Add FP
+   * @param nAmount 
+   * @param ignoreMaxForcePoints 
+   */
+  addFP(nAmount = 0, ignoreMaxForcePoints = false){}
+
+  /**
+   * Subtract FP
+   * @param nAmount 
+   */
+  subtractFP(nAmount = 0){}
+
+  /**
+   * Get the AC
+   * @returns 
+   */
+  getAC(){
+    return 10;
+  }
+
+  /**
+   * Check if the object is a party member
+   * @returns 
+   */
+  isPartyMember(){
+    return this.isPM;//GameState.PartyManager.party.indexOf(this as any) >= 0;
+  }
+
+  /**
+   * Compute the bounding box
+   * @param force 
+   */
+  computeBoundingBox(force: boolean = false){
+    if(this.container){
+      this.container.updateMatrixWorld(true);
+      this.container.updateMatrix();
+      if(force){
+        this.container.traverse( n => {
+          n.updateMatrixWorld(true);
+          n.updateMatrix();
+        })
+      }
+    }
+
+    if(this.model){
+      this.model.updateMatrixWorld(true);
+      this.model.updateMatrix();
+    }
+    
+    if(this.model instanceof THREE.Object3D)
+      this.box.setFromObject(this.model);
+  }
+
+  /**
+   * Check if the object is on screen
+   * @param frustum 
+   * @returns 
+   */
+  isOnScreen(frustum = GameState.viewportFrustum){
+    if(this.area && this.area.fog){
+      if(this.distanceToCamera >= this.area.fog.far){
+        return false;
+      }
+    }
+
+    this.box.getBoundingSphere(this.sphere);
+    return frustum.intersectsSphere(this.sphere);
+  }
+
+  /**
+   * Get the reticle node
+   * @returns 
+   */
+  getReticleNode(){
+    if(!this.model){ return; }
+
+    if(this.model.talkdummy){
+      return this.model.talkdummy;
+    }
+    
+    if(this.model.camerahook){
+      return this.model.camerahook;
+    }
+    
+    if(this.model.lookathook){
+      return this.model.lookathook;
+    }
+    
+    if(this.model.headhook){
+      return this.model.headhook;
+    }
+
+    return this.model;
+  }
+
+  /**
+   * Set the listening state
+   * @param bListenting 
+   */
+  setListening(bListenting = false){
+    this.isListening = bListenting ? true : false;;
+  }
+
+  /**
+   * Set the listening pattern
+   * @param sString 
+   * @param iNum 
+   */
+  setListeningPattern(sString = '', iNum = 0){
+    this.listeningPatterns[sString] = iNum;
+  }
+
+  /**
+   * Get the listening state
+   * @returns 
+   */
+  getIsListening(){
+    return this.isListening ? true : false;
+  }
+
+  /**
+   * Get the local boolean
+   * @param index 
+   * @returns 
+   */
+  getLocalBoolean(index: number){
+    return !!this._locals.Booleans[index];
+  }
+
+  /**
+   * Get the local number
+   * @param index 
+   * @returns 
+   */
+  getLocalNumber(index: number){
+    return (this._locals.Numbers as any)[index] ? (this._locals.Numbers as any)[index] as number : 0;
+  }
+
+  /**
+   * Set the local boolean
+   * @param index 
+   * @param bool 
+   */
+  setLocalBoolean(index: number, bool: boolean){
+    this._locals.Booleans[index] = !!bool;
+  }
+
+  /**
+   * Set the local number
+   * @param index 
+   * @param value 
+   */
+  setLocalNumber(index: number, value: number){
+    (this._locals.Numbers as any)[index] = value;
+  }
+
+  /**
+   * Check if the object is hostile to another object
+   * @param target 
+   * @returns 
+   */
+  isHostile(target: ModuleObject){
+    return GameState.FactionManager.IsHostile(this, target);
+  }
+
+  /**
+   * Check if the object is neutral to another object
+   * @param target 
+   * @returns 
+   */
+  isNeutral(target: ModuleObject){
+    return GameState.FactionManager.IsNeutral(this, target);
+  }
+
+  /**
+   * Check if the object is friendly to another object
+   * @param target 
+   * @returns 
+   */
+  isFriendly(target: ModuleObject){
+    return GameState.FactionManager.IsFriendly(this, target);
+  }
+
+  /**
+   * Get the reputation of the object with another object
+   * @param target 
+   * @returns 
+   */
+  getReputation(target: ModuleObject){
+    return GameState.FactionManager.GetReputation(this, target);
+  }
+
+  /**
+   * Get the primary perception range
+   * @returns 
+   */
+  getPerceptionRangePrimary(){
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      let range = ranges2DA.rows[this.perceptionRange];
+      if(range){
+        return parseInt(range.primaryrange);
+      }
+    }
+    return 1;
+  }
+
+  /**
+   * Get the secondary perception range
+   * @returns 
+   */
+  getPerceptionRangeSecondary(){
+    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
+    if(ranges2DA){
+      let range = ranges2DA.rows[this.perceptionRange];
+      if(range){
+        return parseInt(range.secondaryrange);
+      }
+    }
+    return 1;
+  }
+
+  /**
+   * Initialize the perception list
+   */
+  initPerceptionList(){
+    let length = this.perceptionList.length;
+    while(length--){
+      let perceptionObject = this.perceptionList[length];
+      if(perceptionObject){
+        if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
+          perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
+          if(!(perceptionObject.object instanceof ModuleObject)){
+            this.perceptionList.splice(length, 1);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Notify the object that it has been heard by another object
+   * @param object 
+   * @param heard 
+   * @returns 
+   */
+  notifyPerceptionHeardObject(object: ModuleObject, heard = false){
+    if(!object) return;
+
+    let triggerOnNotice = false;
+    let perceptionObject;
+    let exists = this.perceptionList.filter( (o) => o.object == object );
+    if(exists.length){
+      let existingObject = exists[0];
+      triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
+      existingObject.data |= 0x02;
+      perceptionObject = existingObject;
+    }else{
+      if(heard){
+        let newObject = {
+          object: object,
+          objectId: object.id,
+          data: 0x02
+        };
+        this.perceptionList.push(newObject);
+        perceptionObject = newObject;
+        triggerOnNotice = true;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
+      }
+    }
+
+    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+      //console.log('notifyPerceptionHeardObject', heard, this, object);
+      let instance = this.scripts.onNotice.nwscript.newInstance();
+      instance.lastPerceived = perceptionObject;
+      instance.run(this);
+      return true;
+    }
+  }
+
+  /**
+   * Notify the object that it has been seen by another object
+   * @param object 
+   * @param seen 
+   * @returns 
+   */
+  notifyPerceptionSeenObject(object: ModuleObject, seen = false){
+    if(!object) return;
+
+    let triggerOnNotice = false;
+    let perceptionObject;
+    let exists = this.perceptionList.filter( (o) => o.object == object );
+    if(exists.length){
+      let existingObject = exists[0];
+      triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
+      perceptionObject = existingObject;
+    }else{
+      if(seen){
+        let newObject = {
+          object: object,
+          objectId: object.id,
+          data: 0x01
+        };
+        this.perceptionList.push(newObject);
+        perceptionObject = newObject;
+        triggerOnNotice = true;
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.subtractStealthXP();
+        }
+      }else{
+        if(object.isPlayer && this.isHostile(object)){
+          this.area.addStealthXP();
+        }
+      }
+    }
+
+    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
+      //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
+      let instance = this.scripts.onNotice.nwscript.newInstance();
+      instance.lastPerceived = perceptionObject;
+      instance.run(this);
+      return true;
+    }
+  }
+
+  /**
+   * Check if the object has line of sight to another object
+   * @param oTarget 
+   * @param max_distance 
+   * @returns 
+   */
+  hasLineOfSight(oTarget: ModuleObject, max_distance = 30){
+    if(!this.spawned || !GameState.module.readyToProcessEvents)
+      return false;
+    
+    if(!(oTarget instanceof ModuleObject)){
+      return false;
+    }
+
+    let position_a = this.position.clone();
+    let position_b = oTarget.position.clone();
+    position_a.z += 1;
+    position_b.z += 1;
+    let direction = position_b.clone().sub(position_a).normalize();
+    let distance = position_a.distanceTo(position_b);
+
+    if(this.perceptionRange){
+      if(distance > this.getPerceptionRangePrimary()){
+        return;
+      }
+      max_distance = this.getPerceptionRangePrimary();
+    }else{
+      if(distance > 50)
+        return;
+    }
+
+    GameState.raycaster.ray.origin.copy(position_a);
+    GameState.raycaster.ray.direction.copy(direction);
+    GameState.raycaster.far = max_distance;
+
+    let aabbFaces = [];
+    let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
+
+    for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
+      let room = this.area.rooms[j];
+      if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
+        aabbFaces.push({
+          object: room, 
+          faces: room.collisionData.walkmesh.faces
+        });
+      }
+    }
+
+    for(let j = 0, jl = this.area.doors.length; j < jl; j++){
+      let door = this.area.doors[j];
+      if(door && door != (this as any) && !door.isOpen()){
+        let box3 = door.box;
+        if(box3){
+          if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
+            return false;
+          }
+        }
+      }
+    }
+
+
+    for(let i = 0, il = aabbFaces.length; i < il; i++){
+      let castableFaces = aabbFaces[i];
+      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
+      if (intersects && intersects.length > 0 ) {
+        for(let j = 0; j < intersects.length; j++){
+          if(intersects[j].distance < distance){
+            return false;
+          }
+        }
+      }
+    }
+
+    return true;
+  }
+  
+  /**
+   * Set the animation state
+   * @param animState 
+   */
+  setAnimationState(animState: any){
+    this.animState = animState;
+  }
+
+  /**
+   * Play an animation
+   * @param anim 
+   */
+  dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
+    console.log('dialogPlayAnimation',anim);
+    if(!this.model){ 
+      console.warn('dialogPlayAnimation failed');
+      console.log(this, anim);
+      return; 
+    }
+
+    const odysseyAnimation = this.model.odysseyAnimations.find( (a) => a.name.toLocaleLowerCase() == anim.name.toLocaleLowerCase() );
+    if(!odysseyAnimation){
+      return;
+    }
+
+    this.dialogAnimation = {
+      animation: odysseyAnimation,
+      data: anim,
+      started: false,
+    };
+  }
+
+  /**
+   * Reset the dialog animation state
+   */
+  dialogResetAnimationState(){
+    this.dialogAnimationState = {
+      animationIndex: -1,
+      animation: undefined,
+      data: undefined,
+      started: false,
+    };
+  }
+
+  /**
+   * Use an object
+   * @param object 
+   */
+  use(object: ModuleObject){
+    console.warn("Method not implemented.", this.tag);
+  }
+
+  /**
+   * Attack a creature
+   * @param target 
+   * @param feat 
+   * @param isCutsceneAttack 
+   * @param attackDamage 
+   * @param attackAnimation 
+   * @param attackResult 
+   */
+  attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
+    console.warn("Method not implemented.", this.tag, target);
+  }
+  /**
+   * Set the commandable state
+   * @param arg0 
+   */
+  setCommandable(arg0: boolean) {
+    console.warn("Method not implemented.", this.tag);
+  }
+
+  /**
+   * Play a sound set
+   * @param ssfType 
+   */
+  playSoundSet(ssfType: SSFType){
+    console.warn("Method not implemented.", this.tag);
+  }
+  
+  /**
+   * Initialize the properties
+   */
+  initProperties(){
+
+    if(!this.initialized){
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
+      }
+      
+      GameState.ModuleObjectManager.AddObjectById(this);
+    }
+    
+    if(this.template.RootNode.hasField('Animation'))
+      this.animState = this.template.getFieldByLabel('Animation').getValue();
+    
+    if(this.template.RootNode.hasField('Appearance')){
+      this.appearance = this.template.getFieldByLabel('Appearance').getValue();
+    }
+    
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
+    
+    if(this.template.RootNode.hasField('ObjectId'))
+      this.id = this.template.getFieldByLabel('ObjectId').getValue();
+
+    if(this.template.RootNode.hasField('AutoRemoveKey'))
+      this.autoRemoveKey = this.template.getFieldByLabel('AutoRemoveKey').getValue();
+
+    if(this.template.RootNode.hasField('Commandable'))
+      this.commandable = this.template.getFieldByLabel('Commandable').getValue();
+
+    if(this.template.RootNode.hasField('Cursor'))
+      this.cursor = this.template.getFieldByLabel('Cursor').getValue();
+
+    if(this.template.RootNode.hasField('Faction')){
+      this.factionId = this.template.getFieldByLabel('Faction').getValue();
+      if((this.factionId & 0xFFFFFFFF) == -1){
+        this.factionId = 0;
+      }
+      this.faction = GameState.FactionManager.factions.get(this.factionId);
+    }
+
+    if(this.template.RootNode.hasField('Geometry')){
+      this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
+
+      //Push verticies
+      for(let i = 0; i < this.geometry.length; i++){
+        let tgv = this.geometry[i];
+        this.vertices[i] = new THREE.Vector3( 
+          tgv.getFieldByLabel('PointX').getValue(),
+          tgv.getFieldByLabel('PointY').getValue(),
+          tgv.getFieldByLabel('PointZ').getValue()
+        );
+      }
+    }
+
+    if(this.template.RootNode.hasField('HasMapNote'))
+      this.hasMapNote = this.template.getFieldByLabel('HasMapNote').getValue();
+
+    if(this.template.RootNode.hasField('HighlightHeight'))
+      this.highlightHeight = this.template.getFieldByLabel('HighlightHeight').getValue();
+
+    if(this.template.RootNode.hasField('KeyName'))
+      this.keyName = this.template.getFieldByLabel('KeyName').getValue();
+
+    if(this.template.RootNode.hasField('LinkedTo'))
+      this.linkedTo = this.template.getFieldByLabel('LinkedTo').getValue();
+
+    if(this.template.RootNode.hasField('LinkedToFlags'))
+      this.linkedToFlags = this.template.getFieldByLabel('LinkedToFlags').getValue();
+  
+    if(this.template.RootNode.hasField('LinkedToModule'))
+      this.linkedToModule = this.template.RootNode.getFieldByLabel('LinkedToModule').getValue();
+        
+    if(this.template.RootNode.hasField('LoadScreenID'))
+      this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
+
+    if(this.template.RootNode.hasField('LocName'))
+      this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
+
+    if(this.template.RootNode.hasField('LocalizedName'))
+      this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
+
+    if(this.template.RootNode.hasField('MapNote'))
+      this.mapNote = this.template.getFieldByLabel('MapNote').getCExoLocString();
+
+    if(this.template.RootNode.hasField('MapNoteEnabled'))
+      this.mapNoteEnabled = this.template.getFieldByLabel('MapNoteEnabled').getValue();
+
+    if(this.template.RootNode.hasField('PortraidId')){
+      this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }
+
+    if(this.template.RootNode.hasField('SetByPlayerParty'))
+      this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
+
+    if(this.template.RootNode.hasField('Tag'))
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
+
+    if(this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+
+    if(this.template.RootNode.hasField('TransitionDestin'))
+      this.transitionDestin = this.template.getFieldByLabel('TransitionDestin').getCExoLocString();
+
+    if(this.template.RootNode.hasField('TrapDetectable'))
+      this.trapDetectable = this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
+
+    if(this.template.RootNode.hasField('TrapDisarmable'))
+      this.trapDisarmable = this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
+
+    if(this.template.RootNode.hasField('TrapOneShot'))
+      this.trapOneShot = this.template.getFieldByLabel('TrapOneShot').getValue();
+
+    if(this.template.RootNode.hasField('TrapType'))
+      this.trapType = this.template.getFieldByLabel('TrapType').getValue();
+
+    if(this.template.RootNode.hasField('Type'))
+      this.type = this.template.getFieldByLabel('Type').getValue();
+
+    if(this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
+
+    if(this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
+
+    if(this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+
+    if(this.template.RootNode.hasField('XOrientation'))
+      this.xOrientation = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
+
+    if(this.template.RootNode.hasField('YOrientation'))
+      this.yOrientation = this.template.RootNode.getFieldByLabel('YOrientation').getValue();
+
+    if(this.template.RootNode.hasField('ZOrientation'))
+      this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
+      
+    if(this.template.RootNode.hasField('FortSaveThrow'))
+      this.fortitudeSaveThrow = this.template.RootNode.getFieldByLabel('FortSaveThrow').getValue();
+
+    if(this.template.RootNode.hasField('RefSaveThrow'))
+      this.reflexSaveThrow = this.template.RootNode.getFieldByLabel('RefSaveThrow').getValue();
+
+    if(this.template.RootNode.hasField('WillSaveThrow'))
+      this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
+
+    if(this.template.RootNode.hasField('SWVarTable')){
+      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      if(swVarTableStruct){
+        if(swVarTableStruct.hasField('BitArray')){
+          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          for(let i = 0; i < localBools.length; i++){
+            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            for(let bit = 0; bit < 32; bit++){
+              this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+            }
+          }
+        }
+
+        if(swVarTableStruct.hasField('ByteArray')){
+          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          for(let i = 0; i < localNumbers.length; i++){
+            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            this.setLocalNumber(i, data);
+          }
+        }
+      }
+    }
+
+    this.initialized = true;
+
+  }
+
+  /**
+   * Save the object
+   */
+  Save(){
+    //TODO
+
+    let gff = new GFFObject();
+
+    return gff;
+
+  }
+
+  /**
+   * Get the SWVarTable save struct
+   * @returns 
+   */
+  getSWVarTableSaveStruct(){
+    let swVarTableStruct = new GFFStruct();
+
+    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
+
+    for(let i = 0; i < 3; i++){
+      let varStruct = new GFFStruct();
+      let value = 0;
+      let offset = 32 * i;
+      for(let j = 0; j < 32; j++){
+        if(this.getLocalBoolean(offset + j) == true){
+          value |= 1 << j;
+        }
+      }
+      value = value >>> 0;
+      varStruct.addField( new GFFField(GFFDataType.DWORD, 'Variable') ).setValue( value );
+      swVarTableBitArray.addChildStruct(varStruct);
+    }
+
+    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
+
+    for(let i = 0; i < 8; i++){
+      let varStruct = new GFFStruct();
+      varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
+      swVarTableByteArray.addChildStruct(varStruct);
+    }
+    return swVarTableStruct;
+  }
+
+  /**
+   * Convert the object to a toolset instance
+   * @returns 
+   */
+  toToolsetInstance(){
+
+    let instance = new GFFStruct();
+    
+    instance.addField(
+      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
+    );
+    
+    instance.addField(
+      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
+    );
+    
+    instance.addField(
+      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
+    );
+    
+    instance.addField(
+      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
+    );
+    
+    instance.addField(
+      new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
+    );
+    
+    instance.addField(
+      new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
+    );
+
+    return instance;
+
+  }
+
+  /**
+   * Convert the action queue to an action list
+   * @returns 
+   */
   actionQueueToActionList(){
     const actionList = new GFFField(GFFDataType.LIST, 'ActionList');
 
     for(let i = 0, len = this.actionQueue.length; i < len; i++){
       const action = this.actionQueue[i] as Action;
+      if(!action){ continue; }
       const struct = new GFFStruct(0);
       struct.addField(new GFFField(GFFDataType.DWORD, 'ActionId', action.type));
       struct.addField(new GFFField(GFFDataType.WORD, 'GroupActionId', action.groupId));
@@ -2924,6 +3511,153 @@ export class ModuleObject {
     }
 
     return actionList;
+  }
+
+  /**
+   * Destroy the object
+   */
+  destroy(){
+    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
+    try{
+      this.container.removeFromParent();
+
+      if(this.model instanceof OdysseyModel3D){
+        this.model.removeFromParent();
+        this.model.dispose();
+        this.model = undefined;
+      }
+
+      if(this.mesh instanceof THREE.Mesh){
+        this.mesh.removeFromParent();
+
+        (this.mesh.material as THREE.Material).dispose();
+        this.mesh.geometry.dispose();
+
+        this.mesh.material = undefined;
+        this.mesh.geometry = undefined;
+        this.mesh = undefined;
+      }
+
+      //cleanup audio emitter
+      if(this.audioEmitter){
+        this.audioEmitter.destroy();
+        this.audioEmitter = undefined;
+      }
+
+      if(this.footstepEmitter){
+        this.footstepEmitter.destroy();
+        this.footstepEmitter = undefined;
+      }
+
+      // Dispose all game effects
+      if(this.effects && this.effects.length > 0){
+        for(let i = this.effects.length - 1; i >= 0; i--){
+          if(this.effects[i]){
+            this.effects[i].onRemove();
+          }
+        }
+        this.effects.length = 0;
+      }
+
+      //Cleanup scripts
+      Object.keys(this.scripts).forEach( (key) => {
+        if(this.scripts[key] instanceof NWScriptInstance){
+          this.scripts[key].dispose();
+        }
+        this.scripts = {};
+      });
+
+      //Clear action queue
+      if(this.actionQueue){
+        this.actionQueue.clear();
+        this.actionQueue = undefined;
+      }
+
+      //Clear computed path
+      if(this.#computedPath){
+        this.#computedPath.dispose();
+        this.#computedPath = undefined;
+      }
+
+      //Clear perception list
+      if(this.perceptionList){
+        this.perceptionList.length = 0;
+      }
+
+      //Clear inventory
+      if(this.inventory){
+        for(let i = this.inventory.length - 1; i >= 0; i--){
+          if(this.inventory[i]){
+            this.inventory[i].destroy();
+          }
+        }
+        this.inventory.length = 0;
+      }
+
+      //Clear rooms array
+      if(this.rooms){
+        this.rooms.length = 0;
+      }
+
+      //Clear objects inside
+      if(this.objectsInside){
+        this.objectsInside.length = 0;
+      }
+
+      //Dispose Three.js utility objects
+      if(this.forceVector){
+        this.forceVector = undefined;
+      }
+      if(this.position){
+        this.position = undefined;
+      }
+      if(this.rotation){
+        this.rotation = undefined;
+      }
+      if(this.quaternion){
+        this.quaternion = undefined;
+      }
+      if(this.box){
+        this.box = undefined;
+      }
+      if(this.sphere){
+        this.sphere = undefined;
+      }
+      if(this.v20){
+        this.v20 = undefined;
+      }
+      if(this.v21){
+        this.v21 = undefined;
+      }
+
+      if(this.area){
+        this.area.detachObject(this);
+      }
+
+      //Clear references to prevent circular references
+      this.area = undefined;
+      this.room = undefined;
+      this.lookAtObject = undefined;
+      this.lastTriggerEntered = undefined;
+      this.lastTriggerExited = undefined;
+      this.lastAreaEntered = undefined;
+      this.lastAreaExited = undefined;
+      this.lastModuleEntered = undefined;
+      this.lastModuleExited = undefined;
+      this.lastDoorEntered = undefined;
+      this.lastDoorExited = undefined;
+      this.lastPlaceableEntered = undefined;
+      this.lastPlaceableExited = undefined;
+      this.lastAoeEntered = undefined;
+      this.lastAoeExited = undefined;
+      this.conversation = undefined;
+      this.linkedToObject = undefined;
+
+      GameState.ModuleObjectManager.RemoveObject(this);
+      GameState.CursorManager.notifyObjectDestroyed(this);
+    }catch(e){
+      console.error('ModuleObject.destroy', e);
+    }
   }
 
 }

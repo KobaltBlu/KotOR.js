@@ -84,10 +84,9 @@ export class CutsceneManager {
     this.ended = false;
     this.currentEntry = null;
     this.state = ConversationState.INVALID;
-    if (this.owner == GameState.PartyManager.party[0]) {
-      const old_listener = this.listener;
-      this.listener = this.owner;
-      this.owner = old_listener;
+    if (owner.isPlayer && !listener.isPlayer) {
+      this.listener = owner;
+      this.owner = listener;
     }
     this.unequipHeadItem = false;
     this.unequipItems = false;
@@ -97,8 +96,6 @@ export class CutsceneManager {
     this.currentEntry = null;
     this.currentReplies = [];
     this.lastSpokenString = '';
-    this.listener = listener;
-    this.owner = owner;
     this.ended = false;
     
     if (!dialog) {
@@ -418,15 +415,17 @@ export class CutsceneManager {
     }
     GameState.currentCamera = GameState.camera;
     this.state = ConversationState.INVALID;
+
     if(this.dialog){
       if (this.dialog.animatedCamera instanceof OdysseyModel3D)
         this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-      
+      console.log('CutsceneManager.endConversation: onEndConversation', this.dialog.scripts.onEndConversation);
       if (!aborted) {
         if(this.dialog.scripts.onEndConversation){
           this.dialog.scripts.onEndConversation.run(this.owner, 0);
         }
       }else{
+        console.log('CutsceneManager.endConversation: onEndConversationAbort', this.dialog.scripts.onEndConversationAbort);
         if(this.dialog.scripts.onEndConversationAbort){
           this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
         }
@@ -436,6 +435,8 @@ export class CutsceneManager {
         GameState.FadeOverlayManager.FadeInFromCutscene();
       }
     }
+
+    this.dialog = undefined;
     GameState.VideoEffectManager.SetVideoEffect(-1);
     AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.stop();
   }

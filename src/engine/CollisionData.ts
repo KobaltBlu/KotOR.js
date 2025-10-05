@@ -498,7 +498,7 @@ export class CollisionData {
       }
       this.roomCheckTimer -= delta;
     }
-    this.object.setModelVisibility();
+    this.object.updateModelVisibility();
   }
 
 }

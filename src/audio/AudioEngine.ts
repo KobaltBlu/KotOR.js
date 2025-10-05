@@ -251,6 +251,12 @@ export class AudioEngine {
     this.emitters.push(emitter);
   }
 
+  removeEmitter(emitter: AudioEmitter){
+    const index = this.emitters.indexOf(emitter);
+    if(index == -1){ return; }
+    this.emitters.splice(index, 1);
+  }
+
   setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer, name: string){
     switch(type){
       case 'BACKGROUND_MUSIC_DAY':

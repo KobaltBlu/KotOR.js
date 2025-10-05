@@ -35,7 +35,8 @@ export class GameEffect {
   stringList: string[] = [];
   objectList: ModuleObject[] = [];
   object: ModuleObject;
-  type: any;
+  type: GameEffectType;
+  
   constructor(){
     this.creator = undefined;
     this.duration = 0;

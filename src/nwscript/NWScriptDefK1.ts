@@ -1173,7 +1173,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEffect]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && args[1]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && typeof args[1] === 'object'){
         args[0].removeEffect(args[1]);
       }
     }

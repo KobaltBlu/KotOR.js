@@ -97,6 +97,41 @@ export class ModuleRoom extends ModuleObject {
     }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
       if(this.doors.indexOf(object as ModuleDoor) >= 0) return;
       this.doors.push(object as ModuleDoor);
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      if(this.triggers.indexOf(object as ModuleTrigger) >= 0) return;
+      this.triggers.push(object as ModuleTrigger);
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+      if(this.encounters.indexOf(object as ModuleEncounter) >= 0) return;
+      this.encounters.push(object as ModuleEncounter);
+    }
+  }
+
+  removeChildObject(object: ModuleObject){
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      const idx = this.creatures.indexOf(object as ModuleCreature);
+      if(idx >= 0){
+        this.creatures.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+      const idx = this.placeables.indexOf(object as ModulePlaceable);
+      if(idx >= 0){
+        this.placeables.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+      const idx = this.doors.indexOf(object as ModuleDoor);
+      if(idx >= 0){
+        this.doors.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      const idx = this.triggers.indexOf(object as ModuleTrigger);
+      if(idx >= 0){
+        this.triggers.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+      const idx = this.encounters.indexOf(object as ModuleEncounter);
+      if(idx >= 0){
+        this.encounters.splice(idx, 1);
+      }
     }
   }
 
