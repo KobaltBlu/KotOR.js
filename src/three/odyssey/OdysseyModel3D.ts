@@ -1117,6 +1117,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
       //Make sure there is at least one face before we attempt to build the mesh
       if(odysseyNode.faces.length ){
 
+        if(odysseyNode.roomStatic){
+          if(!odysseyNode.tvectors[0].length) odysseyNode.roomStatic = false;
+        }
+
         //Optimization: Only create a mesh if it is actually rendered. Ignore this for placeable models
         //This breaks shadows because the original game uses the bones of the model to cast shadows. 
         //This can possibly be remedied by setting skin meshes to cast shadows.
@@ -1257,9 +1261,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //----------------//
           // MERGE GEOMETRY
           //----------------//
-          if(odysseyNode.roomStatic){
-            if(!odysseyNode.tvectors[0].length) odysseyNode.roomStatic = false;
-          }
           if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && odysseyNode.roomStatic && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
@@ -1338,6 +1339,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
   };
 
+  cachedMaterials: Map<string, THREE.Material> = new Map<string, THREE.Material>();
+  static NodeMaterialCacheId(odysseyNode: OdysseyModelNodeMesh): string {
+    return `T1:${odysseyNode.textureMap1 || 'NONE'}|T2:${odysseyNode.textureMap2 || 'NONE'}|T3:${odysseyNode.textureMap3 || 'NONE'}|T4:${odysseyNode.textureMap4 || 'NONE'}`;
+  }
+
   static NodeMaterialBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeMesh, options: IOdysseyModelLoaderOptions){
       
     let tMap1 = odysseyNode.textureMap1+'';
@@ -1360,6 +1366,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
         side: THREE.FrontSide,
       });
     }else{
+      const cacheId = OdysseyModel3D.NodeMaterialCacheId(odysseyNode);
+      if(odysseyModel.cachedMaterials.has(cacheId) && options.mergeStatic && odysseyNode.roomStatic){
+        return odysseyModel.cachedMaterials.get(cacheId);
+      }
+
       material = new THREE.ShaderMaterial({
         fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
@@ -1389,7 +1400,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
           material.defines.FORCE_SHIELD = "";
           material.defines.IGNORE_LIGHTING = "";
         }
-      
 
         if(odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV1 || 
           odysseyNode.MDXDataBitmap & OdysseyModelMDXFlag.UV2 || 
@@ -1494,6 +1504,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
 
       material.needsUpdate = true;
+      odysseyModel.cachedMaterials.set(cacheId, material);
     }
     return material;
   };
