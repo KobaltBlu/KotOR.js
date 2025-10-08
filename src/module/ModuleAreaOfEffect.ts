@@ -22,12 +22,12 @@ import { GameState } from "../GameState";
  */
 export class ModuleAreaOfEffect extends ModuleObject {
 
-  areaEffectId: any;
+  areaEffectId: number;
   duration: number;
   durationType: number;
 
   creator: ModuleObject;
-  creatorId: any;
+  creatorId: number;
 
   linkedToObjectId: number;
 
@@ -37,15 +37,15 @@ export class ModuleAreaOfEffect extends ModuleObject {
   lastLeftId: number;
   lastLeft: ModuleObject;
 
-  radius: any;
-  shape: any;
-  length: any;
-  width: any;
+  radius: number;
+  shape: AreaOfEffectShape;
+  length: number;
+  width: number;
 
-  spellId: any;
-  metaMagicType: any;
-  spellSaveDC: any;
-  spellLevel: any;
+  spellId: number;
+  metaMagicType: number;
+  spellSaveDC: number;
+  spellLevel: number;
 
   onHeartbeat: NWScriptInstance;
   onUserDefined: NWScriptInstance;
@@ -103,13 +103,17 @@ export class ModuleAreaOfEffect extends ModuleObject {
     if(this.template.RootNode.hasField('Shape'))
       this.shape = this.template.getFieldByLabel('Shape').getValue();
 
-    if(this.shape == AreaOfEffectShape.RECTANGLE){ //RECT
+    //RECT
+    if(this.shape == AreaOfEffectShape.RECTANGLE){
       if(this.template.RootNode.hasField('Length'))
-      this.length = this.template.getFieldByLabel('Length').getValue();
+        this.length = this.template.getFieldByLabel('Length').getValue();
 
       if(this.template.RootNode.hasField('Width'))
         this.width = this.template.getFieldByLabel('Width').getValue();
-    }else{
+    }
+    //CIRCLE
+    else
+    {
       if(this.template.RootNode.hasField('Radius'))
         this.radius = this.template.getFieldByLabel('Radius').getValue();
     }
@@ -124,10 +128,10 @@ export class ModuleAreaOfEffect extends ModuleObject {
       this.spellSaveDC = this.template.getFieldByLabel('SpellSaveDC').getValue();
 
     if(this.template.RootNode.hasField('OrientationX'))
-    this.xOrientation = this.template.getFieldByLabel('OrientationX').getValue();
+      this.xOrientation = this.template.getFieldByLabel('OrientationX').getValue();
     
     if(this.template.RootNode.hasField('OrientationY'))
-    this.yOrientation = this.template.getFieldByLabel('OrientationY').getValue();
+      this.yOrientation = this.template.getFieldByLabel('OrientationY').getValue();
     
     if(this.template.RootNode.hasField('OrientationZ'))
       this.zOrientation = this.template.getFieldByLabel('OrientationZ').getValue();
@@ -136,7 +140,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
       this.position.x = this.template.getFieldByLabel('PositionX').getValue();
     
     if(this.template.RootNode.hasField('PositionY'))
-    this.position.y = this.template.getFieldByLabel('PositionY').getValue();
+      this.position.y = this.template.getFieldByLabel('PositionY').getValue();
     
     if(this.template.RootNode.hasField('PositionZ'))
       this.position.z = this.template.getFieldByLabel('PositionZ').getValue();
