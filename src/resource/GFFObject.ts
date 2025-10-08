@@ -5,7 +5,6 @@ import { CExoLocString } from "./CExoLocString";
 import { CExoLocSubString } from "./CExoLocSubString";
 import { GFFField } from "./GFFField";
 import { GFFStruct } from "./GFFStruct";
-import * as THREE from "three";
 import * as path from "path";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
@@ -452,19 +451,19 @@ export class GFFObject {
   }
 
   //Gets data from the FieldDataHeader
-  getOrientation(offset: number): THREE.Quaternion{
+  getOrientation(offset: number): {x: number, y: number, z: number, w: number}{
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    let o = new THREE.Quaternion(this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle());
+    let o = {x: this.reader.readSingle(), y: this.reader.readSingle(), z: this.reader.readSingle(), w: this.reader.readSingle()};
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return o;
   }
 
   //Gets data from the FieldDataHeader
-  getVector(offset: number): THREE.Vector3{
+  getVector(offset: number): {x: number, y: number, z: number}{
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
-    let v = new THREE.Vector3(this.reader.readSingle(), this.reader.readSingle(), this.reader.readSingle());
+    let v = {x: this.reader.readSingle(), y: this.reader.readSingle(), z: this.reader.readSingle()};
     this.reader.seek(OriginalPos);//Return the reader position to the original
     return v;
   }

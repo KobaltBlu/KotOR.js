@@ -1,32 +1,98 @@
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { CExoLocString } from "./CExoLocString";
 import { GFFStruct } from "./GFFStruct";
-import * as THREE from "three";
+import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
 
 /**
- * GFFField class.
+ * Represents a field within a GFF (Generic File Format) structure.
  * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * GFFField is a fundamental component of the GFF file format used by BioWare's
+ * Aurora Engine. It represents a single data field that can contain various types
+ * of data including primitive types (integers, strings), complex types (vectors,
+ * orientations), and nested structures.
+ * 
+ * @class GFFField
+ * 
+ * @example
+ * ```typescript
+ * // Create a string field
+ * const nameField = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+ * 
+ * // Create a vector field
+ * const positionField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
+ * 
+ * // Create a nested structure field
+ * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+ * structField.addChildStruct(new GFFStruct(0x0007));
+ * 
+ * // Get and set values
+ * console.log(nameField.getValue()); // 'PlayerName'
+ * nameField.setValue('NewName');
+ * ```
  * 
  * @file GFFField.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GFFField {
+  /** Unique identifier for this field instance */
   uuid: string;
+  
+  /** The data type of this field (from GFFDataType enum) */
   type: number;
+  
+  /** The label/name of this field */
   label: string;
+  
+  /** Raw binary data for this field */
   data: Uint8Array;
+  
+  /** DataView for reading binary data */
   dataView: DataView;
+  
+  /** The actual value stored in this field */
   value: any;
+  
+  /** Array of child structures (for STRUCT and LIST types) */
   childStructs: GFFStruct[] = [];
+  
+  /** Localized string data (for CEXOLOCSTRING type) */
   cexoLocString: CExoLocString;
-  vector: THREE.Vector3;
-  orientation: THREE.Quaternion;
+  
+  /** 3D vector data (for VECTOR type) */
+  vector: {x: number, y: number, z: number};
+  
+  /** 3D orientation data (for ORIENTATION type) */
+  orientation: {x: number, y: number, z: number, w: number};
 
+  /** Index position of this field within its parent structure */
   index: number = 0;
+  
+  /** Index of the field's label in the label table */
   labelIndex: number = 0;
 
+  /**
+   * Creates a new GFFField instance.
+   * 
+   * @param {number} [type=0] - The data type of the field (from GFFDataType enum)
+   * @param {string} [label=""] - The label/name of the field
+   * @param {any} [value] - The initial value for the field (type-specific)
+   * 
+   * @example
+   * ```typescript
+   * // Create a string field
+   * const nameField = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * 
+   * // Create a vector field with initial position
+   * const posField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
+   * 
+   * // Create a localized string field
+   * const locField = new GFFField(GFFDataType.CEXOLOCSTRING, 'Description');
+   * 
+   * // Create a nested structure field
+   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+   * ```
+   */
   constructor(type: number = 0, label: string = "", value?: any){
     this.uuid = crypto.randomUUID();
     this.type = type;
@@ -51,7 +117,7 @@ export class GFFField {
         if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number' && typeof value.w == 'number'){
           this.orientation = value;
         }else{
-          this.orientation = new THREE.Quaternion(0, 0, 0, 1);
+          this.orientation = {x: 0, y: 0, z: 0, w: 1};
         }
       break;
       case GFFDataType.VECTOR:
@@ -59,7 +125,7 @@ export class GFFField {
         if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
           this.vector = value;
         }else{
-          this.vector = new THREE.Vector3(0, 0, 0);
+          this.vector = {x: 0, y: 0, z: 0};
         }
       break;
       case GFFDataType.STRUCT:
@@ -73,18 +139,74 @@ export class GFFField {
 
   }
 
-  getType(): number {
+  /**
+   * Gets the data type of this field.
+   * 
+   * @returns {GFFDataType} The data type identifier
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * console.log(field.getType()); // GFFDataType.CExoString
+   * ```
+   */
+  getType(): GFFDataType {
     return this.type;
   }
 
+  /**
+   * Gets the label/name of this field.
+   * 
+   * @returns {string} The field label
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * console.log(field.getLabel()); // 'Name'
+   * ```
+   */
   getLabel(): string {
     return this.label;
   }
 
+  /**
+   * Gets the raw binary data for VOID type fields.
+   * 
+   * @returns {Uint8Array} The raw binary data
+   * 
+   * @example
+   * ```typescript
+   * const voidField = new GFFField(GFFDataType.VOID, 'BinaryData');
+   * voidField.setValue(new Uint8Array([1, 2, 3, 4]));
+   * const data = voidField.getVoid(); // Uint8Array [1, 2, 3, 4]
+   * ```
+   */
   getVoid(){
     return this.data;
   }
 
+  /**
+   * Gets the value stored in this field.
+   * 
+   * The returned value depends on the field type:
+   * - CEXOLOCSTRING: Returns the localized string value
+   * - DWORD64: Returns the 64-bit unsigned integer value
+   * - Other types: Returns the stored value directly
+   * 
+   * @returns {any} The field's value (type-dependent)
+   * 
+   * @example
+   * ```typescript
+   * const stringField = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * console.log(stringField.getValue()); // 'PlayerName'
+   * 
+   * const intField = new GFFField(GFFDataType.INT, 'Level', 5);
+   * console.log(intField.getValue()); // 5
+   * 
+   * const vectorField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
+   * console.log(vectorField.getValue()); // Vector3 {x: 1, y: 2, z: 3}
+   * ```
+   */
   getValue(){
     switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
@@ -96,15 +218,77 @@ export class GFFField {
     }
   }
 
+  /**
+   * Gets the 3D vector value for VECTOR type fields.
+   * 
+   * @returns {THREE.Vector3} The 3D vector value
+   * 
+   * @example
+   * ```typescript
+   * const vectorField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
+   * const position = vectorField.getVector();
+   * console.log(position.x, position.y, position.z); // 1, 2, 3
+   * ```
+   */
   getVector(){
     return this.vector;
   }
 
-  getChildStructs(){
+  /**
+   * Gets the first child structure for STRUCT type fields.
+   * 
+   * @returns {GFFStruct} The first child structure, or undefined if none exists
+   * 
+   * @example
+   * ```typescript
+   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+   * const childStruct = new GFFStruct(0x0007);
+   * structField.addChildStruct(childStruct);
+   * 
+   * const firstStruct = structField.getFieldStruct();
+   * console.log(firstStruct.getType()); // 0x0007
+   * ```
+   */
+  getFieldStruct(): GFFStruct {
+    return this.childStructs[0];
+  }
+
+  /**
+   * Gets all child structures for STRUCT and LIST type fields.
+   * 
+   * @returns {GFFStruct[]} Array of all child structures
+   * 
+   * @example
+   * ```typescript
+   * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
+   * listField.addChildStruct(new GFFStruct(0x0008));
+   * listField.addChildStruct(new GFFStruct(0x0008));
+   * 
+   * const children = listField.getChildStructs();
+   * console.log(children.length); // 2
+   * ```
+   */
+  getChildStructs(): GFFStruct[] {
     return this.childStructs;
   }
 
-  getChildStructByType(type = -1){
+  /**
+   * Gets a child structure by its type identifier.
+   * 
+   * @param {number} [type=-1] - The type identifier to search for
+   * @returns {GFFStruct | null} The first child structure with the specified type, or null if not found
+   * 
+   * @example
+   * ```typescript
+   * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
+   * listField.addChildStruct(new GFFStruct(0x0008)); // Item type
+   * listField.addChildStruct(new GFFStruct(0x0007)); // Creature type
+   * 
+   * const itemStruct = listField.getChildStructByType(0x0008);
+   * console.log(itemStruct.getType()); // 0x0008
+   * ```
+   */
+  getChildStructByType(type = -1): GFFStruct | null {
     for(let i = 0; i < this.childStructs.length; i++){
       if(this.childStructs[i].type == type)
         return this.childStructs[i];
@@ -112,7 +296,24 @@ export class GFFField {
     return null;
   }
 
-  getFieldByLabel(Label: string){
+  /**
+   * Gets a field from the first child structure by its label.
+   * 
+   * @param {string} Label - The label of the field to retrieve
+   * @returns {GFFField | null} The field with the specified label, or null if not found
+   * 
+   * @example
+   * ```typescript
+   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+   * const childStruct = new GFFStruct(0x0007);
+   * childStruct.addField(new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName'));
+   * structField.addChildStruct(childStruct);
+   * 
+   * const nameField = structField.getFieldByLabel('Name');
+   * console.log(nameField.getValue()); // 'PlayerName'
+   * ```
+   */
+  getFieldByLabel(Label: string): GFFField | null {
     if(this.childStructs.length){
       for(let i = 0; i < this.childStructs[0].fields.length; i++){
         let field = this.childStructs[0].fields[i];
@@ -125,21 +326,92 @@ export class GFFField {
     return null;
   }
 
-  getCExoLocString(){
+  /**
+   * Gets the localized string data for CEXOLOCSTRING type fields.
+   * 
+   * @returns {CExoLocString} The localized string object
+   * 
+   * @example
+   * ```typescript
+   * const locField = new GFFField(GFFDataType.CEXOLOCSTRING, 'Description');
+   * const locString = locField.getCExoLocString();
+   * locString.addSubString('Hello World', 0);
+   * ```
+   */
+  getCExoLocString(): CExoLocString {
     return this.cexoLocString;
   }
 
-  getOrientation(){
+  /**
+   * Gets the 3D orientation value for ORIENTATION type fields.
+   * 
+   * @returns {THREE.Quaternion} The 3D orientation quaternion
+   * 
+   * @example
+   * ```typescript
+   * const orientField = new GFFField(GFFDataType.ORIENTATION, 'Rotation', new THREE.Quaternion(0, 0, 0, 1));
+   * const rotation = orientField.getOrientation();
+   * console.log(rotation.x, rotation.y, rotation.z, rotation.w); // 0, 0, 0, 1
+   * ```
+   */
+  getOrientation(): {x: number, y: number, z: number, w: number} {
     return this.orientation;
   }
 
-  setData(data: Uint8Array){
+  /**
+   * Sets the raw binary data for this field.
+   * 
+   * @param {Uint8Array} data - The binary data to set
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.VOID, 'BinaryData');
+   * field.setData(new Uint8Array([1, 2, 3, 4]));
+   * ```
+   */
+  setData(data: Uint8Array): this {
     this.data = data;
     this.dataView = new DataView(this.data.buffer);
     return this;
   }
 
-  setValue(val: any){
+  /**
+   * Sets the value of this field based on its data type.
+   * 
+   * The method handles type-specific validation and conversion:
+   * - CEXOLOCSTRING: Accepts CExoLocString objects, numbers (for RESREF), or strings
+   * - RESREF/CEXOSTRING/CHAR: Converts to string
+   * - BYTE: Validates range 0-255
+   * - SHORT: Validates range -32768 to 32767
+   * - INT: Validates range -2147483648 to 2147483647
+   * - WORD: Validates range 0-65535
+   * - DWORD: Validates range 0-4294967295
+   * - VOID: Accepts Uint8Array or ArrayBuffer
+   * 
+   * @param {any} val - The value to set (type-dependent)
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * // String field
+   * const nameField = new GFFField(GFFDataType.CExoString, 'Name');
+   * nameField.setValue('PlayerName');
+   * 
+   * // Integer field with validation
+   * const levelField = new GFFField(GFFDataType.BYTE, 'Level');
+   * levelField.setValue(5); // Valid: 0-255
+   * 
+   * // Vector field
+   * const posField = new GFFField(GFFDataType.VECTOR, 'Position');
+   * posField.setValue(new THREE.Vector3(1, 2, 3));
+   * 
+   * // Localized string field
+   * const descField = new GFFField(GFFDataType.CEXOLOCSTRING, 'Description');
+   * descField.setValue('Hello World');
+   * ```
+   */
+  setValue(val: any): this {
 
     switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
@@ -253,32 +525,117 @@ export class GFFField {
 
   }
 
-  setType(type: number){
+  /**
+   * Sets the data type of this field.
+   * 
+   * @param {number} type - The new data type (from GFFDataType enum)
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * field.setType(GFFDataType.INT);
+   * ```
+   */
+  setType(type: number): this {
     this.type = type;
     return this;
   }
 
-  setLabel(label: string){
+  /**
+   * Sets the label/name of this field.
+   * 
+   * @param {string} label - The new field label
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.CExoString, 'OldName', 'PlayerName');
+   * field.setLabel('NewName');
+   * ```
+   */
+  setLabel(label: string): this {
     this.label = label;
     return this;
   }
 
-  setCExoLocString(val: CExoLocString){
+  /**
+   * Sets the localized string data for CEXOLOCSTRING type fields.
+   * 
+   * @param {CExoLocString} val - The localized string object to set
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const locField = new GFFField(GFFDataType.CEXOLOCSTRING, 'Description');
+   * const locString = new CExoLocString();
+   * locString.addSubString('Hello World', 0);
+   * locField.setCExoLocString(locString);
+   * ```
+   */
+  setCExoLocString(val: CExoLocString): this {
     this.cexoLocString = val;
     return this;
   }
 
-  setVector(v: THREE.Vector3){
+  /**
+   * Sets the 3D vector value for VECTOR type fields.
+   * 
+   * @param {THREE.Vector3} v - The 3D vector to set
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const vectorField = new GFFField(GFFDataType.VECTOR, 'Position');
+   * vectorField.setVector(new THREE.Vector3(1, 2, 3));
+   * ```
+   */
+  setVector(v: {x: number, y: number, z: number}): this {
     this.vector = v;
     return this;
   }
 
-  setOrientation(v: THREE.Quaternion){
+  /**
+   * Sets the 3D orientation value for ORIENTATION type fields.
+   * 
+   * @param {THREE.Quaternion} v - The 3D orientation quaternion to set
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const orientField = new GFFField(GFFDataType.ORIENTATION, 'Rotation');
+   * orientField.setOrientation(new THREE.Quaternion(0, 0, 0, 1));
+   * ```
+   */
+  setOrientation(v: {x: number, y: number, z: number, w: number}): this {
     this.orientation = v;
     return this;
   }
 
-  addChildStruct(strt: GFFStruct){
+  /**
+   * Adds a child structure to this field.
+   * 
+   * Behavior depends on field type:
+   * - LIST: Adds the structure to the end of the list
+   * - STRUCT: Replaces the existing structure (index 0)
+   * - Other types: No effect
+   * 
+   * @param {GFFStruct} strt - The structure to add
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * // Add to a list field
+   * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
+   * listField.addChildStruct(new GFFStruct(0x0008));
+   * listField.addChildStruct(new GFFStruct(0x0008));
+   * 
+   * // Set a structure field
+   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+   * structField.addChildStruct(new GFFStruct(0x0007));
+   * ```
+   */
+  addChildStruct(strt: GFFStruct): this {
     if(!(strt instanceof GFFStruct)){
       console.log('addChildStruct invalid type', strt);
       return this;
@@ -296,7 +653,23 @@ export class GFFField {
     return this;
   }
 
-  removeChildStruct(strt: GFFStruct){
+  /**
+   * Removes a child structure from this field.
+   * 
+   * @param {GFFStruct} strt - The structure to remove
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
+   * const itemStruct = new GFFStruct(0x0008);
+   * listField.addChildStruct(itemStruct);
+   * 
+   * listField.removeChildStruct(itemStruct);
+   * console.log(listField.getChildStructs().length); // 0
+   * ```
+   */
+  removeChildStruct(strt: GFFStruct): this {
     let index = this.childStructs.indexOf(strt);
     if(index >= 0){
       this.childStructs.splice(index, 1);
@@ -304,12 +677,55 @@ export class GFFField {
     return this;
   }
 
-  setChildStructs(strts: GFFStruct[]){
+  /**
+   * Sets all child structures for this field.
+   * 
+   * @param {GFFStruct[]} strts - Array of structures to set
+   * @returns {this} This field instance for method chaining
+   * 
+   * @example
+   * ```typescript
+   * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
+   * const structures = [
+   *   new GFFStruct(0x0008),
+   *   new GFFStruct(0x0008),
+   *   new GFFStruct(0x0008)
+   * ];
+   * 
+   * listField.setChildStructs(structures);
+   * console.log(listField.getChildStructs().length); // 3
+   * ```
+   */
+  setChildStructs(strts: GFFStruct[]): this {
     this.childStructs = strts;
     return this;
   }
 
-  toJSON(){
+  /**
+   * Converts this field to a JSON representation.
+   * 
+   * The JSON structure includes:
+   * - type: The field's data type
+   * - value: The field's value (type-specific)
+   * - structs: Array of child structure JSON objects
+   * 
+   * @returns {IGFFFieldJSON} A JSON object representing this field
+   * 
+   * @example
+   * ```typescript
+   * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * const json = field.toJSON();
+   * console.log(json.type); // GFFDataType.CExoString
+   * console.log(json.value); // 'PlayerName'
+   * 
+   * // With child structures
+   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
+   * structField.addChildStruct(new GFFStruct(0x0007));
+   * const structJson = structField.toJSON();
+   * console.log(structJson.structs.length); // 1
+   * ```
+   */
+  toJSON(): IGFFFieldJSON {
     const field = {
       type: this.getType(),
       value: this.getValue(),
