@@ -238,6 +238,7 @@ export class MenuManager {
         MenuManager.MenuMouse = await MenuManager.GameMenuLoader(KOTOR.MenuMouse) as KOTOR.MenuMouse;
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
+        MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(KOTOR.InGameConfirm) as KOTOR.InGameConfirm;
       }else if(GameState.GameKey == GameEngineType.TSL){
         MenuManager.LoadScreen = await MenuManager.GameMenuLoader(TSL.LoadScreen) as KOTOR.LoadScreen;
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(TSL.MainMenu) as KOTOR.MainMenu;
@@ -257,6 +258,7 @@ export class MenuManager {
         MenuManager.MenuMouse = await MenuManager.GameMenuLoader(TSL.MenuMouse) as KOTOR.MenuMouse;
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(TSL.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
+        MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(TSL.InGameConfirm) as KOTOR.InGameConfirm;
       }
     }catch(e){
       console.error(e);
@@ -304,7 +306,6 @@ export class MenuManager {
         MenuManager.InGameBark = await MenuManager.GameMenuLoader(KOTOR.InGameBark) as KOTOR.InGameBark;
         MenuManager.InGameComputer = await MenuManager.GameMenuLoader(KOTOR.InGameComputer) as KOTOR.InGameComputer;
         MenuManager.InGameComputerCam = await MenuManager.GameMenuLoader(KOTOR.InGameComputerCam) as KOTOR.InGameComputerCam;
-        MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(KOTOR.InGameConfirm) as KOTOR.InGameConfirm;
         MenuManager.InGameDialog = await MenuManager.GameMenuLoader(KOTOR.InGameDialog) as KOTOR.InGameDialog;
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(KOTOR.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(KOTOR.InGamePause) as KOTOR.InGamePause;
@@ -334,7 +335,6 @@ export class MenuManager {
         MenuManager.InGameBark = await MenuManager.GameMenuLoader(TSL.InGameBark) as KOTOR.InGameBark;
         MenuManager.InGameComputer = await MenuManager.GameMenuLoader(TSL.InGameComputer) as KOTOR.InGameComputer;
         MenuManager.InGameComputerCam = await MenuManager.GameMenuLoader(TSL.InGameComputerCam) as KOTOR.InGameComputerCam;
-        MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(TSL.InGameConfirm) as KOTOR.InGameConfirm;
         MenuManager.InGameDialog = await MenuManager.GameMenuLoader(TSL.InGameDialog) as KOTOR.InGameDialog;
         MenuManager.InGameOverlay = await MenuManager.GameMenuLoader(TSL.InGameOverlay) as KOTOR.InGameOverlay;
         MenuManager.InGamePause = await MenuManager.GameMenuLoader(TSL.InGamePause) as KOTOR.InGamePause;

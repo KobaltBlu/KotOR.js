@@ -35,12 +35,21 @@ export class InGameConfirm extends K1_InGameConfirm {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.close()
+        console.log('BTN_OK clicked', this.onOk);
+        if(typeof this.onOk === 'function'){
+          this.onOk();
+        }
+        this.close();
       });
+      this._button_a = this.BTN_OK;
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.close()
+        console.log('BTN_CANCEL clicked', this.onCancel);
+        if(typeof this.onCancel === 'function'){
+          this.onCancel();
+        }
+        this.close();
       });
 
       this.tGuiPanel.extent.top = 0;

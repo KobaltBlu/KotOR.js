@@ -89,20 +89,22 @@ export class MenuOptions extends K1_MenuOptions {
       });
 
       this.BTN_QUIT.addEventListener('click', () => {
-        GameState.UnloadModule();
-        GameState.State = EngineState.RUNNING;
-              
-        if(GameState.module instanceof Module){
-          GameState.module.dispose();
-          GameState.module = undefined;
-        }
+        GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
+          GameState.UnloadModule();
+          GameState.State = EngineState.RUNNING;
+                
+          if(GameState.module instanceof Module){
+            GameState.module.dispose();
+            GameState.module = undefined;
+          }
 
-        //Remove all cached scripts and kill all running instances
-        NWScript.Reload();
+          //Remove all cached scripts and kill all running instances
+          NWScript.Reload();
 
-        //Resets all keys to their default state
-        GameState.controls.initKeys();
-        this.manager.MainMenu.Start();
+          //Resets all keys to their default state
+          GameState.controls.initKeys();
+          this.manager.MainMenu.Start();
+        });
       });
 
       this.BTN_LOADGAME.addEventListener( 'hover', () => {
