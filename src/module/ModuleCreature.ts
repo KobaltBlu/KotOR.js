@@ -78,8 +78,6 @@ export class ModuleCreature extends ModuleObject {
   head: OdysseyModel3D;
   aiStyle: number;
   isCommandable: boolean;
-  lookAtObject: any;
-  lookAtMatrix: THREE.Matrix4;
   bodyBag: number;
   bodyVariation: number;
 
@@ -191,8 +189,6 @@ export class ModuleCreature extends ModuleObject {
     this.aiStyle = 0;
 
     this.isCommandable = true;
-    this.lookAtObject = undefined;
-    this.lookAtMatrix = new THREE.Matrix4();
 
     this.lastTriggerEntered = null;
     this.lastTriggerExited = null;
@@ -505,7 +501,6 @@ export class ModuleCreature extends ModuleObject {
         }else{
           this.dialogAnimation = null;
         }
-
       }else{
         this.damageList = [];
         this.getUpAnimationPlayed = false;
@@ -2179,10 +2174,6 @@ export class ModuleCreature extends ModuleObject {
     return new THREE.Vector3(0, 0, 0);
   }
 
-  getPosition(){
-    return this.position;
-  }
-
   getFacing(){
     return this.rotation.z;
   }
@@ -2196,12 +2187,6 @@ export class ModuleCreature extends ModuleObject {
         ) + Math.PI/2,
         false
       );
-    }
-  }
-
-  lookAt(oObject: ModuleObject){
-    if(oObject instanceof ModuleCreature){
-      this.lookAtObject = oObject;
     }
   }
 
@@ -4469,8 +4454,7 @@ export class ModuleCreature extends ModuleObject {
       }
       this.inventory.splice(0, 1);
     }
-
-    if(this.area) this.area.detachObject(this);
+    
     GameState.FactionManager.RemoveCreatureFromFaction(this);
 
     if(this.debugLabel){
