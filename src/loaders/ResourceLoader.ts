@@ -225,28 +225,28 @@ export class ResourceLoader {
   }
 
   static async searchModuleArchives(resId: number, resRef = ''): Promise<Uint8Array> {
-    let data: Uint8Array;
     const archiveCount = this.ModuleArchives.length;
 
     for(let i = 0; i < archiveCount; i++){
       const archive = this.ModuleArchives;
       if(archive instanceof RIMObject){
-        let key = archive.getResource(resRef, resId);
-        if(!key){ continue; }
-
-        let data = await archive.getResourceBuffer(key);
-        if(data){ break; }
+        const data = await archive.getResourceBufferByResRef(resRef, resId);
+        if(data){
+          return data;
+        }
       }else if(archive instanceof ERFObject){
-        data = await archive.getResourceBufferByResRef(resRef, resId);
-        if(data){ break; }
+        const data = await archive.getResourceBufferByResRef(resRef, resId);
+        if(data){
+          return data;
+        }
       }
     }
 
-    return data;
+    return undefined;
   }
 
   static async searchKeyTable(resId: number, resRef: string): Promise<Uint8Array> {
-    let keyLookup = KEYManager.Key.getFileKey(resRef, resId);
+    const keyLookup = KEYManager.Key.getFileKey(resRef, resId);
     if(keyLookup){
       return await KEYManager.Key.getFileBuffer(keyLookup);
     }
@@ -256,20 +256,12 @@ export class ResourceLoader {
     const rims = Array.from(RIMManager.RIMs.values());
     const rimCount = rims.length;
 
-    let data: Uint8Array;
-    let rim: RIMObject;
-    let res: IRIMResource;
     for(let i = 0; i < rimCount; i++){
-      rim = rims[i];
+      const rim = rims[i];
       if(!rim){ continue; }
 
-      res = rim.getResource(resRef, resId);
-      if(!res){ continue; }
-
-      data = await rim.getResourceBuffer(res);
+      return await rim.getResourceBufferByResRef(resRef, resId);
     }
-
-    return data;
   }
 
 }
