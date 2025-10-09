@@ -55,6 +55,7 @@ export const App = (props: any) => {
 
     ForgeState.VerifyGameDirectory(() => {
       console.log('Game Directory', 'verified');
+      setShowGrantModal(false);
       beginInit();
     }, () => {
       console.warn('Game Directory', 'not found');

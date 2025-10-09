@@ -1699,8 +1699,6 @@ text-shadow: 0 1px 0 rgb(14, 72, 57);
   border-top: 1px solid #272727;
 }
 
-@import '../game/styles/loader.scss';
-
 .loading-screen {
   display: none;
 }
@@ -1717,10 +1715,6 @@ text-shadow: 0 1px 0 rgb(14, 72, 57);
   text-align: center;
   position: relative;
   display: block;
-}
-
-.ball1 {
-  top: -40px;
 }
 
 .info-overlay {

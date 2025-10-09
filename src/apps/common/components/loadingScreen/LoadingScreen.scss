@@ -78,10 +78,11 @@
       border-left: 5px solid rgba(0,0,0,0);
       border-radius: 50px;
       box-shadow: 0 0 35px #2187e7;
-      width: 50px;
-      height: 50px;
+      width: 60px;
+      height: 60px;
       margin: 0 auto;
       animation: spin .5s infinite linear;
+      box-sizing: border-box;
     }
     
     .ball1 {
@@ -92,12 +93,13 @@
       border-left: 5px solid rgba(0,0,0,0);
       border-radius: 50px;
       box-shadow: 0 0 15px #2187e7;
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
       margin: 0 auto;
       position: relative;
       top: -50px;
       animation: spinoff .5s infinite linear;
+      box-sizing: border-box;
     }
   }
 }
