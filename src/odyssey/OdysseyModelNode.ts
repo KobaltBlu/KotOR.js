@@ -7,6 +7,15 @@ import { type OdysseyController } from "./controllers/OdysseyController";
 import { OdysseyControllerFactory } from "./controllers/OdysseyControllerFactory";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
+      
+// Constants for quaternion decompression
+const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
+const QUAT_Y_MASK = 0x07ff;        // 11 bits for Y component  
+const QUAT_Z_MASK = 0x3FF;         // 10 bits for Z component
+const QUAT_X_SCALE = 1.0 / 1023.0; // Scale factor for X,Y
+const QUAT_Z_SCALE = 1.0 / 511.0;  // Scale factor for Z
+const QUAT_Y_SHIFT = 11;           // Y component bit shift
+const QUAT_Z_SHIFT = 22;           // Z component bit shift
 
 /**
  * OdysseyModelNode class.
@@ -39,6 +48,7 @@ export class OdysseyModelNode {
   childArrayDefinition: IOdysseyArrayDefinition;
   controllerArrayDefinition: IOdysseyArrayDefinition;
   controllerDataArrayDefinition: IOdysseyArrayDefinition;
+  isRootNode: boolean = false;
 
   constructor(parent: OdysseyModelNode){
     this.parent = parent;
@@ -248,33 +258,33 @@ export class OdysseyModelNode {
             break;
             case OdysseyModelControllerType.Orientation:
               for (let r = 0; r < controller.frameCount; r++) {
-                let frame: any = {};
+                const frame: any = {};
                 frame.time = data[controller.timeKeyIndex + r];
 
                 if(controller.columnCount == 2){
                   let temp = data2[controller.dataValueIndex + r];
-                  let original = data[controller.dataValueIndex + r];
                   
-                  let x, y, z, w = 0;
-
-                  if(isNaN(temp)){
+                  // Input validation and constants
+                  if(isNaN(temp) || !Number.isInteger(temp)){
                     temp = 0;
                   }
 
-                  //@ts-expect-error
-                  x = (parseInt(temp & 0x07ff) / 1023.0) - 1.0;
-                  //@ts-expect-error
-                  y = (parseInt((temp >> 11) & 0x07ff) / 1023.0) - 1.0;
-                  //@ts-expect-error
-                  z = (parseInt((temp >> 22) & 0x3FF) / 511.0) - 1.0;
+                  const x = ((temp & QUAT_X_MASK) * QUAT_X_SCALE) - 1.0;
+                  const y = (((temp >> QUAT_Y_SHIFT) & QUAT_Y_MASK) * QUAT_X_SCALE) - 1.0;
+                  const z = (((temp >> QUAT_Z_SHIFT) & QUAT_Z_MASK) * QUAT_Z_SCALE) - 1.0;
 
-                  let fSquares =  (Math.pow(x, 2.0) + Math.pow(y, 2.0) + Math.pow(z, 2.0));
+                  // Use more efficient square calculation
+                  const fSquares = x * x + y * y + z * z;
 
-                  if(fSquares < 1.0){
-                    w = Math.sqrt(1.0 - fSquares);
-                    tmpQuat.set(x, y, z, w);
+                  // Early exit for identity quaternion (all components near zero)
+                  if(fSquares < 1e-10){
+                    tmpQuat.set(0, 0, 0, 1);
+                  } else if(fSquares < 1.0){
+                    tmpQuat.set(x, y, z, Math.sqrt(1.0 - fSquares));
                   } else {
-                    tmpQuat.set(x, y, z, 0);
+                    // Normalize the vector to unit length instead of setting w=0
+                    const invLength = 1.0 / Math.sqrt(fSquares);
+                    tmpQuat.set(x * invLength, y * invLength, z * invLength, 0);
                   }
 
                 }else{
@@ -284,7 +294,6 @@ export class OdysseyModelNode {
                     data[controller.dataValueIndex + (r * controller.columnCount) + 2],
                     data[controller.dataValueIndex + (r * controller.columnCount) + 3]
                   );
-
                 }
 
                 tmpQuat.normalize();
