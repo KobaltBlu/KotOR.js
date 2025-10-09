@@ -34,6 +34,7 @@ export class ERFObject {
   reader: BinaryReader;
   erfDataOffset: number;
   group: string = 'erf';
+  type: string = 'erf';
 
   constructor(file?: string|Uint8Array){
     this.localizedStrings = [];
@@ -65,78 +66,8 @@ export class ERFObject {
     }
   }
 
-  async loadFromDisk(): Promise<void> {
-    try{
-      const fd = await GameFileSystem.open(this.resource_path, 'r');
-      let header = new Uint8Array(ERF_HEADER_SIZE);
-      await GameFileSystem.read(fd, header, 0, ERF_HEADER_SIZE, 0);
-      this.reader = new BinaryReader(header);
-
-      this.header.fileType = this.reader.readChars(4);
-      this.header.fileVersion = this.reader.readChars(4);
-
-      this.header.languageCount = this.reader.readUInt32();
-      this.header.localizedStringSize = this.reader.readUInt32();
-      this.header.entryCount = this.reader.readUInt32();
-      this.header.offsetToLocalizedString = this.reader.readUInt32();
-      this.header.offsetToKeyList = this.reader.readUInt32();
-      this.header.offsetToResourceList = this.reader.readUInt32();
-      this.header.buildYear = this.reader.readUInt32();
-      this.header.buildDay = this.reader.readUInt32();
-      this.header.DescriptionStrRef = this.reader.readUInt32();
-      this.header.reserved = this.reader.readBytes(116);               //Byte 116
-
-      header = new Uint8Array(0);
-
-      //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-      this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
-      header = new Uint8Array(this.erfDataOffset);
-      await GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0);
-      this.reader.reuse(header);
-
-      this.reader.seek(this.header.offsetToLocalizedString);
-
-      for (let i = 0; i < this.header.languageCount; i++) {
-        let language: IERFLanguage = {} as IERFLanguage;
-        language.languageId = this.reader.readUInt32();
-        language.stringSize = this.reader.readUInt32();
-        language.value = this.reader.readChars(language.stringSize);
-        this.localizedStrings.push(language);
-      }
-
-      this.reader.seek(this.header.offsetToKeyList);
-
-      for (let i = 0; i < this.header.entryCount; i++) {
-        let key: IERFKeyEntry = {} as IERFKeyEntry;
-        key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
-        key.resId = this.reader.readUInt32();
-        key.resType = this.reader.readUInt16();
-        key.unused = this.reader.readUInt16();
-        this.keyList.push(key);
-      }
-
-      this.reader.seek(this.header.offsetToResourceList);
-
-      for (let i = 0; i < this.header.entryCount; i++) {
-        let resource: IERFResource = {} as IERFResource;
-        resource.offset = this.reader.readUInt32();
-        resource.size = this.reader.readUInt32();
-        this.resources.push(resource);
-      }
-
-      header = new Uint8Array(0);
-      this.reader.dispose();
-
-      await GameFileSystem.close(fd);
-    }catch(e){
-      console.error(e);
-    }
-  }
-
-  async loadFromBuffer(): Promise<void> {
-    let header = new Uint8Array(this.buffer.slice(0, ERF_HEADER_SIZE));
-    this.reader = new BinaryReader(header);
-
+  parseHeader(buffer: Uint8Array){
+    this.reader = new BinaryReader(buffer);
     this.header.fileType = this.reader.readChars(4);
     this.header.fileVersion = this.reader.readChars(4);
 
@@ -149,16 +80,12 @@ export class ERFObject {
     this.header.buildYear = this.reader.readUInt32();
     this.header.buildDay = this.reader.readUInt32();
     this.header.DescriptionStrRef = this.reader.readUInt32();
-    this.header.reserved = this.reader.readBytes(116);                 //Byte 116
-
-    header = new Uint8Array(0);
+    this.header.reserved = this.reader.readBytes(116);
     this.reader.dispose();
+  }
 
-    //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
-    this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
-    header = new Uint8Array(this.buffer.slice(0, this.erfDataOffset));
-    this.reader.reuse(header);
-
+  parseStructures(buffer: Uint8Array){
+    this.reader.reuse(buffer);
     this.reader.seek(this.header.offsetToLocalizedString);
 
     for (let i = 0; i < this.header.languageCount; i++) {
@@ -188,9 +115,40 @@ export class ERFObject {
       resource.size = this.reader.readUInt32();
       this.resources.push(resource);
     }
-
-    header = new Uint8Array(0);
     this.reader.dispose();
+  }
+
+  async loadFromDisk(): Promise<void> {
+    try{
+      const fd = await GameFileSystem.open(this.resource_path, 'r');
+      let header = new Uint8Array(ERF_HEADER_SIZE);
+      await GameFileSystem.read(fd, header, 0, ERF_HEADER_SIZE, 0);
+      this.parseHeader(header);
+      header = new Uint8Array(0);
+
+      //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+      this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
+      header = new Uint8Array(this.erfDataOffset);
+      await GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0);
+      this.parseStructures(header);
+      header = new Uint8Array(0);
+
+      await GameFileSystem.close(fd);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  async loadFromBuffer(): Promise<void> {
+    let header = new Uint8Array(this.buffer.slice(0, ERF_HEADER_SIZE));
+    this.reader = new BinaryReader(header);
+    this.parseHeader(header);
+    header = new Uint8Array(0);
+    //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+    this.erfDataOffset = (this.header.offsetToResourceList + (this.header.entryCount * 8));
+    header = new Uint8Array(this.buffer.slice(0, this.erfDataOffset));
+    this.parseStructures(header);
+    header = new Uint8Array(0);
   }
 
   getResource(resRef: string, resType: number): IERFResource{
@@ -208,7 +166,6 @@ export class ERFObject {
     if (typeof resource == 'undefined') {
       return new Uint8Array(0);
     }
-
 
     if(!resource.size){
       return new Uint8Array(0);
