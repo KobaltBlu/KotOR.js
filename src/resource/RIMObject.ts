@@ -23,11 +23,14 @@ export class RIMObject {
   buffer: Uint8Array;
   inMemory: boolean = false;
 
+  type: string = 'rim';
   group: string;
   resources: IRIMResource[] = [];
   reader: BinaryReader;
   header: IRIMHeader;
   rimDataOffset: number;
+
+  resourceMap: Map<number, Map<string, IRIMResource>> = new Map();
 
   constructor(file: Uint8Array|string){
 
@@ -41,6 +44,11 @@ export class RIMObject {
       this.buffer = file;
       this.inMemory = true;
     }
+
+    Object.values(ResourceTypes).forEach((type: number) => {
+      if(typeof type !== 'number'){ return; }
+      this.resourceMap.set(type, new Map());
+    });
 
   }
 
@@ -76,15 +84,14 @@ export class RIMObject {
     this.reader.seek(this.header.resourcesOffset);
 
     for (let i = 0; i < this.header.resourceCount; i++) {
-      const res = {
+      this.addResource({
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
         size: this.reader.readUInt32()
-      };
-      this.resources.push(res);
+      });
     }
   }
 
@@ -111,18 +118,27 @@ export class RIMObject {
     this.reader.seek(this.header.resourcesOffset);
 
     for (let i = 0; i < this.header.resourceCount; i++) {
-      const res: IRIMResource = {
+      this.addResource({
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
         offset: this.reader.readUInt32(),
         size: this.reader.readUInt32()
-      } as IRIMResource;
-      this.resources.push(res);
+      });
     }
 
     this.reader.dispose();
+  }
+
+  addResource(res: IRIMResource){
+    let typeMap = this.resourceMap.get(res.resType);
+    if(!typeMap){
+      typeMap = new Map();
+      this.resourceMap.set(res.resType, typeMap);
+    }
+    typeMap.set(res.resRef, res);
+    this.resources.push(res);
   }
 
   async loadFromBuffer(buffer: Uint8Array){
@@ -145,14 +161,11 @@ export class RIMObject {
   }
 
   getResource(resRef: string, resType: number): IRIMResource {
-    resRef = resRef.toLowerCase();
-    for(let i = 0; i < this.resources.length; i++){
-      let key = this.resources[i];
-      if (key.resRef == resRef && key.resType == resType) {
-        return key;
-      }
-    };
-    return;
+    let typeMap = this.resourceMap.get(resType);
+    if(!typeMap){
+      return undefined;
+    }
+    return typeMap.get(resRef.toLowerCase());
   }
 
   async getResourceBuffer(resource?: IRIMResource): Promise<Uint8Array> {
@@ -166,7 +179,7 @@ export class RIMObject {
         buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
         return buffer;
       }else{
-        const fd = await GameFileSystem.open(this.resource_path, 'r');
+        const fd = await this.getFileDescription();
         const buffer = new Uint8Array(resource.size);
         await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
         await GameFileSystem.close(fd);
@@ -188,6 +201,15 @@ export class RIMObject {
     return await this.getResourceBuffer(resource);
   }
 
+  #fd: any;
+  async getFileDescription(){
+    if(this.#fd){
+      return this.#fd;
+    }
+    this.#fd = await GameFileSystem.open(this.resource_path, 'r');
+    return this.#fd;
+  }
+
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {
     if(directory == null){
       return new Uint8Array(0);
@@ -204,7 +226,7 @@ export class RIMObject {
       return buffer;
     }else{
       let buffer = new Uint8Array(resource.size);
-      const fd = await GameFileSystem.open(this.resource_path, 'r');
+      const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
       // console.log('RIM Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
       await GameFileSystem.writeFile(
