@@ -1236,7 +1236,6 @@ export class ModuleDoor extends ModuleObject {
   destroy(): void {
     super.destroy();
     GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
-    if(this.area) this.area.detachObject(this);
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);

@@ -456,7 +456,6 @@ export class ModuleEncounter extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    if(this.area) this.area.detachObject(this);
   }
 
   save(){

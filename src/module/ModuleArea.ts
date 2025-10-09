@@ -1386,39 +1386,53 @@ export class ModuleArea extends ModuleObject {
     object.area = this;
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      if(this.creatures.indexOf(object as ModuleCreature) >= 0) return;
       this.creatures.push(object as ModuleCreature);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
+      if(this.placeables.indexOf(object as ModulePlaceable) >= 0) return;
       this.placeables.push(object as ModulePlaceable);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
+      if(this.doors.indexOf(object as ModuleDoor) >= 0) return;
       this.doors.push(object as ModuleDoor);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
+      if(this.triggers.indexOf(object as ModuleTrigger) >= 0) return;
       this.triggers.push(object as ModuleTrigger);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
+      if(this.encounters.indexOf(object as ModuleEncounter) >= 0) return;
       this.encounters.push(object as ModuleEncounter);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleStore)){
+      if(this.stores.indexOf(object as ModuleStore) >= 0) return;
       this.stores.push(object as ModuleStore);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleWaypoint)){
+      if(this.waypoints.indexOf(object as ModuleWaypoint) >= 0) return;
       this.waypoints.push(object as ModuleWaypoint);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+      if(this.sounds.indexOf(object as ModuleSound) >= 0) return;
       this.sounds.push(object as ModuleSound);
     }
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleAreaOfEffect)){
+      if(this.areaOfEffects.indexOf(object as ModuleAreaOfEffect) >= 0) return;
       this.areaOfEffects.push(object as ModuleAreaOfEffect);
+    }
+
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
+      if(this.rooms.indexOf(object as ModuleRoom) >= 0) return;
+      this.rooms.push(object as ModuleRoom);
     }
   }
 
@@ -1476,6 +1490,11 @@ export class ModuleArea extends ModuleObject {
       const idx = this.items.indexOf(object as ModuleItem);
       if(idx >= 0){
         this.items.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
+      const idx = this.rooms.indexOf(object as ModuleRoom);
+      if(idx >= 0){
+        this.rooms.splice(idx, 1);
       }
     }else{
       console.warn(`destroyObject: unhandled objectType, ${object.objectType}`);

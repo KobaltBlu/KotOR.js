@@ -711,13 +711,6 @@ export class ModuleRoom extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    if(this.area){
-      const pIdx = this.area.rooms.indexOf(this);
-      //console.log('ModuleObject.destroy', 'placeable', pIdx)
-      if(pIdx > -1){
-        this.area.rooms.splice(pIdx, 1);
-      }
-    }
       
     if(this.collisionData.walkmesh)
       this.collisionData.walkmesh.dispose();
