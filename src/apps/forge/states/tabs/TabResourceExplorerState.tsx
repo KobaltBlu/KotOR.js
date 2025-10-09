@@ -175,7 +175,7 @@ export class TabResourceExplorerState extends TabState {
                 name: (`${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`),
                 type: 'resource',
                 data: {
-                  path: `${ EditorFileProtocol.BIF }//${bif.file}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`
+                  path: `${ EditorFileProtocol.BIF }//game.dir/${bif.file}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`
                 },
               })
             );
