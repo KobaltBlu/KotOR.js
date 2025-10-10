@@ -36,7 +36,7 @@ export class CharGenFeats extends GameMenu {
     super();
     this.gui_resref = 'ftchrgen';
     this.background = '1600x1200back';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

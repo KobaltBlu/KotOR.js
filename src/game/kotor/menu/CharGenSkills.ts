@@ -62,7 +62,7 @@ export class CharGenSkills extends GameMenu {
     super();
     this.gui_resref = 'skchrgen';
     this.background = '1600x1200back';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -51,7 +51,7 @@ export class GameMenu {
   isOverlayGUI: boolean = false;
   textNeedsUpdate: boolean = false;
 
-  canCancel: boolean = true;
+  userCanClose: boolean = true;
   width: number = 640;
   height: number = 480;
 

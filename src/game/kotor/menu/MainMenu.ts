@@ -43,6 +43,7 @@ export class MainMenu extends GameMenu {
     this.gui_resref = 'mainmenu16x12';
     this.background = '1600x1200back';
     this.voidFill = true;
+    this.userCanClose = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -44,7 +44,7 @@ export class CharGenPortCust extends GameMenu {
     super();
     this.gui_resref = 'portcust';
     this.background = '1600x1200back';
-    this.voidFill = false;
+    this.voidFill = true;
     this._3dView = new LBL_3DView();
   }
 

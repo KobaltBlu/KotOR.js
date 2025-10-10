@@ -59,7 +59,7 @@ export class CharGenAbilities extends GameMenu {
     super();
     this.gui_resref = 'abchrgen';
     this.background = '';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

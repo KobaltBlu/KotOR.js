@@ -68,7 +68,7 @@ export class CharGenMain extends GameMenu {
     super();
     this.gui_resref = 'maincg';
     this.background = '1600x1200back';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -138,6 +138,7 @@ export class InGameOverlay extends K1_InGameOverlay {
     this.gui_resref = 'mipc28x6_p';
     this.background = '';
     this.voidFill = false;
+    this.userCanClose = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

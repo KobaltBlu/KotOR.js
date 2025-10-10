@@ -24,8 +24,8 @@ export class MenuKeyboardMapping extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'optkeymapping';
-    this.background = '';
-    this.voidFill = false;
+    this.background = '1600x1200back';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

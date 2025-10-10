@@ -41,6 +41,7 @@ export class CharGenClass extends K1_CharGenClass {
     this.gui_resref = 'classsel_p';
     this.background = '';
     this.voidFill = false;
+    this.userCanClose = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

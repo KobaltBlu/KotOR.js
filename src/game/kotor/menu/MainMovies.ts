@@ -19,8 +19,8 @@ export class MainMovies extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'titlemovie';
-    this.background = '';
-    this.voidFill = false;
+    this.background = '1600x1200back';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

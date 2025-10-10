@@ -24,7 +24,7 @@ export class CharGenName extends GameMenu {
     super();
     this.gui_resref = 'name';
     this.background = '1600x1200back';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -161,6 +161,7 @@ export class InGameOverlay extends GameMenu {
     this.background = '';
     this.voidFill = false;
     this.enablePositionScaling = true;
+    this.userCanClose = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -39,6 +39,7 @@ export class MainMenu extends K1_MainMenu {
     this.gui_resref = 'mainmenu8x6_p';
     this.background = '';
     this.voidFill = true;
+    this.userCanClose = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

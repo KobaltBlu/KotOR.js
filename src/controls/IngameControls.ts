@@ -656,7 +656,7 @@ export class IngameControls {
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       switch(GameState.Mode){
         case EngineMode.GUI:
-          if(currentMenu != GameState.MenuManager.InGameOverlay){
+          if(currentMenu.userCanClose){
             currentMenu.close();
           }
         break;
