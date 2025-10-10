@@ -37,6 +37,7 @@ export class AudioEmitter {
   soundIndex: number = 0;
   playbackRate: number = 1;
   playbackRateVariation: number = 0;
+  elevation: number = 0;
 
   currentSound: AudioBufferSourceNode = undefined;
   currentTimeout: NodeJS.Timeout = undefined;
@@ -267,17 +268,17 @@ export class AudioEmitter {
     if(this.position.x != x || this.position.y != y || this.position.z != z){
       this.position.x = x;
       this.position.y = y;
-      this.position.z = z;
+      this.position.z = z + this.elevation;
     }
 
     if(this.mainNode instanceof PannerNode && (
       this.mainNode.positionX.value != this.position.x ||
       this.mainNode.positionY.value != this.position.y ||
-      this.mainNode.positionZ.value != this.position.z
+      this.mainNode.positionZ.value != this.position.z + this.elevation
     )){
       this.mainNode.positionX.value = this.position.x;
       this.mainNode.positionY.value = this.position.y;
-      this.mainNode.positionZ.value = this.position.z;
+      this.mainNode.positionZ.value = this.position.z + this.elevation;
     }
   }
 
@@ -316,7 +317,7 @@ export class AudioEmitter {
     this.currentSound.connect(this.mainNode);
     this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
 
-    console.log('AudioEmitter', 'Playing sound', this.name, resRef);
+    // console.log('AudioEmitter', 'Playing sound', this.name, resRef);
     this.currentSound.onended = () => {
       if(!this.currentSound.loop){
         this.currentTimeout = global.setTimeout( () => {

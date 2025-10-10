@@ -48,6 +48,7 @@ export class ModuleSound extends ModuleObject {
   volume: number;
   volumeVariation: number;
   micRange: any;
+  elevation: number = 0;
 
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
@@ -204,6 +205,7 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.position.x = this.position.x;
     this.audioEmitter.position.y = this.position.y;
     this.audioEmitter.position.z = this.position.z;
+    this.audioEmitter.elevation = this.elevation || 0;
     await this.audioEmitter.load();
   }
 
@@ -298,6 +300,9 @@ export class ModuleSound extends ModuleObject {
     if(this.template.RootNode.hasField('ZPosition'))
       this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
 
+    if(this.template.RootNode.hasField('Elevation'))
+      this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
+
     if(this.template.RootNode.hasField('SWVarTable')){
       let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
@@ -354,6 +359,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(this.volume);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(this.volumeVariation);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Elevation') ).setValue(this.elevation);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
