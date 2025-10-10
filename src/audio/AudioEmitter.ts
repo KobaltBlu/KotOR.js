@@ -22,6 +22,7 @@ export class AudioEmitter {
   pannerNode: PannerNode;
   mainNode: AudioNode;
 
+  name: string = '';
   sounds: string[] = [];
   isActive: boolean = true;
   isLooping: boolean = false;
@@ -29,9 +30,13 @@ export class AudioEmitter {
   isRandomPosition: boolean = false;
   interval: number = 0;
   intervalVariation: number = 0;
+  minDistance: number = 0;
   maxDistance: number = 1;
   volume: number = 127;
+  volumeVariation: number = 0;
   soundIndex: number = 0;
+  playbackRate: number = 1;
+  playbackRateVariation: number = 0;
 
   currentSound: AudioBufferSourceNode = undefined;
   currentTimeout: NodeJS.Timeout = undefined;
@@ -53,9 +58,7 @@ export class AudioEmitter {
 
   async load(): Promise<void> {
 
-    // this.gainNode.gain.value = (Math.PI/2) * ( ( ( this.volume * 100 ) / 127 ) * 0.01 );
-
-    this.gainNode.gain.value = this.volume / 127;
+    this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
 
     switch(this.type){
       case AudioEmitterType.POSITIONAL:
@@ -265,18 +268,26 @@ export class AudioEmitter {
       this.position.x = x;
       this.position.y = y;
       this.position.z = z;
+    }
 
-      if(this.mainNode instanceof PannerNode){
-        this.mainNode.positionX.value = x;
-        this.mainNode.positionY.value = y;
-        this.mainNode.positionZ.value = z;
-      }
+    if(this.mainNode instanceof PannerNode && (
+      this.mainNode.positionX.value != this.position.x ||
+      this.mainNode.positionY.value != this.position.y ||
+      this.mainNode.positionZ.value != this.position.z
+    )){
+      this.mainNode.positionX.value = this.position.x;
+      this.mainNode.positionY.value = this.position.y;
+      this.mainNode.positionZ.value = this.position.z;
     }
   }
 
   start(): void {
     if(this.sounds.length)
       this.playNextSound();
+  }
+
+  getRandomVariation(value: number): number {
+    return ( Math.random() * (value * 2) ) - value;
   }
 
   playNextSound(): void {
@@ -295,14 +306,17 @@ export class AudioEmitter {
     }
 
     const resRef = this.sounds[this.soundIndex];
-    const delay = ( Math.floor( Math.random() * this.interval ) + this.intervalVariation );
+    const delay = this.interval + this.getRandomVariation(this.intervalVariation);
     this.currentSound = this.engine.audioCtx.createBufferSource();
     this.currentSound.buffer = this.buffers.get(resRef);
     this.currentSound.loop = (this.sounds.length == 1 && this.isLooping);
     (this.currentSound as any).name = this.soundIndex;
+    this.currentSound.playbackRate.value = this.playbackRate + this.getRandomVariation(this.playbackRateVariation);
     this.currentSound.start(0, 0);
     this.currentSound.connect(this.mainNode);
+    this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
 
+    console.log('AudioEmitter', 'Playing sound', this.name, resRef);
     this.currentSound.onended = () => {
       if(!this.currentSound.loop){
         this.currentTimeout = global.setTimeout( () => {

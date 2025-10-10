@@ -186,18 +186,25 @@ export class ModuleSound extends ModuleObject {
     const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
+    this.audioEmitter.name = this.tag;
     this.audioEmitter.isActive = this.getActive();
     this.audioEmitter.isLooping = this.getLooping();
     this.audioEmitter.isRandom = this.getRandom();
     this.audioEmitter.isRandomPosition = this.getRandomPosition();
     this.audioEmitter.interval = this.getInterval();
     this.audioEmitter.intervalVariation = this.getInternalVrtn();
+    this.audioEmitter.minDistance = this.minDistance || 1;
     this.audioEmitter.maxDistance = this.getMaxDistance();
+    this.audioEmitter.playbackRate = 1;
+    this.audioEmitter.playbackRateVariation = this.pitchVariation || 0;
     this.audioEmitter.volume = this.getVolume();
+    this.audioEmitter.volumeVariation = this.volumeVariation || 0;
     this.audioEmitter.type = type;
     this.audioEmitter.sounds = this.soundResRefs.slice(0);
+    this.audioEmitter.position.x = this.position.x;
+    this.audioEmitter.position.y = this.position.y;
+    this.audioEmitter.position.z = this.position.z;
     await this.audioEmitter.load();
-
   }
 
   initProperties(){
