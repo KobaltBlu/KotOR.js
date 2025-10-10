@@ -517,7 +517,7 @@ export class TextureLoader {
 
         if(tex.material instanceof THREE.RawShaderMaterial || tex.material instanceof THREE.ShaderMaterial){
           if(tex.material.uniforms.map.value){
-            tex.material.name += tex.material.uniforms.map.value.name
+            tex.material.name = tex.material.uniforms.map.value.name
             tex.material.defines.USE_MAP = '';
             tex.material.uniforms.uvTransform.value = tex.material.uniforms.map.value.matrix;
             tex.material.uniforms.map.value.updateMatrix();
