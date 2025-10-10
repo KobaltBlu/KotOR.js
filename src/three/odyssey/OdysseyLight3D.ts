@@ -54,7 +54,7 @@ export class OdysseyLight3D extends OdysseyObject3D {
   }
 
   getRadius(){
-    return this.radius * this.multiplier;
+    return this.radius;// * this.multiplier;
     // if(this.odysseyModelNode)
     //   return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
     // else

@@ -128,6 +128,10 @@ export class MenuManager {
         MenuManager.GetCurrentMenu().show();
 
       MenuManager.Resize();
+
+      if(!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI){
+        GameState.RestoreEnginePlayMode();
+      }
     }else{
       const mIdx = MenuManager.activeModals.indexOf(menu);
       if(mIdx >= 0)

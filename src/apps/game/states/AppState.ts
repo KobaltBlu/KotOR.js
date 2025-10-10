@@ -185,22 +185,14 @@ export class AppState {
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);
 
-    KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
-    if(AppState.env == ApplicationEnvironment.ELECTRON){
-      // KotOR.GameState.Debugger.open();
-    }
     window.addEventListener('blur', (e) => {
-      KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = 0;
-      KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = 0;
-      KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = 0;
-      KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = 0;
+      KotOR.AudioEngine.OnWindowFocusChange(false);
     });
+
     window.addEventListener('focus', (e) => {
-      KotOR.AudioEngine.GetAudioEngine().musicGain.gain.value = KotOR.AudioEngine.GAIN_MUSIC;
-      KotOR.AudioEngine.GetAudioEngine().voGain.gain.value = KotOR.AudioEngine.GAIN_VO;
-      KotOR.AudioEngine.GetAudioEngine().sfxGain.gain.value = KotOR.AudioEngine.GAIN_SFX;
-      KotOR.AudioEngine.GetAudioEngine().movieGain.gain.value = KotOR.AudioEngine.GAIN_MOVIE;
+      KotOR.AudioEngine.OnWindowFocusChange(true);
     });
+
     AppState.processEventListener('on-game-loaded', []);
     
     AppState.loaderMessage('GameState: Initializing...');

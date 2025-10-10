@@ -718,7 +718,13 @@ export class GameState implements EngineContext {
        * Initialize Audio for the GUI
        */
       const audioEngine = AudioEngine.GetAudioEngine();
-      GameState.guiAudioEmitter = new AudioEmitter(audioEngine);
+      AudioEngine.GAIN_MUSIC = parseInt(GameState.iniConfig.getProperty('Sound Options.Music Volume')) || 0
+      AudioEngine.GAIN_VO = parseInt(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')) || 0
+      AudioEngine.GAIN_SFX = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
+      AudioEngine.GAIN_GUI = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
+      AudioEngine.GAIN_MOVIE = parseInt(GameState.iniConfig.getProperty('Sound Options.Movie Volume')) || 0
+
+      GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
       GameState.guiAudioEmitter.maxDistance = 100;
       GameState.guiAudioEmitter.volume = 127;
       GameState.guiAudioEmitter.load();
@@ -1099,6 +1105,14 @@ export class GameState implements EngineContext {
         GameState.MenuManager.InGameAreaTransition.hide();
     }
 
+    if(!(mode == EngineMode.INGAME || mode == EngineMode.DIALOG || mode == EngineMode.FREELOOK || mode == EngineMode.MINIGAME)){
+      AudioEngine.Mute(AudioEngineChannel.SFX);
+    }
+
+    if(mode == EngineMode.INGAME || mode == EngineMode.DIALOG || mode == EngineMode.FREELOOK || mode == EngineMode.MINIGAME){
+      AudioEngine.Unmute(AudioEngineChannel.SFX);
+    }
+
     if(mode == EngineMode.GUI && GameState.FadeOverlayManager.material.visible){
       GameState.FadeOverlayManager.material.visible = false;
     }
@@ -1129,8 +1143,7 @@ export class GameState implements EngineContext {
     GameState.staticCameras = [];
     GameState.ConversationPaused = false;
 
-    if(!AudioEngine.isMuted)
-      AudioEngine.Mute();
+    AudioEngine.Mute();
   }
 
   static ReloadTextureCache(){

@@ -9,7 +9,11 @@
  * @enum
  */
 export enum AudioEngineChannel {
-  SFX = 0,
-  VO = 1,
-  MUSIC = 2
+  SFX   = 0x01,
+  VO    = 0x02,
+  MUSIC = 0x04,
+  GUI   = 0x08,
+  MOVIE = 0x10,
+
+  ALL   = 0xFF
 }

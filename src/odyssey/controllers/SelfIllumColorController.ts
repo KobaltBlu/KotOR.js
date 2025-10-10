@@ -40,27 +40,27 @@ export class SelfIllumColorController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     let lerpIllumColorR = last.x + fl * (next.x - last.x);
-      let lerpIllumColorG = last.y + fl * (next.y - last.y);
-      let lerpIllumColorB = last.z + fl * (next.z - last.z);
-      //console.log(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
-      if(manager.modelNode.userData.mesh){
+    let lerpIllumColorG = last.y + fl * (next.y - last.y);
+    let lerpIllumColorB = last.z + fl * (next.z - last.z);
+    //console.log(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
+    if(manager.modelNode.userData.mesh){
 
-        if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
-          manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
-            lerpIllumColorR, 
-            lerpIllumColorG, 
-            lerpIllumColorB
-          );
-          manager.modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
-        }else{
-          manager.modelNode.userData.mesh.material.emissive.setRGB(
-            lerpIllumColorR, 
-            lerpIllumColorG, 
-            lerpIllumColorB
-          );
-        }
-        //manager.modelNode.mesh.material.needsUpdate = true;
+      if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){
+        manager.modelNode.userData.mesh.material.uniforms.selfIllumColor.value.setRGB(
+          lerpIllumColorR, 
+          lerpIllumColorG, 
+          lerpIllumColorB
+        );
+        manager.modelNode.userData.mesh.material.defines.SELFILLUMCOLOR = "";
+      }else{
+        manager.modelNode.userData.mesh.material.emissive.setRGB(
+          lerpIllumColorR, 
+          lerpIllumColorG, 
+          lerpIllumColorB
+        );
       }
+      //manager.modelNode.mesh.material.needsUpdate = true;
+    }
   }
 
 }

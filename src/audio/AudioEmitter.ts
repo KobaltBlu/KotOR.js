@@ -114,10 +114,19 @@ export class AudioEmitter {
 
     switch(this.channel){
       case AudioEngineChannel.VO:
-        this.gainNode.connect(this.engine.voGain);
+        this.gainNode.connect(AudioEngine.voChannel.getGainNode());
+      break;
+      case AudioEngineChannel.MUSIC:
+        this.gainNode.connect(AudioEngine.musicChannel.getGainNode());
+      break;
+      case AudioEngineChannel.MOVIE:
+        this.gainNode.connect(AudioEngine.movieChannel.getGainNode());
+      break;
+      case AudioEngineChannel.GUI:
+        this.gainNode.connect(AudioEngine.guiChannel.getGainNode());
       break;
       default:
-        this.gainNode.connect(this.engine.sfxGain);
+        this.gainNode.connect(AudioEngine.sfxChannel.getGainNode());
       break;
     }
   }

@@ -29,6 +29,7 @@ import type { ModuleItem } from "./ModuleItem";
 import { DLGConversationType } from "../enums/dialog/DLGConversationType";
 import { SkillType } from "../enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "../enums/module/ModulePlaceableObjectSound";
+import { SWBodyBag } from "../engine/rules/SWBodyBag";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -428,11 +429,12 @@ export class ModulePlaceable extends ModuleObject {
 
   retrieveInventory(){
     while(this.inventory.length){
-      GameState.InventoryManager.addItem(this.inventory.pop())
+      const item = this.inventory.pop();
+      GameState.InventoryManager.addItem(item);
     }
-
     if(this.scripts.onInvDisturbed instanceof NWScriptInstance){
-      this.scripts.onInvDisturbed.run(GameState.PartyManager.party[0]);
+      this.scripts.onInvDisturbed.lastDisturbed = GameState.PartyManager.party[0];
+      this.scripts.onInvDisturbed.run(this);
     }
 
   }
@@ -586,42 +588,37 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
-  loadModel(): Promise<OdysseyModel3D> {
-    let modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      MDLLoader.loader.load(modelName)
-      .then( (mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this.context,
-          castShadow: true,
-          //receiveShadow: true,
-          //lighting: false,
-          static: this.static,
-          useTweakColor: this.useTweakColor,
-          tweakColor: this.tweakColor
-        }).then((plc: OdysseyModel3D) => {
-
-          if(this.model instanceof OdysseyModel3D){
-            this.model.removeFromParent();
-            try{ this.model.dispose(); }catch(e){}
-          }
-
-          this.model = plc;
-          this.model.userData.moduleObject = this;
-          this.model.name = modelName;
-
-          this.container.add(this.model);
-
-          this.model.disableMatrixUpdate();
-
-          resolve(this.model);
-        }).catch(() => {
-          resolve(this.model);
-        });
-      }).catch(() => {
-        resolve(this.model);
+  async loadModel(): Promise<OdysseyModel3D> {
+    const modelName = this.getAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    try {
+      const mdl = await MDLLoader.loader.load(modelName);
+      const plc = await OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        castShadow: true,
+        //receiveShadow: true,
+        //lighting: false,
+        static: this.static,
+        useTweakColor: this.useTweakColor,
+        tweakColor: this.tweakColor
       });
-    });
+
+      if(this.model instanceof OdysseyModel3D){
+        this.model.removeFromParent();
+        try{ this.model.dispose(); }catch(e){}
+      }
+
+      this.model = plc;
+      this.model.userData.moduleObject = this;
+      this.model.name = modelName;
+
+      this.container.add(this.model);
+
+      this.model.disableMatrixUpdate();
+    }catch(e){
+      console.error(e);
+    }
+
+    return this.model;
   }
 
   loadScripts (){
@@ -978,7 +975,7 @@ export class ModulePlaceable extends ModuleObject {
     let gff = new GFFObject();
     gff.FileType = 'UTP ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animState);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
@@ -993,7 +990,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -1008,11 +1005,11 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(0);
 
+    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     //Object Inventory
     if(this.inventory.length){
-      let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
       for(let i = 0; i < this.inventory.length; i++){
-        let itemStruct = this.inventory[i].save();
+        const itemStruct = this.inventory[i].save();
         itemList.addChildStruct(itemStruct);
       }
     }
@@ -1110,7 +1107,7 @@ export class ModulePlaceable extends ModuleObject {
           return animations2DA.rows[304];
         case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
           return animations2DA.rows[305];
-        case ModulePlaceableAnimState.DEAD: 	    //10072, //307
+        case ModulePlaceableAnimState.DEAD: 	        //10072, //307
           return animations2DA.rows[307];
         case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
           return animations2DA.rows[308];
@@ -1118,11 +1115,11 @@ export class ModulePlaceable extends ModuleObject {
           return animations2DA.rows[309];
         case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
           return animations2DA.rows[310];
-        case ModulePlaceableAnimState.CLOSE: 			  //10076, //311 - NWSCRIPT Constant: 203
+        case ModulePlaceableAnimState.CLOSE:          //10076, //311 - NWSCRIPT Constant: 203
           return animations2DA.rows[311];
         case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
           return animations2DA.rows[312];
-        case ModulePlaceableAnimState.OPEN_CLOSE:    //10078, //313
+        case ModulePlaceableAnimState.OPEN_CLOSE:     //10078, //313
           return animations2DA.rows[313];
         case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
           return animations2DA.rows[316];
@@ -1211,6 +1208,20 @@ export class ModulePlaceable extends ModuleObject {
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') );
 
     return template;
+  }
+
+  static FromBodyBag(bodyBag: SWBodyBag){
+    const placeable = new ModulePlaceable();
+    placeable.bodyBag = 1;
+    placeable.appearance = bodyBag.appearance;
+    placeable.locName = new CExoLocString(bodyBag.name);
+    placeable.hp = 1;
+    placeable.hardness = 1;
+    placeable.hasInventory = true;
+    placeable.min1HP = true;
+    placeable.partyInteract = true;
+    placeable.isBodyBag = true;
+    return placeable;
   }
 
 }

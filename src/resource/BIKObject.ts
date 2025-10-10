@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { AudioEngine } from "../audio/AudioEngine";
+import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 
 /**
  * BIKObject class.
@@ -259,9 +260,7 @@ export class BIKObject {
       node = undefined;
     }
 
-    AudioEngine.GetAudioEngine().voGain.connect(this.audioCtx.destination);
-    AudioEngine.GetAudioEngine().musicGain.connect(this.audioCtx.destination);
-    AudioEngine.GetAudioEngine().sfxGain.connect(this.audioCtx.destination);
+    AudioEngine.Mute(AudioEngineChannel.SFX | AudioEngineChannel.MUSIC | AudioEngineChannel.GUI | AudioEngineChannel.VO);
 
     if(typeof this.onComplete === 'function')
       this.onComplete();
@@ -409,7 +408,7 @@ export class BIKObject {
       let bufferedNode = this.audioCtx.createBufferSource();
       bufferedNode.buffer = buffered;
       bufferedNode.loop = false;
-      bufferedNode.connect( AudioEngine.GetAudioEngine().movieGain );
+      bufferedNode.connect( AudioEngine.movieChannel.getGainNode() );
       bufferedNode.onended = function(){
         bufferedNode.buffer = undefined;
         bufferedNode.disconnect();

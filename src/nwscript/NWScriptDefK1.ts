@@ -671,7 +671,7 @@ NWScriptDefK1.Actions = {
       try{
         const oSound = GameState.ModuleObjectManager.GetObjectByTag(args[0], 0, NWModuleObjectType.SOUND) as ModuleSound;
         if(!oSound){ return; }
-        oSound.emitter.playNextSound();
+        oSound.audioEmitter.playNextSound();
       }catch(e){ console.error(e); }
     }
   },
@@ -4305,7 +4305,10 @@ NWScriptDefK1.Actions = {
     comment: "348: Get the last object that disturbed the inventory of the caller.\n* Returns OBJECT_INVALID if the caller is not a valid creature or placeable.\n",
     name: "GetLastDisturbed",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return this.lastDisturbed;
+    }
   },
   349:{
     comment: "349: Get the last object that locked the caller.\n* Returns OBJECT_INVALID if the caller is not a valid door or placeable.\n",
@@ -5037,7 +5040,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound))
-      (args[0] as ModuleSound).emitter.playNextSound();
+      (args[0] as ModuleSound).audioEmitter.playNextSound();
     }
   },
   414:{
@@ -8386,8 +8389,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      const audioEngine = AudioEngine.GetAudioEngine();
-      audioEngine.musicGain.gain.value = Math.max(0, Math.min(1, args[0] / 100));
+      AudioEngine.GAIN_MUSIC = Math.max(0, Math.min(1, args[0] / 100));
     }
   },
   766:{

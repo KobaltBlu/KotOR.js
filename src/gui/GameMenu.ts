@@ -228,9 +228,9 @@ export class GameMenu {
   close(){
     this.hide();
     this.manager.Remove(this);
-    if(!this.isOverlayGUI){
-      GameState.RestoreEnginePlayMode();
-    }
+    // if(!this.isOverlayGUI){
+    //   GameState.RestoreEnginePlayMode();
+    // }
   }
 
   open(){

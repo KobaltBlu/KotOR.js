@@ -82,6 +82,8 @@ export class NWScriptInstance {
   lastSpellHarmful: boolean;
   healTarget: ModuleObject;
 
+  lastDisturbed: ModuleObject;
+
   //MiniGame
   mgFollower: ModuleObject;
   mgObstacle: ModuleObject;
@@ -445,6 +447,7 @@ export class NWScriptInstance {
     instance.lastSpell = parentInstance.lastSpell;
     instance.lastSpellHarmful = parentInstance.lastSpellHarmful;
     instance.healTarget = parentInstance.healTarget;
+    instance.lastDisturbed = parentInstance.lastDisturbed;
     instance.mgFollower = parentInstance.mgFollower;
     instance.mgObstacle = parentInstance.mgObstacle;
     instance.mgBullet = parentInstance.mgBullet;

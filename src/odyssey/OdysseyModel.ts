@@ -145,7 +145,7 @@ export class OdysseyModel {
      * Animations
      */
 
-    let animOffsets = OdysseyModelUtility.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
+    const animOffsets = OdysseyModelUtility.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
     for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++){
       this.readAnimation( this.fileHeader.modelDataOffset + animOffsets[i] );
     }
@@ -160,7 +160,8 @@ export class OdysseyModel {
     this.mdlReader.position = this.fileHeader.modelDataOffset + offset;  
     // let node: OdysseyModelNode;
 
-    let node = OdysseyModelFactory.ReadNode(parent, this.mdlReader);
+    const node = OdysseyModelFactory.ReadNode(parent, this.mdlReader);
+    node.isRootNode = !parent;
 
     if(node){
       node.readBinary(this);
@@ -179,10 +180,10 @@ export class OdysseyModel {
   }
 
   readAnimation(offset: number){
-    let pos = this.mdlReader.position;
+    const pos = this.mdlReader.position;
     this.mdlReader.seek(offset);
 
-    let anim = new OdysseyModelAnimation();
+    const anim = new OdysseyModelAnimation();
     anim.readBinary(this);
 
     this.animations.push(anim);
@@ -191,9 +192,13 @@ export class OdysseyModel {
     return anim;
   }
 
+  getAnimationDummyNodeName(){
+    return this.geometryHeader.modelName.trim().toLowerCase() + 'a';
+  }
+
   static FromBuffers(mdl_buffer: Uint8Array, mdx_buffer: Uint8Array): OdysseyModel {
-    let mdlReader = new BinaryReader(mdl_buffer);
-    let mdxReader = new BinaryReader(mdx_buffer);
+    const mdlReader = new BinaryReader(mdl_buffer);
+    const mdxReader = new BinaryReader(mdx_buffer);
     return new OdysseyModel(mdlReader, mdxReader);
   }
 }

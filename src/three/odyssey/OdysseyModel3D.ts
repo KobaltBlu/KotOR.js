@@ -126,6 +126,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
   mergedMaterials: any[];
   mergedDanglyMaterials: any[];
   mergedBufferGeometry: THREE.BufferGeometry;
+  
+  // Material-based geometry grouping for optimized merging
+  geometryGroupsByMaterial: Map<THREE.Material, THREE.BufferGeometry[]>;
   mergedMesh: THREE.Mesh;
   mergedBufferDanglyGeometry: THREE.BufferGeometry;
   mergedDanglyMesh: THREE.Mesh;
@@ -676,7 +679,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       let skinMaterial = new THREE.ShaderMaterial({
         fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
-        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.odyssey.uniforms]),
+        uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.odyssey.uniforms),
         side:THREE.FrontSide,
         lights: true,
         fog: true,
@@ -828,6 +831,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
           odysseyModel.mergedDanglyGeometries = [];
           odysseyModel.mergedMaterials = [];
           odysseyModel.mergedDanglyMaterials = [];
+          
+          // Material-based geometry grouping for optimized merging
+          odysseyModel.geometryGroupsByMaterial = new Map<THREE.Material, THREE.BufferGeometry[]>();
         }
 
         odysseyModel.add(OdysseyModel3D.NodeParser(odysseyModel, odysseyModel, model.rootNode, options));
@@ -836,19 +842,41 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
         if(options.mergeStatic){
           
-          //Merge Basic Geometries
-          if(odysseyModel.mergedGeometries.length){
+          //Merge Basic Geometries by Material
+          if(odysseyModel.geometryGroupsByMaterial.size > 0){
+            const finalGeometries: THREE.BufferGeometry[] = [];
+            const finalMaterials: THREE.Material[] = [];
+            
+            // Process each material group
+            for(const [material, geometries] of odysseyModel.geometryGroupsByMaterial){
+              if(!geometries.length){ continue; }
 
-            odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(odysseyModel.mergedGeometries, true);
-            odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, odysseyModel.mergedMaterials);
-            odysseyModel.mergedMesh.receiveShadow = true;
-            odysseyModel.add(odysseyModel.mergedMesh);
-
-            for(let i = 0, len = odysseyModel.mergedGeometries.length; i < len; i++){
-              odysseyModel.mergedGeometries[i].dispose();
+              // Pre-merge geometries that use the same material
+              const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries, true);
+              finalGeometries.push(mergedGeometry);
+              finalMaterials.push(material);
+              
+              // Dispose of individual geometries
+              for(const geometry of geometries){
+                geometry.dispose();
+              }
             }
-            odysseyModel.mergedGeometries = [];
-
+            
+            // Final merge of all pre-merged geometries
+            if(finalGeometries.length > 0){
+              odysseyModel.mergedBufferGeometry = BufferGeometryUtils.mergeBufferGeometries(finalGeometries, true);
+              odysseyModel.mergedMesh = new THREE.Mesh(odysseyModel.mergedBufferGeometry, finalMaterials);
+              odysseyModel.mergedMesh.receiveShadow = true;
+              odysseyModel.add(odysseyModel.mergedMesh);
+              
+              // Dispose of pre-merged geometries
+              for(const geometry of finalGeometries){
+                geometry.dispose();
+              }
+            }
+            
+            // Clear the material groups
+            odysseyModel.geometryGroupsByMaterial.clear();
           }
           
           //Merge Dangly Geometries
@@ -1117,8 +1145,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
       //Make sure there is at least one face before we attempt to build the mesh
       if(odysseyNode.faces.length ){
 
-        if(odysseyNode.roomStatic){
-          if(!odysseyNode.tvectors[0].length) odysseyNode.roomStatic = false;
+        if(!odysseyNode.isAnimDummyNode){
+          //de-opt geometry if no uv's are present, we currently cannot handle this issue.
+          if(!odysseyNode.tvectors[0].length) odysseyNode.isAnimDummyNode = true;
         }
 
         //Optimization: Only create a mesh if it is actually rendered. Ignore this for placeable models
@@ -1261,7 +1290,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //----------------//
           // MERGE GEOMETRY
           //----------------//
-          if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && odysseyNode.roomStatic && odysseyNode.faces.length){
+          if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
             parentNode.getWorldQuaternion( mesh.quaternion );
@@ -1279,8 +1308,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
               odysseyModel.mergedDanglyGeometries.push(geometry);
               odysseyModel.mergedDanglyMaterials.push(material);
             }else{
-              odysseyModel.mergedGeometries.push(geometry);
-              odysseyModel.mergedMaterials.push(material);
+              // Group regular geometries by material
+              if(!odysseyModel.geometryGroupsByMaterial.has(material)){
+                odysseyModel.geometryGroupsByMaterial.set(material, []);
+              }
+              odysseyModel.geometryGroupsByMaterial.get(material).push(geometry);
             }
 
             //Unset the mesh variable so it can't be added to the node
@@ -1367,14 +1399,14 @@ export class OdysseyModel3D extends OdysseyObject3D {
       });
     }else{
       const cacheId = OdysseyModel3D.NodeMaterialCacheId(odysseyNode);
-      if(odysseyModel.cachedMaterials.has(cacheId) && options.mergeStatic && odysseyNode.roomStatic){
-        return odysseyModel.cachedMaterials.get(cacheId);
+      if(odysseyModel.cachedMaterials.has(cacheId) && options.mergeStatic && !odysseyNode.isAnimDummyNode){
+        // return odysseyModel.cachedMaterials.get(cacheId);
       }
 
       material = new THREE.ShaderMaterial({
         fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
-        uniforms: THREE.UniformsUtils.merge([THREE.ShaderLib.odyssey.uniforms]),
+        uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.odyssey.uniforms),
         side: THREE.FrontSide,
         lights: true,
         fog: odysseyModel.affectedByFog,
@@ -1548,7 +1580,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }else{
       lightNode = new OdysseyLight3D(odysseyNode);
       lightNode.odysseyModel = odysseyModel;
-      lightNode.isAnimated = !odysseyNode.roomStatic;
+      lightNode.isAnimated = odysseyNode.isAnimDummyNode;
       lightNode.position.copy(odysseyNode.position);
       parentNode.add(lightNode);
 
