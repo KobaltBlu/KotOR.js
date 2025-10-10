@@ -47,7 +47,6 @@ export class ModuleSound extends ModuleObject {
   times: number;
   volume: number;
   volumeVariation: number;
-  emitter: AudioEmitter;
   micRange: any;
 
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
@@ -186,18 +185,18 @@ export class ModuleSound extends ModuleObject {
 
     const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     
-    this.emitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
-    this.emitter.isActive = this.getActive();
-    this.emitter.isLooping = this.getLooping();
-    this.emitter.isRandom = this.getRandom();
-    this.emitter.isRandomPosition = this.getRandomPosition();
-    this.emitter.interval = this.getInterval();
-    this.emitter.intervalVariation = this.getInternalVrtn();
-    this.emitter.maxDistance = this.getMaxDistance();
-    this.emitter.volume = this.getVolume();
-    this.emitter.type = type;
-    this.emitter.sounds = this.soundResRefs.slice(0);
-    await this.emitter.load();
+    this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
+    this.audioEmitter.isActive = this.getActive();
+    this.audioEmitter.isLooping = this.getLooping();
+    this.audioEmitter.isRandom = this.getRandom();
+    this.audioEmitter.isRandomPosition = this.getRandomPosition();
+    this.audioEmitter.interval = this.getInterval();
+    this.audioEmitter.intervalVariation = this.getInternalVrtn();
+    this.audioEmitter.maxDistance = this.getMaxDistance();
+    this.audioEmitter.volume = this.getVolume();
+    this.audioEmitter.type = type;
+    this.audioEmitter.sounds = this.soundResRefs.slice(0);
+    await this.audioEmitter.load();
 
   }
 
@@ -383,7 +382,6 @@ export class ModuleSound extends ModuleObject {
 
   destroy(): void {
     super.destroy();
-    if(this.area) this.area.detachObject(this);
   }
 
 }
