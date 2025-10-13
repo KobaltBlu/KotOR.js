@@ -13,6 +13,10 @@ export class EAXPresets {
   static PresetFromIndex(index = 0): any{
 
     let data = EAXPresets.PresetArray[index];
+    if(!data){
+      console.error('EAX preset not found', index);
+      return;
+    }
     let reverb: any = {
       density: data[0],
       diffusion: data[1],

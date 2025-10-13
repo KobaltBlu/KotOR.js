@@ -7,6 +7,7 @@ import { EAXPresets } from "./EAXPresets";
 import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
 import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { ReverbEngine } from "./ReverbEngine";
 
 class AudioChannel {
 
@@ -121,6 +122,8 @@ export class AudioEngine {
   areaMusicNightLoaded: boolean;
   ambientNightLoaded: boolean;
 
+  reverbEngine: ReverbEngine;
+
   static get GAIN_MUSIC(){
     return AudioEngine.musicChannel.getGain();
   }
@@ -167,6 +170,7 @@ export class AudioEngine {
     // this.reverbHF = new Reverb(this.audioCtx);
     // this.reverbLF.filterType = 'highpass';
     // this.reverbHF.filterType = 'lowpass';
+    this.reverbEngine = new ReverbEngine(this.audioCtx);
 
     AudioEngine.sfxChannel = new AudioChannel(AudioEngineChannel.SFX, this.audioCtx);
     AudioEngine.musicChannel = new AudioChannel(AudioEngineChannel.MUSIC, this.audioCtx);
@@ -180,9 +184,11 @@ export class AudioEngine {
     AudioEngine.movieChannel.setGain(AudioEngine.GAIN_MOVIE);
     AudioEngine.guiChannel.setGain(AudioEngine.GAIN_GUI);
 
-    AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
+    // AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
+    this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
     AudioEngine.musicChannel.getGainNode().connect(this.audioCtx.destination);
-    AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
+    // AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
+    this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
     AudioEngine.movieChannel.getGainNode().connect(this.audioCtx.destination);
     AudioEngine.guiChannel.getGainNode().connect(this.audioCtx.destination);
 
@@ -256,6 +262,7 @@ export class AudioEngine {
   }
 
   setReverbState(state = false){
+    return;
     AudioEngine.sfxChannel.getGainNode().disconnect();
     //this.musicGain.disconnect();
     AudioEngine.voChannel.getGainNode().disconnect();
@@ -280,8 +287,10 @@ export class AudioEngine {
 
   setReverbProfile(index = 0){
     this.setReverbState(false);
-    return;
     console.log('setReverbProfile:', index);
+
+    this.reverbEngine.loadPreset(index);
+    return;
 
     const software_mode = (this.mode == AudioEngineMode.Software);
     if(software_mode){
@@ -291,20 +300,6 @@ export class AudioEngine {
     if(index >= 0){
       let data = EAXPresets.PresetFromIndex(index);
       console.log('setReverbProfile:', data);
-      // this.reverbHF.gain.value = data.gainHF;
-      // this.reverbLF.gain.value = data.gainLF;
-
-      // this.reverbHF.decay = data.decayTime;
-      // this.reverbLF.decay = data.decayTime;
-
-      // this.reverbHF.cutoff.value = data.hfReference;
-      // this.reverbLF.cutoff.value = data.lfReference;
-
-      // this.reverbHF.wet.value = data.reflectionsGain * data.diffusion;
-      // this.reverbLF.wet.value = data.reflectionsGain * data.diffusion;
-
-      // this.reverbHF.dry.value = 1;
-      // this.reverbLF.dry.value = 1;
       
       this.setReverbState(!software_mode);
     }else{
@@ -325,6 +320,12 @@ export class AudioEngine {
     this.audioCtx.listener.upX.value = 0;
     this.audioCtx.listener.upY.value = 0;
     this.audioCtx.listener.upZ.value = 1;
+
+    // Update reverb engine 3D positioning
+    this.reverbEngine.updateListener(
+      [position.x, position.y, position.z],
+      [rotation.x, rotation.y, rotation.z]
+    );
 
     //Handle the background music loop
     if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
@@ -427,7 +428,7 @@ export class AudioEngine {
   }
 
   static GetAudioEngine(){
-    if(!this.engines.length) this.engines.push(new AudioEngine());
+    if(!this.engines.length) new AudioEngine();
     return this.engines[0];
   }
 
@@ -483,15 +484,16 @@ export class AudioEngine {
     if(focused == AudioEngine.focused) return;
     AudioEngine.focused = focused;
     if(!focused){
+      // Disconnect all channels
       AudioEngine.sfxChannel.getGainNode().disconnect();
       AudioEngine.musicChannel.getGainNode().disconnect();
       AudioEngine.voChannel.getGainNode().disconnect();
       AudioEngine.movieChannel.getGainNode().disconnect();
       AudioEngine.guiChannel.getGainNode().disconnect();
     }else{
-      AudioEngine.sfxChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
+      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
+      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
       AudioEngine.musicChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
-      AudioEngine.voChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
       AudioEngine.movieChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
       AudioEngine.guiChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
     }

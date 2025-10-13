@@ -446,7 +446,7 @@ export class DLGObject {
     if (!this.ambientTrack) { return; }
     const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
     if(!bgm){ return; }
-    AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', bgm, this.ambientTrack);
+    AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
     AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.play();
   }
 

@@ -1291,20 +1291,19 @@ export class GUIControl {
     return this.border.fill.texture;
   }
 
-  setFillTextureName(name = '', bUpdateHighlight = true): Promise<OdysseyTexture> {
-    return new Promise<OdysseyTexture>( (resolve, reject) => {
-      this.border.fill.texture = name;
-      this.borderFillEnabled = true;
-      if(name.length){
-        if(bUpdateHighlight) this.highlightFillEnabled = true;
-        if(bUpdateHighlight) this.highlight.fill.texture = name;
-        TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          this.setFillTexture(texture)
-          if(bUpdateHighlight) this.setHighlightFillTexture(texture);
-          resolve(texture);
-        });
-      }
+  async setFillTextureName(name = '', bUpdateHighlight = true): Promise<OdysseyTexture> {
+    this.border.fill.texture = name;
+    this.borderFillEnabled = true;
+    if(!name.length){ return; }
+    
+    if(bUpdateHighlight) this.highlightFillEnabled = true;
+    if(bUpdateHighlight) this.highlight.fill.texture = name;
+    TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
+      this.setFillTexture(texture)
+      if(bUpdateHighlight) this.setHighlightFillTexture(texture);
+      return texture;
     });
+    return;
   }
 
   setMaterialTexture(material: THREE.ShaderMaterial, texture: THREE.Texture|null){

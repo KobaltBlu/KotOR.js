@@ -123,8 +123,8 @@ export class MainMenu extends GameMenu {
   Start(){
     return new Promise<void>( (resolve, reject) => {
       this.manager.ClearMenus(); 
-      AudioLoader.LoadMusic(this.bgMusicResRef).then((data: ArrayBuffer) => {
-        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data, this.bgMusicResRef);
+      AudioLoader.LoadMusic(this.bgMusicResRef).then((data: Uint8Array) => {
+        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
         AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
         this.open();
         resolve();

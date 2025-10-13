@@ -1,5 +1,11 @@
 import { ADPCMBlock } from "./ADPCMBlock";
 
+interface ADPCMHeader {
+	sampleRate: number;
+	frameSize: number;
+	channels: number;
+}
+
 /**
  * ADPCMDecoder class.
  * 
@@ -13,7 +19,7 @@ import { ADPCMBlock } from "./ADPCMBlock";
  */
 export class ADPCMDecoder {
 	adpcm: Uint8Array;
-	header: any;
+	header: ADPCMHeader;
 	pcm: Uint8Array;
 	stepIdx: number[];
 	previous: number[];
@@ -21,19 +27,9 @@ export class ADPCMDecoder {
 	inputStreamIndex: number;
 	blocks: any[];
 
-  constructor( args: any = {} ){
-
-    args = Object.assign({
-      data: new Uint8Array(0),
-			header: {
-				sampleRate: 14400,
-				frameSize: 2048,
-				channels: 2
-			}
-    }, args);
-
-    this.adpcm = args.data;
-		this.header = args.header;
+  constructor( header: ADPCMHeader, data: Uint8Array ){
+		this.header = header;
+    this.adpcm = data;
     this.pcm = new Uint8Array(0);
 
 		this.stepIdx = [0, 0];
@@ -45,7 +41,6 @@ export class ADPCMDecoder {
 		this.blocks = [];
 
     this.decode();
-
   }
 
 	concatBuffers(buffers: Uint8Array[]) {
@@ -87,9 +82,7 @@ export class ADPCMDecoder {
 			}
 
 			this.pcm = this.concatBuffers(chunks);
-
 			console.log('ADPCMDecoder', 'Decode Complete');
-
     }
 	}
 

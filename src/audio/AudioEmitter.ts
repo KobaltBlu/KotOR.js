@@ -3,6 +3,8 @@ import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 import { AudioEngine } from "./AudioEngine";
 import { AudioLoader } from "./AudioLoader";
 
+const GAIN_RAMP_TIME = 0.25;
+
 /**
  * AudioEmitter class.
  * 
@@ -28,6 +30,9 @@ export class AudioEmitter {
   isLooping: boolean = false;
   isRandom: boolean = false;
   isRandomPosition: boolean = false;
+  randomX: number = 0;
+  randomY: number = 0;
+  randomZ: number = 0;
   interval: number = 0;
   intervalVariation: number = 0;
   minDistance: number = 0;
@@ -44,6 +49,8 @@ export class AudioEmitter {
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
   channel: AudioEngineChannel = AudioEngineChannel.SFX;
   type: AudioEmitterType = AudioEmitterType.GLOBAL;
+
+  disabled: boolean = false;
 
   constructor (audioEngine: AudioEngine, channel: AudioEngineChannel = AudioEngineChannel.SFX) {
     this.isDestroyed = false;
@@ -64,7 +71,7 @@ export class AudioEmitter {
     switch(this.type){
       case AudioEmitterType.POSITIONAL:
         this.mainNode = this.engine.audioCtx.createPanner();
-        this.setPosition( this.position.x, this.position.y, this.position.z );
+        this.setPosition( this.position.x, this.position.y, this.position.z + this.elevation );
         (this.mainNode as PannerNode).maxDistance = this.maxDistance;
         this.mainNode.connect(this.gainNode);
       break;
@@ -85,6 +92,15 @@ export class AudioEmitter {
     if(this.isActive){
       this.start();
     }
+  }
+
+  setDisabled(disabled: boolean): void {
+    if(disabled == this.disabled){
+      return;
+    }
+    return;
+    this.disabled = disabled;
+    this.gainNode.gain.linearRampToValueAtTime(disabled ? 0 : 1, this.engine.audioCtx.currentTime + GAIN_RAMP_TIME);
   }
 
   async loadSounds(soundIndex = 0): Promise<void> {
@@ -317,6 +333,10 @@ export class AudioEmitter {
     this.currentSound.connect(this.mainNode);
     this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
 
+    if(this.isRandomPosition){
+      this.setPosition(this.position.x + this.getRandomVariation(this.randomX), this.position.y + this.getRandomVariation(this.randomY), this.position.z + this.getRandomVariation(this.randomZ));
+    }
+
     // console.log('AudioEmitter', 'Playing sound', this.name, resRef);
     this.currentSound.onended = () => {
       if(!this.currentSound.loop){
@@ -335,14 +355,14 @@ export class AudioEmitter {
     };
   }
 
-  async addSound(resRef: string, data: ArrayBuffer): Promise<AudioBuffer> {
+  async addSound(resRef: string, data: Uint8Array): Promise<AudioBuffer> {
     if(!data){
       console.error('AudioEmitter.addSound: No audio data present');
       throw new Error('No audio data present');
     }
     
     try{
-      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData( data );
+      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
       this.buffers.set(resRef, buffer);
       return buffer;
     }catch(e){

@@ -453,7 +453,7 @@ export class ModuleArea extends ModuleObject {
     //update rooms
     for(let i = 0; i < roomCount; i++){
       this.rooms[i].update(delta);
-      this.rooms[i].hide();
+      // this.rooms[i].hide();
     }
 
     for(let i = 0, spellCount = this.spellInstances.length; i < spellCount; i++){
@@ -557,9 +557,9 @@ export class ModuleArea extends ModuleObject {
     }
 
     //update rooms
-    for(let i = 0; i < roomCount; i++){
-      this.rooms[i].hide();
-    }
+    // for(let i = 0; i < roomCount; i++){
+    //   this.rooms[i].hide();
+    // }
 
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
@@ -605,7 +605,7 @@ export class ModuleArea extends ModuleObject {
       if(bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
         const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data, bgMusic.resource);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, bgMusic.resource);
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -623,7 +623,7 @@ export class ModuleArea extends ModuleObject {
       if(bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
         const data = await AudioLoader.LoadMusic(bgMusic.resource);
-        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data, bgMusic.resource);
+        audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data.buffer as ArrayBuffer, bgMusic.resource);
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -651,14 +651,14 @@ export class ModuleArea extends ModuleObject {
       if(battleMusic.resource != '****'){
         console.log('Loading Battle Music', battleMusic.resource);
         const data = await AudioLoader.LoadMusic(battleMusic.resource);
-        audioEngine.setAudioBuffer('BATTLE', data, battleMusic.resource);
+        audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleMusic.resource);
       }
       //Load the battle stinger
       try{
         if(battleMusic.stinger1 != '****'){
           console.log('Loading Battle Stinger', battleMusic.stinger1);
           const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data, battleMusic.stinger1);
+          audioEngine.setAudioBuffer('BATTLE_STINGER', data.buffer as ArrayBuffer, battleMusic.stinger1);
         }
       }catch(e){
         console.log('Battle Stinger not found', battleMusic.stinger1);
@@ -694,7 +694,7 @@ export class ModuleArea extends ModuleObject {
       console.log('Loading Ambient Day Sound', ambientDay.resource);
       try{
         const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT_DAY', data, ambientDay.resource);
+        audioEngine.setAudioBuffer('AMBIENT_DAY', data.buffer as ArrayBuffer, ambientDay.resource);
         audioEngine.ambientAudioDayEmitter.play(true);
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);
@@ -716,7 +716,7 @@ export class ModuleArea extends ModuleObject {
       console.log('Loading Ambient Day Sound', ambientDay.resource);
       try{
         const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data, ambientDay.resource);
+        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, ambientDay.resource);
         audioEngine.ambientAudioNightEmitter.play(true);
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);
@@ -736,6 +736,7 @@ export class ModuleArea extends ModuleObject {
     this.textSprites.push(sprite);
   }
 
+  lastRoom: ModuleRoom = undefined;
   updateRoomVisibility(delta: number = 0){
     const roomList: ModuleRoom[] = [];
     let pos = undefined;
@@ -765,19 +766,34 @@ export class ModuleArea extends ModuleObject {
       case EngineMode.INGAME:
       case EngineMode.FREELOOK:
       default:
-        let player = GameState.getCurrentPlayer();
-        if(player && player.room){
+        const player = GameState.getCurrentPlayer();
+        if(!player){ return; }
+        //Check to see if the player has moved to a new room
+        if(this.lastRoom && this.lastRoom == player.room){
+          return;
+        }
+        this.lastRoom = player.room;
+        if(this.lastRoom.envAudio >= 0){
+          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom.envAudio);
+        }
+
+        //Reset all room's visibility to hidden
+        const roomCount = this.rooms.length;
+        for(let i = 0; i < roomCount; i++){
+          const room = this.rooms[i];
+          room.hide();
+        }
+
+        if(player.room){
           player.room.show(true);
         }
 
         //SKYBOX Fix
-        if(player){
-          for(let i = 0, len = this.rooms.length; i < len; i++){
-            let room = this.rooms[i];
-            if(!room.visObject || room.box.containsPoint(player.position)){
-              //Show the room, but don't recursively show it's children
-              room.show(false);
-            }
+        for(let i = 0, len = this.rooms.length; i < len; i++){
+          let room = this.rooms[i];
+          if(!room.visObject || room.box.containsPoint(player.position)){
+            //Show the room, but don't recursively show it's children
+            room.show(false);
           }
         }
       break;
@@ -1050,7 +1066,7 @@ export class ModuleArea extends ModuleObject {
     if(sounds){
       for(let i = 0; i < sounds.childStructs.length; i++ ){
         const strt = sounds.childStructs[i];
-        this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
+        // this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
 

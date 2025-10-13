@@ -161,7 +161,7 @@ export class AudioFile {
     throw 'Unable to decode AUDIO file';*/
   }
 
-  async getPlayableByteStream(){
+  async getPlayableByteStream(): Promise<Uint8Array> {
 
     const b = await this.getBinaryStream();
 
@@ -172,35 +172,31 @@ export class AudioFile {
 
     if(this.audioType == AudioFileAudioType.WAVE){
       if(this.header.format == AudioFileWaveEncoding.ADPCM){
+        const RAW_PCM_DATA_OFFSET = 60;
+        this.reader.seek(RAW_PCM_DATA_OFFSET);
+        const dataADPCM = this.reader.readBytes(this.reader.length() - (RAW_PCM_DATA_OFFSET));
+        const adpcm = new ADPCMDecoder({
+          sampleRate: this.header.sampleRate,
+          frameSize: this.header.frameSize,
+          channels: this.header.channels
+        }, dataADPCM);
 
-        let rawDataOffset = 60;
-        //console.log('rawDataOffset', rawDataOffset);
-        this.reader.seek(rawDataOffset);
-        let dataADPCM = this.reader.readBytes(this.reader.length() - (rawDataOffset));
-        let adpcm = new ADPCMDecoder({header: this.header, data: new Uint8Array(dataADPCM)});
-        //console.log('ADPCMDecoder', adpcm);
-
-        let decompiled = this.buildWave({
+        const decompiled = this.buildWave({
           sampleRate: this.header.sampleRate,
           bytesPerSec: 176400,
           bits: 16,
           channels: this.header.channels
         }, adpcm.pcm);
 
-        return (new Uint8Array(decompiled).buffer);
-
+        return decompiled;
       }else if(this.header.format == AudioFileWaveEncoding.PCM){
-        let dataBuffer = new Uint8Array(this.reader.buffer).buffer;
-        
-        return (dataBuffer);
+        return this.reader.buffer;
       }else{
         throw 'Unsupported WAVE encoding';
       }
 
     }else if(this.audioType == AudioFileAudioType.MP3){
-      let dataBuffer = new Uint8Array(this.reader.buffer).buffer;
-      
-      return (dataBuffer);
+      return this.reader.buffer;
     }else{
       console.error('AudioFile.getPlayableByteStream', this.header);
       throw 'Not a valid audio file'

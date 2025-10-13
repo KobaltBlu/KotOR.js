@@ -1071,6 +1071,7 @@ export class GameState implements EngineContext {
     if(!GameState.holdWorldFadeInForDialog){
       GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
     }
+    GameState.module.area.musicBackgroundPlay();
   }
 
   static RestoreEnginePlayMode(): void {

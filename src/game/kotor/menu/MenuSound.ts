@@ -1,6 +1,9 @@
 import { AudioEngine } from "../../../audio/AudioEngine";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "../../../gui";
+
+const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
@@ -39,14 +42,23 @@ export class MenuSound extends GameMenu {
     if(skipInit) return;
     this.BTN_BACK.addEventListener('click', (e) => {
       e.stopPropagation();
+      GameState.iniConfig.save();
       this.close();
     });
     this._button_b = this.BTN_BACK;
 
     this.BTN_ADVANCED.addEventListener('click', (e) => {
       e.stopPropagation();
-      //this.Hide();
       this.manager.MenuSoundAdvanced.open();
+    });
+
+    this.BTN_DEFAULT.addEventListener('click', (e) => {
+      e.stopPropagation();
+      AudioEngine.GAIN_GUI = DEFAULT_GAIN;
+      this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC = DEFAULT_GAIN);
+      this.SLI_VO.setValue(AudioEngine.GAIN_VO = DEFAULT_GAIN);
+      this.SLI_FX.setValue(AudioEngine.GAIN_SFX = DEFAULT_GAIN);
+      this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE = DEFAULT_GAIN);
     });
 
     this.SLI_MUSIC.onValueChanged = (value: any) => {

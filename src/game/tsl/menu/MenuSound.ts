@@ -1,6 +1,9 @@
 import { AudioEngine } from "../../../audio/AudioEngine";
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUISlider, GUIListBox, GUIButton } from "../../../gui";
 import { MenuSound as K1_MenuSound } from "../../kotor/KOTOR";
+
+const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
@@ -47,9 +50,19 @@ export class MenuSound extends K1_MenuSound {
 
     this.BTN_BACK.addEventListener('click', (e) => {
       e.stopPropagation();
+      GameState.iniConfig.save();
       this.close();
     });
     this._button_b = this.BTN_BACK;
+
+    this.BTN_DEFAULT.addEventListener('click', (e) => {
+      e.stopPropagation();
+      AudioEngine.GAIN_GUI = DEFAULT_GAIN;
+      this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC = DEFAULT_GAIN);
+      this.SLI_VO.setValue(AudioEngine.GAIN_VO = DEFAULT_GAIN);
+      this.SLI_FX.setValue(AudioEngine.GAIN_SFX = DEFAULT_GAIN);
+      this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE = DEFAULT_GAIN);
+    });
 
     this.SLI_MUSIC.onValueChanged = (value: any) => {
       AudioEngine.GAIN_MUSIC = value;

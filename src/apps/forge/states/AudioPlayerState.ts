@@ -131,9 +131,9 @@ export class AudioPlayerState {
 
   static GetAudioBuffer(onBuffered?: Function){
     if(AudioPlayerState.buffer == null){
-      AudioPlayerState.audioFile.getPlayableByteStream().then((data: ArrayBuffer) => {
+      AudioPlayerState.audioFile.getPlayableByteStream().then((data: Uint8Array) => {
         try{
-          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: any) => {
+          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data.buffer as ArrayBuffer, (buffer: any) => {
             AudioPlayerState.buffer = buffer;
             if(typeof onBuffered === 'function')
               onBuffered(AudioPlayerState.buffer);

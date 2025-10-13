@@ -79,8 +79,8 @@ export class MainMusic extends GameMenu {
 
       this.BTN_PLAY.addEventListener('click', (e) => {
         e.stopPropagation();
-        AudioLoader.LoadMusic(this.selected.filename).then((data: ArrayBuffer) => {
-          this.setBackgroundMusic(data);
+        AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
+          this.setBackgroundMusic(data.buffer as ArrayBuffer);
         }, () => {
           console.error('Background Music not found', this.selected.filename);
         });

@@ -183,7 +183,6 @@ export class ModuleSound extends ModuleObject {
 
 
   async loadSound(){
-
     const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
@@ -205,6 +204,9 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.position.x = this.position.x;
     this.audioEmitter.position.y = this.position.y;
     this.audioEmitter.position.z = this.position.z;
+    this.audioEmitter.randomX = this.getRandomPosition() ? this.randomRangeX || 0 : 0;
+    this.audioEmitter.randomY = this.getRandomPosition() ? this.randomRangeY || 0 : 0;
+    this.audioEmitter.randomZ = 0;
     this.audioEmitter.elevation = this.elevation || 0;
     await this.audioEmitter.load();
   }

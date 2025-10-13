@@ -53,7 +53,7 @@ export class AudioLoader {
           throw e;
         }
       }else{
-        await this.LoadStreamSound( resRef);
+        return await this.LoadStreamSound( resRef);
       }
 
     }
@@ -63,6 +63,7 @@ export class AudioLoader {
   static async LoadStreamSound (resRef: string) {
     try{
       const file = path.join('streamsounds', resRef+'.wav');
+      console.log('AudioLoader.LoadStreamSound : file', file);
       const buffer = await GameFileSystem.readFile(file);
       const af = new AudioFile(buffer);
       const data = await af.getPlayableByteStream();
@@ -96,13 +97,12 @@ export class AudioLoader {
     return await AudioLoader.LoadAmbientSound(resRef);
   }
 
-  static async LoadAmbientSound (resRef: string): Promise<ArrayBuffer> {
+  static async LoadAmbientSound (resRef: string): Promise<Uint8Array> {
     try{
       const file = path.join('streammusic', resRef+'.wav');
       const buffer = await GameFileSystem.readFile(file);
       const af = new AudioFile(buffer);
-      const data = await af.getPlayableByteStream();
-      return data;
+      return await af.getPlayableByteStream();
     }catch(e){
       console.log(`AudioLoader.LoadAmbientSound : read`);
       console.error(e);

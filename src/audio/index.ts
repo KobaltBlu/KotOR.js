@@ -5,3 +5,4 @@ export * from "./AudioEngine";
 export * from "./AudioFile";
 export * from "./AudioLoader";
 export * from "./EAXPresets";
+export * from "./ReverbEngine";

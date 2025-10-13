@@ -89,7 +89,7 @@ export class CharGenManager {
   static async StartBackgroundMusic(): Promise<void> {
     const audioResRef = GameState.GameKey == GameEngineType.KOTOR ? 'mus_theme_rep' : 'mus_a_main';
     const data = await AudioLoader.LoadMusic(audioResRef);
-    AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data, audioResRef);
+    AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, audioResRef);
     AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
   }
 

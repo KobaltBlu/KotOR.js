@@ -412,23 +412,28 @@ export class GameInitializer {
 
   static async LoadGameAudioResources( folder: string ){
     PerformanceMonitor.start(`GameInitializer.LoadGameAudioResources[${folder}]`);
-    const files = await GameFileSystem.readdir(folder, {recursive: true})
-    for(let i = 0, len = files.length; i < len; i++){
-      let f = files[i];
-      let _parsed = path.parse(f);
-      let ext = _parsed.ext.substr(1,  _parsed.ext.length);
+    try{
+      const files = await GameFileSystem.readdir(folder, {recursive: true})
+      for(let i = 0, len = files.length; i < len; i++){
+        let f = files[i];
+        let _parsed = path.parse(f);
+        let ext = _parsed.ext.substr(1,  _parsed.ext.length);
 
-      if(typeof ResourceTypes[ext] != 'undefined'){
-        ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
-          inArchive: false,
-          file: f,
-          resref: _parsed.name,
-          resid: ResourceTypes[ext],
-          ext: ext,
-          offset: 0,
-          length: 0
-        });
+        if(typeof ResourceTypes[ext] != 'undefined'){
+          ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
+            inArchive: false,
+            file: f,
+            resref: _parsed.name,
+            resid: ResourceTypes[ext],
+            ext: ext,
+            offset: 0,
+            length: 0
+          });
+        }
       }
+    }catch(e){
+      console.warn(`GameInitializer.LoadGameAudioResources[${folder}]: Failed to load game audio resources`);
+      console.error(e);
     }
     PerformanceMonitor.stop(`GameInitializer.LoadGameAudioResources[${folder}]`);
   }

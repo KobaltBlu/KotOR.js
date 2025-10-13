@@ -1,5 +1,5 @@
 import { ModuleObject } from "./ModuleObject";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleTrigger } from ".";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
 import * as THREE from "three";
 import { GameState } from "../GameState";
 import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
@@ -43,6 +43,7 @@ export class ModuleRoom extends ModuleObject {
   creatures: ModuleCreature[] = [];
   triggers: ModuleTrigger[] = [];
   encounters: ModuleEncounter[] = [];
+  sounds: ModuleSound[] = [];
   grass: THREE.InstancedMesh<THREE.BufferGeometry, THREE.ShaderMaterial>;
 
   linkedRoomData: IVISRoom[] = [];
@@ -66,21 +67,32 @@ export class ModuleRoom extends ModuleObject {
     this.envAudio = audio;
   }
 
+  #boxSize: THREE.Vector3 = new THREE.Vector3();
   detectChildObjects(){
-    let v = new THREE.Vector3();
-    this.box.getSize(v);
-    let box = this.box.clone().expandByVector(v);
+    this.box.getSize(this.#boxSize);
+    const box = this.box.clone().expandByVector(this.#boxSize);
     this.doors = [];
     this.placeables = [];
+    this.sounds = [];
+    
     for(let i = 0, len = this.area.doors.length; i < len; i++){
-      let object = this.area.doors[i];
+      const object = this.area.doors[i] as ModuleDoor;
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
         this.attachChildObject(object);
       }
     }
 
     for(let i = 0, len = this.area.placeables.length; i < len; i++){
-      let object = this.area.placeables[i];
+      const object = this.area.placeables[i] as ModulePlaceable;
+      if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
+        this.attachChildObject(object);
+      }
+    }
+
+    for(let i = 0, len = this.area.sounds.length; i < len; i++){
+      const object = this.area.sounds[i] as ModuleSound;
+      if(!object.positional){ continue; }
+
       if(object && (box.containsBox(object.box) || box.containsPoint(object.position) || box.intersectsSphere(object.sphere))){
         this.attachChildObject(object);
       }
@@ -103,6 +115,9 @@ export class ModuleRoom extends ModuleObject {
     }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleEncounter)){
       if(this.encounters.indexOf(object as ModuleEncounter) >= 0) return;
       this.encounters.push(object as ModuleEncounter);
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+      if(this.sounds.indexOf(object as ModuleSound) >= 0) return;
+      this.sounds.push(object as ModuleSound);
     }
   }
 
@@ -131,6 +146,11 @@ export class ModuleRoom extends ModuleObject {
       const idx = this.encounters.indexOf(object as ModuleEncounter);
       if(idx >= 0){
         this.encounters.splice(idx, 1);
+      }
+    }else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleSound)){
+      const idx = this.sounds.indexOf(object as ModuleSound);
+      if(idx >= 0){
+        this.sounds.splice(idx, 1);
       }
     }
   }
@@ -202,6 +222,10 @@ export class ModuleRoom extends ModuleObject {
       this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
       GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
     }
+
+    for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
+      this.sounds[i].audioEmitter.setDisabled(false);
+    }
   }
 
   hide(){
@@ -224,6 +248,10 @@ export class ModuleRoom extends ModuleObject {
     //Remove the walkmesh back to the scene
     if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
       this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
+    }
+
+    for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
+      this.sounds[i].audioEmitter.setDisabled(true);
     }
   }
 
