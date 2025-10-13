@@ -1066,7 +1066,7 @@ export class ModuleArea extends ModuleObject {
     if(sounds){
       for(let i = 0; i < sounds.childStructs.length; i++ ){
         const strt = sounds.childStructs[i];
-        // this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
+        this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
 
