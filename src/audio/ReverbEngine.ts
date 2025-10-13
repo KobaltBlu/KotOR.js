@@ -12,6 +12,8 @@ import { EAXPresets } from "./EAXPresets";
 export class ReverbEngine {
   private context: AudioContext;
 
+  private currentPreset: number = 0;
+
   // Core nodes
   private convolver: ConvolverNode;
   private wetGain: GainNode;
@@ -119,6 +121,10 @@ export class ReverbEngine {
    * Load preset and apply all parameters with correct EAX mapping
    */
   loadPreset(index: number) {
+    if(this.currentPreset == index){
+      return;
+    }
+
     const preset = EAXPresets.PresetFromIndex(index);
     if(!preset){
       console.error('EAX preset not found', index);
@@ -168,6 +174,8 @@ export class ReverbEngine {
 
     // Room rolloff factor
     this.output.gain.value = 1.0 - preset.roomRolloffFactor;
+
+    this.currentPreset = index;
   }
 
   /**
