@@ -2,13 +2,11 @@ import React from "react";
 import { TabProjectExplorer } from "../../components/tabs/TabProjectExplorer";
 import { TabState } from "./";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-
-import * as KotOR from "../../KotOR";
-import { FileBrowserNode } from "./";
 import { ProjectFileSystem } from "../../ProjectFileSystem";
 import * as path from "path";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
 import { ForgeState } from "../ForgeState";
+import { FileBrowserNode } from "../../FileBrowserNode";
 
 export class TabProjectExplorerState extends TabState {
 

@@ -129,6 +129,8 @@ export class ForgeState {
       KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();
         KotOR.OdysseyWalkMesh.Init();
+        KotOR.AudioEngine.GetAudioEngine();
+        KotOR.AudioEngine.GAIN_SFX = 0.75;
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
         // KotOR.LightManager.toggleLightHelpers();
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();

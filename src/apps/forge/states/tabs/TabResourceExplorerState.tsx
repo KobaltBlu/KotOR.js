@@ -7,62 +7,7 @@ import { AsyncLoop } from "../../../../utility/AsyncLoop";
 import * as KotOR from "../../KotOR";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
 import { ForgeState } from "../ForgeState";
-
-export class FileBrowserNode {
-  static NODE_ID = 0;
-  id: number = 0;
-  name: string = '';
-  canOrphan: boolean = true;
-  nodes: FileBrowserNode[] = [];
-  type: 'group'|'resource' = 'group';
-  data: any = {};
-  open: boolean = false;
-  parent: FileBrowserNode;
-
-  constructor(options: any = {}){
-    options = Object.assign({
-      name: '',
-      canOrphan: true,
-      nodes: [],
-      type: 'group',
-      data: {}
-    }, options);
-    this.name = options.name;
-    this.canOrphan = options.canOrphan;
-    this.nodes = options.nodes;
-    this.type = options.type;
-    this.data = options.data;
-    this.id = FileBrowserNode.NODE_ID++;
-  }
-
-  addChildNode(node: FileBrowserNode): number{
-    node.parent = this;
-    return this.nodes.push(node);
-  }
-
-  searchFor(query: string, results: FileBrowserNode[] = []){
-    if(this.type == 'resource'){
-      if(this.name.toLocaleLowerCase().indexOf(query.toLocaleLowerCase()) >= 0){
-        return [...results, this];
-      }
-    }else{
-      for(let i = 0; i < this.nodes.length; i++){
-        results = this.nodes[i].searchFor(query, results);
-      }
-    }
-    return results;
-  }
-
-  sort(){
-    if(this.nodes.length){
-      this.nodes.sort( (a: FileBrowserNode, b :FileBrowserNode) => {
-        return (a?.name && b?.name) ? a.name.localeCompare(b.name) : 0;
-      });
-      this.nodes.map( (node: FileBrowserNode) => node.sort() );
-    }
-  }
-
-}
+import { FileBrowserNode } from "../../FileBrowserNode";
 
 export class TabResourceExplorerState extends TabState {
 
@@ -86,6 +31,26 @@ export class TabResourceExplorerState extends TabState {
     if(typeof this.onReload === 'function'){
       this.onReload();
     }
+  }
+
+  getBifSounds(){
+    const folderNode = TabResourceExplorerState.Resources.find( (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'bifs' );
+    if(!folderNode){
+      return [];
+    }
+    const soundNodes = folderNode.nodes.find( (node: FileBrowserNode) => node.type == 'group' && node.name.toLocaleLowerCase() === 'sounds' );
+    if(!soundNodes){
+      return [];
+    }
+    return soundNodes.nodes.filter( (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav') );
+  }
+
+  getStreamSounds(){
+    const folderNode = TabResourceExplorerState.Resources.find( (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'streamsounds' );
+    if(!folderNode){
+      return [];
+    }
+    return folderNode.nodes.filter( (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav') );
   }
 
   static async GenerateResourceList( state: TabResourceExplorerState ){

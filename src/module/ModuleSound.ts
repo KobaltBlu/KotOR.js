@@ -223,6 +223,9 @@ export class ModuleSound extends ModuleObject {
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
+    if(this.template.RootNode.hasField('LocName'))
+      this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
+
     if(this.template.RootNode.hasField('Active'))
       this.active = this.template.getFieldByLabel('Active').getValue()
 

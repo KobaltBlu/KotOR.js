@@ -401,6 +401,9 @@ body {
     color: #ffffff;
     background-color: #313131;
   }
+  &::placeholder {
+    color: #9d9d9d;
+  }
 }
 
 select, .form-select {
@@ -745,7 +748,7 @@ overflow:scroll;
 
 button, .btn-default {
   font-size: initial;
-  margin-left: 10px;
+  // margin-left: 10px;
   background: #256DA7;
   border: 2px solid #2196F3;
   padding: 9.5px;
