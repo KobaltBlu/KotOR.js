@@ -5,13 +5,14 @@ import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
+import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 // import { ModuleObjectManager } from "../managers";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 import { GameState } from "../GameState";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
 
 /**
 * ModuleSound class.
@@ -27,27 +28,78 @@ import { GameState } from "../GameState";
 */
 export class ModuleSound extends ModuleObject {
   audioEngine: AudioEngine;
-  active: number;
-  continuous: number;
-  fixedVariance: number;
-  generatedType: number;
-  hours: number;
-  interval: number;
-  intervalVariation: number;
-  looping: number;
-  maxDistance: number;
-  minDistance: number;
-  pitchVariation: number;
-  positional: number;
-  random: number;
-  randomPosition: number;
-  randomRangeX: number;
-  randomRangeY: number;
+  soundType: AudioEmitterType = AudioEmitterType.GLOBAL;
+  active: boolean = true;
+  continuous: boolean = false;
+  fixedVariance: number = 0;
+  generatedType: number = 0;
+  hours: number = 0;
+
+  interval: number = 1000;
+
+  intervalVariation: number = 0;
+
+  looping: boolean = false;
+
+  maxDistance: number = 1;
+
+  minDistance: number = 0;
+
+  pitchVariation: number = 0;
+
+  positional: boolean = false;
+
+  /**
+   * IF true, the waves in the Sound's wave list are chosen randomly each time one finishes playing.
+   * IF false, the waves are played in sequential order.
+   */
+  random: boolean = false;
+
+  /**
+   * IF true, the sound should be played from a random position with an offset from the Sound's position.
+   * IF false, the sound should be played from the Sound's position.
+   */
+  randomPosition: boolean = false;
+
+  /**
+   * The maximum distance from the Sound's position to the random position on the X axis.
+   */
+  randomRangeX: number = 0;
+
+  /**
+   * The maximum distance from the Sound's position to the random position on the Y axis.
+   */
+  randomRangeY: number = 0;
+
+  /**
+   * The list of sound resrefs to play.
+   */
   soundResRefs: string[] = [];
-  times: number;
-  volume: number;
-  volumeVariation: number;
-  micRange: any;
+
+  /**
+   * Times to play the sound.
+   * 0 = Hour specific
+   * 1 = Day
+   * 2 = Night
+   * 3 = Always
+   */
+  times: number = 3;
+
+  /**
+   * The volume of the sound.
+   * MIN = 0, MAX = 127
+   */
+  volume: number = 70;
+
+  /**
+   * The variation of the volume of the sound.
+   * MIN = 0, MAX = 127
+   */
+  volumeVariation: number = 0;
+
+  /**
+   * The elevation of the sound on the Z axis.
+   */
   elevation: number = 0;
 
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
@@ -58,21 +110,21 @@ export class ModuleSound extends ModuleObject {
     this.template = gff;
     this.audioEngine = audioEngine;
 
-    this.active = 0;
+    this.active = true;
     this.commandable = 1;
-    this.continuous = 0;
+    this.continuous = false;
     this.fixedVariance = 0;
     this.generatedType = 0;
     this.hours = 0;
     this.interval = 0;
     this.intervalVariation = 0;
-    this.looping = 0;
+    this.looping = false;
     this.maxDistance = 0;
     this.minDistance = 0;
     this.pitchVariation = 0;
-    this.positional = 0;
-    this.random = 0;
-    this.randomPosition = 0;
+    this.positional = false;
+    this.random = false;
+    this.randomPosition = false;
     this.randomRangeX = 0;
     this.randomRangeY = 0;
     this.soundResRefs = [];
@@ -102,110 +154,49 @@ export class ModuleSound extends ModuleObject {
     }
   }
 
-  loadModel ( onLoad?: Function ) {
-    if(typeof onLoad === 'function')
-      onLoad(this.mesh);
-
-    // let mdlLoader = new THREE.MDLLoader();
-
-    // if(this.getRandom()){
-    //   mdlLoader.load({
-    //     file: 'gi_sound_rndm',
-    //     onLoad: (mesh) => {
-    //       this.mesh = mesh;
-    //       if(onLoad != null)
-    //         onLoad(this.mesh);
-    //     }
-    //   });
-    // }else{
-    //   if(this.getPositional()){
-    //     mdlLoader.load({
-    //       file: 'gi_sound_pos',
-    //       onLoad: (mesh) => {
-    //         this.mesh = mesh;
-    //         if(onLoad != null)
-    //           onLoad(this.mesh);
-    //       }
-    //     });
-    //   }else{
-    //     mdlLoader.load({
-    //       file: 'gi_sound_area',
-    //       onLoad: (mesh) => {
-    //         this.mesh = mesh;
-    //         if(onLoad != null)
-    //           onLoad(this.mesh);
-    //       }
-    //     });
-    //   }
-    // }
-
+  getPreviewModelResRef(): string {
+    if(this.random){
+      return 'gi_sound_rndm';
+    }else if(this.positional){
+      return 'gi_sound_pos';
+    }
+    return 'gi_sound_area';
   }
 
-  getActive(){
-    return this.active ? true : false;
+  async loadModel ( ) {
+    const modelName = this.getPreviewModelResRef();
+    const mdl = await MDLLoader.loader.load(modelName);
+    const model = await OdysseyModel3D.FromMDL(mdl, {
+      context: GameState.context
+    });
+    this.model = model;
+    return model;
   }
-
-  getLooping(){
-    return this.looping ? true : false;
-  }
-
-  getRandom(){
-    return this.random ? true : false;
-  }
-
-  getRandomPosition(){
-    return this.randomPosition ? true : false;
-  }
-
-  getInterval(){
-    return this.interval;
-  }
-
-  getInternalVrtn(){
-    return this.intervalVariation;
-  }
-
-  getMaxDistance(){
-    return this.maxDistance;
-  }
-
-  getVolume(){
-    return this.volume;
-  }
-
-  getPositional(){
-    return this.positional ? true : false;
-  }
-
-  getSounds(){
-    return this.soundResRefs;
-  }
-
 
   async loadSound(){
-    const type = !!this.getPositional() ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
     this.audioEmitter.name = this.tag;
-    this.audioEmitter.isActive = this.getActive();
-    this.audioEmitter.isLooping = this.getLooping();
-    this.audioEmitter.isRandom = this.getRandom();
-    this.audioEmitter.isRandomPosition = this.getRandomPosition();
-    this.audioEmitter.interval = this.getInterval();
-    this.audioEmitter.intervalVariation = this.getInternalVrtn();
+    this.audioEmitter.isActive = this.active;
+    this.audioEmitter.isLooping = this.looping;
+    this.audioEmitter.isRandom = this.random;
+    this.audioEmitter.isRandomPosition = this.randomPosition;
+    this.audioEmitter.interval = this.interval;
+    this.audioEmitter.intervalVariation = this.intervalVariation;
     this.audioEmitter.minDistance = this.minDistance || 1;
-    this.audioEmitter.maxDistance = this.getMaxDistance();
+    this.audioEmitter.maxDistance = this.maxDistance;
     this.audioEmitter.playbackRate = 1;
     this.audioEmitter.playbackRateVariation = this.pitchVariation || 0;
-    this.audioEmitter.volume = this.getVolume();
+    this.audioEmitter.volume = Math.max(0, Math.min(127, this.volume));
     this.audioEmitter.volumeVariation = this.volumeVariation || 0;
     this.audioEmitter.type = type;
     this.audioEmitter.sounds = this.soundResRefs.slice(0);
     this.audioEmitter.position.x = this.position.x;
     this.audioEmitter.position.y = this.position.y;
     this.audioEmitter.position.z = this.position.z;
-    this.audioEmitter.randomX = this.getRandomPosition() ? this.randomRangeX || 0 : 0;
-    this.audioEmitter.randomY = this.getRandomPosition() ? this.randomRangeY || 0 : 0;
+    this.audioEmitter.randomX = this.randomPosition ? this.randomRangeX || 0 : 0;
+    this.audioEmitter.randomY = this.randomPosition ? this.randomRangeY || 0 : 0;
     this.audioEmitter.randomZ = 0;
     this.audioEmitter.elevation = this.elevation || 0;
     await this.audioEmitter.load();
@@ -227,10 +218,10 @@ export class ModuleSound extends ModuleObject {
       this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
 
     if(this.template.RootNode.hasField('Active'))
-      this.active = this.template.getFieldByLabel('Active').getValue()
+      this.active = !!this.template.getFieldByLabel('Active').getValue()
 
     if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = this.template.getFieldByLabel('Commandable').getValue()
+      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue()
 
     if(this.template.RootNode.hasField('FixedVariance'))
       this.fixedVariance = this.template.getFieldByLabel('FixedVariance').getValue()
@@ -260,13 +251,13 @@ export class ModuleSound extends ModuleObject {
       this.pitchVariation = this.template.getFieldByLabel('PitchVariation').getValue();
 
     if(this.template.RootNode.hasField('Positional'))
-      this.positional = this.template.getFieldByLabel('Positional').getValue();
+      this.positional = !!this.template.getFieldByLabel('Positional').getValue();
 
     if(this.template.RootNode.hasField('Random'))
       this.random = this.template.getFieldByLabel('Random').getValue();
 
     if(this.template.RootNode.hasField('RandomPosition'))
-      this.randomPosition = this.template.getFieldByLabel('RandomPosition').getValue();
+      this.randomPosition = !!this.template.getFieldByLabel('RandomPosition').getValue();
 
     if(this.template.RootNode.hasField('RandomRangeX'))
       this.randomRangeX = this.template.getFieldByLabel('RandomRangeX').getValue();
@@ -317,6 +308,13 @@ export class ModuleSound extends ModuleObject {
         }
       }
     }
+
+    this.soundType = AudioEmitterType.GLOBAL;
+    if(this.positional){
+      this.soundType = AudioEmitterType.POSITIONAL;
+    }else if(this.positional &&this.randomPosition){
+      this.soundType = AudioEmitterType.RANDOM;
+    }
     
     this.initialized = true;
 
@@ -328,22 +326,22 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.type = 6;
 
     gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(this.continuous ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).setValue(this.fixedVariance);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).setValue(this.generatedType);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Hours') ).setValue(this.hours);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Interval') ).setValue(this.interval);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).setValue(this.intervalVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).setValue(this.minDistance);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).setValue(this.pitchVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Random') ).setValue(this.random);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Random') ).setValue(this.random ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).setValue(this.randomRangeX);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
 
@@ -362,8 +360,8 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(this.volume);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(this.volumeVariation);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume)));
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(Math.max(0, Math.min(127, this.volumeVariation)));
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Elevation') ).setValue(this.elevation);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
