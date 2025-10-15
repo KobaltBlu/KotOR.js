@@ -13,6 +13,7 @@ import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
 import { GameState } from "../GameState";
 import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+import { AudioGeneratedType } from "../enums/audio/AudioGeneratedType";
 
 /**
 * ModuleSound class.
@@ -32,7 +33,7 @@ export class ModuleSound extends ModuleObject {
   active: boolean = true;
   continuous: boolean = false;
   fixedVariance: number = 0;
-  generatedType: number = 0;
+  generatedType: AudioGeneratedType = AudioGeneratedType.MANUALLY_PLACED;
   hours: number = 0;
 
   interval: number = 1000;
@@ -102,6 +103,12 @@ export class ModuleSound extends ModuleObject {
    */
   elevation: number = 0;
 
+  /**
+   * The priority of the sound.
+   * index into prioritygroups.2da
+   */
+  priority: number = 0;
+
   constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
 
     super(gff);
@@ -131,6 +138,7 @@ export class ModuleSound extends ModuleObject {
     this.times = 3;
     this.volume = 0;
     this.volumeVariation = 0;
+    this.priority = 0;
 
   }
 
@@ -219,6 +227,9 @@ export class ModuleSound extends ModuleObject {
 
     if(this.template.RootNode.hasField('Active'))
       this.active = !!this.template.getFieldByLabel('Active').getValue()
+
+    if(this.template.RootNode.hasField('Priority'))
+      this.priority = this.template.getFieldByLabel('Priority').getValue()
 
     if(this.template.RootNode.hasField('Commandable'))
       this.commandable = !!this.template.getFieldByLabel('Commandable').getValue()
@@ -344,7 +355,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).setValue(this.randomRangeX);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
-
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
     //SWVarTable
     let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
@@ -375,7 +386,7 @@ export class ModuleSound extends ModuleObject {
     let instance = new GFFStruct(6);
 
     instance.addField(
-      new GFFField(GFFDataType.DWORD, 'GeneratedType', 0)
+      new GFFField(GFFDataType.DWORD, 'GeneratedType', AudioGeneratedType.MANUALLY_PLACED)
     );
     
     instance.addField(

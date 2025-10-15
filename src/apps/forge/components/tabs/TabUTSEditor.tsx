@@ -199,6 +199,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
 
   const [active, setActive] = useState<boolean>(false);
   const [continuous, setContinuous] = useState<boolean>(false);
+  const [priority, setPriority] = useState<number>(0);
   const [looping, setLooping] = useState<boolean>(false);
   const [random, setRandom] = useState<boolean>(false);
   const [randomPosition, setRandomPosition] = useState<boolean>(false);
@@ -307,6 +308,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
     setRandomRangeX(tab.moduleSound.randomRangeX);
     setRandomRangeY(tab.moduleSound.randomRangeY);
     setContinuous(tab.moduleSound.continuous);
+    setPriority(tab.moduleSound.priority);
   }
 
   const onUpdateActive = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,6 +358,8 @@ export const TabUTSEditor = function(props: BaseTabProps){
     }
     setPositional(tab.moduleSound.positional);
     setRandomPosition(tab.moduleSound.randomPosition);
+    tab.calculatePriority();
+    setPriority(tab.moduleSound.priority);
   }
 
   const onUpdateMinDistance = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,6 +385,13 @@ export const TabUTSEditor = function(props: BaseTabProps){
   const onUpdateRandomRangeY = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRandomRangeY(Number(e.target.value));
     tab.moduleSound.randomRangeY = Number(e.target.value);
+  }
+
+  const onUpdateLooping = (looping: boolean) => {
+    setLooping(looping);
+    tab.moduleSound.looping = looping;
+    tab.calculatePriority();
+    setPriority(tab.moduleSound.priority);
   }
 
   useEffectOnce( () => {
@@ -423,6 +434,10 @@ export const TabUTSEditor = function(props: BaseTabProps){
               <tr>
                 <td><label>Active</label></td>
                 <td><input type="checkbox" checked={active} onChange={onUpdateActive} /></td>
+              </tr>
+              <tr>
+                <td><label>Priority</label></td>
+                <td><label>{KotOR.SWRuleSet.priorityGroups[priority]?.label}</label></td>
               </tr>
               <tr>
                 <td>
@@ -508,8 +523,8 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 <td><label>Play Style</label></td>
                 <td>
                   <div className="btn-group mb-2">
-                    <button className={`btn ${!looping ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.moduleSound.looping = true; setLooping(tab.moduleSound.looping); }}>Once</button>
-                    <button className={`btn ${looping ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.moduleSound.looping = false; setLooping(tab.moduleSound.looping); }}>Looping</button>
+                    <button className={`btn ${!looping ? 'btn-primary active' : 'btn-default'}`} onClick={() => { onUpdateLooping(false); }}>Single Shot</button>
+                    <button className={`btn ${looping ? 'btn-primary active' : 'btn-default'}`} onClick={() => { onUpdateLooping(true); }}>Looping</button>
                   </div>
                 </td>
               </tr>

@@ -12,6 +12,7 @@ import { SWEXPTable } from "./SWEXPTable";
 import { SWDifficulty } from "./SWDifficulty";
 import { SWBodyBag } from "./SWBodyBag";
 import { SWHead } from "./SWHead";
+import { SWPriorityGroup } from "./SWPriorityGroup";
 import { GameState } from "../../GameState";
 import type { INIConfig } from "../../engine/INIConfig";
 
@@ -55,6 +56,7 @@ export class SWRuleSet {
   static difficulty: SWDifficulty[] = [];
   static currentDifficulty: number = 0;
   static bodyBags: SWBodyBag[] = [];
+  static priorityGroups: SWPriorityGroup[] = [];
 
   static Init(){
 
@@ -212,6 +214,16 @@ export class SWRuleSet {
       }
     }
 
+    /**
+     * Initialize Priority Groups
+     */
+    const priorityGroups = GameState.TwoDAManager.datatables.get('prioritygroups');
+    if(priorityGroups){
+      SWRuleSet.priorityGroups = new Array(priorityGroups.RowCount);
+      for(let i = 0; i < priorityGroups.RowCount; i++){
+        SWRuleSet.priorityGroups[i] = SWPriorityGroup.From2DA(priorityGroups.rows[i]);
+      }
+    }
   }
 
   /**
