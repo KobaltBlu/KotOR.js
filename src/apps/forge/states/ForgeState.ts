@@ -131,6 +131,10 @@ export class ForgeState {
         KotOR.OdysseyWalkMesh.Init();
         KotOR.AudioEngine.GetAudioEngine();
         KotOR.AudioEngine.GAIN_SFX = 0.75;
+        KotOR.AudioEngine.GAIN_VO = 0.75;
+        KotOR.AudioEngine.GAIN_MUSIC = 0.75;
+        KotOR.AudioEngine.GAIN_MOVIE = 0.75;
+        KotOR.AudioEngine.GAIN_GUI = 0.75;
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
         // KotOR.LightManager.toggleLightHelpers();
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();

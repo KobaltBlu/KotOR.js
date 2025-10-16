@@ -1,3 +1,30 @@
+interface IEAXPreset {
+
+  density: number;
+  diffusion: number;
+  gain: number;
+  gainHF: number;
+  gainLF: number;
+  decayTime: number;
+  decayHFRatio: number;
+  decayLFRatio: number;
+  reflectionsGain: number;
+  reflectionsDelay: number;
+  reflectionsPan: [number, number, number];
+  lateReverbGain: number;
+  lateReverbDelay: number;
+  lateReverbPan: [number, number, number];
+  echoTime: number;
+  echoDepth: number;
+  modulationTime: number;
+  modulationDepth: number;
+  airAbsorptionGainHF: number;
+  hfReference: number;
+  lfReference: number;
+  roomRolloffFactor: number;
+  decayHFLimit: boolean;
+}
+
 /**
  * EAXPresets class.
  * 
@@ -10,41 +37,40 @@
  */
 export class EAXPresets {
 
-  static PresetFromIndex(index = 0): any{
+  static PresetFromIndex(index = 0): IEAXPreset {
 
     let data = EAXPresets.PresetArray[index];
     if(!data){
       console.error('EAX preset not found', index);
       return;
     }
-    let reverb: any = {
-      density: data[0],
-      diffusion: data[1],
-      gain: data[2],
-      gainHF: data[3],
-      gainLF: data[4],
-      decayTime: data[5],
-      decayHFRatio: data[6],
-      decayLFRatio: data[7],
-      reflectionsGain: data[8],
-      reflectionsDelay: data[9],
-      reflectionsPan: data[10],
-      lateReverbGain: data[11],
-      lateReverbDelay: data[12],
-      lateReverbPan: data[13],
-      echoTime: data[14],
-      echoDepth: data[15],
-      modulationTime: data[16],
-      modulationDepth: data[17],
-      airAbsorptionGainHF: data[18],
-      hfReference: data[19],
-      lfReference: data[20],
-      roomRolloffFactor: data[21],
-      decayHFLimit: data[22],
+    const reverb: IEAXPreset = {
+      density: data[0] as number,
+      diffusion: data[1] as number,
+      gain: data[2] as number,
+      gainHF: data[3] as number,
+      gainLF: data[4] as number,
+      decayTime: data[5] as number,
+      decayHFRatio: data[6] as number,
+      decayLFRatio: data[7] as number,
+      reflectionsGain: data[8] as number,
+      reflectionsDelay: data[9] as number,
+      reflectionsPan: data[10] as [number, number, number],
+      lateReverbGain: data[11] as number,
+      lateReverbDelay: data[12] as number,
+      lateReverbPan: data[13] as [number, number, number],
+      echoTime: data[14] as number,
+      echoDepth: data[15] as number,
+      modulationTime: data[16] as number,
+      modulationDepth: data[17] as number,
+      airAbsorptionGainHF: data[18] as number,
+      hfReference: data[19] as number,
+      lfReference: data[20] as number,
+      roomRolloffFactor: data[21] as number,
+      decayHFLimit: !!data[22] as boolean,
     };
 
     return reverb;
-
   }
 
   static PresetArray = [

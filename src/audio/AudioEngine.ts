@@ -123,6 +123,7 @@ export class AudioEngine {
   ambientNightLoaded: boolean;
 
   reverbEngine: ReverbEngine;
+  reverbEnabled: boolean = false;
 
   static get GAIN_MUSIC(){
     return AudioEngine.musicChannel.getGain();
@@ -261,34 +262,30 @@ export class AudioEngine {
 
   }
 
-  setReverbState(state = false){
-    return;
+  setReverbState(eaxEnabled = false){
+    if(eaxEnabled == this.reverbEnabled) return;
+    this.reverbEnabled = eaxEnabled;
+    //reset the sfx and vo channels destinations
     AudioEngine.sfxChannel.getGainNode().disconnect();
-    //this.musicGain.disconnect();
     AudioEngine.voChannel.getGainNode().disconnect();
-    // this.reverbLF.disconnect();
-    // this.reverbHF.disconnect();
-    if(state){
-      // this.sfxGain.connect(this.reverbLF);
-      // this.sfxGain.connect(this.reverbHF);
-      //this.musicGain.connect(this.reverbLF);
-      //this.musicGain.connect(this.reverbHF);
-      // this.voGain.connect(this.reverbLF);
-      // this.voGain.connect(this.reverbHF);
-      //Connect the reverb node to the audio output node
-      // this.reverbLF.connect(this.audioCtx.destination);
-      // this.reverbHF.connect(this.audioCtx.destination);
+    if(eaxEnabled){
+      //connect the sfx and vo channels to the reverb engine
+      this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
+      this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
     }else{
+      //disconnect the sfx and vo channels from the reverb engine
       AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
-      //this.musicGain.connect(this.audioCtx.destination);
       AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
     }
   }
 
   setReverbProfile(index = 0){
-    this.setReverbState(false);
     console.log('setReverbProfile:', index);
-
+    if(index == -1){
+      this.setReverbState(false);
+      return;
+    }
+    this.setReverbState(true);
     this.reverbEngine.loadPreset(index);
     return;
 

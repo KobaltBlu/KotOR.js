@@ -64,80 +64,88 @@ export class ReverbEngine {
   private listenerOrientation: [number, number, number] = [0, 0, 1];
 
   constructor(context: AudioContext) {
+    console.log("Initializing ReverbEngine");
     this.context = context;
+    this.currentPreset = 0;
 
-    // Core
     this.convolver = context.createConvolver();
     this.wetGain = context.createGain();
     this.dryGain = context.createGain();
     this.output = context.createGain();
 
-    // Early reflections
-    this.earlyReflections = context.createDelay();
+    this.earlyReflections = context.createDelay(0.2);
     this.earlyGain = context.createGain();
     this.earlyPanner = context.createStereoPanner();
 
-    // Late reverb
-    this.lateDelay = context.createDelay();
+    this.lateDelay = context.createDelay(0.2);
     this.lateGain = context.createGain();
     this.latePanner = context.createStereoPanner();
 
-    // Filters - EAX proper filter chain
     this.hfFilter = context.createBiquadFilter();
-    this.hfFilter.type = "highpass";  // Air absorption filter
-    this.hfFilter.Q.value = 0.7;
-    
+    this.hfFilter.type = "lowshelf";
+    this.hfFilter.frequency.value = 5000;
+    this.hfFilter.gain.value = 0;
+
     this.lfFilter = context.createBiquadFilter();
-    this.lfFilter.type = "lowpass";   // LF emphasis filter
-    this.lfFilter.Q.value = 0.7;
-    
+    this.lfFilter.type = "highshelf";
+    this.lfFilter.frequency.value = 250;
+    this.lfFilter.gain.value = 0;
+
     this.airAbsorptionFilter = context.createBiquadFilter();
-    this.airAbsorptionFilter.type = "highpass";
-    this.airAbsorptionFilter.Q.value = 1.0;
+    this.airAbsorptionFilter.type = "lowpass";
+    this.airAbsorptionFilter.frequency.value = 5000;
+    this.airAbsorptionFilter.Q.value = 0.5;
 
-    // Echo
-    this.echoDelay = context.createDelay();
+    this.echoDelay = context.createDelay(0.5);
     this.echoGain = context.createGain();
-    this.echoDelay.connect(this.echoGain).connect(this.echoDelay); // feedback loop
 
-    // Modulation
     this.lfo = context.createOscillator();
+    this.lfo.type = "sine";
     this.lfoGain = context.createGain();
-
     this.lfo.connect(this.lfoGain);
+    this.lfoGain.connect(this.lateDelay.delayTime);
     this.lfo.start();
 
-    // Routing - EAX proper reverb chain (no parallel paths)
+    this.earlyReflections.connect(this.earlyGain).connect(this.earlyPanner).connect(this.convolver);
     this.convolver.connect(this.hfFilter).connect(this.lfFilter).connect(this.airAbsorptionFilter).connect(this.wetGain);
-    this.wetGain.connect(this.output);
+    this.wetGain.connect(this.lateDelay).connect(this.lateGain).connect(this.latePanner).connect(this.output);
     this.dryGain.connect(this.output);
     this.output.connect(context.destination);
-    
-    // Note: Early reflections, late delay, and echo are now handled by the convolver impulse response
-    // This prevents doubling and creates proper reverb instead of echo effects
+
+    this.density = 1.0;
+    this.diffusion = 1.0;
+    this.decayHFRatio = 1.0;
+    this.decayLFRatio = 1.0;
+    this.cachedWetGain = 0;
+    this.reflectionsPan = [0, 0, 0];
+    this.lateReverbPan = [0, 0, 0];
+    this.echoTime = 0.25;
+    this.echoDepth = 0.0;
+    this.modulationTime = 0.25;
+    this.modulationDepth = 0.0;
+    this.decayHFLimit = false;
+    this.listenerPosition = [0, 0, 0];
+    this.listenerOrientation = [0, 0, 1];
   }
 
   /**
    * Load preset and apply all parameters with correct EAX mapping
    */
   loadPreset(index: number) {
-    if(this.currentPreset == index){
-      return;
-    }
+    console.log("Loading preset:", index);
+    if (this.currentPreset === index) return;
 
     const preset = EAXPresets.PresetFromIndex(index);
-    if(!preset){
+    if (!preset) {
       console.error('EAX preset not found', index);
       return;
     }
 
-    // Store EAX-specific parameters
+    this.currentPreset = index;
     this.density = preset.density;
     this.diffusion = preset.diffusion;
     this.decayHFRatio = preset.decayHFRatio;
     this.decayLFRatio = preset.decayLFRatio;
-    
-    // Store missing EAX features
     this.reflectionsPan = preset.reflectionsPan || [0, 0, 0];
     this.lateReverbPan = preset.lateReverbPan || [0, 0, 0];
     this.echoTime = preset.echoTime || 0.25;
@@ -146,123 +154,135 @@ export class ReverbEngine {
     this.modulationDepth = preset.modulationDepth || 0.0;
     this.decayHFLimit = preset.decayHFLimit || false;
 
-    // Generate proper EAX impulse response
+    this.hfFilter.gain.value = -10 * (1 - this.decayHFRatio);
+    this.lfFilter.gain.value = 10 * (this.decayLFRatio - 1);
+    this.airAbsorptionFilter.frequency.value = preset.airAbsorptionGainHF * 5000;
+    this.earlyPanner.pan.value = this.reflectionsPan[0];
+    this.latePanner.pan.value = this.lateReverbPan[0];
+    this.earlyReflections.delayTime.value = preset.reflectionsDelay;
+    this.lateDelay.delayTime.value = preset.lateReverbDelay;
+    this.lfo.frequency.value = 1 / this.modulationTime;
+    this.lfoGain.gain.value = this.modulationDepth * 0.001;
+    this.echoDelay.delayTime.value = this.echoTime;
+    this.echoGain.gain.value = this.echoDepth;
+
     this.convolver.buffer = this.generateEAXImpulse(preset);
 
-    // Wet/Dry mix - EAX uses gain for overall reverb level
     const reverbLevel = preset.gain * preset.lateReverbGain;
     this.wetGain.gain.value = reverbLevel;
-    this.cachedWetGain = reverbLevel; // Cache for enable/disable
+    this.cachedWetGain = reverbLevel;
     this.dryGain.gain.value = 1.0 - preset.gain;
 
-    // Early reflections and late reverb are now handled by the convolver impulse response
-    // This prevents doubling and creates proper reverb instead of echo effects
-
-    // EAX Filter chain - proper frequency response
-    this.hfFilter.frequency.value = preset.hfReference;
-    this.hfFilter.gain.value = preset.gainHF;
-    
-    this.lfFilter.frequency.value = preset.lfReference;
-    this.lfFilter.gain.value = preset.gainLF;
-    
-    // Air absorption simulation
-    this.airAbsorptionFilter.frequency.value = preset.hfReference;
-    this.airAbsorptionFilter.gain.value = preset.airAbsorptionGainHF;
-
-    // Echo and modulation are now handled by the convolver impulse response
-    // This prevents doubling and creates proper reverb instead of echo effects
-
-    // Room rolloff factor
-    this.output.gain.value = 1.0 - preset.roomRolloffFactor;
-
-    this.currentPreset = index;
   }
 
   /**
    * Generate proper EAX impulse response with early reflections and late reverb
    */
   private generateEAXImpulse(preset: any): AudioBuffer {
+    console.log("Generating EAX impulse for preset");
     const sampleRate = this.context.sampleRate;
-    const length = Math.min(sampleRate * preset.decayTime, sampleRate * 10); // Max 10 seconds
-    const impulse = this.context.createBuffer(2, length, sampleRate);
+    const length = Math.ceil(preset.decayTime * sampleRate);
+    const buffer = this.context.createBuffer(2, length, sampleRate);
+    const left = buffer.getChannelData(0);
+    const right = buffer.getChannelData(1);
 
-    // EAX uses different decay curves for different frequency ranges
-    const hfDecayTime = preset.decayTime * preset.decayHFRatio;
-    const lfDecayTime = preset.decayTime * preset.decayLFRatio;
-
-    for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
-      const data = impulse.getChannelData(channel);
-      
-      for (let i = 0; i < length; i++) {
-        const t = i / sampleRate;
-        const progress = i / length;
-        
-        // Early reflections (first 80ms) - discrete echoes with 3D positioning
-        const earlyReflectionsTime = 0.08; // 80ms
-        let earlyComponent = 0;
-        if (t < earlyReflectionsTime) {
-          const earlyProgress = t / earlyReflectionsTime;
-          const earlyDecay = Math.exp(-t * 8 / earlyReflectionsTime);
-          
-          // Apply 3D positioning to early reflections
-          const panFactor = this.calculatePanFactor(this.reflectionsPan, channel);
-          earlyComponent = (Math.random() * 2 - 1) * earlyDecay * preset.reflectionsGain * preset.gain * panFactor;
-        }
-        
-        // Late reverb (after 80ms) - dense reverb tail
-        let lateComponent = 0;
-        if (t >= earlyReflectionsTime) {
-          const lateTime = t - earlyReflectionsTime;
-          const lateDecay = Math.exp(-lateTime * 3 / preset.decayTime);
-          
-          // Density affects initial reflections
-          const densityFactor = Math.pow(progress, preset.density);
-          
-          // Diffusion affects reverb character
-          const diffusionFactor = 1.0 + (preset.diffusion - 1.0) * Math.sin(progress * Math.PI);
-          
-          // Frequency-dependent decay
-          const hfDecay = Math.exp(-lateTime * 3 / hfDecayTime);
-          const lfDecay = Math.exp(-lateTime * 3 / lfDecayTime);
-          
-          // Combine frequency components for late reverb with 3D positioning
-          const hfComponent = (Math.random() * 2 - 1) * hfDecay * preset.gainHF;
-          const lfComponent = (Math.random() * 2 - 1) * lfDecay * preset.gainLF;
-          const midComponent = (Math.random() * 2 - 1) * lateDecay * preset.gain;
-          
-          // Apply 3D positioning to late reverb
-          const latePanFactor = this.calculatePanFactor(this.lateReverbPan, channel);
-          
-          lateComponent = (hfComponent + lfComponent + midComponent) * 
-                         densityFactor * 
-                         diffusionFactor * 
-                         preset.lateReverbGain * 
-                         preset.gain *
-                         latePanFactor;
-        }
-        
-        // Combine early and late components
-        data[i] = earlyComponent + lateComponent;
-      }
-      
-      // Apply missing EAX features to the channel data
-      this.applyEcho(data, sampleRate, length);
-      this.applyModulation(data, sampleRate, length);
-      this.applyDecayHFLimit(data, sampleRate, length);
+    const decay = Math.exp(-Math.log(1000) / (preset.decayTime * sampleRate));
+    for (let i = 0; i < length; i++) {
+      const noise = Math.random() * 2 - 1;
+      const envelope = Math.pow(decay, i);
+      left[i] = noise * envelope * preset.gain;
+      right[i] = noise * envelope * preset.gain;
     }
-    
-    return impulse;
+
+    this.applyDiffusion(left, right, sampleRate, preset.diffusion);
+    this.applyEcho(left, sampleRate, length);
+    this.applyEcho(right, sampleRate, length);
+    this.applyModulation(left, sampleRate, length);
+    this.applyModulation(right, sampleRate, length);
+    this.applyDecayHFLimit(left, sampleRate, length);
+    this.applyDecayHFLimit(right, sampleRate, length);
+
+    let maxAmp = 0;
+    for (let i = 0; i < length; i++) {
+      maxAmp = Math.max(maxAmp, Math.abs(left[i]), Math.abs(right[i]));
+    }
+    if (maxAmp > 0) {
+      const scale = 0.9 / maxAmp;
+      for (let i = 0; i < length; i++) {
+        left[i] *= scale;
+        right[i] *= scale;
+      }
+    }
+
+    return buffer;
+  }
+
+  applyDiffusion(data: Float32Array, dataRight: Float32Array, sampleRate: number, diffusion: number) {
+    const delaySamples = Math.floor(0.05 * sampleRate);
+    const gain = 0.7 * diffusion;
+    const temp = new Float32Array(data.length);
+    const tempRight = new Float32Array(dataRight.length);
+
+    for (let i = delaySamples; i < data.length; i++) {
+      temp[i] = -gain * data[i] + data[i - delaySamples] + gain * temp[i - delaySamples];
+      tempRight[i] = -gain * dataRight[i] + dataRight[i - delaySamples] + gain * tempRight[i - delaySamples];
+    }
+
+    for (let i = 0; i < data.length; i++) {
+      data[i] = temp[i];
+      dataRight[i] = tempRight[i];
+    }
+  }
+
+  applyEcho(data: Float32Array, sampleRate: number, length: number) {
+    if (this.echoDepth <= 0) return;
+
+    const echoDelaySamples = Math.floor(this.echoTime * sampleRate);
+    const echoGain = this.echoDepth;
+
+    for (let i = echoDelaySamples; i < length; i++) {
+      if (i - echoDelaySamples >= 0) {
+        data[i] += data[i - echoDelaySamples] * echoGain;
+      }
+    }
+  }
+
+  applyModulation(data: Float32Array, sampleRate: number, length: number) {
+    if (this.modulationDepth <= 0) return;
+
+    const modulationRate = 1.0 / this.modulationTime;
+    const modulationDepth = this.modulationDepth * 0.01;
+
+    for (let i = 0; i < length; i++) {
+      const t = i / sampleRate;
+      const modulation = Math.sin(2 * Math.PI * modulationRate * t) * modulationDepth;
+      const delaySamples = Math.floor(modulation * sampleRate * 0.001);
+      if (i + delaySamples < length && i + delaySamples >= 0) {
+        data[i] += data[i + delaySamples] * modulationDepth;
+      }
+    }
+  }
+
+  applyDecayHFLimit(data: Float32Array, sampleRate: number, length: number) {
+    if (!this.decayHFLimit) return;
+
+    const hfLimitTime = 0.1;
+    const hfLimitSamples = Math.floor(hfLimitTime * sampleRate);
+
+    for (let i = hfLimitSamples; i < length; i++) {
+      const progress = (i - hfLimitSamples) / (length - hfLimitSamples);
+      const hfLimitFactor = Math.exp(-progress * 5);
+      data[i] *= hfLimitFactor;
+    }
   }
 
   /**
    * Connect audio source into the engine - proper EAX routing
    */
   connectSource(source: AudioNode) {
-    // Dry signal path (unprocessed)
+    console.log("Connecting source to ReverbEngine");
+    source.connect(this.earlyReflections);
     source.connect(this.dryGain);
-    
-    // Wet signal path (reverb only through convolver)
-    source.connect(this.convolver);
   }
 
   getOutput(): AudioNode {
@@ -311,168 +331,84 @@ export class ReverbEngine {
   /**
    * Calculate proper 3D positioning using EAX-style spatial processing
    */
-  private calculate3DPosition(pan: [number, number, number], channel: number): number {
-    const [x, y, z] = pan;
-    const [listenerX, listenerY, listenerZ] = this.listenerPosition;
-    const [orientX, orientY, orientZ] = this.listenerOrientation;
-    
-    // Calculate relative position from listener
-    const relativeX = x - listenerX;
-    const relativeY = y - listenerY;
-    const relativeZ = z - listenerZ;
-    
-    // Calculate distance for distance-based effects
-    const distance = Math.sqrt(relativeX * relativeX + relativeY * relativeY + relativeZ * relativeZ);
-    
-    // Calculate angle from listener's forward direction
+  calculate3DPosition(relativePos: [number, number, number], channel: number) {
+    const distance = Math.sqrt(
+      relativePos[0] ** 2 + relativePos[1] ** 2 + relativePos[2] ** 2
+    );
+    if (distance < 0.01) return 1.0;
+
+    const orientX = this.listenerOrientation[0];
+    const orientY = this.listenerOrientation[1];
+    const orientZ = this.listenerOrientation[2];
+    const relativeX = relativePos[0] / distance;
+    const relativeY = relativePos[1] / distance;
+    const relativeZ = relativePos[2] / distance;
+
     const dotProduct = relativeX * orientX + relativeY * orientY + relativeZ * orientZ;
     const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct / distance)));
-    
-    // EAX-style 3D processing
-    const azimuth = Math.atan2(relativeX, relativeZ); // Left/right angle
-    const elevation = Math.asin(relativeY / distance); // Up/down angle
-    
-    // Convert to stereo positioning using HRTF-like processing
+
+    const azimuth = Math.atan2(relativeX, relativeZ);
+    const elevation = Math.asin(relativeY / distance);
+
     const leftGain = this.calculateChannelGain(azimuth, elevation, distance, 0);
     const rightGain = this.calculateChannelGain(azimuth, elevation, distance, 1);
-    
+
     return channel === 0 ? leftGain : rightGain;
   }
 
   /**
    * Calculate channel gain using EAX-style HRTF simulation
    */
-  private calculateChannelGain(azimuth: number, elevation: number, distance: number, channel: number): number {
-    // Convert azimuth to degrees for easier processing
+  calculateChannelGain(azimuth: number, elevation: number, distance: number, channel: number) {
     const azimuthDeg = (azimuth * 180 / Math.PI + 360) % 360;
-    
-    // EAX-style head shadowing simulation
     const headShadow = this.calculateHeadShadow(azimuthDeg, channel);
-    
-    // Distance-based attenuation (EAX rolloff)
     const distanceAttenuation = this.calculateDistanceAttenuation(distance);
-    
-    // Elevation-based filtering (simulates pinna effects)
     const elevationFilter = this.calculateElevationFilter(elevation);
-    
-    // Combine all factors
     return headShadow * distanceAttenuation * elevationFilter;
   }
 
-  /**
-   * Simulate head shadowing effects (HRTF-like)
-   */
-  private calculateHeadShadow(azimuthDeg: number, channel: number): number {
-    // Head shadowing is more pronounced for sounds coming from the opposite side
+  calculateHeadShadow(azimuthDeg: number, channel: number) {
     const isLeftChannel = channel === 0;
     const isLeftSide = azimuthDeg > 180;
-    
+
     if (isLeftChannel && isLeftSide) {
-      // Sound from left side to left ear - minimal shadowing
       return 1.0;
     } else if (!isLeftChannel && !isLeftSide) {
-      // Sound from right side to right ear - minimal shadowing
       return 1.0;
     } else {
-      // Cross-ear shadowing - simulate head shadow
       const shadowAngle = Math.abs(azimuthDeg - (isLeftChannel ? 0 : 360));
       const shadowFactor = Math.cos(shadowAngle * Math.PI / 180) * 0.3 + 0.7;
       return Math.max(0.1, shadowFactor);
     }
   }
 
-  /**
-   * Calculate distance-based attenuation (EAX rolloff)
-   */
-  private calculateDistanceAttenuation(distance: number): number {
-    // EAX uses logarithmic distance attenuation
-    const minDistance = 1.0; // Minimum distance for full volume
-    const maxDistance = 100.0; // Maximum distance
-    const rolloffFactor = 1.0; // EAX rolloff factor
-    
+  calculateDistanceAttenuation(distance: number) {
+    const minDistance = 1.0;
+    const maxDistance = 100.0;
+    const rolloffFactor = 1.0;
+
     if (distance <= minDistance) {
       return 1.0;
     }
-    
-    // Logarithmic rolloff (more realistic than linear)
+
     const attenuation = minDistance / (minDistance + rolloffFactor * (distance - minDistance));
     return Math.max(0.0, Math.min(1.0, attenuation));
   }
 
-  /**
-   * Calculate elevation-based filtering (simulates pinna effects)
-   */
-  private calculateElevationFilter(elevation: number): number {
-    // Convert elevation to degrees
+  calculateElevationFilter(elevation: number) {
     const elevationDeg = elevation * 180 / Math.PI;
-    
-    // Pinna filtering - higher frequencies are more directional
+
     if (elevationDeg > 45) {
-      // Above head - slight high-frequency boost
       return 1.1;
     } else if (elevationDeg < -45) {
-      // Below head - slight high-frequency cut
       return 0.9;
     } else {
-      // At ear level - neutral
       return 1.0;
     }
   }
 
-  /**
-   * Legacy method for backward compatibility
-   */
-  private calculatePanFactor(pan: [number, number, number], channel: number): number {
+  calculatePanFactor(pan: [number, number, number], channel: number) {
     return this.calculate3DPosition(pan, channel);
   }
 
-  /**
-   * Apply echo processing to the impulse response
-   */
-  private applyEcho(data: Float32Array, sampleRate: number, length: number): void {
-    if (this.echoDepth <= 0) return;
-    
-    const echoDelaySamples = Math.floor(this.echoTime * sampleRate);
-    const echoGain = this.echoDepth;
-    
-    for (let i = echoDelaySamples; i < length; i++) {
-      data[i] += data[i - echoDelaySamples] * echoGain;
-    }
-  }
-
-  /**
-   * Apply modulation (chorus/flanging) to the impulse response
-   */
-  private applyModulation(data: Float32Array, sampleRate: number, length: number): void {
-    if (this.modulationDepth <= 0) return;
-    
-    const modulationRate = 1.0 / this.modulationTime;
-    const modulationDepth = this.modulationDepth * 0.01;
-    
-    for (let i = 0; i < length; i++) {
-      const t = i / sampleRate;
-      const modulation = Math.sin(2 * Math.PI * modulationRate * t) * modulationDepth;
-      const delaySamples = Math.floor(modulation * sampleRate * 0.001); // Max 1ms delay
-      
-      if (i + delaySamples < length) {
-        data[i] += data[i + delaySamples] * modulationDepth;
-      }
-    }
-  }
-
-  /**
-   * Apply decay HF limit (prevents excessive HF decay)
-   */
-  private applyDecayHFLimit(data: Float32Array, sampleRate: number, length: number): void {
-    if (!this.decayHFLimit) return;
-    
-    const hfLimitTime = 0.1; // 100ms limit
-    const hfLimitSamples = Math.floor(hfLimitTime * sampleRate);
-    
-    for (let i = hfLimitSamples; i < length; i++) {
-      const progress = (i - hfLimitSamples) / (length - hfLimitSamples);
-      const hfLimitFactor = Math.exp(-progress * 5); // Exponential rolloff
-      data[i] *= hfLimitFactor;
-    }
-  }
 }

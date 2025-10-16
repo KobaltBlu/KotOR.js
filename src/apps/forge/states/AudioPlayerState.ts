@@ -190,7 +190,7 @@ export class AudioPlayerState {
           AudioPlayerState.analyser.fftSize = 128; 
           AudioPlayerState.source.connect(AudioPlayerState.analyser);
           AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
-          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.GetAudioEngine().audioCtx.destination);
+          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.voChannel.getGainNode());
           AudioPlayerState.source.loop = false;
           AudioPlayerState.source.start(0, offset);
 
