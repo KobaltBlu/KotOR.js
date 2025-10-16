@@ -2984,12 +2984,11 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         if( ( GameState.PartyManager.party.indexOf(args[0] as any) >= 0 ? NW_TRUE : NW_FALSE ) && ( GameState.PartyManager.party.indexOf(args[1] as any) >= 0 ? NW_TRUE : NW_FALSE ) ){
-          return 1;
+          return NW_TRUE;
         }
         return args[1].isFriendly(args[0]) ? NW_TRUE : NW_FALSE;
-      }else{
-        return 0;
       }
+      return NW_FALSE;
     }
   },
   237:{
@@ -3003,9 +3002,8 @@ NWScriptDefK1.Actions = {
           return NW_TRUE;
         }
         return args[1].isFriendly(args[0]) || args[1].isNeutral(args[0]) ? NW_TRUE : NW_FALSE;
-      }else{
-        return NW_FALSE;
       }
+      return NW_FALSE;
     }
   },
   238:{
@@ -3617,14 +3615,15 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        let perception;
         for(let i = 0, len = args[1].perceptionList.length; i < len; i++){
-          let perception = args[1].perceptionList[i];
+          perception = args[1].perceptionList[i];
           if(perception.object == args[0] && !!(perception.data & PerceptionMask.SEEN)){
-            return true;
+            return NW_TRUE;
           }
         }
-      }else
-        return 0;
+      }
+      return NW_FALSE;
     }
   },
   290:{
@@ -3634,14 +3633,15 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        let perception;
         for(let i = 0, len = args[1].perceptionList.length; i < len; i++){
-          let perception = args[1].perceptionList[i];
+          perception = args[1].perceptionList[i];
           if(perception.object == args[0] && !!(perception.data & PerceptionMask.HEARD)){
-            return true;
+            return NW_TRUE;
           }
         }
-      }else
-        return 0;
+      }
+      return NW_FALSE;
     }
   },
   291:{
@@ -3777,11 +3777,11 @@ NWScriptDefK1.Actions = {
         for(let i = 0, len = args[1].effects.length; i < len; i++){
           const effect = args[1].effects[i];
           if(effect.getSpellId() == args[0]){
-            return 1;
+            return NW_TRUE;
           }
         }
       }
-      return 0;
+      return NW_FALSE;
     }
   },
   305:{
@@ -6649,10 +6649,9 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, ModuleObject]){
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
         GameState.PartyManager.AddCreatureToParty(args[0], (args[1] as ModuleCreature));
-        return 1;
-      }else{
-        return 0;
+        return NW_TRUE;
       }
+      return NW_FALSE;
     }
   },
   575:{
@@ -7643,7 +7642,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       GameState.PartyManager.RemoveAvailableNPC(args[0]);
-      return 1;
+      return NW_TRUE;
     }
   },
   696:{
