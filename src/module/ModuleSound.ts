@@ -183,7 +183,9 @@ export class ModuleSound extends ModuleObject {
 
   async loadSound(){
     const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
-    
+    if(this.audioEmitter){
+      this.audioEmitter.destroy();
+    }
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
     this.audioEmitter.name = this.tag;
     this.audioEmitter.isActive = this.active;

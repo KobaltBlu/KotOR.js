@@ -317,7 +317,7 @@ export class IngameControls {
                   //control.onClick(customEvent);
                   GameState.MenuManager.activeGUIElement = control;
                   control.processEventListener('click', [customEvent]);
-                  GameState.guiAudioEmitter.playSound('gui_click');
+                  GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
                   if(GameState.debug.CONTROLS)
                     console.log('MouseClick', control, control.name);
                   Mouse.leftClick = false;

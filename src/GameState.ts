@@ -1162,6 +1162,8 @@ export class GameState implements EngineContext {
     return GameState.currentCamera;
   }
 
+  static forwardVector = new THREE.Vector3(0, 0, );
+
   static Update(){
     
     requestAnimationFrame( GameState.Update );
@@ -1169,6 +1171,8 @@ export class GameState implements EngineContext {
     // if(GameState.Debugger.showFPS && GameState.stats.m){
       // GameState.stats.showPanel(GameState.Debugger.showFPS);
     // }
+
+    GameState.forwardVector.set(0, 0, -1);
 
     let delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
@@ -1228,6 +1232,10 @@ export class GameState implements EngineContext {
         //Make sure we are using the follower camera while ingame
         GameState.currentCamera = GameState.camera;
         GameState.VideoEffectManager.SetVideoEffect(-1);
+        if(GameState.getCurrentPlayer()){
+          GameState.forwardVector.copy(GameState.getCurrentPlayer().forceVector).multiplyScalar(100);
+          GameState.forwardVector.z = -1;
+        }
       }else if(GameState.Mode == EngineMode.FREELOOK){
         GameState.VideoEffectManager.SetVideoEffect(-1);
         const player = GameState.getCurrentPlayer();
@@ -1343,7 +1351,7 @@ export class GameState implements EngineContext {
 
     }
 
-    AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation);
+    AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.renderPass.camera = GameState.currentCamera;

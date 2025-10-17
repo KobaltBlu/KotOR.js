@@ -455,7 +455,7 @@ export class GUICheckBox extends GUIControl{
     this.updateCBVisualState();
 
     if(this.isClickable()){
-      GameState.guiAudioEmitter.playSound('gui_scroll');
+      GameState.guiAudioEmitter.playSoundFireAndForget('gui_scroll');
     }
     
     this.processEventListener('hover');

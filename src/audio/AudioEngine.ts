@@ -304,16 +304,16 @@ export class AudioEngine {
     }
   }
 
-  update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler() ) {
+  update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
     // Set listener position using modern AudioParam properties
     this.audioCtx.listener.positionX.value = position.x;
     this.audioCtx.listener.positionY.value = position.y;
     this.audioCtx.listener.positionZ.value = position.z;
 
     // Set listener orientation using modern AudioParam properties
-    this.audioCtx.listener.forwardX.value = rotation.x;
-    this.audioCtx.listener.forwardY.value = rotation.y;
-    this.audioCtx.listener.forwardZ.value = rotation.z;
+    this.audioCtx.listener.forwardX.value = forward.x;
+    this.audioCtx.listener.forwardY.value = forward.y;
+    this.audioCtx.listener.forwardZ.value = forward.z;
     this.audioCtx.listener.upX.value = 0;
     this.audioCtx.listener.upY.value = 0;
     this.audioCtx.listener.upZ.value = 1;

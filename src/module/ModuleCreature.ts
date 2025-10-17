@@ -392,6 +392,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.audioEmitter){
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
+      this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     }
 
     this.forceVector.set(0, 0, 0);
@@ -401,6 +402,7 @@ export class ModuleCreature extends ModuleObject {
     if(GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG){
 
       if(this.animationState.index == ModuleCreatureAnimState.IDLE){
+        this.footstepEmitter.isLooping = false;
         this.footstepEmitter.stop();
       }
 
@@ -1868,19 +1870,13 @@ export class ModuleCreature extends ModuleObject {
           }
 
           if(sound != '****'){
-            // this.footstepEmitter.stop();
+            this.footstepEmitter.isLooping = false;
             this.footstepEmitter.playSoundFireAndForget(sound);
           }else if(sndTable['rolling'] != '****'){
-            if(!this.footstepEmitter.currentSound){
-              // this.footstepEmitter.stop();
-              this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
-                buffer.loop = true;
-              });
-            }else if(this.footstepEmitter.currentSound && (this.footstepEmitter.currentSound as any).name != sndTable['rolling']){
-              // this.footstepEmitter.stop();
-              this.footstepEmitter.playSound(sndTable['rolling']).then((buffer: AudioBufferSourceNode) => {
-                buffer.loop = true;
-              });
+            this.footstepEmitter.isLooping = true;
+            if(!this.footstepEmitter.currentSound || (this.footstepEmitter.currentSound as any).name != sndTable['rolling']){
+              console.log('Playing rolling sound', sndTable['rolling']);
+              this.footstepEmitter.playSound(sndTable['rolling']);
             }
           }
         }

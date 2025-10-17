@@ -420,6 +420,15 @@ export const TabUTSEditor = function(props: BaseTabProps){
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
+                <td><label>Emitter</label></td>
+                <td>
+                  <div className="btn-group mb-2">
+                    <button className="btn btn-primary" onClick={() => tab.startEmitter()}>Start</button>
+                    <button className="btn btn-primary" onClick={() => tab.stopEmitter()}>Stop</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
                 <td><label>Name</label></td>
                 <td><input type="cexolocstring" value={name} onChange={onUpdateName} /></td>
               </tr>

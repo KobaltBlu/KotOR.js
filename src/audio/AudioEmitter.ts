@@ -173,10 +173,9 @@ export class AudioEmitter {
 
       sound.buffer = buffer;
       sound.connect(this.mainNode);
-      sound.start(0, 0);
+      sound.start(this.engine.audioCtx.currentTime);
 
       sound.onended = () => {
-        // console.log('AudioEmitter', 'Sound ended', resRef);
         sound.disconnect();
         sound.stop(0);
         this.ffsounds.splice(this.ffsounds.indexOf(sound), 1);
@@ -191,21 +190,16 @@ export class AudioEmitter {
 
   async playSound(resRef = ''): Promise<AudioBufferSourceNode>{
     if(resRef == '****' || !resRef?.length){ return; }
-    if(!!this.currentSound){
-      try{
-        this.currentSound.disconnect();
-        this.currentSound.stop(0);
-        this.currentSound = null;
-      }catch(e: any) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
-    }
+    this.disposeCurrentSound();
 
     //attempt to load from the buffer cache
     if(this.buffers.has(resRef)){
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
       (this.currentSound as any).name = resRef;
+      this.currentSound.loop = this.isLooping;
       this.currentSound.connect(this.mainNode);
-      this.currentSound.start(0, 0);
+      this.currentSound.start(this.engine.audioCtx.currentTime);
       return this.currentSound;
     }
     
@@ -217,8 +211,9 @@ export class AudioEmitter {
         this.currentSound = this.engine.audioCtx.createBufferSource();
         this.currentSound.buffer = buffer;
         (this.currentSound as any).name = resRef;
+        this.currentSound.loop = this.isLooping;
         this.currentSound.connect(this.mainNode);
-        this.currentSound.start(0, 0);
+        this.currentSound.start(this.engine.audioCtx.currentTime);
         return this.currentSound;
       }catch(e){
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
@@ -230,13 +225,7 @@ export class AudioEmitter {
   }
 
   async playStreamWave(resRef =''): Promise<AudioBufferSourceNode> {
-    if(this.currentSound != null){
-      try{
-        this.currentSound.disconnect();
-        this.currentSound.stop(0);
-        this.currentSound = null;
-      }catch(e: any) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
-    }
+    this.disposeCurrentSound();
 
     //attempt to load from the buffer cache
     if(this.buffers.has(resRef)){
@@ -245,7 +234,7 @@ export class AudioEmitter {
       this.currentSound.buffer = this.buffers.get(resRef);
       // this.currentSound.buffer.onEnd = onEnd;
       (this.currentSound as any).name = resRef;
-      this.currentSound.start(0, 0);
+      this.currentSound.start(this.engine.audioCtx.currentTime);
       this.currentSound.connect(this.mainNode);
       return this.currentSound;
     }
@@ -260,7 +249,7 @@ export class AudioEmitter {
         this.currentSound.buffer = buffer;
         // this.currentSound.buffer.onEnd = onEnd;
         (this.currentSound as any).name = resRef;
-        this.currentSound.start(0, 0);
+        this.currentSound.start(this.engine.audioCtx.currentTime);
         this.currentSound.connect(this.mainNode);
 
         return this.currentSound;
@@ -299,60 +288,66 @@ export class AudioEmitter {
   }
 
   start(): void {
-    if(this.sounds.length)
-      this.playNextSound();
+    if(!this.sounds.length){
+      return;
+    }
+    this.playNextSound();
   }
 
   getRandomVariation(value: number): number {
     return ( Math.random() * (value * 2) ) - value;
   }
 
+  getNextSoundIndex(): number {
+    if(this.isRandom){
+      return Math.floor(Math.random() * this.sounds.length);
+    }else{
+      this.soundIndex++;
+      if(this.soundIndex >= this.sounds.length)
+        this.soundIndex = 0;
+    }
+    return this.soundIndex;
+  }
+
   playNextSound(): void {
     if(this.isDestroyed)
       return;
     
-    if(!!this.currentSound){
-      try{
-        this.currentSound.disconnect();
-        this.currentSound.stop(0);
-        this.currentSound = null;
-      }catch(e: any) { 
-        console.error('Failed to disconnect sound', e); 
-        this.currentSound = null; 
-      }
+    this.disposeCurrentSound();
+
+    if(!this.sounds.length){
+      return;
     }
 
     const resRef = this.sounds[this.soundIndex];
-    const delay = this.interval + this.getRandomVariation(this.intervalVariation);
+    const delay = (this.interval + this.getRandomVariation(this.intervalVariation))/1000;
     this.currentSound = this.engine.audioCtx.createBufferSource();
     this.currentSound.buffer = this.buffers.get(resRef);
     this.currentSound.loop = (this.sounds.length == 1 && this.isLooping);
-    (this.currentSound as any).name = this.soundIndex;
+    (this.currentSound as any).name = resRef;
     this.currentSound.playbackRate.value = this.playbackRate + this.getRandomVariation(this.playbackRateVariation);
-    this.currentSound.start(0, 0);
-    this.currentSound.connect(this.mainNode);
     this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
 
-    if(this.isRandomPosition){
-      this.setPosition(this.position.x + this.getRandomVariation(this.randomX), this.position.y + this.getRandomVariation(this.randomY), this.position.z + this.getRandomVariation(this.randomZ));
+    if(this.type == AudioEmitterType.POSITIONAL && (this.mainNode instanceof PannerNode)){
+      this.mainNode.positionX.value = this.position.x;
+      this.mainNode.positionY.value = this.position.y;
+      this.mainNode.positionZ.value = this.position.z + this.elevation;
+      if(this.isRandomPosition){
+        this.mainNode.positionX.value += this.getRandomVariation(this.randomX);
+        this.mainNode.positionY.value += this.getRandomVariation(this.randomY);
+      }
     }
 
-    // console.log('AudioEmitter', 'Playing sound', this.name, resRef);
-    this.currentSound.onended = () => {
-      if(!this.currentSound.loop){
-        this.currentTimeout = global.setTimeout( () => {
-          if(this.isRandom){
-            this.soundIndex = Math.floor(Math.random() * this.sounds.length);
-          }else{
-            this.soundIndex++;
-            if(this.soundIndex >= this.sounds.length)
-              this.soundIndex = 0;
-          }
-          if(this.isActive)
-            this.playNextSound();
-        }, delay );
+    const canExecuteCallback = !this.currentSound?.loop;
+    this.currentSound.onended = canExecuteCallback ? () => {
+      if(!!this.currentSound?.loop || !this.isActive || this.isDestroyed){
+        return;
       }
-    };
+      this.getNextSoundIndex();
+      this.playNextSound();
+    } : undefined;
+    this.currentSound.start(this.engine.audioCtx.currentTime + delay);
+    this.currentSound.connect(this.mainNode);
   }
 
   async addSound(resRef: string, data: Uint8Array): Promise<AudioBuffer> {
@@ -375,6 +370,20 @@ export class AudioEmitter {
     }
   }
 
+  disposeCurrentSound(): void {
+    if(!this.currentSound){
+      return;
+    }
+    try{
+      this.currentSound.onended = undefined;
+      this.currentSound.disconnect();
+      this.currentSound.stop(0);
+    }catch(e: any) { 
+      console.error('Failed to disconnect sound', e);
+    }
+    this.currentSound = null;
+  }
+
   stop(): void {
     if(this.isDestroyed)
       return;
@@ -383,11 +392,7 @@ export class AudioEmitter {
       return;
     }
 
-    try{
-      this.currentSound.disconnect();
-      this.currentSound.stop(0);
-      this.currentSound = null;
-    }catch(e: any) { console.error('Failed to disconnect sound', e); this.currentSound = null; }
+    this.disposeCurrentSound();
   }
 
   destroy(): void {

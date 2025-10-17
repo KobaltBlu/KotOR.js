@@ -45,7 +45,7 @@ export class TabUTSEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.blueprint = new KotOR.GFFObject(response.buffer);
-          this.moduleSound = new KotOR.ModuleSound(this.blueprint);
+          this.moduleSound = new KotOR.ModuleSound(this.blueprint, KotOR.AudioEngine.GetAudioEngine());
           this.moduleSound.initProperties();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
@@ -125,6 +125,18 @@ export class TabUTSEditorState extends TabState {
 
   animate(delta: number = 0){
     //todo
+  }
+
+  startEmitter(){
+    if(this.moduleSound){
+      this.moduleSound.loadSound();
+    }
+  }
+
+  stopEmitter(){
+    if(this.moduleSound){
+      this.moduleSound.audioEmitter.stop();
+    }
   }
 
   updateFile(){
