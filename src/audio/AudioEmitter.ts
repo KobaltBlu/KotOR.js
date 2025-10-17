@@ -4,6 +4,7 @@ import { AudioEngine } from "./AudioEngine";
 import { AudioLoader } from "./AudioLoader";
 
 const GAIN_RAMP_TIME = 0.25;
+const PRIORITY_GROUP_DEFAULT = 23;
 
 /**
  * AudioEmitter class.
@@ -44,11 +45,14 @@ export class AudioEmitter {
   playbackRateVariation: number = 0;
   elevation: number = 0;
 
+  priority: number = PRIORITY_GROUP_DEFAULT;
+
   currentSound: AudioBufferSourceNode = undefined;
   currentTimeout: NodeJS.Timeout = undefined;
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
   channel: AudioEngineChannel = AudioEngineChannel.SFX;
   type: AudioEmitterType = AudioEmitterType.GLOBAL;
+  interationCount: number = 0;
 
   disabled: boolean = false;
 
@@ -291,6 +295,8 @@ export class AudioEmitter {
     if(!this.sounds.length){
       return;
     }
+    this.disposeCurrentSound();
+    this.interationCount = 0;
     this.playNextSound();
   }
 
@@ -309,6 +315,18 @@ export class AudioEmitter {
     return this.soundIndex;
   }
 
+  getDelayInSeconds(): number {
+    return this.interationCount == 0 ? 0 : (this.interval + this.getRandomVariation(this.intervalVariation))/1000;
+  }
+
+  getPlaybackRate(): number {
+    return this.playbackRate + this.getRandomVariation(this.playbackRateVariation);
+  }
+
+  getVolume(): number {
+    return (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+  }
+
   playNextSound(): void {
     if(this.isDestroyed)
       return;
@@ -320,13 +338,14 @@ export class AudioEmitter {
     }
 
     const resRef = this.sounds[this.soundIndex];
-    const delay = (this.interval + this.getRandomVariation(this.intervalVariation))/1000;
+    const delay = this.getDelayInSeconds();
+    this.interationCount++;
     this.currentSound = this.engine.audioCtx.createBufferSource();
     this.currentSound.buffer = this.buffers.get(resRef);
     this.currentSound.loop = (this.sounds.length == 1 && this.isLooping);
     (this.currentSound as any).name = resRef;
-    this.currentSound.playbackRate.value = this.playbackRate + this.getRandomVariation(this.playbackRateVariation);
-    this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+    this.currentSound.playbackRate.value = this.getPlaybackRate();
+    this.gainNode.gain.value = this.getVolume();
 
     if(this.type == AudioEmitterType.POSITIONAL && (this.mainNode instanceof PannerNode)){
       this.mainNode.positionX.value = this.position.x;
@@ -392,11 +411,13 @@ export class AudioEmitter {
       return;
     }
 
+    this.interationCount = 0;
     this.disposeCurrentSound();
   }
 
   destroy(): void {
     this.buffers.clear();
+    this.interationCount = 0;
     this.isDestroyed = true;
     if(!this.engine){ return; }
     this.engine.removeEmitter(this);
