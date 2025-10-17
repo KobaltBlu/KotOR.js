@@ -31,6 +31,10 @@ export class TabUTSEditorState extends TabState {
         }
       }
     ];
+
+    this.addEventListener('onTabRemoved', (tab: TabState) => {
+      this.stopEmitter();
+    });
   }
 
   public openFile(file?: EditorFile){
@@ -129,6 +133,9 @@ export class TabUTSEditorState extends TabState {
 
   startEmitter(){
     if(this.moduleSound){
+      if(this.moduleSound.audioEmitter){
+        this.moduleSound.audioEmitter.stop();
+      }
       this.moduleSound.loadSound();
     }
   }
