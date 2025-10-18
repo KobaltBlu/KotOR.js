@@ -1,0 +1,361 @@
+@import "../../styles/variables";
+
+// =============================================================================
+// TREE VIEW - VS CODE STYLE
+// =============================================================================
+
+.forgeTreeView {
+  font-family: $font-family-primary;
+  font-size: 13px;
+  line-height: 22px;
+  color: $text-primary;
+  background: $bg-primary;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  // Tree container
+  ul, li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  // Hidden checkbox for expand/collapse
+  input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  // Tree item container
+  .tree-item {
+    display: block;
+    margin: 0;
+    padding: 0;
+    position: relative;
+    list-style: none;
+
+    // Node content wrapper - contains arrow, icon, and label
+    .tree-node-content {
+      display: flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 4px;
+      margin: 0;
+      cursor: pointer;
+      position: relative;
+      border-radius: 3px;
+      transition: background-color 0.1s ease;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      &:focus {
+        outline: 1px solid rgba(0, 122, 204, 0.5);
+        outline-offset: -1px;
+      }
+    }
+
+    &.selected .tree-node-content {
+      background-color: rgba(0, 122, 204, 0.3);
+      color: $text-white;
+    }
+
+    &.focused .tree-node-content {
+      background-color: rgba(0, 122, 204, 0.2);
+    }
+
+    // Icon container
+    .tree-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-right: 6px;
+      flex-shrink: 0;
+      color: $text-quaternary;
+
+      &.folder {
+        color: #4FC1FF;
+      }
+
+      &.file {
+        color: $text-quaternary;
+      }
+
+      &.expanded {
+        color: $text-primary;
+      }
+    }
+
+    // Expand/collapse arrow
+    .tree-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-right: 2px;
+      flex-shrink: 0;
+      color: $text-quaternary;
+      transition: transform 0.1s ease;
+      font-size: 12px;
+
+      &:before {
+        content: "▶";
+        display: block;
+        transform: rotate(0deg);
+        transition: transform 0.1s ease;
+      }
+
+      &.expanded:before {
+        transform: rotate(90deg);
+      }
+    }
+
+    // Label text
+    .tree-label {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: inherit;
+      font-size: 13px;
+      line-height: 22px;
+    }
+
+    // Indentation is now handled via inline styles based on depth
+    // Base padding for the node content
+    .tree-node-content {
+      padding-left: 4px;
+    }
+  }
+
+  // Nested tree items
+  .tree-children {
+    display: none;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    position: relative;
+    width: 100%;
+    margin-left: 18px;
+
+    &.expanded {
+      display: block;
+    }
+
+    // Add visual connection lines for better hierarchy
+    &:before {
+      content: '';
+      position: absolute;
+      left: -7px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  // File type specific styling
+  .tree-item {
+    &.folder {
+      .tree-label {
+        font-weight: 500;
+      }
+    }
+
+    &.file {
+      .tree-label {
+        font-weight: 400;
+      }
+    }
+
+    // Common file extensions
+    &.file-js .tree-icon { color: #F7DF1E; }
+    &.file-ts .tree-icon { color: #3178C6; }
+    &.file-tsx .tree-icon { color: #61DAFB; }
+    &.file-jsx .tree-icon { color: #61DAFB; }
+    &.file-css .tree-icon { color: #1572B6; }
+    &.file-scss .tree-icon { color: #CF649A; }
+    &.file-html .tree-icon { color: #E34F26; }
+    &.file-json .tree-icon { color: #F7DF1E; }
+    &.file-md .tree-icon { color: #083FA1; }
+    &.file-png .tree-icon { color: #F24E1E; }
+    &.file-jpg .tree-icon { color: #F24E1E; }
+    &.file-gif .tree-icon { color: #F24E1E; }
+    &.file-svg .tree-icon { color: #FFB000; }
+    
+    // KotOR specific file types
+    &.file-nss .tree-icon { color: #FF6B6B; } // NWScript
+    &.file-ncs .tree-icon { color: #4ECDC4; } // Compiled script
+    &.file-dlg .tree-icon { color: #45B7D1; } // Dialog
+    &.file-utc .tree-icon { color: #96CEB4; } // Creature
+    &.file-utd .tree-icon { color: #FFEAA7; } // Door
+    &.file-ute .tree-icon { color: #DDA0DD; } // Encounter
+    &.file-uti .tree-icon { color: #98D8C8; } // Item
+    &.file-utm .tree-icon { color: #F7DC6F; } // Merchant
+    &.file-utp .tree-icon { color: #BB8FCE; } // Placeable
+    &.file-uts .tree-icon { color: #85C1E9; } // Sound
+    &.file-utt .tree-icon { color: #F8C471; } // Trigger
+    &.file-utw .tree-icon { color: #82E0AA; } // Waypoint
+    &.file-bic .tree-icon { color: #F1948A; } // Character
+    &.file-bik .tree-icon { color: #85C1E9; } // Video
+    &.file-tga .tree-icon { color: #F7DC6F; } // Texture
+    &.file-dds .tree-icon { color: #F7DC6F; } // DirectDraw Surface
+    &.file-tpc .tree-icon { color: #F7DC6F; } // Texture Pack
+    &.file-erf .tree-icon { color: #D5DBDB; } // Encapsulated Resource File
+    &.file-rim .tree-icon { color: #D5DBDB; } // Resource Information Manager
+    &.file-mod .tree-icon { color: #D5DBDB; } // Module
+    &.file-hak .tree-icon { color: #D5DBDB; } // Hak Pak
+    &.file-nwm .tree-icon { color: #D5DBDB; } // Neverwinter Nights Module
+    &.file-ico .tree-icon { color: #F7DC6F; } // Icon
+    &.file-wav .tree-icon { color: #85C1E9; } // Audio
+    &.file-mp3 .tree-icon { color: #85C1E9; } // Audio
+    &.file-ogg .tree-icon { color: #85C1E9; } // Audio
+  }
+
+  // Drag and drop states
+  .tree-item {
+    &.drag-over {
+      background-color: rgba(0, 122, 204, 0.1);
+      border: 1px dashed rgba(0, 122, 204, 0.5);
+    }
+
+    &.drag-target {
+      background-color: rgba(0, 122, 204, 0.2);
+    }
+  }
+
+  // Loading state
+  .tree-item.loading {
+    .tree-label {
+      color: $text-quaternary;
+      font-style: italic;
+    }
+
+    .tree-icon:after {
+      content: "⟳";
+      animation: spin 1s linear infinite;
+      margin-left: 4px;
+    }
+  }
+
+  // Empty state
+  .tree-empty {
+    padding: 20px;
+    text-align: center;
+    color: $text-quaternary;
+    font-style: italic;
+  }
+
+  // Search highlighting
+  .tree-item {
+    .tree-label {
+      .highlight {
+        background-color: rgba(255, 255, 0, 0.3);
+        padding: 0 2px;
+        border-radius: 2px;
+      }
+    }
+  }
+
+  // Context menu indicator
+  .tree-item.has-context-menu {
+    &:after {
+      content: "⋯";
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: $text-quaternary;
+      font-size: 16px;
+      opacity: 0;
+      transition: opacity 0.1s ease;
+    }
+
+    &:hover:after {
+      opacity: 1;
+    }
+  }
+
+  // Focus management
+  .tree-item:focus {
+    outline: 1px solid rgba(0, 122, 204, 0.5);
+    outline-offset: -1px;
+  }
+
+  // Scrollbar styling
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// Animations
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .forgeTreeView {
+    font-size: 12px;
+    line-height: 20px;
+
+    .tree-item {
+      height: 20px;
+      padding: 0 2px;
+
+      .tree-icon,
+      .tree-arrow {
+        width: 14px;
+        height: 14px;
+      }
+
+      .tree-label {
+        font-size: 12px;
+        line-height: 20px;
+      }
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .forgeTreeView {
+    .tree-item {
+      // &:hover {
+      //   background-color: rgba(255, 255, 255, 0.05);
+      // }
+
+      &.selected {
+        background-color: rgba(0, 122, 204, 0.4);
+      }
+
+      &.focused {
+        background-color: rgba(0, 122, 204, 0.3);
+      }
+    }
+  }
+}

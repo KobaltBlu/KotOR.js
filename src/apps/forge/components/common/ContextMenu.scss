@@ -1,0 +1,158 @@
+@import "../../styles/variables";
+
+.context-menu {
+  position: fixed;
+  background: $bg-secondary;
+  border: 1px solid $border-primary;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  min-width: 200px;
+  font-family: $font-family-primary;
+  font-size: 13px;
+  padding: 4px 0;
+  color: $text-primary;
+  user-select: none;
+
+  // Context menu items
+  .context-menu-item {
+    padding: 6px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.15s ease;
+    position: relative;
+
+    &:hover {
+      background: $hover-bg;
+    }
+
+    &:active {
+      background: $active-bg;
+    }
+
+    &.disabled {
+      cursor: not-allowed;
+      color: $text-tertiary;
+      opacity: 0.6;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+
+    // Keyboard shortcut styling
+    .shortcut {
+      color: $text-secondary;
+      font-size: 11px;
+      margin-left: 16px;
+      font-weight: 400;
+    }
+  }
+
+  // Separator styling
+  .context-menu-separator {
+    height: 1px;
+    background: $border-primary;
+    margin: 4px 0;
+  }
+
+  // Dark mode support
+  &.dark-theme {
+    background: $bg-darker;
+    border-color: $border-secondary;
+    color: $text-primary;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+
+    .context-menu-item {
+      &:hover {
+        background: $hover-bg-dark;
+      }
+
+      &:active {
+        background: $active-bg;
+      }
+
+      &.disabled {
+        color: $text-quaternary;
+      }
+
+      .shortcut {
+        color: $text-tertiary;
+      }
+    }
+
+    .context-menu-separator {
+      background: $border-secondary;
+    }
+  }
+
+  // Light mode (default)
+  &.light-theme {
+    background: $bg-secondary;
+    border-color: $border-primary;
+    color: $text-primary;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+
+    .context-menu-item {
+      &:hover {
+        background: $hover-bg;
+      }
+
+      &:active {
+        background: $active-bg;
+      }
+
+      &.disabled {
+        color: $text-tertiary;
+      }
+
+      .shortcut {
+        color: $text-secondary;
+      }
+    }
+
+    .context-menu-separator {
+      background: $border-primary;
+    }
+  }
+
+  // Animation for smooth appearance
+  &.context-menu-enter {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  &.context-menu-enter-active {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  // Focus styles for accessibility
+  .context-menu-item:focus {
+    outline: 2px solid $primary-blue;
+    outline-offset: -2px;
+  }
+
+  // High contrast mode support
+  @media (prefers-contrast: high) {
+    border-width: 2px;
+    
+    .context-menu-item {
+      &:hover {
+        background: $primary-blue;
+        color: $bg-primary;
+      }
+    }
+  }
+
+  // Reduced motion support
+  @media (prefers-reduced-motion: reduce) {
+    &.context-menu-enter,
+    &.context-menu-enter-active {
+      transition: none;
+    }
+  }
+}

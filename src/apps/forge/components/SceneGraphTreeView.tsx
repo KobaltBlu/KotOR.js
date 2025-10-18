@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, memo, useMemo } from "react";
 import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "../SceneGraphNode";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { SceneGraphTreeViewManager } from "../managers/SceneGraphTreeViewManager";
+import { ForgeTreeView } from "./treeview/ForgeTreeView";
+import { ListItemNode } from "./treeview/ListItemNode";
 
 export const SceneGraphTreeView = function (props: any) {
   const manager: SceneGraphTreeViewManager = props.manager;
   return (
-<ul className="tree css-treeview js" style={{ height: '350px', overflow: 'auto'}}>
+    <ForgeTreeView style={{ height: '350px', overflow: 'auto'}}>
     {
       manager.parentNodes.map( (node: SceneGraphNode) => {
         return (
@@ -14,28 +16,29 @@ export const SceneGraphTreeView = function (props: any) {
         )
       })
     }
-    </ul>
+    </ForgeTreeView>
   );
 }
 
-export const SceneGraphTreeViewNode = function (props: any) {
+export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props: any) {
   const manager: SceneGraphTreeViewManager = props.manager;
   const node: SceneGraphNode = props.node;
+  const depth: number = props.depth || 0;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([...node.nodes]);
   const [openState, setOpenState] = useState<boolean>(node.open);
   const [render, rerender] = useState<boolean>(false);
 
-  const onNameChange = () => {
+  const onNameChange = useCallback(() => {
     rerender(!render);
-  };
+  }, [render]);
 
-  const onExpandStateChange = () => {
+  const onExpandStateChange = useCallback(() => {
     setOpenState(node.open);
-  };
+  }, [node.open]);
 
-  const onNodesChange = () => {
+  const onNodesChange = useCallback(() => {
     setNodes([...node.nodes]);
-  }
+  }, [node.nodes]);
 
   useEffectOnce( () => {
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
@@ -48,46 +51,68 @@ export const SceneGraphTreeViewNode = function (props: any) {
     }
   });
 
-  const onClickNode = (e: React.MouseEvent<HTMLLIElement>, node: SceneGraphNode) => {
-    e.stopPropagation();
+  const handleClick = useCallback(() => {
     if(typeof node.onClick === 'function'){
       node.onClick(node);
     }
+  }, [node]);
+
+  const handleToggle = useCallback(() => {
+    setOpenState(prev => !prev);
+  }, []);
+
+  const handleDoubleClick = useCallback(() => {
+    // Add double-click logic if needed
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    // Add context menu logic if needed
+  }, []);
+
+  const handleSelect = useCallback((nodeId: string) => {
+    if(typeof node.onClick === 'function'){
+      node.onClick(node);
+    }
+  }, [node]);
+
+  // Memoize child nodes to prevent unnecessary re-renders
+  const childNodes = useMemo(() => {
+    if (!openState || !nodes.length) return null;
+    return nodes.map((child: SceneGraphNode) => (
+      <SceneGraphTreeViewNode 
+        key={child.id} 
+        node={child} 
+        manager={manager}
+        depth={depth + 1}
+      />
+    ));
+  }, [openState, nodes, manager, depth]);
+
+  const hasChildren = nodes.length > 0;
+
+  // Prepare data attributes
+  const dataAttributes = {
+    'data-path': node.data?.path,
   };
 
-  const onChangeCheckbox = (e: React.ChangeEvent<HTMLInputElement>, node: SceneGraphNode) => {
-    setOpenState(!openState);
-  };
-
-  const onLabelClick = (e: React.MouseEvent<HTMLLabelElement>, node: SceneGraphNode) => {
-    setOpenState(!openState);
-  }
-
-  if(nodes.length){
-    return (
-      <li onClick={(e) => onClickNode(e, props.node)}>
-        <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
-        <label onClick={(e) => onLabelClick(e, props.node)}>
-          {node.icon?.length ? <i className={node.icon}></i> : <></>}
-          {node.name}
-        </label>
-        <ul>
-          {
-            (openState) ? (
-              nodes.map( (child: SceneGraphNode) => (
-                <SceneGraphTreeViewNode key={child.id} node={child} />
-              ))
-            ) : (<></>)
-          }
-        </ul>
-      </li>
-    );
-  }else{
-    return (
-      <li className="link" data-path={node.data.path} onClick={(e) => onClickNode(e, props.node)}>
-        {node.icon?.length ? <i className={node.icon}></i> : <></>}
-        {node.name}
-      </li>
-    );
-  }
-}
+  return (
+    <ListItemNode
+      id={node.id.toString()}
+      name={node.name}
+      hasChildren={hasChildren}
+      isExpanded={openState}
+      isSelected={false}
+      depth={depth}
+      icon={node.icon}
+      iconType={hasChildren ? 'folder' : 'file'}
+      onToggle={handleToggle}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onContextMenu={handleContextMenu}
+      onSelect={handleSelect}
+      dataAttributes={dataAttributes}
+    >
+      {childNodes}
+    </ListItemNode>
+  );
+});

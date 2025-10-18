@@ -1,0 +1,183 @@
+// =============================================================================
+// COLOR SCHEME VARIABLES
+// =============================================================================
+
+// Primary Brand Colors
+$primary-blue: #337ab7;
+$primary-blue-dark: #256DA7;
+$primary-blue-darker: #265c8c;
+$primary-blue-light: #3578BD;
+$primary-blue-lighter: #5bc0de;
+$primary-blue-lightest: #90CEFF;
+
+// Secondary Brand Colors
+$secondary-cyan: #2196F3;
+$secondary-cyan-dark: #2a7ab9;
+$secondary-cyan-darker: #0C3D5A;
+$secondary-cyan-light: #29b3dc;
+
+// TSL Theme Colors (The Sith Lords)
+$tsl-primary: rgb(26, 178, 140);
+$tsl-primary-light: rgb(27, 195, 153);
+$tsl-primary-lighter: rgb(25, 212, 166);
+$tsl-primary-dark: rgb(12, 111, 86);
+$tsl-primary-darker: rgb(14, 72, 57);
+$tsl-primary-darkest: rgb(11, 70, 55);
+
+// Background Colors
+$bg-primary: #212121;
+$bg-secondary: #333;
+$bg-tertiary: #292929;
+$bg-quaternary: #30303D;
+$bg-quinary: #464646;
+$bg-dark: #121212;
+$bg-darker: #1D1D1D;
+$bg-darkest: #0d0d0d;
+$bg-overlay: rgba(0, 0, 0, 0.5);
+$bg-overlay-light: rgba(0, 0, 0, 0.25);
+$bg-overlay-dark: rgba(0, 0, 0, 0.75);
+
+// Text Colors
+$text-primary: #CCC;
+$text-secondary: #f2f2f2;
+$text-tertiary: #9d9d9d;
+$text-quaternary: #777777;
+$text-white: #FFFFFF;
+$text-light: #C9DDE6;
+$text-dark: #989898;
+$text-accent: #62b3f9;
+
+// Border Colors
+$border-primary: #464646;
+$border-secondary: #252525;
+$border-tertiary: #1f1f1f;
+$border-quaternary: #656565;
+$border-quinary: #797979;
+$border-accent: #0c435d;
+$border-accent-dark: #0D5171;
+$border-accent-darker: #0C548E;
+$border-accent-darkest: #0b5171;
+
+// Status Colors
+$success: #0b800f;
+$success-light: #09b509;
+$success-dark: #005f03;
+$success-darker: #0a8e01;
+$warning: #e43a35;
+$error: #ff1e00;
+$error-dark: #670000;
+$error-darker: #810000;
+
+// Interactive Colors
+$hover-bg: #232323;
+$hover-bg-light: #255d8e;
+$hover-bg-dark: #111;
+$active-bg: #313131;
+$disabled-bg: #364550;
+$disabled-border: #2D5A7D;
+
+// Form Colors
+$form-bg: #133652;
+$form-bg-gradient-start: #133652;
+$form-bg-gradient-end: #205784;
+$form-border: #2a7ab9;
+$form-border-focus: #2196F3;
+$form-placeholder: #9d9d9d;
+
+// Scrollbar Colors
+$scrollbar-track: #464646;
+$scrollbar-thumb: #337ab7;
+$scrollbar-thumb-inactive: #777;
+
+// Shadow Colors
+$shadow-light: rgba(0, 0, 0, 0.075);
+$shadow-medium: #1d1d1d;
+$shadow-dark: rgba(0, 0, 0, 0.5);
+$shadow-darker: rgba(0, 0, 0, 0.75);
+
+// Special Colors
+$checkerboard-light: #ccc;
+$checkerboard-dark: #676767;
+$checkbox-bg-start: #afafaf;
+$checkbox-bg-end: #efefef;
+$checkbox-border: #4c4c4c;
+$checkbox-shadow: #424242;
+
+// =============================================================================
+// TYPOGRAPHY VARIABLES
+// =============================================================================
+
+$font-family-primary: 'Roboto', sans-serif;
+$font-family-trajan: 'Trajan', serif;
+$font-family-old-republic: 'Old Republic', serif;
+$font-family-fa: "Font Awesome 6 Free";
+
+$font-size-base: 12pt;
+$font-size-small: 10pt;
+$font-size-large: 14pt;
+$font-size-larger: 17px;
+
+// =============================================================================
+// SPACING VARIABLES
+// =============================================================================
+
+$spacing-xs: 2px;
+$spacing-sm: 5px;
+$spacing-md: 10px;
+$spacing-lg: 15px;
+$spacing-xl: 20px;
+$spacing-xxl: 30px;
+
+// =============================================================================
+// LAYOUT VARIABLES
+// =============================================================================
+
+$header-height: 60px;
+$border-radius: 5px;
+$border-radius-large: 10px;
+$border-width: 1px;
+$border-width-thick: 2px;
+
+// =============================================================================
+// Z-INDEX VARIABLES
+// =============================================================================
+
+$z-index-dropdown: 99;
+$z-index-modal: 9999;
+$z-index-notification: 99999999;
+
+// =============================================================================
+// ANIMATION VARIABLES
+// =============================================================================
+
+$transition-fast: 0.15s;
+$transition-normal: 0.3s;
+$transition-slow: 0.82s;
+
+// =============================================================================
+// MIXINS
+// =============================================================================
+
+@mixin text-shadow-light {
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+@mixin box-shadow-form {
+  box-shadow: 2px 2px 10px $shadow-medium;
+}
+
+@mixin border-radius-form {
+  border-radius: $border-radius;
+}
+
+@mixin transition-form {
+  transition: border-color ease-in-out $transition-fast, box-shadow ease-in-out $transition-fast;
+}
+
+@mixin gradient-form {
+  background: linear-gradient($form-bg-gradient-start 0%, $form-bg-gradient-end 100%);
+}
+
+@mixin gradient-tsl {
+  background: linear-gradient($tsl-primary-darker 0%, $tsl-primary-dark 100%);
+}

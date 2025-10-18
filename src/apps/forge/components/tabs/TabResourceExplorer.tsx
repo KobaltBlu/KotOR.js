@@ -6,69 +6,9 @@ import { FileTypeManager } from "../../FileTypeManager";
 import { EditorFile } from "../../EditorFile";
 import { Form, ProgressBar } from "react-bootstrap";
 import { FileBrowserNode } from "../../FileBrowserNode";
+import { ForgeTreeView } from "../treeview/ForgeTreeView";
+import { ResourceListNode } from "../treeview/ResourceListNode";
 
-export interface ResourceListNodeProps {
-  node: FileBrowserNode;
-  depth?: number;
-  children?: any;
-}
-
-export const ResourceListNode = memo(function(props: ResourceListNodeProps){
-  const node = props.node;
-  const [openState, setOpenState] = useState<boolean>(node.open);
-
-  const onClickNode = useCallback((e: React.MouseEvent<HTMLLIElement>, node: FileBrowserNode) => {
-    e.stopPropagation();
-    if(node.type == 'resource'){
-      console.log('resource', node);
-      // let resref = e.target.dataset.resref;
-      // let reskey = parseInt(e.target.dataset.resid);
-      // let type = e.target.dataset.type;
-      // let archive = e.target.dataset.archive;
-
-      FileTypeManager.onOpenResource(
-        new EditorFile({
-          path: node.data.path,
-          useGameFileSystem: true,
-        })
-      );
-    }
-  }, []);
-
-  const onChangeCheckbox = useCallback((e: React.ChangeEvent<HTMLInputElement>, node: FileBrowserNode) => {
-    setOpenState(prev => !prev);
-  }, []);
-
-  const onLabelClick = useCallback((e: React.MouseEvent<HTMLLabelElement>, node: FileBrowserNode) => {
-    setOpenState(prev => !prev);
-  }, []);
-
-  // Memoize child nodes to prevent unnecessary re-renders
-  const childNodes = useMemo(() => {
-    if (!openState || !node.nodes.length) return null;
-    return node.nodes.map((child: FileBrowserNode) => (
-      <ResourceListNode key={child.id} node={child} />
-    ));
-  }, [openState, node.nodes]);
-
-  if(node.nodes.length){
-    return (
-      <li onClick={(e) => onClickNode(e, props.node)}>
-        <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
-        <label onClick={(e) => onLabelClick(e, props.node)}>{node.name}</label>
-        <ul>
-          {childNodes}
-        </ul>
-      </li>
-    );
-  }else{
-    return (
-      <li className="link" data-path={node.data.path} onDoubleClick={(e) => onClickNode(e, props.node)}>
-        {node.name}
-      </li>
-    );
-  }
-});
 
 export interface TabResourceExplorerProps extends BaseTabProps {
   tab: TabResourceExplorerState;
@@ -201,9 +141,9 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         width:'100%', 
         overflow: 'auto',
       }}>
-        <ul className="tree css-treeview js">
+        <ForgeTreeView>
           {resourceListItems}
-        </ul>
+        </ForgeTreeView>
         {resourceList.length > visibleItems.length && (
           <div style={{ padding: '10px', textAlign: 'center' }}>
             <button 

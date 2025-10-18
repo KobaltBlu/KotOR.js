@@ -6,6 +6,7 @@ import { FileTypeManager } from "../../FileTypeManager";
 import { EditorFile } from "../../EditorFile";
 import { FileLocationType } from "../../enum/FileLocationType";
 import { FileBrowserNode } from "../../FileBrowserNode";
+import { ForgeTreeView } from "../treeview/ForgeTreeView";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -78,7 +79,7 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
 
   return (
     <div className="scroll-container" style={{ width:'100%', overflow: 'auto' }}>
-      <ul className="tree css-treeview js">
+      <ForgeTreeView>
         {
           resourceList.map( (node: FileBrowserNode) => {
             return (
@@ -86,7 +87,7 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
             )
           })
         }
-      </ul>
+      </ForgeTreeView>
     </div>
   );
 
