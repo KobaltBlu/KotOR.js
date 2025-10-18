@@ -53,6 +53,62 @@ export class MenuTopState {
   static menuItemStartPage: MenuTopItem;
   static menuItemOpenModuleEditor: MenuTopItem;
   static menuItemRecentFiles: MenuTopItem;
+  static menuItemAudio: MenuTopItem;
+
+  static #eventListeners: any = {};
+
+  static addEventListener(event: string, callback: Function){
+    if(typeof callback !== 'function'){ return; }
+    if(!Array.isArray(this.#eventListeners[event])){
+      this.#eventListeners[event] = [];
+    }
+    if(Array.isArray(this.#eventListeners[event])){
+      let ev = this.#eventListeners[event];
+      let index = ev.indexOf(callback);
+      if(index == -1){
+        ev.push(callback);
+      }else{
+        console.warn('Event Listener: Already added', event);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', event);
+    }
+  }
+
+  static removeEventListener(event: string, callback: Function){
+    if(typeof callback !== 'function'){ return; }
+    if(!Array.isArray(this.#eventListeners[event])){
+      this.#eventListeners[event] = [];
+    }
+    if(Array.isArray(this.#eventListeners[event])){
+      let ev = this.#eventListeners[event];
+      let index = ev.indexOf(callback);
+      if(index >= 0){
+        ev.splice(index, 1);
+      }else{
+        console.warn('Event Listener: Already removed', event);
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', event);
+    } 
+  }
+
+  static triggerEventListener(event: string, ...args: any[]){
+    if(!Array.isArray(this.#eventListeners[event])){
+      this.#eventListeners[event] = [];
+    }
+    if(Array.isArray(this.#eventListeners[event])){
+      let ev = this.#eventListeners[event];
+      for(let i = 0; i < ev.length; i++){
+        const callback = ev[i];
+        if(typeof callback === 'function'){
+          callback(...args);
+        }
+      }
+    }else{
+      console.warn('Event Listener: Unsupported', event);
+    }
+  }
 
   static buildMenuItems(){
 
@@ -69,6 +125,11 @@ export class MenuTopState {
     //View Menu Item
     this.menuItemView = new MenuTopItem({
       name: `View`
+    });
+
+    //Audio Menu Item
+    this.menuItemAudio = new MenuTopItem({
+      name: `Audio`
     });
 
     //File Menu Child Items
@@ -276,10 +337,20 @@ export class MenuTopState {
       }
     });
 
+    this.menuItemAudio.items.push(
+      new MenuTopItem({
+        name: 'No Reverb',
+        onClick: () => {
+          KotOR.AudioEngine.GetAudioEngine().setReverbProfile(-1);
+        }
+      })
+    );
+
     MenuTopState.items.push(
       this.menuItemFile, 
       this.menuItemProject, 
-      this.menuItemView
+      this.menuItemView,
+      this.menuItemAudio,
     );
 
     this.menuItemFile.items.push(
@@ -333,6 +404,33 @@ export class MenuTopState {
       this.menuItemStartPage,
     );
 
+  }
+
+  static buildAudioMenuItems(){
+    this.menuItemAudio.items = [];
+    this.menuItemAudio.items.push(
+      new MenuTopItem({
+        name: 'No Reverb',
+        onClick: () => {
+          KotOR.AudioEngine.GetAudioEngine().setReverbProfile(-1);
+        }
+      })
+    );
+
+    const eaxPresets = Object.values(KotOR.TwoDAManager.datatables.get('soundeax')?.rows || {});
+    for(let i = 0; i < eaxPresets.length; i++){
+      const eaxPreset = eaxPresets[i] as any;
+      if(eaxPreset.label == 23) break;
+      this.menuItemAudio.items.push(
+        new MenuTopItem({
+          name: eaxPreset.label,
+          onClick: () => {
+            KotOR.AudioEngine.GetAudioEngine().setReverbProfile(i);
+          }
+        })
+      );
+    }
+    this.triggerEventListener('onMenuTopItemsUpdated');
   }
 
 }

@@ -12,6 +12,7 @@ import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import { TabStoreState } from "../interfaces/TabStoreState";
 import { NWScriptParser } from "../../../nwscript/NWScriptParser";
 import { ModalManagerState } from "./modal/ModalManagerState";
+import { MenuTopState } from "./MenuTopState";
 
 import * as KotOR from '../KotOR';
 
@@ -135,6 +136,7 @@ export class ForgeState {
         KotOR.AudioEngine.GAIN_MUSIC = 0.75;
         KotOR.AudioEngine.GAIN_MOVIE = 0.75;
         KotOR.AudioEngine.GAIN_GUI = 0.75;
+        MenuTopState.buildAudioMenuItems();
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
         // KotOR.LightManager.toggleLightHelpers();
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
