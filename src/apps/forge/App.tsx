@@ -4,7 +4,7 @@ import { TabManagerProvider } from "./context/TabManagerContext";
 import { ForgeState } from "./states/ForgeState";
 import { MenuTop } from "./components/MenuTop";
 import { LayoutContainerProvider } from "./context/LayoutContainerContext";
-import { LayoutContainer } from "./components/LayoutContainer";
+import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
 import ModalGrantAccess from "./components/modal/ModalGrantAccess";
 import { ModalChangeGame } from "./components/modal/ModalChangeGame";
 import { useEffectOnce } from "./helpers/UseEffectOnce";

@@ -84,11 +84,6 @@ body {
   max-width: initial;
 }
 
-.layout-container {
-  width: 100%;
-  height: 100%;
-}
-
 // =============================================================================
 // LOADING SCREEN
 // =============================================================================
@@ -663,22 +658,6 @@ button, .btn-default {
   margin-top: $spacing-lg;
   padding-top: $spacing-md;
   border-top: $border-width solid $border-secondary;
-}
-
-// =============================================================================
-// LAYOUT
-// =============================================================================
-
-.ui-layout-pane {
-  padding: 0 !important;
-}
-
-.ui-layout-resizer {
-  transform: none !important;
-}
-
-.ui-layout-toggler {
-  cursor: pointer;
 }
 
 // =============================================================================
@@ -1682,11 +1661,6 @@ input[type=checkbox].ui {
 
   .windowpane-content .title {
     color: $tsl-primary;
-  }
-
-  .ui-layout-toggler {
-    border: $border-width solid $tsl-primary-dark;
-    background-color: $tsl-primary-darker;
   }
 
   .tabs-menu li.current {

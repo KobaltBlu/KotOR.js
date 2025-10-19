@@ -6,7 +6,7 @@ import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../st
 
 import * as KotOR from "../../KotOR";
 // import { Form, InputGroup } from "react-bootstrap";
-import { LayoutContainer } from "../LayoutContainer";
+import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
 import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
 import { UI3DRendererView } from "../UI3DRendererView";
 // import { UI3DOverlayComponent } from "../UI3DOverlayComponent";

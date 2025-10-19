@@ -1,7 +1,7 @@
 import React from "react";
 import { BaseTabProps } from "../../interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { LayoutContainer } from "../LayoutContainer";
+import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
 import { TabModuleEditorState } from "../../states/tabs";
 import { UI3DRendererView } from "../UI3DRendererView";
 import { UI3DOverlayComponent } from "../UI3DOverlayComponent";
