@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import MonacoEditor from "react-monaco-editor";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { TabTextEditorState } from "../../states/tabs";
-import { LayoutContainer } from "../LayoutContainer";
+import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
 import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
 import { TabManagerProvider } from "../../context/TabManagerContext";
 import TabManager from "./TabManager";

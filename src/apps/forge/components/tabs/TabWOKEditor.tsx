@@ -4,7 +4,7 @@ import { TabWOKEditorControlMode, TabWOKEditorState } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { UI3DRendererView } from "../UI3DRendererView";
 import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { LayoutContainer } from "../LayoutContainer";
+import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
 
 import * as KotOR from "../../KotOR";
 import { SectionContainer } from "../SectionContainer";

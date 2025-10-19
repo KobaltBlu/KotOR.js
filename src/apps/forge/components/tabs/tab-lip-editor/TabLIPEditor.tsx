@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react"
-import { LayoutContainer } from "../../LayoutContainer";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 import TabManager from "../TabManager";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs";
