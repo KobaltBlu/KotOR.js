@@ -370,31 +370,40 @@ export const LayoutContainer = React.memo<LayoutContainerProps>(function LayoutC
     style: LayoutStyle; 
     className: string; 
     title: string; 
-  }) => (
-    <Draggable 
-      bounds="parent" 
-      axis={axis} 
-      onStart={(e) => handleStart(e, direction)} 
-      onStop={(e) => handleStop(e, direction)}
-    >
-      <div 
-        ref={(el) => { refs.current[`${direction}Handle` as keyof typeof refs.current] = el; }}
-        className={className} 
-        style={style} 
-        title={title}
+  }) => {
+    // Create a ref for this specific handle to avoid findDOMNode warning
+    const handleRef = useRef<HTMLDivElement>(null);
+    
+    return (
+      <Draggable 
+        nodeRef={handleRef}
+        bounds="parent" 
+        axis={axis} 
+        onStart={(e) => handleStart(e, direction)} 
+        onStop={(e) => handleStop(e, direction)}
       >
         <div 
-          onClick={(e) => onPaneToggle(e, direction)} 
-          className={`ui-layout-toggler ui-layout-toggler-${direction} ui-layout-toggler-open ui-layout-toggler-${direction}-open`} 
-          title="Toggle"
-          style={{
-            height: axis === 'y' ? '100%' : '50px',
-            width: axis === 'x' ? '100%' : '50px',
+          ref={(el) => {
+            (handleRef as any).current = el;
+            refs.current[`${direction}Handle` as keyof typeof refs.current] = el;
           }}
-        />
-      </div>
-    </Draggable>
-  ), [handleStart, handleStop, onPaneToggle]);
+          className={className} 
+          style={style} 
+          title={title}
+        >
+          <div 
+            onClick={(e) => onPaneToggle(e, direction)} 
+            className={`ui-layout-toggler ui-layout-toggler-${direction} ui-layout-toggler-open ui-layout-toggler-${direction}-open`} 
+            title="Toggle"
+            style={{
+              height: axis === 'y' ? '100%' : '50px',
+              width: axis === 'x' ? '100%' : '50px',
+            }}
+          />
+        </div>
+      </Draggable>
+    );
+  }, [handleStart, handleStop, onPaneToggle]);
 
   return (
     <div ref={(el) => { refs.current.container = el; }} className="layout-container">
