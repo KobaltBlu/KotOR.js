@@ -91,13 +91,29 @@ export const LayoutContainer = React.memo<LayoutContainerProps>(function LayoutC
   const hasEastContent = Boolean(props.eastContent);
   const hasWestContent = Boolean(props.westContent);
 
+  // Track drag start position to detect actual movement
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  const DRAG_THRESHOLD = 3; // Minimum pixels of movement to trigger resize
+
   // Event handlers with proper memoization
   const handleStart = useCallback((e: any, handle: string) => {
-    // Optional: Add visual feedback during drag
+    // Store the initial drag position
+    dragStartPos.current = { x: e.clientX, y: e.clientY };
   }, []);
 
   const handleStop = useCallback((e: any, handle: string) => {
-    if (!refs.current.container) return;
+    if (!refs.current.container || !dragStartPos.current) return;
+
+    // Calculate the distance moved
+    const deltaX = Math.abs(e.clientX - dragStartPos.current.x);
+    const deltaY = Math.abs(e.clientY - dragStartPos.current.y);
+    const totalMovement = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    // Only update layout if there was significant movement
+    if (totalMovement < DRAG_THRESHOLD) {
+      dragStartPos.current = null;
+      return;
+    }
 
     const rect = refs.current.container.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -130,6 +146,9 @@ export const LayoutContainer = React.memo<LayoutContainerProps>(function LayoutC
       
       return newState;
     });
+
+    // Reset drag start position
+    dragStartPos.current = null;
   }, [hasNorthContent, hasSouthContent, hasEastContent, hasWestContent, containerSize]);
 
   const onPaneToggle = useCallback((e: React.MouseEvent, handle: string) => {
