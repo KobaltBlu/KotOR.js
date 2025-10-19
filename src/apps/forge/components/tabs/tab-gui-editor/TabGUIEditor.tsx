@@ -1,15 +1,15 @@
 import React, { ChangeEvent, useEffect, useState } from "react"
-import { BaseTabProps } from "../../interfaces/BaseTabProps"
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
-import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../states/tabs";
+import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../../states/tabs";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "../../../KotOR";
 // import { Form, InputGroup } from "react-bootstrap";
-import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { UI3DRendererView } from "../UI3DRendererView";
-// import { UI3DOverlayComponent } from "../UI3DOverlayComponent";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { UI3DRendererView } from "../../UI3DRendererView";
+// import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 
 export const TabGUIEditor = function(props: BaseTabProps){
 

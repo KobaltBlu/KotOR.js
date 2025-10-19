@@ -4,7 +4,7 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTSEditor } from "../../components/tabs/TabUTSEditor";
+import { TabUTSEditor } from "../../components/tabs/tab-uts-editor/TabUTSEditor";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
 const PRIORITY_POSITIONAL_AMBIENTS = 5;

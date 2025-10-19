@@ -4,7 +4,7 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTPEditor } from "../../components/tabs/TabUTPEditor";
+import { TabUTPEditor } from "../../components/tabs/tab-utp-editor/TabUTPEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
 import { UI3DRendererView } from "../../components/UI3DRendererView";
 

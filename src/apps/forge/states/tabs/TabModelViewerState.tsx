@@ -3,7 +3,7 @@ import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import React from "react";
-import { TabModelViewer } from "../../components/tabs/TabModelViewer";
+import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import { UI3DRendererView } from "../../components/UI3DRendererView";
 import { EditorFile } from "../../EditorFile";

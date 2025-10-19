@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-import { TabScriptCompileLogState, TabTextEditorState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { TabScriptCompileLogState, TabTextEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
 export const TabScriptCompileLog = function(props: any){
   const tab: TabScriptCompileLogState = props.tab;
@@ -34,3 +34,4 @@ export const TabScriptCompileLog = function(props: any){
   );
 
 }
+

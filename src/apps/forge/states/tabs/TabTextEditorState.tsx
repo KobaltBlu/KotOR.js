@@ -1,5 +1,5 @@
 import React from "react";
-import { TabTextEditor } from "../../components/tabs/TabTextEditor";
+import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";

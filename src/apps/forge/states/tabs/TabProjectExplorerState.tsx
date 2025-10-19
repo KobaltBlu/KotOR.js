@@ -1,5 +1,5 @@
 import React from "react";
-import { TabProjectExplorer } from "../../components/tabs/TabProjectExplorer";
+import { TabProjectExplorer } from "../../components/tabs/tab-project-explorer/TabProjectExplorer";
 import { TabState } from "./";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { ProjectFileSystem } from "../../ProjectFileSystem";

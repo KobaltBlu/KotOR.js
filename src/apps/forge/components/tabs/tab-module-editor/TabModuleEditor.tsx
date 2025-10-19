@@ -1,10 +1,10 @@
 import React from "react";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
-import { TabModuleEditorState } from "../../states/tabs";
-import { UI3DRendererView } from "../UI3DRendererView";
-import { UI3DOverlayComponent } from "../UI3DOverlayComponent";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { TabModuleEditorState } from "../../../states/tabs";
+import { UI3DRendererView } from "../../UI3DRendererView";
+import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 
 export const TabModuleEditor = function(props: BaseTabProps){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
@@ -27,3 +27,4 @@ export const TabModuleEditor = function(props: BaseTabProps){
     </LayoutContainerProvider>
   )
 }
+

@@ -1,6 +1,6 @@
 import React from "react";
 import { TabState } from "./TabState";
-import { TabResourceExplorer } from "../../components/tabs/TabResourceExplorer";
+import { TabResourceExplorer } from "../../components/tabs/tab-resource-explorer/TabResourceExplorer";
 import * as path from "path";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { AsyncLoop } from "../../../../utility/AsyncLoop";

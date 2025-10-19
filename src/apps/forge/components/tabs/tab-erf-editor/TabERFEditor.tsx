@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabERFEditorState } from "../../states/tabs";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabERFEditorState } from "../../../states/tabs";
 
-import * as KotOR from "../../KotOR";
-import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../../KotOR";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { EditorFile } from "../../../EditorFile";
 import * as fs from "fs";
 
 declare const dialog: any;

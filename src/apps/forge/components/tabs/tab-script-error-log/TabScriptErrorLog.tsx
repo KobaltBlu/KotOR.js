@@ -1,6 +1,6 @@
 import React, { useState } from "react"
-import { useEffectOnce } from "../../helpers/UseEffectOnce"
-import { TabScriptErrorLogState, TabTextEditorState } from "../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce"
+import { TabScriptErrorLogState, TabTextEditorState } from "../../../states/tabs";
 
 export const TabScriptErrorLog = function(props: any){
   const tab: TabScriptErrorLogState = props.tab;
@@ -48,3 +48,4 @@ export const TabScriptErrorLog = function(props: any){
     </div>
   )
 }
+

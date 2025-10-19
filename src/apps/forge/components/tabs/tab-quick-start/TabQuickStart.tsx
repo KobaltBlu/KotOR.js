@@ -1,10 +1,10 @@
 import React, { useState, useCallback, memo } from "react";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { Project } from "../../Project";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ForgeState } from "../../states/ForgeState";
-import { EditorFile } from "../../EditorFile";
-import { FileTypeManager } from "../../FileTypeManager";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { Project } from "../../../Project";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { ForgeState } from "../../../states/ForgeState";
+import { EditorFile } from "../../../EditorFile";
+import { FileTypeManager } from "../../../FileTypeManager";
 import "./TabQuickStart.scss";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
@@ -157,3 +157,4 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     </div>
   );
 });
+

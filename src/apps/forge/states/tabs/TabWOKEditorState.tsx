@@ -5,7 +5,7 @@ import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { UI3DRenderer } from "../../UI3DRenderer";
-import { TabWOKEditor } from "../../components/tabs/TabWOKEditor";
+import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,

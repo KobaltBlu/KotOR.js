@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import * as KotOR from "../../KotOR";
-import { TabTextEditorState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import * as KotOR from "../../../KotOR";
+import { TabTextEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;
@@ -83,3 +83,4 @@ export const TabScriptInspector = function(props: any){
     </div>
   )
 }
+

@@ -4,7 +4,7 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTCEditor } from "../../components/tabs/TabUTCEditor";
+import { TabUTCEditor } from "../../components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
 import { UI3DRendererView } from "../../components/UI3DRendererView";
 import { ModuleCreatureAnimState } from "../../../../enums/module/ModuleCreatureAnimState";

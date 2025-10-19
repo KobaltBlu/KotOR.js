@@ -1,14 +1,14 @@
 import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react"
-import { BaseTabProps } from "../../interfaces/BaseTabProps"
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
-import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../states/tabs";
+import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "../../../states/tabs";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "../../../KotOR";
 import { Form, InputGroup } from "react-bootstrap";
-import { ForgeTreeView } from "../treeview/ForgeTreeView";
-import { ListItemNode } from "../treeview/ListItemNode";
-import { useContextMenu } from "../common/ContextMenu";
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { ListItemNode } from "../../treeview/ListItemNode";
+import { useContextMenu } from "../../common/ContextMenu";
 import { createGFFContextMenuItems } from "./GFFContextMenu";
 
 export const TabGFFEditor = function(props: BaseTabProps){

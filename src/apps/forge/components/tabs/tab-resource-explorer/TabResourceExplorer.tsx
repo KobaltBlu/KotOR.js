@@ -1,13 +1,13 @@
 import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
-import { TabResourceExplorerState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
+import { TabResourceExplorerState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { EditorFile } from "../../../EditorFile";
 import { Form, ProgressBar } from "react-bootstrap";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { ForgeTreeView } from "../treeview/ForgeTreeView";
-import { ResourceListNode } from "../treeview/ResourceListNode";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { ResourceListNode } from "../../treeview/ResourceListNode";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {
@@ -159,3 +159,4 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   );
 
 };
+

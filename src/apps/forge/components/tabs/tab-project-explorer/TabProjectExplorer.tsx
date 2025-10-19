@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabProjectExplorerState } from "../../states/tabs";
-import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
-import { FileLocationType } from "../../enum/FileLocationType";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { ForgeTreeView } from "../treeview/ForgeTreeView";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabProjectExplorerState } from "../../../states/tabs";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { EditorFile } from "../../../EditorFile";
+import { FileLocationType } from "../../../enum/FileLocationType";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -92,3 +92,4 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
   );
 
 }
+

@@ -1,13 +1,13 @@
 import React, { useState } from "react"
-import { BaseTabProps } from "../../interfaces/BaseTabProps"
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabTwoDAEditorState } from "../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabTwoDAEditorState } from "../../../states/tabs";
 import { ProgressBar } from "react-bootstrap";
-import { TwoDAEditorRow } from "../TwoDAEditorRow";
-import { TwoDAEditorColumnHeader } from "../TwoDAEditorColumnHeader";
+import { TwoDAEditorRow } from "../../TwoDAEditorRow";
+import { TwoDAEditorColumnHeader } from "../../TwoDAEditorColumnHeader";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "../../../KotOR";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
   const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
@@ -80,3 +80,4 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     )
   )
 }
+

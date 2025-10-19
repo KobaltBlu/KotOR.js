@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabAudioPlayerState } from "../../states/tabs/TabAudioPlayerState";
-import { AudioPlayerState } from "../../states/AudioPlayerState";
-import * as KotOR from "../../../../KotOR";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabAudioPlayerState } from "../../../states/tabs/TabAudioPlayerState";
+import { AudioPlayerState } from "../../../states/AudioPlayerState";
+import * as KotOR from "../../../../../KotOR";
 
 export const TabAudioPlayer = function(props: BaseTabProps) {
   const tab = props.tab as TabAudioPlayerState;

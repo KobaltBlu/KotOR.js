@@ -3,7 +3,7 @@ import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabGFFEditor } from "../../components/tabs/TabGFFEditor";
+import { TabGFFEditor } from "../../components/tabs/tab-gff-editor/TabGFFEditor";
 
 
 export type TabGFFEditorStateEventListenerTypes =

@@ -1,7 +1,7 @@
 import React from "react";
 import { TabState } from "./TabState";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabERFEditor } from "../../components/tabs/TabERFEditor";
+import { TabERFEditor } from "../../components/tabs/tab-erf-editor/TabERFEditor";
 import { EditorFile } from "../../EditorFile";
 
 import * as KotOR from "../../KotOR";

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "../../interfaces/BaseTabProps";
-import { TabWOKEditorControlMode, TabWOKEditorState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { UI3DRendererView } from "../UI3DRendererView";
-import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { TabWOKEditorControlMode, TabWOKEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { UI3DRendererView } from "../../UI3DRendererView";
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 
-import * as KotOR from "../../KotOR";
-import { SectionContainer } from "../SectionContainer";
+import * as KotOR from "../../../KotOR";
+import { SectionContainer } from "../../SectionContainer";
 import { Button, ButtonGroup } from "react-bootstrap";
 
 export const TabWOKEditor = function(props: BaseTabProps) {

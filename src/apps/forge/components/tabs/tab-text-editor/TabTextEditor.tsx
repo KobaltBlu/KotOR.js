@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import MonacoEditor from "react-monaco-editor";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { TabTextEditorState } from "../../states/tabs";
-import { LayoutContainer } from "../LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "../../context/LayoutContainerContext";
-import { TabManagerProvider } from "../../context/TabManagerContext";
-import TabManager from "./TabManager";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { TabTextEditorState } from "../../../states/tabs";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { TabManagerProvider } from "../../../context/TabManagerContext";
+import TabManager from "../TabManager";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
 export const TabTextEditor = function(props: any){
@@ -68,3 +68,4 @@ export const TabTextEditor = function(props: any){
     </>
   )
 }
+

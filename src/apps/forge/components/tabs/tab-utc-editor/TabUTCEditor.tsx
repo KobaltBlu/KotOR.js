@@ -1,11 +1,11 @@
 import React, { useState } from "react"
-import { BaseTabProps } from "../../interfaces/BaseTabProps"
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
-import * as KotOR from "../../KotOR";
-import { TabUTCEditorState } from "../../states/tabs";
-import { UI3DRendererView } from "../UI3DRendererView";
+import * as KotOR from "../../../KotOR";
+import { TabUTCEditorState } from "../../../states/tabs";
+import { UI3DRendererView } from "../../UI3DRendererView";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 

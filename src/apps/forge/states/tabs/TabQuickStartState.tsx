@@ -1,5 +1,5 @@
 import React from "react";
-import {TabQuickStart} from "../../components/tabs/TabQuickStart";
+import {TabQuickStart} from "../../components/tabs/tab-quick-start/TabQuickStart";
 import { TabState } from "./";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 

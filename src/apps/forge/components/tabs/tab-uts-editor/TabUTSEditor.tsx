@@ -1,12 +1,12 @@
 import React, { useRef, useState } from "react"
-import { BaseTabProps } from "../../interfaces/BaseTabProps"
-import { TabUTSEditorState } from "../../states/tabs";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import * as KotOR from "../../KotOR";
-import "../../styles/tabs/tab-uts-editor.scss";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import { TabUTSEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import * as KotOR from "../../../KotOR";
+import "../../../styles/tabs/tab-uts-editor.scss";
 import { Button, Modal } from "react-bootstrap";
-import { FileBrowserNode } from "../../FileBrowserNode";
-import { ForgeState } from "../../states/ForgeState";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { ForgeState } from "../../../states/ForgeState";
 
 const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClose: () => void}){
   const [soundResRef, setSoundResRef] = useState<string>('');

@@ -1,5 +1,5 @@
 import React from "react";
-import { TabTwoDAEditor } from "../../components/tabs/TabTwoDAEditor";
+import { TabTwoDAEditor } from "../../components/tabs/tab-twoda-editor/TabTwoDAEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";

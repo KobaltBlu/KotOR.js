@@ -1,6 +1,6 @@
 import React from "react";
 import { TabState } from "./";
-import { TabImageViewer } from "../../components/tabs/TabImageViewer";
+import { TabImageViewer } from "../../components/tabs/tab-image-viewer/TabImageViewer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
