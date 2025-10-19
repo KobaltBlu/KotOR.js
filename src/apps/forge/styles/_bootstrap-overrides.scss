@@ -1,0 +1,75 @@
+// =============================================================================
+// BOOTSTRAP VARIABLE OVERRIDES
+// =============================================================================
+// These overrides must be imported BEFORE Bootstrap to take effect
+// This ensures Bootstrap's default styles work with our dark theme
+
+@import "variables";
+
+// Bootstrap Color System Overrides
+$body-bg: $bg-primary;
+$body-color: $text-primary;
+$body-secondary-bg: $bg-secondary;
+$body-secondary-color: $text-secondary;
+$body-tertiary-bg: $bg-tertiary;
+$body-tertiary-color: $text-tertiary;
+
+// Link Colors
+$link-color: $primary-blue-light;
+$link-hover-color: $primary-blue-lightest;
+$link-decoration: none;
+
+// Border Colors
+$border-color: $border-primary;
+$border-color-translucent: rgba(70, 70, 70, 0.5);
+
+// Component Background Colors
+$card-bg: $bg-secondary;
+$card-color: $text-primary;
+$card-border-color: $border-primary;
+$card-cap-bg: $bg-tertiary;
+
+// Form Controls
+$input-bg: $form-bg;
+$input-color: $text-primary;
+$input-border-color: $form-border;
+$input-focus-border-color: $form-border-focus;
+$input-placeholder-color: $form-placeholder;
+
+// Buttons
+$btn-color: $text-primary;
+$btn-bg: $bg-secondary;
+$btn-border-color: $border-primary;
+
+// Dropdowns
+$dropdown-bg: $bg-secondary;
+$dropdown-border-color: $border-primary;
+$dropdown-link-color: $text-primary;
+$dropdown-link-hover-bg: $hover-bg;
+$dropdown-link-hover-color: $text-secondary;
+
+// Modals
+$modal-content-bg: $bg-secondary;
+$modal-content-color: $text-primary;
+$modal-content-border-color: $border-primary;
+$modal-backdrop-bg: #000;
+$modal-backdrop-opacity: 0.75;
+
+// Navs and Tabs
+$nav-link-color: $text-primary;
+$nav-link-hover-color: $primary-blue-light;
+$nav-tabs-link-active-bg: $bg-secondary;
+$nav-tabs-link-active-color: $text-secondary;
+
+// Tables
+$table-bg: $bg-secondary;
+$table-color: $text-primary;
+$table-striped-bg: $bg-tertiary;
+$table-hover-bg: $hover-bg;
+$table-border-color: $border-primary;
+
+// Alerts
+$alert-bg-scale: -80%;
+$alert-border-scale: -70%;
+$alert-color-scale: 40%;
+

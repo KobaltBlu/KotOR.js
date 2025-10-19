@@ -112,10 +112,10 @@ $font-family-trajan: 'Trajan', serif;
 $font-family-old-republic: 'Old Republic', serif;
 $font-family-fa: "Font Awesome 6 Free";
 
-$font-size-base: 12pt;
-$font-size-small: 10pt;
-$font-size-large: 14pt;
-$font-size-larger: 17px;
+$font-size-base: 0.875rem; // 14px (equivalent to ~12pt at 16px base)
+$font-size-small: 0.75rem;  // 12px (equivalent to ~10pt)
+$font-size-large: 1rem;     // 16px (equivalent to ~14pt)
+$font-size-larger: 1.0625rem; // 17px
 
 // =============================================================================
 // SPACING VARIABLES

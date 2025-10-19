@@ -2,8 +2,14 @@
 // IMPORTS
 // =============================================================================
 
-@import "~bootstrap/scss/bootstrap";
+// Import our variables first
 @import "styles/variables";
+
+// Override Bootstrap variables before importing Bootstrap
+@import "styles/bootstrap-overrides";
+
+// Now import Bootstrap with our overrides applied
+@import "~bootstrap/scss/bootstrap";
 
 $fa-font-path: "./fonts";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
