@@ -1377,6 +1377,7 @@ input[type=checkbox].ui {
     @include border-radius-form;
     cursor: pointer;
     vertical-align: middle;
+    user-select: none;
 
     &:before {
       content: '';
@@ -1390,6 +1391,7 @@ input[type=checkbox].ui {
       vertical-align: middle;
       margin-left: -$spacing-sm;
       margin-right: $spacing-sm;
+      user-select: none;
     }
   }
 
@@ -1397,6 +1399,7 @@ input[type=checkbox].ui {
     background: radial-gradient(ellipse at center, $primary-blue 0%, $primary-blue-lighter 100%);
     border: $border-width-thick solid $primary-blue-dark;
     box-shadow: 1px 1px 5px #307592;
+    user-select: none;
   }
 }
 
