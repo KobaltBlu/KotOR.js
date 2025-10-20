@@ -108,6 +108,41 @@ export const TabUTDEditor = function(props: BaseTabProps){
     setComments(''); // Comments not stored in door
   };
 
+  const togglePlot = (value: boolean) => {
+    setPlot(value);
+    if(tab.blueprint) { tab.plot = value; tab.updateFile(); }
+  }
+
+  const toggleStatic = (value: boolean) => {
+    setStatic(value);
+    if(tab.blueprint) { tab.static = value; tab.updateFile(); }
+  }
+
+  const toggleLocked = (value: boolean) => {
+    setLocked(value);
+    if(tab.blueprint) { tab.locked = value; tab.updateFile(); }
+  }
+
+  const toggleLockable = (value: boolean) => {
+    setLockable(value);
+    if(tab.blueprint) { tab.lockable = value; tab.updateFile(); }
+  }
+
+  const toggleAutoRemoveKey = (value: boolean) => {
+    setAutoRemoveKey(value);
+    if(tab.blueprint) { tab.autoRemoveKey = value; tab.updateFile(); }
+  }
+
+  const toggleKeyRequired = (value: boolean) => {
+    setKeyRequired(value);
+    if(tab.blueprint) { tab.keyRequired = value; tab.updateFile(); }
+  }
+
+  const toggleInterruptable = (value: boolean) => {
+    setInterruptable(value);
+    if(tab.blueprint) { tab.interruptable = value; tab.updateFile(); }
+  }
+
   useEffectOnce(() => {
     tab.addEventListener('onEditorFileLoad', loadDoorData);
     loadDoorData(); // Load initial data if already loaded
@@ -144,8 +179,14 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   <td><input type="number" value={appearance} onChange={(e) => { setAppearance(Number(e.target.value)); if(tab.blueprint) { tab.appearance = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
-                  <td><input type="checkbox" className="ui" checked={plot} onChange={(e) => { setPlot(e.target.checked); if(tab.blueprint) { tab.plot = e.target.checked; tab.updateFile(); } }} /><label>Plot Item</label></td>
-                  <td><input type="checkbox" className="ui" checked={static_} onChange={(e) => { setStatic(e.target.checked); if(tab.blueprint) { tab.static = e.target.checked; tab.updateFile(); } }} /><label>Static</label></td>
+                  <td>
+                    <input type="checkbox" className="ui" name="plot" checked={plot} />
+                    <label onClick={(e) => { togglePlot(!plot); }}>Plot Item</label>
+                  </td>
+                  <td>
+                    <input type="checkbox" className="ui" name="static" checked={static_} />
+                    <label onClick={(e) => { toggleStatic(!static_); }}>Static</label>
+                  </td>
                 </tr>
                 <tr>
                   <td><label>Hardness</label></td>
@@ -183,22 +224,26 @@ export const TabUTDEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={locked} onChange={(e) => { setLocked(e.target.checked); if(tab.blueprint) { tab.locked = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Locked</label>
+                  <input type="checkbox" className="ui" checked={locked} />
+                  <label className="checkbox-label" onClick={(e) => { toggleLocked(!locked); }}>Locked</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={lockable} onChange={(e) => { setLockable(e.target.checked); if(tab.blueprint) { tab.lockable = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Can be relocked</label>
+                  <input type="checkbox" className="ui" checked={lockable} />
+                  <label className="checkbox-label" onClick={(e) => { toggleLockable(!lockable); }}>Can be relocked</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={autoRemoveKey} onChange={(e) => { setAutoRemoveKey(e.target.checked); if(tab.blueprint) { tab.autoRemoveKey = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Auto remove key after use</label>
+                  <input type="checkbox" className="ui" checked={autoRemoveKey} />
+                  <label className="checkbox-label" onClick={(e) => { toggleAutoRemoveKey(!autoRemoveKey); }}>Auto remove key after use</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={keyRequired} onChange={(e) => { setKeyRequired(e.target.checked); if(tab.blueprint) { tab.keyRequired = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Key required to unlock or lock</label>
+                  <input type="checkbox" className="ui" checked={keyRequired} />
+                  <label className="checkbox-label" onClick={(e) => { toggleKeyRequired(!keyRequired); }}>Key required to unlock or lock</label>
                 </td>
               </tr>
             </tbody>
@@ -245,8 +290,8 @@ export const TabUTDEditor = function(props: BaseTabProps){
                 <td>
                   <input type="text" maxLength={16} style={{width: 'auto'}} value={conversationResRef} onChange={(e) => { setConversationResRef(e.target.value); if(tab.blueprint) { tab.conversation = e.target.value; tab.updateFile(); } }} />
                   <div className="ui-checkbox" style={{display: 'inline-block'}}>
-                    <input type="checkbox" className="ui" checked={!interruptable} onChange={(e) => { setInterruptable(!e.target.checked); if(tab.blueprint) { tab.interruptable = !e.target.checked; tab.updateFile(); } }} />
-                    <label>No Interrupt</label>
+                    <input type="checkbox" className="ui" checked={!interruptable} />
+                    <label onClick={(e) => { toggleInterruptable(!interruptable); }}>No Interrupt</label>
                   </div>
                 </td>
               </tr>
