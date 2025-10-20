@@ -3,6 +3,8 @@ import React, { useState, ReactNode } from "react";
 export interface SubTab {
   id: string;
   label: string;
+  headerIcon?: string;
+  headerTitle?: string;
   content: ReactNode;
 }
 
@@ -11,6 +13,38 @@ export interface SubTabHostProps {
   defaultTab?: string;
   leftPanel?: ReactNode;
   contentStyle?: React.CSSProperties;
+}
+
+export interface SubTabHeaderProps {
+  title: string;
+  icon?: string;
+}
+
+export const SubTabHeader = function(props: SubTabHeaderProps) {
+  return (
+    <div className="tab-pane-header">
+      <h3>
+        {props.icon && (
+          <>
+            <i className={`fa-solid ${props.icon}`}/>&nbsp;
+          </>
+        )}
+        {props.title}
+      </h3>
+    </div>
+  );
+}
+
+export interface SubTabContentProps {
+  children: ReactNode;
+}
+
+export const SubTabContent = function(props: SubTabContentProps) {
+  return (
+    <div className="tab-pane-content relative">
+      {props.children}
+    </div>
+  );
 }
 
 export const SubTabHost: React.FC<SubTabHostProps> = ({
@@ -49,7 +83,6 @@ export const SubTabHost: React.FC<SubTabHostProps> = ({
               left: leftPanel ? '50%' : 0,
               right: 0,
               overflowY: 'auto',
-              padding: '0 10px',
               ...contentStyle
             }}
           >
@@ -59,7 +92,10 @@ export const SubTabHost: React.FC<SubTabHostProps> = ({
                 className="tab-pane"
                 style={{ display: selectedTab === tab.id ? 'block' : 'none' }}
               >
-                {tab.content}
+                {(tab.headerIcon || tab.headerTitle) && (
+                  <SubTabHeader icon={tab.headerIcon || ''} title={tab.headerTitle || ''} />
+                )}
+                <SubTabContent>{tab.content}</SubTabContent>
               </div>
             ))}
           </div>

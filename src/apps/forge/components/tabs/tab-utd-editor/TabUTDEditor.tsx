@@ -120,11 +120,10 @@ export const TabUTDEditor = function(props: BaseTabProps){
     {
       id: 'basic',
       label: 'Basic',
+      headerIcon: 'fa-info-circle',
+      headerTitle: 'Basic',
       content: (
         <>
-          <h3><i className="fa-solid fa-info-circle"></i> Basic</h3>
-          <hr />
-
           <table style={{width: '100%;'}}>
             <tbody>
                 <tr>
@@ -176,10 +175,10 @@ export const TabUTDEditor = function(props: BaseTabProps){
     {
       id: 'lock',
       label: 'Lock',
+      headerIcon: 'fa-lock',
+      headerTitle: 'Lock',
       content: (
         <>
-          <h3><i className="fa-solid fa-lock"></i> Lock</h3>
-          <hr />
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
@@ -227,11 +226,10 @@ export const TabUTDEditor = function(props: BaseTabProps){
     {
       id: 'advanced',
       label: 'Advanced',
+      headerIcon: 'fa-gear',
+      headerTitle: 'Advanced',
       content: (
         <>
-          <h3><i className="fa-solid fa-gear"></i> Advanced</h3>
-          <hr />
-
           <table style={{width: '100%;'}}>
             <tbody>
               <tr>
@@ -258,17 +256,16 @@ export const TabUTDEditor = function(props: BaseTabProps){
               </tr>
             </tbody>
           </table>
-
         </>
       )
     },
     {
       id: 'scripts',
       label: 'Scripts',
+      headerIcon: 'fa-file-code',
+      headerTitle: 'Scripts',
       content: (
         <>
-          <h3><i className="fa-solid fa-file-code"></i> Scripts</h3>
-          <hr />
           <table style={{width: '100%;'}}>
             <tbody>
                 <tr>
@@ -335,10 +332,10 @@ export const TabUTDEditor = function(props: BaseTabProps){
     {
       id: 'description',
       label: 'Description',
+      headerIcon: 'fa-file-lines',
+      headerTitle: 'Description',
       content: (
         <>
-          <h3><i className="fa-solid fa-file-lines"></i> Description</h3>
-          <hr />
           <label>Description</label>
           <CExoLocStringEditor 
             value={description}
@@ -353,10 +350,10 @@ export const TabUTDEditor = function(props: BaseTabProps){
     {
       id: 'comments',
       label: 'Comments',
+      headerIcon: 'fa-comment',
+      headerTitle: 'Comments',
       content: (
         <>
-          <h3><i className="fa-solid fa-comment"></i> Comments</h3>
-          <hr />
           <label>Comments</label>
           <textarea value={comments} onChange={(e) => setComments(e.target.value)}></textarea>
         </>

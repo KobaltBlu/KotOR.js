@@ -98,22 +98,6 @@
     // display: none;
     // box-shadow: rgb(0, 0, 0) 0px 0px 5px inset;
 
-    .tab-pane > .tab-pane-content {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-    }
-
-    .tab-pane > .tab-pane-content.scroll-y {
-      overflow-y: auto;
-    }
-
-    .tab-pane > .tab-pane-content.scroll-x {
-      overflow-x: auto;
-    }
-
     .tab-pane {
       overflow: hidden;
       &.active, &.show {
@@ -142,6 +126,43 @@
         .vertical-tabs-container {
           position: relative;
           height: calc(100% - 30px);
+        }
+      }
+
+      .tab-pane-header {
+        background: #292929;
+        margin: 0;
+        padding: 0 10px;
+        padding-bottom: 5px;
+        padding-top: 15px;
+        border-bottom: 1px solid $border-primary;
+        margin-bottom: 15px;
+        i.icon {
+          color: $secondary-cyan-dark;
+        }
+      }
+      
+      .tab-pane-content {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        &.relative {
+          position: relative;
+          top: initial;
+          bottom: initial;
+          left: initial;
+          right: initial;
+          padding: 0 10px;
+        }
+
+        &.scroll-y {
+          overflow-y: auto;
+        }
+    
+        &.scroll-x {
+          overflow-x: auto;
         }
       }
 
