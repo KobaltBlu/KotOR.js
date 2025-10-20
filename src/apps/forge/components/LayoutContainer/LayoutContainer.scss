@@ -105,6 +105,11 @@
   &.ui-layout-resizer-east-sliding-hover {
     border-left-width: 1px;
   }
+  
+  // Dragging limit styles
+  &.ui-layout-resizer-dragging-limit {
+    background: #E1A4A4 !important; // red color for limit feedback
+  }
 }
 
 // =============================================================================
@@ -190,6 +195,30 @@
 }
 
 // =============================================================================
+// LAYOUT MASKS
+// =============================================================================
+
+.ui-layout-mask {
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  opacity: 0 !important;
+  filter: Alpha(Opacity="0") !important;
+}
+
+.ui-layout-mask-inside-pane {
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+div.ui-layout-mask {} // standard mask for iframes
+iframe.ui-layout-mask {} // extra mask for objects/applets
+
+// =============================================================================
 // UTILITY CLASSES
 // =============================================================================
 
@@ -216,6 +245,23 @@
 // =============================================================================
 
 @media print {
+  // Allow content to flow for printing
+  html {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  
+  body.ui-layout-container {
+    position: static !important;
+    top: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    // only IE6 has container width & height set by Layout
+    _width: auto !important;
+    _height: auto !important;
+  }
+  
   .ui-layout-resizer, 
   .ui-layout-toggler {
     display: none !important;
