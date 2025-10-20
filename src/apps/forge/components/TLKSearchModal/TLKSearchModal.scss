@@ -1,0 +1,334 @@
+@import "../../styles/variables";
+
+.tlk-search-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: $bg-overlay-dark;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: $z-index-modal;
+  backdrop-filter: blur(2px);
+  animation: fadeIn $transition-fast ease-out;
+}
+
+.tlk-search-modal {
+  background-color: $bg-secondary;
+  border: $border-width solid $border-primary;
+  border-radius: $border-radius-large;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  width: 90%;
+  max-width: 800px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  font-family: $font-family-primary;
+  animation: slideIn $transition-normal ease-out;
+
+  .tlk-search-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $spacing-lg;
+    border-bottom: $border-width solid $border-primary;
+    background-color: $bg-tertiary;
+    border-radius: $border-radius-large $border-radius-large 0 0;
+
+    h3 {
+      margin: 0;
+      color: $text-primary;
+      font-size: $font-size-large;
+      font-weight: bold;
+    }
+
+    .tlk-search-modal-close {
+      background: none;
+      border: none;
+      color: $text-primary;
+      font-size: 28px;
+      cursor: pointer;
+      padding: 0;
+      width: 30px;
+      height: 30px;
+      line-height: 1;
+      transition: color $transition-fast ease;
+
+      &:hover {
+        color: $error;
+      }
+    }
+  }
+
+  .tlk-search-modal-body {
+    padding: $spacing-lg;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-lg;
+
+    .tlk-search-controls {
+      display: flex;
+      gap: $spacing-md;
+
+      .tlk-search-input {
+        flex: 1;
+        padding: $spacing-md;
+        border: $border-width solid $form-border;
+        border-radius: $border-radius;
+        background-color: $form-bg;
+        color: $text-primary;
+        font-size: $font-size-base;
+        @include transition-form;
+
+        &:focus {
+          outline: none;
+          border-color: $form-border-focus;
+          box-shadow: 0 0 0 3px rgba($form-border-focus, 0.1);
+        }
+
+        &::placeholder {
+          color: $form-placeholder;
+        }
+      }
+
+      .tlk-search-button {
+        padding: $spacing-md $spacing-xl;
+        cursor: pointer;
+        background-color: $primary-blue;
+        color: $text-white;
+        border: none;
+        border-radius: $border-radius;
+        font-size: $font-size-base;
+        font-weight: bold;
+        transition: background-color $transition-fast ease;
+        white-space: nowrap;
+
+        &:hover:not(:disabled) {
+          background-color: $primary-blue-dark;
+        }
+
+        &:active:not(:disabled) {
+          background-color: $primary-blue-darker;
+        }
+
+        &:disabled {
+          background-color: $disabled-bg;
+          border: $border-width solid $disabled-border;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    .tlk-current-selection {
+      padding: $spacing-md;
+      background-color: $bg-tertiary;
+      border: $border-width solid $border-accent;
+      border-radius: $border-radius;
+      color: $text-primary;
+      font-size: $font-size-small;
+
+      strong {
+        color: $primary-blue-lighter;
+      }
+    }
+
+    .tlk-search-results-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 300px;
+      border: $border-width solid $border-primary;
+      border-radius: $border-radius;
+      background-color: $bg-tertiary;
+
+      .tlk-search-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: $spacing-xxl;
+        color: $text-tertiary;
+
+        .tlk-search-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid $border-primary;
+          border-top-color: $primary-blue;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+          margin-bottom: $spacing-lg;
+        }
+
+        p {
+          margin: 0;
+          font-size: $font-size-base;
+        }
+      }
+
+      .tlk-search-no-results,
+      .tlk-search-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: $spacing-xxl;
+        color: $text-tertiary;
+        text-align: center;
+
+        i {
+          font-size: 48px;
+          margin-bottom: $spacing-lg;
+          color: $text-quaternary;
+        }
+
+        p {
+          margin: 0 0 $spacing-sm 0;
+          font-size: $font-size-base;
+          color: $text-primary;
+        }
+
+        small {
+          font-size: $font-size-small;
+          color: $text-tertiary;
+        }
+      }
+
+      .tlk-search-results-header {
+        padding: $spacing-md;
+        background-color: $bg-quaternary;
+        border-bottom: $border-width solid $border-primary;
+        font-size: $font-size-small;
+        color: $text-primary;
+        font-weight: bold;
+      }
+
+      .tlk-search-results-list {
+        overflow-y: auto;
+        flex: 1;
+
+        .tlk-search-result-item {
+          padding: $spacing-md $spacing-lg;
+          cursor: pointer;
+          border-bottom: $border-width solid $border-secondary;
+          transition: background-color $transition-fast ease;
+          display: flex;
+          gap: $spacing-lg;
+
+          &:last-child {
+            border-bottom: none;
+          }
+
+          &:hover {
+            background-color: $hover-bg;
+          }
+
+          &:active {
+            background-color: $active-bg;
+          }
+
+          &.active {
+            background-color: $hover-bg-light;
+            border-left: 3px solid $primary-blue;
+            padding-left: calc(#{$spacing-lg} - 3px);
+          }
+
+          .tlk-result-index {
+            color: $primary-blue-lighter;
+            font-weight: bold;
+            font-size: $font-size-base;
+            min-width: 60px;
+            flex-shrink: 0;
+          }
+
+          .tlk-result-text {
+            color: $text-primary;
+            font-size: $font-size-base;
+            flex: 1;
+            word-break: break-word;
+          }
+        }
+      }
+    }
+  }
+
+  .tlk-search-modal-footer {
+    padding: $spacing-lg;
+    border-top: $border-width solid $border-primary;
+    background-color: $bg-tertiary;
+    display: flex;
+    justify-content: flex-end;
+    border-radius: 0 0 $border-radius-large $border-radius-large;
+
+    .tlk-cancel-button {
+      padding: $spacing-md $spacing-xl;
+      cursor: pointer;
+      background-color: $bg-quinary;
+      color: $text-primary;
+      border: $border-width solid $border-primary;
+      border-radius: $border-radius;
+      font-size: $font-size-base;
+      transition: background-color $transition-fast ease, border-color $transition-fast ease;
+
+      &:hover {
+        background-color: $hover-bg;
+        border-color: $border-quaternary;
+      }
+
+      &:active {
+        background-color: $active-bg;
+      }
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Scrollbar styling for results list
+.tlk-search-results-list {
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $scrollbar-track;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $scrollbar-thumb;
+    border-radius: 4px;
+
+    &:hover {
+      background: $scrollbar-thumb-inactive;
+    }
+  }
+}
+

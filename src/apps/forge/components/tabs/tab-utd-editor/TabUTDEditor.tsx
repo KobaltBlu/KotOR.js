@@ -4,13 +4,15 @@ import { TabUTDEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { CExoLocStringEditor } from "../../CExoLocStringEditor";
+import * as KotOR from "../../../KotOR";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
   const tab: TabUTDEditorState = props.tab as TabUTDEditorState;
 
   // Basic tab
-  const [name, setName] = useState<string>('');
+  const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [tag, setTag] = useState<string>('');
   const [appearance, setAppearance] = useState<number>(0);
   const [plot, setPlot] = useState<boolean>(false);
@@ -54,55 +56,55 @@ export const TabUTDEditor = function(props: BaseTabProps){
   const [onUserDefined, setOnUserDefined] = useState<string>('');
 
   // Description tab
-  const [description, setDescription] = useState<string>('');
+  const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
 
   // Comments tab
   const [comments, setComments] = useState<string>('');
 
   const loadDoorData = () => {
-    if (!tab.moduleDoor) return;
+    if (!tab.blueprint) return;
 
-    setName(tab.moduleDoor.getName());
-    setTag(tab.moduleDoor.tag);
-    setAppearance(tab.moduleDoor.appearance);
-    setPlot(tab.moduleDoor.plot);
-    setStatic(tab.moduleDoor.static);
-    setHardness(tab.moduleDoor.hardness);
-    setHitpoints(tab.moduleDoor.hp);
-    setFort(tab.moduleDoor.fort);
-    setRef(tab.moduleDoor.ref);
-    setWill(tab.moduleDoor.will);
+    setLocName(tab.locName);
+    setTag(tab.tag);
+    setAppearance(tab.appearance);
+    setPlot(tab.plot);
+    setStatic(tab.static);
+    setHardness(tab.hardness);
+    setHitpoints(tab.hp);
+    setFort(tab.fort);
+    setRef(tab.ref);
+    setWill(tab.will);
 
-    setLocked(tab.moduleDoor.locked);
-    setLockable(tab.moduleDoor.lockable);
-    setAutoRemoveKey(tab.moduleDoor.autoRemoveKey);
-    setKeyRequired(tab.moduleDoor.keyRequired);
-    setOpenLockDC(tab.moduleDoor.openLockDC);
-    setCloseLockDC(tab.moduleDoor.closeLockDC);
-    setKeyName(tab.moduleDoor.keyName);
+    setLocked(tab.locked);
+    setLockable(tab.lockable);
+    setAutoRemoveKey(tab.autoRemoveKey);
+    setKeyRequired(tab.keyRequired);
+    setOpenLockDC(tab.openLockDC);
+    setCloseLockDC(tab.closeLockDC);
+    setKeyName(tab.keyName);
 
-    setTemplateResRef(tab.moduleDoor.templateResRef);
-    setFactionId(tab.moduleDoor.factionId || 0);
-    setConversationResRef(tab.moduleDoor.conversation?.resref || '');
-    setInterruptable(tab.moduleDoor.interruptable);
-    setAnimationState(tab.moduleDoor.animationState);
+    setTemplateResRef(tab.templateResRef);
+    setFactionId(tab.factionId || 0);
+    setConversationResRef(tab.conversation);
+    setInterruptable(tab.interruptable);
+    setAnimationState(tab.animationState);
 
-    setOnClick(tab.moduleDoor.scripts.onClick?.name || '');
-    setOnClosed(tab.moduleDoor.scripts.onClosed?.name || '');
-    setOnDamaged(tab.moduleDoor.scripts.onDamaged?.name || '');
-    setOnDeath(tab.moduleDoor.scripts.onDeath?.name || '');
-    setOnDisarm(tab.moduleDoor.scripts.onDisarm?.name || '');
-    setOnFailToOpen(tab.moduleDoor.scripts.onFailToOpen?.name || '');
-    setOnHeartbeat(tab.moduleDoor.scripts.onHeartbeat?.name || '');
-    setOnLock(tab.moduleDoor.scripts.onLock?.name || '');
-    setOnMeleeAttacked(tab.moduleDoor.scripts.onMeleeAttacked?.name || '');
-    setOnOpen(tab.moduleDoor.scripts.onOpen?.name || '');
-    setOnSpellCastAt(tab.moduleDoor.scripts.onSpellCastAt?.name || '');
-    setOnTrapTriggered(tab.moduleDoor.scripts.onTrapTriggered?.name || '');
-    setOnUnlock(tab.moduleDoor.scripts.onUnlock?.name || '');
-    setOnUserDefined(tab.moduleDoor.scripts.onUserDefined?.name || '');
+    setOnClick(tab.onClick);
+    setOnClosed(tab.onClosed);
+    setOnDamaged(tab.onDamaged);
+    setOnDeath(tab.onDeath);
+    setOnDisarm(tab.onDisarm);
+    setOnFailToOpen(tab.onFailToOpen);
+    setOnHeartbeat(tab.onHeartbeat);
+    setOnLock(tab.onLock);
+    setOnMeleeAttacked(tab.onMeleeAttacked);
+    setOnOpen(tab.onOpen);
+    setOnSpellCastAt(tab.onSpellCastAt);
+    setOnTrapTriggered(tab.onTrapTriggered);
+    setOnUnlock(tab.onUnlock);
+    setOnUserDefined(tab.onUserDefined);
 
-    setDescription(tab.moduleDoor.description?.getValue() || '');
+    setDescription(tab.description);
     setComments(''); // Comments not stored in door
   };
 
@@ -127,39 +129,44 @@ export const TabUTDEditor = function(props: BaseTabProps){
             <tbody>
                 <tr>
                   <td><label>Name</label></td>
-                  <td><input type="text" value={name} onChange={(e) => { setName(e.target.value); if(tab.moduleDoor) tab.moduleDoor.locName.setValue(e.target.value); }} /></td>
+                  <td>
+                    <CExoLocStringEditor 
+                      value={locName}
+                      onChange={(newValue) => { setLocName(newValue); if(tab.blueprint) { tab.locName = newValue; tab.updateFile(); } }}
+                    />
+                  </td>
                 </tr>
                 <tr>
                   <td><label>Tag</label></td>
-                  <td><input type="text" maxLength={16} value={tag} onChange={(e) => { setTag(e.target.value); if(tab.moduleDoor) tab.moduleDoor.tag = e.target.value; }} /></td>
+                  <td><input type="text" maxLength={16} value={tag} onChange={(e) => { setTag(e.target.value); if(tab.blueprint) { tab.tag = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>Door Type</label></td>
-                  <td><input type="number" value={appearance} onChange={(e) => { setAppearance(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.appearance = Number(e.target.value); }} /></td>
+                  <td><input type="number" value={appearance} onChange={(e) => { setAppearance(Number(e.target.value)); if(tab.blueprint) { tab.appearance = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
-                  <td><input type="checkbox" className="ui" checked={plot} onChange={(e) => { setPlot(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.plot = e.target.checked; }} /><label>Plot Item</label></td>
-                  <td><input type="checkbox" className="ui" checked={static_} onChange={(e) => { setStatic(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.static = e.target.checked; }} /><label>Static</label></td>
+                  <td><input type="checkbox" className="ui" checked={plot} onChange={(e) => { setPlot(e.target.checked); if(tab.blueprint) { tab.plot = e.target.checked; tab.updateFile(); } }} /><label>Plot Item</label></td>
+                  <td><input type="checkbox" className="ui" checked={static_} onChange={(e) => { setStatic(e.target.checked); if(tab.blueprint) { tab.static = e.target.checked; tab.updateFile(); } }} /><label>Static</label></td>
                 </tr>
                 <tr>
                   <td><label>Hardness</label></td>
-                  <td><input type="number" min="0" value={hardness} onChange={(e) => { setHardness(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.hardness = Number(e.target.value); }} /></td>
+                  <td><input type="number" min="0" value={hardness} onChange={(e) => { setHardness(Number(e.target.value)); if(tab.blueprint) { tab.hardness = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>Hitpoints</label></td>
-                  <td><input type="number" min="0" value={hitpoints} onChange={(e) => { setHitpoints(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.hp = Number(e.target.value); }} /></td>
+                  <td><input type="number" min="0" value={hitpoints} onChange={(e) => { setHitpoints(Number(e.target.value)); if(tab.blueprint) { tab.hp = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>Fortitude Save</label></td>
-                  <td><input type="number" min="0" value={fort} onChange={(e) => { setFort(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.fort = Number(e.target.value); }} /></td>
+                  <td><input type="number" min="0" value={fort} onChange={(e) => { setFort(Number(e.target.value)); if(tab.blueprint) { tab.fort = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>Reflex Save</label></td>
-                  <td><input type="number" min="0" value={ref} onChange={(e) => { setRef(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.ref = Number(e.target.value); }} /></td>
+                  <td><input type="number" min="0" value={ref} onChange={(e) => { setRef(Number(e.target.value)); if(tab.blueprint) { tab.ref = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>Will Save</label></td>
-                  <td><input type="number" min="0" value={will} onChange={(e) => { setWill(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.will = Number(e.target.value); }} /></td>
+                  <td><input type="number" min="0" value={will} onChange={(e) => { setWill(Number(e.target.value)); if(tab.blueprint) { tab.will = Number(e.target.value); tab.updateFile(); } }} /></td>
                 </tr>
             </tbody>
           </table>
@@ -177,22 +184,22 @@ export const TabUTDEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={locked} onChange={(e) => { setLocked(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.locked = e.target.checked; }} /><label className="checkbox-label">Locked</label>
+                  <input type="checkbox" className="ui" checked={locked} onChange={(e) => { setLocked(e.target.checked); if(tab.blueprint) { tab.locked = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Locked</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={lockable} onChange={(e) => { setLockable(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.lockable = e.target.checked; }} /><label className="checkbox-label">Can be relocked</label>
+                  <input type="checkbox" className="ui" checked={lockable} onChange={(e) => { setLockable(e.target.checked); if(tab.blueprint) { tab.lockable = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Can be relocked</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={autoRemoveKey} onChange={(e) => { setAutoRemoveKey(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.autoRemoveKey = e.target.checked; }} /><label className="checkbox-label">Auto remove key after use</label>
+                  <input type="checkbox" className="ui" checked={autoRemoveKey} onChange={(e) => { setAutoRemoveKey(e.target.checked); if(tab.blueprint) { tab.autoRemoveKey = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Auto remove key after use</label>
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={keyRequired} onChange={(e) => { setKeyRequired(e.target.checked); if(tab.moduleDoor) tab.moduleDoor.keyRequired = e.target.checked; }} /><label className="checkbox-label">Key required to unlock or lock</label>
+                  <input type="checkbox" className="ui" checked={keyRequired} onChange={(e) => { setKeyRequired(e.target.checked); if(tab.blueprint) { tab.keyRequired = e.target.checked; tab.updateFile(); } }} /><label className="checkbox-label">Key required to unlock or lock</label>
                 </td>
               </tr>
             </tbody>
@@ -202,15 +209,15 @@ export const TabUTDEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td><label>Open Lock DC</label></td>
-                <td><input type="number" value={openLockDC} onChange={(e) => { setOpenLockDC(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.openLockDC = Number(e.target.value); }} /></td>
+                <td><input type="number" value={openLockDC} onChange={(e) => { setOpenLockDC(Number(e.target.value)); if(tab.blueprint) { tab.openLockDC = Number(e.target.value); tab.updateFile(); } }} /></td>
               </tr>
               <tr>
                 <td><label>Close Lock DC</label></td>
-                <td><input type="number" value={closeLockDC} onChange={(e) => { setCloseLockDC(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.closeLockDC = Number(e.target.value); }} /></td>
+                <td><input type="number" value={closeLockDC} onChange={(e) => { setCloseLockDC(Number(e.target.value)); if(tab.blueprint) { tab.closeLockDC = Number(e.target.value); tab.updateFile(); } }} /></td>
               </tr>
               <tr>
                 <td><label>Key Name</label></td>
-                <td><input type="text" maxLength={16} value={keyName} onChange={(e) => { setKeyName(e.target.value); if(tab.moduleDoor) tab.moduleDoor.keyName = e.target.value; }} /></td>
+                <td><input type="text" maxLength={16} value={keyName} onChange={(e) => { setKeyName(e.target.value); if(tab.blueprint) { tab.keyName = e.target.value; tab.updateFile(); } }} /></td>
               </tr>
             </tbody>
           </table>
@@ -233,21 +240,21 @@ export const TabUTDEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Faction</label></td>
-                <td><input type="number" value={factionId} onChange={(e) => { setFactionId(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.factionId = Number(e.target.value); }} /></td>
+                <td><input type="number" value={factionId} onChange={(e) => { setFactionId(Number(e.target.value)); if(tab.blueprint) { tab.factionId = Number(e.target.value); tab.updateFile(); } }} /></td>
               </tr>
               <tr>
                 <td><label>Conversation</label></td>
                 <td>
-                  <input type="text" maxLength={16} style={{width: 'auto'}} value={conversationResRef} readOnly />
+                  <input type="text" maxLength={16} style={{width: 'auto'}} value={conversationResRef} onChange={(e) => { setConversationResRef(e.target.value); if(tab.blueprint) { tab.conversation = e.target.value; tab.updateFile(); } }} />
                   <div className="ui-checkbox" style={{display: 'inline-block'}}>
-                    <input type="checkbox" className="ui" checked={!interruptable} onChange={(e) => { setInterruptable(!e.target.checked); if(tab.moduleDoor) tab.moduleDoor.interruptable = !e.target.checked; }} />
+                    <input type="checkbox" className="ui" checked={!interruptable} onChange={(e) => { setInterruptable(!e.target.checked); if(tab.blueprint) { tab.interruptable = !e.target.checked; tab.updateFile(); } }} />
                     <label>No Interrupt</label>
                   </div>
                 </td>
               </tr>
               <tr>
                 <td><label>Animation State</label></td>
-                <td><input type="number" value={animationState} onChange={(e) => { setAnimationState(Number(e.target.value)); if(tab.moduleDoor) tab.moduleDoor.animationState = Number(e.target.value); }} /></td>
+                <td><input type="number" value={animationState} onChange={(e) => { setAnimationState(Number(e.target.value)); if(tab.blueprint) { tab.animationState = Number(e.target.value); tab.updateFile(); } }} /></td>
               </tr>
             </tbody>
           </table>
@@ -266,59 +273,59 @@ export const TabUTDEditor = function(props: BaseTabProps){
             <tbody>
                 <tr>
                   <td><label>OnClick</label></td>
-                  <td><input type="text" maxLength={16} value={onClick} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onClick} onChange={(e) => { setOnClick(e.target.value); if(tab.blueprint) { tab.onClick = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnClosed</label></td>
-                  <td><input type="text" maxLength={16} value={onClosed} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onClosed} onChange={(e) => { setOnClosed(e.target.value); if(tab.blueprint) { tab.onClosed = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDamaged</label></td>
-                  <td><input type="text" maxLength={16} value={onDamaged} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onDamaged} onChange={(e) => { setOnDamaged(e.target.value); if(tab.blueprint) { tab.onDamaged = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDeath</label></td>
-                  <td><input type="text" maxLength={16} value={onDeath} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onDeath} onChange={(e) => { setOnDeath(e.target.value); if(tab.blueprint) { tab.onDeath = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnDisarm</label></td>
-                  <td><input type="text" maxLength={16} value={onDisarm} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onDisarm} onChange={(e) => { setOnDisarm(e.target.value); if(tab.blueprint) { tab.onDisarm = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnFailToOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onFailToOpen} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onFailToOpen} onChange={(e) => { setOnFailToOpen(e.target.value); if(tab.blueprint) { tab.onFailToOpen = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnHeartbeat</label></td>
-                  <td><input type="text" maxLength={16} value={onHeartbeat} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onHeartbeat} onChange={(e) => { setOnHeartbeat(e.target.value); if(tab.blueprint) { tab.onHeartbeat = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnLock</label></td>
-                  <td><input type="text" maxLength={16} value={onLock} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onLock} onChange={(e) => { setOnLock(e.target.value); if(tab.blueprint) { tab.onLock = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnMeleeAttacked</label></td>
-                  <td><input type="text" maxLength={16} value={onMeleeAttacked} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onMeleeAttacked} onChange={(e) => { setOnMeleeAttacked(e.target.value); if(tab.blueprint) { tab.onMeleeAttacked = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onOpen} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onOpen} onChange={(e) => { setOnOpen(e.target.value); if(tab.blueprint) { tab.onOpen = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnSpellCastAt</label></td>
-                  <td><input type="text" maxLength={16} value={onSpellCastAt} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onSpellCastAt} onChange={(e) => { setOnSpellCastAt(e.target.value); if(tab.blueprint) { tab.onSpellCastAt = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnTrapTriggered</label></td>
-                  <td><input type="text" maxLength={16} value={onTrapTriggered} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onTrapTriggered} onChange={(e) => { setOnTrapTriggered(e.target.value); if(tab.blueprint) { tab.onTrapTriggered = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnUnlock</label></td>
-                  <td><input type="text" maxLength={16} value={onUnlock} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onUnlock} onChange={(e) => { setOnUnlock(e.target.value); if(tab.blueprint) { tab.onUnlock = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
                 <tr>
                   <td><label>OnUserDefined</label></td>
-                  <td><input type="text" maxLength={16} value={onUserDefined} readOnly /></td>
+                  <td><input type="text" maxLength={16} value={onUserDefined} onChange={(e) => { setOnUserDefined(e.target.value); if(tab.blueprint) { tab.onUserDefined = e.target.value; tab.updateFile(); } }} /></td>
                 </tr>
             </tbody>
           </table>
@@ -333,7 +340,13 @@ export const TabUTDEditor = function(props: BaseTabProps){
           <h3><i className="fa-solid fa-file-lines"></i> Description</h3>
           <hr />
           <label>Description</label>
-          <textarea data-type="cexolocstring" value={description} onChange={(e) => { setDescription(e.target.value); if(tab.moduleDoor) tab.moduleDoor.description.setValue(e.target.value); }}></textarea>
+          <CExoLocStringEditor 
+            value={description}
+            onChange={(newValue) => { 
+              setDescription(newValue); 
+              if(tab.blueprint) { tab.description = newValue; tab.updateFile(); } 
+            }}
+          />
         </>
       )
     },

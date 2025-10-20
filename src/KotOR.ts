@@ -35,6 +35,8 @@ export * from "./nwscript/NWScriptInstruction";
 export * from "./nwscript/NWScriptDefK1";
 export * from "./nwscript/NWScriptDefK2";
 
+export * from "./resource/CExoLocString";
+export * from "./resource/CExoLocSubString";
 export * from "./resource/BIFObject";
 export * from "./resource/BIKObject";
 export * from "./resource/ERFObject";

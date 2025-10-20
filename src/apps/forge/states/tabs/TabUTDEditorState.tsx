@@ -16,6 +16,58 @@ export class TabUTDEditorState extends TabState {
 
   ui3DRenderer: UI3DRenderer;
 
+  animationState: number = 0;
+  appearance: number = 0;
+  autoRemoveKey: boolean = false;
+  closeLockDC: number = 0;
+  conversation: string = '';
+  currentHP: number = 0;
+  description: KotOR.CExoLocString = new KotOR.CExoLocString();
+  disarmDC: number = 0;
+  factionId: number = 0;
+  fort: number = 0;
+  genericType: number = 0;
+  hp: number = 0;
+  hardness: number = 0;
+  interruptable: boolean = false;
+  keyName: string = '';
+  keyRequired: boolean = false;
+  loadScreenID: number = 0;
+  locName: KotOR.CExoLocString = new KotOR.CExoLocString();
+  lockable: boolean = false;
+  locked: boolean = false;
+  min1HP: boolean = false;
+  onClick: string = '';
+  onClosed: string = '';
+  onDamaged: string = '';
+  onDeath: string = '';
+  onDisarm: string = '';
+  onFailToOpen: string = '';
+  onHeartbeat: string = '';
+  onLock: string = '';
+  onMeleeAttacked: string = '';
+  onOpen: string = '';
+  onSpellCastAt: string = '';
+  onTrapTriggered: string = '';
+  onUnlock: string = '';
+  onUserDefined: string = '';
+  openLockDC: number = 0;
+  openState: number = 0;
+  paletteID: number = 0;
+  plot: boolean = false;
+  portraitId: number = 0;
+  ref: number = 0;
+  static: boolean = false;
+  tag: string = '';
+  templateResRef: string = '';
+  trapDetectDC: number = 0;
+  trapDetectable: boolean = false;
+  trapDisarmable: boolean = false;
+  trapFlag: boolean = false;
+  trapOneShot: boolean = false;
+  trapType: number = 0;
+  will: number = 0;
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
@@ -46,18 +98,29 @@ export class TabUTDEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.blueprint = new KotOR.GFFObject(response.buffer);
+          this.setPropsFromBlueprint();
           this.processEventListener('onEditorFileLoad', [this]);
-          this.moduleDoor = new KotOR.ModuleDoor(this.blueprint);
-          this.moduleDoor.setContext(this.ui3DRenderer as any);
-          this.moduleDoor.load();
-          this.moduleDoor.loadModel().then( () => {
-            this.ui3DRenderer.scene.add(this.moduleDoor.container);
-            this.updateCameraFocus();
-          });
+          this.initializeGameObject();
           resolve(this.blueprint);
         });
       }
     });
+  }
+
+  disposeGameObject(){
+    if(!this.moduleDoor) return;
+    this.moduleDoor.destroy();
+  }
+
+  async initializeGameObject(){
+    if(!this.blueprint) return;
+    this.disposeGameObject();
+    this.moduleDoor = new KotOR.ModuleDoor(this.blueprint);
+    this.moduleDoor.setContext(this.ui3DRenderer as any);
+    this.moduleDoor.load();
+    await this.moduleDoor.loadModel();
+    this.ui3DRenderer.scene.add(this.moduleDoor.container);
+    this.updateCameraFocus();
   }
 
   updateCameraFocus(){
@@ -104,4 +167,235 @@ export class TabUTDEditorState extends TabState {
     
   }
 
+  setPropsFromBlueprint(){
+    if(!this.blueprint) return;
+    const root = this.blueprint.RootNode;
+    if(!root) return;
+
+    if(root.hasField('AnimationState')){
+      this.animationState = root.getFieldByLabel('AnimationState').getValue() || 0;
+    }
+    if(root.hasField('Appearance')){
+      this.appearance = root.getFieldByLabel('Appearance').getValue() || 0;
+    }
+    if(root.hasField('AutoRemoveKey')){
+      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
+    }
+    if(root.hasField('CloseLockDC')){
+      this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
+    }
+    if(root.hasField('Conversation')){
+      this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
+    }
+    if(root.hasField('CurrentHP')){
+      this.currentHP = root.getFieldByLabel('CurrentHP').getValue() || 0;
+    }
+    if(root.hasField('Description')){
+      this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
+    }
+    if(root.hasField('DisarmDC')){
+      this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
+    }
+    if(root.hasField('Faction')){
+      this.factionId = root.getFieldByLabel('Faction').getValue() || 0;
+    }
+    if(root.hasField('Fort')){
+      this.fort = root.getFieldByLabel('Fort').getValue() || 0;
+    }
+    if(root.hasField('GenericType')){
+      this.genericType = root.getFieldByLabel('GenericType').getValue() || 0;
+    }
+    if(root.hasField('HP')){
+      this.hp = root.getFieldByLabel('HP').getValue() || 0;
+    }
+    if(root.hasField('Hardness')){
+      this.hardness = root.getFieldByLabel('Hardness').getValue() || 0;
+    }
+    if(root.hasField('Interruptable')){
+      this.interruptable = root.getFieldByLabel('Interruptable').getValue() || false;
+    }
+    if(root.hasField('KeyName')){
+      this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
+    }
+    if(root.hasField('KeyRequired')){
+      this.keyRequired = root.getFieldByLabel('KeyRequired').getValue() || false;
+    }
+    if(root.hasField('LoadScreenID')){
+      this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
+    }
+    if(root.hasField('LocName')){
+      this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
+    }
+    if(root.hasField('Lockable')){
+      this.lockable = root.getFieldByLabel('Lockable').getValue() || false;
+    }
+    if(root.hasField('Locked')){
+      this.locked = root.getFieldByLabel('Locked').getValue() || false;
+    }
+    if(root.hasField('Min1HP')){
+      this.min1HP = root.getFieldByLabel('Min1HP').getValue() || false;
+    }
+    if(root.hasField('OnClick')){
+      this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
+    }
+    if(root.hasField('OnClosed')){
+      this.onClosed = root.getFieldByLabel('OnClosed').getValue() || '';
+    }
+    if(root.hasField('OnDamaged')){
+      this.onDamaged = root.getFieldByLabel('OnDamaged').getValue() || '';
+    }
+    if(root.hasField('OnDeath')){
+      this.onDeath = root.getFieldByLabel('OnDeath').getValue() || '';
+    }
+    if(root.hasField('OnDisarm')){
+      this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
+    }
+    if(root.hasField('OnFailToOpen')){
+      this.onFailToOpen = root.getFieldByLabel('OnFailToOpen').getValue() || '';
+    }
+    if(root.hasField('OnHeartbeat')){
+      this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
+    }
+    if(root.hasField('OnLock')){
+      this.onLock = root.getFieldByLabel('OnLock').getValue() || '';
+    }
+    if(root.hasField('OnMeleeAttacked')){
+      this.onMeleeAttacked = root.getFieldByLabel('OnMeleeAttacked').getValue() || '';
+    }
+    if(root.hasField('OnOpen')){
+      this.onOpen = root.getFieldByLabel('OnOpen').getValue() || '';
+    }
+    if(root.hasField('OnSpellCastAt')){
+      this.onSpellCastAt = root.getFieldByLabel('OnSpellCastAt').getValue() || '';
+    }
+    if(root.hasField('OnTrapTriggered')){
+      this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
+    }
+    if(root.hasField('OnUnlock')){
+      this.onUnlock = root.getFieldByLabel('OnUnlock').getValue() || '';
+    }
+    if(root.hasField('OnUserDefined')){
+      this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
+    }
+    if(root.hasField('OpenLockDC')){
+      this.openLockDC = root.getFieldByLabel('OpenLockDC').getValue() || 0;
+    }
+    if(root.hasField('OpenState')){
+      this.openState = root.getFieldByLabel('OpenState').getValue() || 0;
+    }
+    if(root.hasField('PaletteID')){
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+    }
+    if(root.hasField('Plot')){
+      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+    }
+    if(root.hasField('PortraitId')){
+      this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
+    }
+    if(root.hasField('Ref')){
+      this.ref = root.getFieldByLabel('Ref').getValue() || 0;
+    }
+    if(root.hasField('Static')){
+      this.static = root.getFieldByLabel('Static').getValue() || false;
+    }
+    if(root.hasField('Tag')){
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+    }
+    if(root.hasField('TemplateResRef')){
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+    }
+    if(root.hasField('TrapDetectDC')){
+      this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
+    }
+    if(root.hasField('TrapDetectable')){
+      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
+    }
+    if(root.hasField('TrapDisarmable')){
+      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
+    }
+    if(root.hasField('TrapFlag')){
+      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
+    }
+    if(root.hasField('TrapOneShot')){
+      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
+    }
+    if(root.hasField('TrapType')){
+      this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
+    }
+    if(root.hasField('Will')){
+      this.will = root.getFieldByLabel('Will').getValue() || 0;
+    }
+  }
+
+  updateFile(){
+    if(!this.moduleDoor) return;
+    
+    const utd = new KotOR.GFFObject();
+    utd.FileType = 'UTD ';
+    
+    const root = utd.RootNode;
+    if(!root) return;
+    root.type = -1;
+    
+    // Basic Properties
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AnimationState', this.animationState || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CloseLockDC', this.closeLockDC) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Conversation', this.conversation || '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'CurrentHP', this.currentHP) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description || new KotOR.CExoLocString()) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'DisarmDC', this.disarmDC) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.factionId || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Fort', this.fort) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'GenericType', this.genericType || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'HP', this.hp) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Hardness', this.hardness) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'KeyName', this.keyName || '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'KeyRequired', this.keyRequired ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenID || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocName', this.locName || new KotOR.CExoLocString()) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Lockable', this.lockable ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Locked', this.locked ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Min1HP', this.min1HP ? 1 : 0) )
+    
+    // Script References
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClick', this.onClick ? this.onClick : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnClosed', this.onClosed ? this.onClosed : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDamaged', this.onDamaged ? this.onDamaged : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDeath', this.onDeath ? this.onDeath : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnDisarm', this.onDisarm ? this.onDisarm : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnFailToOpen', this.onFailToOpen ? this.onFailToOpen : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnHeartbeat', this.onHeartbeat ? this.onHeartbeat : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnLock', this.onLock ? this.onLock : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnMeleeAttacked', this.onMeleeAttacked ? this.onMeleeAttacked : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnOpen', this.onOpen ? this.onOpen : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnSpellCastAt', this.onSpellCastAt ? this.onSpellCastAt : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnTrapTriggered', this.onTrapTriggered ? this.onTrapTriggered : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUnlock', this.onUnlock ? this.onUnlock : '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined ? this.onUserDefined : '') )
+    
+    // Lock and Trap Properties
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenLockDC', this.openLockDC) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'OpenState', this.openState || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PortraitId', this.portraitId || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Ref', this.ref) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Static', this.static ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectDC', this.trapDetectDC || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDetectable', this.trapDetectable ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapDisarmable', this.trapDisarmable ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapFlag', this.trapFlag ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapOneShot', this.trapOneShot ? 1 : 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TrapType', this.trapType || 0) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Will', this.will) )
+
+    this.blueprint = utd;
+    this.file.buffer = utd.getExportBuffer();
+    this.processEventListener('onEditorFileChange', [this]);
+  }
 }

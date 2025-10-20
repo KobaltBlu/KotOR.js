@@ -1,42 +1,20 @@
-import React, { useState } from "react"
+import React from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-
-import * as KotOR from "../../../KotOR";
 import { TabUTCEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
+import { SubTabHost, SubTab } from "../../SubTabHost";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
   const tab: TabUTCEditorState = props.tab as TabUTCEditorState;
-  const [selectedTab, setSelectedTab] = useState<string>('basic');
 
-  return <>
-  <div style={{height: '100%'}}>
-    <div className="vertical-tabs" style={{height: '100%'}}>
-      <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
-        <ul className="tabs-menu" style={{textAlign: 'center'}}>
-          <li className={`btn btn-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'stats' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('stats') }>Stats</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'skills' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('skills') }>Skills</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'advanced' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('advanced') }>Advanced</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'feats' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('feats') }>Feats</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'spells' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('spells') }>Force Powers</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'class' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('class') }>Class</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'abilities' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('abilities') }>Special Abilities</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'scripts' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('scripts') }>Scripts</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'inventory' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('inventory') }>Inventory</a></li>
-          <li className={`btn btn-tab ${selectedTab == 'comments' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('comments') }>Comments</a></li>
-        </ul>
-      </div>
-      <div className="vertical-tabs-container">
-        <div className="editor-3d-preview" style={{position: 'absolute', top:0, bottom: 0, left: '0', right: '50%'}}>
-          <UI3DRendererView context={tab.ui3DRenderer} />
-        </div>
-        <div id="editor-content" className="tabs" style={{position: 'absolute', top:0, bottom: 0, left: '50%', right: 0, overflowY: 'auto', padding: '0 10px'}}>
-          <div className="tab-pane" style={{display: (selectedTab == 'basic' ? 'block' : 'none'), padding: '10px'}}>
-            <h3 style={{marginTop: '0'}}>Basic</h3>
+  const tabs: SubTab[] = [
+    {
+      id: 'basic',
+      label: 'Basic',
+      content: (
+        <>
+          <h3 style={{marginTop: '0'}}><i className="fa-solid fa-user"></i> Basic</h3>
             <hr />
             <fieldset>
               <legend>Profile</legend>
@@ -99,10 +77,16 @@ export const TabUTCEditor = function(props: BaseTabProps){
               </table>
           </fieldset>
 
-            
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'stats' ? 'block' : 'none')}}>
-            <h3>Stats</h3>
+
+        </>
+      )
+    },
+    {
+      id: 'stats',
+      label: 'Stats',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-chart-bar"></i> Stats</h3>
             <hr />
             <fieldset>
               <legend>Ability Scores</legend>
@@ -202,10 +186,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 </td>
               </tr>
             </table>
-          </div>
-
-          <div className="tab-pane" style={{display: (selectedTab == 'skills' ? 'block' : 'none')}}>
-            <h3>Skills</h3>
+        </>
+      )
+    },
+    {
+      id: 'skills',
+      label: 'Skills',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-wrench"></i> Skills</h3>
             <hr />
 
             <label>Computer Use</label>
@@ -231,10 +220,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
             <label>Treat Injury</label>
             <input type="number" min="0" />
-
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'advanced' ? 'block' : 'none')}}>
-            <h3>Advanced</h3>
+        </>
+      )
+    },
+    {
+      id: 'advanced',
+      label: 'Advanced',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-gear"></i> Advanced</h3>
             <hr />
 
             <table style={{width: '100%'}}>
@@ -310,31 +304,66 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 </tr>
               </tbody>
             </table>
-
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'feats' ? 'block' : 'none')}}>
-            <h3>Feats</h3>
+        </>
+      )
+    },
+    {
+      id: 'feats',
+      label: 'Feats',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-trophy"></i> Feats</h3>
             <hr />
             <div></div>
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'spells' ? 'block' : 'none')}}>
-            <h3>Force</h3>
+        </>
+      )
+    },
+    {
+      id: 'spells',
+      label: 'Force Powers',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-hand-sparkles"></i> Force Powers</h3>
             <hr />
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'class' ? 'block' : 'none')}}>
-            <h3>Class</h3>
+        </>
+      )
+    },
+    {
+      id: 'class',
+      label: 'Class',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-graduation-cap"></i> Class</h3>
             <hr />
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'abilities' ? 'block' : 'none')}}>
-            <h3>Special</h3>
+        </>
+      )
+    },
+    {
+      id: 'abilities',
+      label: 'Special Abilities',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-star"></i> Special Abilities</h3>
             <hr />
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'scripts' ? 'block' : 'none')}}>
-            <h3>Scripts</h3>
+        </>
+      )
+    },
+    {
+      id: 'scripts',
+      label: 'Scripts',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-file-code"></i> Scripts</h3>
             <hr />
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'inventory' ? 'block' : 'none')}}>
-            <h3>Inventory</h3>
+        </>
+      )
+    },
+    {
+      id: 'inventory',
+      label: 'Inventory',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-suitcase"></i> Inventory</h3>
             <hr />
             <div className="iSlots">
               <div className="iSlot texture-canvas" data-type="512"  data-texture="iimplant"></div>
@@ -347,15 +376,27 @@ export const TabUTCEditor = function(props: BaseTabProps){
               <div className="iSlot texture-canvas" data-type="1024" data-texture="ibelt"></div>
               <div className="iSlot texture-canvas" data-type="16"   data-texture="ihand_r"></div>
             </div>
-          </div>
-          <div className="tab-pane" style={{display: (selectedTab == 'comments' ? 'block' : 'none')}}>
-            <h3>Comments</h3>
-            <hr />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  </>;
+        </>
+      )
+    },
+    {
+      id: 'comments',
+      label: 'Comments',
+      content: (
+        <>
+          <h3><i className="fa-solid fa-comment"></i> Comments</h3>
+          <hr />
+        </>
+      )
+    }
+  ];
+
+  return (
+    <SubTabHost
+      tabs={tabs}
+      defaultTab="basic"
+      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+    />
+  );
 
 };

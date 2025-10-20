@@ -1,0 +1,374 @@
+@import "../../styles/variables";
+
+.cexoloc-editor {
+  margin-bottom: $spacing-md;
+  font-family: $font-family-primary;
+
+  .cexoloc-label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: $spacing-sm;
+    color: $text-primary;
+  }
+
+  .cexoloc-container {
+    border: $border-width solid $border-primary;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    background-color: $bg-tertiary;
+  }
+
+  .cexoloc-main-input-row {
+    display: flex;
+    align-items: center;
+    gap: $spacing-md;
+
+    .cexoloc-display-input {
+      flex: 1;
+      padding: 4px;
+      background-color: $form-bg;
+      border: $border-width solid $form-border;
+      border-radius: $border-radius;
+      color: $text-primary;
+      font-family: $font-family-primary;
+      @include transition-form;
+
+      &::placeholder {
+        color: $form-placeholder;
+      }
+
+      &:focus {
+        outline: none;
+        border-color: $form-border-focus;
+      }
+    }
+
+    .cexoloc-toggle-button {
+      padding: 4px 12px;
+      cursor: pointer;
+      background-color: $primary-blue;
+      color: $text-white;
+      border: none;
+      border-radius: $border-radius;
+      transition: background-color $transition-fast ease;
+
+      &:hover {
+        background-color: $primary-blue-dark;
+      }
+
+      &:active {
+        background-color: $primary-blue-darker;
+      }
+    }
+
+    .cexoloc-button-group {
+      display: flex;
+      gap: $spacing-sm;
+    }
+
+    .cexoloc-save-button {
+      padding: 4px 12px;
+      cursor: pointer;
+      background-color: $success;
+      color: $text-white;
+      border: none;
+      border-radius: $border-radius;
+      transition: background-color $transition-fast ease;
+
+      &:hover {
+        background-color: lighten($success, 10%);
+      }
+
+      &:active {
+        background-color: darken($success, 5%);
+      }
+    }
+
+    .cexoloc-cancel-button {
+      padding: 4px 12px;
+      cursor: pointer;
+      background-color: $warning;
+      color: $text-white;
+      border: none;
+      border-radius: $border-radius;
+      transition: background-color $transition-fast ease;
+
+      &:hover {
+        background-color: lighten($warning, 10%);
+      }
+
+      &:active {
+        background-color: darken($warning, 5%);
+      }
+    }
+  }
+
+  .cexoloc-expanded {
+    margin-top: $spacing-md;
+    padding-top: $spacing-md;
+    border-top: $border-width solid $border-secondary;
+  }
+
+  .cexoloc-resref-section {
+    margin-bottom: $spacing-lg;
+
+    .cexoloc-resref-label {
+      display: block;
+      font-size: $font-size-small;
+      margin-bottom: $spacing-sm;
+      color: $text-primary;
+      font-weight: bold;
+    }
+
+    .cexoloc-resref-display {
+      margin-bottom: $spacing-md;
+      padding: $spacing-md;
+      border: $border-width solid $border-primary;
+      border-radius: $border-radius;
+      background-color: $bg-quaternary;
+
+      .cexoloc-tlk-current,
+      .cexoloc-tlk-custom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: $spacing-md;
+
+        .cexoloc-tlk-info {
+          display: flex;
+          gap: $spacing-md;
+          align-items: flex-start;
+          flex: 1;
+          min-width: 0; // Allow text to shrink
+
+          .cexoloc-tlk-index {
+            color: $primary-blue-lighter;
+            font-weight: bold;
+            font-size: $font-size-small;
+            flex-shrink: 0;
+          }
+
+          .cexoloc-tlk-text {
+            color: $text-primary;
+            font-size: $font-size-small;
+            flex: 1;
+            word-break: break-word;
+          }
+        }
+
+        .cexoloc-tlk-actions {
+          display: flex;
+          gap: $spacing-sm;
+          align-items: center;
+          flex-shrink: 0;
+        }
+      }
+
+      .cexoloc-tlk-custom {
+        .cexoloc-tlk-text {
+          font-style: italic;
+          color: $text-tertiary;
+        }
+      }
+    }
+
+    .cexoloc-inline-button {
+      padding: 4px 8px;
+      cursor: pointer;
+      border: none;
+      border-radius: $border-radius;
+      background-color: transparent;
+      color: $text-primary;
+      transition: all $transition-fast ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      i {
+        font-size: $font-size-small;
+      }
+
+      &:hover {
+        background-color: $bg-tertiary;
+      }
+
+      &:active {
+        background-color: $bg-primary;
+      }
+    }
+
+    .cexoloc-search-icon-button {
+      &:hover {
+        color: $primary-blue;
+        background-color: rgba($primary-blue, 0.1);
+      }
+    }
+
+    .cexoloc-clear-icon-button {
+      &:hover {
+        color: $error;
+        background-color: rgba($error, 0.1);
+      }
+    }
+
+    .cexoloc-resref-hint {
+      display: block;
+      font-size: $font-size-small;
+      color: $text-tertiary;
+      line-height: 1.4;
+    }
+  }
+
+  .cexoloc-substrings-section {
+    margin-bottom: $spacing-md;
+
+    .cexoloc-substrings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: $spacing-md;
+
+      .cexoloc-substrings-label {
+        font-size: $font-size-small;
+        font-weight: bold;
+        color: $text-primary;
+      }
+
+      .cexoloc-add-button {
+        padding: $spacing-xs $spacing-md;
+        font-size: $font-size-small;
+        cursor: pointer;
+        background-color: $success;
+        color: $text-white;
+        border: none;
+        border-radius: $border-radius;
+        transition: background-color $transition-fast ease;
+
+        &:hover:not(:disabled) {
+          background-color: $success-light;
+        }
+
+        &:active:not(:disabled) {
+          background-color: $success-dark;
+        }
+
+        &:disabled {
+          background-color: $disabled-bg;
+          border: $border-width solid $disabled-border;
+          cursor: not-allowed;
+          opacity: 0.6;
+        }
+      }
+    }
+
+    .cexoloc-empty-state {
+      padding: $spacing-md;
+      text-align: center;
+      color: $text-tertiary;
+      font-size: $font-size-small;
+      font-style: italic;
+    }
+  }
+
+  .cexoloc-substring {
+    margin-bottom: $spacing-md;
+    padding: $spacing-md;
+    background-color: $bg-secondary;
+    border: $border-width solid $border-primary;
+    border-radius: $border-radius;
+
+    .cexoloc-substring-controls {
+      display: flex;
+      gap: $spacing-md;
+      margin-bottom: 6px;
+
+      .cexoloc-substring-field {
+        flex: 1;
+
+        .cexoloc-substring-field-label {
+          display: block;
+          font-size: $font-size-small;
+          margin-bottom: $spacing-xs;
+          color: $text-primary;
+        }
+
+        .cexoloc-substring-select {
+          width: 100%;
+          padding: $spacing-xs;
+          font-size: $font-size-small;
+          border: $border-width solid $form-border;
+          border-radius: $border-radius;
+          background-color: $form-bg;
+          color: $text-primary;
+          @include transition-form;
+
+          &:focus {
+            outline: none;
+            border-color: $form-border-focus;
+          }
+        }
+      }
+
+      .cexoloc-substring-remove-wrapper {
+        display: flex;
+        align-items: flex-end;
+
+        .cexoloc-remove-button {
+          padding: $spacing-xs $spacing-md;
+          font-size: $font-size-small;
+          cursor: pointer;
+          background-color: $warning;
+          color: $text-white;
+          border: none;
+          border-radius: $border-radius;
+          transition: background-color $transition-fast ease;
+
+          &:hover {
+            background-color: $error;
+          }
+
+          &:active {
+            background-color: $error-dark;
+          }
+        }
+      }
+    }
+
+    .cexoloc-substring-text {
+      .cexoloc-substring-text-label {
+        display: block;
+        font-size: $font-size-small;
+        margin-bottom: $spacing-xs;
+        color: $text-primary;
+      }
+
+      .cexoloc-substring-textarea {
+        width: 100%;
+        padding: 4px;
+        font-size: $font-size-small;
+        border: $border-width solid $form-border;
+        border-radius: $border-radius;
+        font-family: monospace;
+        resize: vertical;
+        background-color: $form-bg;
+        color: $text-primary;
+        @include transition-form;
+
+        &::placeholder {
+          color: $form-placeholder;
+        }
+
+        &:focus {
+          outline: none;
+          border-color: $form-border-focus;
+        }
+      }
+
+      .cexoloc-char-counter {
+        font-size: $font-size-small;
+        color: $text-tertiary;
+      }
+    }
+  }
+}
+
