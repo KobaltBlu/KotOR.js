@@ -206,7 +206,7 @@ export class TabTextEditorState extends TabState {
     });
   }
 
-  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     return new TextEncoder().encode(this.code);
   }
 

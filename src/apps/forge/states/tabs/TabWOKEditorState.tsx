@@ -421,7 +421,7 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     return this.wok.toExportBuffer();
   }
 

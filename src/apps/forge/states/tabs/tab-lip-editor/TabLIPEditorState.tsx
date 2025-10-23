@@ -707,11 +707,11 @@ export class TabLIPEditorState extends TabState {
     });
   }
 
-  async getExportBuffer(): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(this.lip){
       return this.lip.toExportBuffer();
     }
-    return super.getExportBuffer();
+    return super.getExportBuffer(resref, ext);
   }
 
   destroy(): void {

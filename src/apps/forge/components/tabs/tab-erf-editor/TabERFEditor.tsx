@@ -69,6 +69,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
                     let saveBuffer = new Uint8Array(currentFile.buffer)
                     let ws: FileSystemWritableFileStream = await newHandle.createWritable();
                     await ws.write(saveBuffer || new Uint8Array(0));
+                    await ws.close();
                     currentFile.buffer = saveBuffer;
                     currentFile.unsaved_changes = false;
                   }catch(e){

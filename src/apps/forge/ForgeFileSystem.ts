@@ -1,7 +1,4 @@
-import { FileTypeManager } from "./FileTypeManager";
-import { pathParse } from "./helpers/PathParse";
 import * as fs from "fs";
-
 import * as KotOR from "./KotOR";
 declare const dialog: any;
 

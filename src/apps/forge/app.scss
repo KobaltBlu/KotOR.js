@@ -487,25 +487,48 @@ textarea {
   }
 }
 
-select, .form-select {
+// Universal select styling - applies to all select elements
+select {
   @include border-radius-form;
-  border: $border-width-thick solid $secondary-cyan;
+  border: $border-width-thick solid $form-border;
   padding: $spacing-sm;
   background-color: $form-bg;
-  outline-color: $secondary-cyan;
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-  border: $border-width-thick solid $form-border;
   outline-color: $form-border;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23FFFFFF' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right $spacing-sm center;
+  background-size: 16px 12px;
   display: block;
   @include box-shadow-form;
   width: 100%;
   color: $text-white;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 
   &:focus {
     color: $text-white;
     border-color: $secondary-cyan;
     outline: none;
+    box-shadow: 0 0 0 2px rgba($secondary-cyan, 0.2);
   }
+
+  &:hover {
+    border-color: $secondary-cyan-light;
+  }
+
+  option {
+    background-color: $form-bg;
+    color: $text-white;
+  }
+}
+
+// Ensure .form-select class gets the same styling
+.form-select {
+  @extend select;
 }
 
 button[disabled], 
@@ -736,7 +759,7 @@ button, .btn-default {
 
 .navbar.navbar-sidebar-wizard-horizontal a:hover, 
 .navbar.navbar-sidebar-wizard a:focus {
-  background: $primary-blue-dark;
+  // background: $primary-blue-dark;
 }
 
 // =============================================================================
@@ -1364,46 +1387,6 @@ input[type="range"].volume:before {
 }
 
 // =============================================================================
-// CUSTOM CHECKBOXES
-// =============================================================================
-
-input[type=checkbox].ui {
-  visibility: hidden;
-  width: 1px;
-  height: 1px;
-
-  + label {
-    padding: $spacing-sm $spacing-md;
-    @include border-radius-form;
-    cursor: pointer;
-    vertical-align: middle;
-    user-select: none;
-
-    &:before {
-      content: '';
-      display: inline-block;
-      width: $spacing-xl;
-      height: $spacing-xl;
-      background: radial-gradient(ellipse at center, $checkbox-bg-start 0%, $checkbox-bg-end 100%);
-      border: $border-width-thick solid $checkbox-border;
-      box-shadow: 1px 1px 5px $checkbox-shadow;
-      border-radius: 50%;
-      vertical-align: middle;
-      margin-left: -$spacing-sm;
-      margin-right: $spacing-sm;
-      user-select: none;
-    }
-  }
-
-  &:checked + label:before {
-    background: radial-gradient(ellipse at center, $primary-blue 0%, $primary-blue-lighter 100%);
-    border: $border-width-thick solid $primary-blue-dark;
-    box-shadow: 1px 1px 5px #307592;
-    user-select: none;
-  }
-}
-
-// =============================================================================
 // ANIMATIONS
 // =============================================================================
 
@@ -1671,7 +1654,7 @@ input[type=checkbox].ui {
 
   .navbar.navbar-sidebar-wizard-horizontal a:hover, 
   .navbar.navbar-sidebar-wizard a:focus {
-    background: $tsl-primary;
+    // background: $tsl-primary;
   }
 
   .nav > li > a:focus, 

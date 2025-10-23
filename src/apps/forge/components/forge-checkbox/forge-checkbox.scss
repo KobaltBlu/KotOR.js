@@ -1,0 +1,37 @@
+@import "../../styles/variables";
+
+input[type=checkbox].ui {
+  visibility: hidden;
+  width: 1px;
+  height: 1px;
+
+  + label {
+    padding: $spacing-sm $spacing-md;
+    @include border-radius-form;
+    cursor: pointer;
+    vertical-align: middle;
+    user-select: none;
+
+    &:before {
+      content: '';
+      display: inline-block;
+      width: $spacing-xl;
+      height: $spacing-xl;
+      background: radial-gradient(ellipse at center, $checkbox-bg-start 0%, $checkbox-bg-end 100%);
+      border: $border-width-thick solid $checkbox-border;
+      box-shadow: 1px 1px 5px $checkbox-shadow;
+      border-radius: 50%;
+      vertical-align: middle;
+      margin-left: -$spacing-sm;
+      margin-right: $spacing-sm;
+      user-select: none;
+    }
+  }
+
+  &:checked + label:before {
+    background: radial-gradient(ellipse at center, $primary-blue 0%, $primary-blue-lighter 100%);
+    border: $border-width-thick solid $primary-blue-dark;
+    box-shadow: 1px 1px 5px #307592;
+    user-select: none;
+  }
+}

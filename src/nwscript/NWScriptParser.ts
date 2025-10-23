@@ -195,7 +195,7 @@ export class NWScriptParser {
   }
 
   isDataType( dataType?: any, value = '' ){
-    return (typeof dataType == 'object' && dataType.value == value);
+    return (dataType && typeof dataType == 'object' && dataType.value == value);
   }
 
   getActionByName( name = '' ){
@@ -211,7 +211,8 @@ export class NWScriptParser {
   }
 
   getVariableByName( name: any = '' ){
-    if(typeof name == 'object' && typeof name.value == 'string') name = name.value;
+    if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
+    if(!name) return undefined;
     let variable = this.engine_constants.find( v => v.name == name);
     if(!variable){
       for(let i = 0; i < this.scopes.length; i++){
@@ -224,7 +225,7 @@ export class NWScriptParser {
   }
 
   getStatementName( name: any = '' ){
-    if(typeof name == 'object' && typeof name.value == 'string') name = name.value;
+    if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
     return name;
   }
 
@@ -246,16 +247,18 @@ export class NWScriptParser {
 
   getValueDataType( value: any ): any {
     try{
-      if(typeof value == 'object'){
-        if(value.type == 'literal') return value.datatype.value;
-        if(value.type == 'variable') { return value.datatype.value || value?.variable_reference?.datatype?.value || value?.variable_reference?.datatype; }
-        if(value.type == 'argument') return value.datatype.value;
-        if(value.type == 'function_call') return value.function_reference.returntype.value;
+      if(value && typeof value == 'object'){
+        if(value.type == 'literal') return value.datatype?.value;
+        if(value.type == 'variable') { 
+          return value.datatype?.value || value?.variable_reference?.datatype?.value;
+        }
+        if(value.type == 'argument') return value.datatype?.value;
+        if(value.type == 'function_call') return value.function_reference?.returntype?.value;
         if(value.type == 'add') return this.getValueDataType(value.left);
         if(value.type == 'sub') return this.getValueDataType(value.left);
         if(value.type == 'mul') return this.getValueDataType(value.left);
         if(value.type == 'div') return this.getValueDataType(value.left);
-        if(value.type == 'compare') return value.datatype.value;
+        if(value.type == 'compare') return value.datatype?.value;
         if(value.type == 'not') return this.getValueDataType(value.value);
         if(value.type == 'neg') return this.getValueDataType(value.value);
         if(value.type == 'inc') return this.getValueDataType(value.value);
@@ -264,20 +267,21 @@ export class NWScriptParser {
     }catch(e){
       return 'NULL'
     }
+    return undefined;
   }
 
   getValueDataTypeUnary( value: any ): any{
     try{
-      if(typeof value == 'object'){
-        if(value.type == 'literal') return value.datatype.unary;
-        if(value.type == 'variable') { return value.datatype.unary || value?.variable_reference?.datatype?.unary; }
-        if(value.type == 'argument') return value.datatype.unary;
-        if(value.type == 'function_call') return value.function_reference.returntype.unary;
+      if(value && typeof value == 'object'){
+        if(value.type == 'literal') return value.datatype?.unary;
+        if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
+        if(value.type == 'argument') return value.datatype?.unary;
+        if(value.type == 'function_call') return value.function_reference?.returntype?.unary;
         if(value.type == 'add') return this.getValueDataTypeUnary(value.left);
         if(value.type == 'sub') return this.getValueDataTypeUnary(value.left);
         if(value.type == 'mul') return this.getValueDataTypeUnary(value.left);
         if(value.type == 'div') return this.getValueDataTypeUnary(value.left);
-        if(value.type == 'compare') return value.datatype.unary;
+        if(value.type == 'compare') return value.datatype?.unary;
         if(value.type == 'not') return this.getValueDataTypeUnary(value.value);
         if(value.type == 'neg') return this.getValueDataTypeUnary(value.value);
         if(value.type == 'inc') return this.getValueDataTypeUnary(value.value);
@@ -286,6 +290,7 @@ export class NWScriptParser {
     }catch(e){
       return 'NULL'
     }
+    return undefined;
   }
 
   isValueLiteral( value: any = null ){
@@ -468,15 +473,21 @@ export class NWScriptParser {
               this.walkASTStatement(arg);
 
               if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
+                const argDataType = this.getValueDataType(arg);
+                const argRefDataType = this.getValueDataType(arg_ref);
+                
                 if(arg_ref.datatype.value == 'action'){
                   if(!arg.function_reference){
                     this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
                   }
                 }else{
-                  this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
+                  const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+                  this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
                 }
               }else if(!arg_ref){
-                this.throwError(`Can't pass a value with a datatype type of [${this.getValueDataType(arg)}] to [no argument]`, object, arg);
+                const argDataType = this.getValueDataType(arg);
+                const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+                this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to [no argument]`, object, arg);
               }
             }else{
               this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, object, arg);
@@ -911,18 +922,22 @@ export class NWScriptParser {
       }else if(object.type == 'inc'){
         let value_type = this.getValueDataType(object.value);
         object.variable_reference = this.getVariableByName(object.name);
-        object.datatype = object.variable_reference.datatype;
-        if( !(object.datatype.value == 'int') )
-        {
-          this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
+        if(object.variable_reference){
+          object.datatype = object.variable_reference.datatype;
+          if( !(object.datatype.value == 'int') )
+          {
+            this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
+          }
         }
       }else if(object.type == 'dec'){
         let value_type = this.getValueDataType(object.value);
         object.variable_reference = this.getVariableByName(object.name);
-        object.datatype = object.variable_reference.datatype;
-        if( !(object.datatype.value == 'int') )
-        {
-          this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
+        if(object.variable_reference){
+          object.datatype = object.variable_reference.datatype;
+          if( !(object.datatype.value == 'int') )
+          {
+            this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
+          }
         }
       }
     }

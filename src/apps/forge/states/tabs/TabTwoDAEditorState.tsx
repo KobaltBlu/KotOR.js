@@ -50,8 +50,8 @@ export class TabTwoDAEditorState extends TabState {
 
   }
 
-  async getExportBuffer(extension: string): Promise<Uint8Array> {
-    if(extension == 'csv'){
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+    if(ext == 'csv'){
       const textEncoder = new TextEncoder();
       return textEncoder.encode(this.twoDAObject.toCSV());
     }

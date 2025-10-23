@@ -215,7 +215,7 @@ export class TabImageViewerState extends TabState {
     }
   }
 
-  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(ext == 'tga'){
       const tga = new KotOR.TGAObject();
       tga.header = {
@@ -234,9 +234,9 @@ export class TabImageViewerState extends TabState {
       };
       tga.pixelData = TabImageViewerState.TGAColorFix(await this.getPixelData());
       return tga.toExportBuffer();
-    }else{
-      return super.getExportBuffer(ext);
     }
+    
+    return super.getExportBuffer(resref, ext);
   }
 
 }

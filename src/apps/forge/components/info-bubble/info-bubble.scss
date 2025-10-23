@@ -1,0 +1,140 @@
+// =============================================================================
+// INFO BUBBLE COMPONENT STYLES
+// =============================================================================
+
+@import "../../styles/variables";
+
+.info-bubble-trigger {
+  position: relative;
+  display: inline-block;
+}
+
+.info-bubble {
+  position: fixed;
+  z-index: 10000;
+  background: $bg-primary;
+  border: $border-width solid $border-accent;
+  border-radius: $border-radius;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  padding: $spacing-sm;
+  font-size: $font-size-small;
+  line-height: 1.4;
+  color: $text-primary;
+  max-width: 300px;
+  word-wrap: break-word;
+  pointer-events: none;
+  opacity: 0;
+  animation: info-bubble-fade-in 0.2s ease-out forwards;
+
+  &__content {
+    position: relative;
+    z-index: 2;
+  }
+
+  &__arrow {
+    position: absolute;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+  }
+
+  // Arrow positions
+  &__arrow--top {
+    bottom: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-top-color: $border-accent;
+    border-bottom: none;
+  }
+
+  &__arrow--bottom {
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-bottom-color: $border-accent;
+    border-top: none;
+  }
+
+  &__arrow--left {
+    right: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left-color: $border-accent;
+    border-right: none;
+  }
+
+  &__arrow--right {
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-right-color: $border-accent;
+    border-left: none;
+  }
+
+  // Dark theme support
+  .dark-theme & {
+    background: $bg-secondary;
+    border-color: $border-primary;
+    color: $text-primary;
+    
+    .info-bubble__arrow--top {
+      border-top-color: $border-primary;
+    }
+    
+    .info-bubble__arrow--bottom {
+      border-bottom-color: $border-primary;
+    }
+    
+    .info-bubble__arrow--left {
+      border-left-color: $border-primary;
+    }
+    
+    .info-bubble__arrow--right {
+      border-right-color: $border-primary;
+    }
+  }
+
+  // TSL theme support
+  .TSL & {
+    background: $bg-secondary;
+    border-color: $tsl-primary;
+    color: $text-primary;
+    
+    .info-bubble__arrow--top {
+      border-top-color: $tsl-primary;
+    }
+    
+    .info-bubble__arrow--bottom {
+      border-bottom-color: $tsl-primary;
+    }
+    
+    .info-bubble__arrow--left {
+      border-left-color: $tsl-primary;
+    }
+    
+    .info-bubble__arrow--right {
+      border-right-color: $tsl-primary;
+    }
+  }
+}
+
+// Animation keyframes
+@keyframes info-bubble-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .info-bubble {
+    max-width: 250px;
+    font-size: $font-size-small;
+    padding: $spacing-xs;
+  }
+}

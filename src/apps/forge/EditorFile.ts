@@ -36,6 +36,8 @@ export class EditorFile extends EventListenerModel {
 
   buffer: Uint8Array = new Uint8Array(0);
   buffer2?: Uint8Array; //for dual file types like mdl/mdx
+  gffObject?: KotOR.GFFObject;
+  isBlueprint: boolean = false;
   
   path: any;
   path2: any; //for dual file types like mdl/mdx
@@ -137,6 +139,10 @@ export class EditorFile extends EventListenerModel {
 
   }
 
+  setGFFObject(gffObject: KotOR.GFFObject){
+    this.gffObject = gffObject;
+  }
+
   setPath(filepath: string){
     this.path = filepath;
     if(typeof this.path === 'string'){
@@ -195,7 +201,7 @@ export class EditorFile extends EventListenerModel {
           this.path = pathname;
           this.resref = path_obj.name;
           if(!this.reskey){
-            this.reskey = KotOR.ResourceTypes[path_obj.ext.slice(1)];
+            this.reskey = KotOR.ResourceTypes[path_obj.ext];
           }
     
           this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
@@ -234,8 +240,8 @@ export class EditorFile extends EventListenerModel {
           });
         }else{
           if(this.archive_path){
-            let archive_path = pathParse(this.archive_path);
-            console.log(archive_path.ext.slice(1))
+            const archive_path = pathParse(this.archive_path);
+            console.log(archive_path.ext)
 
             switch(this.protocol){
               case EditorFileProtocol.BIF:

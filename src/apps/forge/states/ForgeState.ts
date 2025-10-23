@@ -809,11 +809,10 @@ export class ForgeState {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(Array.isArray(response.paths)){
           const file_path = response.paths[0];
-          let parsed = pathParse(file_path);
-          let fileParts = parsed.name.split('.');
-          if(parsed.ext == '.mdl'){
+          const parsed = pathParse(file_path);
+          if(parsed.ext == 'mdl'){
             (window as any).dialog.showOpenDialog({
-              title: `Open MDX File (${fileParts[0]}.mdx)`,
+              title: `Open MDX File (${parsed.name}.mdx)`,
               filters: [
                 {name: 'Model File', extensions: ['mdx']},
                 {name: 'All Formats', extensions: ['*']},
@@ -826,7 +825,7 @@ export class ForgeState {
                 path2: file_path2, 
                 filename: parsed.base, 
                 resref: parsed.name, 
-                ext: fileParts[1]
+                ext: parsed.ext
               });
             });
           }else{
@@ -834,20 +833,19 @@ export class ForgeState {
               path: file_path, 
               filename: parsed.base, 
               resref: parsed.name, 
-              ext: fileParts[1]
+              ext: parsed.ext
             });
           }
         }
       }else{
         if(Array.isArray(response.handles)){
           const [handle] = response.handles as FileSystemFileHandle[];
-          let parsed = pathParse(handle.name);
-          let fileParts = parsed.name.split('.');
+          const parsed = pathParse(handle.name);
 
-          if(parsed.ext == '.mdl'){
+          if(parsed.ext == 'mdl'){
 
             const originalTitle = document.title;
-            document.title = `Open MDX File (${fileParts[0]}.mdx)`;
+            document.title = `Open MDX File (${parsed.name}.mdx)`;
 
             const mdxResponse = await ForgeFileSystem.OpenFile({
               ext: ['.mdx'],
@@ -862,8 +860,8 @@ export class ForgeState {
               handle: handle, 
               handle2: mdxHandle, 
               filename: handle.name, 
-              resref: fileParts[0], 
-              ext: fileParts[1]
+              resref: parsed.name, 
+              ext: parsed.ext
             });
 
 
@@ -872,8 +870,8 @@ export class ForgeState {
               path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
               handle: handle, 
               filename: handle.name, 
-              resref: fileParts[0], 
-              ext: fileParts[1]
+              resref: parsed.name, 
+              ext: parsed.ext
             });
           }
         }

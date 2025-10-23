@@ -96,7 +96,7 @@ export class TabGUIEditorState extends TabState {
     });
   }
 
-  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     return this.gff.getExportBuffer();
   }
 }

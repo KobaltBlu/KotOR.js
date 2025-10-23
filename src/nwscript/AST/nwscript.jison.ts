@@ -101,6 +101,25 @@ export const grammar: any = {
   "engine_tokens": "EFFECT EVENT LOCATION TALENT",
 
   "tokens": "COMMENT COMMENT_ML RETURN BREAK SWITCH CASE DEFAULT CEXOSTRING HEXADECIMAL INTEGER FLOAT CONST VOID INT FLOAT STRING OBJECT VECTOR STRUCT ACTION OBJECT_SELF OBJECT_INVALID NAME INCLUDE DEFINE IF ELSEIF ELSE WHILE DO FOR CONTINUE ( ) { } [ ] . ? , : ; < > ^ = / + - * % ! | & ~ |= == != += -= *= %= /= ++ -- || && &= ^= << >> >>= >>>= <<= TRUE FALSE NULL",
+  
+  "operators": [
+    ["right", "=", "+=", "-=", "*=", "/=", "%=", "|=", "&=", "^=", "<<=", ">>=", ">>>="],
+    ["right", "ELSE", "ELSEIF"],
+    ["left", "||"],
+    ["left", "&&"],
+    ["left", "|"],
+    ["left", "^"],
+    ["left", "&"],
+    ["left", "==", "!="],
+    ["left", "<", ">", "<=", ">="],
+    ["left", "<<", ">>"],
+    ["left", "+", "-"],
+    ["left", "*", "/", "%"],
+    ["right", "++", "--", "UMINUS", "UNOT", "UCOMPL"],
+    ["left", "."],
+    ["left", "(", "["],
+  ],
+  
   "start": "NWProgram",
 
   "bnf": {
@@ -245,7 +264,6 @@ export const grammar: any = {
       ["NAME . NAME = NWExp ;", `$$ = { type: 'variable', struct: $1, is_const: false, declare: false, datatype: null, name: $3, value: $5, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @5.last_line, last_column: @5.last_column } };`],
       ["NAME ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @1.last_line, last_column: @1.last_column } };`],
       ["NAME = NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
-      ["NAME == NWExp ;", `$$ = { type: 'variable', is_const: false, datatype: null, name: $1, value: $3, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @3.last_line, last_column: @3.last_column } };`],
       ["NAME ++ ;", `$$ = { type: 'inc', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
       ["NAME -- ;", `$$ = { type: 'dec', is_const: false, datatype: null, name: $1, value: null, source: { first_line: @1.first_line, first_column: @1.first_column, last_line: @2.last_line, last_column: @2.last_column } };`],
     ],
@@ -339,9 +357,7 @@ export const grammar: any = {
     ],
 
     "NWStatementElseIfList": [
-      //["NWStatementElse", `$$ = [$1]`],
       ["NWStatementElseIf", `$$ = [$1]`],
-      //["NWStatementElseIfList NWStatementElseIf", `$$ = $1; $1.push($2);`],
       ["NWStatementElseIfList NWStatementElseIf", `$$ = $1; $1.push($2);`],
     ],
 
@@ -393,7 +409,7 @@ export const grammar: any = {
 
     "NWVarList": [
       ["NWVar", `$$ = [$1]`],
-      ["NWVarList , Var", `$$ = $1; $1.push($3)`],
+      ["NWVarList , NWVar", `$$ = $1; $1.push($3)`],
     ],
 
     "NWExpList": [

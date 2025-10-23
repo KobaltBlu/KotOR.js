@@ -9,6 +9,7 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeF
 
 import * as KotOR from "../../KotOR";
 import { TabStoreState } from "../../interfaces/TabStoreState";
+import { pathParse } from "../../helpers/PathParse";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -129,7 +130,7 @@ export class TabState extends EventListenerModel {
     return this.file;
   }
 
-  async getExportBuffer(ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     return this.file.buffer ? this.file.buffer : new Uint8Array(0);
   }
 
@@ -188,7 +189,8 @@ export class TabState extends EventListenerModel {
             console.log('saveFile', currentFile.path);
             //trigger a Save
             try{
-              let saveBuffer = await this.getExportBuffer(currentFile.path.split('.').pop());
+              const pathInfo = pathParse(currentFile.path);
+              let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
               fs.writeFile(currentFile.path, saveBuffer, () => {
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
@@ -212,7 +214,8 @@ export class TabState extends EventListenerModel {
               }
               if(granted){
                 try{
-                  let saveBuffer = await this.getExportBuffer(currentFile.handle.name.split('.').pop());
+                  const pathInfo = pathParse(currentFile.handle.name);
+                  let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
                   let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
                   await ws.write(saveBuffer as any);
                   currentFile.buffer = saveBuffer;
@@ -235,8 +238,10 @@ export class TabState extends EventListenerModel {
                 currentFile.handle = newHandle;
                 try{
                   let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
+                  const pathInfo = pathParse(newHandle.name);
+                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
                   await ws.write(saveBuffer as any || new Uint8Array(0) as any);
+                  await ws.close();
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
                   resolve(true);
@@ -280,21 +285,22 @@ export class TabState extends EventListenerModel {
 
   async saveAs() {
     console.log('fileTypes', this.getSaveTypes());
-    let currentFile = this.getFile();
+    const currentFile = this.getFile();
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
     // currentFile.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     return new Promise<boolean>( async (resolve, reject) => {
       try{
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          let savePath = await dialog.showSaveDialog({
+          const savePath = await dialog.showSaveDialog({
             title: 'Save File As',
             defaultPath: currentFile.getFilename(),
             filters: this.getSaveTypes()
           });
           if(savePath && !savePath.cancelled){
             console.log('savePath', savePath.filePath);
+            const pathInfo = pathParse(savePath.filePath);
             try{
-              let saveBuffer = await this.getExportBuffer(savePath.filePath.split('.').pop());
+              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
               fs.writeFile(savePath.filePath, saveBuffer, () => {
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
                 // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
@@ -313,18 +319,19 @@ export class TabState extends EventListenerModel {
             }
           }
         }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-          let newHandle = await window.showSaveFilePicker({
+          const newHandle = await window.showSaveFilePicker({
             suggestedName: currentFile.getFilename(),
-            types: this.getSaveTypes()
+            types: this.getSaveTypes(),
           });
           if(newHandle){
             currentFile.handle = newHandle;
-            console.log('handle', newHandle.name, newHandle);
             try{
-              currentFile.setPath(newHandle.name);
-              let saveBuffer = await this.getExportBuffer(newHandle.name.split('.').pop());
-              let ws: FileSystemWritableFileStream = await newHandle.createWritable();
+              const pathInfo = pathParse(newHandle.name);
+              currentFile.setPath(`file://system.dir/${newHandle.name}`);
+              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+              const ws: FileSystemWritableFileStream = await newHandle.createWritable();
               await ws.write(saveBuffer as any || new Uint8Array(0) as any);
+              await ws.close();
               // this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
               // this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
               this.file = currentFile;

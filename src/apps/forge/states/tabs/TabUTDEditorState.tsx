@@ -94,6 +94,7 @@ export class TabUTDEditorState extends TabState {
   
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
+        this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
   
         file.readFile().then( (response) => {
@@ -327,6 +328,15 @@ export class TabUTDEditorState extends TabState {
     }
   }
 
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+    if(!!resref && ext == 'utd'){
+      this.templateResRef = resref;
+      this.updateFile();
+      return this.blueprint.getExportBuffer();
+    }
+    return super.getExportBuffer(resref, ext);
+  }
+
   updateFile(){
     if(!this.moduleDoor) return;
     
@@ -395,7 +405,7 @@ export class TabUTDEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Will', this.will) )
 
     this.blueprint = utd;
-    this.file.buffer = utd.getExportBuffer();
+    this.file.setGFFObject(utd);
     this.processEventListener('onEditorFileChange', [this]);
   }
 }
