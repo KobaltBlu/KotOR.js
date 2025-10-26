@@ -1,5 +1,6 @@
 import { GameState } from "../GameState";
 import { MiniGameType } from "../enums/engine/MiniGameType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -158,9 +159,9 @@ export class ModuleMiniGame {
   runMiniGameScripts(){
     for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
-      if(enemy.scripts.onCreate instanceof NWScriptInstance){
-        enemy.scripts.onCreate.run(enemy, 0)
-      }
+      const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
+      if(!onCreate){ return; }
+      onCreate.run(enemy, 0);
     }
   }
 

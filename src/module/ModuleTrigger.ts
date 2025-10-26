@@ -4,9 +4,6 @@ import * as THREE from "three";
 import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
 import { GameState } from "../GameState";
 import { ResourceTypes } from "../resource/ResourceTypes";
-// import { ModuleObjectManager, PartyManager, FactionManager } from "../managers";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { NWScript } from "../nwscript/NWScript";
 import { GFFField } from "../resource/GFFField";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -16,6 +13,7 @@ import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleDoorAnimState, SignalEventType } from "../enums";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleTrigger class.
@@ -441,48 +439,29 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   loadScripts(){
+    const scriptKeys = [
+      ModuleObjectScript.TriggerOnClick,
+      ModuleObjectScript.TriggerOnDisarm,
+      ModuleObjectScript.TriggerOnTrapTriggered,
+      ModuleObjectScript.TriggerOnHeartbeat,
+      ModuleObjectScript.TriggerOnEnter,
+      ModuleObjectScript.TriggerOnExit,
+      ModuleObjectScript.TriggerOnUserDefined,
+    ];
 
-    this.scripts = {
-      onClick: undefined,
-      onDisarm: undefined,
-      onTrapTriggered: undefined,
-      onHeartbeat: undefined,
-      onEnter: undefined,
-      onExit: undefined,
-      onUserDefined: undefined
-    };
-
-    if(this.template.RootNode.hasField('OnClick'))
-      this.scripts.onClick = this.template.getFieldByLabel('OnClick').getValue();
+    const scriptsNode = this.template?.RootNode;
+    if(!scriptsNode){ return; }
     
-    if(this.template.RootNode.hasField('OnDisarm'))
-      this.scripts.onDisarm = this.template.getFieldByLabel('OnDisarm').getValue();
-
-    if(this.template.RootNode.hasField('OnTrapTriggered'))
-      this.scripts.onTrapTriggered = this.template.getFieldByLabel('OnTrapTriggered').getValue();
-
-    if(this.template.RootNode.hasField('ScriptHeartbeat'))
-      this.scripts.onHeartbeat = this.template.getFieldByLabel('ScriptHeartbeat').getValue();
-
-    if(this.template.RootNode.hasField('ScriptOnEnter'))
-      this.scripts.onEnter = this.template.getFieldByLabel('ScriptOnEnter').getValue();
-
-    if(this.template.RootNode.hasField('ScriptOnExit'))
-      this.scripts.onExit = this.template.getFieldByLabel('ScriptOnExit').getValue();
-    
-    if(this.template.RootNode.hasField('ScriptUserDefine'))
-      this.scripts.onUserDefined = this.template.getFieldByLabel('ScriptUserDefine').getValue();
-
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    for(const scriptKey of scriptKeys){
+      if(scriptsNode.hasField(scriptKey)){
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ continue; }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
     }
-
   }
 
   initProperties(){
@@ -675,9 +654,9 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnClick') ).setValue(this.scripts.onClick ? this.scripts.onClick.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDisarm') ).setValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnTrapTriggered') ).setValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnClick) ).setValue(this.scripts[ModuleObjectScript.TriggerOnClick]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnDisarm) ).setValue(this.scripts[ModuleObjectScript.TriggerOnDisarm]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.TriggerOnTrapTriggered]?.name || '');
     
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
 
@@ -686,10 +665,10 @@ export class ModuleTrigger extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnEnter') ).setValue(this.scripts.onEnter ? this.scripts.onEnter.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnExit') ).setValue(this.scripts.onExit ? this.scripts.onExit.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.TriggerOnHeartbeat]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnEnter) ).setValue(this.scripts[ModuleObjectScript.TriggerOnEnter]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnExit) ).setValue(this.scripts[ModuleObjectScript.TriggerOnExit]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.TriggerOnUserDefined]?.name || '');
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPartyPlayer') ).setValue(this.setByPlayerParty);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);

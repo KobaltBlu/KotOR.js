@@ -4,6 +4,8 @@ import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GameState } from "../GameState";
 
 /**
 * ModuleMGObstacle class.
@@ -61,66 +63,47 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   onAnimEvent(){
-    if(this.scripts.onAnimEvent instanceof NWScriptInstance){
-      this.scripts.onAnimEvent.nwscript.newInstance().run(this, 0);
-    }
+    const onAnimEvent = this.scripts[ModuleObjectScript.MGObstacleOnAnimEvent];
+    if(!onAnimEvent){ return; }
+    onAnimEvent.run(this, 0);
   }
 
   onCreate(){
-    if(this.scripts.onCreate instanceof NWScriptInstance){
-      this.scripts.onCreate.nwscript.newInstance().run(this, 0);
-    }
+    const onCreate = this.scripts[ModuleObjectScript.MGObstacleOnCreate];
+    if(!onCreate){ return; }
+    onCreate.run(this, 0);
   }
 
   onHitBullet(){
-    if(this.scripts.onHitBullet instanceof NWScriptInstance){
-      this.scripts.onHitBullet.nwscript.newInstance().run(this, 0);
-    }
+    const onHitBullet = this.scripts[ModuleObjectScript.MGObstacleOnHitBullet];
+    if(!onHitBullet){ return; }
+    onHitBullet.run(this, 0);
   }
 
   onHitFollower(){
-    if(this.scripts.onHitFollower instanceof NWScriptInstance){
-      this.scripts.onHitFollower.nwscript.newInstance().run(this, 0);
-    }
+    const onHitFollower = this.scripts[ModuleObjectScript.MGObstacleOnHitFollower];
+    if(!onHitFollower){ return; }
+    onHitFollower.run(this, 0);
   }
 
-  loadScripts (){
-    this.scripts = {
-      onAnimEvent: undefined,
-      onCreate: undefined,
-      onHeartbeat: undefined,
-      onHitBullet: undefined,
-      onHitFollower: undefined,
-    };
+  loadScripts(){
+    const scriptKeys = [
+      ModuleObjectScript.MGObstacleOnAnimEvent,
+      ModuleObjectScript.MGObstacleOnCreate,
+      ModuleObjectScript.MGObstacleOnHeartbeat,
+      ModuleObjectScript.MGObstacleOnHitBullet,
+      ModuleObjectScript.MGObstacleOnHitFollower,
+    ];
 
-    let scriptsNode = this.template.getFieldByLabel('Scripts').getChildStructs()[0];
-    if(scriptsNode){
-      
-      if(scriptsNode.hasField('OnAnimEvent'))
-        this.scripts.onAnimEvent = scriptsNode.getFieldByLabel('OnAnimEvent').getValue();
-
-      if(scriptsNode.hasField('OnCreate'))
-        this.scripts.onCreate = scriptsNode.getFieldByLabel('OnCreate').getValue();
-
-      if(scriptsNode.hasField('OnHeartbeat'))
-        this.scripts.onHeartbeat = scriptsNode.getFieldByLabel('OnHeartbeat').getValue();
-      
-      if(scriptsNode.hasField('OnHitBullet'))
-        this.scripts.onHitBullet = scriptsNode.getFieldByLabel('OnHitBullet').getValue();
-
-      if(scriptsNode.hasField('OnHitFollower'))
-        this.scripts.onHitFollower = scriptsNode.getFieldByLabel('OnHitFollower').getValue();
-
-    }
-
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    for(const scriptKey of scriptKeys){
+      if(!scriptKey){ continue; }
+      const nwscript = GameState.NWScript.Load(scriptKey);
+      if(!nwscript){ 
+        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
+        continue; 
       }
+      nwscript.caller = this;
+      this.scripts[scriptKey] = nwscript;
     }
 
   }

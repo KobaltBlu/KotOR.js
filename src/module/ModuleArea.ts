@@ -55,6 +55,7 @@ import { ModuleMGPlayer } from "./ModuleMGPlayer";
 import type { Module } from "./Module";
 import { IVISRoom } from "../interface/module/IVISRoom";
 import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -921,10 +922,21 @@ export class ModuleArea extends ModuleObject {
     this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
     this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
 
-    this.scriptResRefs.set('OnEnter', this.are.getFieldByLabel('OnEnter').getValue());
-    this.scriptResRefs.set('OnExit', this.are.getFieldByLabel('OnExit').getValue());
-    this.scriptResRefs.set('OnHeartbeat', this.are.getFieldByLabel('OnHeartbeat').getValue());
-    this.scriptResRefs.set('OnUserDefined', this.are.getFieldByLabel('OnUserDefined').getValue());
+    if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnEnter)){
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getFieldByLabel(ModuleObjectScript.AreaOnEnter).getValue());
+    }
+
+    if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnExit)){
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnExit, this.are.getFieldByLabel(ModuleObjectScript.AreaOnExit).getValue());
+    }
+
+    if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnHeartbeat)){
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnHeartbeat, this.are.getFieldByLabel(ModuleObjectScript.AreaOnHeartbeat).getValue());
+    }
+
+    if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnUserDefined)){
+      this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getFieldByLabel(ModuleObjectScript.AreaOnUserDefined).getValue());
+    }
 
     this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
     this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
@@ -1947,26 +1959,11 @@ export class ModuleArea extends ModuleObject {
    */
   async loadScripts(){
     console.log('ModuleArea.loadScripts');
-
-    const scriptKeys = Array.from(this.scriptResRefs.keys());
-    const scriptResRefs = Array.from(this.scriptResRefs.values());
-    for(let i = 0; i < scriptResRefs.length; i++){
-      const resRef = scriptResRefs[i];
-      if(!resRef){ continue; }
-
-      const key = scriptKeys[i];
-      const script = NWScript.Load(resRef);
+    for(let [key, resRef] of this.scriptResRefs){
+      const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
-
-      if(key == 'OnEnter'){
-        this.scripts.onEnter = script;
-      }else if(key == 'OnExit'){
-        this.scripts.onExit = script;
-      }else if(key == 'OnHeartbeat'){
-        this.scripts.onHeartbeat = script;
-      }else if(key == 'OnUserDefined'){
-        this.scripts.onUserDefined = script;
-      }
+      script.caller = this;
+      this.scripts[key as any] = script;
     }
   }
 
@@ -2015,11 +2012,10 @@ export class ModuleArea extends ModuleObject {
   }
 
   runOnEnterScripts(){
-    if(this.scripts.onEnter instanceof NWScriptInstance){
-      console.log('onEnter', this.scripts.onEnter, GameState.PartyManager.party[0])
-      this.scripts.onEnter.enteringObject = GameState.PartyManager.party[0];
-      this.scripts.onEnter.run(this, 0);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.AreaOnEnter];
+    if(!nwscript){ return; }
+    nwscript.enteringObject = GameState.PartyManager.party[0];
+    nwscript.run(this, 0);
   }
 
   async runStartScripts(){
@@ -2274,16 +2270,16 @@ export class ModuleArea extends ModuleObject {
       new GFFField(GFFDataType.BYTE, 'NoRest', this.noRest ? 1 : 0)
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnEnter', this.scriptResRefs.get('OnEnter'))
+      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnEnter, this.scripts[ModuleObjectScript.AreaOnEnter]?.name || '')
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnExit', this.scriptResRefs.get('OnExit'))
+      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnExit, this.scripts[ModuleObjectScript.AreaOnExit]?.name || '')
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnHeartbeat', this.scriptResRefs.get('OnHeartbeat'))
+      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnHeartbeat, this.scripts[ModuleObjectScript.AreaOnHeartbeat]?.name || '')
     );
     are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'OnUserDefined', this.scriptResRefs.get('OnUserDefined'))
+      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnUserDefined, this.scripts[ModuleObjectScript.AreaOnUserDefined]?.name || '')
     );
     are.RootNode.addField(
       new GFFField(GFFDataType.BYTE, 'PlayerOnly', this.playerOnly ? 1 : 0)

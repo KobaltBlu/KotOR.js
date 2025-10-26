@@ -8,7 +8,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
-import { SignalEventType } from "../enums";
+import { ModuleObjectScript, SignalEventType } from "../enums";
 
 /**
  * EventSignalEvent class.
@@ -53,63 +53,102 @@ export class EventSignalEvent extends GameEvent {
 
     switch(this.eventType){
       case SignalEventType.OnClose:
-        if(obj.scripts.onClose){
-          const instance = obj.scripts.onClose.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnClosed].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnClosed].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnOpen:
-        if(obj.scripts.onOpen){
-          const instance = obj.scripts.onOpen.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnOpen].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnOpen].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnDamaged:
-        if(obj.scripts.onDamaged){
-          const instance = obj.scripts.onDamaged.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnDamaged].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnDamaged].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+          const instance = obj.scripts[ModuleObjectScript.MGEnemyOnDamage].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+          const instance = obj.scripts[ModuleObjectScript.MGEnemyOnDamage].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+          const instance = obj.scripts[ModuleObjectScript.MGPlayerOnDamage].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnDeath:
-        if(obj.scripts.onDeath){
-          const instance = obj.scripts.onDeath.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+          const instance = obj.scripts[ModuleObjectScript.CreatureOnDeath].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnDeath].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnDeath].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGObstacle)){
+          const instance = obj.scripts[ModuleObjectScript.MGEnemyOnDeath].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+          const instance = obj.scripts[ModuleObjectScript.MGEnemyOnDeath].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer)){
+          const instance = obj.scripts[ModuleObjectScript.MGPlayerOnDeath].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnDisarm:
-        if(obj.scripts.onDisarm){
-          const instance = obj.scripts.onDisarm.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnDisarm].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnDisarm].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnFailToOpen:
-        if(obj.scripts.onFailToOpen){
-          const instance = obj.scripts.onFailToOpen.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnFailToOpen].nwscript.newInstance();
           instance.run(obj);
         }
       break;
       case SignalEventType.OnObjectEnter:
-        if(obj.scripts.onEnter && !obj.scripts.onEnter.running){
-          obj.scripts.onEnter.running = true;
-          const instance = obj.scripts.onEnter.nwscript.newInstance();
-          instance.enteringObject = this.getCaller();
-          instance.run(obj);
-          obj.scripts.onEnter.running = false;
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+          const onEnter = obj.scripts[ModuleObjectScript.TriggerOnEnter];
+          if(!onEnter){ return; }
+          onEnter.enteringObject = this.getCaller();
+          onEnter.run(obj);
         }
       break;
       case SignalEventType.OnObjectExit:
-        if(obj.scripts.onExit && !obj.scripts.onExit.running){
-          obj.scripts.onExit.running = true;
-          const instance = obj.scripts.onExit.nwscript.newInstance();
-          instance.exitingObject = this.getCaller();
-          instance.run(obj);
-          obj.scripts.onExit.running = false;
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+          const onExit = obj.scripts[ModuleObjectScript.TriggerOnExit];
+          if(!onExit){ return; }
+          onExit.exitingObject = this.getCaller();
+          onExit.run(obj);
         }
       break;
       case SignalEventType.OnTrapTriggered:
-        console.log('onTrapTriggered', obj.scripts.onTrapTriggered);
-        if(obj.scripts.onTrapTriggered){
-          const instance = obj.scripts.onTrapTriggered.nwscript.newInstance();
+        if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+          const instance = obj.scripts[ModuleObjectScript.PlaceableOnTrapTriggered].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+          const instance = obj.scripts[ModuleObjectScript.DoorOnTrapTriggered].nwscript.newInstance();
+          instance.run(obj);
+        }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+          const instance = obj.scripts[ModuleObjectScript.TriggerOnTrapTriggered].nwscript.newInstance();
           instance.run(obj);
         }
         if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){

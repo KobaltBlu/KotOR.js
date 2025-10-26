@@ -105,8 +105,11 @@ export class MenuManager {
       if(MenuManager.activeMenus.length)
         MenuManager.activeMenus[MenuManager.activeMenus.length-1].hide();
 
-      if(menu)
-        MenuManager.activeMenus.push(menu);
+      const idx = MenuManager.activeMenus.indexOf(menu);
+      if(idx >= 0)
+        MenuManager.activeMenus.splice(idx, 1);
+      
+      MenuManager.activeMenus.push(menu);
   
       MenuManager.Resize();
     }else{

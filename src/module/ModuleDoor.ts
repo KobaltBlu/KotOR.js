@@ -30,7 +30,8 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { ModulePlaceableObjectSound, SkillType } from "../enums";
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -386,8 +387,9 @@ export class ModuleDoor extends ModuleObject {
       }
 
       if(this.isLocked()){
-        if(this.scripts.onFailToOpen instanceof NWScriptInstance){
-          this.scripts.onFailToOpen.run(this);
+        const onFailToOpen = this.scripts[ModuleObjectScript.DoorOnFailToOpen];
+        if(onFailToOpen){
+          onFailToOpen.run(this);
         }
 
         this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
@@ -404,8 +406,9 @@ export class ModuleDoor extends ModuleObject {
     if(this.locked){ return; }
     this.locked = true;
     
-    if(this.scripts.onLock instanceof NWScriptInstance){
-      this.scripts.onLock.run(this);
+    const onLock = this.scripts[ModuleObjectScript.DoorOnLock];
+    if(onLock){
+      onLock.run(this);
     }
   }
 
@@ -413,8 +416,9 @@ export class ModuleDoor extends ModuleObject {
     if(!this.locked){ return; }
     this.locked = false;
     
-    if(this.scripts.onUnlock instanceof NWScriptInstance){
-      this.scripts.onUnlock.run(this);
+    const onUnlock = this.scripts[ModuleObjectScript.DoorOnUnlock];
+    if(onUnlock){
+      onUnlock.run(this);
     }
   }
 
@@ -457,8 +461,9 @@ export class ModuleDoor extends ModuleObject {
       //object.lastDoorEntered = this;
     }
 
-    if(this.scripts.onOpen instanceof NWScriptInstance){
-      this.scripts.onOpen.run(this);
+    const onOpen = this.scripts[ModuleObjectScript.DoorOnOpen];
+    if(onOpen){
+      onOpen.run(this);
     }
 
     this.playObjectSound(ModulePlaceableObjectSound.OPENED);
@@ -506,8 +511,9 @@ export class ModuleDoor extends ModuleObject {
 
   destroyDoor(object: ModuleObject){
 
-    if(this.scripts.onDeath instanceof NWScriptInstance){
-      this.scripts.onDeath.run(this);
+    const onDeath = this.scripts[ModuleObjectScript.DoorOnDeath];
+    if(onDeath){
+      onDeath.run(this);
     }
     
     //TODO: detect the correct side that the creature interacted from
@@ -597,18 +603,17 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  onAttacked(){
-    if(this.scripts.onAttacked instanceof NWScriptInstance){
-      let instance = this.scripts.onAttacked.nwscript.newInstance();
-      instance.run(this);
-    }
+  onAttacked(attackType: CombatActionType){
+    const isSpellAttack = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
+    const instance = this.scripts[!isSpellAttack ? ModuleObjectScript.DoorOnMeleeAttacked : ModuleObjectScript.DoorOnSpellCastAt];
+    if(!instance){ return; }
+    instance.run(this);
   }
 
   onDamaged(): boolean{
-    if(this.scripts.onDamaged instanceof NWScriptInstance){
-      let instance = this.scripts.onDamaged.nwscript.newInstance();
-      instance.run(this);
-    }
+    const instance = this.scripts[ModuleObjectScript.DoorOnDamaged];
+    if(!instance){ return false; }
+    instance.run(this);
     return false;
   }
 
@@ -950,89 +955,36 @@ export class ModuleDoor extends ModuleObject {
   }
 
   loadScripts(){
+    const scriptKeys = [
+      ModuleObjectScript.DoorOnClick,
+      ModuleObjectScript.DoorOnClosed,
+      ModuleObjectScript.DoorOnDamaged,
+      ModuleObjectScript.DoorOnDeath,
+      ModuleObjectScript.DoorOnDisarm,
+      ModuleObjectScript.DoorOnFailToOpen,
+      ModuleObjectScript.DoorOnHeartbeat,
+      ModuleObjectScript.DoorOnInvDisturbed,
+      ModuleObjectScript.DoorOnLock,
+      ModuleObjectScript.DoorOnMeleeAttacked,
+      ModuleObjectScript.DoorOnOpen,
+      ModuleObjectScript.DoorOnSpellCastAt,
+      ModuleObjectScript.DoorOnTrapTriggered,
+      ModuleObjectScript.DoorOnUnlock,
+      ModuleObjectScript.DoorOnUserDefined,
+    ];
 
-    this.scripts = {
-      onClick: undefined,
-      onClosed: undefined,
-      onDamaged: undefined,
-      onDeath: undefined,
-      onDisarm: undefined,
-      onFailToOpen: undefined,
-      onHeartbeat: undefined,
-      onInvDisturbed: undefined,
-      onLock: undefined,
-      onMeleeAttacked: undefined,
-      onOpen: undefined,
-      onSpellCastAt: undefined,
-      onTrapTriggered: undefined,
-      onUnlock: undefined,
-      onUserDefined: undefined
-    };
-
-    if(this.template.RootNode.hasField('OnClick'))
-      this.scripts.onClick = this.template.getFieldByLabel('OnClick').getValue();
-    
-    if(this.template.RootNode.hasField('OnClosed'))
-      this.scripts.onClosed = this.template.getFieldByLabel('OnClosed').getValue();
-
-    if(this.template.RootNode.hasField('OnDamaged'))
-      this.scripts.onDamaged = this.template.getFieldByLabel('OnDamaged').getValue();
-
-    if(this.template.RootNode.hasField('OnDeath'))
-      this.scripts.onDeath = this.template.getFieldByLabel('OnDeath').getValue();
-
-    if(this.template.RootNode.hasField('OnDisarm'))
-      this.scripts.onDisarm = this.template.getFieldByLabel('OnDisarm').getValue();
-
-    if(this.template.RootNode.hasField('OnFailToOpen'))
-      this.scripts.onFailToOpen = this.template.getFieldByLabel('OnFailToOpen').getValue();
-
-    if(this.template.RootNode.hasField('OnHeartbeat'))
-      this.scripts.onHeartbeat = this.template.getFieldByLabel('OnHeartbeat').getValue();
-
-    if(this.template.RootNode.hasField('OnInvDisturbed'))
-      this.scripts.onInvDisturbed = this.template.getFieldByLabel('OnInvDisturbed').getValue();
-
-    if(this.template.RootNode.hasField('OnLock'))
-      this.scripts.onLock = this.template.getFieldByLabel('OnLock').getValue();
-    
-    if(this.template.RootNode.hasField('OnMeleeAttacked'))
-      this.scripts.onMeleeAttacked = this.template.getFieldByLabel('OnMeleeAttacked').getValue();
-
-    if(this.template.RootNode.hasField('OnOpen'))
-      this.scripts.onOpen = this.template.getFieldByLabel('OnOpen').getValue();
-
-    if(this.template.RootNode.hasField('OnSpellCastAt'))
-      this.scripts.onSpellCastAt = this.template.getFieldByLabel('OnSpellCastAt').getValue();
-
-    if(this.template.RootNode.hasField('OnTrapTriggered'))
-      this.scripts.onTrapTriggered = this.template.getFieldByLabel('OnTrapTriggered').getValue();
-
-    if(this.template.RootNode.hasField('OnUnlock'))
-      this.scripts.onUnlock = this.template.getFieldByLabel('OnUnlock').getValue();
-
-    if(this.template.RootNode.hasField('OnUserDefined'))
-      this.scripts.onUserDefined = this.template.getFieldByLabel('OnUserDefined').getValue();
-    
-    if(this.template.RootNode.hasField('TweakColor'))
-      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-    
-    if(this.template.RootNode.hasField('UseTweakColor'))
-      this.useTweakColor = !!this.template.getFieldByLabel('UseTweakColor').getValue();
-
-    if(this.template.RootNode.hasField('NotBlastable'))
-      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
-
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    const scriptsNode = this.template?.RootNode;
+    if(!scriptsNode){ return; }
+    for(const scriptKey of scriptKeys){
+      if(scriptsNode.hasField(scriptKey)){
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ continue; }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
     }
-
   }
 
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
@@ -1228,6 +1180,17 @@ export class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.hasField('TransitionDestin'))
       this.transitionDestin = this.template.RootNode.getFieldByLabel('TransitionDestin').getCExoLocString();
+    
+    //BEGIN: TSL Properties
+    if(this.template.RootNode.hasField('TweakColor'))
+      this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
+    
+    if(this.template.RootNode.hasField('UseTweakColor'))
+      this.useTweakColor = !!this.template.getFieldByLabel('UseTweakColor').getValue();
+
+    if(this.template.RootNode.hasField('NotBlastable'))
+      this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
+    //END: TSL Properties
 
     this.initialized = true
 
@@ -1282,21 +1245,20 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnClick') ).setValue(this.scripts.onClick ? this.scripts.onClick.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnClosed') ).setValue(this.scripts.onClosed ? this.scripts.onClosed.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDamaged') ).setValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDeath') ).setValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDialog') ).setValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDisarm') ).setValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnFailToOpen') ).setValue(this.scripts.onFailToOpen ? this.scripts.onFailToOpen.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnLock') ).setValue(this.scripts.onLock ? this.scripts.onLock.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnMeleeAttacked') ).setValue(this.scripts.onMeleeAttacked ? this.scripts.onMeleeAttacked.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpen') ).setValue(this.scripts.onOpen ? this.scripts.onOpen.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnSpellCastAt') ).setValue(this.scripts.onSpellCastAt ? this.scripts.onSpellCastAt.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnTrapTriggered') ).setValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUnlock') ).setValue(this.scripts.onUnlock ? this.scripts.onUnlock.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUserDefined') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClick) ).setValue(this.scripts[ModuleObjectScript.DoorOnClick]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClosed) ).setValue(this.scripts[ModuleObjectScript.DoorOnClosed]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDamaged) ).setValue(this.scripts[ModuleObjectScript.DoorOnDamaged]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDeath) ).setValue(this.scripts[ModuleObjectScript.DoorOnDeath]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDisarm) ).setValue(this.scripts[ModuleObjectScript.DoorOnDisarm]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnFailToOpen) ).setValue(this.scripts[ModuleObjectScript.DoorOnFailToOpen]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.DoorOnHeartbeat]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnLock) ).setValue(this.scripts[ModuleObjectScript.DoorOnLock]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnMeleeAttacked) ).setValue(this.scripts[ModuleObjectScript.DoorOnMeleeAttacked]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnOpen) ).setValue(this.scripts[ModuleObjectScript.DoorOnOpen]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnSpellCastAt) ).setValue(this.scripts[ModuleObjectScript.DoorOnSpellCastAt]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.DoorOnTrapTriggered]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUnlock) ).setValue(this.scripts[ModuleObjectScript.DoorOnUnlock]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.DoorOnUserDefined]?.name || '');
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);

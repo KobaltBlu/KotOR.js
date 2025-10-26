@@ -16,6 +16,7 @@ import { ModuleMGGunBank } from "./ModuleMGGunBank";
 import type { ModuleMGGunBullet } from "./ModuleMGGunBullet";
 import type { ModuleMGEnemy } from "./ModuleMGEnemy";
 import type { ModuleMGObstacle } from "./ModuleMGObstacle";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleMGPlayer class.
@@ -761,137 +762,96 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   onAnimEvent(){
-    if(this.scripts.onAnimEvent instanceof NWScriptInstance){
-      this.scripts.onAnimEvent.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnAnimEvent];
+    if(!instance){ return; }
+    instance.run(this, 0);
   }
 
   onCreate(){
-    if(this.scripts.onCreate instanceof NWScriptInstance){
-      this.scripts.onCreate.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnCreate];
+    if(!instance){ return; }
+    instance.run(this, 0);
   }
 
   onDamaged(): boolean{
-    if(this.scripts.onDamage instanceof NWScriptInstance){
-      this.scripts.onDamage.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnDamage];
+    if(!instance){ return true; }
+    instance.run(this, 0);
     return true;
   }
 
   onFire(){
-    if(this.scripts.onFire instanceof NWScriptInstance){
-      this.scripts.onFire.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnFire];
+    if(!instance){ return; }
+    instance.run(this, 0);
   }
 
   onAccelerate(){
-    if(this.scripts.onAccelerate instanceof NWScriptInstance){
-      this.scripts.onAccelerate.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnAccelerate];
+    if(!instance){ return; }
+    instance.run(this, 0);
   }
 
   onHitBullet( bullet: ModuleMGGunBullet ){
-    if(this.scripts.onHitBullet instanceof NWScriptInstance){
-      const instance = this.scripts.onHitBullet;
-      instance.mgBullet = bullet;
-      instance.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnHitBullet];
+    if(!instance){ return; }
+    instance.mgBullet = bullet;
+    instance.run(this, 0);
   }
 
   onHitFollower( follower: ModuleMGEnemy ){
-    if(this.scripts.onHitFollower instanceof NWScriptInstance){
-      const instance = this.scripts.onHitFollower;
-      instance.mgFollower = follower;
-      instance.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnHitFollower];
+    if(!instance){ return; }
+    instance.mgFollower = follower;
+    instance.run(this, 0);
   }
 
   onHitObstacle( obstacle: ModuleMGObstacle ){
-    if(this.scripts.onHitObstacle instanceof NWScriptInstance){
-      const instance = this.scripts.onHitObstacle;
-      instance.mgObstacle = obstacle;
-      instance.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnHitObstacle];
+    if(!instance){ return; }
+    instance.mgObstacle = obstacle;
+    instance.run(this, 0);
   }
 
   onTrackLoop(){
-    if(this.scripts.onTrackLoop instanceof NWScriptInstance){
-      this.scripts.onTrackLoop.run(this, 0);
-    }
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnTrackLoop];
+    if(!instance){ return; }
+    instance.run(this, 0);
   }
 
   loadScripts (){
-    this.scripts = {
-      onAccelerate: undefined,
-      onAnimEvent: undefined,
-      onBrake: undefined,
-      onCreate: undefined,
-      onDamage: undefined,
-      onDeath: undefined,
-      onFire: undefined,
-      onHeartbeat: undefined,
-      onHitBullet: undefined,
-      onHitFollower: undefined,
-      onHitObstacle: undefined,
-      onHitWorld: undefined,
-      onTrackLoop: undefined
-    };
+    const scriptResRefs = [
+      ModuleObjectScript.MGPlayerOnAccelerate,
+      ModuleObjectScript.MGPlayerOnAnimEvent,
+      ModuleObjectScript.MGPlayerOnBrake,
+      ModuleObjectScript.MGPlayerOnCreate,
+      ModuleObjectScript.MGPlayerOnDamage,
+      ModuleObjectScript.MGPlayerOnDeath,
+      ModuleObjectScript.MGPlayerOnFire,
+      ModuleObjectScript.MGPlayerOnHeartbeat,
+      ModuleObjectScript.MGPlayerOnHitBullet,
+      ModuleObjectScript.MGPlayerOnHitFollower,
+      ModuleObjectScript.MGPlayerOnHitObstacle,
+      ModuleObjectScript.MGPlayerOnHitWorld,
+      ModuleObjectScript.MGPlayerOnTrackLoop,
+    ];
 
-    let scriptsNode = this.template.getFieldByLabel('Scripts').getChildStructs()[0];
+    const scriptsNode = this.template.getFieldByLabel('Scripts')?.getFieldStruct();
     if(scriptsNode){
-
-      if(scriptsNode.hasField('OnAccelerate'))
-        this.scripts.onAccelerate = scriptsNode.getFieldByLabel('OnAccelerate').getValue();
-      
-      if(scriptsNode.hasField('OnAnimEvent'))
-        this.scripts.onAnimEvent = scriptsNode.getFieldByLabel('OnAnimEvent').getValue();
-
-      if(scriptsNode.hasField('OnBrake'))
-        this.scripts.onBrake = scriptsNode.getFieldByLabel('OnBrake').getValue();
-
-      if(scriptsNode.hasField('OnCreate'))
-        this.scripts.onCreate = scriptsNode.getFieldByLabel('OnCreate').getValue();
-
-      if(scriptsNode.hasField('OnDamage'))
-        this.scripts.onDamage = scriptsNode.getFieldByLabel('OnDamage').getValue();
-
-      if(scriptsNode.hasField('OnDeath'))
-        this.scripts.onDeath = scriptsNode.getFieldByLabel('OnDeath').getValue();
-
-      if(scriptsNode.hasField('OnFire'))
-        this.scripts.onFire = scriptsNode.getFieldByLabel('OnFire').getValue();
-
-      if(scriptsNode.hasField('OnHeartbeat'))
-        this.scripts.onHeartbeat = scriptsNode.getFieldByLabel('OnHeartbeat').getValue();
-      
-      if(scriptsNode.hasField('OnHitBullet'))
-        this.scripts.onHitBullet = scriptsNode.getFieldByLabel('OnHitBullet').getValue();
-
-      if(scriptsNode.hasField('OnHitFollower'))
-        this.scripts.onHitFollower = scriptsNode.getFieldByLabel('OnHitFollower').getValue();
-
-      if(scriptsNode.hasField('OnHitObstacle'))
-        this.scripts.onHitObstacle = scriptsNode.getFieldByLabel('OnHitObstacle').getValue();
-
-      if(scriptsNode.hasField('OnHitWorld'))
-        this.scripts.onHitWorld = scriptsNode.getFieldByLabel('OnHitWorld').getValue();
-
-      if(scriptsNode.hasField('OnTrackLoop'))
-        this.scripts.onTrackLoop = scriptsNode.getFieldByLabel('OnTrackLoop').getValue();
-
-    }
-
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = GameState.NWScript.Load(_script);
-        this.scripts[key].caller = this;
+      for(const scriptKey of scriptResRefs){
+        if(scriptsNode.hasField(scriptKey)){
+          const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+          if(!resRef){ continue; }
+          const nwscript = GameState.NWScript.Load(resRef);
+          if(!nwscript){ 
+            console.warn(`ModuleMGPlayer.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+            continue; 
+          }
+          nwscript.caller = this;
+          this.scripts[scriptKey] = nwscript;
+        }
       }
     }
-
   }
 
   initProperties(){

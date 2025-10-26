@@ -1,4 +1,4 @@
-import { ModuleObjectType } from "../enums";
+import { ModuleObjectScript, ModuleObjectType } from "../enums";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { GameState } from "../GameState";
@@ -6190,7 +6190,7 @@ NWScriptDefK2.Actions = {
     args: [ NWScriptDataType.OBJECT ],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
-        args[0].scripts.onHeartbeat = undefined;
+        args[0].scripts[ModuleObjectScript.PlaceableOnHeartbeat] = undefined;
       }
     }	
   },

@@ -11,7 +11,6 @@ import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GameState } from "../GameState";
-import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -57,6 +56,7 @@ import { EngineDebugType } from "../enums/engine/EngineDebugType";
 import { TextSprite3D } from "../engine/TextSprite3D";
 import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
 import { ExperienceType } from "../enums/engine/ExperienceType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleCreature class.
@@ -297,22 +297,20 @@ export class ModuleCreature extends ModuleObject {
     this.portraitId = 0;
     this.race = 0;
 
-    this.scripts = {
-      onAttacked: undefined,
-      onDamaged: undefined,
-      onDeath: undefined,
-      onDialog: undefined,
-      onDisturbed: undefined,
-      onEndDialog: undefined,
-      onEndRound: undefined,
-      onHeartbeat: undefined,
-      onBlocked: undefined,
-      onNotice: undefined,
-      onRested: undefined,
-      onSpawn: undefined,
-      onSpellAt: undefined,
-      onUserDefined: undefined
-    };
+    this.scripts[ModuleObjectScript.CreatureOnAttacked] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnDamaged] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnDeath] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnDialog] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnDisturbed] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnEndDialog] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnEndRound] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnHeartbeat] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnBlocked] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnNotice] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnRested] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnSpawn] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnSpellAt] = undefined;
+    this.scripts[ModuleObjectScript.CreatureOnUserDefined] = undefined;
 
     this.skills = [];
 
@@ -807,10 +805,6 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     if(this.heardStrings.length){
-
-      //if(this.scripts.onDialog instanceof NWScriptInstance && this.scripts.onDialog.running)
-      //  return;
-
       let str = this.heardStrings[0];
       //console.log('HeardString', this.id, str, this.isListening, this);
       if(this.isListening && str){
@@ -2217,26 +2211,25 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.isDead() || !this.combatData.combatState)
       return true;
-
-    if(this.scripts.onEndRound instanceof NWScriptInstance){
-      let instance = this.scripts.onEndRound.nwscript.newInstance();
-      instance.run(this);
-    }
+    
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndRound];
+    if(!nwscript){ return true; }
+    const instance = nwscript.newInstance();
+    instance.run(this);
   }
 
   onDeath(){
     this.weaponPowered(false);
-    if(this.scripts.onDeath instanceof NWScriptInstance){
-      let instance = this.scripts.onDeath.nwscript.newInstance();
-      instance.run(this);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
+    if(!nwscript){ return true; }
+    const instance = nwscript.newInstance();
+    instance.run(this);
   }
 
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined){
-    if(!(this.scripts.onDialog instanceof NWScriptInstance)){
-      return false;
-    }
-    const instance = this.scripts.onDialog.nwscript.newInstance();
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnDialog];
+    if(!nwscript){ return false; }
+    const instance = nwscript.newInstance();
     instance.listenPatternNumber = listenPatternNumber;
     instance.listenPatternSpeaker = oSpeaker;
     instance.conversation = conversation;
@@ -2244,12 +2237,12 @@ export class ModuleCreature extends ModuleObject {
     return true;
   }
 
-  onAttacked(){
-    if(this.scripts.onAttacked instanceof NWScriptInstance){
-      let instance = this.scripts.onAttacked.nwscript.newInstance();
-      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
-      instance.run(this, script_num);
-    }
+  onAttacked(attackType: CombatActionType){
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnAttacked];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2005 : 1005;
+    instance.run(this, script_num);
   }
 
   onDamaged(){
@@ -2258,22 +2251,22 @@ export class ModuleCreature extends ModuleObject {
 
     this.resetExcitedDuration();
     
-    if(this.scripts.onDamaged instanceof NWScriptInstance){
-      let instance = this.scripts.onDamaged.nwscript.newInstance();
-      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
-      instance.run(this, script_num);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnDamaged];
+    if(!nwscript){ return true; }
+    const instance = nwscript.newInstance();
+    const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2006 : 1006;
+    instance.run(this, script_num);
   }
 
   onBlocked(){
     if(this == GameState.getCurrentPlayer())
       return;
 
-    if(this.scripts.onBlocked instanceof NWScriptInstance){
-      let instance = this.scripts.onBlocked.nwscript.newInstance();
-      let script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
-      instance.run(this, script_num);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.CreatureOnBlocked];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    const script_num = (GameState.PartyManager.party.indexOf(this) > -1) ? 2009 : 1009;
+    instance.run(this, script_num);
   }
 
   use(object: ModuleObject){
@@ -3266,28 +3259,37 @@ export class ModuleCreature extends ModuleObject {
 
   loadScripts (){
 
-    this.scripts.onAttacked = this.template.getFieldByLabel('ScriptAttacked').getValue();
-    this.scripts.onDamaged = this.template.getFieldByLabel('ScriptDamaged').getValue();
-    this.scripts.onDeath = this.template.getFieldByLabel('ScriptDeath').getValue();
-    this.scripts.onDialog = this.template.getFieldByLabel('ScriptDialogue').getValue();
-    this.scripts.onDisturbed = this.template.getFieldByLabel('ScriptDisturbed').getValue();
-    this.scripts.onEndDialog = this.template.getFieldByLabel('ScriptEndDialogu').getValue();
-    this.scripts.onEndRound = this.template.getFieldByLabel('ScriptEndRound').getValue();
-    this.scripts.onHeartbeat = this.template.getFieldByLabel('ScriptHeartbeat').getValue();
-    this.scripts.onBlocked = this.template.getFieldByLabel('ScriptOnBlocked').getValue();
-    this.scripts.onNotice = this.template.getFieldByLabel('ScriptOnNotice').getValue();
-    this.scripts.onRested = this.template.getFieldByLabel('ScriptRested').getValue();
-    this.scripts.onSpawn = this.template.getFieldByLabel('ScriptSpawn').getValue();
-    this.scripts.onSpellAt = this.template.getFieldByLabel('ScriptSpellAt').getValue();
-    this.scripts.onUserDefined = this.template.getFieldByLabel('ScriptUserDefine').getValue();
+    const scriptKeys = [
+      ModuleObjectScript.CreatureOnAttacked,
+      ModuleObjectScript.CreatureOnDamaged,
+      ModuleObjectScript.CreatureOnDeath,
+      ModuleObjectScript.CreatureOnDialog,
+      ModuleObjectScript.CreatureOnDisturbed,
+      ModuleObjectScript.CreatureOnEndDialog,
+      ModuleObjectScript.CreatureOnEndRound,
+      ModuleObjectScript.CreatureOnHeartbeat,
+      ModuleObjectScript.CreatureOnBlocked,
+      ModuleObjectScript.CreatureOnNotice,
+      ModuleObjectScript.CreatureOnRested,
+      ModuleObjectScript.CreatureOnSpawn,
+      ModuleObjectScript.CreatureOnSpellAt,
+      ModuleObjectScript.CreatureOnUserDefined,
+    ];
 
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    const scriptsNode = this.template?.RootNode;
+    if(!scriptsNode){ return; }
+    
+    for(const scriptKey of scriptKeys){
+      if(scriptsNode.hasField(scriptKey)){
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ 
+          console.warn(`ModuleCreature.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
+        }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
     }
 
@@ -4695,20 +4697,20 @@ export class ModuleCreature extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue(this.scripts.onAttacked ? this.scripts.onAttacked.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).setValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).setValue(this.scripts.onDisturbed ? this.scripts.onDisturbed.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).setValue(this.scripts.onEndDialog ? this.scripts.onEndDialog.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).setValue(this.scripts.onEndRound ? this.scripts.onEndRound.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).setValue(this.scripts.onBlocked ? this.scripts.onBlocked.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).setValue(this.scripts.onNotice ? this.scripts.onNotice.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).setValue(this.scripts.onRested ? this.scripts.onRested.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).setValue(this.scripts.onSpawn ? this.scripts.onSpawn.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).setValue(this.scripts.onSpellAt ? this.scripts.onSpellAt.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptAttacked') ).setValue(this.scripts[ModuleObjectScript.CreatureOnAttacked]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDamaged') ).setValue(this.scripts[ModuleObjectScript.CreatureOnDamaged]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDeath') ).setValue(this.scripts[ModuleObjectScript.CreatureOnDeath]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDialogue') ).setValue(this.scripts[ModuleObjectScript.CreatureOnDialog]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptDisturbed') ).setValue(this.scripts[ModuleObjectScript.CreatureOnDisturbed]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu') ).setValue(this.scripts[ModuleObjectScript.CreatureOnEndDialog]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptEndRound') ).setValue(this.scripts[ModuleObjectScript.CreatureOnEndRound]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat') ).setValue(this.scripts[ModuleObjectScript.CreatureOnHeartbeat]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked') ).setValue(this.scripts[ModuleObjectScript.CreatureOnBlocked]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptOnNotice') ).setValue(this.scripts[ModuleObjectScript.CreatureOnNotice]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptRested') ).setValue(this.scripts[ModuleObjectScript.CreatureOnRested]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') ).setValue(this.scripts[ModuleObjectScript.CreatureOnSpawn]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') ).setValue(this.scripts[ModuleObjectScript.CreatureOnSpellAt]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts[ModuleObjectScript.CreatureOnUserDefined]?.name || '');
 
     //Skills
     let skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );

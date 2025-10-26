@@ -23,6 +23,8 @@ import { IAreaListItem } from "../interface/area/IAreaListItem";
 import type { GameEvent } from "../events/GameEvent";
 import { ModuleArea } from "./ModuleArea";
 import { ModuleTimeManager } from "./ModuleTimeManager";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -53,7 +55,7 @@ export class Module {
   entryY: number;
   entryZ: number;
   
-  scripts: IModuleScripts = {} as IModuleScripts;
+  scripts: { [key: string]: NWScriptInstance };
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
   timeManager: ModuleTimeManager;
@@ -183,7 +185,7 @@ export class Module {
   isSaveGame: boolean = false;
 
   constructor(){
-    this.scripts = {} as IModuleScripts;
+    this.scripts = {} as { [key in ModuleObjectScript]?: NWScriptInstance };
     this.archives = [];
     this.effects = [];
     this.eventQueue = [];
@@ -301,20 +303,20 @@ export class Module {
     }
 
     //Scripts
-    this.scriptResRefs.set('Mod_OnAcquirItem',  ifo.getFieldByLabel('Mod_OnAcquirItem').getValue());
-    this.scriptResRefs.set('Mod_OnActvtItem',   ifo.getFieldByLabel('Mod_OnActvtItem').getValue());
-    this.scriptResRefs.set('Mod_OnClientEntr',  ifo.getFieldByLabel('Mod_OnClientEntr').getValue());
-    this.scriptResRefs.set('Mod_OnClientLeav',  ifo.getFieldByLabel('Mod_OnClientLeav').getValue());
-    this.scriptResRefs.set('Mod_OnHeartbeat',   ifo.getFieldByLabel('Mod_OnHeartbeat').getValue());
-    this.scriptResRefs.set('Mod_OnModLoad',     ifo.getFieldByLabel('Mod_OnModLoad').getValue());
-    this.scriptResRefs.set('Mod_OnModStart',    ifo.getFieldByLabel('Mod_OnModStart').getValue());
-    this.scriptResRefs.set('Mod_OnPlrDeath',    ifo.getFieldByLabel('Mod_OnPlrDeath').getValue());
-    this.scriptResRefs.set('Mod_OnPlrDying',    ifo.getFieldByLabel('Mod_OnPlrDying').getValue());
-    this.scriptResRefs.set('Mod_OnPlrLvlUp',    ifo.getFieldByLabel('Mod_OnPlrLvlUp').getValue());
-    this.scriptResRefs.set('Mod_OnPlrRest',     ifo.getFieldByLabel('Mod_OnPlrRest').getValue());
-    this.scriptResRefs.set('Mod_OnSpawnBtnDn',  ifo.getFieldByLabel('Mod_OnSpawnBtnDn').getValue());
-    this.scriptResRefs.set('Mod_OnUnAqreItem',  ifo.getFieldByLabel('Mod_OnUnAqreItem').getValue());
-    this.scriptResRefs.set('Mod_OnUsrDefined',  ifo.getFieldByLabel('Mod_OnUsrDefined').getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerActivateItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientEnter).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientLeave).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnHeartbeat).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnLoad).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnStart).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDeath).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDying).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerLevelUp).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerRest).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnSpawnButtonDown).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUnAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUserDefined).getValue());
 
     if(ifo.RootNode.hasField('Mod_StartMovie')){
       this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue();
@@ -473,55 +475,22 @@ export class Module {
   }
 
   async initScripts(){
-    const scriptKeys = Array.from(this.scriptResRefs.keys());
-    const scriptResRefs = Array.from(this.scriptResRefs.values());
-    for(let i = 0; i < scriptResRefs.length; i++){
-      const resRef = scriptResRefs[i];
-      if(!resRef){ continue; }
-
-      const key = scriptKeys[i];
+    for(let [key, resRef] of this.scriptResRefs){
       const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
-
-      if(key == 'Mod_OnAcquirItem'){
-        this.scripts.onAcquireItem = script;
-      }else if(key == 'Mod_OnActvtItem'){
-        this.scripts.onActivateItem = script;
-      }else if(key == 'Mod_OnClientEntr'){
-        this.scripts.onClientEnter = script;
-      }else if(key == 'Mod_OnClientLeav'){
-        this.scripts.onClientLeave = script;
-      }else if(key == 'Mod_OnHeartbeat'){
-        this.scripts.onHeartbeat = script;
-      }else if(key == 'Mod_OnModLoad'){
-        this.scripts.onModuleLoad = script;
-      }else if(key == 'Mod_OnModStart'){
-        this.scripts.onModuleStart = script;
-      }else if(key == 'Mod_OnPlrDeath'){
-        this.scripts.onPlayerDeath = script;
-      }else if(key == 'Mod_OnPlrDying'){
-        this.scripts.onPlayerDying = script;
-      }else if(key == 'Mod_OnPlrLvlUp'){
-        this.scripts.onPlayerLevelUp = script;
-      }else if(key == 'Mod_OnPlrRest'){
-        this.scripts.onPlayerRest = script;
-      }else if(key == 'Mod_OnSpawnBtnDn'){
-        this.scripts.onSpawnButtonDown = script;
-      }else if(key == 'Mod_OnUnAqreItem'){
-        this.scripts.onUnAcquireItem = script;
-      }else if(key == 'Mod_OnUsrDefined'){
-        this.scripts.onUserDefined = script;
-      }
+      this.scripts[key] = script;
     }
 
-    if(this.scripts.onModuleLoad){
-      this.scripts.onModuleLoad.enteringObject = GameState.PartyManager.party[0];
-      this.scripts.onModuleLoad.run(this.area, 0);
+    const onLoad = this.scripts[ModuleObjectScript.ModuleOnLoad];
+    if(onLoad){
+      onLoad.enteringObject = GameState.PartyManager.party[0];
+      onLoad.run(this.area, 0);
     }
 
-    if(this.scripts.onClientEnter){
-      this.scripts.onClientEnter.enteringObject = GameState.PartyManager.party[0];
-      this.scripts.onClientEnter.run(this.area, 0);
+    const onPlayerClientEnter = this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter];
+    if(onPlayerClientEnter){
+      onPlayerClientEnter.enteringObject = GameState.PartyManager.party[0];
+      onPlayerClientEnter.run(this.area, 0);
     }
   }
 
@@ -631,20 +600,20 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId1') ).setValue(this.nextCharId1);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId0') ).setValue(this.nextObjId0);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId1') ).setValue(this.nextObjId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts.onAcquireItem ? this.scripts.onAcquireItem.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts.onActivateItem ? this.scripts.onActivateItem.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts.onClientEnter ? this.scripts.onClientEnter.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts.onClientLeave ? this.scripts.onClientLeave.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts.onModuleLoad ? this.scripts.onModuleLoad.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts.onModuleStart ? this.scripts.onModuleStart.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts.onPlayerDeath ? this.scripts.onPlayerDeath.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts.onPlayerDying ? this.scripts.onPlayerDying.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts.onPlayerLevelUp ? this.scripts.onPlayerLevelUp.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts.onPlayerRest ? this.scripts.onPlayerRest.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts.onSpawnButtonDown ? this.scripts.onSpawnButtonDown.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts.onUnAcquireItem ? this.scripts.onUnAcquireItem.name : '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientLeave]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts[ModuleObjectScript.ModuleOnHeartbeat]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts[ModuleObjectScript.ModuleOnLoad]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts[ModuleObjectScript.ModuleOnStart]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDeath]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDying]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerRest]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUnAcquireItem]?.name || '');
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUserDefined]?.name || '');
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
 
@@ -998,20 +967,20 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame', 0) );
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour) );
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name') ).setCExoLocString(this.name );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scripts.onAcquireItem) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem', this.scripts.onActivateItem) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr', this.scripts.onClientEnter) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav', this.scripts.onClientLeave) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat', this.scripts.onHeartbeat) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad', this.scripts.onModuleLoad) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart', this.scripts.onModuleStart) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath', this.scripts.onPlayerDeath) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying', this.scripts.onPlayerDying) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp', this.scripts.onPlayerLevelUp) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest', this.scripts.onPlayerRest) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn', this.scripts.onSpawnButtonDown) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem', this.scripts.onUnAcquireItem) );
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined', this.scripts.onUserDefined) );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem', this.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr', this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav', this.scripts[ModuleObjectScript.ModuleOnPlayerClientLeave]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat', this.scripts[ModuleObjectScript.ModuleOnHeartbeat]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad', this.scripts[ModuleObjectScript.ModuleOnLoad]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart', this.scripts[ModuleObjectScript.ModuleOnStart]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath', this.scripts[ModuleObjectScript.ModuleOnPlayerDeath]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying', this.scripts[ModuleObjectScript.ModuleOnPlayerDying]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp', this.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest', this.scripts[ModuleObjectScript.ModuleOnPlayerRest]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn', this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem', this.scripts[ModuleObjectScript.ModuleOnUnAcquireItem]?.name || '') );
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined', this.scripts[ModuleObjectScript.ModuleOnUserDefined]?.name || '') );
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartDay', this.timeManager.day) );
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartHour', this.timeManager.hour) );
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMonth', this.timeManager.month) );

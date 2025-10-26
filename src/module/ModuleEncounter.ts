@@ -16,6 +16,7 @@ import { ModuleObject } from "./ModuleObject";
 import { EncounterCreatureEntry } from "./EncounterCreatureEntry";
 import { EncounterSpawnPointEntry } from "./EncounterSpawnPointEntry";
 import { EncounterSpawnEntry } from "./EncounterSpawnEntry";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 /**
 * ModuleEncounter class.
@@ -172,19 +173,19 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   onEnter(object: ModuleObject){
-    if(this.scripts.onEnter instanceof NWScriptInstance){
-      let instance = this.scripts.onEnter.nwscript.newInstance();
-      instance.enteringObject = object;
-      instance.run(this, 0);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.EncounterOnEntered];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    instance.enteringObject = object;
+    instance.run(this, 0);
   }
 
   onExit(object: ModuleObject){
-    if(this.scripts.onExit instanceof NWScriptInstance){
-      let instance = this.scripts.onExit.nwscript.newInstance();
-      instance.exitingObject = object;
-      instance.run(this, 0);
-    }
+    const nwscript = this.scripts[ModuleObjectScript.EncounterOnExit];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    instance.exitingObject = object;
+    instance.run(this, 0);
   }
 
   load(){
@@ -259,19 +260,27 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   loadScripts(){
-    this.scripts.onEntered = this.template.getFieldByLabel('OnEntered').getValue();
-    this.scripts.onExhausted = this.template.getFieldByLabel('OnExhausted').getValue();
-    this.scripts.onExit = this.template.getFieldByLabel('OnExit').getValue();
-    this.scripts.onHeartbeat = this.template.getFieldByLabel('OnHeartbeat').getValue();
-    this.scripts.onUserDefined = this.template.getFieldByLabel('OnUserDefined').getValue();
+    const scriptKeys = [
+      ModuleObjectScript.EncounterOnEntered,
+      ModuleObjectScript.EncounterOnExhausted,
+      ModuleObjectScript.EncounterOnExit,
+      ModuleObjectScript.EncounterOnHeartbeat,
+      ModuleObjectScript.EncounterOnUserDefined,
+    ];
 
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    const scriptsNode = this.template?.RootNode;
+    if(!scriptsNode){ return; }
+    for(const scriptKey of scriptKeys){
+      if(scriptsNode.hasField(scriptKey)){
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ 
+          console.warn(`ModuleEncounter.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
+        }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
     }
   }
@@ -533,11 +542,11 @@ export class ModuleEncounter extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnEntered') ).setValue(this.scripts.onEntered ? this.scripts.onEntered.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnExit') ).setValue(this.scripts.onExit ? this.scripts.onExit.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnExhausted') ).setValue(this.scripts.onExhausted ? this.scripts.onExhausted.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUserDefined') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnEntered) ).setValue(this.scripts[ModuleObjectScript.EncounterOnEntered]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExit) ).setValue(this.scripts[ModuleObjectScript.EncounterOnExit]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExhausted) ).setValue(this.scripts[ModuleObjectScript.EncounterOnExhausted]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.EncounterOnHeartbeat]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.EncounterOnUserDefined]?.name || '');
 
     gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);

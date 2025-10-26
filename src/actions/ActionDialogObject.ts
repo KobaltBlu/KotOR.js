@@ -3,6 +3,7 @@ import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import type { ModuleObject } from "../module/ModuleObject";
@@ -87,8 +88,8 @@ export class ActionDialogObject extends Action {
 
       this.owner.heardStrings = [];
       this.target.heardStrings = [];
-      if(this.target.scripts.onDialog){
-        // this.target.scripts.onDialog.conversation = this.conversation;
+      const onDialog = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) ? this.target.scripts[ModuleObjectScript.CreatureOnDialog] : undefined;
+      if(onDialog){
         this.target.onDialog(this.owner, -1, this.conversation);
       }else{
         GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);

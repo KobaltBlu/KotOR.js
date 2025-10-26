@@ -548,7 +548,7 @@ export class CombatRound {
 
     combatAction.target.combatData.lastAttacker = creature;
     creature.combatData.lastAttackResult = combatAction.attackResult;
-    combatAction.target.onAttacked();
+    combatAction.target.onAttacked(combatAction.actionType);
 
     this.calculateRoundAnimations(creature, combatAction);
 

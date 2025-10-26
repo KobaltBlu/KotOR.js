@@ -47,7 +47,7 @@ import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
-import { EngineDebugType, ModuleTriggerType, SkillType } from "../enums";
+import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType } from "../enums";
 import type { SWPortrait } from "../engine/rules/SWPortrait";
 
 /**
@@ -1495,13 +1495,21 @@ export class ModuleObject {
    * @param event 
    */
   triggerUserDefinedEvent( event: NWScriptEvent ){
-    if(event instanceof NWScriptEvent){
-      if(this.scripts.onUserDefined instanceof NWScriptInstance){
-        // console.log('triggerUserDefinedEvent', this.getTag(), this.scripts.onUserDefined.name, event.getInt(0), this);
-        // let instance = this.scripts.onUserDefined.nwscript.newInstance();
-        this.scripts.onUserDefined.run(this, parseInt(event.getInt(0)));
-      }
+    if(!(event instanceof NWScriptEvent)){ return; }
+
+    let onUserDefined: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onUserDefined = this.scripts[ModuleObjectScript.CreatureOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      onUserDefined = this.scripts[ModuleObjectScript.PlaceableOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      onUserDefined = this.scripts[ModuleObjectScript.DoorOnUserDefined];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+      onUserDefined = this.scripts[ModuleObjectScript.TriggerOnUserDefined];
     }
+    
+    if(!onUserDefined){ return; }
+    onUserDefined.run(this, parseInt(event.getInt(0)));
   }
 
   /**
@@ -1509,15 +1517,23 @@ export class ModuleObject {
    * @param event 
    */
   triggerSpellCastAtEvent( event: NWScriptEvent ){
-    if(event instanceof NWScriptEvent){
-      if(this.scripts.onSpellAt instanceof NWScriptInstance){
-        let instance = this.scripts.onSpellAt.nwscript.newInstance();
-        instance.lastSpellCaster = event.getObject(0);
-        instance.lastSpell = event.getInt(0);
-        instance.lastSpellHarmful = event.getInt(1) ? true : false;
-        instance.run(this);
-      }
+    if(!(event instanceof NWScriptEvent)){ return; }
+
+    let onSpellAt: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onSpellAt = this.scripts[ModuleObjectScript.CreatureOnSpellAt];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      onSpellAt = this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      onSpellAt = this.scripts[ModuleObjectScript.DoorOnSpellCastAt];
     }
+
+    if(!onSpellAt){ return; }
+    const instance = onSpellAt.nwscript.newInstance();
+    instance.lastSpellCaster = event.getObject(0);
+    instance.lastSpell = event.getInt(0);
+    instance.lastSpellHarmful = event.getInt(1) ? true : false;
+    instance.run(this);
   }
 
   /**
@@ -1525,7 +1541,7 @@ export class ModuleObject {
    * @param event 
    */
   scriptEventHandler( event: NWScriptEvent ){
-    // console.log('scriptEventHandler', this.tag, event);
+    console.log('scriptEventHandler', this.tag, event);
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEventType.EventUserDefined:
@@ -1549,8 +1565,28 @@ export class ModuleObject {
     if(!(this.spawned === true && GameState.module.readyToProcessEvents)){
       return;
     }
-    if(!this.scripts.onHeartbeat){ return; }
-      this.scripts.onHeartbeat.run(this);
+
+    let onHeartbeat: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onHeartbeat = this.scripts[ModuleObjectScript.CreatureOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      onHeartbeat = this.scripts[ModuleObjectScript.PlaceableOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      onHeartbeat = this.scripts[ModuleObjectScript.DoorOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+      onHeartbeat = this.scripts[ModuleObjectScript.TriggerOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleEncounter)){
+      onHeartbeat = this.scripts[ModuleObjectScript.EncounterOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGObstacle)){
+      onHeartbeat = this.scripts[ModuleObjectScript.MGObstacleOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGEnemy)){
+      onHeartbeat = this.scripts[ModuleObjectScript.MGEnemyOnHeartbeat];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGPlayer)){
+      onHeartbeat = this.scripts[ModuleObjectScript.MGPlayerOnHeartbeat];
+    }
+    if(!onHeartbeat){ return; }
+
+    onHeartbeat.run(this);
   }
 
   /**
@@ -1567,8 +1603,13 @@ export class ModuleObject {
    */
   onSpawn(runScript = true){
 
-    if(runScript && this.scripts.onSpawn instanceof NWScriptInstance){
-      this.scripts.onSpawn.run(this, 0);
+    let onSpawn: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onSpawn = this.scripts[ModuleObjectScript.CreatureOnSpawn];
+    }
+
+    if(runScript && onSpawn){
+      onSpawn.run(this, 0);
       console.log('spawned', this.getName());
     }
     
@@ -1783,7 +1824,15 @@ export class ModuleObject {
     console.log('addTrap', trap);
 
     if(trap.trapscript?.length && trap.trapscript != '****'){
-      this.scripts.onTrapTriggered = NWScript.Load(trap.trapscript);
+      const nwscript = NWScript.Load(trap.trapscript);
+      nwscript.caller = this;
+      if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
+        this.scripts[ModuleObjectScript.TriggerOnTrapTriggered] = nwscript;
+      }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+        this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered] = nwscript;
+      }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+        this.scripts[ModuleObjectScript.DoorOnTrapTriggered] = nwscript;
+      }
     }
 
     this.trapType = nTrapId;
@@ -1923,8 +1972,17 @@ export class ModuleObject {
     if(this.isDead())
       return true;
 
-    if(this.scripts.onDamaged instanceof NWScriptInstance){
-      this.scripts.onDamaged.run(this);
+    let onDamaged: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onDamaged = this.scripts[ModuleObjectScript.CreatureOnDamaged];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
+      onDamaged = this.scripts[ModuleObjectScript.PlaceableOnDamaged];
+    }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
+      onDamaged = this.scripts[ModuleObjectScript.DoorOnDamaged];
+    }
+
+    if(onDamaged){
+      onDamaged.run(this);
     }
   }
 
@@ -1957,7 +2015,7 @@ export class ModuleObject {
   /**
    * On attacked
    */
-  onAttacked(){
+  onAttacked(attackType: CombatActionType){
     //stub
   }
 
@@ -3018,9 +3076,13 @@ export class ModuleObject {
       }
     }
 
-    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-      //console.log('notifyPerceptionHeardObject', heard, this, object);
-      let instance = this.scripts.onNotice.nwscript.newInstance();
+    let onNotice: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onNotice = this.scripts[ModuleObjectScript.CreatureOnNotice];
+    }
+
+    if(triggerOnNotice && onNotice){
+      const instance = onNotice.nwscript.newInstance();
       instance.lastPerceived = perceptionObject;
       instance.run(this);
       return true;
@@ -3063,9 +3125,13 @@ export class ModuleObject {
       }
     }
 
-    if(triggerOnNotice && this.scripts.onNotice instanceof NWScriptInstance){
-      //console.log('notifyPerceptionSeenObject', seen, this.getName(), object.getName());
-      let instance = this.scripts.onNotice.nwscript.newInstance();
+    let onNotice: NWScriptInstance;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      onNotice = this.scripts[ModuleObjectScript.CreatureOnNotice];
+    }
+
+    if(triggerOnNotice && onNotice){
+      const instance = onNotice.nwscript.newInstance();
       instance.lastPerceived = perceptionObject;
       instance.run(this);
       return true;

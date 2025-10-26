@@ -30,6 +30,7 @@ import { DLGConversationType } from "../enums/dialog/DLGConversationType";
 import { SkillType } from "../enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "../enums/module/ModulePlaceableObjectSound";
 import { SWBodyBag } from "../engine/rules/SWBodyBag";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -432,11 +433,10 @@ export class ModulePlaceable extends ModuleObject {
       const item = this.inventory.pop();
       GameState.InventoryManager.addItem(item);
     }
-    if(this.scripts.onInvDisturbed instanceof NWScriptInstance){
-      this.scripts.onInvDisturbed.lastDisturbed = GameState.PartyManager.party[0];
-      this.scripts.onInvDisturbed.run(this);
-    }
-
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
+    if(!instance){ return; }
+    instance.lastDisturbed = GameState.PartyManager.party[0];
+    instance.run(this);
   }
 
   getModel(){
@@ -491,14 +491,15 @@ export class ModulePlaceable extends ModuleObject {
         GameState.MenuManager.MenuContainer.open();
       }
   
-      if(this.scripts.onOpen instanceof NWScriptInstance){
-        this.scripts.onOpen.run(this);
+      const instance = this.scripts[ModuleObjectScript.PlaceableOnOpen];
+      if(instance){
+        instance.run(this); 
       }
     }
   
-    if(this.scripts.onUsed instanceof NWScriptInstance){
-      this.scripts.onUsed.run(this);
-    }
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
+    if(!instance){ return; }
+    instance.run(this);
 
   }
 
@@ -506,18 +507,18 @@ export class ModulePlaceable extends ModuleObject {
     if(!this.locked){ return; }
     this.locked = true;
     
-    if(this.scripts.onLock instanceof NWScriptInstance){
-      this.scripts.onLock.run(this);
-    }
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
+    if(!instance){ return; }
+    instance.run(this);
   }
 
   unlock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
     
-    if(this.scripts.onUnlock instanceof NWScriptInstance){
-      this.scripts.onUnlock.run(this);
-    }
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnUnlock];
+    if(!instance){ return; }
+    instance.run(this);
   }
 
   attemptUnlock(object: ModuleObject){
@@ -546,10 +547,9 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   close(object: ModuleObject){
-    if(this.scripts.onClosed instanceof NWScriptInstance){
-      //console.log('Running script', this.scripts.onUsed)
-      this.scripts.onClosed.run(this);
-    }
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnClosed];
+    if(!instance){ return; }
+    instance.run(this);
 
     if(this.isOpen()){
       this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
@@ -622,79 +622,40 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadScripts (){
-    this.scripts = {
-      onClosed: undefined,
-      onDamaged: undefined,
-      onDeath: undefined,
-      onDisarm: undefined,
-      onEndDialogue: undefined,
-      onHeartbeat: undefined,
-      onInvDisturbed: undefined,
-      onLock: undefined,
-      onMeleeAttacked: undefined,
-      onOpen: undefined,
-      onSpellCastAt: undefined,
-      onTrapTriggered: undefined,
-      onUnlock: undefined,
-      onUsed: undefined,
-      onUserDefined: undefined
-    };
+    const scriptKeys = [
+      ModuleObjectScript.PlaceableOnClosed,
+      ModuleObjectScript.PlaceableOnDamaged,
+      ModuleObjectScript.PlaceableOnDeath,
+      ModuleObjectScript.PlaceableOnDisarm,
+      ModuleObjectScript.PlaceableOnEndDialogue,
+      ModuleObjectScript.PlaceableOnHeartbeat,
+      ModuleObjectScript.PlaceableOnInvDisturbed,
+      ModuleObjectScript.PlaceableOnLock,
+      ModuleObjectScript.PlaceableOnMeleeAttacked,
+      ModuleObjectScript.PlaceableOnOpen,
+      ModuleObjectScript.PlaceableOnSpellCastAt,
+      ModuleObjectScript.PlaceableOnTrapTriggered,
+      ModuleObjectScript.PlaceableOnUnlock,
+      ModuleObjectScript.PlaceableOnUsed,
+      ModuleObjectScript.PlaceableOnUserDefined,
+    ];
 
-    if(this.template.RootNode.hasField('OnClosed'))
-      this.scripts.onClosed = this.template.getFieldByLabel('OnClosed').getValue();
+    const scriptsNode = this.template?.RootNode;
+    if(!scriptsNode){ return; }
     
-    if(this.template.RootNode.hasField('OnDamaged'))
-      this.scripts.onDamaged = this.template.getFieldByLabel('OnDamaged').getValue();
-
-    if(this.template.RootNode.hasField('OnDeath'))
-      this.scripts.onDeath = this.template.getFieldByLabel('OnDeath').getValue();
-
-    if(this.template.RootNode.hasField('OnDisarm'))
-      this.scripts.onDisarm = this.template.getFieldByLabel('OnDisarm').getValue();
-
-    if(this.template.RootNode.hasField('OnEndDialogue'))
-      this.scripts.onEndDialogue = this.template.getFieldByLabel('OnEndDialogue').getValue();
-
-    if(this.template.RootNode.hasField('OnHeartbeat'))
-      this.scripts.onHeartbeat = this.template.getFieldByLabel('OnHeartbeat').getValue();
-
-    if(this.template.RootNode.hasField('OnInvDisturbed'))
-      this.scripts.onInvDisturbed = this.template.getFieldByLabel('OnInvDisturbed').getValue();
-
-    if(this.template.RootNode.hasField('OnLock'))
-      this.scripts.onLock = this.template.getFieldByLabel('OnLock').getValue();
-    
-    if(this.template.RootNode.hasField('OnMeleeAttacked'))
-      this.scripts.onMeleeAttacked = this.template.getFieldByLabel('OnMeleeAttacked').getValue();
-
-    if(this.template.RootNode.hasField('OnOpen'))
-      this.scripts.onOpen = this.template.getFieldByLabel('OnOpen').getValue();
-
-    if(this.template.RootNode.hasField('OnSpellCastAt'))
-      this.scripts.onSpellCastAt = this.template.getFieldByLabel('OnSpellCastAt').getValue();
-
-    if(this.template.RootNode.hasField('OnTrapTriggered'))
-      this.scripts.onTrapTriggered = this.template.getFieldByLabel('OnTrapTriggered').getValue();
-
-    if(this.template.RootNode.hasField('OnUnlock'))
-      this.scripts.onUnlock = this.template.getFieldByLabel('OnUnlock').getValue();
-
-    if(this.template.RootNode.hasField('OnUsed'))
-      this.scripts.onUsed = this.template.getFieldByLabel('OnUsed').getValue();
-
-    if(this.template.RootNode.hasField('OnUserDefined'))
-      this.scripts.onUserDefined = this.template.getFieldByLabel('OnUserDefined').getValue();
-
-    let keys = Object.keys(this.scripts);
-    for(let i = 0; i < keys.length; i++){
-      const key = keys[i];
-      let _script = this.scripts[key];
-      if( (typeof _script === 'string' && _script != '') ){
-        this.scripts[key] = NWScript.Load(_script);
-        this.scripts[key].caller = this;
+    for(const scriptKey of scriptKeys){
+      if(scriptsNode.hasField(scriptKey)){
+        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+        if(!resRef){ continue; }
+        const nwscript = GameState.NWScript.Load(resRef);
+        if(!nwscript){ 
+          console.warn(`ModulePlaceable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          continue; 
+        }
+        nwscript.caller = this;
+        this.scripts[scriptKey] = nwscript;
       }
     }
-
   }
 
   loadInventory(){
@@ -1024,22 +985,21 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnClosed') ).setValue(this.scripts.onClosed ? this.scripts.onClosed.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDamaged') ).setValue(this.scripts.onDamaged ? this.scripts.onDamaged.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDeath') ).setValue(this.scripts.onDeath ? this.scripts.onDeath.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDialog') ).setValue(this.scripts.onDialog ? this.scripts.onDialog.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnDisarm') ).setValue(this.scripts.onDisarm ? this.scripts.onDisarm.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnEndDialogue') ).setValue(this.scripts.onEndDialogue ? this.scripts.onEndDialogue.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnHeartbeat') ).setValue(this.scripts.onHeartbeat ? this.scripts.onHeartbeat.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnInvDisturbed') ).setValue(this.scripts.onInvDisturbed ? this.scripts.onInvDisturbed.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnLock') ).setValue(this.scripts.onLock ? this.scripts.onLock.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnMeleeAttacked') ).setValue(this.scripts.onMeleeAttacked ? this.scripts.onMeleeAttacked.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpen') ).setValue(this.scripts.onOpen ? this.scripts.onOpen.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnSpellCastAt') ).setValue(this.scripts.onSpellCastAt ? this.scripts.onSpellCastAt.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnTrapTriggered') ).setValue(this.scripts.onTrapTriggered ? this.scripts.onTrapTriggered.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUnlock') ).setValue(this.scripts.onUnlock ? this.scripts.onUnlock.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUsed') ).setValue(this.scripts.onUsed ? this.scripts.onUsed.name : '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnUserDefined') ).setValue(this.scripts.onUserDefined ? this.scripts.onUserDefined.name : '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnClosed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnClosed]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDamaged) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDamaged]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDeath) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDeath]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDisarm) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDisarm]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnEndDialogue) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnEndDialogue]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnHeartbeat]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnInvDisturbed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnLock) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnLock]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnMeleeAttacked) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnMeleeAttacked]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnOpen) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnOpen]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnSpellCastAt) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUnlock) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUnlock]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUsed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUsed]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUserDefined]?.name || '');
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);

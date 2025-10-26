@@ -10,19 +10,20 @@ import type { NWScriptInstance } from "../../nwscript/NWScriptInstance"
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @interface
  */
+
 export interface IModuleScripts {
-  onAcquireItem: NWScriptInstance,
-  onActivateItem: NWScriptInstance
-  onClientEnter: NWScriptInstance
-  onClientLeave: NWScriptInstance
-  onHeartbeat: NWScriptInstance
-  onModuleLoad: NWScriptInstance
-  onModuleStart: NWScriptInstance
-  onPlayerDeath: NWScriptInstance
-  onPlayerDying: NWScriptInstance
-  onPlayerLevelUp: NWScriptInstance
-  onPlayerRest: NWScriptInstance
-  onSpawnButtonDown: NWScriptInstance
-  onUnAcquireItem: NWScriptInstance
-  onUserDefined: NWScriptInstance
+  ModuleOnPlayerAcquireItem: NWScriptInstance,
+  ModuleOnPlayerActivateItem: NWScriptInstance
+  ModuleOnPlayerClientEnter: NWScriptInstance
+  ModuleOnPlayerClientLeave: NWScriptInstance
+  ModuleOnHeartbeat: NWScriptInstance
+  ModuleOnLoad: NWScriptInstance
+  ModuleOnStart: NWScriptInstance
+  ModuleOnPlayerDeath: NWScriptInstance
+  ModuleOnPlayerDying: NWScriptInstance
+  ModuleOnPlayerLevelUp: NWScriptInstance
+  ModuleOnPlayerRest: NWScriptInstance
+  ModuleOnSpawnButtonDown: NWScriptInstance
+  ModuleOnUnAcquireItem: NWScriptInstance
+  ModuleOnUserDefined: NWScriptInstance
 }
