@@ -1,96 +1,38 @@
-import React, { useState } from "react";
-import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
+import React, { useCallback, useEffect, useState } from "react";
+// import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { TabERFEditorState } from "../../../states/tabs";
-
 import * as KotOR from "../../../KotOR";
 import { FileTypeManager } from "../../../FileTypeManager";
 import { EditorFile } from "../../../EditorFile";
-import * as fs from "fs";
-
-declare const dialog: any;
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { ERFListNode } from "../../treeview/ERFListNode";
+import { useContextMenu } from "../../common/ContextMenu";
+import { createERFContextMenuItems } from "./ERFContextMenu";
 
 const MENU_ID = 'context-tab-erf-editor-entry';
 
+const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
+
+interface ContextMenuProps {
+  archive: KotOR.ERFObject;
+  resource: KotOR.IERFKeyEntry;
+}
+
 export const TabERFEditor = function(props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
-  const [entries, setEntries] = useState<KotOR.IERFKeyEntry[]>();
-  const [resources, setResources] = useState<KotOR.IERFResource[]>();
-  const [selectedEntry, setSelectedEntry] = useState<KotOR.IERFKeyEntry>();
+  const [entries, setEntries] = useState<FileBrowserNode[]>([]);
+  const [selectedEntry, setSelectedEntry] = useState<FileBrowserNode>();
+  const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
-  
-  const { show } = useContextMenu({
-    id: MENU_ID,
-  });
-
-  const handleContextItemClick = async ({ id, event, props, data }: ItemParams<KotOR.IERFKeyEntry, any>) => {
-    switch (id) {
-      case "open-file":
-        console.log(event, props)
-        if(props){
-          openERFResource(props);
-        }
-        break;
-      case "export-file":
-        console.log(event, props);
-        if(props){
-          tab.erf.getResourceBufferByResRef(props.resRef, props.resType).then( async (buffer) => {
-            const currentFile = new EditorFile({resref: props.resRef, reskey: props.resType, buffer: buffer });
-            if(!currentFile.buffer) return;
-            try{
-              if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-                let savePath = await dialog.showSaveDialog({
-                  title: 'Save File As',
-                  defaultPath: currentFile.getFilename(),
-                });
-                if(savePath && !savePath.cancelled){
-                  console.log('savePath', savePath.filePath);
-                  try{
-                    let saveBuffer = new Uint8Array(currentFile.buffer)
-                    fs.writeFile(savePath.filePath, saveBuffer, () => {
-                      currentFile.setPath(savePath.filePath);
-                      currentFile.archive_path = undefined;
-                      currentFile.archive_path2 = undefined;
-                      currentFile.buffer = saveBuffer;
-                      currentFile.unsaved_changes = false;
-                    });
-                  }catch(e){
-                    console.error(e);
-                  }
-                }
-              }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-                let newHandle = await window.showSaveFilePicker();
-                if(newHandle){
-                  currentFile.handle = newHandle;
-                  console.log('handle', newHandle.name, newHandle);
-                  try{
-                    currentFile.setPath(newHandle.name);
-                    let saveBuffer = new Uint8Array(currentFile.buffer)
-                    let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                    await ws.write(saveBuffer || new Uint8Array(0));
-                    await ws.close();
-                    currentFile.buffer = saveBuffer;
-                    currentFile.unsaved_changes = false;
-                  }catch(e){
-                    console.error(e);
-                  }
-                }else{
-                  console.error('save handle invalid');
-                }
-              }
-            }catch(e: any){
-              console.error(e);
-            }
-          });
-        }
-        break;
-    }
-  }
+  const [selectedFilename, setSelectedFilename] = useState<string>('');
+  const [selectedFiletype, setSelectedFiletype] = useState<string>('');
+  const [selectedFilesize, setSelectedFilesize] = useState<string>('');
 
   const onEditorFileLoad = () => {
-    setEntries(tab.erf.keyList);
-    setResources(tab.erf.resources);
+    setEntries(tab.files);
   };
 
   useEffectOnce( () => { //constructor
@@ -100,30 +42,49 @@ export const TabERFEditor = function(props: BaseTabProps) {
     }
   });
 
-  const onResourceClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
-    setSelectedEntry(key);
+  useEffect(() => {
+    if(!selectedEntry) return;
+    const { resource, archive } = selectedEntry.data || {};
+    const res = archive.getResource(resource?.resRef, resource?.resType);
+    setSelectedFilename(resource?.resRef);
+    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource?.resType));
+    setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
+  }, [selectedEntry]);
+
+  const onResourceClick = (node: FileBrowserNode) => {
+    console.log('onResourceClick', node);
+    if(!node.data.resource){ return; }
+    setSelectedEntry(node);
   }
 
-  const onResourceDoubleClick = (e: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
-    setSelectedEntry(key);
-    openERFResource(key);
+  const onResourceDoubleClick = (node: FileBrowserNode) => {
+    console.log('onResourceDoubleClick', node);
+    if(!node.data.resource){ return; }
+    openERFResource(node.data.archive, node.data.resource);
   }
 
-  const onContextMenu = (event: React.MouseEvent<HTMLLIElement>, key: KotOR.IERFKeyEntry) => {
-    console.log('handleContextMenu', event);
-    setSelectedEntry(key);
-    show({
-      event,
-      props: key
-    })
-  }
+  const onContextMenu = (event: React.MouseEvent<any>, node: FileBrowserNode) => {
+    console.log('handleContextMenu', event, node);
+    event.preventDefault();
+    event.stopPropagation();
+    if(!node.data.resource){ return; }
+    setSelectedEntry(node);
+    
+    const contextMenuItems = createERFContextMenuItems({
+      archive: node.data.archive,
+      resource: node.data.resource
+    });
 
-  const openERFResource = async (key: KotOR.IERFKeyEntry) => {
+    console.log('contextMenuItems', contextMenuItems);
+    showContextMenu(event.clientX, event.clientY, contextMenuItems);
+  };
+
+  const openERFResource = async (archive: KotOR.ERFObject, key: KotOR.IERFKeyEntry) => {
     let buffer: Uint8Array;
     let buffer2: Uint8Array;
     if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
-      buffer = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdl']);
-      buffer2 = await tab.erf.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdx']);
+      buffer = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdl']);
+      buffer2 = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdx']);
       FileTypeManager.onOpenResource(
         new EditorFile({
           resref: key.resRef,
@@ -133,7 +94,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
         })
       );
     }else {
-      buffer = await tab.erf.getResourceBufferByResRef(key.resRef, key.resType);
+      buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
       FileTypeManager.onOpenResource(
         new EditorFile({resref: key.resRef, reskey: key.resType, buffer: buffer })
       );
@@ -143,30 +104,29 @@ export const TabERFEditor = function(props: BaseTabProps) {
   return (
     <>
       <div className="file-browser">
-        <div className="file-browser-header">
-          <span>Name</span>
-          <span>Type</span>
-          <span>Size</span>
+        <div className="d-flex h-100">
+          <ForgeTreeView style={{flex: 0.5, height: '100%', overflow: 'auto'}}>
+            {
+              entries.map( (node: FileBrowserNode) => {
+                return (
+                  <ERFListNode key={node.id} node={node} onContextMenu={onContextMenu} onSelect={onResourceClick} onDoubleClick={onResourceDoubleClick} />
+                )
+              })
+            }
+          </ForgeTreeView>
+          <div style={{flex: 0.5, height: '100%'}}>
+            {selectedEntry && (
+              <div className="d-flex flex-column h-100 text-center align-items-center justify-content-center text-uppercase">
+                <span><i className="fas fa-file-alt"></i></span>
+                <span className="text-primary font-weight-bold">{selectedFilename}</span>
+                <span className="text-secondary">{selectedFiletype}</span>
+                <span className="text-muted">{selectedFilesize}</span>
+              </div>
+            )}
+          </div>
         </div>
-        <ul className="file-browser-list">
-          {
-            entries?.map( (key: KotOR.IERFKeyEntry) => {
-              const resource = tab.erf.getResource(key.resRef, key.resType);
-              return (
-                <li className={`file-browser-item ${selectedEntry == key ? `selected` : ``}`} onClick={(e) => onResourceClick(e, key)} onDoubleClick={(e) => onResourceDoubleClick(e, key)} onContextMenu={(e) => onContextMenu(e, key)}>
-                  <span>{key.resRef}</span>
-                  <span>{KotOR.ResourceTypes.getKeyByValue(key.resType)}</span>
-                  <span>{KotOR.Utility.bytesToSize( resource ? resource.size : 0 )}</span>
-                </li>
-              )
-            })
-          }
-        </ul>
-        <Menu id={MENU_ID} theme={'dark'}>
-          <Item id="open-file" onClick={handleContextItemClick}>Open</Item>
-          <Item id="export-file" onClick={handleContextItemClick}>Export</Item>
-        </Menu>
       </div>
+      {ContextMenuComponent}
     </>
   );
 }

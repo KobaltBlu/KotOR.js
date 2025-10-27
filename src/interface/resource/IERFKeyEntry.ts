@@ -9,8 +9,8 @@
  * @interface
  */
 export interface IERFKeyEntry {
-  resRef: string;
   resId: number;
+  resRef: string;
   resType: number;
   unused: number;
 }

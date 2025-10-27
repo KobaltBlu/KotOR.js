@@ -7,6 +7,8 @@ import "../../../styles/tabs/tab-uts-editor.scss";
 import { Button, Modal } from "react-bootstrap";
 import { FileBrowserNode } from "../../../FileBrowserNode";
 import { ForgeState } from "../../../states/ForgeState";
+import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
+import { FormField } from "../../form-field/FormField";
 
 const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClose: () => void}){
   const [soundResRef, setSoundResRef] = useState<string>('');
@@ -192,7 +194,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
   const [selectedTab, setSelectedTab] = useState<string>('basic');
   const [showSoundSelector, setShowSoundSelector] = useState<boolean>(false);
 
-  const [name, setName] = useState<string>('');
+  const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [tag, setTag] = useState<string>('');
   const [comments, setComments] = useState<string>('');
   const [sounds, setSounds] = useState<string[]>([]);
@@ -268,130 +270,126 @@ export const TabUTSEditor = function(props: BaseTabProps){
     tab.moveSoundDown(index);
   }
 
-  const onUpdateName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setName(e.target.value);
-    tab.moduleSound.name = e.target.value;
-  }
   const onUpdateTag = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTag(e.target.value);
-    tab.moduleSound.tag = e.target.value;
+    tab.tag = e.target.value;
   }
   const onUpdateComments = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComments(e.target.value);
-    // tab.moduleSound.comments = e.target.value;
+    // tab.comments = e.target.value;
   }
 
   const onSoundChange = () => {
     console.log('onSoundChange', tab);
-    if(!tab.moduleSound) return;
-    setName(tab.moduleSound.name);
-    setTag(tab.moduleSound.tag);
+    if(!tab) return;
+    setLocName(tab.locName);
+    setTag(tab.tag);
     setComments('');
-    setSounds([...tab.moduleSound.soundResRefs]);
-    setActive(tab.moduleSound.active);
-    setLooping(tab.moduleSound.looping);
-    setRandom(tab.moduleSound.random);
-    setRandomPosition(tab.moduleSound.randomPosition);
-    setInterval(tab.moduleSound.interval);
-    setIntervalVariation(tab.moduleSound.intervalVariation);
-    setMaxDistance(tab.moduleSound.maxDistance);
-    setMinDistance(tab.moduleSound.minDistance);
-    setPitchVariation(tab.moduleSound.pitchVariation);
-    setPositional(tab.moduleSound.positional);
-    setElevation(tab.moduleSound.elevation);
-    setVolume(tab.moduleSound.volume);
-    setVolumeVariation(tab.moduleSound.volumeVariation);
-    setFixedVariance(tab.moduleSound.fixedVariance);
-    setGeneratedType(tab.moduleSound.generatedType);
-    setHours(tab.moduleSound.hours);
-    setTimes(tab.moduleSound.times);
-    setRandomRangeX(tab.moduleSound.randomRangeX);
-    setRandomRangeY(tab.moduleSound.randomRangeY);
-    setContinuous(tab.moduleSound.continuous);
-    setPriority(tab.moduleSound.priority);
+    setSounds([...tab.soundResRefs]);
+    setActive(tab.active);
+    setLooping(tab.looping);
+    setRandom(tab.random);
+    setRandomPosition(tab.randomPosition);
+    setInterval(tab.interval);
+    setIntervalVariation(tab.intervalVariation);
+    setMaxDistance(tab.maxDistance);
+    setMinDistance(tab.minDistance);
+    setPitchVariation(tab.pitchVariation);
+    setPositional(tab.positional);
+    setElevation(tab.elevation);
+    setVolume(tab.volume);
+    setVolumeVariation(tab.volumeVariation);
+    // setFixedVariance(tab.fixedVariance);
+    // setGeneratedType(tab.generatedType);
+    setHours(tab.hours);
+    setTimes(tab.times);
+    setRandomRangeX(tab.randomRangeX);
+    setRandomRangeY(tab.randomRangeY);
+    setContinuous(tab.continuous);
+    setPriority(tab.priority);
   }
 
   const onUpdateActive = (e: React.ChangeEvent<HTMLInputElement>) => {
     setActive(e.target.checked);
-    tab.moduleSound.active = e.target.checked;
+    tab.active = e.target.checked;
   }
 
   const onUpdateVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(Number(e.target.value));
-    tab.moduleSound.volume = Number(e.target.value);
+    tab.volume = Number(e.target.value);
   }
 
   const onUpdateVolumeVariation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolumeVariation(Number(e.target.value));
-    tab.moduleSound.volumeVariation = Number(e.target.value);
+    tab.volumeVariation = Number(e.target.value);
   }
 
   const onUpdatePitchVariation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPitchVariation(Number(e.target.value));
-    tab.moduleSound.pitchVariation = Number(e.target.value);
+    tab.pitchVariation = Number(e.target.value);
   }
 
   const onUpdateInterval = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInterval(Number(e.target.value));
-    tab.moduleSound.interval = Number(e.target.value);
+    tab.interval = Number(e.target.value);
   }
 
   const onUpdateIntervalVariation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIntervalVariation(Number(e.target.value));
-    tab.moduleSound.intervalVariation = Number(e.target.value);
+    tab.intervalVariation = Number(e.target.value);
   }
 
   const toggleSoundType = (type: string) => {
     if(type == 'global'){
-      tab.moduleSound.positional = !tab.moduleSound.positional;
-      if(!tab.moduleSound.positional){
-        tab.moduleSound.randomPosition = false;
+      tab.positional = !tab.positional;
+      if(!tab.positional){
+        tab.randomPosition = false;
       }
     }else if(type == 'positional'){
-      tab.moduleSound.positional = !tab.moduleSound.positional;
-      if(!tab.moduleSound.positional){
-        tab.moduleSound.randomPosition = false;
+      tab.positional = !tab.positional;
+      if(!tab.positional){
+        tab.randomPosition = false;
       }
     }else if(type == 'randomPosition'){
-      tab.moduleSound.randomPosition = !tab.moduleSound.randomPosition;
-      tab.moduleSound.positional = true;
+      tab.randomPosition = !tab.randomPosition;
+      tab.positional = true;
     }
-    setPositional(tab.moduleSound.positional);
-    setRandomPosition(tab.moduleSound.randomPosition);
+    setPositional(tab.positional);
+    setRandomPosition(tab.randomPosition);
     tab.calculatePriority();
-    setPriority(tab.moduleSound.priority);
+    setPriority(tab.priority);
   }
 
   const onUpdateMinDistance = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMinDistance(Number(e.target.value));
-    tab.moduleSound.minDistance = Number(e.target.value);
+    tab.minDistance = Number(e.target.value);
   }
 
   const onUpdateMaxDistance = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMaxDistance(Number(e.target.value));
-    tab.moduleSound.maxDistance = Number(e.target.value);
+    tab.maxDistance = Number(e.target.value);
   }
 
   const onUpdateElevation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setElevation(Number(e.target.value));
-    tab.moduleSound.elevation = Number(e.target.value);
+    tab.elevation = Number(e.target.value);
   }
 
   const onUpdateRandomRangeX = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRandomRangeX(Number(e.target.value));
-    tab.moduleSound.randomRangeX = Number(e.target.value);
+    tab.randomRangeX = Number(e.target.value);
   }
 
   const onUpdateRandomRangeY = (e: React.ChangeEvent<HTMLInputElement>) => {
     setRandomRangeY(Number(e.target.value));
-    tab.moduleSound.randomRangeY = Number(e.target.value);
+    tab.randomRangeY = Number(e.target.value);
   }
 
   const onUpdateLooping = (looping: boolean) => {
     setLooping(looping);
-    tab.moduleSound.looping = looping;
+    tab.looping = looping;
     tab.calculatePriority();
-    setPriority(tab.moduleSound.priority);
+    setPriority(tab.priority);
   }
 
   useEffectOnce( () => {
@@ -428,10 +426,15 @@ export const TabUTSEditor = function(props: BaseTabProps){
                   </div>
                 </td>
               </tr>
-              <tr>
-                <td><label>Name</label></td>
-                <td><input type="cexolocstring" value={name} onChange={onUpdateName} /></td>
-              </tr>
+              <FormField 
+                label="Name" 
+                info="The display name of the door/trigger. This is what players will see in-game and can be localized for different languages."
+              >
+                <CExoLocStringEditor 
+                  value={locName}
+                  onChange={(newValue) => { setLocName(newValue); if(tab.blueprint) { tab.locName = newValue; tab.updateFile(); } }}
+                />
+              </FormField>
               <tr>
                 <td><label>Tag</label></td>
                 <td><input type="text" maxLength={16} value={tag} onChange={onUpdateTag} /></td>
@@ -541,8 +544,8 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 <td><label>Play Order</label></td>
                 <td>
                   <div className="btn-group mb-2">
-                    <button className={`btn ${!random ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.moduleSound.random = true; setRandom(tab.moduleSound.random); }}>Sequential</button>
-                    <button className={`btn ${random ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.moduleSound.random = false; setRandom(tab.moduleSound.random); }}>Random</button>
+                    <button className={`btn ${!random ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.random = true; setRandom(tab.random); }}>Sequential</button>
+                    <button className={`btn ${random ? 'btn-primary active' : 'btn-default'}`} onClick={() => { tab.random = false; setRandom(tab.random); }}>Random</button>
                   </div>
                 </td>
               </tr>

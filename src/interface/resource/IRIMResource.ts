@@ -9,10 +9,10 @@
  * @interface
  */
 export interface IRIMResource {
+  resId: number;
   resRef: string;
   resType: number;
   unused: number;
-  resId: number;
   offset: number;
   size: number;
 }

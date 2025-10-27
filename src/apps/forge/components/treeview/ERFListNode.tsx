@@ -4,16 +4,17 @@ import { FileTypeManager } from "../../FileTypeManager";
 import { EditorFile } from "../../EditorFile";
 import { ListItemNode } from "./ListItemNode";
 
-export interface ResourceListNodeProps {
+export interface ERFListNodeProps {
   node: FileBrowserNode;
   depth?: number;
   isSelected?: boolean;
   onSelect?: (node: FileBrowserNode) => void;
+  onDoubleClick?: (node: FileBrowserNode) => void;
   onContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
 }
 
-export const ResourceListNode = memo(function ResourceListNode(props: ResourceListNodeProps) {
-  const { node, depth = 0, isSelected = false, onSelect, onContextMenu } = props;
+export const ERFListNode = memo(function ResourceListNode(props: ERFListNodeProps) {
+  const { node, depth = 0, isSelected = false, onSelect, onDoubleClick, onContextMenu } = props;
   const [openState, setOpenState] = useState<boolean>(node.open);
 
   const isFolder = node.nodes && node.nodes.length > 0;
@@ -24,22 +25,16 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
   }, []);
 
   const handleClick = useCallback(() => {
-    if (onSelect) {
+    if (typeof onSelect === 'function'){
       onSelect(node);
     }
   }, [node, onSelect]);
 
   const handleDoubleClick = useCallback(() => {
-    if (node.type === 'resource') {
-      console.log('Opening resource:', node);
-      FileTypeManager.onOpenResource(
-        new EditorFile({
-          path: node.data.path,
-          useGameFileSystem: true,
-        })
-      );
+    if(typeof onDoubleClick === 'function'){
+      onDoubleClick(node);
     }
-  }, [node]);
+  }, [node, onDoubleClick]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     console.log('Context menu for:', node.name);
@@ -65,6 +60,8 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}
+        onDoubleClick={onDoubleClick}
+        onContextMenu={onContextMenu}
       />
     ));
   }, [openState, hasChildren, node.nodes, depth, onSelect]);

@@ -248,8 +248,8 @@ export class ModuleSound extends ModuleObject {
     if(this.template.RootNode.hasField('Interval'))
       this.interval = this.template.getFieldByLabel('Interval').getValue();
 
-    if(this.template.RootNode.hasField('InternalVrtn'))
-      this.intervalVariation = this.template.getFieldByLabel('InternalVrtn').getValue();
+    if(this.template.RootNode.hasField('IntervalVrtn'))
+      this.intervalVariation = this.template.getFieldByLabel('IntervalVrtn').getValue();
 
     if(this.template.RootNode.hasField('Looping'))
       this.looping = this.template.getFieldByLabel('Looping').getValue();

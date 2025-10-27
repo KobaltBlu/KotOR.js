@@ -3,12 +3,17 @@ import { TabState } from "./TabState";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabERFEditor } from "../../components/tabs/tab-erf-editor/TabERFEditor";
 import { EditorFile } from "../../EditorFile";
+import { FileBrowserNode } from "../../FileBrowserNode";
 
 import * as KotOR from "../../KotOR";
+
+const arfArchiveTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav']];
 
 export class TabERFEditorState extends TabState {
   tabName: string = `ERF`;
   erf: KotOR.ERFObject;
+
+  files: FileBrowserNode[] = [];
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -39,7 +44,52 @@ export class TabERFEditorState extends TabState {
     const response = await file.readFile();
     this.erf = new KotOR.ERFObject(response.buffer);
     await this.erf.load();
+    const root = await this.buildFileBrowser(this.erf);
+    this.files = root.nodes;
     this.processEventListener('onEditorFileLoad', [this]);
     return this.erf;
+  }
+
+  async buildFileBrowser(archive: KotOR.ERFObject, parent?: FileBrowserNode){
+    const isRoot = !parent;
+    if(!parent){
+      parent = new FileBrowserNode({
+        name: 'ERF',
+        type: 'group',
+        data: {
+          archive: archive,
+        }
+      });
+      this.files.push(parent);
+    }
+
+    const moduleNode = new FileBrowserNode({
+      name: 'Modules',
+      type: 'group'
+    });
+
+    for(const key of archive.keyList){
+      const isERF = arfArchiveTypes.includes(key.resType);
+      const node = new FileBrowserNode({
+        name: `${key.resRef}.${KotOR.ResourceTypes.getKeyByValue(key.resType)}`,
+        type: isERF ? 'group' : 'resource',
+        data: {
+          archive: archive,
+          resource: key,
+        }
+      });
+      if(isERF){
+        const erf = new KotOR.ERFObject(await archive.getResourceBufferByResRef(key.resRef, key.resType));
+        await erf.load();
+        this.buildFileBrowser(erf, node);
+        moduleNode.addChildNode(node);
+      }else{
+        parent.addChildNode(node);
+      }
+    }
+    if(isRoot){
+      parent.addChildNode(moduleNode);
+    }
+    return parent;
   }
 }

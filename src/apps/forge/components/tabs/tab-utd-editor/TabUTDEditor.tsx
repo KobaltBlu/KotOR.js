@@ -8,6 +8,7 @@ import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import * as KotOR from "../../../KotOR";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { InfoBubble } from "../../info-bubble/info-bubble";
+import { FormField } from "../../form-field/FormField";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
@@ -144,23 +145,6 @@ export const TabUTDEditor = function(props: BaseTabProps){
     setInterruptable(value);
     if(tab.blueprint) { tab.interruptable = value; tab.updateFile(); }
   }
-
-  // Helper component for form fields with info bubbles
-  const FormField = ({ label, info, children, className = '' }: { 
-    label: string; 
-    info: string; 
-    children: React.ReactNode; 
-    className?: string;
-  }) => (
-    <tr className={className}>
-      <td>
-        <InfoBubble content={info} position="right">
-          <label style={{ cursor: 'help' }}>{label}</label>
-        </InfoBubble>
-      </td>
-      <td>{children}</td>
-    </tr>
-  );
 
   useEffectOnce(() => {
     tab.addEventListener('onEditorFileLoad', loadDoorData);
