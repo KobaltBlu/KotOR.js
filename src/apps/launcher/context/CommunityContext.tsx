@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import axios from "axios";
 
 export interface CommunityProviderValues {
   lightboxImage: [ string,  React.Dispatch<string>],
@@ -42,9 +41,14 @@ export const CommunityProvider = (props: any) => {
 
 
   useEffect(() => {
-    axios.get(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
-      if(res.data?.videos){
-        setVideos([...res.data.videos]);
+    fetch(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
+      if(res.ok){
+        return res.json();
+      }
+      throw new Error('Failed to fetch YouTube videos');
+    }).then( (data) => {
+      if(data?.videos){
+        setVideos([...data.videos]);
       }
     }).catch((e) => {
       console.error(e);

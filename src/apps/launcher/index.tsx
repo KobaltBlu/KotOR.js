@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
 import './app.scss';
-import axios from "axios";
 import { AppProvider, useApp } from "./context/AppContext";
 
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";

@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ConfigClient } from "../../../utility/ConfigClient";
-import axios from "axios";
-
 
 export interface AppProviderValues {
   version: string,
@@ -110,13 +108,18 @@ export const AppProvider = (props: any) => {
 
   useEffect(() => {
     // console.log('Global', 'useEffect');
-    axios.get(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
-      if(res.data?.videos){
-        setVideos([...res.data.videos]);
+    fetch(`https://swkotor.net/api/media/youtube/latest`).then( (res) => {
+      if(res.ok){
+        return res.json();
+      }
+      throw new Error('Failed to fetch YouTube videos');
+    }).then( (data) => {
+      if(data?.videos){
+        setVideos([...data.videos]);
       }
     }).catch((e) => {
       console.error(e);
-    })
+    });
   }, [])
 
   const providerValue: AppProviderValues = {
