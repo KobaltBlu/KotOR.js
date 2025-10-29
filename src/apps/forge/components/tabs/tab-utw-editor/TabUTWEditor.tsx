@@ -117,15 +117,24 @@ export const TabUTWEditor = function(props: BaseTabProps){
                 <input type="text" maxLength={32} value={linkedTo} onChange={onUpdateLinkedTo} />
               </FormField>
               <tr>
+                <td></td>
                 <td>
-                  <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is selected." position="right">
-                    <ForgeCheckbox label="Map Note Enabled" value={mapNoteEnabled} onChange={(value) => { onMapNoteEnabledChange(value); }} />
-                  </InfoBubble>
-                </td>
-                <td>
-                  <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is moused overed in-game." position="right">
-                    <ForgeCheckbox label="Has Map Note" value={hasMapNote} onChange={(value) => { onHasMapNoteChange(value); }} />
-                  </InfoBubble>
+                  <table style={{width: '100%'}}>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is selected." position="right">
+                            <ForgeCheckbox label="Map Note Enabled" value={mapNoteEnabled} onChange={(value) => { onMapNoteEnabledChange(value); }} />
+                          </InfoBubble>
+                        </td>
+                        <td>
+                          <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is moused overed in-game." position="right">
+                            <ForgeCheckbox label="Has Map Note" value={hasMapNote} onChange={(value) => { onHasMapNoteChange(value); }} />
+                          </InfoBubble>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </td>
               </tr>
               <FormField
