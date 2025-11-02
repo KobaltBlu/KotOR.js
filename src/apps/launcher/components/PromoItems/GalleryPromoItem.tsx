@@ -10,10 +10,6 @@ export interface ProfilePromoItemProps {
 
 export const GalleryPromoItem = function(props: ProfilePromoItemProps){
   const element: any = props.element;
-  
-  const profileContext = useProfile();
-  const [lightboxActiveValue, setLightboxActive] = profileContext.lightboxActive;
-  const [lightboxImageValue, setLightboxImage] = profileContext.lightboxImage;
 
   const [index, setIndex] = useState(0);
 
@@ -58,9 +54,12 @@ export const GalleryPromoItem = function(props: ProfilePromoItemProps){
           element.images.map((image: any, i: number) => {
             return (
               <div key={`gallery-image-${i}`} className={`gallery-image ${i == index ? 'active' : ''}`} data-full={image.path_full} style={{backgroundImage: `url(${image.path_thumbnail})`}} onClick={() => {
-                console.log('image', image.path_full);
-                setLightboxImage(image.path_full);
-                setLightboxActive(true);
+                if(typeof props.onClick === 'function'){
+                  props.onClick({
+                    type: 'image',
+                    url: image.path_full,
+                  });
+                }
               }}></div>
             )
           }
