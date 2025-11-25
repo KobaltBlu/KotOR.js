@@ -306,17 +306,25 @@ export class AudioEngine {
 
   update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
     // Set listener position using modern AudioParam properties
-    this.audioCtx.listener.positionX.value = position.x;
-    this.audioCtx.listener.positionY.value = position.y;
-    this.audioCtx.listener.positionZ.value = position.z;
+    if(typeof this.audioCtx.listener.positionX !== 'undefined'){
+      this.audioCtx.listener.positionX.value = position.x;
+      this.audioCtx.listener.positionY.value = position.y;
+      this.audioCtx.listener.positionZ.value = position.z;
+    }else{
+      this.audioCtx.listener.setPosition(position.x, position.y, position.z);
+    }
 
     // Set listener orientation using modern AudioParam properties
-    this.audioCtx.listener.forwardX.value = forward.x;
-    this.audioCtx.listener.forwardY.value = forward.y;
-    this.audioCtx.listener.forwardZ.value = forward.z;
-    this.audioCtx.listener.upX.value = 0;
-    this.audioCtx.listener.upY.value = 0;
-    this.audioCtx.listener.upZ.value = 1;
+    if(typeof this.audioCtx.listener.forwardX !== 'undefined'){
+      this.audioCtx.listener.forwardX.value = forward.x;
+      this.audioCtx.listener.forwardY.value = forward.y;
+      this.audioCtx.listener.forwardZ.value = forward.z;
+      this.audioCtx.listener.upX.value = 0;
+      this.audioCtx.listener.upY.value = 0;
+      this.audioCtx.listener.upZ.value = 1;
+    }else{
+      this.audioCtx.listener.setOrientation(forward.x, forward.y, forward.z, 0, 0, 1);
+    }
 
     // Update reverb engine 3D positioning
     this.reverbEngine.updateListener(
