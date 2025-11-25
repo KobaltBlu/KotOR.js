@@ -177,6 +177,7 @@ export class AppState {
     KotOR.GameInitializer.AddEventListener('on-loader-hide', () => {
       AppState.loaderHide();
     });
+
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
     console.log('loaded')

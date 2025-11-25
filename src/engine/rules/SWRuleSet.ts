@@ -1,3 +1,5 @@
+import { GameState } from "../../GameState";
+import type { INIConfig } from "../../engine/INIConfig";
 import { CreatureClass } from "../../combat/CreatureClass";
 import { TalentFeat } from "../../talents/TalentFeat";
 import { SWRace } from "./SWRace";
@@ -13,8 +15,7 @@ import { SWDifficulty } from "./SWDifficulty";
 import { SWBodyBag } from "./SWBodyBag";
 import { SWHead } from "./SWHead";
 import { SWPriorityGroup } from "./SWPriorityGroup";
-import { GameState } from "../../GameState";
-import type { INIConfig } from "../../engine/INIConfig";
+import { SWEncounterDifficulty } from "./SWEncounterDifficulty";
 
 /**
  * SWRuleSet class.
@@ -57,6 +58,9 @@ export class SWRuleSet {
   static currentDifficulty: number = 0;
   static bodyBags: SWBodyBag[] = [];
   static priorityGroups: SWPriorityGroup[] = [];
+
+  static encounterDifficulties: SWEncounterDifficulty[] = [];
+  static encounterDifficultyCount: number = 0;
 
   static Init(){
 
@@ -222,6 +226,18 @@ export class SWRuleSet {
       SWRuleSet.priorityGroups = new Array(priorityGroups.RowCount);
       for(let i = 0; i < priorityGroups.RowCount; i++){
         SWRuleSet.priorityGroups[i] = SWPriorityGroup.From2DA(priorityGroups.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Encounter Difficulties
+     */
+    const encounterDifficulties = GameState.TwoDAManager.datatables.get('encdifficulty');
+    if(encounterDifficulties){
+      SWRuleSet.encounterDifficultyCount = encounterDifficulties.RowCount;
+      SWRuleSet.encounterDifficulties = new Array(SWRuleSet.encounterDifficultyCount);
+      for(let i = 0; i < encounterDifficulties.RowCount; i++){
+        SWRuleSet.encounterDifficulties[i] = SWEncounterDifficulty.From2DA(encounterDifficulties.rows[i]);
       }
     }
   }

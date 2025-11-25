@@ -1,0 +1,109 @@
+.tab-ute-editor {
+  padding: 10px;
+
+  &__table {
+    width: 100%;
+  }
+
+  &__input {
+    width: 100%;
+  }
+
+  &__input-monospace {
+    width: 100%;
+    font-family: monospace;
+  }
+
+  &__select {
+    width: 100%;
+  }
+
+  &__creature-list-header {
+    margin-bottom: 10px;
+  }
+
+  &__creature-list-label {
+    color: #ddd;
+  }
+
+  &__button-add {
+    margin-left: 10px;
+    background-color: #2d4d2d;
+    color: #99ff99;
+    border: 1px solid #555;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+
+    &:hover {
+      background-color: #3d5d3d;
+    }
+  }
+
+  &__button-remove {
+    background-color: #3d1a1a;
+    color: #ff9999;
+    border: 1px solid #555;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+
+    &:hover {
+      background-color: #4d2a2a;
+    }
+  }
+
+  &__creature-list-empty {
+    font-style: italic;
+    color: #999;
+  }
+
+  &__creature-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #555;
+
+    thead tr {
+      background-color: #2d2d2d;
+    }
+
+    th {
+      border: 1px solid #555;
+      padding: 5px;
+      color: #ddd;
+      text-align: left;
+    }
+
+    tbody {
+      tr:nth-child(even) {
+        background-color: #1e1e1e;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #252525;
+      }
+
+      td {
+        border: 1px solid #555;
+        padding: 5px;
+      }
+    }
+  }
+
+  &__creature-table-cell--center {
+    text-align: center;
+  }
+
+  &__creature-input {
+    width: 100%;
+    background-color: #1a1a1a;
+    color: #ddd;
+    border: 1px solid #444;
+    padding: 3px;
+  }
+
+  &__creature-checkbox {
+    cursor: pointer;
+  }
+}
+
