@@ -1,7 +1,8 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import { CommunityProvider, useCommunity } from "../context/CommunityContext";
 import { ProfilePromoItems } from "./ProfilePromoItems";
+import { LightboxComponent } from "./LightboxComponenet";
 
 export interface CommunityTabContentProps {};
 
@@ -12,7 +13,8 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
   const promoRef = useRef<any>(null);
 
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
-  const lightboxContentRef = useRef<any>(null);
+  const [lightboxType, setLightboxType] = useState<'image'|'ytvideo'>('ytvideo');
+  const [lightboxSrc, setLightboxSrc] = useState<string>("");
 
   const [communityProfile, setCommunityProfile] = useState<any>({
     name: 'Community',
@@ -20,31 +22,13 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
   });
   const [videos, setVideos] = appContext.videos;
 
-  // The component instance will be extended
-  // with whatever you return from the callback passed
-  // as the second argument
-
   useImperativeHandle(ref, () => ({
     showTab() {
       // console.warn(`showTab: ${profile.name}`);
       if(promoRef.current) promoRef.current.recalculate();
     }
   }));
-
-  let onComponentResize = () => {
-    // updateScroll();
-    // updateScrollButtons();
-  }
-
-  useEffect(() => {
-    window.addEventListener('resize', onComponentResize);
-    // updateScroll();
-    // updateScrollButtons();
-    return () => {
-      window.removeEventListener('resize', onComponentResize);
-    };
-  }, []);
-
+  
   useEffect(() => {
     setCommunityProfile({
       name: 'Community',
@@ -60,18 +44,21 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
     });
   }, [videos]);
 
-  const onPromoItemClick = (element: any) => {
-    console.log('onYTVideoClick', element);
+  const onPromoItemClick = useCallback((element: any) => {
     if(element.type === 'ytvideo'){
-      lightboxContentRef.current.innerHTML = `<iframe width="960" height="540" src="https://www.youtube.com/embed/${element.id}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+      setLightboxType('ytvideo');
+      setLightboxSrc(element.id);
+    } else if (element.type === 'image') {
+      setLightboxType('image');
+      setLightboxSrc(element.url);
     }
     setLightboxActive(true);
-  }
+  }, []);
 
-  const onLightboxClose = () => {
+  const onLightboxClose = useCallback(() => {
     setLightboxActive(false);
-    lightboxContentRef.current.innerHTML = '';
-  }
+    setLightboxSrc("");
+  }, []);
 
   return (
     <CommunityProvider>
@@ -94,16 +81,12 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
             <ProfilePromoItems ref={promoRef} profile={communityProfile} tabRef={tabRef} promoElementWidth={456.5} onClick={onPromoItemClick}></ProfilePromoItems>
           </div>
         </div>
-        <div id="lightbox" className={`lightbox ${lightboxActiveValue ? 'active' : ''}`}>
-          <div className="lightbox-content-wrapper">
-            <div className="lightbox-close" onClick={onLightboxClose}>
-              <i className="fa-solid fa-circle-xmark" />
-            </div>
-            <div className="lightbox-content">
-              <div ref={lightboxContentRef} style={{textAlign: 'center'}}/>
-            </div>
-          </div>
-        </div>
+        <LightboxComponent 
+          active={lightboxActiveValue}
+          onClose={onLightboxClose}
+          type={lightboxType}
+          src={lightboxSrc}
+        />
       </div>
     </CommunityProvider>
   );

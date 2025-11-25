@@ -19,25 +19,31 @@
   bottom: 0;
   z-index: 999;
   opacity: 0;
-  transition: all .5s ease-in-out;
+  backdrop-filter: blur(0px);
+  transition: opacity .35s ease, backdrop-filter .35s ease;
   -webkit-app-region: no-drag;
 }
 
 .lightbox.active {
   visibility: visible;
   opacity: 1;
+  backdrop-filter: blur(5px);
 }
 
 .lightbox .lightbox-content-wrapper {
   position: relative;
   display: block;
   background: black;
-  transition: all 0.5s ease-in-out;
+  transition: transform .35s ease, opacity .35s ease;
+  border-radius: 8px;
+  transform: translateY(8px) scale(0.98);
+  opacity: 0;
 }
 
 .lightbox.active .lightbox-content-wrapper {
-  width: 75%;
   position: relative;
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 .lightbox .lightbox-content-wrapper .lightbox-close {
@@ -50,6 +56,8 @@
   color: gold;
   cursor: pointer;
   z-index: 99;
+  transition: transform .25s ease, filter .25s ease, opacity .25s ease;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5));
 }
 
 .lightbox .lightbox-content-wrapper .lightbox-content {
@@ -58,4 +66,59 @@
   box-shadow: 0 0 10px #000;
   border: 1px solid #191919;
   width: 100%;
+  height: 100%;
+  animation: lightboxContentFade .35s ease both;
+}
+
+// Responsive adjustments for smaller screens
+@media (max-width: 768px) {
+  .lightbox .lightbox-content-wrapper {
+    margin: 20px;
+  }
+  
+  .lightbox .lightbox-content-wrapper .lightbox-close {
+    top: -15px;
+    right: -15px;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lightbox .lightbox-content-wrapper {
+    margin: 10px;
+  }
+}
+
+/* Hover and active animations */
+.lightbox .lightbox-content-wrapper .lightbox-close:hover {
+  transform: scale(1.05) rotate(8deg);
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,.6));
+}
+
+.lightbox .lightbox-content-wrapper .lightbox-close:active {
+  transform: scale(0.95);
+}
+
+/* Keyframes */
+@keyframes lightboxContentFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .lightbox {
+    transition: none;
+  }
+  .lightbox .lightbox-content-wrapper,
+  .lightbox .lightbox-content-wrapper .lightbox-close,
+  .lightbox .lightbox-content-wrapper .lightbox-content {
+    transition: none;
+    animation: none;
+  }
+  .lightbox.active {
+    backdrop-filter: none;
+  }
 }
