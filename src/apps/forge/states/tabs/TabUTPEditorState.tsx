@@ -106,6 +106,9 @@ export class TabUTPEditorState extends TabState {
         this.loadModel();
       }
     }
+    if(property === 'hp'){
+      this.currentHP = newValue;
+    }
   }
 
   public openFile(file?: EditorFile){
