@@ -18,6 +18,9 @@ import {
   createForgeCheckboxFieldHandler
 } from "../../../helpers/UTxEditorHelpers";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "../../SubTabHost";
+import { FormField } from "../../form-field/FormField";
+import { InfoBubble } from "../../info-bubble/info-bubble";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
@@ -183,47 +186,29 @@ export const TabUTPEditor = function(props: BaseTabProps){
     };
   }, [selectedTab]);
 
-  return <>
-<div style={{height: '100%'}}>
-  <div className="vertical-tabs" style={{height: '100%'}}>
-    <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
-      <ul className="tabs-menu" style={{textAlign: 'center'}}>
-        <li className={`btn btn-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'lock' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('lock') }>Lock</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'advanced' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('advanced') }>Advanced</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'scripts' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('scripts') }>Scripts</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'description' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('description') }>Description</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'comments' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('comments') }>Comments</a></li>
-        <li className={`btn btn-tab ${selectedTab == 'trap' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('trap') }>Trap</a></li>
-      </ul>
-    </div>
-    <div className="vertical-tabs-container">
-      <div className="editor-3d-preview" style={{position: 'absolute', top:0, bottom: 0, left: 0, right: '50%'}}>
-        <UI3DRendererView context={tab.ui3DRenderer} />
-      </div>
-      <div className="tabs" style={{position: 'absolute', top:0, bottom: 0, left: '50%', right: 0, overflowY: 'auto', padding: '0 10px'}}>
-        <div className="tab-pane" style={{display: (selectedTab == 'basic' ? 'block' : 'none')}}>
-          <h3>Basic</h3>
-          <hr />
-
-          <table style={{width: '100%'}}>
+  const tabs: SubTab[] = [
+    {
+      id: 'basic',
+      label: 'Basic',
+      headerIcon: 'fa-info-circle',
+      headerTitle: 'Basic',
+      content: (
+        <>
+          <table style={{width: '100%;'}}>
             <tbody>
-              <tr>
-                <td><label>Name</label></td>
-                <td><CExoLocStringEditor value={locName} onChange={onUpdateCExoLocStringField(setLocName, 'locName')} /></td>
-              </tr>
-              <tr>
-                <td><label>Tag</label></td>
-                <td><input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} /></td>
-              </tr>
-              <tr>
-                <td><label>Appearance</label></td>
-                <td><select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
+              <FormField label="Name" info="The display name of the placeable. This is what players will see in-game and can be localized for different languages.">
+                <CExoLocStringEditor value={locName} onChange={onUpdateCExoLocStringField(setLocName, 'locName')} />
+              </FormField>
+              <FormField label="Tag" info="A unique identifier for this placeable. Used by scripts to reference this specific object. Must be unique within the module.">
+                <input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
+              </FormField>
+              <FormField label="Appearance" info="The appearance of the placeable. This is the model that will be used to display the placeable in-game.">
+                <select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
                   {kPlaceableAppearances.map((appearance: any, index: number) => (
                     <option key={index} value={index}>{appearance.label}</option>
                   ))}
-                </select></td>
-              </tr>
+                </select>
+              </FormField>
             </tbody>
           </table>
           <br />
@@ -231,13 +216,13 @@ export const TabUTPEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Plot Item" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
+                  <ForgeCheckbox label="Plot Item" info="Whether this placeable is a plot item. This is used to determine if the placeable should be displayed in the plot window." value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Static" value={static_} onChange={onUpdateForgeCheckboxField(setStatic, 'static')} />
+                  <ForgeCheckbox label="Static" info="Whether this placeable is static. This is used to determine if the placeable should be displayed in the static window." value={static_} onChange={onUpdateForgeCheckboxField(setStatic, 'static')} />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Min 1HP" value={min1HP} onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')} />
+                  <ForgeCheckbox label="Min 1HP" info="Whether this placeable should have at least 1 hitpoint. This is used to determine if the placeable should be displayed in the min 1HP window." value={min1HP} onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')} />
                 </td>
               </tr>
             </tbody>
@@ -245,33 +230,33 @@ export const TabUTPEditor = function(props: BaseTabProps){
           <br />
           <table style={{width: '100%'}}>
             <tbody>
-              <tr>
-                <td><label>Hardness</label></td>
-                <td><input type="number" min="0" value={hardness} onChange={onUpdateByteField(setHardness, 'hardness')} /></td>
-              </tr>
-              <tr>
-                <td><label>Hitpoints</label></td>
-                <td><input type="number" min="0" value={hp} onChange={onUpdateWordField(setHP, 'hp')} /></td>
-              </tr>
-              <tr>
-                <td><label>Forititude Save</label></td>
-                <td><input type="number" min="0" value={fort} onChange={onUpdateByteField(setFort, 'fort')} /></td>
-              </tr>
-              <tr>
-                <td><label>Reflex Save</label></td>
-                <td><input type="number" min="0" value={ref} onChange={onUpdateByteField(setRef, 'ref')} /></td>
-              </tr>
-              <tr>
-                <td><label>Will Save</label></td>
-                <td><input type="number" min="0" value={will} onChange={onUpdateByteField(setWill, 'will')} /></td>
-              </tr>
+              <FormField label="Hardness" info="The hardness of the placeable. This is used to determine if the placeable should be displayed in the hardness window.">
+                <input type="number" min="0" value={hardness} onChange={onUpdateByteField(setHardness, 'hardness')} />
+              </FormField>
+              <FormField label="Hitpoints" info="The hitpoints of the placeable. This is used to determine if the placeable should be displayed in the hitpoints window.">
+                <input type="number" min="0" value={hp} onChange={onUpdateWordField(setHP, 'hp')} />
+              </FormField>
+              <FormField label="Forititude Save" info="The forititude save of the placeable. This is used to determine if the placeable should be displayed in the forititude save window.">
+                <input type="number" min="0" value={fort} onChange={onUpdateByteField(setFort, 'fort')} />
+              </FormField>
+              <FormField label="Reflex Save" info="The reflex save of the placeable. This is used to determine if the placeable should be displayed in the reflex save window.">
+                <input type="number" min="0" value={ref} onChange={onUpdateByteField(setRef, 'ref')} />
+              </FormField>
+              <FormField label="Will Save" info="The will save of the placeable. This is used to determine if the placeable should be displayed in the will save window.">
+                <input type="number" min="0" value={will} onChange={onUpdateByteField(setWill, 'will')} />
+              </FormField>
             </tbody>
           </table>
-
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'lock' ? 'block' : 'none')}}>
-          <h3>Lock</h3>
-          <hr />
+        </>
+      )
+    },
+    {
+      id: 'lock',
+      label: 'Lock',
+      headerIcon: 'fa-lock',
+      headerTitle: 'Lock',
+      content: (
+        <>
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
@@ -313,10 +298,16 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
             </tbody>
           </table>
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'advanced' ? 'block' : 'none')}}>
-          <h3>Advanced</h3>
-          <hr />
+        </>
+      )
+    },
+    {
+      id: 'advanced',
+      label: 'Advanced',
+      headerIcon: 'fa-gear',
+      headerTitle: 'Advanced',
+      content: (
+        <>
           <table style={{width: '100%'}}>
             <tbody>
               <tr>
@@ -364,10 +355,16 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
             </tbody>
           </table>
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'scripts' ? 'block' : 'none')}}>
-          <h3>Scripts</h3>
-          <hr />
+        </>
+      )
+    },
+    {
+      id: 'scripts',
+      label: 'Scripts',
+      headerIcon: 'fa-code',
+      headerTitle: 'Scripts',
+      content: (
+        <>
           <table style={{width: '100%'}}>
             <tbody>
                 <tr>
@@ -440,23 +437,49 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 </tr>
             </tbody>
           </table>
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'comments' ? 'block' : 'none')}}>
-          <h3>Comments</h3>
-          <hr />
-          <label>Comments</label>
-          <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} ></textarea>
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'description' ? 'block' : 'none')}}>
-          <h3>Description</h3>
-          <hr />
-          <label>Description</label>
+        </>
+      )
+    },
+    {
+      id: 'description',
+      label: 'Description',
+      headerIcon: 'fa-file-text',
+      headerTitle: 'Description',
+      content: (
+        <>
+          <InfoBubble content="The description text that appears when players examine this placeable. This can be localized for different languages and is what players see in the examine window." position="right">
+            <label style={{ cursor: 'help' }}>Description</label>
+          </InfoBubble>
           <CExoLocStringEditor value={description} onChange={onUpdateCExoLocStringField(setDescription, 'description')} />
-        </div>
-        <div className="tab-pane" style={{display: (selectedTab == 'trap' ? 'block' : 'none')}}>
-          <h3>Trap</h3>
-          <hr />
+        </>
+      )
+    },
+    {
+      id: 'comments',
+      label: 'Comments',
+      headerIcon: 'fa-comments',
+      headerTitle: 'Comments',
+      content: (
+        <>
           <table style={{width: '100%'}}>
+            <tbody>
+              <tr>
+                <td><label>Comments</label></td>
+                <td><textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={5} /></td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )
+    },
+    {
+      id: 'trap',
+      label: 'Trap',
+      headerIcon: 'fa-bomb',
+      headerTitle: 'Trap',
+      content: (
+        <>
+          <table style={{width: '100%;'}}>
             <tbody>
               <tr>
                 <td><label>Trap Type</label></td>
@@ -488,11 +511,16 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+        </>
+      )
+    }
+  ];
+  return <>
+    <SubTabHost
+      tabs={tabs}
+      defaultTab="basic"
+      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+    />
   </>;
 
 };
