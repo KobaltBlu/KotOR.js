@@ -8,6 +8,7 @@ import * as KotOR from "../../../KotOR";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { InfoBubble } from "../../info-bubble/info-bubble";
 import { FormField } from "../../form-field/FormField";
+import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
@@ -16,7 +17,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
   // Basic tab
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [tag, setTag] = useState<string>('');
-  const [appearance, setAppearance] = useState<number>(0);
+  const [genericType, setGenericType] = useState<number>(0);
   const [plot, setPlot] = useState<boolean>(false);
   const [static_, setStatic] = useState<boolean>(false);
   const [hardness, setHardness] = useState<number>(0);
@@ -63,12 +64,14 @@ export const TabUTDEditor = function(props: BaseTabProps){
   // Comments tab
   const [comments, setComments] = useState<string>('');
 
+  const [loadingModel, setLoadingModel] = useState<boolean>(false);
+
   const loadDoorData = useCallback(() => {
     if (!tab.blueprint) return;
 
     setLocName(tab.locName);
     setTag(tab.tag);
-    setAppearance(tab.appearance);
+    setGenericType(tab.genericType);
     setPlot(tab.plot);
     setStatic(tab.static);
     setHardness(tab.hardness);
@@ -108,49 +111,41 @@ export const TabUTDEditor = function(props: BaseTabProps){
 
     setDescription(tab.description);
     setComments(''); // Comments not stored in door
+    setLoadingModel(tab.modelLoading);
   }, [tab]);
 
-  const togglePlot = (value: boolean) => {
-    setPlot(value);
-    if(tab.blueprint) { tab.plot = value; tab.updateFile(); }
-  }
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTDEditorState, parser: (value: number) => number = (v) => v) => 
+    createNumberFieldHandler(setter, property, tab, parser);
 
-  const toggleStatic = (value: boolean) => {
-    setStatic(value);
-    if(tab.blueprint) { tab.static = value; tab.updateFile(); }
-  }
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTDEditorState) => 
+    createBooleanFieldHandler(setter, property, tab);
 
-  const toggleLocked = (value: boolean) => {
-    setLocked(value);
-    if(tab.blueprint) { tab.locked = value; tab.updateFile(); }
-  }
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTDEditorState) => 
+    createResRefFieldHandler(setter, property, tab);
 
-  const toggleLockable = (value: boolean) => {
-    setLockable(value);
-    if(tab.blueprint) { tab.lockable = value; tab.updateFile(); }
-  }
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTDEditorState) => 
+    createCExoStringFieldHandler(setter, property, tab);
 
-  const toggleAutoRemoveKey = (value: boolean) => {
-    setAutoRemoveKey(value);
-    if(tab.blueprint) { tab.autoRemoveKey = value; tab.updateFile(); }
-  }
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTDEditorState) => 
+    createCExoLocStringFieldHandler(setter, property, tab);
 
-  const toggleKeyRequired = (value: boolean) => {
-    setKeyRequired(value);
-    if(tab.blueprint) { tab.keyRequired = value; tab.updateFile(); }
-  }
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTDEditorState) => 
+    createForgeCheckboxFieldHandler(setter, property, tab);
 
-  const toggleInterruptable = (value: boolean) => {
-    setInterruptable(value);
-    if(tab.blueprint) { tab.interruptable = value; tab.updateFile(); }
-  }
+  const onModelChange = useCallback(() => {
+    setLoadingModel(tab.modelLoading);
+  }, [tab]);
 
   useEffect(() => {
     if(!tab) return;
     loadDoorData(); // Load initial data if already loaded
     tab.addEventListener('onEditorFileLoad', loadDoorData);
+    tab.addEventListener('onEditorFileChange', loadDoorData);
+    tab.addEventListener('onModelChange', onModelChange);
     return () => {
       tab.removeEventListener('onEditorFileLoad', loadDoorData);
+      tab.removeEventListener('onEditorFileChange', loadDoorData);
+      tab.removeEventListener('onModelChange', onModelChange);
     };
   }, []);
 
@@ -170,30 +165,30 @@ export const TabUTDEditor = function(props: BaseTabProps){
                 >
                   <CExoLocStringEditor 
                     value={locName}
-                    onChange={(newValue) => { setLocName(newValue); if(tab.blueprint) { tab.locName = newValue; tab.updateFile(); } }}
+                    onChange={onUpdateCExoLocStringField(setLocName, 'locName')}
                   />
                 </FormField>
                 <FormField 
                   label="Tag" 
                   info="A unique identifier for this door/trigger. Used by scripts to reference this specific object. Must be unique within the module."
                 >
-                  <input type="text" placeholder="Enter tag" maxLength={32} value={tag} onChange={(e) => { setTag(e.target.value); if(tab.blueprint) { tab.tag = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter tag" maxLength={32} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
                 </FormField>
                 <FormField 
                   label="Door Type" 
                   info="The visual appearance type of the door. Different types have different models and animations. Check the game's door appearance list for valid values."
                 >
-                  <input type="number" min="0" value={appearance} onChange={(e) => { setAppearance(Number(e.target.value)); if(tab.blueprint) { tab.appearance = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" disabled={loadingModel} value={genericType} onChange={onUpdateNumberField(setGenericType, 'genericType')} />
                 </FormField>
                 <tr>
                   <td>
                     <InfoBubble content="If checked, this door/trigger is part of the main story and cannot be destroyed or bypassed by normal means." position="right">
-                      <ForgeCheckbox label="Plot Item" value={plot} onChange={(value) => { togglePlot(value); }} />
+                      <ForgeCheckbox label="Plot Item" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
                     </InfoBubble>
                   </td>
                   <td>
                     <InfoBubble content="If checked, this door/trigger cannot be moved, rotated, or modified by scripts or other game mechanics." position="right">
-                      <ForgeCheckbox label="Static" value={static_} onChange={(value) => { toggleStatic(value); }} />
+                      <ForgeCheckbox label="Static" value={static_} onChange={onUpdateForgeCheckboxField(setStatic, 'static')} />
                     </InfoBubble>
                   </td>
                 </tr>
@@ -201,31 +196,31 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   label="Hardness" 
                   info="The difficulty to damage this door/trigger. Higher values make it more resistant to physical attacks and spells."
                 >
-                  <input type="number" min="0" value={hardness} onChange={(e) => { setHardness(Number(e.target.value)); if(tab.blueprint) { tab.hardness = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" value={hardness} onChange={onUpdateNumberField(setHardness, 'hardness')} />
                 </FormField>
                 <FormField 
                   label="Hitpoints" 
                   info="The amount of damage this door/trigger can take before being destroyed. When reduced to 0, the object is destroyed."
                 >
-                  <input type="number" min="0" value={hitpoints} onChange={(e) => { setHitpoints(Number(e.target.value)); if(tab.blueprint) { tab.hp = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" value={hitpoints} onChange={onUpdateNumberField(setHitpoints, 'hp')} />
                 </FormField>
                 <FormField 
                   label="Fortitude Save" 
                   info="The difficulty class for Fortitude saving throws against effects that target this door/trigger's physical constitution."
                 >
-                  <input type="number" min="0" value={fort} onChange={(e) => { setFort(Number(e.target.value)); if(tab.blueprint) { tab.fort = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" value={fort} onChange={onUpdateNumberField(setFort, 'fort')} />
                 </FormField>
                 <FormField 
                   label="Reflex Save" 
                   info="The difficulty class for Reflex saving throws against effects that require quick reactions or dodging."
                 >
-                  <input type="number" min="0" value={ref} onChange={(e) => { setRef(Number(e.target.value)); if(tab.blueprint) { tab.ref = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" value={ref} onChange={onUpdateNumberField(setRef, 'ref')} />
                 </FormField>
                 <FormField 
                   label="Will Save" 
                   info="The difficulty class for Will saving throws against mental effects, illusions, and mind-affecting spells."
                 >
-                  <input type="number" min="0" value={will} onChange={(e) => { setWill(Number(e.target.value)); if(tab.blueprint) { tab.will = Number(e.target.value); tab.updateFile(); } }} />
+                  <input type="number" min="0" value={will} onChange={onUpdateNumberField(setWill, 'will')} />
                 </FormField>
             </tbody>
           </table>
@@ -244,28 +239,28 @@ export const TabUTDEditor = function(props: BaseTabProps){
               <tr>
                 <td>
                   <InfoBubble content="If checked, this door/trigger starts in a locked state and requires a key or lockpicking to open." position="right">
-                    <ForgeCheckbox label="Locked" value={locked} onChange={(value) => { toggleLocked(value); }} />
+                    <ForgeCheckbox label="Locked" value={locked} onChange={onUpdateForgeCheckboxField(setLocked, 'locked')} />
                   </InfoBubble>
                 </td>
               </tr>
               <tr>
                 <td>
                   <InfoBubble content="If checked, this door/trigger can be locked again after being unlocked. If unchecked, it remains unlocked once opened." position="right">
-                    <ForgeCheckbox label="Can be relocked" value={lockable} onChange={(value) => { toggleLockable(value); }} />
+                    <ForgeCheckbox label="Can be relocked" value={lockable} onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')} />
                   </InfoBubble>
                 </td>
               </tr>
               <tr>
                 <td>
                   <InfoBubble content="If checked, the key will be automatically removed from the player's inventory after successfully unlocking the door/trigger." position="right">
-                    <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={(value) => { toggleAutoRemoveKey(value); }} />
+                    <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
                   </InfoBubble>
                 </td>
               </tr>
               <tr>
                 <td>
                   <InfoBubble content="If checked, a key is required to both lock and unlock this door/trigger. If unchecked, it can be locked/unlocked without a key." position="right">
-                    <ForgeCheckbox label="Key required to unlock or lock" value={keyRequired} onChange={(value) => { toggleKeyRequired(value); }} />
+                    <ForgeCheckbox label="Key required to unlock or lock" value={keyRequired} onChange={onUpdateForgeCheckboxField(setKeyRequired, 'keyRequired')} />
                   </InfoBubble>
                 </td>
               </tr>
@@ -278,19 +273,19 @@ export const TabUTDEditor = function(props: BaseTabProps){
                 label="Open Lock DC" 
                 info="The difficulty class for lockpicking this door/trigger when it's locked. Higher values make it more difficult to pick."
               >
-                <input type="number" min="0" value={openLockDC} onChange={(e) => { setOpenLockDC(Number(e.target.value)); if(tab.blueprint) { tab.openLockDC = Number(e.target.value); tab.updateFile(); } }} />
+                <input type="number" min="0" value={openLockDC} onChange={onUpdateNumberField(setOpenLockDC, 'openLockDC')} />
               </FormField>
               <FormField 
                 label="Close Lock DC" 
                 info="The difficulty class for lockpicking this door/trigger when it's unlocked but needs to be locked again."
               >
-                <input type="number" min="0" value={closeLockDC} onChange={(e) => { setCloseLockDC(Number(e.target.value)); if(tab.blueprint) { tab.closeLockDC = Number(e.target.value); tab.updateFile(); } }} />
+                <input type="number" min="0" value={closeLockDC} onChange={onUpdateNumberField(setCloseLockDC, 'closeLockDC')} />
               </FormField>
               <FormField 
                 label="Key Name" 
                 info="The tag of the key item that can unlock this door/trigger. Must match the tag of an existing item in the module."
               >
-                <input type="text" placeholder="Enter key tag" maxLength={16} value={keyName} onChange={(e) => { setKeyName(e.target.value); if(tab.blueprint) { tab.keyName = e.target.value; tab.updateFile(); } }} />
+                <input type="text" placeholder="Enter key tag" maxLength={16} value={keyName} onChange={onUpdateResRefField(setKeyName, 'keyName')} />
               </FormField>
             </tbody>
           </table>
@@ -316,7 +311,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
                 label="Faction" 
                 info="The faction ID that this door/trigger belongs to. Used for determining hostile/friendly status and AI behavior."
               >
-                <input type="number" min="0" value={factionId} onChange={(e) => { setFactionId(Number(e.target.value)); if(tab.blueprint) { tab.factionId = Number(e.target.value); tab.updateFile(); } }} />
+                <input type="number" min="0" value={factionId} onChange={onUpdateNumberField(setFactionId, 'factionId')} />
               </FormField>
               <tr>
                 <td>
@@ -328,7 +323,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   <input type="text" placeholder="Enter conversation resref" maxLength={16} style={{width: 'auto'}} value={conversationResRef} onChange={(e) => { setConversationResRef(e.target.value); if(tab.blueprint) { tab.conversation = e.target.value; tab.updateFile(); } }} />
                   <div className="ui-checkbox" style={{display: 'inline-block'}}>
                     <InfoBubble content="If checked, this conversation can be interrupted by combat or other events. If unchecked, the conversation must complete before other actions." position="right">
-                      <ForgeCheckbox label="Interruptable" value={interruptable} onChange={(value) => { toggleInterruptable(value); }} />
+                      <ForgeCheckbox label="Interruptable" value={interruptable} onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')} />
                     </InfoBubble>
                   </div>
                 </td>
@@ -337,7 +332,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
                 label="Animation State" 
                 info="The initial animation state of the door/trigger. Different states control how the door appears and behaves (open, closed, locked, etc.)."
               >
-                <input type="number" min="0" value={animationState} onChange={(e) => { setAnimationState(Number(e.target.value)); if(tab.blueprint) { tab.animationState = Number(e.target.value); tab.updateFile(); } }} />
+                <input type="number" min="0" value={animationState} onChange={onUpdateNumberField(setAnimationState, 'animationState')} />
               </FormField>
             </tbody>
           </table>
@@ -357,85 +352,85 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   label="OnClick" 
                   info="Script that runs when the door/trigger is clicked or activated by the player. This is the primary interaction script."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onClick} onChange={(e) => { setOnClick(e.target.value); if(tab.blueprint) { tab.onClick = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} />
                 </FormField>
                 <FormField 
                   label="OnClosed" 
                   info="Script that runs when the door is closed. Useful for triggering events, playing sounds, or updating game state."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onClosed} onChange={(e) => { setOnClosed(e.target.value); if(tab.blueprint) { tab.onClosed = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onClosed} onChange={onUpdateResRefField(setOnClosed, 'onClosed')} />
                 </FormField>
                 <FormField 
                   label="OnDamaged" 
                   info="Script that runs when the door/trigger takes damage. Can be used to trigger defensive mechanisms or destruction sequences."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDamaged} onChange={(e) => { setOnDamaged(e.target.value); if(tab.blueprint) { tab.onDamaged = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDamaged} onChange={onUpdateResRefField(setOnDamaged, 'onDamaged')} />
                 </FormField>
                 <FormField 
                   label="OnDeath" 
                   info="Script that runs when the door/trigger is destroyed or 'dies'. Often used for cleanup or triggering destruction effects."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDeath} onChange={(e) => { setOnDeath(e.target.value); if(tab.blueprint) { tab.onDeath = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDeath} onChange={onUpdateResRefField(setOnDeath, 'onDeath')} />
                 </FormField>
                 <FormField 
                   label="OnDisarm" 
                   info="Script that runs when a trap on the door/trigger is successfully disarmed. Used for trap-related door mechanics."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDisarm} onChange={(e) => { setOnDisarm(e.target.value); if(tab.blueprint) { tab.onDisarm = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} />
                 </FormField>
                 <FormField 
                   label="OnFailToOpen" 
                   info="Script that runs when a player attempts to open the door but fails (due to lock, insufficient skill, etc.)."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onFailToOpen} onChange={(e) => { setOnFailToOpen(e.target.value); if(tab.blueprint) { tab.onFailToOpen = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onFailToOpen} onChange={onUpdateResRefField(setOnFailToOpen, 'onFailToOpen')} />
                 </FormField>
                 <FormField 
                   label="OnHeartbeat" 
                   info="Script that runs periodically while the door/trigger is active. Useful for continuous monitoring or timed events."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onHeartbeat} onChange={(e) => { setOnHeartbeat(e.target.value); if(tab.blueprint) { tab.onHeartbeat = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} />
                 </FormField>
                 <FormField 
                   label="OnLock" 
                   info="Script that runs when the door/trigger is locked. Can be used to trigger security measures or update game state."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onLock} onChange={(e) => { setOnLock(e.target.value); if(tab.blueprint) { tab.onLock = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onLock} onChange={onUpdateResRefField(setOnLock, 'onLock')} />
                 </FormField>
                 <FormField 
                   label="OnMeleeAttacked" 
                   info="Script that runs when the door/trigger is attacked in melee combat. Useful for defensive responses or damage handling."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onMeleeAttacked} onChange={(e) => { setOnMeleeAttacked(e.target.value); if(tab.blueprint) { tab.onMeleeAttacked = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onMeleeAttacked} onChange={onUpdateResRefField(setOnMeleeAttacked, 'onMeleeAttacked')} />
                 </FormField>
                 <FormField 
                   label="OnOpen" 
                   info="Script that runs when the door is successfully opened. Often used for triggering events, playing sounds, or updating quest states."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onOpen} onChange={(e) => { setOnOpen(e.target.value); if(tab.blueprint) { tab.onOpen = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onOpen} onChange={onUpdateResRefField(setOnOpen, 'onOpen')} />
                 </FormField>
                 <FormField 
                   label="OnSpellCastAt" 
                   info="Script that runs when a spell is cast at the door/trigger. Useful for magical interactions or spell-based door mechanics."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onSpellCastAt} onChange={(e) => { setOnSpellCastAt(e.target.value); if(tab.blueprint) { tab.onSpellCastAt = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onSpellCastAt} onChange={onUpdateResRefField(setOnSpellCastAt, 'onSpellCastAt')} />
                 </FormField>
                 <FormField 
                   label="OnTrapTriggered" 
                   info="Script that runs when a trap on the door/trigger is activated. Used for trap effects and consequences."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onTrapTriggered} onChange={(e) => { setOnTrapTriggered(e.target.value); if(tab.blueprint) { tab.onTrapTriggered = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} />
                 </FormField>
                 <FormField 
                   label="OnUnlock" 
                   info="Script that runs when the door/trigger is successfully unlocked. Often used for triggering events or updating quest progress."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onUnlock} onChange={(e) => { setOnUnlock(e.target.value); if(tab.blueprint) { tab.onUnlock = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onUnlock} onChange={onUpdateResRefField(setOnUnlock, 'onUnlock')} />
                 </FormField>
                 <FormField 
                   label="OnUserDefined" 
                   info="A custom script event that can be triggered by other scripts or game events. Useful for custom door behaviors and interactions."
                 >
-                  <input type="text" placeholder="Enter script name" maxLength={16} value={onUserDefined} onChange={(e) => { setOnUserDefined(e.target.value); if(tab.blueprint) { tab.onUserDefined = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter script name" maxLength={16} value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} />
                 </FormField>
             </tbody>
           </table>
@@ -454,10 +449,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
           </InfoBubble>
           <CExoLocStringEditor 
             value={description}
-            onChange={(newValue) => { 
-              setDescription(newValue); 
-              if(tab.blueprint) { tab.description = newValue; tab.updateFile(); } 
-            }}
+            onChange={onUpdateCExoLocStringField(setDescription, 'description')}
           />
         </>
       )
@@ -472,7 +464,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
           <InfoBubble content="Developer notes and comments about this door/trigger. These are not visible to players and are only for your reference during development." position="right">
             <label style={{ cursor: 'help' }}>Comments</label>
           </InfoBubble>
-          <textarea placeholder="Enter comments" value={comments} rows={5} onChange={(e) => setComments(e.target.value)}></textarea>
+          <textarea placeholder="Enter comments" value={comments} rows={5} onChange={onUpdateCExoStringField(setComments, 'comment')}></textarea>
         </>
       )
     }

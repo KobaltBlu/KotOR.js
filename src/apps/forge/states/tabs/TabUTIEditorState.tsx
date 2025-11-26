@@ -59,6 +59,22 @@ export class TabUTIEditorState extends TabState {
         }
       }
     ];
+    
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+  }
+
+  onPropertyChange(property: keyof TabUTIEditorState, newValue: any, oldValue: any){
+    let modelNeedsUpdate = false;
+    if(property === 'baseItem'){
+      this.loadBaseItem();
+      modelNeedsUpdate = true;
+    }
+    if(property === 'modelVariation'){
+      modelNeedsUpdate = true;
+    }
+    if(modelNeedsUpdate){
+      this.loadModel();
+    }
   }
 
   public openFile(file?: EditorFile){

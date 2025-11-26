@@ -11,7 +11,6 @@ import { ModuleCreatureAnimState } from "../../../../enums/module/ModuleCreature
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;
-  moduleDoor: KotOR.ModuleDoor;
   blueprint: KotOR.GFFObject;
 
   ui3DRenderer: UI3DRenderer;
@@ -20,6 +19,7 @@ export class TabUTDEditorState extends TabState {
   appearance: number = 0;
   autoRemoveKey: boolean = false;
   closeLockDC: number = 0;
+  comment: string = '';
   conversation: string = '';
   currentHP: number = 0;
   description: KotOR.CExoLocString = new KotOR.CExoLocString();
@@ -68,6 +68,9 @@ export class TabUTDEditorState extends TabState {
   trapType: number = 0;
   will: number = 0;
 
+  model: KotOR.OdysseyModel3D;
+  modelLoading: boolean = false;
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
@@ -84,6 +87,18 @@ export class TabUTDEditorState extends TabState {
         }
       }
     ];
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+  }
+
+  onPropertyChange(property: keyof TabUTDEditorState, newValue: any, oldValue: any){
+    let modelNeedsUpdate = false;
+    if(property === 'genericType'){
+      this.loadAppearance();
+      modelNeedsUpdate = true;
+    }
+    if(modelNeedsUpdate){
+      this.loadModel();
+    }
   }
 
   public openFile(file?: EditorFile){
@@ -101,47 +116,79 @@ export class TabUTDEditorState extends TabState {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
           this.processEventListener('onEditorFileLoad', [this]);
-          this.initializeGameObject();
+          this.loadAppearance();
+          this.loadModel();
           resolve(this.blueprint);
         });
       }
     });
   }
 
-  disposeGameObject(){
-    if(!this.moduleDoor) return;
-    this.moduleDoor.destroy();
+  disposeModel(){
+    if(!this.model) return;
+    this.model.removeFromParent();
+    try{ this.model.dispose(); }catch(e){}
   }
 
-  async initializeGameObject(){
-    if(!this.blueprint) return;
-    this.disposeGameObject();
-    this.moduleDoor = new KotOR.ModuleDoor(this.blueprint);
-    this.moduleDoor.setContext(this.ui3DRenderer as any);
-    this.moduleDoor.load();
-    await this.moduleDoor.loadModel();
-    this.ui3DRenderer.scene.add(this.moduleDoor.container);
-    this.updateCameraFocus();
+  kDoorAppearance: any = {};
+  kDoorAppearances: any[] = [];
+
+  loadAppearance(){
+    if(!this.kDoorAppearance){
+      this.kDoorAppearance = {};
+    }
+    const twodaObject = KotOR.TwoDAManager.datatables.get('genericdoors');
+    if(!twodaObject) return;
+    this.kDoorAppearances = Object.values(twodaObject.rows);
+    return this.kDoorAppearance = twodaObject.getRowByIndex(this.genericType || 0);
   }
+
+  async loadModel(){
+    if(!this.blueprint) return;
+    this.disposeModel();
+
+    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
+    try{
+      this.modelLoading = true;
+      this.processEventListener('onModelChange', [this]);
+      const mdl = await KotOR.MDLLoader.loader.load(modelName);
+      const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+        context: this.ui3DRenderer,
+        lighting: true
+      });
+      this.model = model;
+      this.ui3DRenderer.scene.add(this.model);
+      this.updateCameraFocus();
+    }
+    catch(e){
+      console.error(e);
+    }
+    this.modelLoading = false;
+    this.processEventListener('onModelChange', [this]);
+  }
+
+  stringCleaner(str: string = ''){
+    return str.replace(/\0[\s\S]*$/g,'').toLowerCase();
+  }
+
+  box3: THREE.Box3 = new THREE.Box3();
+  center: THREE.Vector3 = new THREE.Vector3();
+  size: THREE.Vector3 = new THREE.Vector3();
+  origin: THREE.Vector3 = new THREE.Vector3();
 
   updateCameraFocus(){
-    if(!this.moduleDoor || !this.moduleDoor?.model) return;
+    if(!this.model) return;
 
-    this.moduleDoor.container.position.set(0, 0, 0);
-    this.moduleDoor.box.setFromObject(this.moduleDoor.container);
-
-    let center = new THREE.Vector3();
-    this.moduleDoor.box.getCenter(center);
-
-    let size = new THREE.Vector3();
-    this.moduleDoor.box.getSize(size);
+    this.model.position.set(0, 0, 0);
+    this.box3.setFromObject(this.model);
+    this.box3.getCenter(this.center);
+    this.box3.getSize(this.size);
 
     //Center the object to 0
-    let origin = new THREE.Vector3();
-    this.moduleDoor.container.position.set(-center.x, -center.y, -center.z);
+    this.model.position.set(-this.center.x, -this.center.y, -this.center.z);
     this.ui3DRenderer.camera.position.z = 0;
-    this.ui3DRenderer.camera.position.y = size.x + size.y;
-    this.ui3DRenderer.camera.lookAt(origin)
+    this.ui3DRenderer.camera.position.y = this.size.x + this.size.y;
+    this.ui3DRenderer.camera.lookAt(this.origin)
   }
 
   show(): void {
@@ -159,13 +206,11 @@ export class TabUTDEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-
-    if(this.moduleDoor && this.moduleDoor.model){
-      this.moduleDoor.model.update(delta);
+    if(this.model){
+      this.model.update(delta);
       //rotate the object in the viewport
-      this.moduleDoor.rotation.z += delta;
+      this.model.rotation.z += delta;
     }
-    
   }
 
   setPropsFromBlueprint(){
@@ -184,6 +229,9 @@ export class TabUTDEditorState extends TabState {
     }
     if(root.hasField('CloseLockDC')){
       this.closeLockDC = root.getFieldByLabel('CloseLockDC').getValue() || 0;
+    }
+    if(root.hasField('Comment')){
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
     if(root.hasField('Conversation')){
       this.conversation = root.getFieldByLabel('Conversation').getValue() || '';
@@ -338,8 +386,6 @@ export class TabUTDEditorState extends TabState {
   }
 
   updateFile(){
-    if(!this.moduleDoor) return;
-    
     const utd = new KotOR.GFFObject();
     utd.FileType = 'UTD ';
     
@@ -352,6 +398,7 @@ export class TabUTDEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Appearance', this.appearance) )
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'AutoRemoveKey', this.autoRemoveKey) )
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CloseLockDC', this.closeLockDC) )
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment || '') )
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Conversation', this.conversation || '') )
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'CurrentHP', this.currentHP) )
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description || new KotOR.CExoLocString()) )
