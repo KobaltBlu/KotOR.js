@@ -5,6 +5,8 @@ import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "../../SubTabHost";
+import { UI3DRendererView } from "../../UI3DRendererView";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
@@ -118,6 +120,10 @@ export const TabUTIEditor = function(props: BaseTabProps){
     const raw = parseInt(e.target.value) || 0;
     const value = parser(raw);
     setter(value);
+    if(setter == setBaseItem || setter == setModelVariation) {
+      tab.loadBaseItem();
+      tab.loadModel();
+    }
     updateTab(() => { (tab as any)[property] = value; });
   }
 
@@ -184,121 +190,130 @@ export const TabUTIEditor = function(props: BaseTabProps){
     </tr>
   );
 
-  return (
-    <div className="tab-uti-editor" style={{height: '100%'}}>
-      <div className="vertical-tabs" style={{height: '100%'}}>
-        <div className="vertical-tabs-nav navbar navbar-sidebar-wizard-horizontal" role="navigation">
-          <ul className="tabs-menu" style={{textAlign: 'center'}}>
-            <li className={`btn btn-tab ${selectedTab == 'basic' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('basic') }>Basic</a></li>
-            <li className={`btn btn-tab ${selectedTab == 'description' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('description') }>Descriptions</a></li>
-            <li className={`btn btn-tab ${selectedTab == 'properties' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('properties') }>Properties</a></li>
-          </ul>
-        </div>
-        <div className="vertical-tabs-container">
-          <div className="tabs" style={{position: 'absolute', top:0, bottom: 0, left: 0, right: 0, overflowY: 'auto', padding: '0 10px'}}>
-            <div className="tab-pane" style={{display: (selectedTab == 'basic' ? 'block' : 'none')}}>
-              <h3>Basic</h3>
-              <hr />
-              <table style={{ width: '100%' }}>
-                <tbody>
-                  <FormField label="Name" info="Display name shown in-game once identified.">
-                    <CExoLocStringEditor value={locName} onChange={onUpdateLocName} />
-                  </FormField>
-                  <FormField label="Template ResRef" info="Internal resource reference (max 16 chars, lowercase).">
-                    <input type="text" value={templateResRef} disabled={true} maxLength={16} />
-                  </FormField>
-                  <FormField label="Tag" info="Unique identifier (max 32 chars).">
-                    <input type="text" value={tag} onChange={onUpdateTag} maxLength={32} />
-                  </FormField>
-                  <FormField label="Comment" info="Designer-only notes.">
-                    <textarea value={comment} onChange={onUpdateComment} rows={2} />
-                  </FormField>
-                  <FormField label="Base Item" info="Index into baseitems.2da determining model type and behaviour.">
-                    <input type="number" min={0} value={baseItem} onChange={onUpdateNumberField(setBaseItem, 'baseItem')} />
-                  </FormField>
-                  <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
-                    <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
-                  </FormField>
-                  <FormField label="Cost" info="Final item cost shown in toolset.">
-                    <input type="number" min={0} value={cost} onChange={onUpdateNumberField(setCost, 'cost')} />
-                  </FormField>
-                  <FormField label="Additional Cost" info="AddCost modifier added after calculations.">
-                    <input type="number" min={0} value={addCost} onChange={onUpdateNumberField(setAddCost, 'addCost')} />
-                  </FormField>
-                  <FormField label="Charges" info="Remaining charges for consumables (0-255).">
-                    <input type="number" min={0} max={255} value={charges} onChange={onUpdateByteField(setCharges, 'charges')} />
-                  </FormField>
-                  <FormField label="Stack Size" info="Number of items per stack for stackable base types.">
-                    <input type="number" min={1} max={65535} value={stackSize} onChange={onUpdateWordField(setStackSize, 'stackSize')} />
-                  </FormField>
-                  <FormField label="Model Variation" info="Model variation for the item blueprint.">
-                    <input type="number" min={0} max={255} value={modelVariation} onChange={onUpdateByteField(setModelVariation, 'modelVariation')} />
-                  </FormField>
-                  <FormField label="Upgrade Level" info="Upgrade level for the item blueprint.">
-                    <input type="number" min={0} max={255} value={upgradeLevel} onChange={onUpdateByteField(setUpgradeLevel, 'upgradeLevel')} />
-                  </FormField>
-                  <FormField label="Flags" info="Gameplay restrictions for this item.">
-                    <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-                      <ForgeCheckbox label="Plot" value={plot} onChange={updateBooleanField(setPlot, 'plot')} />
-                      <ForgeCheckbox label="Stolen" value={stolen} onChange={updateBooleanField(setStolen, 'stolen')} />
-                      <ForgeCheckbox label="Identified" value={identified} onChange={updateBooleanField(setIdentified, 'identified')} />
-                    </div>
-                  </FormField>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="tab-pane" style={{display: (selectedTab == 'description' ? 'block' : 'none')}}>
-              <h3>Descriptions</h3>
-              <hr />
-              <table style={{ width: '100%' }}>
-                <tbody>
-                  <FormField label="Unidentified Description" info="Description shown before the item is identified.">
-                    <CExoLocStringEditor value={description} onChange={onUpdateDescription} />
-                  </FormField>
-                  <FormField label="Identified Description" info="Description shown once the item has been identified.">
-                    <CExoLocStringEditor value={descIdentified} onChange={onUpdateDescIdentified} />
-                  </FormField>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="tab-pane" style={{display: (selectedTab == 'properties' ? 'block' : 'none')}}>
-              <h3>Item Properties</h3>
-              <hr />
-              <div style={{marginBottom: '10px'}}>
-                <button className="btn btn-sm btn-primary" onClick={addProperty}>
-                  <i className="fa-solid fa-plus"></i> Add Property
-                </button>
-              </div>
-              <div className="table-responsive">
-                <table className="table table-sm">
-                  <thead>
-                    <tr>
-                      <th>Property</th>
-                      <th>Subtype</th>
-                      <th>Cost Table</th>
-                      <th>Cost Value</th>
-                      <th>Param Table</th>
-                      <th>Param Value</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {properties.length === 0 && (
-                      <tr>
-                        <td colSpan={7} style={{textAlign: 'center', fontStyle: 'italic'}}>No properties defined.</td>
-                      </tr>
-                    )}
-                    {properties.map((property, index) => renderPropertyRow(property, index))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+  const tabs: SubTab[] = [
+    {
+      id: 'basic',
+      label: 'Basic',
+      headerIcon: 'fa-info-circle',
+      headerTitle: 'Basic',
+      content: (
+        <>
+          <table style={{ width: '100%' }}>
+            <tbody>
+              <FormField label="Name" info="Display name shown in-game once identified.">
+                <CExoLocStringEditor value={locName} onChange={onUpdateLocName} />
+              </FormField>
+              <FormField label="Template ResRef" info="Internal resource reference (max 16 chars, lowercase).">
+                <input type="text" value={templateResRef} disabled={true} maxLength={16} />
+              </FormField>
+              <FormField label="Tag" info="Unique identifier (max 32 chars).">
+                <input type="text" value={tag} onChange={onUpdateTag} maxLength={32} />
+              </FormField>
+              <FormField label="Comment" info="Designer-only notes.">
+                <textarea value={comment} onChange={onUpdateComment} rows={2} />
+              </FormField>
+              <FormField label="Base Item" info="Index into baseitems.2da determining model type and behaviour.">
+                <input type="number" min={0} value={baseItem} onChange={onUpdateNumberField(setBaseItem, 'baseItem')} />
+              </FormField>
+              <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
+                <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
+              </FormField>
+              <FormField label="Cost" info="Final item cost shown in toolset.">
+                <input type="number" min={0} value={cost} onChange={onUpdateNumberField(setCost, 'cost')} />
+              </FormField>
+              <FormField label="Additional Cost" info="AddCost modifier added after calculations.">
+                <input type="number" min={0} value={addCost} onChange={onUpdateNumberField(setAddCost, 'addCost')} />
+              </FormField>
+              <FormField label="Charges" info="Remaining charges for consumables (0-255).">
+                <input type="number" min={0} max={255} value={charges} onChange={onUpdateByteField(setCharges, 'charges')} />
+              </FormField>
+              <FormField label="Stack Size" info="Number of items per stack for stackable base types.">
+                <input type="number" min={1} max={65535} value={stackSize} onChange={onUpdateWordField(setStackSize, 'stackSize')} />
+              </FormField>
+              <FormField label="Model Variation" info="Model variation for the item blueprint.">
+                <input type="number" min={1} max={255} value={modelVariation} onChange={onUpdateByteField(setModelVariation, 'modelVariation')} />
+              </FormField>
+              <FormField label="Upgrade Level" info="Upgrade level for the item blueprint.">
+                <input type="number" min={0} max={255} value={upgradeLevel} onChange={onUpdateByteField(setUpgradeLevel, 'upgradeLevel')} />
+              </FormField>
+              <FormField label="Flags" info="Gameplay restrictions for this item.">
+                <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
+                  <ForgeCheckbox label="Plot" value={plot} onChange={updateBooleanField(setPlot, 'plot')} />
+                  <ForgeCheckbox label="Stolen" value={stolen} onChange={updateBooleanField(setStolen, 'stolen')} />
+                  <ForgeCheckbox label="Identified" value={identified} onChange={updateBooleanField(setIdentified, 'identified')} />
+                </div>
+              </FormField>
+            </tbody>
+          </table>
+        </>
+      )
+    },
+    {
+      id: 'description',
+      label: 'Descriptions',
+      headerIcon: 'fa-file-alt',
+      headerTitle: 'Descriptions',
+      content: (
+        <>
+          <table style={{ width: '100%' }}>
+            <tbody>
+              <FormField label="Unidentified Description" info="Description shown before the item is identified.">
+                <CExoLocStringEditor value={description} onChange={onUpdateDescription} />
+              </FormField>
+              <FormField label="Identified Description" info="Description shown once the item has been identified.">
+                <CExoLocStringEditor value={descIdentified} onChange={onUpdateDescIdentified} />
+              </FormField>
+            </tbody>
+          </table>
+        </>
+      )
+    },
+    {
+      id: 'properties',
+      label: 'Properties',
+      headerIcon: 'fa-cogs',
+      headerTitle: 'Properties',
+      content: (
+        <>
+          <div style={{marginBottom: '10px'}}>
+            <button className="btn btn-sm btn-primary" onClick={addProperty}>
+              <i className="fa-solid fa-plus"></i> Add Property
+            </button>
           </div>
-        </div>
-      </div>
-    </div>
+          <div className="table-responsive">
+            <table className="table table-sm">
+              <thead>
+                <tr>
+                  <th>Property</th>
+                  <th>Subtype</th>
+                  <th>Cost Table</th>
+                  <th>Cost Value</th>
+                  <th>Param Table</th>
+                  <th>Param Value</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {properties.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{textAlign: 'center', fontStyle: 'italic'}}>No properties defined.</td>
+                  </tr>
+                )}
+                {properties.map((property, index) => renderPropertyRow(property, index))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )
+    }
+  ];
+
+  return (
+    <SubTabHost
+      tabs={tabs}
+      defaultTab="basic"
+      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+    />
   );
 }
 

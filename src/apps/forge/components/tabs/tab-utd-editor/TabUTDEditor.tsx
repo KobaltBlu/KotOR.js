@@ -3,7 +3,6 @@ import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTDEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import * as KotOR from "../../../KotOR";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";

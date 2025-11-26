@@ -4,6 +4,8 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabUTIEditor } from "../../components/tabs/tab-uti-editor/TabUTIEditor";
+import { UI3DRenderer } from "../../UI3DRenderer";
+import * as THREE from "three";
 
 export interface ItemPropertyEntry {
   chanceAppear: number;
@@ -35,12 +37,18 @@ export class TabUTIEditorState extends TabState {
   paletteID: number = 0;
   properties: ItemPropertyEntry[] = [];
   identified: boolean = true;
-  modelVariation: number = 0;
+  modelVariation: number = 1;
   upgradeLevel: number = 0;
+
+  ui3DRenderer: UI3DRenderer;
+  model: KotOR.OdysseyModel3D;
+  kBaseItem: any = {};
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
 
+    this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
     this.setContentView(<TabUTIEditor tab={this}></TabUTIEditor>);
     this.openFile();
     this.saveTypes = [
@@ -67,7 +75,11 @@ export class TabUTIEditorState extends TabState {
         file.readFile().then( (response) => {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
-          this.processEventListener('onEditorFileLoad', [this]);
+          this.loadBaseItem();
+          this.loadModel().then( () => {
+            this.ui3DRenderer.scene.add(this.model);
+            this.processEventListener('onEditorFileLoad', [this]);
+          });
           resolve(this.blueprint);
         });
       }
@@ -128,7 +140,7 @@ export class TabUTIEditorState extends TabState {
     }
 
     if(root.hasField('ModelVariation')){
-      this.modelVariation = this.blueprint.getFieldByLabel('ModelVariation').getValue() || 0;
+      this.modelVariation = this.blueprint.getFieldByLabel('ModelVariation').getValue() || 1;
     }
 
     if(root.hasField('UpgradeLevel')){
@@ -166,6 +178,91 @@ export class TabUTIEditorState extends TabState {
     }
   }
 
+  loadBaseItem(){
+    if(!this.baseItem){ 
+      this.kBaseItem = {};
+      return this.kBaseItem;
+    }
+    const twodaObject = KotOR.TwoDAManager.datatables.get('baseitems');
+    if(!twodaObject) return;
+    return this.kBaseItem = twodaObject.getRowByIndex(this.baseItem);
+  }
+
+  async loadModel(){
+    if(this.model){
+      this.model.removeFromParent();
+      try{ this.model.dispose(); }catch(e){}
+    }
+
+    if(!this.baseItem){ 
+      this.model = new KotOR.OdysseyModel3D;
+      return this.model;
+    }
+
+    const itemclass = this.stringCleaner(this.kBaseItem.itemclass);
+    let defaultModel = this.stringCleaner(this.kBaseItem.defaultmodel);
+
+    if(defaultModel != 'i_null'){
+      defaultModel = this.nthStringConverter(defaultModel, this.modelVariation);
+      if(!parseInt(defaultModel.substr(-3))){
+        defaultModel = itemclass+'_'+(('000'+this.modelVariation).substr(-3));
+      }
+    }
+
+    try{
+      const mdl = await KotOR.MDLLoader.loader.load(defaultModel);
+      const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+        context: this.ui3DRenderer,
+        lighting: true
+      });
+      this.model = model;
+      this.ui3DRenderer.scene.add(this.model);
+      this.updateCameraFocus();
+      return this.model;
+    }catch(e){
+      this.model = new KotOR.OdysseyModel3D;
+      return this.model;
+    }
+  }
+
+  stringCleaner(str: string = ''){
+    return str.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+  }
+
+  nthStringConverter(name = '', nth = 1){
+    let value = nth.toString();
+    name = name.substr(0, name.length - value.length);
+    return name + value;
+  }
+
+  box3: THREE.Box3 = new THREE.Box3();
+  center: THREE.Vector3 = new THREE.Vector3();
+  size: THREE.Vector3 = new THREE.Vector3();
+  origin: THREE.Vector3 = new THREE.Vector3();
+
+  updateCameraFocus(){
+    if(!this.model) return;
+
+    this.model.position.set(0, 0, 0);
+    this.box3.setFromObject(this.model);
+
+    this.box3.getCenter(this.center);
+    this.box3.getSize(this.size);
+
+    //Center the object to 0
+    this.model.position.set(-this.center.x, -this.center.y, -this.center.z);
+    this.ui3DRenderer.camera.position.z = 0;
+    this.ui3DRenderer.camera.position.y = this.size.x + this.size.y;
+    this.ui3DRenderer.camera.lookAt(this.origin)
+  }
+
+  animate(delta: number){
+    if(!this.model) return;
+    this.model.update(delta);
+    //rotate the object in the viewport
+    this.model.rotation.z += delta;
+  }
+
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(!!resref && ext == 'uti'){
       this.templateResRef = resref;
@@ -173,6 +270,19 @@ export class TabUTIEditorState extends TabState {
       return this.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
+  }
+
+  show(): void {
+    super.show();
+    this.ui3DRenderer.enabled = true;
+    this.updateCameraFocus();
+    this.ui3DRenderer.render();
+  }
+
+  hide(): void {
+    super.hide();
+    this.ui3DRenderer.enabled = false;
+    this.ui3DRenderer.render();
   }
 
   updateFile(){
