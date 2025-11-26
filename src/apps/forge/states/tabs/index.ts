@@ -15,6 +15,7 @@ export * from "./TabUTEEditorState";
 export * from "./TabUTPEditorState";
 export * from "./TabUTSEditorState";
 export * from "./TabUTTEditorState";
+export * from "./TabUTIEditorState";
 export * from "./TabUTWEditorState";
 export * from "./TabTextEditorState";
 export * from "./TabWOKEditorState";

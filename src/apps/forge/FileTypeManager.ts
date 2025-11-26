@@ -5,7 +5,7 @@ import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
 import { 
   TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
-  TabUTDEditorState, TabUTEEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
+  TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
 } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
 
@@ -95,6 +95,9 @@ export class FileTypeManager {
       break;
       case 'utp':
         ForgeState.tabManager.addTab(new TabUTPEditorState({editorFile: res}));
+      break;
+      case 'uti':
+        ForgeState.tabManager.addTab(new TabUTIEditorState({editorFile: res}));
       break;
       case 'uts':
         ForgeState.tabManager.addTab(new TabUTSEditorState({editorFile: res}));
