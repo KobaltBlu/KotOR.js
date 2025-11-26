@@ -1,7 +1,6 @@
-import React, { useRef, useState } from "react"
+import React, { useRef, useState, useEffect } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTWEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import "../../../styles/tabs/tab-uts-editor.scss";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { FormField } from "../../form-field/FormField";
@@ -73,10 +72,14 @@ export const TabUTWEditor = function(props: BaseTabProps){
     tab.updateFile(); 
   }
 
-  useEffectOnce( () => {
+  useEffect(() => {
+    if(!tab) return;
+    onWaypointChange();
     tab.addEventListener('onEditorFileLoad', onWaypointChange);
+    tab.addEventListener('onEditorFileChange', onWaypointChange);
     return () => {
       tab.removeEventListener('onEditorFileLoad', onWaypointChange);
+      tab.removeEventListener('onEditorFileChange', onWaypointChange);
     }
   });
 

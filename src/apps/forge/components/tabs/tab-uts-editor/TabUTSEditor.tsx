@@ -1,7 +1,6 @@
-import React, { useRef, useState } from "react"
+import React, { useRef, useState, useEffect } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTSEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import * as KotOR from "../../../KotOR";
 import "../../../styles/tabs/tab-uts-editor.scss";
 import { Button, Modal } from "react-bootstrap";
@@ -18,11 +17,11 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const audioBufferRef = useRef<AudioBufferSourceNode | null>(null);
 
-  useEffectOnce( () => {
+  useEffect(() => {
     const nodes = [...ForgeState.resourceExplorerTab.getStreamSounds(), ...ForgeState.resourceExplorerTab.getBifSounds()].sort((a, b) => a.name.localeCompare(b.name));
     setSounds(nodes);
     setSoundMap(new Map(nodes.map( (node: FileBrowserNode) => [node.name, node] )));
-  });
+  }, []);
 
   const close = () => {
     // Stop any playing audio
@@ -392,14 +391,16 @@ export const TabUTSEditor = function(props: BaseTabProps){
     setPriority(tab.priority);
   }
 
-  useEffectOnce( () => {
+  useEffect(() => {
+    if(!tab) return;
+    onSoundChange();
     tab.addEventListener('onEditorFileLoad', onSoundChange);
     tab.addEventListener('onSoundChange', onSoundChange);
     return () => {
       tab.removeEventListener('onEditorFileLoad', onSoundChange);
       tab.removeEventListener('onSoundChange', onSoundChange);
     }
-  });
+  }, []);
 
   return <>
 <div style={{height: '100%'}}>

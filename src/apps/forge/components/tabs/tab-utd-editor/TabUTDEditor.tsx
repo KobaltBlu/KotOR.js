@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTDEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
@@ -64,7 +64,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
   // Comments tab
   const [comments, setComments] = useState<string>('');
 
-  const loadDoorData = () => {
+  const loadDoorData = useCallback(() => {
     if (!tab.blueprint) return;
 
     setLocName(tab.locName);
@@ -109,7 +109,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
 
     setDescription(tab.description);
     setComments(''); // Comments not stored in door
-  };
+  }, [tab]);
 
   const togglePlot = (value: boolean) => {
     setPlot(value);
@@ -146,13 +146,14 @@ export const TabUTDEditor = function(props: BaseTabProps){
     if(tab.blueprint) { tab.interruptable = value; tab.updateFile(); }
   }
 
-  useEffectOnce(() => {
-    tab.addEventListener('onEditorFileLoad', loadDoorData);
+  useEffect(() => {
+    if(!tab) return;
     loadDoorData(); // Load initial data if already loaded
+    tab.addEventListener('onEditorFileLoad', loadDoorData);
     return () => {
       tab.removeEventListener('onEditorFileLoad', loadDoorData);
     };
-  });
+  }, []);
 
   const tabs: SubTab[] = [
     {

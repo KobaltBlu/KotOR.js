@@ -1,7 +1,6 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabUTIEditorState, ItemPropertyEntry } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
@@ -62,13 +61,16 @@ export const TabUTIEditor = function(props: BaseTabProps){
     setUpgradeLevel(tab.upgradeLevel);
   }, [tab]);
 
-  useEffectOnce(() => {
+  useEffect(() => {
+    if(!tab) return;
     onItemChange();
+    tab.addEventListener('onEditorFileLoad', onItemChange);
     tab.addEventListener('onEditorFileChange', onItemChange);
     return () => {
+      tab.removeEventListener('onEditorFileLoad', onItemChange);
       tab.removeEventListener('onEditorFileChange', onItemChange);
     };
-  });
+  }, []);
 
   const onUpdateLocName = (value: KotOR.CExoLocString) => {
     setLocName(value);

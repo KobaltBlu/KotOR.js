@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabUTEEditorState } from "../../../states/tabs/TabUTEEditorState";
 import { EncounterDifficulty } from "../../../interfaces/EncounterDifficulty";
@@ -7,7 +7,6 @@ import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import "../../../styles/tabs/tab-ute-editor.scss";
 
 export const TabUTEEditor = function(props: BaseTabProps){
@@ -37,7 +36,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
   const [tag, setTag] = useState<string>('');
   const [templateResRef, setTemplateResRef] = useState<string>('');
 
-  const onEncounterChange = () => {
+  const onEncounterChange = useCallback(() => {
     setActive(tab.active);
     setComment(tab.comment);
     setCreatureList([...tab.creatureList]);
@@ -60,15 +59,18 @@ export const TabUTEEditor = function(props: BaseTabProps){
     setSpawnOption(tab.spawnOption);
     setTag(tab.tag);
     setTemplateResRef(tab.templateResRef);
-  }
+  }, [tab]);
 
-  useEffectOnce(() => {
+  useEffect(() => {
+    if(!tab) return;
     onEncounterChange();
-    tab.addEventListener('onEditorFileChange', () => { onEncounterChange(); });
+    tab.addEventListener('onEditorFileChange', onEncounterChange);  
+    tab.addEventListener('onEditorFileLoad', onEncounterChange);
     return () => {
-      tab.removeEventListener('onEditorFileChange', () => { onEncounterChange(); });
+      tab.removeEventListener('onEditorFileLoad', onEncounterChange);
+      tab.removeEventListener('onEditorFileChange', onEncounterChange);
     };
-  });
+  }, []);
 
   useEffect(() => {
     setEncounterDifficulties(tab.encounterDifficulties);

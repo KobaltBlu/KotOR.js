@@ -1,7 +1,6 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTTEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
@@ -69,13 +68,16 @@ export const TabUTTEditor = function(props: BaseTabProps){
     setType(tab.t_type);
   }
 
-  useEffectOnce(() => {
+  useEffect(() => {
+    if(!tab) return;
     onTriggerChange();
-    tab.addEventListener('onEditorFileChange', () => { onTriggerChange(); });
+    tab.addEventListener('onEditorFileLoad', onTriggerChange);
+    tab.addEventListener('onEditorFileChange', onTriggerChange);
     return () => {
-      tab.removeEventListener('onEditorFileChange', () => { onTriggerChange(); });
+      tab.removeEventListener('onEditorFileLoad', onTriggerChange);
+      tab.removeEventListener('onEditorFileChange', onTriggerChange);
     };
-  });
+  }, []);
 
   const sanitizeResRef = (value: string) => value.substring(0, 16).toLowerCase().replace(/[^a-z0-9_]/g, '');
   const clampByte = (value: number) => Math.max(0, Math.min(255, value));
