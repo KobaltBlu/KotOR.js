@@ -52,6 +52,13 @@ export class TabUTEEditorState extends TabState {
 
     this.encounterDifficulties = KotOR.SWRuleSet.encounterDifficulties;
 
+    this.addEventListener('onPropertyChange', (property: string, value: any) => {
+      if(property === 'difficultyIndex'){
+        // Difficulty should match the VALUE from encdifficulty.2da (obsolete but must match)
+        this.difficulty = this.encounterDifficulties[value].value;
+      }
+    });
+
     this.addEventListener('onTabRemoved', (tab: TabState) => {
       
     });
