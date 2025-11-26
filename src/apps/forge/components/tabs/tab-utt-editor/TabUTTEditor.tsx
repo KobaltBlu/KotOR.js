@@ -5,6 +5,7 @@ import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { sanitizeResRef, clampByte, createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
@@ -79,135 +80,30 @@ export const TabUTTEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const sanitizeResRef = (value: string) => value.substring(0, 16).toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const clampByte = (value: number) => Math.max(0, Math.min(255, value));
+  // Helper functions using shared utilities
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTTEditorState, parser: (value: number) => number = (v) => v) => 
+    createNumberFieldHandler(setter, property, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTTEditorState) => 
+    createByteFieldHandler(setter, property, tab);
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTTEditorState) => 
+    createWordFieldHandler(setter, property, tab);
+  
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTTEditorState) => 
+    createBooleanFieldHandler(setter, property, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTTEditorState) => 
+    createResRefFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTTEditorState) => 
+    createCExoStringFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTTEditorState) => 
+    createCExoLocStringFieldHandler(setter, property, tab);
 
-  const updateTab = (updater: () => void) => {
-    if(!tab) return;
-    updater();
-    tab.updateFile();
-  };
-
-  const onUpdateLocalizedName = (value: KotOR.CExoLocString) => {
-    setLocalizedName(value);
-    updateTab(() => { tab.localizedName = value; });
-  }
-
-  const onUpdateTemplateResRef = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeResRef(e.target.value);
-    setTemplateResRef(value);
-    updateTab(() => { tab.templateResRef = value; });
-  }
-
-  const onUpdateTag = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.substring(0, 32);
-    setTag(value);
-    updateTab(() => { tab.tag = value; });
-  }
-
-  const onUpdateComment = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setComment(value);
-    updateTab(() => { tab.comment = value; });
-  }
-
-  const onUpdateType = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setType(value);
-    updateTab(() => { tab.t_type = value; });
-  }
-
-  const onUpdateFaction = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setFaction(value);
-    updateTab(() => { tab.faction = value; });
-  }
-
-  const onUpdatePaletteID = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setPaletteID(value);
-    updateTab(() => { tab.paletteID = value; });
-  }
-
-  const onUpdateCursor = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = clampByte(parseInt(e.target.value) || 0);
-    setCursor(value);
-    updateTab(() => { tab.cursor = value; });
-  }
-
-  const onUpdateHighlightHeight = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    const parsed = isNaN(value) ? 0 : value;
-    setHighlightHeight(parsed);
-    updateTab(() => { tab.highlightHeight = parsed; });
-  }
-
-  const onUpdateLoadScreenID = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setLoadScreenID(value);
-    updateTab(() => { tab.loadScreenID = value; });
-  }
-
-  const onUpdateKeyName = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.substring(0, 32);
-    setKeyName(value);
-    updateTab(() => { tab.keyName = value; });
-  }
-
-  const onUpdateAutoRemoveKey = (value: boolean) => {
-    setAutoRemoveKey(value);
-    updateTab(() => { tab.autoRemoveKey = value; });
-  }
-
-  const onUpdatePortraitId = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setPortraitId(value);
-    updateTab(() => { tab.portraitId = value; });
-  }
-
-  const onUpdateDisarmDC = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = clampByte(parseInt(e.target.value) || 0);
-    setDisarmDC(value);
-    updateTab(() => { tab.disarmDC = value; });
-  }
-
-  const onUpdateTrapDetectDC = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setTrapDetectDC(value);
-    updateTab(() => { tab.trapDetectDC = value; });
-  }
-
-  const onUpdateTrapType = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 0;
-    setTrapType(value);
-    updateTab(() => { tab.trapType = value; });
-  }
-
-  const onUpdateTrapDetectable = (value: boolean) => {
-    setTrapDetectable(value);
-    updateTab(() => { tab.trapDetectable = value; });
-  }
-
-  const onUpdateTrapDisarmable = (value: boolean) => {
-    setTrapDisarmable(value);
-    updateTab(() => { tab.trapDisarmable = value; });
-  }
-
-  const onUpdateTrapFlag = (value: boolean) => {
-    setTrapFlag(value);
-    updateTab(() => { tab.trapFlag = value; });
-  }
-
-  const onUpdateTrapOneShot = (value: boolean) => {
-    setTrapOneShot(value);
-    updateTab(() => { tab.trapOneShot = value; });
-  }
-
-  const onUpdateScriptField = (setter: (value: string) => void, property: keyof TabUTTEditorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeResRef(e.target.value);
-    setter(value);
-    updateTab(() => { (tab as any)[property] = value; });
-  }
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTTEditorState) => 
+    createForgeCheckboxFieldHandler(setter, property, tab);
 
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
@@ -229,47 +125,47 @@ export const TabUTTEditor = function(props: BaseTabProps){
               <table style={{ width: '100%' }}>
                 <tbody>
                   <FormField label="Name" info="Localized label shown in toolset lists.">
-                    <CExoLocStringEditor value={localizedName} onChange={onUpdateLocalizedName} />
+                    <CExoLocStringEditor value={localizedName} onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')} />
                   </FormField>
                   <FormField label="Template ResRef" info="Internal ResRef (max 16 chars, lowercase).">
-                    <input type="text" value={templateResRef} onChange={onUpdateTemplateResRef} maxLength={16} />
+                    <input type="text" value={templateResRef} onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')} maxLength={16} />
                   </FormField>
                   <FormField label="Tag" info="Unique identifier (max 32 chars).">
-                    <input type="text" value={tag} onChange={onUpdateTag} maxLength={32} />
+                    <input type="text" value={tag} onChange={onUpdateResRefField(setTag, 'tag')} maxLength={32} />
                   </FormField>
                   <FormField label="Comment" info="Designer-only notes stored in blueprint.">
-                    <textarea value={comment} onChange={onUpdateComment} rows={2} />
+                    <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={2} />
                   </FormField>
                   <FormField label="Type" info="0=Generic, 1=Area Transition, 2=Trap.">
-                    <select value={type} onChange={onUpdateType}>
+                    <select value={type} onChange={onUpdateByteField(setType, 'type')}>
                       <option value={0}>Generic</option>
                       <option value={1}>Area Transition</option>
                       <option value={2}>Trap</option>
                     </select>
                   </FormField>
                   <FormField label="Faction" info="Faction index controlling hostility.">
-                    <input type="number" value={faction} onChange={onUpdateFaction} />
+                    <input type="number" value={faction} onChange={onUpdateByteField(setFaction, 'faction')} />
                   </FormField>
                   <FormField label="Palette ID" info="Palette folder identifier in toolset.">
-                    <input type="number" value={paletteID} onChange={onUpdatePaletteID} />
+                    <input type="number" value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
                   </FormField>
                   <FormField label="Cursor" info="Index into cursors.2da.">
-                    <input type="number" min={0} max={255} value={cursor} onChange={onUpdateCursor} />
+                    <input type="number" min={0} max={255} value={cursor} onChange={onUpdateByteField(setCursor, 'cursor')} />
                   </FormField>
                   <FormField label="Highlight Height" info="Height in meters for trigger highlight glow.">
-                    <input type="number" step="0.1" value={highlightHeight} onChange={onUpdateHighlightHeight} />
+                    <input type="number" step="0.1" value={highlightHeight} onChange={onUpdateNumberField(setHighlightHeight, 'highlightHeight')} />
                   </FormField>
                   <FormField label="Load Screen ID" info="loadscreeen.2da row used for area transitions.">
-                    <input type="number" min={0} value={loadScreenID} onChange={onUpdateLoadScreenID} />
+                    <input type="number" min={0} value={loadScreenID} onChange={onUpdateWordField(setLoadScreenID, 'loadScreenID')} />
                   </FormField>
                   <FormField label="Key Name" info="Optional required key tag for area transitions.">
-                    <input type="text" value={keyName} onChange={onUpdateKeyName} maxLength={32} />
+                    <input type="text" value={keyName} onChange={onUpdateResRefField(setKeyName, 'keyName')} maxLength={32} />
                   </FormField>
                   <FormField label="Auto Remove Key" info="Removes key item after transition.">
-                    <ForgeCheckbox label="Enabled" value={autoRemoveKey} onChange={onUpdateAutoRemoveKey} />
+                    <ForgeCheckbox label="Enabled" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
                   </FormField>
                   <FormField label="Portrait ID" info="Index into portraits.2da for UI portrait.">
-                    <input type="number" min={0} value={portraitId} onChange={onUpdatePortraitId} />
+                    <input type="number" min={0} value={portraitId} onChange={onUpdateWordField(setPortraitId, 'portraitId')} />
                   </FormField>
                 </tbody>
               </table>
@@ -280,25 +176,25 @@ export const TabUTTEditor = function(props: BaseTabProps){
               <table style={{ width: '100%' }}>
                 <tbody>
                   <FormField label="On Click" info="ResRef of script executed when clicked.">
-                    <input type="text" value={onClick} onChange={onUpdateScriptField(setOnClick, 'onClick')} maxLength={16} />
+                    <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} />
                   </FormField>
                   <FormField label="On Heartbeat" info="ResRef of ScriptOnHeartbeat.">
-                    <input type="text" value={onHeartbeat} onChange={onUpdateScriptField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
+                    <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
                   </FormField>
                   <FormField label="On Enter" info="ResRef of ScriptOnEnter.">
-                    <input type="text" value={onEnter} onChange={onUpdateScriptField(setOnEnter, 'onEnter')} maxLength={16} />
+                    <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} />
                   </FormField>
                   <FormField label="On Exit" info="ResRef of ScriptOnExit.">
-                    <input type="text" value={onExit} onChange={onUpdateScriptField(setOnExit, 'onExit')} maxLength={16} />
+                    <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} />
                   </FormField>
                   <FormField label="On User Defined" info="ResRef of ScriptOnUserDefine.">
-                    <input type="text" value={onUserDefined} onChange={onUpdateScriptField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
+                    <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
                   </FormField>
                   <FormField label="On Disarm" info="ResRef executed when trap is disarmed.">
-                    <input type="text" value={onDisarm} onChange={onUpdateScriptField(setOnDisarm, 'onDisarm')} maxLength={16} />
+                    <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} />
                   </FormField>
                   <FormField label="On Trap Triggered" info="ResRef fired when trap trips.">
-                    <input type="text" value={onTrapTriggered} onChange={onUpdateScriptField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
+                    <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
                   </FormField>
                 </tbody>
               </table>
@@ -309,25 +205,25 @@ export const TabUTTEditor = function(props: BaseTabProps){
               <table style={{ width: '100%' }}>
                 <tbody>
                   <FormField label="Trap Flag" info="Marks trigger as trap for engine.">
-                    <ForgeCheckbox label="Enabled" value={trapFlag} onChange={onUpdateTrapFlag} />
+                    <ForgeCheckbox label="Enabled" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} />
                   </FormField>
                   <FormField label="Trap Type" info="Index into traps.2da.">
-                    <input type="number" min={0} value={trapType} onChange={onUpdateTrapType} />
+                    <input type="number" min={0} value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} />
                   </FormField>
                   <FormField label="Disarm DC" info="Base DC to disarm (1-250).">
-                    <input type="number" min={0} max={255} value={disarmDC} onChange={onUpdateDisarmDC} />
+                    <input type="number" min={0} max={255} value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} />
                   </FormField>
                   <FormField label="Trap Detect DC" info="DC to detect trap.">
-                    <input type="number" min={0} value={trapDetectDC} onChange={onUpdateTrapDetectDC} />
+                    <input type="number" min={0} value={trapDetectDC} onChange={onUpdateByteField(setTrapDetectDC, 'trapDetectDC')} />
                   </FormField>
                   <FormField label="Trap Detectable" info="Whether trap can be detected.">
-                    <ForgeCheckbox label="Enabled" value={trapDetectable} onChange={onUpdateTrapDetectable} />
+                    <ForgeCheckbox label="Enabled" value={trapDetectable} onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')} />
                   </FormField>
                   <FormField label="Trap Disarmable" info="Allows trap to be disarmed.">
-                    <ForgeCheckbox label="Enabled" value={trapDisarmable} onChange={onUpdateTrapDisarmable} />
+                    <ForgeCheckbox label="Enabled" value={trapDisarmable} onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')} />
                   </FormField>
                   <FormField label="Trap One Shot" info="Trap is removed after firing.">
-                    <ForgeCheckbox label="Enabled" value={trapOneShot} onChange={onUpdateTrapOneShot} />
+                    <ForgeCheckbox label="Enabled" value={trapOneShot} onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')} />
                   </FormField>
                 </tbody>
               </table>

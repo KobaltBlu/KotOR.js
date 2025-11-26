@@ -4,6 +4,20 @@ import { TabUTIEditorState, TabUTPEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
+import {
+  sanitizeResRef,
+  clampByte,
+  clampWord,
+  createNumberFieldHandler,
+  createByteFieldHandler,
+  createWordFieldHandler,
+  createBooleanFieldHandler,
+  createResRefFieldHandler,
+  createCExoStringFieldHandler,
+  createCExoLocStringFieldHandler,
+  createForgeCheckboxFieldHandler
+} from "../../../helpers/UTxEditorHelpers";
+import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
@@ -71,47 +85,30 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [kPlaceableAppearances, setKPlaceableAppearances] = useState<any[]>([]);
   const [kFactions, setKFactions] = useState<any[]>([]);
 
-  const sanitizeResRef = (value: string) => value.substring(0, 16).toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const clampByte = (value: number) => Math.max(0, Math.min(255, value));
-  const clampWord = (value: number) => Math.max(1, Math.min(0xFFFF, value || 1));
+  // Helper functions using shared utilities
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTPEditorState, parser: (value: number) => number = (v) => v) => 
+    createNumberFieldHandler(setter, property, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => 
+    createByteFieldHandler(setter, property, tab);
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => 
+    createWordFieldHandler(setter, property, tab);
+  
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTPEditorState) => 
+    createBooleanFieldHandler(setter, property, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => 
+    createResRefFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => 
+    createCExoStringFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTPEditorState) => 
+    createCExoLocStringFieldHandler(setter, property, tab);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTPEditorState, parser: (value: number) => number = (v) => v) => (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
-    const raw = parseInt(e.target.value) || 0;
-    const value = parser(raw);
-    setter(value);
-    updateTab(property, value);
-  }
-
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => onUpdateNumberField(setter, property, clampByte);
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => onUpdateNumberField(setter, property, clampWord);
-
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTPEditorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.checked;
-    setter(value);
-    updateTab(property, value);
-  }
-
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = sanitizeResRef(e.target.value);
-    setter(value);
-    updateTab(property, value);
-  }
-
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setter(e.target.value);
-    updateTab(property, e.target.value);
-  }
-
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTPEditorState) => (value: KotOR.CExoLocString) => {
-    setter(value);
-    updateTab(property, value);
-  }
-
-  const updateTab = (property: keyof TabUTPEditorState, value: any) => {
-    if(!tab) return;
-    tab.setProperty(property, value);
-    tab.updateFile();
-  };
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTPEditorState) => 
+    createForgeCheckboxFieldHandler(setter, property, tab);
 
   const onPlaceableChange = useCallback(() => {
     setAnimationState(tab.animationState);
@@ -234,13 +231,13 @@ export const TabUTPEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={plot} onChange={updateBooleanField(setPlot, 'plot')} /><label>Plot Item</label>
+                  <ForgeCheckbox label="Plot Item" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
                 </td>
                 <td>
-                  <input type="checkbox" className="ui" checked={static_} onChange={updateBooleanField(setStatic, 'static')} /><label>Static</label>
+                  <ForgeCheckbox label="Static" value={static_} onChange={onUpdateForgeCheckboxField(setStatic, 'static')} />
                 </td>
                 <td>
-                  <input type="checkbox" className="ui" checked={min1HP} onChange={updateBooleanField(setMin1HP, 'min1HP')} /><label>Min 1HP</label>
+                  <ForgeCheckbox label="Min 1HP" value={min1HP} onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')} />
                 </td>
               </tr>
             </tbody>
@@ -279,22 +276,22 @@ export const TabUTPEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={locked} onChange={updateBooleanField(setLocked, 'locked')} /><label className="checkbox-label">Locked</label>
+                  <ForgeCheckbox label="Locked" value={locked} onChange={onUpdateForgeCheckboxField(setLocked, 'locked')} />
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={lockable} onChange={updateBooleanField(setLockable, 'lockable')} /><label className="checkbox-label">Can be relocked</label>
+                  <ForgeCheckbox label="Can be relocked" value={lockable} onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')} />
                 </td>
               <tr>
               </tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={autoRemoveKey} onChange={updateBooleanField(setAutoRemoveKey, 'autoRemoveKey')} /><label className="checkbox-label">Auto remove key after use</label>
+                  <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
                 </td>
               </tr>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={keyRequired} onChange={updateBooleanField(setKeyRequired, 'keyRequired')} /><label className="checkbox-label">Key required to unlock or lock</label>
+                  <ForgeCheckbox label="Key required to unlock or lock" value={keyRequired} onChange={onUpdateForgeCheckboxField(setKeyRequired, 'keyRequired')} />
                 </td>
               </tr>
             </tbody>
@@ -338,10 +335,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 <td><label>Conversation</label></td>
                 <td>
                   <input type="text" maxLength={16} style={{width: 'auto' }} value={conversation} onChange={onUpdateResRefField(setConversation, 'conversation')} />
-                  <div className="ui-checkbox" style={{display: 'inline-block'}}>
-                    <input type="checkbox" className="ui" checked={interruptable} onChange={updateBooleanField(setInterruptable, 'interruptable')} />
-                    <label>No Interrupt</label>
-                  </div>
+                  <ForgeCheckbox label="No Interrupt" value={interruptable} onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')} />
                 </td>
               </tr>
               <tr>
@@ -359,13 +353,13 @@ export const TabUTPEditor = function(props: BaseTabProps){
             <tbody>
               <tr>
                 <td>
-                  <input type="checkbox" className="ui" checked={hasInventory} onChange={updateBooleanField(setHasInventory, 'hasInventory')} /><label>Has Inventory</label>
+                  <ForgeCheckbox label="Has Inventory" value={hasInventory} onChange={onUpdateForgeCheckboxField(setHasInventory, 'hasInventory')} />
                 </td>
                 <td>
-                  <input type="checkbox" className="ui" checked={partyInteract} onChange={updateBooleanField(setPartyInteract, 'partyInteract')} /><label>Party Interact</label>
+                  <ForgeCheckbox label="Party Interact" value={partyInteract} onChange={onUpdateForgeCheckboxField(setPartyInteract, 'partyInteract')} />
                 </td>
                 <td>
-                  <input type="checkbox" className="ui" checked={useable} onChange={updateBooleanField(setUseable, 'useable')} /><label>Usable</label>
+                  <ForgeCheckbox label="Usable" value={useable} onChange={onUpdateForgeCheckboxField(setUseable, 'useable')} />
                 </td>
               </tr>
             </tbody>
@@ -478,19 +472,19 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Trap Detectable</label></td>
-                <td><input type="checkbox" className="ui" checked={trapDetectable} onChange={updateBooleanField(setTrapDetectable, 'trapDetectable')} /><label>Trap Detectable</label></td>
+                <td><ForgeCheckbox label="Trap Detectable" value={trapDetectable} onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')} /></td>
               </tr>
               <tr>
                 <td><label>Trap Disarmable</label></td>
-                <td><input type="checkbox" className="ui" checked={trapDisarmable} onChange={updateBooleanField(setTrapDisarmable, 'trapDisarmable')} /><label>Trap Disarmable</label></td>
+                <td><ForgeCheckbox label="Trap Disarmable" value={trapDisarmable} onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')} /></td>
               </tr>
               <tr>
                 <td><label>Trap Flag</label></td>
-                <td><input type="checkbox" className="ui" checked={trapFlag} onChange={updateBooleanField(setTrapFlag, 'trapFlag')} /><label>Trap Flag</label></td>
+                <td><ForgeCheckbox label="Trap Flag" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} /></td>
               </tr>
               <tr>
                 <td><label>Trap One Shot</label></td>
-                <td><input type="checkbox" className="ui" checked={trapOneShot} onChange={updateBooleanField(setTrapOneShot, 'trapOneShot')} /><label>Trap One Shot</label></td>
+                <td><ForgeCheckbox label="Trap One Shot" value={trapOneShot} onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')} /></td>
               </tr>
             </tbody>
           </table>

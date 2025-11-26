@@ -7,6 +7,7 @@ import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEdit
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "../../SubTabHost";
 import { UI3DRendererView } from "../../UI3DRendererView";
+import { sanitizeResRef, clampByte, clampWord, createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
@@ -31,16 +32,6 @@ export const TabUTIEditor = function(props: BaseTabProps){
   const [identified, setIdentified] = useState<boolean>(true);
   const [modelVariation, setModelVariation] = useState<number>(0);
   const [upgradeLevel, setUpgradeLevel] = useState<number>(0);
-
-  const sanitizeResRef = (value: string) => value.substring(0, 16).toLowerCase().replace(/[^a-z0-9_]/g, '');
-  const clampByte = (value: number) => Math.max(0, Math.min(255, value));
-  const clampWord = (value: number) => Math.max(1, Math.min(0xFFFF, value || 1));
-
-  const updateTab = (updater: () => void) => {
-    if(!tab) return;
-    updater();
-    tab.updateFile();
-  };
 
   const onItemChange = useCallback(() => {
     setLocName(tab.locName);
@@ -74,70 +65,35 @@ export const TabUTIEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const onUpdateLocName = (value: KotOR.CExoLocString) => {
-    setLocName(value);
-    updateTab(() => { tab.locName = value; });
-  }
+  // Helper functions using shared utilities
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTIEditorState, parser: (value: number) => number = (v) => v) => 
+    createNumberFieldHandler(setter, property, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => 
+    createByteFieldHandler(setter, property, tab);
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => 
+    createWordFieldHandler(setter, property, tab);
+  
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTIEditorState) => 
+    createBooleanFieldHandler(setter, property, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTIEditorState) => 
+    createResRefFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTIEditorState) => 
+    createCExoStringFieldHandler(setter, property, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTIEditorState) => 
+    createCExoLocStringFieldHandler(setter, property, tab);
 
-  const onUpdateDescription = (value: KotOR.CExoLocString) => {
-    setDescription(value);
-    updateTab(() => { tab.description = value; });
-  }
-
-  const onUpdateDescIdentified = (value: KotOR.CExoLocString) => {
-    setDescIdentified(value);
-    updateTab(() => { tab.descIdentified = value; });
-  }
-
-  const onUpdateTag = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.substring(0, 32);
-    setTag(value);
-    updateTab(() => { tab.tag = value; });
-  }
-
-  const onUpdateComment = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setComment(value);
-    updateTab(() => { tab.comment = value; });
-  }
-
-  const onUpdateIdentified = (value: boolean) => {
-    setIdentified(value);
-    updateTab(() => { tab.identified = value; });
-  }
-
-  const onUpdateModelVariation = (value: number) => {
-    setModelVariation(value);
-    updateTab(() => { tab.modelVariation = value; });
-  }
-
-  const onUpdateUpgradeLevel = (value: number) => {
-    setUpgradeLevel(value);
-    updateTab(() => { tab.upgradeLevel = value; });
-  }
-
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTIEditorState, parser: (value: number) => number = (v) => v) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const raw = parseInt(e.target.value) || 0;
-    const value = parser(raw);
-    setter(value);
-    if(setter == setBaseItem || setter == setModelVariation) {
-      tab.loadBaseItem();
-      tab.loadModel();
-    }
-    updateTab(() => { (tab as any)[property] = value; });
-  }
-
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => onUpdateNumberField(setter, property, clampByte);
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => onUpdateNumberField(setter, property, clampWord);
-
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTIEditorState) => (value: boolean) => {
-    setter(value);
-    updateTab(() => { (tab as any)[property] = value; });
-  }
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTIEditorState) => 
+    createForgeCheckboxFieldHandler(setter, property, tab);
 
   const updateProperties = (next: ItemPropertyEntry[]) => {
     setProperties(next);
-    updateTab(() => { tab.properties = next.map((prop) => ({...prop})); });
+    tab.setProperty('properties', next.map((prop) => ({...prop})));
+    tab.updateFile();
   }
 
   const addProperty = () => {
@@ -201,19 +157,19 @@ export const TabUTIEditor = function(props: BaseTabProps){
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="Name" info="Display name shown in-game once identified.">
-                <CExoLocStringEditor value={locName} onChange={onUpdateLocName} />
+                <CExoLocStringEditor value={locName} onChange={onUpdateCExoLocStringField(setLocName, 'locName')} />
               </FormField>
               <FormField label="Template ResRef" info="Internal resource reference (max 16 chars, lowercase).">
                 <input type="text" value={templateResRef} disabled={true} maxLength={16} />
               </FormField>
               <FormField label="Tag" info="Unique identifier (max 32 chars).">
-                <input type="text" value={tag} onChange={onUpdateTag} maxLength={32} />
+                <input type="text" value={tag} onChange={onUpdateResRefField(setTag, 'tag')} maxLength={32} />
               </FormField>
               <FormField label="Comment" info="Designer-only notes.">
-                <textarea value={comment} onChange={onUpdateComment} rows={2} />
+                <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={2} />
               </FormField>
               <FormField label="Base Item" info="Index into baseitems.2da determining model type and behaviour.">
-                <input type="number" min={0} value={baseItem} onChange={onUpdateNumberField(setBaseItem, 'baseItem')} />
+                <input type="number" min={0} value={baseItem} onChange={onUpdateByteField(setBaseItem, 'baseItem')} />
               </FormField>
               <FormField label="Palette ID" info="Palette grouping for the item blueprint.">
                 <input type="number" min={0} max={255} value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
@@ -238,9 +194,9 @@ export const TabUTIEditor = function(props: BaseTabProps){
               </FormField>
               <FormField label="Flags" info="Gameplay restrictions for this item.">
                 <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
-                  <ForgeCheckbox label="Plot" value={plot} onChange={updateBooleanField(setPlot, 'plot')} />
-                  <ForgeCheckbox label="Stolen" value={stolen} onChange={updateBooleanField(setStolen, 'stolen')} />
-                  <ForgeCheckbox label="Identified" value={identified} onChange={updateBooleanField(setIdentified, 'identified')} />
+                  <ForgeCheckbox label="Plot" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
+                  <ForgeCheckbox label="Stolen" value={stolen} onChange={onUpdateForgeCheckboxField(setStolen, 'stolen')} />
+                  <ForgeCheckbox label="Identified" value={identified} onChange={onUpdateForgeCheckboxField(setIdentified, 'identified')} />
                 </div>
               </FormField>
             </tbody>
@@ -258,10 +214,10 @@ export const TabUTIEditor = function(props: BaseTabProps){
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="Unidentified Description" info="Description shown before the item is identified.">
-                <CExoLocStringEditor value={description} onChange={onUpdateDescription} />
+                <CExoLocStringEditor value={description} onChange={onUpdateCExoLocStringField(setDescription, 'description')} />
               </FormField>
               <FormField label="Identified Description" info="Description shown once the item has been identified.">
-                <CExoLocStringEditor value={descIdentified} onChange={onUpdateDescIdentified} />
+                <CExoLocStringEditor value={descIdentified} onChange={onUpdateCExoLocStringField(setDescIdentified, 'descIdentified')} />
               </FormField>
             </tbody>
           </table>

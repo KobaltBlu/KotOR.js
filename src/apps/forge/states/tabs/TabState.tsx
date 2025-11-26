@@ -183,7 +183,12 @@ export class TabState extends EventListenerModel {
       return supportedFilePickerTypes;
     }
   }
-  
+
+
+  updateFile(){
+    //stub method to be overridden by subclasses
+  }
+
   async save() {
     let currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
