@@ -26,7 +26,6 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [dex, setDex] = useState<number>(10);
   const [disarmable, setDisarmable] = useState<boolean>(false);
-  const [equipItemList, setEquipItemList] = useState<string[]>([]);
   const [factionID, setFactionID] = useState<number>(0);
   const [featList, setFeatList] = useState<number[]>([]);
   const [firstName, setFirstName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
@@ -80,6 +79,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [refbonus, setRefbonus] = useState<number>(0);
   const [willbonus, setWillbonus] = useState<number>(0);
 
+  // Equipment Slots
+  const [slotArmor, setSlotArmor] = useState<string>('');
+  const [slotBelt, setSlotBelt] = useState<string>('');
+  const [slotClaw1, setSlotClaw1] = useState<string>('');
+  const [slotClaw2, setSlotClaw2] = useState<string>('');
+  const [slotClaw3, setSlotClaw3] = useState<string>('');
+  const [slotHide, setSlotHide] = useState<string>('');
+  const [slotLeftArmband, setSlotLeftArmband] = useState<string>('');
+  const [slotLeftHand, setSlotLeftHand] = useState<string>('');
+  const [slotRightArmband, setSlotRightArmband] = useState<string>('');
+  const [slotRightHand, setSlotRightHand] = useState<string>('');
+  const [slotRightHand2, setSlotRightHand2] = useState<string>('');
+  const [slotLeftHand2, setSlotLeftHand2] = useState<string>('');
+  const [slotImplant, setSlotImplant] = useState<string>('');
+  const [slotHead, setSlotHead] = useState<string>('');
+  const [slotArms, setSlotArms] = useState<string>('');
+
   const onCreatureChange = useCallback(() => {
     setAppearanceType(tab.appearanceType);
     setBodyBag(tab.bodyBag);
@@ -96,7 +112,6 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setDescription(tab.description);
     setDex(tab.dex);
     setDisarmable(tab.disarmable);
-    setEquipItemList([...tab.equipItemList]);
     setFactionID(tab.factionID);
     setFeatList([...tab.featList]);
     setFirstName(tab.firstName);
@@ -149,6 +164,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setFortbonus(tab.fortbonus);
     setRefbonus(tab.refbonus);
     setWillbonus(tab.willbonus);
+
+    // Equipment Slots
+    setSlotArmor(tab.slotArmor);
+    setSlotBelt(tab.slotBelt);
+    setSlotClaw1(tab.slotClaw1);
+    setSlotClaw2(tab.slotClaw2);
+    setSlotClaw3(tab.slotClaw3);
+    setSlotHide(tab.slotHide);
+    setSlotLeftArmband(tab.slotLeftArmband);
+    setSlotLeftHand(tab.slotLeftHand);
+    setSlotRightArmband(tab.slotRightArmband);
+    setSlotRightHand(tab.slotRightHand);
+    setSlotRightHand2(tab.slotRightHand2);
+    setSlotLeftHand2(tab.slotLeftHand2);
+    setSlotImplant(tab.slotImplant);
+    setSlotHead(tab.slotHead);
+    setSlotArms(tab.slotArms);
   }, [tab]);
 
   useEffect(() => {

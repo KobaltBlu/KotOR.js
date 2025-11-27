@@ -6,8 +6,6 @@ import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabUTCEditor } from "../../components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
-import { ModuleCreatureAnimState } from "../../../../enums/module/ModuleCreatureAnimState";
 
 export interface KnownListEntry {
   type: 0|1|3|4;
@@ -43,7 +41,6 @@ export class TabUTCEditorState extends TabState {
   description: KotOR.CExoLocString = new KotOR.CExoLocString();
   dex: number = 10;
   disarmable: boolean = false;
-  equipItemList: string[] = [];
   factionID: number = 0;
   featList: number[] = [];
   firstName: KotOR.CExoLocString = new KotOR.CExoLocString();
@@ -98,6 +95,22 @@ export class TabUTCEditorState extends TabState {
   fortbonus: number = 0;
   refbonus: number = 0;
   willbonus: number = 0;
+
+  slotArmor: string = '';
+  slotBelt: string = '';
+  slotClaw1: string = '';
+  slotClaw2: string = '';
+  slotClaw3: string = '';
+  slotHide: string = '';
+  slotLeftArmband: string = '';
+  slotLeftHand: string = '';
+  slotRightArmband: string = '';
+  slotRightHand: string = '';
+  slotRightHand2: string = '';
+  slotLeftHand2: string = '';
+  slotImplant: string = '';
+  slotHead: string = '';
+  slotArms: string = '';
 
   ui3DRenderer: UI3DRenderer;
   model: KotOR.OdysseyModel3D;
@@ -195,9 +208,59 @@ export class TabUTCEditorState extends TabState {
       this.disarmable = root.getFieldByLabel('Disarmable').getValue() || false;
     }
     if(root.hasField('Equip_ItemList')){
-      this.equipItemList = root.getFieldByLabel('Equip_ItemList').getChildStructs().map( (struct) => {
-        return struct.getFieldByLabel('EquippedRes').getValue() || '';
-      }) || [];
+      const equipItemList = root.getFieldByLabel('Equip_ItemList').getChildStructs();
+      for(let i = 0; i < equipItemList.length; i++){
+        const struct = equipItemList[i];
+        const slot = struct.type;
+        const item = struct.getFieldByLabel('EquippedRes').getValue() || '';
+        switch(slot){
+          case KotOR.ModuleCreatureArmorSlot.ARMOR:
+            this.slotArmor = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.BELT:
+            this.slotBelt = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.CLAW1:
+            this.slotClaw1 = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.CLAW2:
+            this.slotClaw2 = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.CLAW3:
+            this.slotClaw3 = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.HEAD:
+            this.slotHead = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.ARMS:
+            this.slotArms = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.IMPLANT:
+            this.slotImplant = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.LEFTARMBAND:
+            this.slotLeftArmband = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND:
+            this.slotRightArmband = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
+            this.slotLeftHand = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
+            this.slotRightHand = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.RIGHTHAND2:
+            this.slotRightHand2 = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.LEFTHAND2:
+            this.slotLeftHand2 = item;
+          break;
+          case KotOR.ModuleCreatureArmorSlot.HIDE:
+            this.slotHide = item;
+          break;
+        }
+      }
     }
     if(root.hasField('FactionID')){
       this.factionID = root.getFieldByLabel('FactionID').getValue() || 0;
@@ -436,10 +499,6 @@ export class TabUTCEditorState extends TabState {
     //       }
     //     }
     //   }
-
-    //   this.moduleCreature.model.update(delta);
-    //   //rotate the object in the viewport
-    //   this.moduleCreature.rotation.z += delta;
     // }
     
   }
@@ -473,6 +532,83 @@ export class TabUTCEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Dex', this.dex) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Disarmable', this.disarmable) );
+    const equipItemList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList');
+    if(this.slotArmor){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.ARMOR);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotArmor) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotBelt){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.BELT);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotBelt) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotClaw1){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.CLAW1);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotClaw1) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotClaw2){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.CLAW2);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotClaw2) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotClaw3){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.CLAW3);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotClaw3) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotHide){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.HIDE);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotHide) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotLeftArmband){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.LEFTARMBAND);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotLeftArmband) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotRightArmband){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotRightArmband) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotLeftHand){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.LEFTHAND);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotLeftHand) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotRightHand){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.RIGHTHAND);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotRightHand) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotRightHand2){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.RIGHTHAND2);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotRightHand2) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotLeftHand2){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.LEFTHAND2);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotLeftHand2) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotImplant){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.IMPLANT);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotImplant) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotHead){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.HEAD);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotHead) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    if(this.slotArms){
+      const equipItem = new KotOR.GFFStruct(KotOR.ModuleCreatureArmorSlot.ARMS);
+      equipItem.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'EquippedRes', this.slotArms) );
+      equipItemList.addChildStruct(equipItem);
+    }
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList', equipItemList) );
     // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList') );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'FactionID', this.factionID) );
     // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList') );
