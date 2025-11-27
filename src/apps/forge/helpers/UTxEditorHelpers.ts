@@ -41,6 +41,23 @@ export const createNumberFieldHandler = <T extends TabState>(
   };
 };
 
+export const createNumberArrayFieldHandler = <T extends TabState>(
+  setter: (value: number[]) => void,
+  index: number,
+  property: keyof T,
+  tab: T
+) => {
+  return (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
+    const raw = parseInt(e.target.value) || 0;
+    const value = tab.getProperty(property) as number[];
+    value[index] = raw;
+    setter([...value]);
+    tab.setProperty(property as keyof TabState, value);
+    tab.updateFile();
+  };
+};
+
+
 /**
  * Creates a handler for updating BYTE fields (0-255)
  */

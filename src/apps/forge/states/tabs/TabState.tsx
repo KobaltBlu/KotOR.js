@@ -89,6 +89,10 @@ export class TabState extends EventListenerModel {
     this.editorFileUpdated();
   }
 
+  getProperty(property: keyof this): any{
+    return (this as any)[property];
+  }
+
   setProperty(property: keyof this, value: any){
     const old = (this as any)[property];
     (this as any)[property] = value;

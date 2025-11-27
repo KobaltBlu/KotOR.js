@@ -1,391 +1,639 @@
-import React from "react"
+import React, { useCallback, useEffect, useState } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTCEditorState } from "../../../states/tabs";
+import { CreatureClassEntry, TabUTCEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
+import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createForgeCheckboxFieldHandler, createNumberArrayFieldHandler } from "../../../helpers/UTxEditorHelpers";
+import * as KotOR from "../../../KotOR";
+import { CExoLocStringEditor } from "../../CExoLocStringEditor";
+import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
   const tab: TabUTCEditorState = props.tab as TabUTCEditorState;
+  const [appearanceType, setAppearanceType] = useState<number>(0);
+  const [bodyBag, setBodyBag] = useState<number>(0);
+  const [bodyVariation, setBodyVariation] = useState<number>(0);
+  const [cha, setCha] = useState<number>(10);
+  const [challengeRating, setChallengeRating] = useState<number>(0);
+  const [classList, setClassList] = useState<CreatureClassEntry[]>([]);
+  const [comment, setComment] = useState<string>('');
+  const [con, setCon] = useState<number>(10);
+  const [conversation, setConversation] = useState<string>('');
+  const [currentForce, setCurrentForce] = useState<number>(0);
+  const [currentHitPoints, setCurrentHitPoints] = useState<number>(0);
+  const [deity, setDeity] = useState<string>('');
+  const [description, setDescription] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
+  const [dex, setDex] = useState<number>(10);
+  const [disarmable, setDisarmable] = useState<boolean>(false);
+  const [equipItemList, setEquipItemList] = useState<string[]>([]);
+  const [factionID, setFactionID] = useState<number>(0);
+  const [featList, setFeatList] = useState<number[]>([]);
+  const [firstName, setFirstName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
+  const [forcePoints, setForcePoints] = useState<number>(0);
+  const [gender, setGender] = useState<number>(0);
+  const [goodEvil, setGoodEvil] = useState<number>(50);
+  const [hitPoints, setHitPoints] = useState<number>(0);
+  const [int, setInt] = useState<number>(10);
+  const [interruptable, setInterruptable] = useState<boolean>(true);
+  const [isPC, setIsPC] = useState<boolean>(false);
+  const [itemList, setItemList] = useState<string[]>([]);
+  const [lastName, setLastName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
+  const [lawfulChaotic, setLawfulChaotic] = useState<number>(0);
+  const [maxHitPoints, setMaxHitPoints] = useState<number>(0);
+  const [min1HP, setMin1HP] = useState<boolean>(false);
+  const [naturalAC, setNaturalAC] = useState<number>(0);
+  const [noPermDeath, setNoPermDeath] = useState<boolean>(false);
+  const [notReorienting, setNotReorienting] = useState<boolean>(false);
+  const [partyInteract, setPartyInteract] = useState<boolean>(false);
+  const [perceptionRange, setPerceptionRange] = useState<number>(0);
+  const [phenotype, setPhenotype] = useState<number>(0);
+  const [plot, setPlot] = useState<boolean>(false);
+  const [palletID, setPalletID] = useState<number>(0);
+  const [portraitId, setPortraitId] = useState<number>(0);
+  const [race, setRace] = useState<number>(0);
+  const [scriptAttacked, setScriptAttacked] = useState<string>('');
+  const [scriptDamaged, setScriptDamaged] = useState<string>('');
+  const [scriptDeath, setScriptDeath] = useState<string>('');
+  const [scriptDialogu, setScriptDialogu] = useState<string>('');
+  const [scriptDisturbed, setScriptDisturbed] = useState<string>('');
+  const [scriptEndDialogue, setScriptEndDialogue] = useState<string>('');
+  const [scriptEndRound, setScriptEndRound] = useState<string>('');
+  const [scriptHeartbeat, setScriptHeartbeat] = useState<string>('');
+  const [scriptOnBlocked, setScriptOnBlocked] = useState<string>('');
+  const [scriptOnNotice, setScriptOnNotice] = useState<string>('');
+  const [scriptRested, setScriptRested] = useState<string>('');
+  const [scriptSpawn, setScriptSpawn] = useState<string>('');
+  const [scriptSpellAt, setScriptSpellAt] = useState<string>('');
+  const [scriptUserDefined, setScriptUserDefined] = useState<string>('');
+  const [skillList, setSkillList] = useState<number[]>([]);
+  const [soundSetFile, setSoundSetFile] = useState<number>(0);
+  const [str, setStr] = useState<number>(10);
+  const [subrace, setSubrace] = useState<string>('');
+  const [subraceIndex, setSubraceIndex] = useState<number>(0);
+  const [tag, setTag] = useState<string>('');
+  const [templateResRef, setTemplateResRef] = useState<string>('');
+  const [textureVar, setTextureVar] = useState<number>(1);
+  const [walkRate, setWalkRate] = useState<number>(7);
+  const [wis, setWis] = useState<number>(10);
+  const [fortbonus, setFortbonus] = useState<number>(0);
+  const [refbonus, setRefbonus] = useState<number>(0);
+  const [willbonus, setWillbonus] = useState<number>(0);
+
+  const onCreatureChange = useCallback(() => {
+    setAppearanceType(tab.appearanceType);
+    setBodyBag(tab.bodyBag);
+    setBodyVariation(tab.bodyVariation);
+    setCha(tab.cha);
+    setChallengeRating(tab.challengeRating);
+    setClassList([...tab.classList]);
+    setComment(tab.comment);
+    setCon(tab.con);
+    setConversation(tab.conversation);
+    setCurrentForce(tab.currentForce);
+    setCurrentHitPoints(tab.currentHitPoints);
+    setDeity(tab.deity);
+    setDescription(tab.description);
+    setDex(tab.dex);
+    setDisarmable(tab.disarmable);
+    setEquipItemList([...tab.equipItemList]);
+    setFactionID(tab.factionID);
+    setFeatList([...tab.featList]);
+    setFirstName(tab.firstName);
+    setForcePoints(tab.forcePoints);
+    setGender(tab.gender);
+    setGoodEvil(tab.goodEvil);
+    setHitPoints(tab.hitPoints);
+    setInt(tab.int);
+    setInterruptable(tab.interruptable);
+    setIsPC(tab.isPC);
+    setItemList([...tab.itemList]);
+    setLastName(tab.lastName);
+    setLawfulChaotic(tab.lawfulChaotic);
+    setMaxHitPoints(tab.maxHitPoints);
+    setMin1HP(tab.min1HP);
+    setNaturalAC(tab.naturalAC);
+    setNoPermDeath(tab.noPermDeath);
+    setNotReorienting(tab.notReorienting);
+    setPartyInteract(tab.partyInteract);
+    setPerceptionRange(tab.perceptionRange);
+    setPhenotype(tab.phenotype);
+    setPlot(tab.plot);
+    setPalletID(tab.palletID);
+    setPortraitId(tab.portraitId);
+    setRace(tab.race);
+    setScriptAttacked(tab.scriptAttacked);
+    setScriptDamaged(tab.scriptDamaged);
+    setScriptDeath(tab.scriptDeath);
+    setScriptDialogu(tab.scriptDialogu);
+    setScriptDisturbed(tab.scriptDisturbed);
+    setScriptEndDialogue(tab.scriptEndDialogue);
+    setScriptEndRound(tab.scriptEndRound);
+    setScriptHeartbeat(tab.scriptHeartbeat);
+    setScriptOnBlocked(tab.scriptOnBlocked);
+    setScriptOnNotice(tab.scriptOnNotice);
+    setScriptRested(tab.scriptRested);
+    setScriptSpawn(tab.scriptSpawn);
+    setScriptSpellAt(tab.scriptSpellAt);
+    setScriptUserDefined(tab.scriptUserDefined);
+    setSkillList([...tab.skillList]);
+    setSoundSetFile(tab.soundSetFile);
+    setStr(tab.str);
+    setSubrace(tab.subrace);
+    setSubraceIndex(tab.subraceIndex);
+    setTag(tab.tag);
+    setTemplateResRef(tab.templateResRef);
+    setTextureVar(tab.textureVar);
+    setWalkRate(tab.walkRate);
+    setWis(tab.wis);
+    setFortbonus(tab.fortbonus);
+    setRefbonus(tab.refbonus);
+    setWillbonus(tab.willbonus);
+  }, [tab]);
+
+  useEffect(() => {
+    if(!tab) return;
+    onCreatureChange();
+    tab.addEventListener('onEditorFileLoad', onCreatureChange);
+    tab.addEventListener('onEditorFileChange', onCreatureChange);
+    return () => {
+      tab.removeEventListener('onEditorFileLoad', onCreatureChange);
+      tab.removeEventListener('onEditorFileChange', onCreatureChange);
+    };
+  }, []);
+
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTCEditorState, parser: (value: number) => number = (v) => v) => 
+    createNumberFieldHandler(setter, property, tab, parser);
+
+  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof TabUTCEditorState) => 
+    createNumberArrayFieldHandler(setter, index, property, tab);
+
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
+    createBooleanFieldHandler(setter, property, tab);
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTCEditorState) => 
+    createResRefFieldHandler(setter, property, tab);
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTCEditorState) => 
+    createCExoStringFieldHandler(setter, property, tab);
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTCEditorState) => 
+    createCExoLocStringFieldHandler(setter, property, tab);
+
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
+    createForgeCheckboxFieldHandler(setter, property, tab);
 
   const tabs: SubTab[] = [
     {
       id: 'basic',
       label: 'Basic',
+      headerIcon: 'fa-user',
+      headerTitle: 'Basic',
       content: (
         <>
-          <h3 style={{marginTop: '0'}}><i className="fa-solid fa-user"></i> Basic</h3>
-            <hr />
-            <fieldset>
-              <legend>Profile</legend>
-              <table>
-                <tbody>
-                    <tr>
-                      <td><label>First Name</label></td>
-                      <td><input type="text" disabled /></td>
-                    </tr>
-                    <tr>
-                      <td><label>Last Name</label></td>
-                      <td><input type="text" disabled /></td>
-                    </tr>
-                    <tr>
-                      <td><label>Tag</label></td>
-                      <td><input type="text" maxLength={16} /></td>
-                    </tr>
-                    <tr>
-                      <td><label>Race</label></td>
-                      <td><select className="form-select"></select></td>
-                    </tr>
-                    <tr>
-                      <td><label>Appearance</label></td>
-                      <td><select className="form-select"></select></td>
-                    </tr>
-                    <tr>
-                      <td><label>Phenotype</label></td>
-                      <td><select className="form-select"></select></td>
-                    </tr>
-                    <tr>
-                      <td><label>Gender</label></td>
-                      <td><select className="form-select"></select></td>
-                    </tr>
-                    <tr>
-                      <td><label>Description</label></td>
-                      <td><input type="text" /></td>
-                    </tr>
-                    <tr>
-                      <td><label>BodyBag</label></td>
-                      <td><select className="form-select"></select></td>
-                    </tr>
-                </tbody>
-              </table>
-            </fieldset>
-
-            <fieldset>
-              <legend>Portrait</legend>
-              <select className="form-select"></select>
-            </fieldset>
-
-            <fieldset>
-              <legend>Conversation</legend>
-              <table style={{width: '100%'}}>
-                <tbody>
+          <fieldset>
+            <legend>Personal</legend>
+            <table>
+              <tbody>
                   <tr>
-                    <td><input type="text" /></td>
-                    <td><input type="checkbox" /><label>No Interrupt</label></td>
+                    <td><label>First Name</label></td>
+                    <td>
+                      <CExoLocStringEditor
+                        value={firstName}
+                        onChange={onUpdateCExoLocStringField(setFirstName, 'firstName')}
+                      />
+                    </td>
                   </tr>
-                </tbody>
-              </table>
+                  <tr>
+                    <td><label>Last Name</label></td>
+                    <td>
+                      <CExoLocStringEditor
+                        value={lastName}
+                        onChange={onUpdateCExoLocStringField(setLastName, 'lastName')}
+                      />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><label>Tag</label></td>
+                    <td><input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} /></td>
+                  </tr>
+                  <tr>
+                    <td><label>Race</label></td>
+                    <td><select className="form-select" value={race} onChange={onUpdateNumberField(setRace, 'race')}></select></td>
+                  </tr>
+                  <tr>
+                    <td><label>Appearance</label></td>
+                    <td><select className="form-select" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')}></select></td>
+                  </tr>
+                  <tr>
+                    <td><label>Phenotype</label></td>
+                    <td><select className="form-select" value={phenotype} onChange={onUpdateNumberField(setPhenotype, 'phenotype')}></select></td>
+                  </tr>
+                  <tr>
+                    <td><label>Gender</label></td>
+                    <td><select className="form-select" value={gender} onChange={onUpdateNumberField(setGender, 'gender')}></select></td>
+                  </tr>
+                  <tr>
+                    <td><label>Description</label></td>
+                    <td><CExoLocStringEditor
+                        value={description}
+                        onChange={onUpdateCExoLocStringField(setDescription, 'description')}
+                      /></td>
+                  </tr>
+                  <tr>
+                    <td><label>BodyBag</label></td>
+                    <td><select className="form-select" value={bodyBag} onChange={onUpdateNumberField(setBodyBag, 'bodyBag')}></select></td>
+                  </tr>
+              </tbody>
+            </table>
           </fieldset>
 
+          <fieldset>
+            <legend>Portrait</legend>
+            <select className="form-select" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')}></select>
+          </fieldset>
 
+          <fieldset>
+            <legend>Conversation</legend>
+            <table style={{width: '100%'}}>
+              <tbody>
+                <tr>
+                  <td><input type="text" value={conversation} onChange={onUpdateResRefField(setConversation, 'conversation')} /></td>
+                  <td><ForgeCheckbox label="No Interrupt" value={interruptable} onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')} /></td>
+                </tr>
+              </tbody>
+            </table>
+          </fieldset>
         </>
       )
     },
     {
       id: 'stats',
       label: 'Stats',
+      headerIcon: 'fa-chart-bar',
+      headerTitle: 'Stats',
       content: (
         <>
-          <h3><i className="fa-solid fa-chart-bar"></i> Stats</h3>
-            <hr />
-            <fieldset>
-              <legend>Ability Scores</legend>
-              <table style={{width: '100%'}}>
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><label>Strength</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
+          <fieldset>
+            <legend>Ability Scores</legend>
+            <table style={{width: '100%'}}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Score</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><label>Strength</label></td>
+                  <td><input type="number" min="0" value={str} onChange={onUpdateNumberField(setStr, 'str')} /></td>
+                </tr>
 
-                  <tr>
-                    <td><label>Dexterity</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
+                <tr>
+                  <td><label>Dexterity</label></td>
+                  <td><input type="number" min="0" value={dex} onChange={onUpdateNumberField(setDex, 'dex')} /></td>
+                </tr>
 
-                  <tr>
-                    <td><label>Constitution</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
+                <tr>
+                  <td><label>Constitution</label></td>
+                  <td><input type="number" min="0" value={con} onChange={onUpdateNumberField(setCon, 'con')} /></td>
+                </tr>
 
-                  <tr>
-                    <td><label>Intelligence</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
+                <tr>
+                  <td><label>Intelligence</label></td>
+                  <td><input type="number" min="0" value={int} onChange={onUpdateNumberField(setInt, 'int')} /></td>
+                </tr>
 
-                  <tr>
-                    <td><label>Wisdom</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
+                <tr>
+                  <td><label>Wisdom</label></td>
+                  <td><input type="number" min="0" value={wis} onChange={onUpdateNumberField(setWis, 'wis')} /></td>
+                </tr>
 
-                  <tr>
-                    <td><label>Charisma</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </fieldset>
-
-            <fieldset>
-              <legend>Saves</legend>
-              <table style={{width: '100%'}}>
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Bonus</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><label>Fortitude</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Reflex</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Will</label></td>
-                    <td><input type="number" min="0" /></td>
-                  </tr>
-                </tbody>
-              </table>
-            </fieldset>
-            
-            <table>
-              <tr>
-                <td style={{width: '50%'}}>
-                  <fieldset>
-                    <legend>Armor Class</legend>
-                    <label>Natural AC</label>
-                    <input type="number" min="0" />
-                  </fieldset>
-                  <fieldset>
-                    <legend>Speed</legend>
-                    <label>Movement Rate</label>
-                    <select className="form-select"></select>
-                  </fieldset>
-                </td>
-                <td style={{width: '50%'}}>
-                  <fieldset>
-                    <legend>Hit Points</legend>
-                    <label>Base Hit Points</label>
-                    <input type="number" min="0" />
-        
-                    <label>Current Hit Points</label>
-                    <input type="number" min="0" />
-        
-                    <label>Max Hit Points</label>
-                    <input type="number" min="0" />
-                  </fieldset>
-                </td>
-              </tr>
+                <tr>
+                  <td><label>Charisma</label></td>
+                  <td><input type="number" min="0" value={cha} onChange={onUpdateNumberField(setCha, 'cha')} /></td>
+                </tr>
+              </tbody>
             </table>
+          </fieldset>
+
+          <fieldset>
+            <legend>Saves</legend>
+            <table style={{width: '100%'}}>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Bonus</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><label>Fortitude</label></td>
+                  <td><input type="number" min="0" value={fortbonus} onChange={onUpdateNumberField(setFortbonus, 'fortbonus')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Reflex</label></td>
+                  <td><input type="number" min="0" value={refbonus} onChange={onUpdateNumberField(setRefbonus, 'refbonus')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Will</label></td>
+                  <td><input type="number" min="0" value={willbonus} onChange={onUpdateNumberField(setWillbonus, 'willbonus')} /></td>
+                </tr>
+              </tbody>
+            </table>
+          </fieldset>
+          
+          <table>
+            <tr>
+              <td style={{width: '50%'}}>
+                <fieldset>
+                  <legend>Armor Class</legend>
+                  <label>Natural AC</label>
+                  <input type="number" min="0" value={naturalAC} onChange={onUpdateNumberField(setNaturalAC, 'naturalAC')} />
+                </fieldset>
+                <fieldset>
+                  <legend>Speed</legend>
+                  <label>Movement Rate</label>
+                  <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}></select>
+                </fieldset>
+              </td>
+              <td style={{width: '50%'}}>
+                <fieldset>
+                  <legend>Hit Points</legend>
+                  <label>Base Hit Points</label>
+                  <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
+      
+                  <label>Current Hit Points</label>
+                  <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
+      
+                  <label>Max Hit Points</label>
+                  <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
+                </fieldset>
+              </td>
+            </tr>
+          </table>
         </>
       )
     },
     {
       id: 'skills',
       label: 'Skills',
+      headerIcon: 'fa-wrench',
+      headerTitle: 'Skills',
       content: (
         <>
-          <h3><i className="fa-solid fa-wrench"></i> Skills</h3>
-            <hr />
+          <label>Computer Use</label>
+          <input type="number" min="0" value={skillList[0]} onChange={onUpdateNumberArrayField(setSkillList, 0, 'skillList')} />
 
-            <label>Computer Use</label>
-            <input type="number" min="0" />
+          <label>Demolitions</label>
+          <input type="number" min="0" value={skillList[1]} onChange={onUpdateNumberArrayField(setSkillList, 1, 'skillList')} />
 
-            <label>Demolitions</label>
-            <input type="number" min="0" />
+          <label>Stealth</label>
+          <input type="number" min="0" value={skillList[2]} onChange={onUpdateNumberArrayField(setSkillList, 2, 'skillList')} />
 
-            <label>Stealth</label>
-            <input type="number" min="0" />
+          <label>Awareness</label>
+          <input type="number" min="0" value={skillList[3]} onChange={onUpdateNumberArrayField(setSkillList, 3, 'skillList')} />
 
-            <label>Awareness</label>
-            <input type="number" min="0" />
+          <label>Persuade</label>
+          <input type="number" min="0" value={skillList[4]} onChange={onUpdateNumberArrayField(setSkillList, 4, 'skillList')} />
 
-            <label>Persuade</label>
-            <input type="number" min="0" />
+          <label>Repair</label>
+          <input type="number" min="0" value={skillList[5]} onChange={onUpdateNumberArrayField(setSkillList, 5, 'skillList')} />
 
-            <label>Repair</label>
-            <input type="number" min="0" />
+          <label>Security</label>
+          <input type="number" min="0" value={skillList[6]} onChange={onUpdateNumberArrayField(setSkillList, 6, 'skillList')} />
 
-            <label>Security</label>
-            <input type="number" min="0" />
-
-            <label>Treat Injury</label>
-            <input type="number" min="0" />
+          <label>Treat Injury</label>
+          <input type="number" min="0" value={skillList[7]} onChange={onUpdateNumberArrayField(setSkillList, 7, 'skillList')} />
         </>
       )
     },
     {
       id: 'advanced',
       label: 'Advanced',
+      headerIcon: 'fa-gear',
+      headerTitle: 'Advanced',
       content: (
         <>
-          <h3><i className="fa-solid fa-gear"></i> Advanced</h3>
-            <hr />
+          <table style={{width: '100%'}}>
+            <tbody>
+              <tr>
+                <td><label>Blueprint ResRef</label></td>
+                <td><input type="text" disabled={true} value={templateResRef} /></td>
+              </tr>
+            </tbody>
+          </table>
 
+          <fieldset>
+            <legend>Interface</legend>
             <table style={{width: '100%'}}>
               <tbody>
                 <tr>
-                  <td><label>Blueprint ResRef</label></td>
-                  <td><input type="text" /></td>
+                  <td><label>Disarmable</label></td>
+                  <td><ForgeCheckbox label="Disarmable" value={disarmable} onChange={onUpdateForgeCheckboxField(setDisarmable, 'disarmable')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Plot</label></td>
+                  <td><ForgeCheckbox label="Plot" value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} /></td>
+                </tr>
+                <tr>
+                  <td><label>No Permanent Death</label></td>
+                  <td><ForgeCheckbox label="No Permanent Death" value={noPermDeath} onChange={onUpdateForgeCheckboxField(setNoPermDeath, 'noPermDeath')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Is PC</label></td>
+                  <td><ForgeCheckbox label="Is PC" value={isPC} onChange={onUpdateForgeCheckboxField(setIsPC, 'isPC')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Minimum 1 HP</label></td>
+                  <td><ForgeCheckbox label="Minimum 1 HP" value={min1HP} onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')} /></td>
+                </tr>
+                <tr>
+                  <td><label>Subrace</label></td>
+                  <td><select className="form-select" value={subraceIndex} onChange={onUpdateNumberField(setSubraceIndex, 'subraceIndex')}></select></td>
                 </tr>
               </tbody>
             </table>
+          </fieldset>
 
-            <fieldset>
-              <legend>Interface</legend>
-              <table style={{width: '100%'}}>
-                <tbody>
-                  <tr>
-                    <td><label>Disarmable</label></td>
-                    <td><input type="checkbox" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Plot</label></td>
-                    <td><input type="checkbox" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>No Permanent Death</label></td>
-                    <td><input type="checkbox" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Is PC</label></td>
-                    <td><input type="checkbox" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Minimum 1 HP</label></td>
-                    <td><input type="checkbox" /></td>
-                  </tr>
-                  <tr>
-                    <td><label>Subrace</label></td>
-                    <td><select className="form-select"></select></td>
-                  </tr>
-                </tbody>
-              </table>
-            </fieldset>
-
-            <table style={{width: '100%'}}>
-              <tbody>
-                <tr>
-                  <td>
-                    <fieldset>
-                      <legend>Challenge Rating</legend>
-                      <input type="number" />
-                    </fieldset>
-                  </td>
-                  <td>
-                    <fieldset>
-                      <legend>Sound Set</legend>
-                      <select className="form-select"></select>
-                    </fieldset>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <fieldset>
-                      <legend>Faction</legend>
-                      <select className="form-select"></select>
-                    </fieldset>
-                  </td>
-                  <td>
-                    <fieldset>
-                      <legend>Perception Range</legend>
-                      <select className="form-select"></select>
-                    </fieldset>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <table style={{width: '100%'}}>
+            <tbody>
+              <tr>
+                <td>
+                  <fieldset>
+                    <legend>Challenge Rating</legend>
+                    <input type="number" value={challengeRating} onChange={onUpdateNumberField(setChallengeRating, 'challengeRating')} />
+                  </fieldset>
+                </td>
+                <td>
+                  <fieldset>
+                    <legend>Sound Set</legend>
+                    <select className="form-select" value={soundSetFile} onChange={onUpdateNumberField(setSoundSetFile, 'soundSetFile')}></select>
+                  </fieldset>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <fieldset>
+                    <legend>Faction</legend>
+                    <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}></select>
+                  </fieldset>
+                </td>
+                <td>
+                  <fieldset>
+                    <legend>Perception Range</legend>
+                    <select className="form-select" value={perceptionRange} onChange={onUpdateNumberField(setPerceptionRange, 'perceptionRange')}></select>
+                  </fieldset>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </>
       )
     },
     {
       id: 'feats',
       label: 'Feats',
+      headerIcon: 'fa-trophy',
+      headerTitle: 'Feats',
       content: (
         <>
-          <h3><i className="fa-solid fa-trophy"></i> Feats</h3>
-            <hr />
-            <div></div>
+          
         </>
       )
     },
     {
       id: 'spells',
       label: 'Force Powers',
+      headerIcon: 'fa-hand-sparkles',
+      headerTitle: 'Force Powers',
       content: (
         <>
-          <h3><i className="fa-solid fa-hand-sparkles"></i> Force Powers</h3>
-            <hr />
+          
         </>
       )
     },
     {
       id: 'class',
       label: 'Class',
+      headerIcon: 'fa-user-graduate',
+      headerTitle: 'Class',
       content: (
         <>
-          <h3><i className="fa-solid fa-graduation-cap"></i> Class</h3>
-            <hr />
+          
         </>
       )
     },
     {
       id: 'abilities',
       label: 'Special Abilities',
+      headerIcon: 'fa-star',
+      headerTitle: 'Special Abilities',
       content: (
         <>
-          <h3><i className="fa-solid fa-star"></i> Special Abilities</h3>
-            <hr />
+          
         </>
       )
     },
     {
       id: 'scripts',
       label: 'Scripts',
+      headerIcon: 'fa-file-code',
+      headerTitle: 'Scripts',
       content: (
         <>
-          <h3><i className="fa-solid fa-file-code"></i> Scripts</h3>
-            <hr />
+          <table style={{width: '100%'}}>
+            <tbody>
+              <tr>
+                <td><label>Attacked</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptAttacked} onChange={onUpdateResRefField(setScriptAttacked, 'scriptAttacked')} /></td>
+              </tr>
+              <tr>
+                <td><label>Damaged</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptDamaged} onChange={onUpdateResRefField(setScriptDamaged, 'scriptDamaged')} /></td>
+              </tr>
+              <tr>
+                <td><label>Death</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptDeath} onChange={onUpdateResRefField(setScriptDeath, 'scriptDeath')} /></td>
+              </tr>
+              <tr>
+                <td><label>Dialogue</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptDialogu} onChange={onUpdateResRefField(setScriptDialogu, 'scriptDialogu')} /></td>
+              </tr>
+              <tr>
+                <td><label>Disturbed</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptDisturbed} onChange={onUpdateResRefField(setScriptDisturbed, 'scriptDisturbed')} /></td>
+              </tr>
+              <tr>
+                <td><label>End Dialogue</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptEndDialogue} onChange={onUpdateResRefField(setScriptEndDialogue, 'scriptEndDialogue')} /></td>
+              </tr>
+              <tr>
+                <td><label>End Round</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptEndRound} onChange={onUpdateResRefField(setScriptEndRound, 'scriptEndRound')} /></td>
+              </tr>
+              <tr>
+                <td><label>Heartbeat</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptHeartbeat} onChange={onUpdateResRefField(setScriptHeartbeat, 'scriptHeartbeat')} /></td>
+              </tr>
+              <tr>
+                <td><label>On Blocked</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptOnBlocked} onChange={onUpdateResRefField(setScriptOnBlocked, 'scriptOnBlocked')} /></td>
+              </tr>
+              <tr>
+                <td><label>On Notice</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptOnNotice} onChange={onUpdateResRefField(setScriptOnNotice, 'scriptOnNotice')} /></td>
+              </tr>
+              <tr>
+                <td><label>Rested</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptRested} onChange={onUpdateResRefField(setScriptRested, 'scriptRested')} /></td>
+              </tr>
+              <tr>
+                <td><label>Spawn</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptSpawn} onChange={onUpdateResRefField(setScriptSpawn, 'scriptSpawn')} /></td>
+              </tr>
+              <tr>
+                <td><label>Spell At</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptSpellAt} onChange={onUpdateResRefField(setScriptSpellAt, 'scriptSpellAt')} /></td>
+              </tr>
+              <tr>
+                <td><label>User Define</label></td>
+                <td><input type="text" placeholder="Script ResRef" value={scriptUserDefined} onChange={onUpdateResRefField(setScriptUserDefined, 'scriptUserDefined')} /></td>
+              </tr>
+            </tbody>
+          </table>
         </>
       )
     },
     {
       id: 'inventory',
       label: 'Inventory',
+      headerIcon: 'fa-suitcase',
+      headerTitle: 'Inventory',
       content: (
         <>
-          <h3><i className="fa-solid fa-suitcase"></i> Inventory</h3>
-            <hr />
-            <div className="iSlots">
-              <div className="iSlot texture-canvas" data-type="512"  data-texture="iimplant"></div>
-              <div className="iSlot texture-canvas" data-type="1"    data-texture="ihead"></div>
-              <div className="iSlot texture-canvas" data-type="8"    data-texture="ihands"></div>
-              <div className="iSlot texture-canvas" data-type="128"  data-texture="iforearm_l"></div>
-              <div className="iSlot texture-canvas" data-type="2"    data-texture="iarmor"></div>
-              <div className="iSlot texture-canvas" data-type="256"  data-texture="iforearm_r"></div>
-              <div className="iSlot texture-canvas" data-type="32"   data-texture="ihand_l"></div>
-              <div className="iSlot texture-canvas" data-type="1024" data-texture="ibelt"></div>
-              <div className="iSlot texture-canvas" data-type="16"   data-texture="ihand_r"></div>
-            </div>
+          <div className="iSlots">
+            <div className="iSlot texture-canvas" data-type="512"  data-texture="iimplant"></div>
+            <div className="iSlot texture-canvas" data-type="1"    data-texture="ihead"></div>
+            <div className="iSlot texture-canvas" data-type="8"    data-texture="ihands"></div>
+            <div className="iSlot texture-canvas" data-type="128"  data-texture="iforearm_l"></div>
+            <div className="iSlot texture-canvas" data-type="2"    data-texture="iarmor"></div>
+            <div className="iSlot texture-canvas" data-type="256"  data-texture="iforearm_r"></div>
+            <div className="iSlot texture-canvas" data-type="32"   data-texture="ihand_l"></div>
+            <div className="iSlot texture-canvas" data-type="1024" data-texture="ibelt"></div>
+            <div className="iSlot texture-canvas" data-type="16"   data-texture="ihand_r"></div>
+          </div>
         </>
       )
     },
     {
       id: 'comments',
       label: 'Comments',
+      headerIcon: 'fa-comment',
+      headerTitle: 'Comments',
       content: (
         <>
-          <h3><i className="fa-solid fa-comment"></i> Comments</h3>
-          <hr />
+          <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={5} />
         </>
       )
     }
