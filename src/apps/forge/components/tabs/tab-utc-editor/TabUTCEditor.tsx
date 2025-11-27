@@ -7,6 +7,7 @@ import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldH
 import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { TextureCanvas } from "./TextureCanvas";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
@@ -645,15 +646,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="iSlots">
-            <div className="iSlot texture-canvas" data-type="512"  data-texture="iimplant"></div>
-            <div className="iSlot texture-canvas" data-type="1"    data-texture="ihead"></div>
-            <div className="iSlot texture-canvas" data-type="8"    data-texture="ihands"></div>
-            <div className="iSlot texture-canvas" data-type="128"  data-texture="iforearm_l"></div>
-            <div className="iSlot texture-canvas" data-type="2"    data-texture="iarmor"></div>
-            <div className="iSlot texture-canvas" data-type="256"  data-texture="iforearm_r"></div>
-            <div className="iSlot texture-canvas" data-type="32"   data-texture="ihand_l"></div>
-            <div className="iSlot texture-canvas" data-type="1024" data-texture="ibelt"></div>
-            <div className="iSlot texture-canvas" data-type="16"   data-texture="ihand_r"></div>
+            <TextureCanvas texture="iimplant" />
+            <TextureCanvas texture="ihead" />
+            <TextureCanvas texture="ihands" />
+            <TextureCanvas texture="iforearm_l" />
+            <TextureCanvas texture="iarmor" />
+            <TextureCanvas texture="iforearm_r" />
+            <TextureCanvas texture="ihand_l" />
+            <TextureCanvas texture="ibelt" />
+            <TextureCanvas texture="ihand_r" />
           </div>
         </>
       )
