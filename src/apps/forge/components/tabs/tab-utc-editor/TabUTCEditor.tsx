@@ -11,6 +11,8 @@ import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
 import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
 import { ForgeState } from "../../../states/ForgeState";
 import { InfoBubble } from "../../info-bubble/info-bubble";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import './TabUTCEditor.scss';
 
 export const TabUTCEditor = function(props: BaseTabProps){
@@ -646,7 +648,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
                 {feat.nextFeat ? (
                   <>
-                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
                     <div className={`feat-icon ${featList.includes(feat.nextFeat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.nextFeat.id)}>
                       <InfoBubble
                         content={feat.nextFeat.label}
@@ -665,7 +669,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
                 {feat.nextFeat?.nextFeat ? (
                   <>
-                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
                     <div className={`feat-icon ${featList.includes(feat.nextFeat.nextFeat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.nextFeat.nextFeat.id)}>
                       <InfoBubble
                         content={feat.nextFeat.nextFeat.label}
@@ -711,7 +717,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
                 {spell.nextSpell ? (
                   <>
-                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
                     <div className={`feat-icon ${featList.includes(spell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.id)}>
                       <InfoBubble
                         content={spell.nextSpell.label}
@@ -730,7 +738,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
                 {spell.nextSpell?.nextSpell ? (
                   <>
-                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
                     <div className={`feat-icon ${featList.includes(spell.nextSpell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.nextSpell.id)}>
                       <InfoBubble
                         content={spell.nextSpell.nextSpell.label}

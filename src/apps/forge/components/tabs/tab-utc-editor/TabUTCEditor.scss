@@ -31,7 +31,21 @@
       }
     }
   }
-  
+
+  .sep-icon {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: $primary-blue;
+    font-size: larger;
+  }
+
   .blank-icon {
     width: 32px;
     height: 32px;
