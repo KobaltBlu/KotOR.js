@@ -74,7 +74,7 @@ export class SpellCastInstance {
       this.projectileCurve.v2.copy(this.projectileTarget);
     }
 
-    if(this.spell.projmodel != '****'){
+    if(this.spell.projmodel != ''){
       console.log('projectile', this.spell.projmodel);
       MDLLoader.loader.load(this.spell.projmodel.toLowerCase())
       .then((mdl: OdysseyModel) => {
@@ -160,7 +160,7 @@ export class SpellCastInstance {
     if(this.impacted) return;
     this.impacted = true;
     
-    if(this.impactscript != '****'){
+    if(this.impactscript != ''){
       console.log('Casting spell', this.impactscript, this);
       const instance = GameState.NWScript.Load(this.impactscript);
       if(instance) {
@@ -171,7 +171,7 @@ export class SpellCastInstance {
       };
     }
 
-    if(this.casthandvisual != '****'){
+    if(this.casthandvisual != ''){
       MDLLoader.loader.load(this.casthandvisual)
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {

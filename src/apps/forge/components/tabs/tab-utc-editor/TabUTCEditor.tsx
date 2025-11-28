@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { CreatureClassEntry, TabUTCEditorState } from "../../../states/tabs";
+import { CreatureClassEntry, KnownListEntry, TabUTCEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
 import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createForgeCheckboxFieldHandler, createNumberArrayFieldHandler } from "../../../helpers/UTxEditorHelpers";
@@ -111,6 +111,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [slotArms, setSlotArms] = useState<string>('');
 
   const [feats, setFeats] = useState<KotOR.TalentFeat[]>([]);
+  const [spells, setSpells] = useState<KotOR.TalentSpell[]>([]);
 
   const onCreatureChange = useCallback(() => {
     setAppearanceType(tab.appearanceType);
@@ -202,6 +203,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   useEffect(() => {
     if(!tab) return;
     setFeats(KotOR.SWRuleSet.feats.filter(feat => feat.label != '' && feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1));
+    setSpells(KotOR.SWRuleSet.spells.filter(spell => spell.label != '' && spell.prerequisites.length == 0));
     onCreatureChange();
     tab.addEventListener('onEditorFileLoad', onCreatureChange);
     tab.addEventListener('onEditorFileChange', onCreatureChange);
@@ -276,6 +278,39 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
     setFeatList(updated);
     tab.setProperty('featList', updated.sort((a, b) => a - b));
+    tab.updateFile();
+  };
+
+  const onSpellClick = (index: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const spell = KotOR.SWRuleSet.spells[index];
+    if(!spell) return;
+
+    const spellList = classList[0].knownList0;
+
+    const wasEnabled = spellList.find(spell => spell.spell == index);
+    const idx = spellList.findIndex(spell => spell.spell == index);
+    const updated: KnownListEntry[] = [...spellList];
+
+    //remove child feats if the feat is disabled
+    if(wasEnabled){
+      if(spell.nextSpell){
+        const idx = updated.findIndex(s => s.spell == spell.nextSpell.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+      if(spell.nextSpell?.nextSpell){
+        const idx = updated.findIndex(s => s.spell == spell.nextSpell.nextSpell.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+    }
+
+    // setSpellList(updated);
+    // tab.setProperty('featList', updated.sort((a, b) => a - b));
     tab.updateFile();
   };
 
@@ -659,7 +694,61 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Force Powers',
       content: (
         <>
-          
+          <div className="feats">
+            {spells.map((spell, index) => (
+              <div 
+                className="feat-row"
+                key={`feat-${spell.id}`} 
+              >
+                <div className={`feat-icon ${featList.includes(spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
+                  <InfoBubble
+                    content={spell.label}
+                    position="right"
+                  >
+                    <TextureCanvas texture={spell.iconresref} width={32} height={32} />
+                  </InfoBubble>
+                </div>
+
+                {spell.nextSpell ? (
+                  <>
+                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className={`feat-icon ${featList.includes(spell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.id)}>
+                      <InfoBubble
+                        content={spell.nextSpell.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={spell.nextSpell.iconresref} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+
+                {spell.nextSpell?.nextSpell ? (
+                  <>
+                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className={`feat-icon ${featList.includes(spell.nextSpell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.nextSpell.id)}>
+                      <InfoBubble
+                        content={spell.nextSpell.nextSpell.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={spell.nextSpell.nextSpell.iconresref} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+              </div>
+            ))}
+          </div>
         </>
       )
     },

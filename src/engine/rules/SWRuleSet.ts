@@ -2,6 +2,7 @@ import { GameState } from "../../GameState";
 import type { INIConfig } from "../../engine/INIConfig";
 import { CreatureClass } from "../../combat/CreatureClass";
 import { TalentFeat } from "../../talents/TalentFeat";
+import { TalentSpell } from "../../talents/TalentSpell";
 import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
 import { SWItemPropsDef } from "./SWItemPropsDef";
@@ -51,6 +52,8 @@ export class SWRuleSet {
   static featGains: SWFeatGain;
   static featGainCount: number = 0;
 
+  static spells: TalentSpell[] = [];
+  static spellCount: number = 0;
   static spellGains: SWSpellGain;
   static spellGainCount: number = 0;
   static expTable: SWEXPTable;
@@ -106,6 +109,28 @@ export class SWRuleSet {
     if(featGains){
       SWRuleSet.featGainCount = featGains.RowCount;
       SWRuleSet.featGains = SWFeatGain.From2DA(featGains);
+    }
+
+    /**
+     * Initialize Spells
+     */
+    const spells = GameState.TwoDAManager.datatables.get('spells');
+    if(spells){
+      SWRuleSet.spellCount = spells.RowCount;
+      SWRuleSet.spells = new Array(SWRuleSet.spellCount);
+      for(let i = 0; i < spells.RowCount; i++){
+        SWRuleSet.spells[i] = TalentSpell.From2DA(spells.rows[i]);
+      }
+      for(let i = 0; i < SWRuleSet.spellCount; i++){
+        const spell = SWRuleSet.spells[i];
+        if(spell.prerequisites.length > 0){
+          const parentSpellId = spell.prerequisites[spell.prerequisites.length - 1];
+          const parentSpell = SWRuleSet.spells[parentSpellId];
+          if(parentSpell){
+            parentSpell.nextSpell = spell;
+          }
+        }
+      }
     }
 
     /**

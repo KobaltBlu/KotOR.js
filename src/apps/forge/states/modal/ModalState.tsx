@@ -54,6 +54,7 @@ export class ModalState extends EventListenerModel {
   close(){
     this.hide();
     this.processEventListener('onClose', [this]);
+    this.#manager.removeModal(this);
   }
 
   destroy(){
