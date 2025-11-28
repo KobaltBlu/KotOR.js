@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { CreatureClassEntry, KnownListEntry, TabUTCEditorState } from "../../../states/tabs";
+import { CreatureClassEntry, KnownSpellEntry, SpecialAbilityEntry, TabUTCEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
 import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createForgeCheckboxFieldHandler, createNumberArrayFieldHandler } from "../../../helpers/UTxEditorHelpers";
@@ -94,6 +94,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [fortbonus, setFortbonus] = useState<number>(0);
   const [refbonus, setRefbonus] = useState<number>(0);
   const [willbonus, setWillbonus] = useState<number>(0);
+  const [specialAbilities, setSpecialAbilities] = useState<SpecialAbilityEntry[]>([]);
 
   // Equipment Slots
   const [slotArmor, setSlotArmor] = useState<string>('');
@@ -114,6 +115,11 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   const [feats, setFeats] = useState<KotOR.TalentFeat[]>([]);
   const [spells, setSpells] = useState<KotOR.TalentSpell[]>([]);
+  const [specialAbilitiesList, setSpecialAbilitiesList] = useState<KotOR.TalentSpell[]>([]);
+  const [classes, setClasses] = useState<KotOR.CreatureClass[]>([]);
+  const [creatureClass, setCreatureClass] = useState<number>(0);
+  const [creatureLevel, setCreatureLevel] = useState<number>(1);
+  const [knownList0, setKnownList0] = useState<KnownSpellEntry[]>([]);
 
   const onCreatureChange = useCallback(() => {
     setAppearanceType(tab.appearanceType);
@@ -183,6 +189,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setFortbonus(tab.fortbonus);
     setRefbonus(tab.refbonus);
     setWillbonus(tab.willbonus);
+    setSpecialAbilities(tab.specAbilityList);
 
     // Equipment Slots
     setSlotArmor(tab.slotArmor);
@@ -200,12 +207,21 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setSlotImplant(tab.slotImplant);
     setSlotHead(tab.slotHead);
     setSlotArms(tab.slotArms);
+
+    // Update classList state
+    if(tab.classList[0]){
+      setCreatureClass(tab.classList[0].class);
+      setCreatureLevel(tab.classList[0].level);
+      setKnownList0(tab.classList[0].knownList0);
+    }
   }, [tab]);
 
   useEffect(() => {
     if(!tab) return;
     setFeats(KotOR.SWRuleSet.feats.filter(feat => feat.label != '' && feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1));
-    setSpells(KotOR.SWRuleSet.spells.filter(spell => spell.label != '' && spell.prerequisites.length == 0));
+    setSpells(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 1 && spell.prerequisites.length == 0));
+    setSpecialAbilitiesList(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 2 && spell.prerequisites.length == 0));
+    setClasses(KotOR.SWRuleSet.classes.slice());
     onCreatureChange();
     tab.addEventListener('onEditorFileLoad', onCreatureChange);
     tab.addEventListener('onEditorFileChange', onCreatureChange);
@@ -235,6 +251,19 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
     createForgeCheckboxFieldHandler(setter, property, tab);
+
+  const onUpdateClassListField = (setter: (value: number) => void, property: 'class' | 'level') => {
+    return (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
+      const raw = parseInt(e.target.value) || 0;
+      setter(raw);
+      if(tab.classList[0]){
+        const updated = [...tab.classList];
+        updated[0] = { ...updated[0], [property]: raw };
+        tab.setProperty('classList', updated);
+        tab.updateFile();
+      }
+    };
+  };
 
   const hasPrereqFeat = (feat: KotOR.TalentFeat) => {
     const hasPrereqFeat1 = feat.prereqFeat1 >= 0 ? featList.includes(feat.prereqFeat1) : true;
@@ -293,7 +322,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
     const wasEnabled = spellList.find(spell => spell.spell == index);
     const idx = spellList.findIndex(spell => spell.spell == index);
-    const updated: KnownListEntry[] = [...spellList];
+    const updated: KnownSpellEntry[] = [...spellList];
+
+    //remove the feat from the list if it already exists
+    if(idx >= 0){
+      updated.splice(idx, 1);
+    }
+
+    const hasPrereq = spell.prerequisites.length == 0 || spell.prerequisites.map(id => spellList.find(s => s.spell == id)).every(has => has);
+
+    //add the feat to the list if it doesn't exist and has met the prerequisites
+    if(!wasEnabled && hasPrereq){
+      updated.push({
+        spell: index,
+        spellMetaMagic: 0,
+        spellFlags: 0,
+      });
+    }
 
     //remove child feats if the feat is disabled
     if(wasEnabled){
@@ -311,8 +356,55 @@ export const TabUTCEditor = function(props: BaseTabProps){
       }
     }
 
-    // setSpellList(updated);
-    // tab.setProperty('featList', updated.sort((a, b) => a - b));
+    setKnownList0(updated);
+    tab.classList[0].knownList0 = updated;
+    tab.updateFile();
+  };
+
+  const onSpecialAbilityClick = (index: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const specialAbility = KotOR.SWRuleSet.spells[index];
+    if(!specialAbility) return;
+
+    const wasEnabled = specialAbilities.find(s => s.spell == index);
+    const idx = specialAbilities.findIndex(s => s.spell == index);
+    const updated: SpecialAbilityEntry[] = [...specialAbilities];
+
+    //remove the feat from the list if it already exists
+    if(idx >= 0){
+      updated.splice(idx, 1);
+    }
+
+    const hasPrereq = specialAbility.prerequisites.length == 0 || specialAbility.prerequisites.map(id => specialAbilities.find(s => s.spell == id)).every(has => has);
+
+    //add the feat to the list if it doesn't exist and has met the prerequisites
+    if(!wasEnabled && hasPrereq){
+      updated.push({
+        spell: index,
+        spellCasterLevel: 1,
+        spellFlags: 0,
+      });
+    }
+
+    //remove child feats if the feat is disabled
+    if(wasEnabled){
+      if(specialAbility.nextSpell){
+        const idx = updated.findIndex(s => s.spell == specialAbility.nextSpell.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+      if(specialAbility.nextSpell?.nextSpell){
+        const idx = updated.findIndex(s => s.spell == specialAbility.nextSpell.nextSpell.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+    }
+
+    setSpecialAbilities(updated);
+    tab.setProperty('specAbilityList', updated);
     tab.updateFile();
   };
 
@@ -706,7 +798,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 className="feat-row"
                 key={`feat-${spell.id}`} 
               >
-                <div className={`feat-icon ${featList.includes(spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
+                <div className={`feat-icon ${knownList0.find(s => s.spell == spell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.id)}>
                   <InfoBubble
                     content={spell.label}
                     position="right"
@@ -720,7 +812,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                     <div className="sep-icon">
                       <FontAwesomeIcon icon={faArrowRight} />
                     </div>
-                    <div className={`feat-icon ${featList.includes(spell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.id)}>
+                    <div className={`feat-icon ${knownList0.find(s => s.spell == spell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.id)}>
                       <InfoBubble
                         content={spell.nextSpell.label}
                         position="right"
@@ -741,7 +833,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                     <div className="sep-icon">
                       <FontAwesomeIcon icon={faArrowRight} />
                     </div>
-                    <div className={`feat-icon ${featList.includes(spell.nextSpell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.nextSpell.id)}>
+                    <div className={`feat-icon ${knownList0.find(s => s.spell == spell.nextSpell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpellClick(spell.nextSpell.nextSpell.id)}>
                       <InfoBubble
                         content={spell.nextSpell.nextSpell.label}
                         position="right"
@@ -769,7 +861,35 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Class',
       content: (
         <>
-          
+          {classList[0] && (
+            <>
+              <div>
+                <label>Good Evil</label>
+                <input type="range" min="0" max="100" value={goodEvil} onChange={onUpdateNumberField(setGoodEvil, 'goodEvil')} />
+                <span>{goodEvil}</span>
+              </div>
+              <div>
+                <table>
+                  <tbody>
+                    <tr>
+                      <td><label>Class</label></td>
+                      <td>
+                        <select className="form-select" value={creatureClass} onChange={onUpdateClassListField(setCreatureClass, 'class')}>
+                          {classes.map((cls, index) => (
+                            <option key={`class-${cls.id}`} value={cls.id}>{cls.label}</option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td><label>Level</label></td>
+                      <td><input type="number" min="0" value={creatureLevel} onChange={onUpdateClassListField(setCreatureLevel, 'level')} /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              </>
+          )}
         </>
       )
     },
@@ -780,7 +900,65 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Special Abilities',
       content: (
         <>
-          
+          <div className="feats">
+            {specialAbilitiesList.map((specialAbility, index) => (
+              <div 
+                className="feat-row"
+                key={`feat-${specialAbility.id}`} 
+              >
+                <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.id)}>
+                  <InfoBubble
+                    content={specialAbility.label}
+                    position="right"
+                  >
+                    <TextureCanvas texture={specialAbility.iconresref} width={32} height={32} />
+                  </InfoBubble>
+                </div>
+
+                {specialAbility.nextSpell ? (
+                  <>
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
+                    <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.nextSpell.id)}>
+                      <InfoBubble
+                        content={specialAbility.nextSpell.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={specialAbility.nextSpell.iconresref} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+
+                {specialAbility.nextSpell?.nextSpell ? (
+                  <>
+                    <div className="sep-icon">
+                      <FontAwesomeIcon icon={faArrowRight} />
+                    </div>
+                    <div className={`feat-icon ${specialAbilities.find(s => s.spell == specialAbility.nextSpell.nextSpell.id) ? 'enabled' : 'disabled'}`} onClick={onSpecialAbilityClick(specialAbility.nextSpell.nextSpell.id)}>
+                      <InfoBubble
+                        content={specialAbility.nextSpell.nextSpell.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={specialAbility.nextSpell.nextSpell.iconresref} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+              </div>
+            ))}
+          </div>
         </>
       )
     },
@@ -862,15 +1040,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="iSlots">
-            <TextureCanvas texture={`${race == 5 ? 'idimplant' : 'iimplant'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.IMPLANT)} />
-            <TextureCanvas texture={`${race == 5 ? 'idhead' : 'ihead'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.HEAD)} />
-            <TextureCanvas texture={`${race == 5 ? 'idhands' : 'ihands'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMS)} />
-            <TextureCanvas texture={`${race == 5 ? 'idforearm_l' : 'iforearm_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTARMBAND)} />
-            <TextureCanvas texture={`${race == 5 ? 'idarmor' : 'iarmor'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMOR)} />
-            <TextureCanvas texture={`${race == 5 ? 'idforearm_r' : 'iforearm_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND)} />
-            <TextureCanvas texture={`${race == 5 ? 'idweap_l' : 'ihand_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTHAND)} />
-            <TextureCanvas texture={`${race == 5 ? 'idbelt' : 'ibelt'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.BELT)} />
-            <TextureCanvas texture={`${race == 5 ? 'idweap_r' : 'ihand_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTHAND)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idimplant' : 'iimplant'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.IMPLANT)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idhead' : 'ihead'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.HEAD)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idhands' : 'ihands'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMS)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idforearm_l' : 'iforearm_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTARMBAND)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idarmor' : 'iarmor'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMOR)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idforearm_r' : 'iforearm_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idweap_l' : 'ihand_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTHAND)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idbelt' : 'ibelt'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.BELT)} />
+            <TextureCanvas width={64} height={64} texture={`${race == 5 ? 'idweap_r' : 'ihand_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTHAND)} />
           </div>
         </>
       )

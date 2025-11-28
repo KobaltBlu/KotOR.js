@@ -25,7 +25,20 @@ export class TalentSpell extends TalentObject {
   name: number = -1;
   spelldesc: number = -1;
   forcepoints: number = -1;
+
+  /**
+   * - = Neutral
+   * G = Good
+   * E = Evil
+   */
   goodEvil: string = '-';
+
+  /**
+   * 1 = Spell
+   * 2 = Special Ability
+   * 3 = Feat
+   * 4 = Item Power
+   */
   userType: number = 0;
   prerequisites: number[] = [];
   masterspell: number = -1;

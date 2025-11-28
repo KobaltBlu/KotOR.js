@@ -7,19 +7,52 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabUTCEditor } from "../../components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
 
-export interface KnownListEntry {
-  type: 0|1|3|4;
-  feat: number;
-  rank: number;
+export interface SpecialAbilityEntry {
+  /**
+   * Special Ability ID index into the spells.2da datatable
+   */
   spell: number;
+  /**
+   * Spell caster level to cast this spell as
+   */
   spellCasterLevel: number;
+  /**
+   * 0x01 = readied
+   * 0x02 = spontaneous
+   * 0x04 = unlimited use
+   */
+  spellFlags: number;
+}
+
+export interface KnownSpellEntry {
+  /**
+   * Spell ID index into the spells.2da datatable
+   */
+  spell: number;
+
+  /**
+   * 0x00 - None
+   * 0x01 - Empower
+   * 0x02 - Extend
+   * 0x04 - Maximize
+   * 0x08 - Quicken
+   * 0x10 - Silent
+   * 0x20 - Still
+   */
+  spellMetaMagic: number;
+
+  /**
+   * 0x01 = readied
+   * 0x02 = spontaneous
+   * 0x04 = unlimited use
+   */
   spellFlags: number;
 }
 
 export interface CreatureClassEntry {
   class: number;
   level: number;
-  knownList0: KnownListEntry[];
+  knownList0: KnownSpellEntry[];
 }
 
 export class TabUTCEditorState extends TabState {
@@ -88,7 +121,7 @@ export class TabUTCEditorState extends TabState {
   scriptUserDefined: string = '';
   skillList: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
   soundSetFile: number = 0;
-  specAbilityList: number[] = [];
+  specAbilityList: SpecialAbilityEntry[] = [];
   str: number = 10;
   subrace: string = '';
   subraceIndex: number = 0;
@@ -182,9 +215,23 @@ export class TabUTCEditorState extends TabState {
       this.challengeRating = root.getFieldByLabel('ChallengeRating').getValue() || 0;
     }
     if(root.hasField('ClassList')){
-      // this.classList = root.getFieldByLabel('ClassList').getChildStructs().map( (struct) => {
-      //   return CreatureClassEntry.FromCreatureClassStruct(struct);
-      // }) || [];
+      this.classList = root.getFieldByLabel('ClassList').getChildStructs().map( (struct) => {
+        const classEntry: CreatureClassEntry = {
+          class: struct.getFieldByLabel('Class').getValue() || 0,
+          level: struct.getFieldByLabel('ClassLevel').getValue() || 1,
+          knownList0: [],
+        };
+        const knownList0 = struct.getFieldByLabel('KnownList0').getChildStructs().map( (struct) => {
+          const knownSpellEntry: KnownSpellEntry = {
+            spell: struct.getFieldByLabel('Spell').getValue() || 0,
+            spellMetaMagic: struct.getFieldByLabel('SpellMetaMagic').getValue() || 0,
+            spellFlags: struct.getFieldByLabel('SpellFlags').getValue() || 0,
+          };
+          return knownSpellEntry;
+        });
+        classEntry.knownList0 = knownList0;
+        return classEntry;
+      }) || [];
     }
     if(root.hasField('Comment')){
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
@@ -272,9 +319,9 @@ export class TabUTCEditorState extends TabState {
       this.factionID = root.getFieldByLabel('FactionID').getValue() || 0;
     }
     if(root.hasField('FeatList')){
-      // this.featList = root.getFieldByLabel('FeatList').getChildStructs().map( (struct) => {
-      //   return struct.getFieldByLabel('Feat').getValue() || 0;
-      // }) || [];
+      this.featList = root.getFieldByLabel('FeatList').getChildStructs().map( (struct) => {
+        return struct.getFieldByLabel('Feat').getValue() || 0;
+      }) || [];
     }
     if(root.hasField('FirstName')){
       this.firstName = root.getFieldByLabel('FirstName').getCExoLocString() || new KotOR.CExoLocString();
@@ -398,9 +445,14 @@ export class TabUTCEditorState extends TabState {
       this.soundSetFile = root.getFieldByLabel('SoundSetFile').getValue() || 0;
     }
     if(root.hasField('SpecAbilityList')){
-      // this.specAbilityList = root.getFieldByLabel('SpecAbilityList').getChildStructs().map( (struct) => {
-      //   return struct.getFieldByLabel('SpecAbility').getValue() || 0;
-      // }) || [];
+      this.specAbilityList = root.getFieldByLabel('SpecAbilityList').getChildStructs().map( (struct) => {
+        const KnownListEntry: SpecialAbilityEntry = {
+          spell: struct.getFieldByLabel('Spell').getValue() || 0,
+          spellCasterLevel: struct.getFieldByLabel('SpellCasterLevel').getValue() || 0,
+          spellFlags: struct.getFieldByLabel('SpellFlags').getValue() || 0,
+        };
+        return KnownListEntry;
+      }) || [];
     }
     if(root.hasField('Str')){
       this.str = root.getFieldByLabel('Str').getValue() || 10;
@@ -528,7 +580,25 @@ export class TabUTCEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Cha', this.cha) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ChallengeRating', this.challengeRating) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ClassList') );
+    const classList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ClassList');
+    if(classList){
+      this.classList.forEach(classEntry => {
+        const classStruct = new KotOR.GFFStruct(2);
+        classStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Class', classEntry.class) );
+        classStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ClassLevel', classEntry.level) );
+        const knownList0 = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'KnownList0');
+        classEntry.knownList0.forEach(knownSpellEntry => {
+          const knownSpellStruct = new KotOR.GFFStruct(4);
+          knownSpellStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Spell', knownSpellEntry.spell) );
+          knownSpellStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SpellMetaMagic', knownSpellEntry.spellMetaMagic) );
+          knownSpellStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SpellFlags', knownSpellEntry.spellFlags) );
+          knownList0.addChildStruct(knownSpellStruct);
+        });
+        classStruct.addField( knownList0 );
+        classList.addChildStruct(classStruct);
+      });
+    }
+    root.addField( classList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Con', this.con) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Conversation', this.conversation) );
@@ -615,9 +685,16 @@ export class TabUTCEditorState extends TabState {
       equipItemList.addChildStruct(equipItem);
     }
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList', equipItemList) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Equip_ItemList') );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'FactionID', this.factionID) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList') );
+    const featList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'FeatList');
+    if(featList){
+      this.featList.forEach(feat => {
+        const featStruct = new KotOR.GFFStruct(1);
+        featStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Feat', feat) );
+        featList.addChildStruct(featStruct);
+      });
+    }
+    root.addField( featList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'FirstName', this.firstName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'ForcePoints', this.forcePoints) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Gender', this.gender) );
@@ -626,7 +703,17 @@ export class TabUTCEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Int', this.int) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Interruptable', this.interruptable ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'IsPC', this.isPC ? 1 : 0) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList') );
+    const itemList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'ItemList');
+    if(itemList){
+      this.itemList.forEach((item, index) => {
+        const itemStruct = new KotOR.GFFStruct(index);
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosX', 0) );
+        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosY', index) );
+        itemList.addChildStruct(itemStruct);
+      });
+    }
+    root.addField( itemList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LastName', this.lastName) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'LawfulChaotic', this.lawfulChaotic) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.SHORT, 'MaxHitPoints', this.maxHitPoints) );
@@ -655,14 +742,32 @@ export class TabUTCEditorState extends TabState {
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptSpawn', this.scriptSpawn) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptSpellAt', this.scriptSpellAt) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ScriptUserDefine', this.scriptUserDefined) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SkillList') );
+    const skillList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SkillList');
+    if(skillList){
+      this.skillList.forEach((skill) => {
+        const skillStruct = new KotOR.GFFStruct(0);
+        skillStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Rank', skill) );
+        skillList.addChildStruct(skillStruct);
+      });
+    }
+    root.addField( skillList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'SoundSetFile', this.soundSetFile) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpecAbilityList') );
+    const specAbilityList = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpecAbilityList');
+    if(specAbilityList){
+      this.specAbilityList.forEach((specAbility) => {
+        const specAbilityStruct = new KotOR.GFFStruct(4);
+        specAbilityStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Spell', specAbility.spell) );
+        specAbilityStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SpellCasterLevel', specAbility.spellCasterLevel) );
+        specAbilityStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SpellFlags', specAbility.spellFlags) );
+        specAbilityList.addChildStruct(specAbilityStruct);
+      });
+    }
+    root.addField( specAbilityList );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Str', this.str) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Subrace', this.subrace) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SubraceIndex', this.subraceIndex) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
-    // root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'TemplateList') );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'TemplateList') );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TextureVar', this.textureVar) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'WalkRate', this.walkRate) );

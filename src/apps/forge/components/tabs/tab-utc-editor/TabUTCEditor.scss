@@ -70,3 +70,31 @@
     margin: 5px;
   }
 }
+
+// =============================================================================
+// INVENTORY SLOTS
+// =============================================================================
+
+.iSlots {
+  width: 200px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  .iSlot {
+    width: 64px;
+    height: 64px;
+    border: $border-width-thick solid $primary-blue;
+    background-color: $bg-primary;
+    display: inline-block;
+    box-sizing: border-box;
+    overflow: hidden;
+    flex: 1;
+    flex-basis: 30%;
+    border-radius: 10px;
+    cursor: pointer;
+    &:hover {
+      border-color: $primary-blue-light;
+    }
+  }
+}
