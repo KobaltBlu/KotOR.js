@@ -15,7 +15,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   const tab: TabUTCEditorState = props.tab as TabUTCEditorState;
 
-  const handleItemSlotClick = (slotType: string) => {
+  const handleItemSlotClick = (slotType: KotOR.ModuleCreatureArmorSlot) => {
     const modal = new ModalItemBrowserState((item) => {
       console.log('Item selected:', item);
       // TODO: Update the slot with the selected item
@@ -657,15 +657,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="iSlots">
-            <TextureCanvas texture="iimplant" onClick={() => handleItemSlotClick('implant')} />
-            <TextureCanvas texture="ihead" onClick={() => handleItemSlotClick('head')} />
-            <TextureCanvas texture="ihands" onClick={() => handleItemSlotClick('hands')} />
-            <TextureCanvas texture="iforearm_l" onClick={() => handleItemSlotClick('forearm_l')} />
-            <TextureCanvas texture="iarmor" onClick={() => handleItemSlotClick('armor')} />
-            <TextureCanvas texture="iforearm_r" onClick={() => handleItemSlotClick('forearm_r')} />
-            <TextureCanvas texture="ihand_l" onClick={() => handleItemSlotClick('hand_l')} />
-            <TextureCanvas texture="ibelt" onClick={() => handleItemSlotClick('belt')} />
-            <TextureCanvas texture="ihand_r" onClick={() => handleItemSlotClick('hand_r')} />
+            <TextureCanvas texture={`${race == 5 ? 'idimplant' : 'iimplant'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.IMPLANT)} />
+            <TextureCanvas texture={`${race == 5 ? 'idhead' : 'ihead'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.HEAD)} />
+            <TextureCanvas texture={`${race == 5 ? 'idhands' : 'ihands'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMS)} />
+            <TextureCanvas texture={`${race == 5 ? 'idforearm_l' : 'iforearm_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTARMBAND)} />
+            <TextureCanvas texture={`${race == 5 ? 'idarmor' : 'iarmor'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.ARMOR)} />
+            <TextureCanvas texture={`${race == 5 ? 'idforearm_r' : 'iforearm_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND)} />
+            <TextureCanvas texture={`${race == 5 ? 'idhand_l' : 'ihand_l'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.LEFTHAND)} />
+            <TextureCanvas texture={`${race == 5 ? 'idbelt' : 'ibelt'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.BELT)} />
+            <TextureCanvas texture={`${race == 5 ? 'idhand_r' : 'ihand_r'}`} onClick={() => handleItemSlotClick(KotOR.ModuleCreatureArmorSlot.RIGHTHAND)} />
           </div>
         </>
       )
