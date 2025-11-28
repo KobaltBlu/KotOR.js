@@ -5,8 +5,13 @@
   justify-content: space-around;
   align-items: center;
 
+  &:hover {
+    background: $bg-quaternary;
+    border-radius: 3px;
+  }
+
   .feat-icon {
-    background: $bg-secondary;
+    background: $bg-primary;
     border: 1px solid $border-primary;
     border-radius: 3px;
     box-sizing: border-box;
@@ -17,14 +22,22 @@
 
     &.enabled {
       border-color: $primary-blue;
-      background: $primary-blue;
+      background: $primary-blue-darker;
       color: $text-white;
+
+      &:hover {
+        border-color: $primary-blue-lighter;
+      }
     }
 
     &.disabled {
       border-color: $border-primary;
-      background: $bg-secondary;
+      background: $bg-primary;
       color: $text-primary;
+
+      &:hover {
+        border-color: $primary-blue-light;
+      }
 
       canvas {
         opacity: 0.5;
