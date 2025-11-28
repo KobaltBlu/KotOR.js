@@ -69,13 +69,15 @@ export interface TextureCanvasProps {
   width?: number;
   height?: number;
   className?: string;
+  onClick?: () => void;
 }
 
 export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   texture,
   width,
   height,
-  className = ""
+  className = "",
+  onClick
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
@@ -179,8 +181,18 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
     loadTexture();
   }, [texture, width, height, canvasRef]);
 
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
-    <div className={`iSlot texture-canvas ${className}`}>
+    <div 
+      className={`iSlot texture-canvas ${className} ${onClick ? 'clickable' : ''}`}
+      onClick={onClick ? handleClick : undefined}
+      style={onClick ? { cursor: 'pointer' } : {}}
+    >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
     </div>
   );

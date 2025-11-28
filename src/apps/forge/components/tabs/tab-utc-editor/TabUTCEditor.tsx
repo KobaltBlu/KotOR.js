@@ -8,10 +8,21 @@ import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { TextureCanvas } from "./TextureCanvas";
+import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
+import { ForgeState } from "../../../states/ForgeState";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
   const tab: TabUTCEditorState = props.tab as TabUTCEditorState;
+
+  const handleItemSlotClick = (slotType: string) => {
+    const modal = new ModalItemBrowserState((item) => {
+      console.log('Item selected:', item);
+      // TODO: Update the slot with the selected item
+    });
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
+  };
   const [appearanceType, setAppearanceType] = useState<number>(0);
   const [bodyBag, setBodyBag] = useState<number>(0);
   const [bodyVariation, setBodyVariation] = useState<number>(0);
@@ -646,15 +657,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
       content: (
         <>
           <div className="iSlots">
-            <TextureCanvas texture="iimplant" />
-            <TextureCanvas texture="ihead" />
-            <TextureCanvas texture="ihands" />
-            <TextureCanvas texture="iforearm_l" />
-            <TextureCanvas texture="iarmor" />
-            <TextureCanvas texture="iforearm_r" />
-            <TextureCanvas texture="ihand_l" />
-            <TextureCanvas texture="ibelt" />
-            <TextureCanvas texture="ihand_r" />
+            <TextureCanvas texture="iimplant" onClick={() => handleItemSlotClick('implant')} />
+            <TextureCanvas texture="ihead" onClick={() => handleItemSlotClick('head')} />
+            <TextureCanvas texture="ihands" onClick={() => handleItemSlotClick('hands')} />
+            <TextureCanvas texture="iforearm_l" onClick={() => handleItemSlotClick('forearm_l')} />
+            <TextureCanvas texture="iarmor" onClick={() => handleItemSlotClick('armor')} />
+            <TextureCanvas texture="iforearm_r" onClick={() => handleItemSlotClick('forearm_r')} />
+            <TextureCanvas texture="ihand_l" onClick={() => handleItemSlotClick('hand_l')} />
+            <TextureCanvas texture="ibelt" onClick={() => handleItemSlotClick('belt')} />
+            <TextureCanvas texture="ihand_r" onClick={() => handleItemSlotClick('hand_r')} />
           </div>
         </>
       )
