@@ -10,6 +10,8 @@ import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { TextureCanvas } from "./TextureCanvas";
 import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
 import { ForgeState } from "../../../states/ForgeState";
+import { InfoBubble } from "../../info-bubble/info-bubble";
+import './TabUTCEditor.scss';
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
@@ -108,6 +110,8 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [slotHead, setSlotHead] = useState<string>('');
   const [slotArms, setSlotArms] = useState<string>('');
 
+  const [feats, setFeats] = useState<KotOR.TalentFeat[]>([]);
+
   const onCreatureChange = useCallback(() => {
     setAppearanceType(tab.appearanceType);
     setBodyBag(tab.bodyBag);
@@ -197,6 +201,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   useEffect(() => {
     if(!tab) return;
+    setFeats(KotOR.SWRuleSet.feats.filter(feat => feat.label != '' && feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1));
     onCreatureChange();
     tab.addEventListener('onEditorFileLoad', onCreatureChange);
     tab.addEventListener('onEditorFileChange', onCreatureChange);
@@ -226,6 +231,53 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
     createForgeCheckboxFieldHandler(setter, property, tab);
+
+  const hasPrereqFeat = (feat: KotOR.TalentFeat) => {
+    const hasPrereqFeat1 = feat.prereqFeat1 >= 0 ? featList.includes(feat.prereqFeat1) : true;
+    const hasPrereqFeat2 = feat.prereqFeat2 >= 0 ? featList.includes(feat.prereqFeat2) : true;
+    return hasPrereqFeat1 && hasPrereqFeat2;
+  }
+
+  const onFeatClick = (index: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const feat = KotOR.SWRuleSet.feats[index];
+    if(!feat) return;
+
+    const wasEnabled = featList.includes(index);
+    const idx = featList.indexOf(index);
+    const updated: number[] = [...featList];
+
+    //remove the feat from the list if it already exists
+    if(idx >= 0){
+      updated.splice(idx, 1);
+    }
+
+    //add the feat to the list if it doesn't exist and has met the prerequisites
+    if(!wasEnabled && hasPrereqFeat(feat)){
+      updated.push(index);
+    }
+
+    //remove child feats if the feat is disabled
+    if(wasEnabled){
+      if(feat.nextFeat){
+        const idx = updated.indexOf(feat.nextFeat.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+      if(feat.nextFeat?.nextFeat){
+        const idx = updated.indexOf(feat.nextFeat.nextFeat.id);
+        if(idx >= 0){
+          updated.splice(idx, 1);
+        }
+      }
+    }
+
+    setFeatList(updated);
+    tab.setProperty('featList', updated.sort((a, b) => a - b));
+    tab.updateFile();
+  };
 
   const tabs: SubTab[] = [
     {
@@ -542,7 +594,61 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Feats',
       content: (
         <>
-          
+          <div className="feats">
+            {feats.map((feat, index) => (
+              <div 
+                className="feat-row"
+                key={`feat-${feat.id}`} 
+              >
+                <div className={`feat-icon ${featList.includes(feat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.id)}>
+                  <InfoBubble
+                    content={feat.label}
+                    position="right"
+                  >
+                    <TextureCanvas texture={feat.icon} width={32} height={32} />
+                  </InfoBubble>
+                </div>
+
+                {feat.nextFeat ? (
+                  <>
+                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className={`feat-icon ${featList.includes(feat.nextFeat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.nextFeat.id)}>
+                      <InfoBubble
+                        content={feat.nextFeat.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={feat.nextFeat.icon} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+
+                {feat.nextFeat?.nextFeat ? (
+                  <>
+                    <TextureCanvas texture={`lbl_skarr`} width={32} height={32} />
+                    <div className={`feat-icon ${featList.includes(feat.nextFeat.nextFeat.id) ? 'enabled' : 'disabled'}`} onClick={onFeatClick(feat.nextFeat.nextFeat.id)}>
+                      <InfoBubble
+                        content={feat.nextFeat.nextFeat.label}
+                        position="right"
+                      >
+                        <TextureCanvas texture={feat.nextFeat.nextFeat.icon} width={32} height={32} />
+                      </InfoBubble>
+                    </div>
+                  </>
+                ) : (
+                <>
+                  <div className="blank-icon" />
+                  <div className="blank-icon" />
+                </>)
+                }
+              </div>
+            ))}
+          </div>
         </>
       )
     },

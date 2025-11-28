@@ -114,6 +114,8 @@ export class TalentFeat extends TalentObject {
   useType: number;
   pips: number;
 
+  nextFeat: TalentFeat;
+
   constructor( id = 0){
     super(id);
     this.objectType = TalentObjectType.TalentObject | TalentObjectType.TalentFeat;

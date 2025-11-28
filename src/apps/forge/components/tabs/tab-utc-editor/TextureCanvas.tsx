@@ -82,6 +82,9 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
 
+  const [cWidth, setCanvasWidth] = useState<number>(width || 0);
+  const [cHeight, setCanvasHeight] = useState<number>(height || 0);
+
   useEffect(() => {
     if (!texture || !canvasRef.current) return;
 
@@ -172,6 +175,9 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
           ctx.putImageData(imageData, 0, 0);
         }
 
+        setCanvasWidth(canvasWidth);
+        setCanvasHeight(canvasHeight);
+
         setTextureLoaded(true);
       } catch (error) {
         console.error(`Failed to load texture: ${texture}`, error);
@@ -193,7 +199,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
       onClick={onClick ? handleClick : undefined}
       style={onClick ? { cursor: 'pointer' } : {}}
     >
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+      <canvas ref={canvasRef} style={{ width: `${cWidth}px`, height: `${cHeight}px`, display: 'block' }} />
     </div>
   );
 };

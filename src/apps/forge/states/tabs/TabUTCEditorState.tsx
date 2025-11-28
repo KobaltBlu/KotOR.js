@@ -31,7 +31,13 @@ export class TabUTCEditorState extends TabState {
   bodyVariation: number = 0;
   cha: number = 10;
   challengeRating: number = 0;
-  classList: CreatureClassEntry[] = [];
+  classList: CreatureClassEntry[] = [
+    {
+      class: 0,
+      level: 1,
+      knownList0: [],
+    }
+  ];
   comment: string = '';
   con: number = 10;
   conversation: string = '';

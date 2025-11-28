@@ -1,0 +1,45 @@
+@import '../../../styles/_variables.scss';
+.feat-row {
+  display: flex;
+  gap: 10px;
+  justify-content: space-around;
+  align-items: center;
+
+  .feat-icon {
+    background: $bg-secondary;
+    border: 1px solid $border-primary;
+    border-radius: 3px;
+    box-sizing: border-box;
+    padding: 5px;
+    padding-bottom: 0;
+    margin: 5px;
+    cursor: pointer;
+
+    &.enabled {
+      border-color: $primary-blue;
+      background: $primary-blue;
+      color: $text-white;
+    }
+
+    &.disabled {
+      border-color: $border-primary;
+      background: $bg-secondary;
+      color: $text-primary;
+
+      canvas {
+        opacity: 0.5;
+      }
+    }
+  }
+  
+  .blank-icon {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    box-sizing: border-box;
+    padding: 5px;
+    margin: 5px;
+  }
+}
