@@ -7,7 +7,7 @@ import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldH
 import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { TextureCanvas } from "./TextureCanvas";
+import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
 import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
 import { ForgeState } from "../../../states/ForgeState";
 import { InfoBubble } from "../../info-bubble/info-bubble";

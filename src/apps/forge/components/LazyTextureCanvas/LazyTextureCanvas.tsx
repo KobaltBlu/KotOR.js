@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { TextureCanvas } from "../tabs/tab-utc-editor/TextureCanvas";
+import { TextureCanvas } from "../TextureCanvas/TextureCanvas";
 
 interface LazyTextureCanvasProps {
   texture: string;

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
-import * as KotOR from "../../../KotOR";
-import { TabImageViewerState } from "../../../states/tabs/TabImageViewerState";
-import { PixelManager } from "../../../../../utility/PixelManager";
+import * as KotOR from "../../KotOR";
+import { TabImageViewerState } from "../../states/tabs/TabImageViewerState";
+import { PixelManager } from "../../../../utility/PixelManager";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;

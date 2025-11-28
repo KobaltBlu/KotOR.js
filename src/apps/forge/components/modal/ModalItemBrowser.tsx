@@ -3,7 +3,7 @@ import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, Modal } from "react-bootstrap";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 import { ModalItemBrowserState } from "../../states/modal/ModalItemBrowserState";
-import { LazyTextureCanvas } from "./LazyTextureCanvas";
+import { LazyTextureCanvas } from "../LazyTextureCanvas/LazyTextureCanvas";
 import "./ModalItemBrowser.scss";
 
 export const ModalItemBrowser = (props: BaseModalProps) => {
