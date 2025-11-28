@@ -17,6 +17,13 @@ import { SWBodyBag } from "./SWBodyBag";
 import { SWHead } from "./SWHead";
 import { SWPriorityGroup } from "./SWPriorityGroup";
 import { SWEncounterDifficulty } from "./SWEncounterDifficulty";
+import { SWGender } from "./SWGender";
+import { SWPhenotype } from "./SWPhenotype";
+import { SWSubRace } from "./SWSubRace";
+import { SWSoundSet } from "./SWSoundSet";
+import { SWCreatureSize } from "./SWCreatureSize";
+import { SWCreatureSpeed } from "./SWCreatureSpeed";
+import { SWRange } from "./SWRange";
 
 /**
  * SWRuleSet class.
@@ -64,6 +71,27 @@ export class SWRuleSet {
 
   static encounterDifficulties: SWEncounterDifficulty[] = [];
   static encounterDifficultyCount: number = 0;
+
+  static genders: SWGender[] = [];
+  static genderCount: number = 0;
+
+  static phenotypes: SWPhenotype[] = [];
+  static phenotypeCount: number = 0;
+
+  static subRaces: SWSubRace[] = [];
+  static subRaceCount: number = 0;
+
+  static soundSets: SWSoundSet[] = [];
+  static soundSetCount: number = 0;
+
+  static creatureSizes: SWCreatureSize[] = [];
+  static creatureSizeCount: number = 0;
+
+  static creatureSpeeds: SWCreatureSpeed[] = [];
+  static creatureSpeedCount: number = 0;
+
+  static ranges: SWRange[] = [];
+  static rangeCount: number = 0;
 
   static Init(){
 
@@ -279,6 +307,90 @@ export class SWRuleSet {
       SWRuleSet.encounterDifficulties = new Array(SWRuleSet.encounterDifficultyCount);
       for(let i = 0; i < encounterDifficulties.RowCount; i++){
         SWRuleSet.encounterDifficulties[i] = SWEncounterDifficulty.From2DA(encounterDifficulties.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Genders
+     */
+    const genders = GameState.TwoDAManager.datatables.get('gender');
+    if(genders){
+      SWRuleSet.genderCount = genders.RowCount;
+      SWRuleSet.genders = new Array(SWRuleSet.genderCount);
+      for(let i = 0; i < genders.RowCount; i++){
+        SWRuleSet.genders[i] = SWGender.From2DA(genders.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Phenotypes
+     */
+    const phenotypes = GameState.TwoDAManager.datatables.get('phenotype');
+    if(phenotypes){
+      SWRuleSet.phenotypeCount = phenotypes.RowCount;
+      SWRuleSet.phenotypes = new Array(SWRuleSet.phenotypeCount);
+      for(let i = 0; i < phenotypes.RowCount; i++){
+        SWRuleSet.phenotypes[i] = SWPhenotype.From2DA(phenotypes.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Sub Races
+     */
+    const subRaces = GameState.TwoDAManager.datatables.get('subrace');
+    if(subRaces){
+      SWRuleSet.subRaceCount = subRaces.RowCount;
+      SWRuleSet.subRaces = new Array(SWRuleSet.subRaceCount);
+      for(let i = 0; i < subRaces.RowCount; i++){
+        SWRuleSet.subRaces[i] = SWSubRace.From2DA(subRaces.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Sound Sets
+     */
+    const soundSets = GameState.TwoDAManager.datatables.get('soundset');
+    if(soundSets){
+      SWRuleSet.soundSetCount = soundSets.RowCount;
+      SWRuleSet.soundSets = new Array(SWRuleSet.soundSetCount);
+      for(let i = 0; i < soundSets.RowCount; i++){
+        SWRuleSet.soundSets[i] = SWSoundSet.From2DA(soundSets.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Creature Sizes
+     */
+    const creatureSizes = GameState.TwoDAManager.datatables.get('creaturesize');
+    if(creatureSizes){
+      SWRuleSet.creatureSizeCount = creatureSizes.RowCount;
+      SWRuleSet.creatureSizes = new Array(SWRuleSet.creatureSizeCount);
+      for(let i = 0; i < creatureSizes.RowCount; i++){
+        SWRuleSet.creatureSizes[i] = SWCreatureSize.From2DA(creatureSizes.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Creature Speeds
+     */
+    const creatureSpeeds = GameState.TwoDAManager.datatables.get('creaturespeed');
+    if(creatureSpeeds){
+      SWRuleSet.creatureSpeedCount = creatureSpeeds.RowCount;
+      SWRuleSet.creatureSpeeds = new Array(SWRuleSet.creatureSpeedCount);
+      for(let i = 0; i < creatureSpeeds.RowCount; i++){
+        SWRuleSet.creatureSpeeds[i] = SWCreatureSpeed.From2DA(creatureSpeeds.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Ranges
+     */
+    const ranges = GameState.TwoDAManager.datatables.get('range');
+    if(ranges){
+      SWRuleSet.rangeCount = ranges.RowCount;
+      SWRuleSet.ranges = new Array(SWRuleSet.rangeCount);
+      for(let i = 0; i < ranges.RowCount; i++){
+        SWRuleSet.ranges[i] = SWRange.From2DA(ranges.rows[i]);
       }
     }
   }

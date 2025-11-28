@@ -120,6 +120,15 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [creatureClass, setCreatureClass] = useState<number>(0);
   const [creatureLevel, setCreatureLevel] = useState<number>(1);
   const [knownList0, setKnownList0] = useState<KnownSpellEntry[]>([]);
+  const [appearanceList, setAppearanceList] = useState<KotOR.CreatureAppearance[]>([]);
+  const [raceList, setRaceList] = useState<KotOR.SWRace[]>([]);
+
+  const [portrait, setPortrait] = useState<KotOR.SWPortrait>(new KotOR.SWPortrait());
+
+  useEffect(() => {
+    if(!portraitId) return;
+    setPortrait(KotOR.SWRuleSet.portraits[portraitId]);
+  }, [portraitId]);
 
   const onCreatureChange = useCallback(() => {
     setAppearanceType(tab.appearanceType);
@@ -222,6 +231,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setSpells(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 1 && spell.prerequisites.length == 0));
     setSpecialAbilitiesList(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 2 && spell.prerequisites.length == 0));
     setClasses(KotOR.SWRuleSet.classes.slice());
+    setAppearanceList(Array.from(KotOR.AppearanceManager.appearances.values()));
     onCreatureChange();
     tab.addEventListener('onEditorFileLoad', onCreatureChange);
     tab.addEventListener('onEditorFileChange', onCreatureChange);
@@ -444,19 +454,43 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   </tr>
                   <tr>
                     <td><label>Race</label></td>
-                    <td><select className="form-select" value={race} onChange={onUpdateNumberField(setRace, 'race')}></select></td>
+                    <td>
+                      <select className="form-select" value={race} onChange={onUpdateNumberField(setRace, 'race')}>
+                        {KotOR.SWRuleSet.racialtypes.map((race) => (
+                          <option key={race.id} value={race.id}>{race.getName()}</option>
+                        ))}
+                      </select>
+                    </td>
                   </tr>
                   <tr>
                     <td><label>Appearance</label></td>
-                    <td><select className="form-select" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')}></select></td>
+                    <td>
+                      <select className="form-select" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')}>
+                        {appearanceList.map((appearance) => (
+                          <option key={appearance.id} value={appearance.id}>{appearance.label}</option>
+                        ))}
+                      </select>
+                    </td>
                   </tr>
                   <tr>
                     <td><label>Phenotype</label></td>
-                    <td><select className="form-select" value={phenotype} onChange={onUpdateNumberField(setPhenotype, 'phenotype')}></select></td>
+                    <td>
+                      <select className="form-select" value={phenotype} onChange={onUpdateNumberField(setPhenotype, 'phenotype')}>
+                        {KotOR.SWRuleSet.phenotypes.map((phenotype) => (
+                          <option key={phenotype.id} value={phenotype.id}>{phenotype.getName()}</option>
+                        ))}
+                      </select>
+                      </td>
                   </tr>
                   <tr>
                     <td><label>Gender</label></td>
-                    <td><select className="form-select" value={gender} onChange={onUpdateNumberField(setGender, 'gender')}></select></td>
+                    <td>
+                      <select className="form-select" value={gender} onChange={onUpdateNumberField(setGender, 'gender')}>
+                        {KotOR.SWRuleSet.genders.map((gender) => (
+                          <option key={gender.id} value={gender.id}>{gender.getName()}</option>
+                        ))}
+                      </select>
+                    </td>
                   </tr>
                   <tr>
                     <td><label>Description</label></td>
@@ -467,7 +501,13 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   </tr>
                   <tr>
                     <td><label>BodyBag</label></td>
-                    <td><select className="form-select" value={bodyBag} onChange={onUpdateNumberField(setBodyBag, 'bodyBag')}></select></td>
+                    <td>
+                      <select className="form-select" value={bodyBag} onChange={onUpdateNumberField(setBodyBag, 'bodyBag')}>
+                        {KotOR.SWRuleSet.bodyBags.map((bodyBag) => (
+                          <option key={bodyBag.id} value={bodyBag.id}>{bodyBag.label}</option>
+                        ))}
+                      </select>
+                    </td>
                   </tr>
               </tbody>
             </table>
@@ -475,7 +515,18 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
           <fieldset>
             <legend>Portrait</legend>
-            <select className="form-select" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')}></select>
+            <div className="d-flex">
+              <div className="flex-grow-1">
+                <TextureCanvas texture={portrait.baseresref || ''} width={64} height={64} />
+              </div>
+              <div className="flex-grow-1">
+                <select className="form-select" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')}>
+                  {KotOR.SWRuleSet.portraits.map((portrait) => (
+                    <option key={portrait.id} value={portrait.id}>{portrait.baseresref}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </fieldset>
 
           <fieldset>
@@ -579,7 +630,11 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <fieldset>
                   <legend>Speed</legend>
                   <label>Movement Rate</label>
-                  <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}></select>
+                  <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
+                    {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
+                      <option key={speed.id} value={speed.id}>{speed.getName()}</option>
+                    ))}
+                  </select>
                 </fieldset>
               </td>
               <td style={{width: '50%'}}>
@@ -675,7 +730,13 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 </tr>
                 <tr>
                   <td><label>Subrace</label></td>
-                  <td><select className="form-select" value={subraceIndex} onChange={onUpdateNumberField(setSubraceIndex, 'subraceIndex')}></select></td>
+                  <td>
+                    <select className="form-select" value={subraceIndex} onChange={onUpdateNumberField(setSubraceIndex, 'subraceIndex')}>
+                      {KotOR.SWRuleSet.subRaces.map((subrace) => (
+                        <option key={subrace.id} value={subrace.id}>{subrace.label}</option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -693,7 +754,11 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <td>
                   <fieldset>
                     <legend>Sound Set</legend>
-                    <select className="form-select" value={soundSetFile} onChange={onUpdateNumberField(setSoundSetFile, 'soundSetFile')}></select>
+                    <select className="form-select" value={soundSetFile} onChange={onUpdateNumberField(setSoundSetFile, 'soundSetFile')}>
+                      {KotOR.SWRuleSet.soundSets.map((soundSet) => (
+                        <option key={soundSet.id} value={soundSet.id}>{soundSet.getName()}</option>
+                      ))}
+                    </select>
                   </fieldset>
                 </td>
               </tr>
@@ -701,13 +766,21 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <td>
                   <fieldset>
                     <legend>Faction</legend>
-                    <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}></select>
+                    <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}>
+                      {Object.values(KotOR.FactionManager.factions).map((faction, index) => (
+                        <option key={index} value={index}>{faction.label}</option>
+                      ))}
+                    </select>
                   </fieldset>
                 </td>
                 <td>
                   <fieldset>
                     <legend>Perception Range</legend>
-                    <select className="form-select" value={perceptionRange} onChange={onUpdateNumberField(setPerceptionRange, 'perceptionRange')}></select>
+                    <select className="form-select" value={perceptionRange} onChange={onUpdateNumberField(setPerceptionRange, 'perceptionRange')}>
+                      {KotOR.SWRuleSet.ranges.filter(range => range.getType() == 2).map((size) => (
+                        <option key={size.id} value={size.id}>{size.getName()}</option>
+                      ))}
+                    </select>
                   </fieldset>
                 </td>
               </tr>

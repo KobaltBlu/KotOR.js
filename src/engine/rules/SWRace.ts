@@ -1,3 +1,4 @@
+import { TLKManager } from "../../managers/TLKManager";
 import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
@@ -34,6 +35,10 @@ export class SWRace {
   constant: string = '';
   age: number = 18;
   toolsetDefaultClass: number = -1;
+
+  getName(){
+    return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
+  }
 
   static From2DA(row: any = {}){
     const race = new SWRace();

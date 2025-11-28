@@ -4,3 +4,6 @@ export * from "./JournalCategory";
 export * from "./JournalCategoryEntry";
 export * from "./minigames";
 export * from "./INIConfig";
+export * from "./CreatureAppearance";
+export * from "./DoorAppearance";
+export * from "./PlaceableAppearance";
