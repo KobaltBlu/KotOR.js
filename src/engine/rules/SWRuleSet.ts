@@ -24,6 +24,7 @@ import { SWSoundSet } from "./SWSoundSet";
 import { SWCreatureSize } from "./SWCreatureSize";
 import { SWCreatureSpeed } from "./SWCreatureSpeed";
 import { SWRange } from "./SWRange";
+import { SWSkill } from "./SWSkill";
 
 /**
  * SWRuleSet class.
@@ -92,6 +93,9 @@ export class SWRuleSet {
 
   static ranges: SWRange[] = [];
   static rangeCount: number = 0;
+
+  static skills: SWSkill[] = [];
+  static skillCount: number = 0;
 
   static Init(){
 
@@ -393,6 +397,19 @@ export class SWRuleSet {
         SWRuleSet.ranges[i] = SWRange.From2DA(ranges.rows[i]);
       }
     }
+
+    /**
+     * Initialize Skills
+     */
+    const skills = GameState.TwoDAManager.datatables.get('skills');
+    if(skills){
+      SWRuleSet.skillCount = skills.RowCount;
+      SWRuleSet.skills = new Array(SWRuleSet.skillCount);
+      for(let i = 0; i < skills.RowCount; i++){
+        SWRuleSet.skills[i] = SWSkill.From2DA(skills.rows[i]);
+      }
+    }
+    
   }
 
   /**

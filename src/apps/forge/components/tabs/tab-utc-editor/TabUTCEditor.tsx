@@ -662,29 +662,13 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerTitle: 'Skills',
       content: (
         <>
-          <label>Computer Use</label>
-          <input type="number" min="0" value={skillList[0]} onChange={onUpdateNumberArrayField(setSkillList, 0, 'skillList')} />
-
-          <label>Demolitions</label>
-          <input type="number" min="0" value={skillList[1]} onChange={onUpdateNumberArrayField(setSkillList, 1, 'skillList')} />
-
-          <label>Stealth</label>
-          <input type="number" min="0" value={skillList[2]} onChange={onUpdateNumberArrayField(setSkillList, 2, 'skillList')} />
-
-          <label>Awareness</label>
-          <input type="number" min="0" value={skillList[3]} onChange={onUpdateNumberArrayField(setSkillList, 3, 'skillList')} />
-
-          <label>Persuade</label>
-          <input type="number" min="0" value={skillList[4]} onChange={onUpdateNumberArrayField(setSkillList, 4, 'skillList')} />
-
-          <label>Repair</label>
-          <input type="number" min="0" value={skillList[5]} onChange={onUpdateNumberArrayField(setSkillList, 5, 'skillList')} />
-
-          <label>Security</label>
-          <input type="number" min="0" value={skillList[6]} onChange={onUpdateNumberArrayField(setSkillList, 6, 'skillList')} />
-
-          <label>Treat Injury</label>
-          <input type="number" min="0" value={skillList[7]} onChange={onUpdateNumberArrayField(setSkillList, 7, 'skillList')} />
+          {KotOR.SWRuleSet.skills.map((skill) => (
+            <div key={skill.id} className="d-flex align-items-center">
+              <TextureCanvas texture={skill.icon} width={32} height={32} />
+              <label>{skill.getName()}</label>
+              <input type="number" min="0" value={skillList[skill.id]} onChange={onUpdateNumberArrayField(setSkillList, skill.id, 'skillList')} />
+            </div>
+          ))}
         </>
       )
     },
