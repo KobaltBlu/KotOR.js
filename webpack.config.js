@@ -98,15 +98,12 @@ const libraryConfig = (name, color) => ({
     rules: [
       {
         test: /\.tsx?$/,
-        use: [
-          {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: true,
-              experimentalWatchApi: true,
-            },
-          },
-        ],
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2019',
+          tsconfig: 'tsconfig.json',
+        },
         exclude: /node_modules/,
       },
       {
@@ -179,23 +176,23 @@ const launcherConfig = (name, color) => ({
     publicPath: false
   },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
-        module: {
-        rules: [
-          {
-            test: /\.tsx?$/,
-            use: [{
-              loader: 'ts-loader',
-              options: {
-                configFile: "tsconfig.launcher.json"
-              }
-            }],
-            exclude: /node_modules/,
-          },
-          cssRule,
-          scssRule,
-          ...assetRules
-        ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2019',
+          tsconfig: 'tsconfig.launcher.json',
+        },
+        exclude: /node_modules/,
       },
+      cssRule,
+      scssRule,
+      ...assetRules
+    ],
+  },
   plugins: [
     new WebpackBar({
       color,
@@ -263,23 +260,23 @@ const gameConfig = (name, color) => ({
     publicPath: false
   },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
-        module: {
-        rules: [
-          {
-            test: /\.tsx?$/,
-            use: [{
-              loader: 'ts-loader',
-              options: {
-                configFile: "tsconfig.game.json"
-              }
-            }],
-            exclude: /node_modules/,
-          },
-          cssRule,
-          scssRule,
-          ...assetRules
-        ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2019',
+          tsconfig: 'tsconfig.game.json',
+        },
+        exclude: /node_modules/,
       },
+      cssRule,
+      scssRule,
+      ...assetRules
+    ],
+  },
   plugins: [
     new WebpackBar({
       color,
@@ -357,23 +354,23 @@ const forgeConfig = (name, color) => ({
     publicPath: false
   },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
-        module: {
-        rules: [
-          {
-            test: /\.tsx?$/,
-            use: [{
-              loader: 'ts-loader',
-              options: {
-                configFile: "tsconfig.forge.json"
-              }
-            }],
-            exclude: /node_modules/,
-          },
-          cssRule,
-          scssRule,
-          ...assetRules
-        ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2019',
+          tsconfig: 'tsconfig.forge.json',
+        },
+        exclude: /node_modules/,
       },
+      cssRule,
+      scssRule,
+      ...assetRules
+    ],
+  },
   plugins: [
     new WebpackBar({
       color,
@@ -456,23 +453,23 @@ const debuggerConfig = (name, color) => ({
     publicPath: false
   },
   devtool: !isProd ? 'eval-source-map' : 'source-map',
-        module: {
-        rules: [
-          {
-            test: /\.tsx?$/,
-            use: [{
-              loader: 'ts-loader',
-              options: {
-                configFile: "tsconfig.debugger.json"
-              }
-            }],
-            exclude: /node_modules/,
-          },
-          cssRule,
-          scssRule,
-          ...assetRules
-        ],
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2019',
+          tsconfig: 'tsconfig.debugger.json',
+        },
+        exclude: /node_modules/,
       },
+      cssRule,
+      scssRule,
+      ...assetRules
+    ],
+  },
   plugins: [
     new WebpackBar({
       color,
@@ -495,11 +492,6 @@ const debuggerConfig = (name, color) => ({
     ...(isProd ? [new MiniCssExtractPlugin({
       filename: 'style.css'
     })] : []),
-    new MonacoWebpackPlugin({
-      publicPath: '/monaco',
-      globalAPI: true,
-      languages: ['json']
-    }),
   ],
   resolve: {
     alias: {
