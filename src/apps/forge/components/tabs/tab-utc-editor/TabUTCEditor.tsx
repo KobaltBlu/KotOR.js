@@ -661,15 +661,20 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-wrench',
       headerTitle: 'Skills',
       content: (
-        <>
+        <div className="skill-grid">
           {KotOR.SWRuleSet.skills.map((skill) => (
-            <div key={skill.id} className="d-flex align-items-center">
+            <div key={skill.id} className="skill-grid-item">
               <TextureCanvas texture={skill.icon} width={32} height={32} />
               <label>{skill.getName()}</label>
-              <input type="number" min="0" value={skillList[skill.id]} onChange={onUpdateNumberArrayField(setSkillList, skill.id, 'skillList')} />
+              <input
+                type="number"
+                min="0"
+                value={skillList[skill.id]}
+                onChange={onUpdateNumberArrayField(setSkillList, skill.id, 'skillList')}
+              />
             </div>
           ))}
-        </>
+        </div>
       )
     },
     {
