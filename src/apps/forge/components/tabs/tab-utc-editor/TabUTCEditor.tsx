@@ -757,8 +757,8 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <fieldset>
                     <legend>Faction</legend>
                     <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}>
-                      {Object.values(KotOR.FactionManager.factions).map((faction, index) => (
-                        <option key={index} value={index}>{faction.label}</option>
+                      {KotOR.SWRuleSet.factions.map((faction, index) => (
+                        <option key={faction.id} value={faction.id}>{faction.getName()}</option>
                       ))}
                     </select>
                   </fieldset>

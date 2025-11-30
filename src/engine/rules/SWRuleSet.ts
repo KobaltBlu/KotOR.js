@@ -25,6 +25,7 @@ import { SWCreatureSize } from "./SWCreatureSize";
 import { SWCreatureSpeed } from "./SWCreatureSpeed";
 import { SWRange } from "./SWRange";
 import { SWSkill } from "./SWSkill";
+import { SWFaction } from "./SWFaction";
 
 /**
  * SWRuleSet class.
@@ -69,6 +70,8 @@ export class SWRuleSet {
   static currentDifficulty: number = 0;
   static bodyBags: SWBodyBag[] = [];
   static priorityGroups: SWPriorityGroup[] = [];
+  static factions: SWFaction[] = [];
+  static factionCount: number = 0;
 
   static encounterDifficulties: SWEncounterDifficulty[] = [];
   static encounterDifficultyCount: number = 0;
@@ -303,14 +306,14 @@ export class SWRuleSet {
     }
 
     /**
-     * Initialize Encounter Difficulties
+     * Initialize Factions
      */
-    const encounterDifficulties = GameState.TwoDAManager.datatables.get('encdifficulty');
-    if(encounterDifficulties){
-      SWRuleSet.encounterDifficultyCount = encounterDifficulties.RowCount;
-      SWRuleSet.encounterDifficulties = new Array(SWRuleSet.encounterDifficultyCount);
-      for(let i = 0; i < encounterDifficulties.RowCount; i++){
-        SWRuleSet.encounterDifficulties[i] = SWEncounterDifficulty.From2DA(encounterDifficulties.rows[i]);
+    const factions = GameState.TwoDAManager.datatables.get('repute');
+    if(factions){
+      SWRuleSet.factionCount = factions.RowCount;
+      SWRuleSet.factions = new Array(SWRuleSet.factionCount);
+      for(let i = 0; i < factions.RowCount; i++){
+        SWRuleSet.factions[i] = SWFaction.From2DA(factions.rows[i]);
       }
     }
 
