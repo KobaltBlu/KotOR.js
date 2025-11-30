@@ -389,7 +389,7 @@ export class SWRuleSet {
     /**
      * Initialize Ranges
      */
-    const ranges = GameState.TwoDAManager.datatables.get('range');
+    const ranges = GameState.TwoDAManager.datatables.get('ranges');
     if(ranges){
       SWRuleSet.rangeCount = ranges.RowCount;
       SWRuleSet.ranges = new Array(SWRuleSet.rangeCount);
