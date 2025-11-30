@@ -633,7 +633,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <label>Movement Rate</label>
                   <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
                     {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
-                      <option key={speed.id} value={speed.id}>{speed.getName()}</option>
+                      <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
                     ))}
                   </select>
                 </fieldset>
