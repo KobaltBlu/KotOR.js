@@ -216,6 +216,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setSlotImplant(tab.slotImplant);
     setSlotHead(tab.slotHead);
     setSlotArms(tab.slotArms);
+    setPortrait(KotOR.SWRuleSet.portraits[portraitId]);
 
     // Update classList state
     if(tab.classList[0]){

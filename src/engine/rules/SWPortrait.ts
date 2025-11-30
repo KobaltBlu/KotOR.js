@@ -40,8 +40,8 @@ export class SWPortrait {
   static From2DA(row: any = {}){
     const portrait = new SWPortrait();
 
-    if(row.hasOwnProperty('id'))
-      portrait.id = TwoDAObject.normalizeValue(row.id, 'number', 0);
+    if(row.hasOwnProperty('__index'))
+      portrait.id = TwoDAObject.normalizeValue(row.__index, 'number', 0);
 
     if(row.hasOwnProperty('appearancenumber'))
       portrait.appearancenumber = TwoDAObject.normalizeValue(row.appearancenumber, 'number', 0);
