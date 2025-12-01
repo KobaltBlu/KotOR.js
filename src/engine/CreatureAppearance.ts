@@ -1,4 +1,5 @@
 import { TwoDAObject } from "../resource/TwoDAObject";
+import { Utility } from "../utility/Utility";
 
 /**
  * CreatureAppearance class.
@@ -122,6 +123,78 @@ export class CreatureAppearance {
   destroyobjectdelay: number = -1;
   disableinjuredanim: boolean = false;
   equipslotslocked: number = -1;
+
+  getBodyModelInfo(bodyVariation: string = '', textureVariation: number = 1): { model: string, texture: string } {
+    console.log('getBodyModelInfo', bodyVariation, textureVariation);
+    const defaultModel = this.modela.replace(/\0[\s\S]*$/g,'');
+    const defaultTexture = this.texa.replace(/\0[\s\S]*$/g,'');
+    let bodyModel = defaultModel; 
+    let bodyTexture = defaultTexture;
+
+    if(!bodyVariation){
+      if(this.modeltype != 'B'){
+        const raceTex = this.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        bodyModel = this.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        const match = raceTex.match(/\d+/);
+        bodyTexture = (match && textureVariation > 1) ? raceTex.replace( new RegExp("[0-9]+", "g"), Utility.PadInt( textureVariation, match[0].length ) ) : raceTex;
+      }else{
+        bodyModel = this.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
+        bodyTexture = this.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( textureVariation, 2);
+      }
+      return {
+        model: bodyModel.toLowerCase(),
+        texture: bodyTexture.toLowerCase()
+      }
+    }
+
+    switch(bodyVariation?.toLowerCase()){
+      case 'b':
+        bodyModel = this.modelb.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texb.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'c':
+        bodyModel = this.modelc.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texc.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'd':
+        bodyModel = this.modeld.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texd.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'e':
+        bodyModel = this.modele.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texe.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'f':
+        bodyModel = this.modelf.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texf.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'g':
+        bodyModel = this.modelg.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texg.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'h':
+        bodyModel = this.modelh.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texh.replace(/\0[\s\S]*$/g,'');
+      break;
+      case 'i':
+        bodyModel = this.modeli.replace(/\0[\s\S]*$/g,'');
+        bodyTexture = this.texi.replace(/\0[\s\S]*$/g,'');
+      break;
+      default:
+        bodyModel = defaultModel;
+        bodyTexture = defaultTexture;
+      break;
+    }
+
+    if(!!bodyTexture){
+      bodyTexture += Utility.PadInt( textureVariation, 2);
+    }
+
+    return {
+      model: !!bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
+      texture: !!bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
+    };
+  }
 
   static From2DA (row: any = {}): CreatureAppearance {
     const appearance = new CreatureAppearance();

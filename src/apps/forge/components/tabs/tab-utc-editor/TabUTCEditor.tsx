@@ -21,8 +21,51 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   const handleItemSlotClick = (slotType: KotOR.ModuleCreatureArmorSlot) => {
     const modal = new ModalItemBrowserState((item) => {
-      console.log('Item selected:', item);
-      // TODO: Update the slot with the selected item
+      switch(slotType){
+        case KotOR.ModuleCreatureArmorSlot.HEAD:
+          tab.setProperty('slotHead', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.ARMOR:
+          tab.setProperty('slotArmor', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
+          tab.setProperty('slotLeftHand', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
+          tab.setProperty('slotRightHand', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.BELT:
+          tab.setProperty('slotBelt', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.IMPLANT:
+          tab.setProperty('slotImplant', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTARMBAND:
+          tab.setProperty('slotLeftArmband', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND:
+          tab.setProperty('slotRightArmband', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.HIDE:
+          tab.setProperty('slotHide', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW1:
+          tab.setProperty('slotClaw1', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW2:
+          tab.setProperty('slotClaw2', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.CLAW3:
+          tab.setProperty('slotClaw3', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTHAND2:
+          tab.setProperty('slotRightHand2', item.resref);
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTHAND2:
+          tab.setProperty('slotLeftHand2', item.resref);
+          break;
+      }
+      tab.updateFile();
     });
     modal.attachToModalManager(ForgeState.modalManager);
     modal.open();

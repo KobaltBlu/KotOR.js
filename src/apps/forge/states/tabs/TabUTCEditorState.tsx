@@ -7,6 +7,15 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabUTCEditor } from "../../components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
 
+interface EngineItem {
+  baseItem: KotOR.SWBaseItem | undefined;
+  modelVariation: number;
+  textureVariation: number;
+  bodyVariation: string;
+}
+
+type TemplateSlotKey = 'headItem' | 'armorItem' | 'leftHandItem' | 'rightHandItem' | 'beltItem' | 'implantItem' | 'leftArmbandItem' | 'rightArmbandItem' | 'hideItem' | 'claw1Item' | 'claw2Item' | 'claw3Item' | 'leftHand2Item' | 'rightHand2Item';
+
 export interface SpecialAbilityEntry {
   /**
    * Special Ability ID index into the spells.2da datatable
@@ -170,6 +179,94 @@ export class TabUTCEditorState extends TabState {
         }
       }
     ];
+
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+  }
+
+  onPropertyChange(property: keyof TabUTCEditorState, newValue: any, oldValue: any){
+    if(property === 'appearanceType'){
+      if(newValue !== oldValue){
+        this.loadAppearance();
+        this.loadModel();
+      }
+    }
+    if(property === 'slotHead'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.HEAD);
+      }
+    }
+    if(property === 'slotArmor'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.ARMOR).then(() => {
+          this.loadModel();
+        });
+      }
+    }
+    if(property === 'slotLeftHand'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTHAND);
+      }
+    }
+    if(property === 'slotRightHand'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND);
+      }
+    }
+    if(property === 'slotBelt'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.BELT);
+      }
+    }
+    if(property === 'slotImplant'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.IMPLANT);
+      }
+    }
+    if(property === 'slotLeftArmband'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTARMBAND);
+      }
+    }
+    if(property === 'slotRightArmband'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND);
+      }
+    }
+    if(property === 'slotHide'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.HIDE);
+      }
+    }
+    if(property === 'slotClaw1'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.CLAW1);
+      }
+    }
+    if(property === 'slotClaw2'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.CLAW2);
+      }
+    }
+    if(property === 'slotClaw3'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.CLAW3);
+      }
+    }
+    if(property === 'slotHide'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.HIDE);
+      }
+    }
+    if(property === 'slotLeftHand2'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTHAND2);
+      }
+    }
+    if(property === 'slotRightHand2'){
+      if(newValue !== oldValue){
+        this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND2);
+      }
+    }
   }
 
   public openFile(file?: EditorFile){
@@ -186,7 +283,12 @@ export class TabUTCEditorState extends TabState {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
           this.loadAppearance();
-          this.loadModel();
+          (async () => {
+            await this.loadEquipment(KotOR.ModuleCreatureArmorSlot.ARMOR);
+            await this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTHAND);
+            await this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND);
+            await this.loadModel();
+          })();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -494,12 +596,178 @@ export class TabUTCEditorState extends TabState {
     }
   }
 
-  loadAppearance(){
+  creatureAppearance: KotOR.CreatureAppearance;
+  modelVariation: number = 0;
+  textureVariation: number = 0;
 
+  templateSlots: Record<TemplateSlotKey, EngineItem | undefined> = {
+    headItem: undefined,
+    armorItem: undefined,
+    leftHandItem: undefined,
+    rightHandItem: undefined,
+    beltItem: undefined,
+    implantItem: undefined,
+    leftArmbandItem: undefined,
+    rightArmbandItem: undefined,
+    hideItem: undefined,
+    claw1Item: undefined,
+    claw2Item: undefined,
+    claw3Item: undefined,
+    leftHand2Item: undefined,
+    rightHand2Item: undefined,
+  };
+
+  loadAppearance(){
+    const appearance = KotOR.AppearanceManager.GetCreatureAppearanceById(this.appearanceType);
+    if(appearance){
+      this.creatureAppearance = appearance;
+    }
   }
 
-  async loadModel(){
+  async loadEquipment(slot: KotOR.ModuleCreatureArmorSlot){
+    try{
+      let baseItemId: number = 0;
+      let baseItem: KotOR.SWBaseItem | undefined = undefined;
+      let modelVariation: number = 0;
+      let textureVariation: number = 0;
+      let bodyVariation: number = 1;
+      let itemTemplate: KotOR.GFFObject = new KotOR.GFFObject();
+      let slotKey: keyof typeof this.templateSlots | undefined = undefined;
 
+      const utiResId = KotOR.ResourceTypes.uti;
+
+      switch(slot){
+        case KotOR.ModuleCreatureArmorSlot.HEAD:
+          itemTemplate = new KotOR.GFFObject(
+            await KotOR.ResourceLoader.loadResource(utiResId, this.slotHead)
+          );
+          slotKey = 'headItem';
+          break;
+        case KotOR.ModuleCreatureArmorSlot.ARMOR:
+          itemTemplate = new KotOR.GFFObject(
+            await KotOR.ResourceLoader.loadResource(utiResId, this.slotArmor)
+          );
+          slotKey = 'armorItem';
+          break;
+        case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
+          itemTemplate = new KotOR.GFFObject(
+            await KotOR.ResourceLoader.loadResource(utiResId, this.slotLeftHand)
+          );
+          slotKey = 'leftHandItem';
+          break;
+        case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
+          itemTemplate = new KotOR.GFFObject(
+            await KotOR.ResourceLoader.loadResource(utiResId, this.slotRightHand)
+          );
+          slotKey = 'rightHandItem';
+          break;
+        default:
+          break;
+      }
+
+      if(slotKey){
+        this.templateSlots[slotKey] = undefined;
+      }
+      
+      if(itemTemplate && typeof slotKey === 'string'){
+        const root = itemTemplate.RootNode;
+        if(root.hasField('BaseItem')){
+          baseItemId = itemTemplate.getFieldByLabel('BaseItem').getValue() || 0;
+          baseItem = KotOR.SWRuleSet.baseItems[baseItemId];
+        }
+        if(root.hasField('ModelVariation')){
+          modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 0;
+        }
+        if(root.hasField('TextureVar')){
+          textureVariation = root.getFieldByLabel('TextureVar').getValue() || 0;
+        }
+        if(root.hasField('BodyVariation')){
+          bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || '';
+        }
+        this.templateSlots[slotKey] = {
+          baseItem: baseItem,
+          modelVariation: modelVariation,
+          textureVariation: textureVariation,
+          bodyVariation: baseItem?.bodyVar || (bodyVariation > 0 ? String.fromCharCode(bodyVariation + 64) : ''),
+        };
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  modelLoading: boolean = false;
+  async loadModel () {
+    if(this.modelLoading) return;
+    this.modelLoading = true;
+    try{
+      await this.loadBody();
+      await this.loadHead();
+    }catch(e){
+      console.error(e);
+    } 
+    this.modelLoading = false;
+  }
+
+  async loadBody(): Promise<KotOR.OdysseyModel3D> {
+
+    if(this.model){
+      this.model.removeFromParent();
+      try{ this.model.dispose(); }catch(e){}
+    }
+
+    const appearance = this.creatureAppearance;
+    let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
+    let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
+    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
+
+    try{
+      const mdl = await KotOR.MDLLoader.loader.load(bodyModel);
+      this.model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+        castShadow: true,
+        receiveShadow: true,
+        textureVar: bodyTexture,
+        isHologram: false,
+        context: this.ui3DRenderer,
+      });
+    }catch(e){
+      this.model = new KotOR.OdysseyModel3D();
+    }
+
+    this.ui3DRenderer.scene.add(this.model);
+
+    return this.model;
+  }
+
+  async loadHead() {
+    const appearance = this.creatureAppearance;
+    const headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    if(!( headId >= 0 && appearance.modeltype == 'B' )){
+      return;
+    }
+
+    const headDetails = KotOR.SWRuleSet.heads[headId];
+    if(!headDetails){
+      return;
+    }
+
+    try
+    {
+      const headTexture = headDetails.getTextureGoodEvil(this.goodEvil);
+      const mdl = await KotOR.MDLLoader.loader.load(headDetails.head);
+      const head = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+        context: this.ui3DRenderer,
+        castShadow: true,
+        receiveShadow: true,
+        isHologram: false,
+        textureVar: headTexture,
+      });
+      this.model.attachHead(head);
+    }
+    catch(e)
+    {
+      console.error(e);
+    }
   }
 
   box3: THREE.Box3 = new THREE.Box3();

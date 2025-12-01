@@ -26,6 +26,7 @@ import { SWCreatureSpeed } from "./SWCreatureSpeed";
 import { SWRange } from "./SWRange";
 import { SWSkill } from "./SWSkill";
 import { SWFaction } from "./SWFaction";
+import { SWBaseItem } from "./SWBaseItem";
 
 /**
  * SWRuleSet class.
@@ -37,6 +38,9 @@ import { SWFaction } from "./SWFaction";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SWRuleSet {
+
+  static baseItems: SWBaseItem[] = [];
+  static baseItemCount: number = 0;
 
   static classes: CreatureClass[] = [];
   static classCount: number = 0;
@@ -102,6 +106,17 @@ export class SWRuleSet {
 
   static Init(){
 
+    /**
+     * Initialize Base Items
+     */
+    const baseItems = GameState.TwoDAManager.datatables.get('baseitems');
+    if(baseItems){
+      SWRuleSet.baseItemCount = baseItems.RowCount;
+      SWRuleSet.baseItems = new Array(SWRuleSet.baseItemCount);
+      for(let i = 0; i < baseItems.RowCount; i++){
+        SWRuleSet.baseItems[i] = SWBaseItem.From2DA(baseItems.rows[i]);
+      }
+    }
     /**
      * Initialize Difficulty
      */

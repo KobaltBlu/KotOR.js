@@ -19,3 +19,4 @@ export * from "./SWSoundSet";
 export * from "./SWCreatureSize";
 export * from "./SWCreatureSpeed";
 export * from "./SWRange";
+export * from "./SWBaseItem";
