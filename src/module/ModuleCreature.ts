@@ -3295,21 +3295,15 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  loadModel (): Promise<OdysseyModel3D> {
+  async loadModel (): Promise<OdysseyModel3D> {
     this.isReady = false;
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      this.loadEquipmentModels().then(() => {
-        this.loadBody().then( () => {
-          this.loadHead().then(() => {
-            this.isReady = true;
-            this.updateCollision(0.0000000000000000000001);
-            this.update(0.0000000000000000000001);
-            resolve(this.model);
-          });
-        });
-      });
-    });
-
+    await this.loadEquipmentModels();
+    await this.loadBody();
+    await this.loadHead();
+    this.isReady = true;
+    this.updateCollision(0.0000000000000000000001);
+    this.update(0.0000000000000000000001);
+    return this.model;
   }
 
   async loadBody() {
