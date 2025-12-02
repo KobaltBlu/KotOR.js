@@ -202,7 +202,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
           let currentPC = GameState.PartyManager.party[0];
-          currentPC.equipItem(this.slot, this.selectedItem, () => {
+          currentPC.equipItem(this.slot, this.selectedItem).then( () => {
             this.updateSlotIcons();
           });
           this.slot = null as any;
@@ -228,8 +228,8 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(right_1) right_1.destroy();
 
-          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1, () => { this.updateSlotIcons(true); });
-          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2, () => { this.updateSlotIcons(true); });
+          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1).then( () => { this.updateSlotIcons(true); });
+          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2).then( () => { this.updateSlotIcons(true); });
 
           const left_1 = currentPC.equipment.LEFTHAND;
           const left_2 = currentPC.equipment.LEFTHAND2;
@@ -238,8 +238,8 @@ export class MenuEquipment extends K1_MenuEquipment {
 
           if(left_1) left_1.destroy();
 
-          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1, () => { this.updateSlotIcons(true); });
-          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2, () => { this.updateSlotIcons(true); });
+          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1).then( () => { this.updateSlotIcons(true); });
+          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2).then( () => { this.updateSlotIcons(true); });
           this.updateSlotIcons(true);
         }
       });

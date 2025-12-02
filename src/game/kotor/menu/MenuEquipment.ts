@@ -207,7 +207,7 @@ export class MenuEquipment extends GameMenu {
           if(this.selectedItem instanceof GUIItemNone){
             currentPC.unequipSlot(this.slot);
           }else if(this.selectedItem instanceof ModuleItem){
-            currentPC.equipItem(this.slot, this.selectedItem, () => {
+            currentPC.equipItem(this.slot, this.selectedItem).then( () => {
               this.updateSlotIcons();
             });
           }

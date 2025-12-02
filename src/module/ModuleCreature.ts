@@ -3432,62 +3432,47 @@ export class ModuleCreature extends ModuleObject {
     return [];
   }*/
 
-  equipItem(slot = 0x1, item: ModuleItem, onLoad?: Function){
+  async equipItem(slot = 0x1, item: ModuleItem){
     if(!item){
-      if(typeof onLoad == 'function')
-        onLoad();
-
       return;
     }
 
     this.unequipSlot(slot);
     item.onEquip(this);
-    item.loadModel().then( () => {
-      switch(slot){
-        case ModuleCreatureArmorSlot.ARMOR:
-          this.equipment.ARMOR = item;
-          this.loadModel().then(() => {
-            if(typeof onLoad == 'function')
-              onLoad();
-          });
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND:
-          this.equipment.RIGHTHAND = item;
-          item.loadModel().then(() => {
-            if(item.model instanceof OdysseyModel3D)
-              this.model.rhand.add(item.model);
-
-            if(typeof onLoad == 'function')
-              onLoad();
-          });
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND:
-          this.equipment.LEFTHAND = item;
-          item.loadModel().then(() => {
-            if(item.model instanceof OdysseyModel3D)
-              this.model.lhand.add(item.model);
-
-            if(typeof onLoad == 'function')
-              onLoad();
-          });
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND2:
-          this.equipment.RIGHTHAND2 = item;
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND2:
-          this.equipment.LEFTHAND2 = item;
-        break;
-        case ModuleCreatureArmorSlot.CLAW1:
-          this.equipment.CLAW1 = item;
-        break;
-        case ModuleCreatureArmorSlot.CLAW2:
-          this.equipment.CLAW2 = item;
-        break;
-        case ModuleCreatureArmorSlot.CLAW3:
-          this.equipment.CLAW3 = item;
-        break;
-      }
-    });
+    await item.loadModel();
+    switch(slot){
+      case ModuleCreatureArmorSlot.ARMOR:
+        this.equipment.ARMOR = item;
+        await this.loadModel();
+      break;
+      case ModuleCreatureArmorSlot.RIGHTHAND:
+        this.equipment.RIGHTHAND = item;
+        await item.loadModel();
+        if(item.model instanceof OdysseyModel3D)
+          this.model.rhand.add(item.model);
+      break;
+      case ModuleCreatureArmorSlot.LEFTHAND:
+        this.equipment.LEFTHAND = item;
+        await item.loadModel();
+        if(item.model instanceof OdysseyModel3D)
+          this.model.lhand.add(item.model);
+      break;
+      case ModuleCreatureArmorSlot.RIGHTHAND2:
+        this.equipment.RIGHTHAND2 = item;
+      break;
+      case ModuleCreatureArmorSlot.LEFTHAND2:
+        this.equipment.LEFTHAND2 = item;
+      break;
+      case ModuleCreatureArmorSlot.CLAW1:
+        this.equipment.CLAW1 = item;
+      break;
+      case ModuleCreatureArmorSlot.CLAW2:
+        this.equipment.CLAW2 = item;
+      break;
+      case ModuleCreatureArmorSlot.CLAW3:
+        this.equipment.CLAW3 = item;
+      break;
+    }
   }
 
   unequipSlot(slot = 0x1){
@@ -3699,78 +3684,6 @@ export class ModuleCreature extends ModuleObject {
         return null;
       break;
     }
-
-  }
-
-  loadEquipmentItem(args: any = {}){
-
-    args = Object.assign({
-      item: new GFFObject(),
-      Slot: 0x01,
-      onLoad: null,
-      onError: null
-    }, args);
-    //console.log('loadEquipmentItem', args);
-    let uti: ModuleItem = args.item;
-
-    if(uti instanceof GFFObject)
-      uti = new GameState.Module.ModuleArea.ModuleItem(uti);
-
-    switch(args.Slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        this.equipment.IMPLANT = uti;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        this.equipment.HEAD = uti;
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        this.equipment.ARMS = uti;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        this.equipment.ARMOR = uti;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        this.equipment.RIGHTHAND = uti;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        this.equipment.LEFTHAND = uti;
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        this.equipment.BELT = uti;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        this.equipment.RIGHTARMBAND = uti;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        this.equipment.LEFTARMBAND = uti;
-      break;
-      case ModuleCreatureArmorSlot.HIDE:
-        this.equipment.HIDE = uti;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        this.equipment.CLAW1 = uti;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        this.equipment.CLAW2 = uti;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        this.equipment.CLAW3 = uti;
-      break;
-    }
-    
-    if(!uti.load()){
-      if(typeof args.onLoad == 'function')
-        args.onLoad();
-
-      return;
-    }
-    uti.loadModel().then( () => {
-      if(args.Slot == ModuleCreatureArmorSlot.RIGHTHAND || args.Slot == ModuleCreatureArmorSlot.LEFTHAND){
-        uti.model.playAnimation('off', true);
-      }
-      if(typeof args.onLoad == 'function')
-        args.onLoad();
-    });
 
   }
 
