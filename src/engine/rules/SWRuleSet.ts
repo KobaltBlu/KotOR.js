@@ -27,6 +27,9 @@ import { SWRange } from "./SWRange";
 import { SWSkill } from "./SWSkill";
 import { SWFaction } from "./SWFaction";
 import { SWBaseItem } from "./SWBaseItem";
+import { SWCreatureAppearance } from "./SWCreatureAppearance";
+import { SWDoorAppearance } from "./SWDoorAppearance";
+import { SWPlaceableAppearance } from ".";
 
 /**
  * SWRuleSet class.
@@ -103,6 +106,15 @@ export class SWRuleSet {
 
   static skills: SWSkill[] = [];
   static skillCount: number = 0;
+
+  static creatureAppearances: SWCreatureAppearance[] = [];
+  static creatureAppearanceCount: number = 0;
+
+  static doorAppearances: SWDoorAppearance[] = [];
+  static doorAppearanceCount: number = 0;
+
+  static placeableAppearances: SWPlaceableAppearance[] = [];
+  static placeableAppearanceCount: number = 0;
 
   static Init(){
 
@@ -427,7 +439,42 @@ export class SWRuleSet {
         SWRuleSet.skills[i] = SWSkill.From2DA(skills.rows[i]);
       }
     }
-    
+
+    /**
+     * Initialize Creature Appearances
+     */
+    const creatureAppearances = GameState.TwoDAManager.datatables.get('appearance');
+    if(creatureAppearances){
+      SWRuleSet.creatureAppearanceCount = creatureAppearances.RowCount;
+      SWRuleSet.creatureAppearances = new Array(SWRuleSet.creatureAppearanceCount);
+      for(let i = 0; i < creatureAppearances.RowCount; i++){
+        SWRuleSet.creatureAppearances[i] = SWCreatureAppearance.From2DA(creatureAppearances.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Door Appearances
+     */
+    const doorAppearances = GameState.TwoDAManager.datatables.get('genericdoors');
+    if(doorAppearances){
+      SWRuleSet.doorAppearanceCount = doorAppearances.RowCount;
+      SWRuleSet.doorAppearances = new Array(SWRuleSet.doorAppearanceCount);
+      for(let i = 0; i < doorAppearances.RowCount; i++){
+        SWRuleSet.doorAppearances[i] = SWDoorAppearance.From2DA(doorAppearances.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Placeable Appearances
+     */
+    const placeableAppearances = GameState.TwoDAManager.datatables.get('placeables');
+    if(placeableAppearances){
+      SWRuleSet.placeableAppearanceCount = placeableAppearances.RowCount;
+      SWRuleSet.placeableAppearances = new Array(SWRuleSet.placeableAppearanceCount);
+      for(let i = 0; i < placeableAppearances.RowCount; i++){
+        SWRuleSet.placeableAppearances[i] = SWPlaceableAppearance.From2DA(placeableAppearances.rows[i]);
+      }
+    }
   }
 
   /**

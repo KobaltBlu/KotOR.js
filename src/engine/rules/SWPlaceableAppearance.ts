@@ -1,15 +1,15 @@
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
- * PlaceableAppearance class.
+ * SWPlaceableAppearance class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * @file PlaceableAppearance.ts
+ * @file SWPlaceableAppearance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class PlaceableAppearance {
+export class SWPlaceableAppearance {
   id: number = -1;
   label: string = '';
   strref: number = -1;
@@ -30,8 +30,8 @@ export class PlaceableAppearance {
   ignorestatichitcheck: boolean = false;
   usesearch: boolean = false; //TSL
 
-  static From2DA (row: any = {}): PlaceableAppearance {
-    const appearance = new PlaceableAppearance();
+  static From2DA (row: any = {}): SWPlaceableAppearance {
+    const appearance = new SWPlaceableAppearance();
 
     appearance.id = parseInt(row.__index);
 

@@ -223,6 +223,11 @@ export class GameInitializer {
      */
     GameState.SWRuleSet.Init();
 
+    /**
+     * Initialize AppearanceManager
+     */
+    GameState.AppearanceManager.Init();
+
     GameInitializer.SetLoadingMessage("Loading INI File");
     /**
      * Initialize INIConfig
@@ -374,7 +379,6 @@ export class GameInitializer {
   static async Load2DAs(){
     PerformanceMonitor.start('GameInitializer.Load2DAs');
     await GameState.TwoDAManager.Load2DATables();
-    GameState.AppearanceManager.Init();
     PerformanceMonitor.stop('GameInitializer.Load2DAs');
   }
 

@@ -20,3 +20,6 @@ export * from "./SWCreatureSize";
 export * from "./SWCreatureSpeed";
 export * from "./SWRange";
 export * from "./SWBaseItem";
+export * from "./SWCreatureAppearance";
+export * from "./SWDoorAppearance";
+export * from "./SWPlaceableAppearance";

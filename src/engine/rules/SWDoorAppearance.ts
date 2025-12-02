@@ -1,15 +1,15 @@
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
- * DoorAppearance class.
+ * SWDoorAppearance class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * @file DoorAppearance.ts
+ * @file SWDoorAppearance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class DoorAppearance {
+export class SWDoorAppearance {
   id: number = -1;
   label: string = '';
   strref: number = -1;
@@ -22,8 +22,8 @@ export class DoorAppearance {
   nobin: boolean = false;
   staticanim: string = '';
 
-  static From2DA (row: any = {}): DoorAppearance {
-    const appearance = new DoorAppearance();
+  static From2DA (row: any = {}): SWDoorAppearance {
+    const appearance = new SWDoorAppearance();
     
     appearance.id = parseInt(row.__index);
 

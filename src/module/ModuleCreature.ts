@@ -35,7 +35,7 @@ import { AttackResult } from "../enums/combat/AttackResult";
 // import { ICombatAction } from "../interface/combat/ICombatAction";
 import { DLGObject } from "../resource/DLGObject";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { CreatureAppearance } from "../engine/CreatureAppearance";
+import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
 import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "../enums/combat/WeaponWield";
@@ -173,7 +173,7 @@ export class ModuleCreature extends ModuleObject {
   getUpAnimationPlayed: boolean;
   animSpeed: number;
   selectedNPC: number;
-  creatureAppearance: CreatureAppearance;
+  creatureAppearance: SWCreatureAppearance;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -2848,7 +2848,7 @@ export class ModuleCreature extends ModuleObject {
     return this.firstName;
   }
 
-  getAppearance(): CreatureAppearance {
+  getAppearance(): SWCreatureAppearance {
     return this.creatureAppearance;
     // const appearance2DA = TwoDAManager.datatables.get('appearance');
     // if(appearance2DA){
@@ -3312,167 +3312,68 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  loadBody(): Promise<OdysseyModel3D> {
-    return new Promise<OdysseyModel3D>( (resolve, reject) => {
-      let appearance = this.creatureAppearance;
-      this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();
-      this.textureVar = 1;
-      if(this.equipment.ARMOR){
-        this.textureVar = this.equipment.ARMOR.getTextureVariation() || 1;
-        //console.log('ModuleCreature', this, this.textureVar);
-        if(appearance.modeltype != 'B'){
+  async loadBody() {
+    let appearance = this.creatureAppearance;
+    let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
+    let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
+    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation, textureVariation);
+    this.bodyModel = bodyModel;
+    this.bodyTexture = bodyTexture;
 
-          let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'');
-          this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-          let match = raceTex.match(/\d+/);
+    if(!this.bodyModel || this.bodyModel.length === 0){
+      this.model = new OdysseyModel3D();
+      return this.model;
+    }
+    
+    try{
+      const mdl = await MDLLoader.loader.load(this.bodyModel);
+      const model = await OdysseyModel3D.FromMDL(mdl, {
+        castShadow: true,
+        receiveShadow: true,
+        textureVar: this.bodyTexture,
+        isHologram: this.isHologram,
+        context: this.context,
+      });
 
-          this.bodyTexture = raceTex;
-          
-          /*if(match && this.textureVar){
+      if(this.model){
+        this.model.removeFromParent();
+        try{ this.model.dispose(); }catch(e){}
+      }
+      
+      model.addEventListener('playEvent', this.playEvent.bind(this));
 
-            match = match[0];
-            this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? pad( this.textureVar, match.length ) : '' );
-            //console.log('ModuleCreature', this, this.bodyTexture, this.textureVar);
-          }else{
+      this.model = model;
+      this.model.userData.moduleObject = this;
+      this.container.add(this.model);
+      this.box.setFromObject(this.container);
 
-            this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
-            //console.log('ModuleCreature', this, raceTex);
-          }*/
-
-          //console.log('ModuleCreature', 'body 1', this, this.bodyTexture, raceTex, this.textureVar, appearance);
-          
-        }else{
-          switch(this.equipment.ARMOR.getBodyVariation().toLowerCase()){
-            case 'a':
-              this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'b':
-              this.bodyModel = appearance.modelb.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texb.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'c':
-              this.bodyModel = appearance.modelc.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texc.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'd':
-              this.bodyModel = appearance.modeld.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texd.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'e':
-              this.bodyModel = appearance.modele.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texe.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'f':
-              this.bodyModel = appearance.modelf.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texf.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'g':
-              this.bodyModel = appearance.modelg.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texg.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'h':
-              this.bodyModel = appearance.modelh.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texh.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            case 'i':
-              this.bodyModel = appearance.modeli.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texi.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
-            default:
-              this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-              this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase();// + pad( this.textureVar, 2);
-            break;
+      try{
+        if(this.model.lhand instanceof OdysseyObject3D){
+          if(this.equipment.LEFTHAND && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
+            this.model.lhand.add(this.equipment.LEFTHAND.model);
           }
-
-          if(this.bodyTexture != '****'){
-            this.bodyTexture += Utility.PadInt( this.textureVar, 2);
-          }
-
-          //console.log('ModuleCreature', 'body 1B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
         }
-        
-      }else{
-        if(appearance.modeltype != 'B'){
-          let raceTex = appearance.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
-          this.bodyModel = appearance.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-
-          let match = raceTex.match(/\d+/);
-          if(match && this.textureVar > 1){
-            match = match[0] as any;
-            this.bodyTexture = raceTex.replace( new RegExp("[0-9]+", "g"), this.textureVar ? Utility.PadInt( this.textureVar, match.length ) : '' );
-          }else{
-            this.bodyTexture = raceTex; //(raceTex != '****' ? raceTex : 0) + ((this.textureVar < 10) ? (this.textureVar) : this.textureVar)
-          }
-
-          //console.log('ModuleCreature', 'body 2', this, this.bodyTexture, raceTex, this.textureVar, appearance);
-        }else{
-          this.bodyModel = appearance.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-          this.bodyTexture = appearance.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( this.textureVar, 2);
-
-          //console.log('ModuleCreature', 'body 2B', this, this.bodyTexture, this.bodyModel, this.textureVar, appearance);
-        }
+      }catch(e){
+        console.error('ModuleCreature.LoadBody', e);
       }
 
-      if(this.bodyModel == '****'){
-        this.model = new OdysseyModel3D();
-        resolve(this.model);
-      }else{
-        MDLLoader.loader.load(this.bodyModel).then( 
-          (mdl: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(mdl, {
-              castShadow: true,
-              receiveShadow: true,
-              textureVar: this.bodyTexture,
-              isHologram: this.isHologram,
-              context: this.context,
-            }).then((model: OdysseyModel3D) => {
-              if(this.model){
-                this.model.removeFromParent();
-                try{ this.model.dispose(); }catch(e){}
-              }
-              
-              model.addEventListener('playEvent', this.playEvent.bind(this));
-
-              this.model = model;
-              this.model.userData.moduleObject = this;
-              this.container.add(this.model);
-              this.box.setFromObject(this.container);
-
-              try{
-                if(this.model.lhand instanceof OdysseyObject3D){
-                  if(this.equipment.LEFTHAND && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-                    this.model.lhand.add(this.equipment.LEFTHAND.model);
-                  }
-                }
-              }catch(e){
-                console.error('ModuleCreature.LoadBody', e);
-              }
-
-              try{
-                if(this.model.rhand instanceof OdysseyObject3D){
-                  if(this.equipment.RIGHTHAND && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-                    this.model.rhand.add(this.equipment.RIGHTHAND.model);
-                  }
-                }
-              }catch(e){
-                console.error('ModuleCreature.LoadBody', e);
-              }
-
-              resolve(this.model)
-
-              this.model.disableMatrixUpdate();
-
-            }).catch(() => {
-              resolve(this.model);
-            });
+      try{
+        if(this.model.rhand instanceof OdysseyObject3D){
+          if(this.equipment.RIGHTHAND && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
+            this.model.rhand.add(this.equipment.RIGHTHAND.model);
           }
-        ).catch(() => {
-          resolve(this.model);
-        });
+        }
+      }catch(e){
+        console.error('ModuleCreature.LoadBody', e);
       }
-    });
+
+      this.model.disableMatrixUpdate();
+      return this.model;
+    }catch(e){
+      console.error(e);
+      this.model = new OdysseyModel3D();
+      return this.model;
+    }
   }
 
   async loadHead(): Promise<OdysseyModel3D> {

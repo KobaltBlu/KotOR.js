@@ -24,7 +24,7 @@ import { MDLLoader, ResourceLoader } from "../loaders";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { DoorAppearance } from "../engine/DoorAppearance";
+import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
@@ -102,7 +102,7 @@ export class ModuleDoor extends ModuleObject {
   destroyAnimationPlayed: boolean = false;
 
   collisionDelay: number = 0;
-  doorAppearance: DoorAppearance;
+  doorAppearance: SWDoorAppearance;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);

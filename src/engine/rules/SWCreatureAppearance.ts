@@ -1,16 +1,16 @@
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { Utility } from "../utility/Utility";
+import { TwoDAObject } from "../../resource/TwoDAObject";
+import { Utility } from "../../utility/Utility";
 
 /**
- * CreatureAppearance class.
+ * SWCreatureAppearance class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * @file CreatureAppearance.ts
+ * @file SWCreatureAppearance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class CreatureAppearance {
+export class SWCreatureAppearance {
   id: number = -1;
   label: string = '';
   string_ref: number = -1;
@@ -196,8 +196,8 @@ export class CreatureAppearance {
     };
   }
 
-  static From2DA (row: any = {}): CreatureAppearance {
-    const appearance = new CreatureAppearance();
+  static From2DA (row: any = {}): SWCreatureAppearance {
+    const appearance = new SWCreatureAppearance();
     
     appearance.id = parseInt(row.__index);
 

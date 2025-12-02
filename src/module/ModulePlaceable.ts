@@ -18,7 +18,7 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { MDLLoader, ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { OdysseyModel3D } from "../three/odyssey";
-import { PlaceableAppearance } from "../engine/PlaceableAppearance";
+import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
 // import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "../managers";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
@@ -91,7 +91,7 @@ export class ModulePlaceable extends ModuleObject {
     loop: false,
     started: false
   };
-  placeableAppearance: PlaceableAppearance;
+  placeableAppearance: SWPlaceableAppearance;
 
   constructor ( gff = new GFFObject()) {
     super(gff);
@@ -373,7 +373,7 @@ export class ModulePlaceable extends ModuleObject {
     return this.inventory;
   }
 
-  getAppearance(): PlaceableAppearance {
+  getAppearance(): SWPlaceableAppearance {
     return this.placeableAppearance;
   }
 

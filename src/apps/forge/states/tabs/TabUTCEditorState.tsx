@@ -596,7 +596,7 @@ export class TabUTCEditorState extends TabState {
     }
   }
 
-  creatureAppearance: KotOR.CreatureAppearance;
+  creatureAppearance: KotOR.SWCreatureAppearance;
   modelVariation: number = 0;
   textureVariation: number = 0;
 
@@ -736,6 +736,8 @@ export class TabUTCEditorState extends TabState {
 
     this.ui3DRenderer.scene.add(this.model);
 
+    this.updateCameraFocus();
+
     return this.model;
   }
 
@@ -763,6 +765,8 @@ export class TabUTCEditorState extends TabState {
         textureVar: headTexture,
       });
       this.model.attachHead(head);
+
+      this.updateCameraFocus();
     }
     catch(e)
     {
@@ -778,6 +782,9 @@ export class TabUTCEditorState extends TabState {
   updateCameraFocus(){
     if(!this.model) return;
 
+    const oldRotationZ = this.model.rotation.z;
+    this.model.rotation.z = 0;
+
     this.model.position.set(0, 0, 0);
     this.box3.setFromObject(this.model);
     this.box3.getCenter(this.center);
@@ -786,14 +793,15 @@ export class TabUTCEditorState extends TabState {
     //Center the object to 0
     this.model.position.set(-this.center.x, -this.center.y, -this.center.z);
     this.ui3DRenderer.camera.position.z = 0;
-    this.ui3DRenderer.camera.position.y = this.size.x + this.size.y;
+    this.ui3DRenderer.camera.position.y = (this.size.x + this.size.y) * 1.5;
     this.ui3DRenderer.camera.lookAt(this.origin)
+
+    this.model.rotation.z = oldRotationZ;
   }
 
   show(): void {
     super.show();
     this.ui3DRenderer.enabled = true;
-    this.updateCameraFocus();
     this.ui3DRenderer.render();
   }
 
@@ -808,6 +816,7 @@ export class TabUTCEditorState extends TabState {
       this.model.update(delta);
       //rotate the object in the viewport
       this.model.rotation.z += delta;
+      this.updateCameraFocus();
     }
 
     // if(this.moduleCreature && this.moduleCreature.model){

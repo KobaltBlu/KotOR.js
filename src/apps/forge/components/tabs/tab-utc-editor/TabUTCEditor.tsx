@@ -163,7 +163,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [creatureClass, setCreatureClass] = useState<number>(0);
   const [creatureLevel, setCreatureLevel] = useState<number>(1);
   const [knownList0, setKnownList0] = useState<KnownSpellEntry[]>([]);
-  const [appearanceList, setAppearanceList] = useState<KotOR.CreatureAppearance[]>([]);
+  const [appearanceList, setAppearanceList] = useState<KotOR.SWCreatureAppearance[]>([]);
   const [raceList, setRaceList] = useState<KotOR.SWRace[]>([]);
 
   const [portrait, setPortrait] = useState<KotOR.SWPortrait>(new KotOR.SWPortrait());

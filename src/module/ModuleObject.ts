@@ -32,9 +32,9 @@ import { EngineMode } from "../enums/engine/EngineMode";
 import { DLGObject } from "../resource/DLGObject";
 import { Faction } from "../engine/Faction";
 import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { PlaceableAppearance } from "../engine/PlaceableAppearance";
-import { CreatureAppearance } from "../engine/CreatureAppearance";
-import { DoorAppearance } from "../engine/DoorAppearance";
+import { SWPlaceableAppearance } from "../engine/rules/SWPlaceableAppearance";
+import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
+import { SWDoorAppearance } from "../engine/rules/SWDoorAppearance";
 import { IDialogAnimationState } from "../interface/animation/IDialogAnimationState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
@@ -1593,7 +1593,7 @@ export class ModuleObject {
    * Get the appearance
    * @returns 
    */
-  getAppearance(): PlaceableAppearance|CreatureAppearance|DoorAppearance {
+  getAppearance(): SWPlaceableAppearance|SWCreatureAppearance|SWDoorAppearance {
     return;
   }
 

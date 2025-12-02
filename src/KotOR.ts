@@ -67,9 +67,6 @@ export * from "./engine/TextSprite3D";
 export * from "./engine/INIConfig";
 export * from "./engine/CurrentGame";
 export * from "./engine/rules";
-export * from "./engine/CreatureAppearance";
-export * from "./engine/DoorAppearance";
-export * from "./engine/PlaceableAppearance";
 
 export * from "./talents";
 export * from "./engine/menu/ActionMenuManager";
