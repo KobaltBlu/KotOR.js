@@ -2,6 +2,13 @@ import * as THREE from "three";
 import { OdysseyLight3D } from "../three/odyssey";
 import type { ModuleObject } from "../module";
 
+interface IOdysseyAnimatedLightUniformStruct {
+  position: THREE.Vector3;
+  color: THREE.Color;
+  distance: number;
+  decay: number;
+}
+
 /**
  * LightManager class.
  * 
@@ -29,6 +36,9 @@ export class LightManager {
   new_lights: OdysseyLight3D[];
   new_lights_uuids: string[];
   new_lights_spawned: number;
+
+  animatedLights: IOdysseyAnimatedLightUniformStruct[] = [];
+  animatedLightsCacheID: number = 0;
 
   context: any;
 
@@ -180,6 +190,7 @@ export class LightManager {
   }
 
   updateDynamicLights(delta = 0){
+    this.animatedLights = [];
     this.tmpLights = [];//this.lights.slice();
     //let ambientLights = this.lights.filter(light => light.odysseyModel.visible && (light.isAmbient || (light.odysseyModelNode.radius*light.odysseyModelNode.multiplier) > 50));
     //let shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
@@ -324,16 +335,40 @@ export class LightManager {
       }
       
     }
+		// artist-friendly light intensity scaling factor
+		const scaleFactor = ( this.context?.renderer?.physicallyCorrectLights !== true ) ? Math.PI : 1;
 
+    let animatedLightsNeedUpdate = false;
+    let animatedLightIndex = 0;
     for( let i = 0, il = this.light_pool.length; i < il; i++ ){
       let lightNode = this.light_pool[i];
       let light = this.light_pool[i].userData.odysseyLight;
-      if(light && light.isAnimated){
-        lightNode.decay = LightManager.DECAY;
-        lightNode.distance = Math.abs(light.getRadius() );
-        //lightNode.intensity = 1;//light.getIntensity();// * ((lightNode.color.r + lightNode.color.g + lightNode.color.b) / 3);
-        //console.log(lightNode.distance);
+      if(!light || !light.isAnimated){ continue; }
+
+      lightNode.decay = LightManager.DECAY;
+      lightNode.distance = Math.abs(light.getRadius());
+      //lightNode.intensity = 1;//light.getIntensity();// * ((lightNode.color.r + lightNode.color.g + lightNode.color.b) / 3);
+      //console.log(lightNode.distance);
+      
+      const animatedLight: IOdysseyAnimatedLightUniformStruct = {
+        position: lightNode.position,
+        color: lightNode.color.clone().copy(lightNode.color).multiplyScalar( lightNode.intensity * scaleFactor ),
+        distance: lightNode.distance,
+        decay: lightNode.decay
+      };
+
+      const currentAnimatedLight = this.animatedLights[animatedLightIndex];
+      if(currentAnimatedLight && currentAnimatedLight.position.equals(animatedLight.position) && currentAnimatedLight.color.equals(animatedLight.color) && currentAnimatedLight.distance === animatedLight.distance && currentAnimatedLight.decay === animatedLight.decay){
+        continue;
       }
+      this.animatedLights[animatedLightIndex] = animatedLight;
+      animatedLightsNeedUpdate = true;
+      animatedLightIndex++;
+    }
+    const diffLightCount = !!(this.animatedLights.length - animatedLightIndex);
+    this.animatedLights.length = animatedLightIndex;
+    if(animatedLightsNeedUpdate || diffLightCount){
+      this.animatedLightsCacheID++;
     }
   }
   

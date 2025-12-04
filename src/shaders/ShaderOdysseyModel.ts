@@ -225,150 +225,26 @@ export class ShaderOdysseyModel extends Shader {
     #include <cube_uv_reflection_fragment>
     #include <fog_pars_fragment>
     #include <bsdfs>
+    #include <lights_pars_begin>
     
     //ADD Animated to PointLight struct
-    uniform bool receiveShadow;
-    uniform vec3 ambientLightColor;
-    uniform vec3 lightProbe[ 9 ];
-
-    // get the irradiance (radiance convolved with cosine lobe) at the point 'normal' on the unit sphere
-    // source: https://graphics.stanford.edu/papers/envmap/envmap.pdf
-    vec3 shGetIrradianceAt( in vec3 normal, in vec3 shCoefficients[ 9 ] ) {
-      // normal is assumed to have unit length
-      float x = normal.x, y = normal.y, z = normal.z;
-      // band 0
-      vec3 result = shCoefficients[ 0 ] * 0.886227;
-      // band 1
-      result += shCoefficients[ 1 ] * 2.0 * 0.511664 * y;
-      result += shCoefficients[ 2 ] * 2.0 * 0.511664 * z;
-      result += shCoefficients[ 3 ] * 2.0 * 0.511664 * x;
-      // band 2
-      result += shCoefficients[ 4 ] * 2.0 * 0.429043 * x * y;
-      result += shCoefficients[ 5 ] * 2.0 * 0.429043 * y * z;
-      result += shCoefficients[ 6 ] * ( 0.743125 * z * z - 0.247708 );
-      result += shCoefficients[ 7 ] * 2.0 * 0.429043 * x * z;
-      result += shCoefficients[ 8 ] * 0.429043 * ( x * x - y * y );
-      return result;
-    }
-
-    vec3 getLightProbeIrradiance( const in vec3 lightProbe[ 9 ], const in vec3 normal ) {
-      vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-      vec3 irradiance = shGetIrradianceAt( worldNormal, lightProbe );
-      return irradiance;
-    }
-
-    vec3 getAmbientLightIrradiance( const in vec3 ambientLightColor ) {
-      vec3 irradiance = ambientLightColor;
-      return irradiance;
-    }
-
-    float getDistanceAttenuation( const in float lightDistance, const in float cutoffDistance, const in float decayExponent ) {
-      #if defined ( PHYSICALLY_CORRECT_LIGHTS )
-        // based upon Frostbite 3 Moving to Physically-based Rendering
-        // page 32, equation 26: E[window1]
-        // https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf
-        float distanceFalloff = 1.0 / max( pow( lightDistance, decayExponent ), 0.01 );
-        if ( cutoffDistance > 0.0 ) {
-          distanceFalloff *= pow2( saturate( 1.0 - pow4( lightDistance / cutoffDistance ) ) );
-        }
-        return distanceFalloff;
-      #else
-        if ( cutoffDistance > 0.0 && decayExponent > 0.0 ) {
-          return pow( saturate( - lightDistance / cutoffDistance + 1.0 ), decayExponent );
-        }
-        return 1.0;
-      #endif
-    }
-
-    float getSpotAttenuation( const in float coneCosine, const in float penumbraCosine, const in float angleCosine ) {
-      return smoothstep( coneCosine, penumbraCosine, angleCosine );
-    }
-
-    #if NUM_DIR_LIGHTS > 0
-      struct DirectionalLight {
-        vec3 direction;
-        vec3 color;
-      };
-      uniform DirectionalLight directionalLights[ NUM_DIR_LIGHTS ];
-      void getDirectionalLightInfo( const in DirectionalLight directionalLight, const in GeometricContext geometry, out IncidentLight light ) {
-        light.color = directionalLight.color;
-        light.direction = directionalLight.direction;
-        light.visible = true;
-      }
-    #endif
-    #if NUM_POINT_LIGHTS > 0
-      struct PointLight {
+    #ifdef USE_ANIMATED_LIGHTS
+      struct AnimPointLight {
         vec3 position;
         vec3 color;
         float distance;
-        float animated;
         float decay;
       };
-      uniform PointLight pointLights[ NUM_POINT_LIGHTS ];
+      uniform AnimPointLight animPointLights[ NUM_ANIM_POINT_LIGHTS ];
 
       // light is an out parameter as having it as a return value caused compiler errors on some devices
-      void getPointLightInfo( const in PointLight pointLight, const in GeometricContext geometry, out IncidentLight light ) {
+      void getPointAnimLightInfo( const in AnimPointLight pointLight, const in GeometricContext geometry, out IncidentLight light ) {
         vec3 lVector = pointLight.position - geometry.position;
         light.direction = normalize( lVector );
         float lightDistance = length( lVector );
         light.color = pointLight.color;
         light.color *= getDistanceAttenuation( lightDistance, pointLight.distance, pointLight.decay );
         light.visible = ( light.color != vec3( 0.0 ) );
-      }
-    #endif
-    #if NUM_SPOT_LIGHTS > 0
-      struct SpotLight {
-        vec3 position;
-        vec3 direction;
-        vec3 color;
-        float distance;
-        float decay;
-        float coneCos;
-        float penumbraCos;
-      };
-      uniform SpotLight spotLights[ NUM_SPOT_LIGHTS ];
-      // light is an out parameter as having it as a return value caused compiler errors on some devices
-      void getSpotLightInfo( const in SpotLight spotLight, const in GeometricContext geometry, out IncidentLight light ) {
-        vec3 lVector = spotLight.position - geometry.position;
-        light.direction = normalize( lVector );
-        float angleCos = dot( light.direction, spotLight.direction );
-        float spotAttenuation = getSpotAttenuation( spotLight.coneCos, spotLight.penumbraCos, angleCos );
-        if ( spotAttenuation > 0.0 ) {
-          float lightDistance = length( lVector );
-          light.color = spotLight.color * spotAttenuation;
-          light.color *= getDistanceAttenuation( lightDistance, spotLight.distance, spotLight.decay );
-          light.visible = ( light.color != vec3( 0.0 ) );
-        } else {
-          light.color = vec3( 0.0 );
-          light.visible = false;
-        }
-      }
-    #endif
-    #if NUM_RECT_AREA_LIGHTS > 0
-      struct RectAreaLight {
-        vec3 color;
-        vec3 position;
-        vec3 halfWidth;
-        vec3 halfHeight;
-      };
-      // Pre-computed values of LinearTransformedCosine approximation of BRDF
-      // BRDF approximation Texture is 64x64
-      uniform sampler2D ltc_1; // RGBA Float
-      uniform sampler2D ltc_2; // RGBA Float
-      uniform RectAreaLight rectAreaLights[ NUM_RECT_AREA_LIGHTS ];  
-    #endif
-    #if NUM_HEMI_LIGHTS > 0
-      struct HemisphereLight {
-        vec3 direction;
-        vec3 skyColor;
-        vec3 groundColor;
-      };
-      uniform HemisphereLight hemisphereLights[ NUM_HEMI_LIGHTS ];
-      vec3 getHemisphereLightIrradiance( const in HemisphereLight hemiLight, const in vec3 normal ) {
-        float dotNL = dot( normal, hemiLight.direction );
-        float hemiDiffuseWeight = 0.5 * dotNL + 0.5;
-        vec3 irradiance = mix( hemiLight.groundColor, hemiLight.skyColor, hemiDiffuseWeight );
-        return irradiance;
       }
     #endif
     //END Animated to PointLight struct
@@ -407,11 +283,11 @@ export class ShaderOdysseyModel extends Shader {
     #include <logdepthbuf_pars_fragment>
     #include <clipping_planes_pars_fragment>
   
-    void RE_Direct_Anim( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, const in float amount, inout ReflectedLight reflectedLight ) {
+    void RE_Direct_Anim( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {
       float dotNL = saturate( dot( geometry.normal, directLight.direction ) );
       vec3 irradiance = dotNL * directLight.color;
-      reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor ) * amount;
-      reflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometry.viewDir, geometry.normal, material.specularColor, material.specularShininess ) * material.specularStrength * amount;
+      reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
+      reflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometry.viewDir, geometry.normal, material.specularColor, material.specularShininess ) * material.specularStrength;
     }
   
     //float rand(vec2 co) {
@@ -450,96 +326,20 @@ export class ShaderOdysseyModel extends Shader {
       #include <emissivemap_fragment>
       // accumulation
       #include <lights_phong_fragment>
-      
-      //BEGIN Custom LIGHT - "lights_fragment_begin"
-      // #include <lights_fragment_begin>
-      GeometricContext geometry;
-      geometry.position = - vViewPosition;
-      geometry.normal = normal;
-      geometry.viewDir = ( isOrthographic ) ? vec3( 0, 0, 1 ) : normalize( vViewPosition );
-      #ifdef CLEARCOAT
-        geometry.clearcoatNormal = clearcoatNormal;
-      #endif
-      IncidentLight directLight;
-      #if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )
-        PointLight pointLight;
-        #if defined( USE_SHADOWMAP ) && NUM_POINT_LIGHT_SHADOWS > 0
-        PointLightShadow pointLightShadow;
-        #endif
+
+      #include <lights_fragment_begin>
+      //BEGIN CUSTOM LIGHTING - "lights_fragment_begin"
+      #ifdef USE_ANIMATED_LIGHTS
+        AnimPointLight animPointLight;
         #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_POINT_LIGHTS; i ++ ) {
-          pointLight = pointLights[ i ];
-          getPointLightInfo( pointLight, geometry, directLight );
-          #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_POINT_LIGHT_SHADOWS )
-          pointLightShadow = pointLightShadows[ i ];
-          directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getPointShadow( pointShadowMap[ i ], pointLightShadow.shadowMapSize, pointLightShadow.shadowBias, pointLightShadow.shadowRadius, vPointShadowCoord[ i ], pointLightShadow.shadowCameraNear, pointLightShadow.shadowCameraFar ) : 1.0;
-          #endif
-          RE_Direct( directLight, geometry, material, reflectedLight );
-          
-          RE_Direct_Anim( directLight, geometry, material, pointLight.animated, animatedLight );
+        for ( int i = 0; i < NUM_ANIM_POINT_LIGHTS; i ++ ) {
+          animPointLight = animPointLights[ i ];
+          getPointAnimLightInfo( animPointLight, geometry, directLight );
+          RE_Direct_Anim( directLight, geometry, material, animatedLight );
         }
         #pragma unroll_loop_end
       #endif
-      #if ( NUM_SPOT_LIGHTS > 0 ) && defined( RE_Direct )
-        SpotLight spotLight;
-        #if defined( USE_SHADOWMAP ) && NUM_SPOT_LIGHT_SHADOWS > 0
-        SpotLightShadow spotLightShadow;
-        #endif
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_SPOT_LIGHTS; i ++ ) {
-          spotLight = spotLights[ i ];
-          getSpotLightInfo( spotLight, geometry, directLight );
-          #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_SPOT_LIGHT_SHADOWS )
-          spotLightShadow = spotLightShadows[ i ];
-          directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( spotShadowMap[ i ], spotLightShadow.shadowMapSize, spotLightShadow.shadowBias, spotLightShadow.shadowRadius, vSpotShadowCoord[ i ] ) : 1.0;
-          #endif
-          RE_Direct( directLight, geometry, material, reflectedLight );
-        }
-        #pragma unroll_loop_end
-      #endif
-      #if ( NUM_DIR_LIGHTS > 0 ) && defined( RE_Direct )
-        DirectionalLight directionalLight;
-        #if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
-        DirectionalLightShadow directionalLightShadow;
-        #endif
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_DIR_LIGHTS; i ++ ) {
-          directionalLight = directionalLights[ i ];
-          getDirectionalLightInfo( directionalLight, geometry, directLight );
-          #if defined( USE_SHADOWMAP ) && ( UNROLLED_LOOP_INDEX < NUM_DIR_LIGHT_SHADOWS )
-          directionalLightShadow = directionalLightShadows[ i ];
-          directLight.color *= all( bvec2( directLight.visible, receiveShadow ) ) ? getShadow( directionalShadowMap[ i ], directionalLightShadow.shadowMapSize, directionalLightShadow.shadowBias, directionalLightShadow.shadowRadius, vDirectionalShadowCoord[ i ] ) : 1.0;
-          #endif
-          RE_Direct( directLight, geometry, material, reflectedLight );
-        }
-        #pragma unroll_loop_end
-      #endif
-      #if ( NUM_RECT_AREA_LIGHTS > 0 ) && defined( RE_Direct_RectArea )
-        RectAreaLight rectAreaLight;
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_RECT_AREA_LIGHTS; i ++ ) {
-          rectAreaLight = rectAreaLights[ i ];
-          RE_Direct_RectArea( rectAreaLight, geometry, material, reflectedLight );
-        }
-        #pragma unroll_loop_end
-      #endif
-      #if defined( RE_IndirectDiffuse )
-        vec3 iblIrradiance = vec3( 0.0 );
-        vec3 irradiance = getAmbientLightIrradiance( ambientLightColor );
-        irradiance += getLightProbeIrradiance( lightProbe, geometry.normal );
-        #if ( NUM_HEMI_LIGHTS > 0 )
-          #pragma unroll_loop_start
-          for ( int i = 0; i < NUM_HEMI_LIGHTS; i ++ ) {
-            irradiance += getHemisphereLightIrradiance( hemisphereLights[ i ], geometry.normal );
-          }
-          #pragma unroll_loop_end
-        #endif
-      #endif
-      #if defined( RE_IndirectSpecular )
-        vec3 radiance = vec3( 0.0 );
-        vec3 clearcoatRadiance = vec3( 0.0 );
-      #endif
-      //END Custom LIGHT
+      //END CUSTOM LIGHTING
   
       #include <lights_fragment_maps>
       #include <lights_fragment_end>
@@ -789,7 +589,13 @@ export class ShaderOdysseyModel extends Shader {
       { animationVector : { value: new THREE.Vector4(0, 0, 0, 0) } },
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
-      { danglyPeriod: { value: 0 } }
+      { danglyPeriod: { value: 0 } },
+      { animPointLights: { value: [], properties: {
+        color: {},
+        position: {},
+        decay: {},
+        distance: {}
+      } } },
     ];
 
   }

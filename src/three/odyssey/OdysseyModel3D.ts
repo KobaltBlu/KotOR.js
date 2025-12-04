@@ -29,6 +29,13 @@ import { OdysseyObject3D } from "./OdysseyObject3D";
 import { OdysseyEmitter3D } from "./OdysseyEmitter3D";
 import { OdysseyLight3D } from "./OdysseyLight3D";
 
+function odysseyOnBeforeCompile(this: THREE.ShaderMaterial, shader: any) {
+  const lightCount = this.uniforms.animPointLights.value.length;
+  const numAnimatedLights = (lightCount || 0).toString();
+  shader.vertexShader = shader.vertexShader.replace( /NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString() );
+  shader.fragmentShader = (numAnimatedLights > 0 ? `#define NUM_ANIM_POINT_LIGHTS ${numAnimatedLights}\n #define USE_ANIMATED_LIGHTS\n` : '') + shader.fragmentShader.replace( /NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString() );
+}
+
 /**
  * OdysseyModel3D class.
  * 
@@ -690,6 +697,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMaterial.defines.USE_UV = '';
       skinMaterial.defines.USE_SKINNING = '';
       skinMaterial.uniforms.diffuse.value.r = 0.5;
+      skinMaterial.onBeforeCompile = odysseyOnBeforeCompile.bind(skinMaterial);
 
       // skinMaterial.opacity = 0.5;
       // skinMaterial.transparent = true;
@@ -1323,8 +1331,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
           // ADD MESH TO NODE
           //------------------//
           if(mesh instanceof THREE.Mesh){
-
-            //mesh.visible = !node.isWalkmesh;
             (mesh as any).odysseyNode = odysseyNode;
             mesh.userData.odysseyModelNode = odysseyNode;
             mesh.matrixAutoUpdate = true;
@@ -1336,30 +1342,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
               mesh.castShadow = odysseyNode.flagShadow;// && !options.static;//options.castShadow;
               mesh.receiveShadow = options.receiveShadow;
             }
-
-            if(odysseyNode.hasLightmap && options.manageLighting){
-              // mesh.onBeforeRender = (renderer, scene, camera, geometry, material: THREE.ShaderMaterial, group) => {
-              //   if(material.type == "ShaderMaterial"){
-              //     (material.uniforms.pointLights as any).properties.animated = {} as any;
-              //     let odysseyLight: OdysseyLight3D;
-              //     for(let i = 0, len = LightManager.lights.length; i < len; i++){
-              //       odysseyLight = LightManager.lights[i];
-              //       if(odysseyLight.isAnimated){
-              //         let light = material.uniforms.pointLights.value.findIndex( (light: THREE.PointLight) => {
-              //           return light.position.equals(odysseyLight.worldPosition);
-              //         });
-              //         if(light >= 0){
-              //           material.uniforms.pointLights.value[i].animated = 1;
-              //         }
-              //       }else{
-              //         material.uniforms.pointLights.value[i].animated = 0;
-              //       }
-              //     }
-              //     // console.log(renderer, camera, material, LightManager);
-              //   }
-              // }
-            }
-
           }
 
         }
@@ -1450,6 +1432,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
             material.uniforms.selfIllumColor.value.setRGB(frame.x, frame.y, frame.z);
           }
         }
+        material.onBeforeCompile = odysseyOnBeforeCompile.bind(material);
       }
 
       if(!odysseyNode.flagRender && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){

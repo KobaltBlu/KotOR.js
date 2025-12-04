@@ -568,6 +568,36 @@ export class ModuleArea extends ModuleObject {
     this.updateMusic(delta);
   }
 
+  /**
+   * Update room models width lightmaps to use animated lights
+   * Animated lights are the only lights that can influence lightmapped surfaces
+   * @param delta 
+   */
+  updateRoomAnimatedLights(delta: number = 0){
+
+    const lm = GameState.lightManager;
+    const animatedLightUniformStructList = lm.animatedLights;
+
+    const rooms = this.rooms;
+    for(let i = 0, il = rooms.length; i < il; i++){
+      const room = rooms[i];
+      if(!room.isVisible() || !room.model){ continue; }
+      if(!(room.model instanceof OdysseyModel3D)){ continue; }
+
+      for(let j = 0, jl = room.model.materials.length; j < jl; j++){
+        const material = room.model.materials[j];
+        if(!(material instanceof THREE.ShaderMaterial && !material.defines?.USE_LIGHTMAP)){ continue; }
+        if(material.userData.animatedLightCacheID == lm.animatedLightsCacheID){ continue; }
+        material.uniforms.animPointLights.value = animatedLightUniformStructList;
+        (material.uniforms.animPointLights as any).needsUpdate = true;
+        material.userData.animatedLightCacheID = lm.animatedLightsCacheID;
+        material.uniformsNeedUpdate = true;
+        material.defines.NUM_ANIM_POINT_LIGHTS = animatedLightUniformStructList.length.toString();
+        material.needsUpdate = true;
+      }
+    }
+  }
+
   updateMusic(delta: number = 0){
     const audioEngine = AudioEngine.GetAudioEngine();
     const oPC = GameState.getCurrentPlayer();

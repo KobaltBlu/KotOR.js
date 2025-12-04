@@ -1293,9 +1293,11 @@ export class GameState implements EngineContext {
         GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
         if(GameState.Mode == EngineMode.DIALOG){
           GameState.lightManager.update(delta, GameState.currentCamera);
+          GameState.module.area.updateRoomAnimatedLights(delta);
         }else{
           GameState.lightManager.update(delta, GameState.getCurrentPlayer());
           GameState.currentCamera = GameState.camera;
+          GameState.module.area.updateRoomAnimatedLights(delta);
         }
         
         //Handle the visibility of the PAUSE overlay
@@ -1309,6 +1311,7 @@ export class GameState implements EngineContext {
       }else if(GameState.Mode == EngineMode.MINIGAME){
         GameState.FadeOverlayManager.Update(delta);
         GameState.lightManager.update(delta, GameState.getCurrentPlayer());
+        GameState.module.area.updateRoomAnimatedLights(delta);
       }
 
       if(GameState.Mode == EngineMode.INGAME){
