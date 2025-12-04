@@ -57,7 +57,6 @@ import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
 // import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
-import { OdysseyGLRenderer } from "./three/OdysseyGLRenderer";
 import { ModuleTriggerType } from "./enums";
 import { Planetary } from "./engine/Planetary";
 import { Debugger } from "./engine/Debugger";
@@ -483,8 +482,7 @@ export class GameState implements EngineContext {
     GameState.context = GameState.canvas.getContext( 'webgl' );
 
     GameState.rendererUpscaleFactor = 1;
-    //@ts-expect-error
-    GameState.renderer = new OdysseyGLRenderer({
+    GameState.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: GameState.canvas,
       context: GameState.context,
