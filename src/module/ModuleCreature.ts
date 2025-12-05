@@ -737,6 +737,14 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
+      if(!this.position.equals(this.lastPosition)){
+        this.lastPosition.copy(this.position);
+        this.positionChanged = true;
+      }
+
+      if(this.positionChanged){
+        this.onPositionChanged();
+      }
     }else{
       this.updateAnimationState();
       this.updateItems(delta);
@@ -2199,6 +2207,21 @@ export class ModuleCreature extends ModuleObject {
       }
     }
     
+  }
+
+  positionChanged: boolean = false;
+
+  /**
+   * Called when the creature's position changes
+   */
+  onPositionChanged(){
+    this.positionChanged = false;
+    //check if the creature is inside a trigger
+    const triggers = GameState.module.area.triggers;
+    const tLen = triggers.length;
+    for(let i = 0; i < tLen; i++){
+      triggers[i].updateObjectInside(this);
+    }
   }
 
   //---------------//

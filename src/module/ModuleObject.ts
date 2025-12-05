@@ -80,6 +80,7 @@ export class ModuleObject {
   container: OdysseyObject3D;
   forceVector: THREE.Vector3 = new THREE.Vector3();
   position: THREE.Vector3 = new THREE.Vector3();
+  lastPosition: THREE.Vector3 = new THREE.Vector3();
   rotation: THREE.Euler = new THREE.Euler();
   quaternion: THREE.Quaternion = new THREE.Quaternion();
   _triangle: THREE.Triangle = new THREE.Triangle();

@@ -15,6 +15,9 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleDoorAnimState, SignalEventType } from "../enums";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
+
+const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
+
 /**
 * ModuleTrigger class.
 * 
@@ -263,37 +266,61 @@ export class ModuleTrigger extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = GameState.PartyManager.party.length;
+      const partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = GameState.PartyManager.party[i];
-        if(this.box.containsPoint(partymember.position)){
-          if(this.objectsInside.indexOf(partymember) == -1){
-            this.objectsInside.push(partymember);
-
-            partymember.lastTriggerEntered = this;
-            this.lastObjectEntered = partymember;
-          }
-        }
+        const partymember = GameState.PartyManager.party[i];
+        const pos = partymember.position;
+        if(!this.box.containsPoint(pos)){ continue; }
+        const added = this.addObjectInside(partymember);
+        if(!added){ continue; }
+        
+        partymember.lastTriggerEntered = this;
+        this.lastObjectEntered = partymember;
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
+      const creatureLen = GameState.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
-        if(this.box.containsPoint(creature.position)){
-          if(this.objectsInside.indexOf(creature) == -1){
-            this.objectsInside.push(creature);
+        const creature = GameState.module.area.creatures[i];
+        const pos = creature.position;
+        if(!this.box.containsPoint(pos)){ continue; }
 
-            creature.lastTriggerEntered = this;
-            this.lastObjectEntered = creature;
-          }
-        }
+        const added = this.addObjectInside(creature);
+        if(!added){ continue; }
+        creature.lastTriggerEntered = this;
+        this.lastObjectEntered = creature;
       }
     }
   }
 
+  isInsideBoundingBox(object: ModuleObject): boolean {
+    return this.box.containsPoint(object.position);
+  }
+
+  isInside(object: ModuleObject): boolean {
+    return this.objectsInside.indexOf(object) >= 0;
+  }
+
+  addObjectInside(object: ModuleObject): boolean {
+    const isInside = this.isInside(object);
+    if(isInside){ return false; }
+    this.objectsInside.push(object);
+    return true;
+  }
+
+  removeObjectInside(object: ModuleObject): boolean {
+    const isInside = this.isInside(object);
+    if(!isInside){ return false; }
+    this.objectsInside.splice(this.objectsInside.indexOf(object), 1);
+    return true;
+  }
+
   isUseable(): boolean {
     return this.type == ModuleTriggerType.TRAP;
+  }
+
+  canTrigger(object: ModuleObject): boolean {
+    return this.isHostile(object) && (!this.triggered || !this.trapOneShot);
   }
 
   update(delta = 0){
@@ -317,86 +344,79 @@ export class ModuleTrigger extends ModuleObject {
         this.trapModel.playAnimation('default', false);
       }
     }
-
-    /*
-    let pos = GameState.PartyManager.Player.getModel().position.clone();
-    if(this.box.containsPoint(pos)){
-      if(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()) == -1){
-        this.objectsInside.push(GameState.PartyManager.Player.getModel());
-        this.onEnter(GameState.PartyManager.Player.getModel());
-      }
-    }else{
-      if(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()) <= 0){
-        //this.onExit(GameState.PartyManager.Player.getModel());
-        this.objectsInside.splice(this.objectsInside.indexOf(GameState.PartyManager.Player.getModel()), 1)
-      }
-    }
-    */
     
-    //Check Module Creatures
-    let creatureLen = GameState.module.area.creatures.length;
-    for(let i = 0; i < creatureLen; i++){
-      let creature = GameState.module.area.creatures[i];
-      let pos = creature.position.clone();
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(creature) == -1){
-          this.objectsInside.push(creature);
-          if(!this.triggered && this.isHostile(creature)){
-            creature.lastTriggerEntered = this;
-            this.lastObjectEntered = creature;
-
-            this.onEnter(creature);
-            this.triggered = true;
-          }
-        }
-      }else{
-        if(this.objectsInside.indexOf(creature) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
-          if(!this.triggered && this.isHostile(creature)){
-            creature.lastTriggerExited = this;
-            this.lastObjectExited = creature;
-            this.onExit(creature);
-          }
-        }
-      }
-    }
-
-    //Check Party Members
-    let partyLen = GameState.PartyManager.party.length;
-    for(let i = 0; i < partyLen; i++){
-      let partymember = GameState.PartyManager.party[i];
-      let pos = partymember.position.clone();
-      
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(partymember) == -1){
-          this.objectsInside.push(partymember);
-          if(!this.triggered && this.isHostile(partymember)){
-            partymember.lastTriggerEntered = this;
-            this.lastObjectEntered = partymember;
-
-            this.onEnter(partymember);
-            this.triggered = true;
-          }
-        }
-      }else{
-        if(this.objectsInside.indexOf(partymember) >= 0){
-          this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
-          if(!this.triggered && this.isHostile(partymember)){
-            partymember.lastTriggerExited = this;
-            this.lastObjectExited = partymember;
-
-            this.onExit(partymember);
-          }
-        }
-      }
-    }
+    //Call the function to update the objectsInside array
+    //this.autoUpdateObjectsInside();
 
     if(this.mesh){
       this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
     }
   }
 
+  /**
+   * Timer for the objectsInside array update
+   * If the timer is less than the OBJECTS_INSIDE_UPDATE_THRESHOLD, ignore the update
+   */
+  #autoObjectsInsideTimer = 0;
+
+  /**
+   * Update the objectsInside array
+   * @deprecated - use the positionChanged event inside ModuleCreature instead
+   * @param delta 
+   * @returns 
+   */
+  autoUpdateObjectsInside(){
+    this.#autoObjectsInsideTimer += 1;
+    if(this.#autoObjectsInsideTimer < OBJECTS_INSIDE_UPDATE_THRESHOLD){ return; }
+    this.#autoObjectsInsideTimer = 0;
+
+    const creaturesToCheck = [
+      ...GameState.module.area.creatures.filter(object => this.box.containsPoint(object.position)), 
+      ...GameState.PartyManager.party.filter(object => this.box.containsPoint(object.position))
+    ];
+
+    //Check Creatures in Area
+    const creatureLen = creaturesToCheck.length;
+    for(let i = 0; i < creatureLen; i++){
+      const creature = creaturesToCheck[i];
+      this.updateObjectInside(creature);
+    }
+  }
+
+  /**
+   * Update the objectsInside array
+   * @param object 
+   * @returns 
+   */
+  updateObjectInside(object: ModuleObject){
+    //Check if the creature is inside the bounding box
+    const isInside = this.isInsideBoundingBox(object);  
+    if(isInside){
+      //If the creature is inside the bounding box, attempt to add it to the objectsInside array
+      const added = this.addObjectInside(object);
+      if(!added){ return; }
+      if(!this.triggered && this.isHostile(object)){
+        object.lastTriggerEntered = this;
+        this.lastObjectEntered = object;
+
+        this.onEnter(object);
+        this.triggered = true;
+      }
+      return;
+    }
+
+    //If the creature is not inside the bounding box, attempt to remove it from the objectsInside array
+    const removed = this.removeObjectInside(object);
+    if(!removed){ return; }
+    if(!this.triggered && this.isHostile(object)){
+      object.lastTriggerExited = this;
+      this.lastObjectExited = object;
+      this.onExit(object);
+    }
+  }
+
   onEnter(object?: ModuleObject){
+    if(!object){ return; }
     console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
     if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
@@ -428,6 +448,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   onExit(object?: ModuleObject){
+    if(!object){ return; }
     console.log('ModuleTrigger', this.getTag(), 'exit')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
