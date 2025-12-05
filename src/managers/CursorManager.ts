@@ -412,9 +412,11 @@ export class CursorManager {
 			}
 		}
 
+		const maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
+
 		CursorManager.arrow.visible = false;
 		if(CursorManager.selectedObject){
-			if(CursorManager.selectedObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+			if(CursorManager.selectedObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){
 				CursorManager.selectedObject = undefined;
 				CursorManager.selected = undefined;
 			}
@@ -426,7 +428,7 @@ export class CursorManager {
 		}
 
 		if(CursorManager.hoveredObject){
-			if(CursorManager.hoveredObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > GameState.maxSelectableDistance){
+			if(CursorManager.hoveredObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){
 				CursorManager.hoveredObject = undefined;
 				CursorManager.hovered = undefined;
 			}
