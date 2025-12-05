@@ -369,36 +369,47 @@ export class ModuleDoor extends ModuleObject {
 
     this.lastUsedBy = object;
 
-    if(!this.openState){
-      
-      if(this.isLocked() && this.keyRequired){
-        if(this.keyName.length){
-          const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
-          if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
-            this.unlock(object);
-            if(this.autoRemoveKey){
-              object.removeItem(keyItem);
-            }
-            object.playSoundSet(SSFType.UNLOCK_SUCCESS);
-          }
-        }
-  
-        object.playSoundSet(SSFType.UNLOCK_FAIL);
-      }
-
-      if(this.isLocked()){
-        const onFailToOpen = this.scripts[ModuleObjectScript.DoorOnFailToOpen];
-        if(onFailToOpen){
-          onFailToOpen.run(this);
-        }
-
-        this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
-      }else{
-        this.openDoor(object);
-      }
-    }else{
-      console.log('already open');
+    // If the door is already open, do nothing
+    if(this.openState){
+      console.log('ModuleDoor', this.getTag(), this.getName(), 'already open');
+      return;
     }
+
+    // If the caller is the door itself and the door is closed, open it
+    const isCallerSelf = object === this;
+    if(isCallerSelf){
+      this.openDoor(this);
+      return;
+    }
+
+    // If the door is locked and a key is required, try to unlock it
+    if(this.isLocked() && this.keyRequired){
+      if(this.keyName.length){
+        const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
+        if(keyItem && BitWise.InstanceOf(keyItem?.objectType, ModuleObjectType.ModuleItem)){
+          this.unlock(object);
+          if(this.autoRemoveKey){
+            object.removeItem(keyItem);
+          }
+          object.playSoundSet(SSFType.UNLOCK_SUCCESS);
+        }
+      }
+
+      object.playSoundSet(SSFType.UNLOCK_FAIL);
+    }
+
+    // If the door is still locked, run the on fail to open script
+    if(this.isLocked()){
+      const onFailToOpen = this.scripts[ModuleObjectScript.DoorOnFailToOpen];
+      if(onFailToOpen){
+        onFailToOpen.run(this);
+      }
+
+      this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
+      return;
+    }
+    
+    this.openDoor(object);
 
   }
 
