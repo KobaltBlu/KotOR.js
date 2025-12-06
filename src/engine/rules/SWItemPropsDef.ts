@@ -22,11 +22,7 @@ export class SWItemPropsDef {
   description: number = -1;
 
   getName(){
-    if(this.name >= 0){
-      return TLKManager.GetStringById(this.name).Value;
-    }else{
-      return TLKManager.GetStringById(0).Value;
-    }
+    return TLKManager.GetStringById(this.name > -1 ? this.name : 0).Value;
   }
 
   hasSubType(): boolean {

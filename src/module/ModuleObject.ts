@@ -1543,7 +1543,7 @@ export class ModuleObject {
    * @param event 
    */
   scriptEventHandler( event: NWScriptEvent ){
-    console.log('scriptEventHandler', this.tag, event);
+    // console.log('scriptEventHandler', this.tag, event);
     if(event instanceof NWScriptEvent){
       switch(event.type){
         case NWScriptEventType.EventUserDefined:
@@ -2058,6 +2058,7 @@ export class ModuleObject {
 
     const rangeSquared = range * range;
     let cDistanceSquared = 0;
+    // console.log('SpeakString', this.getName(), str, volume, range);
     const speakString = str.toLowerCase();
 
     if(notifyPCs){

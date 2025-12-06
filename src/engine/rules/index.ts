@@ -2,6 +2,7 @@ export * from "./SWRuleSet";
 export * from "./SWRace";
 export * from "./SWEffectIcon";
 export * from "./SWItemPropsDef";
+export * from "./SWCostTable";
 export * from "./SWXPTableEntry";
 export * from "./SWPortrait";
 export * from "./SWHead";

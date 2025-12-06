@@ -29,7 +29,8 @@ import { SWFaction } from "./SWFaction";
 import { SWBaseItem } from "./SWBaseItem";
 import { SWCreatureAppearance } from "./SWCreatureAppearance";
 import { SWDoorAppearance } from "./SWDoorAppearance";
-import { SWPlaceableAppearance } from ".";
+import { SWPlaceableAppearance } from "./SWPlaceableAppearance";
+import { SWCostTable } from "./SWCostTable";
 
 /**
  * SWRuleSet class.
@@ -55,6 +56,8 @@ export class SWRuleSet {
   static effectIconCount: number = 0;
 
   static itemPropsDef: SWItemPropsDef[] = [];
+  static costTables: SWCostTable[] = [];
+  static costTableCount: number = 0;
 
   static pazaakDecks: PazaakDeck[] = [];
   static pazaakDeckCount: number = 0;
@@ -279,6 +282,18 @@ export class SWRuleSet {
       }
     }
 
+    /**
+     * Initialize Cost Tables
+     */
+    const costTables = GameState.TwoDAManager.datatables.get('iprp_costtable');
+    if(costTables){
+      SWRuleSet.costTableCount = costTables.RowCount;
+      SWRuleSet.costTables = new Array(SWRuleSet.costTableCount);
+      for(let i = 0; i < costTables.RowCount; i++){
+        SWRuleSet.costTables[i] = SWCostTable.From2DA(costTables.rows[i]);
+      }
+    }
+    
     /**
      * Initialize Pazaak Decks
      */

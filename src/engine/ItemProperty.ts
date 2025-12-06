@@ -1,92 +1,114 @@
 import { GameState } from "../GameState";
 import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-// import { TLKManager, TwoDAManager } from "../managers";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { Dice } from "../utility/Dice";
+import { SWItemPropsDef } from "./rules/SWItemPropsDef";
+import { SWCostTable } from "./rules/SWCostTable";
+import { TwoDAObject } from "../resource/TwoDAObject";
+
+class SWSubTypeBase {
+  id: number;
+  name: number;
+  label: string;
+
+  getName(){
+    return this.name != -1 ? GameState.TLKManager.GetStringById(this.name).Value : this.label;
+  }
+
+  static From2DA(row: any = {}){
+    const subType = new SWSubTypeBase();
+    subType.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
+    subType.name = TwoDAObject.normalizeValue(row.name, 'number', -1);
+    subType.label = TwoDAObject.normalizeValue(row.label, 'string', '');
+    return subType;
+  }
+}
 
 export class ItemProperty {
   template: any;
   item: any;
-  propertyName: any;
-  subType: any;
-  costTable: any;
-  costValue: any;
+  propertyName: number;
+  subType: number;
+  costTable: number;
+  costValue: number;
   upgradeType: number;
-  param1: any;
-  param1Value: any;
-  chanceAppear: any;
-  usesPerDay: any;
-  useable: any;
+  param1: number;
+  param1Value: number;
+  chanceAppear: number;
+  usesPerDay: number;
+  useable: number;
+
+  propertyDefinition: SWItemPropsDef;
+  subTypeDefinition: SWSubTypeBase;
+  costTableLookupDefinition: SWCostTable;
+  costTableDefinition: any;
 
   constructor(template: any, item: any){
     this.template = template;
     this.item = item;
     this.initProperties();
+
+    //Load the property definition
+    this.propertyDefinition = GameState.SWRuleSet.itemPropsDef[this.propertyName];
+    if(!this.propertyDefinition){
+      console.error(`Invalid Item Property: ${this.propertyName}`);
+    }
+
+    //Load the sub type definition
+    if(this.propertyDefinition?.hasSubType()){
+      const subTypeDef = GameState.TwoDAManager.datatables.get(this.propertyDefinition.subtyperesref.toLowerCase());
+      if(subTypeDef){
+        const row = subTypeDef.rows[this.subType];
+        if(!row){
+          console.error(`Invalid Item Property Sub Type: ${this.subType}`);
+        }
+        this.subTypeDefinition = SWSubTypeBase.From2DA(row);
+      }else{
+        console.error(`Invalid Item Property Sub Type: ${this.propertyDefinition.subtyperesref}`);
+      }
+    }
+
+    //Load the cost table definition
+    this.costTableLookupDefinition = GameState.SWRuleSet.costTables[this.costTable];
+    if(!this.costTableLookupDefinition && this.costTable > -1){
+      console.error(`Invalid Item Property Cost Table: ${this.costTable}`);
+    }else{
+      const costTable = GameState.TwoDAManager.datatables.get(this.costTableLookupDefinition.name.toLowerCase());
+      this.costTableDefinition = costTable;
+    }
   }
 
-  getProperty(){
-    const _2DA = GameState.TwoDAManager.datatables.get('itempropdef');
-    if(_2DA){
-      return _2DA.rows[this.propertyName];
-    }
+  getProperty():SWItemPropsDef{
+    return this.propertyDefinition;
   }
 
   getPropertyName(){
     const property = this.getProperty();
-    if(property){
-      if(property.name != '****'){
-        return GameState.TLKManager.GetStringById(property.name).Value;
-      }else{
-        return GameState.TLKManager.GetStringById(0).Value;
-      }
+    if(!property){
+      return new Error(`Invalid Item Property`);
     }
-    return new Error(`Invalid Item Property`);
+    return property.getName();
   }
 
   getSubType(){
-    const property = this.getProperty();
-    if(property && property.subtyperesref != '****'){
-      const _2DA = GameState.TwoDAManager.datatables.get(property.subtyperesref.toLowerCase());
-      if(_2DA){
-        return _2DA.rows[this.subType];
-      }
-    }
+    return this.subTypeDefinition;
   }
 
   getSubtypeName(){
-    const subType = this.getSubType();
-    if(subType){
-      if(subType.name != '****'){
-        return GameState.TLKManager.GetStringById(subType.name).Value;
-      }else{
-        return GameState.TLKManager.GetStringById(0).Value;
-      }
-    }
-    return new Error(`Invalid Item Property Sub Type`);
+    return this.subTypeDefinition?.getName() || '';
   }
 
   getCostTable() {
-    const iprp_costtable2DA = GameState.TwoDAManager.datatables.get('iprp_costtable');
-    if(iprp_costtable2DA){
-      const costTableName = iprp_costtable2DA.rows[this.costTable].name.toLowerCase();
-      if(costTableName){
-        const costtable2DA = GameState.TwoDAManager.datatables.get(costTableName);
-        if(costtable2DA){
-          return costtable2DA;
-        }
-      }
+    if(this.costTableDefinition){
+      return this.costTableDefinition;
     }
     throw new Error('Unable to locate costTable');
   }
 
   getCostTableRow(){
-    const costTable = this.getCostTable();
-    if(costTable){
-      return costTable.rows[this.costValue];
-    }
-    return undefined;
+    return this.costTableDefinition?.rows[this.costValue];
   }
 
   //Determine if the property requires an upgrade to use, or if it is always useable

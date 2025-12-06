@@ -348,7 +348,7 @@ export class ModuleItem extends ModuleObject {
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(property.isUseable() && property.is(ModuleItemProperty.Damage)){
-        return property.getSubType();
+        return property.getSubType()?.id || 0;
       }
     }
     return 0;
