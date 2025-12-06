@@ -812,18 +812,15 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead())
       return;
 
-    if(this.heardStrings.length){
-      let str = this.heardStrings[0];
-      //console.log('HeardString', this.id, str, this.isListening, this);
-      if(this.isListening && str){
-        const pattern = this.listeningPatterns[str.string];
+    const str = this.heardStrings[0];
+    if(!this.isListening || !str){ return;  }
+    //console.log('HeardString', this.id, str, this.isListening, this);
 
-        if(typeof pattern != 'undefined'){
-          this.heardStrings.shift();
-          this.onDialog(str.speaker, pattern);
-        }
-      }
-    }
+    const pattern = this.listeningPatterns[str.string];
+    if(typeof pattern === 'undefined'){ return; }
+
+    this.heardStrings.shift();
+    this.onDialog(str.speaker, pattern);
   }
 
   updatePerceptionList(delta = 0){

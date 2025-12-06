@@ -39,6 +39,7 @@ import { ExperienceType } from "../enums/engine/ExperienceType";
 import { AudioEngine } from "../audio/AudioEngine";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
 import { CreatureClassType } from "../enums/nwscript/CreatureClassType";
+import { TalkVolume } from "../enums/engine/TalkVolume";
 
 /**
  * NWScriptDefK1 class.
@@ -576,7 +577,17 @@ NWScriptDefK1.Actions = {
     comment: "39: Add a speak action to the action subject.\n- sStringToSpeak: String to be spoken\n- nTalkVolume: TALKVOLUME_*\n",
     name: "ActionSpeakString",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [string, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionSpeak();
+      action.setParameter(0, ActionParameterType.STRING, args[0]);
+      action.setParameter(1, ActionParameterType.INT, args[1]);
+      this.caller.actionQueue.add(action);
+    }
   },
   40:{
     comment: "40: Cause the action subject to play an animation\n- nAnimation: ANIMATION_*\n- fSpeed: Speed of the animation\n- fDurationSeconds: Duration of the animation (this is not used for Fire and\nForget animations) If a time of -1.0f is specified for a looping animation\nit will loop until the next animation is applied.\n",
@@ -2763,70 +2774,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-
-      //https://nwnlexicon.com/index.php?title=SpeakString
-
-      let range = 5;
-      switch(args[1]){
-        case 0: //TALKVOLUME_TALK
-
-        break;
-        case 1: //TALKVOLUME_WHISPER
-
-        break;
-        case 2: //TALKVOLUME_SHOUT
-
-        break;
-        case 3: //TALKVOLUME_SILENT_TALK
-          range = 20;
-        break;
-        case 4: //TALKVOLUME_SILENT_SHOUT
-          range = 1000;
-        break;
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
       }
 
-      if(args[1] == 3){
-        for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-          if(GameState.module.area.creatures[i] != this.caller && !GameState.module.area.creatures[i].isDead()){
-            let distance = this.caller.position.distanceTo(GameState.module.area.creatures[i].position);
-            if(distance <= range){
-              GameState.module.area.creatures[i].heardStrings.push({
-                speaker: this.caller,
-                string: args[0].toLowerCase(), 
-                volume: args[1]
-              });
-            }
-          }
-        }
-      }else if(args[1] == 4){
-        for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
-          if(GameState.PartyManager.party[i] != this.caller && !GameState.PartyManager.party[i].isDead()){
-            let distance = this.caller.position.distanceTo(GameState.PartyManager.party[i].position);
-            if(distance <= range){
-              GameState.PartyManager.party[i].heardStrings.push({
-                speaker: this.caller,
-                string: args[0].toLowerCase(), 
-                volume: args[1]
-              });
-            }
-          }
-        }
-        for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-          if(GameState.module.area.creatures[i] != this.caller && !GameState.module.area.creatures[i].isDead()){
-            let distance = this.caller.position.distanceTo(GameState.module.area.creatures[i].position);
-            if(distance <= range){
-              GameState.module.area.creatures[i].heardStrings.push({
-                speaker: this.caller,
-                string: args[0].toLowerCase(), 
-                volume: args[1]
-              });
-            }
-          }
-        }
-      }else{
-        //console.log('SpeakString', args[1], args[0]);
-      }
-      
+      this.caller.speakString(args[0], args[1]);
     }
   },
   222:{

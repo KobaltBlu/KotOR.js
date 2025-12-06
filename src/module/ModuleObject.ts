@@ -47,8 +47,9 @@ import { DiceType } from "../enums/combat/DiceType";
 import { BitWise } from "../utility/BitWise";
 import { ActionType } from "../enums/actions/ActionType";
 import { NWScript } from "../nwscript/NWScript";
-import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType } from "../enums";
+import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "../enums";
 import type { SWPortrait } from "../engine/rules/SWPortrait";
+import type { IHeardString } from "../interface/dialog/IHeardString";
 
 /**
 * ModuleObject class.
@@ -165,7 +166,7 @@ export class ModuleObject {
   _heartbeatTimeout: number;
 
   //Perception
-  heardStrings: any[];
+  heardStrings: IHeardString[] = [];
   perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
@@ -2025,6 +2026,70 @@ export class ModuleObject {
    */
   onBlocked(){
     //stub
+  }
+
+  speakString(str: string, volume: TalkVolume){
+    //https://nwnlexicon.com/index.php?title=SpeakString
+    let notifyCreatures = false;
+    let notifyPCs = false;
+    let talkVolume = volume;
+
+    let range = 5;
+    switch(talkVolume){
+      case TalkVolume.TALK:
+
+      break;
+      case TalkVolume.WHISPER:
+
+      break;
+      case TalkVolume.SHOUT:
+
+      break;
+      case TalkVolume.SILENT_TALK:
+        range = 20;
+        notifyCreatures = true;
+      break;
+      case TalkVolume.SILENT_SHOUT:
+        range = 1000;
+        notifyCreatures = true;
+        notifyPCs = true;
+      break;
+    }
+
+    const rangeSquared = range * range;
+    let cDistanceSquared = 0;
+    const speakString = str.toLowerCase();
+
+    if(notifyPCs){
+      for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
+        const creature = GameState.PartyManager.party[i];
+        if(creature != (this as any) && !creature.isDead()){
+          cDistanceSquared = this.position.distanceToSquared(creature.position);
+          if(cDistanceSquared > rangeSquared){ continue; }
+          creature.heardStrings.push({ 
+            speaker: this, 
+            string: speakString, 
+            volume: talkVolume 
+          });
+        }
+      }
+    }
+
+    if(notifyCreatures){
+      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
+        const creature = GameState.module.area.creatures[i];
+        if(creature != (this as any) && !creature.isDead()){
+          cDistanceSquared = this.position.distanceToSquared(creature.position);
+          if(cDistanceSquared > rangeSquared){ continue; }
+
+          creature.heardStrings.push({
+            speaker: this,
+            string: speakString, 
+            volume: talkVolume
+          });
+        }
+      }
+    }
   }
   
   /**

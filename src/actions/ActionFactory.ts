@@ -35,6 +35,7 @@ import { ActionFlagMine } from "./ActionFlagMine";
 import { ActionRecoverMine } from "./ActionRecoverMine";
 import { ActionDisarmMine } from "./ActionDisarmMine";
 import { ActionExamineMine } from "./ActionExamineMine";
+import { ActionSpeak } from "./ActionSpeak";
 import type { Action } from "./Action";
 
 /**
@@ -82,6 +83,7 @@ export class ActionFactory {
   static ActionDisarmMine: typeof ActionDisarmMine = ActionDisarmMine;
   static ActionExamineMine: typeof ActionExamineMine = ActionExamineMine;
   static ActionFlagMine: typeof ActionFlagMine = ActionFlagMine;
+  static ActionSpeak: typeof ActionSpeak = ActionSpeak;
 
   static FromStruct( struct: GFFStruct ): Action {
     let action: Action = undefined as any;
@@ -146,6 +148,9 @@ export class ActionFactory {
       break;
       case ActionType.ActionPhysicalAttacks:
         action = new ActionPhysicalAttacks(actionId, groupId);
+      break;
+      case ActionType.ActionSpeak:
+        action = new ActionSpeak(actionId, groupId);
       break;
       case ActionType.ActionResumeDialog:
         action = new ActionResumeDialog(actionId, groupId);

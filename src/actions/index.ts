@@ -34,4 +34,5 @@ export * from "./ActionDisarmMine";
 export * from "./ActionRecoverMine";
 export * from "./ActionExamineMine";
 export * from "./ActionFlagMine";
+export * from "./ActionSpeak";
 export * from "./ActionFactory";

@@ -18,3 +18,4 @@ export * from "./FeedbackMessageColor";
 export * from "./FeedbackOption";
 export * from "./UIIconTimerType";
 export * from "./ExperienceType";
+export * from "./TalkVolume";
