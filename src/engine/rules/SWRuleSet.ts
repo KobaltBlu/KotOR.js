@@ -274,7 +274,7 @@ export class SWRuleSet {
     /**
      * Initialize Item Properties
      */
-    const itemProps = GameState.TwoDAManager.datatables.get('itempropsdef');
+    const itemProps = GameState.TwoDAManager.datatables.get('itempropdef');
     if(itemProps){
       SWRuleSet.itemPropsDef = new Array(itemProps.RowCount);
       for(let i = 0; i < itemProps.RowCount; i++){
@@ -293,7 +293,7 @@ export class SWRuleSet {
         SWRuleSet.costTables[i] = SWCostTable.From2DA(costTables.rows[i]);
       }
     }
-    
+
     /**
      * Initialize Pazaak Decks
      */
