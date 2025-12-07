@@ -125,25 +125,19 @@ export class SWCreatureAppearance {
   equipslotslocked: number = -1;
 
   getBodyModelInfo(bodyVariation: string = '', textureVariation: number = 1): { model: string, texture: string } {
+    textureVariation = Math.max(1, textureVariation);
     console.log('getBodyModelInfo', bodyVariation, textureVariation);
     const defaultModel = this.modela.replace(/\0[\s\S]*$/g,'');
     const defaultTexture = this.texa.replace(/\0[\s\S]*$/g,'');
     let bodyModel = defaultModel; 
     let bodyTexture = defaultTexture;
 
-    if(!bodyVariation){
-      if(this.modeltype != 'B'){
-        const raceTex = this.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        bodyModel = this.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        const match = raceTex.match(/\d+/);
-        bodyTexture = (match && textureVariation > 1) ? raceTex.replace( new RegExp("[0-9]+", "g"), Utility.PadInt( textureVariation, match[0].length ) ) : raceTex;
-      }else{
-        bodyModel = this.modela.replace(/\0[\s\S]*$/g,'').toLowerCase();
-        bodyTexture = this.texa.replace(/\0[\s\S]*$/g,'').toLowerCase() + Utility.PadInt( textureVariation, 2);
-      }
+    if(this.modeltype != 'B'){
+      bodyModel = this.race.replace(/\0[\s\S]*$/g,'').toLowerCase();
+      bodyTexture = this.racetex.replace(/\0[\s\S]*$/g,'').toLowerCase();
       return {
-        model: bodyModel.toLowerCase(),
-        texture: bodyTexture.toLowerCase()
+        model: bodyModel,
+        texture: bodyTexture
       }
     }
 
