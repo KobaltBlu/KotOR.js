@@ -31,6 +31,8 @@ import { SWCreatureAppearance } from "./SWCreatureAppearance";
 import { SWDoorAppearance } from "./SWDoorAppearance";
 import { SWPlaceableAppearance } from "./SWPlaceableAppearance";
 import { SWCostTable } from "./SWCostTable";
+import { SWFootStep } from "./SWFootStep";
+import { SWWeaponSound } from "./SWWeaponSound";
 
 /**
  * SWRuleSet class.
@@ -118,6 +120,12 @@ export class SWRuleSet {
 
   static placeableAppearances: SWPlaceableAppearance[] = [];
   static placeableAppearanceCount: number = 0;
+
+  static footSteps: SWFootStep[] = [];
+  static footStepCount: number = 0;
+
+  static weaponSounds: SWWeaponSound[] = [];
+  static weaponSoundCount: number = 0;
 
   static Init(){
 
@@ -452,6 +460,30 @@ export class SWRuleSet {
       SWRuleSet.skills = new Array(SWRuleSet.skillCount);
       for(let i = 0; i < skills.RowCount; i++){
         SWRuleSet.skills[i] = SWSkill.From2DA(skills.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Foot Steps
+     */
+    const footSteps = GameState.TwoDAManager.datatables.get('footstepsounds');
+    if(footSteps){
+      SWRuleSet.footStepCount = footSteps.RowCount;
+      SWRuleSet.footSteps = new Array(SWRuleSet.footStepCount);
+      for(let i = 0; i < footSteps.RowCount; i++){
+        SWRuleSet.footSteps[i] = SWFootStep.From2DA(footSteps.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Weapon Sounds
+     */
+    const weaponSounds = GameState.TwoDAManager.datatables.get('weaponsounds');
+    if(weaponSounds){
+      SWRuleSet.weaponSoundCount = weaponSounds.RowCount;
+      SWRuleSet.weaponSounds = new Array(SWRuleSet.weaponSoundCount);
+      for(let i = 0; i < weaponSounds.RowCount; i++){
+        SWRuleSet.weaponSounds[i] = SWWeaponSound.From2DA(weaponSounds.rows[i]);
       }
     }
 

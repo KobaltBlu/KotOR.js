@@ -19,6 +19,8 @@ export * from "./SWSubRace";
 export * from "./SWSoundSet";
 export * from "./SWCreatureSize";
 export * from "./SWCreatureSpeed";
+export * from "./SWFootStep";
+export * from "./SWWeaponSound";
 export * from "./SWRange";
 export * from "./SWBaseItem";
 export * from "./SWCreatureAppearance";
