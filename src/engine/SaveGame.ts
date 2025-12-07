@@ -322,6 +322,7 @@ export class SaveGame {
    * // Game state is now restored and ready to play
    */
   async load(){
+    localStorage.setItem(`${GameState.GameKey}_last_save_id`, SaveGame.saves.indexOf(this).toString());
     GameState.isLoadingSave = true;
     GameState.TutorialWindowTracker = [];
 

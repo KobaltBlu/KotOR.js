@@ -27,6 +27,7 @@ export const CheatConsole = () => {
       <div className="console-buttons">
         <button className="console-btn" onClick={() => appState.toggleDebugger()}>Debugger</button>
         <button className="console-btn" onClick={() => appState.togglePerformanceMonitor()}>Toggle Stats</button>
+        <button className="console-btn" onClick={() => appState.reloadLastSave()}>Reload Last Save</button>
       </div>
       <input className="console-input" type="text" value={consoleInput} onChange={handleConsoleInput} onKeyDown={handleConsoleSubmit} />
     </div>

@@ -264,6 +264,14 @@ export class AppState {
     KotOR.GameState.Debugger.open();
   }
 
+  static reloadLastSave(){
+    const gameKey = KotOR.GameState.GameKey;
+    const lastSaveId = parseInt(localStorage.getItem(`${gameKey}_last_save_id`) || '-1');
+    const saveGame = KotOR.SaveGame.saves[lastSaveId];
+    if(!saveGame){ return; }
+    saveGame.load();
+  }
+
   /**
    * Event Listeners
    */
