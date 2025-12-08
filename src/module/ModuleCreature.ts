@@ -2238,13 +2238,8 @@ export class ModuleCreature extends ModuleObject {
   getInventory(): ModuleItem[] {
     if(this.isPartyMember()){
       return GameState.InventoryManager.getInventory();
-    }else{
-      return this.inventory;
     }
-    /*if(this.template.RootNode.hasField('ItemList')){
-      return this.template.RootNode.getFieldByLabel('ItemList').getChildStructs();
-    }
-    return [];*/
+    return this.inventory;
   }
 
   getXOrientation(){
@@ -2655,15 +2650,6 @@ export class ModuleCreature extends ModuleObject {
 
   getAppearance(): SWCreatureAppearance {
     return this.creatureAppearance;
-    // const appearance2DA = TwoDAManager.datatables.get('appearance');
-    // if(appearance2DA){
-    //   let eDisguise = this.getEffect(GameEffectType.EffectDisguise);
-    //   if(eDisguise){
-    //     return appearance2DA.rows[eDisguise.getInt(0)];
-    //   }else{
-    //     return appearance2DA.rows[this.appearance] || appearance2DA.rows[0];
-    //   }
-    // }
   }
 
   isWalking(){
