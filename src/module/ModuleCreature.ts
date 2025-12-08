@@ -1630,13 +1630,6 @@ export class ModuleCreature extends ModuleObject {
     
   }
 
-  getDeflectAnimation(): ITwoDAAnimation {
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
-    //console.log('getDamageAnimation', 'g'+weaponWield+'d1');
-    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'n1');
-  }
-
   getCombatAnimationAttackType(): string {
     let weapon = this.equipment.RIGHTHAND;
     let weaponType = 0;
