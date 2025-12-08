@@ -58,6 +58,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   meshes: any[] = [];
   danglyMeshes: any[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
+  odysseyAnimationMap: Map<string, OdysseyModelAnimation> = new Map<string, OdysseyModelAnimation>();
   emitters: OdysseyEmitter3D[] = [];
   lights: any = [];
   aabb: OdysseyModelNodeAABB = {} as any;
@@ -372,7 +373,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(typeof anim === 'number'){
       animation = this.odysseyAnimations[anim];
     }else if(typeof anim === 'string'){
-      animation = this.getAnimationByName(anim);
+      animation = this.odysseyAnimationMap.get(anim.toLowerCase().trim());
     }else{
       animation = anim;
     }
@@ -403,7 +404,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(typeof anim === 'number'){
       this.animationManager.setCurrentAnimation(this.odysseyAnimations[anim], state);
     }else if(typeof anim === 'string'){
-      this.animationManager.setCurrentAnimation(this.getAnimationByName(anim), state);
+      this.animationManager.setCurrentAnimation(this.odysseyAnimationMap.get(anim.toLowerCase().trim()), state);
     }else{
       this.animationManager.setCurrentAnimation(anim, state);
     }
@@ -441,7 +442,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     if(typeof anim === 'number'){
       this.animationManager.setOverlayAnimation(this.odysseyAnimations[anim], state);
     }else if(typeof anim === 'string'){
-      this.animationManager.setOverlayAnimation(this.getAnimationByName(anim), state);
+      this.animationManager.setOverlayAnimation(this.odysseyAnimationMap.get(anim.toLowerCase().trim()), state);
     }else{
       this.animationManager.setOverlayAnimation(anim, state);
     }
@@ -453,13 +454,6 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   stopAnimation(){
     this.animationManager.stopAnimation();
-  }
-
-  getAnimationByName(name = ''): OdysseyModelAnimation {
-    for(let i = 0; i < this.odysseyAnimations.length; i++){
-      if(this.odysseyAnimations[i].name == name)
-        return this.odysseyAnimations[i];
-    }
   }
 
   getAnimationName(): string {
@@ -764,36 +758,29 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   static async SuperModelLoader(resref: string, odysseyModel: OdysseyModel3D): Promise<OdysseyModel3D> {
     const supermodel: OdysseyModel = await MDLLoader.loader.load(resref);
-    if(!!supermodel){
-      //--------------------------------------//
-      // Supermodel: Animations Merge - Begin
-      //--------------------------------------//
+    if(!supermodel){
+      return odysseyModel;
+    }
 
-      let currentAnimations = odysseyModel.odysseyAnimations.slice(); //Copy the array
-      for(let i = 0; i < supermodel.animations.length; i++){
-        let animName = supermodel.animations[i].name;
-        let hasAnim = false;
-        for(let j = 0; j < currentAnimations.length; j++){
-          if(animName == currentAnimations[j].name){
-            //odysseyModel.odysseyAnimations[j] = supermodel.odysseyAnimations[i];
-            hasAnim = true;
-            break;
-          }
-        }
-
-        if(!hasAnim){
-          odysseyModel.odysseyAnimations.push(OdysseyModelAnimation.From(supermodel.animations[i]));
-        }
+    //--------------------------------------//
+    // Supermodel: Animations Merge - Begin
+    //--------------------------------------//
+    for(let i = 0, ilen = supermodel.animations.length; i < ilen; i++){
+      const animName = supermodel.animations[i].name;
+      const hasAnim = odysseyModel.odysseyAnimationMap.has(animName);
+      if(!hasAnim){
+        const anim = OdysseyModelAnimation.From(supermodel.animations[i]);
+        odysseyModel.odysseyAnimations.push(anim);
+        odysseyModel.odysseyAnimationMap.set(anim.name, anim);
       }
+    }
+    //------------------------------------//
+    // Supermodel: Animations Merge - End
+    //------------------------------------//
 
-      //------------------------------------//
-      // Supermodel: Animations Merge - End
-      //------------------------------------//
-
-      let superModelName = supermodel.modelHeader.superModelName;
-      if(superModelName != 'null' && superModelName.indexOf("NULL") == -1 && superModelName != ''){
-        return OdysseyModel3D.SuperModelLoader( superModelName.toLowerCase(), odysseyModel ); 
-      }
+    const superModelName = supermodel.modelHeader.superModelName;
+    if(!!superModelName){
+      return OdysseyModel3D.SuperModelLoader( superModelName, odysseyModel ); 
     }
     return odysseyModel;
   }
@@ -827,6 +814,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }else{
           for(let i = 0; i < model.animations.length; i++){
             odysseyModel.odysseyAnimations[i] = OdysseyModelAnimation.From(model.animations[i]);
+            odysseyModel.odysseyAnimationMap.set(odysseyModel.odysseyAnimations[i].name, odysseyModel.odysseyAnimations[i]);
           }
         }
         odysseyModel.Scale = 1;
@@ -920,7 +908,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         
         odysseyModel.buildSkeleton();
 
-        if(model.modelHeader.superModelName.indexOf("NULL") == -1 && model.modelHeader.superModelName != ''){
+        if(model.modelHeader.superModelName.indexOf("null") == -1 && model.modelHeader.superModelName != ''){
           await OdysseyModel3D.SuperModelLoader(model.modelHeader.superModelName.toLowerCase(), odysseyModel);
         }
 
@@ -1509,7 +1497,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         }
       });
 
-      if(tMap1 != 'NULL' && tMap1 != 'Toolcolors'){
+      if(!!tMap1 && tMap1 != 'toolcolors'){
         material.userData.map = tMap1;
         TextureLoader.enQueue(tMap1, material, TextureType.TEXTURE, undefined, fallbackTexture);
       }else{

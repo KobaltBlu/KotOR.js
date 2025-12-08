@@ -113,7 +113,7 @@ export class OdysseyModelAnimation {
     anim.nodes = original.nodes;
     anim.modelName = original.ModelName;
     anim.events = original.events;
-    anim.name = original.name;
+    anim.name = original.name?.toLowerCase().trim() || '';
     anim.length = original.length;
     anim.transition = original.transition;
 

@@ -173,7 +173,7 @@ export class LIPObject {
       }
       
       if(this.anim == null){
-        this.anim = model.getAnimationByName('talk');
+        this.anim = model.odysseyAnimationMap.get('talk');
       }
       
       if(this.anim){

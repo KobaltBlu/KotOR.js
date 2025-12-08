@@ -9,6 +9,11 @@ import type { OdysseyModel } from "./OdysseyModel";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
 
+const mdlStringCleaner = (str: string = ''): string => {
+  const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
+  return cleaned != 'null' ? cleaned : '';
+};
+
 /**
  * OdysseyModelNodeMesh class.
  * 
@@ -128,10 +133,10 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     this.transparencyHint = this.odysseyModel.mdlReader.readUInt32() ? true : false;
 
-    this.textureMap1 = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,''); //This stores the texture filename
-    this.textureMap2 = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,''); //This stores the lightmap filename
-    this.textureMap3 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 3rd texture filename (?)
-    this.textureMap4 = this.odysseyModel.mdlReader.readChars(12).replace(/\0[\s\S]*$/g,''); //This stores a 4th texture filename (?)
+    this.textureMap1 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32)); //This stores the texture filename
+    this.textureMap2 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(32)); //This stores the lightmap filename
+    this.textureMap3 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12)); //This stores a 3rd texture filename (?)
+    this.textureMap4 = mdlStringCleaner(this.odysseyModel.mdlReader.readChars(12)); //This stores a 4th texture filename (?)
 
     this.indexCountArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //IndexCounterArray
     this.vertexLocArrayDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader); //vertex_indices_offset

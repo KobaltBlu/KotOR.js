@@ -730,7 +730,7 @@ export class CutsceneManager {
     }
 
     const animationName = this.getCUTAnimationName(nCamera);
-    const animation = this.dialog.animatedCamera.getAnimationByName(animationName);
+    const animation = this.dialog.animatedCamera.odysseyAnimationMap.get(animationName.toLowerCase().trim());
     this.cameraState.currentCameraAnimation = animation;
     this.cameraState.currentCameraAnimationElapsed = 0;
     this.dialog.animatedCamera.animationManager.currentAnimation = animation;

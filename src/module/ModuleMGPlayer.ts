@@ -387,7 +387,7 @@ export class ModuleMGPlayer extends ModuleObject {
     //console.log(`play: ${name}${padding}`.substring(0, 20), `bLooping: ${bLooping ? 'true' : 'false'}${padding}`.substring(0, 20), `bQueue: ${bQueue ? 'true' : 'false'}${padding}`.substring(0, 20), `bOverlay: ${bOverlay ? 'true' : 'false'}${padding}`.substring(0, 20));
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
-      const anim = model.getAnimationByName(name);
+      const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
       if(anim){
 
         //Check if this animation has already been applied

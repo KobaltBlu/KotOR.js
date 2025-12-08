@@ -10,6 +10,11 @@ import { OdysseyModelFactory } from "./OdysseyModelFactory";
 import { OdysseyModelNode } from "./OdysseyModelNode";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
+const mdlStringCleaner = (str: string = ''): string => {
+  const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
+  return cleaned != 'null' ? cleaned : '';
+};
+
 /**
  * OdysseyModel class.
  * 
@@ -82,7 +87,7 @@ export class OdysseyModel {
       break;
     }
 
-    this.geometryHeader.modelName = this.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.geometryHeader.modelName = mdlStringCleaner(this.mdlReader.readChars(32));
     this.geometryHeader.rootNodeOffset = this.mdlReader.readUInt32();
     this.geometryHeader.nodeCount = this.mdlReader.readUInt32();
 
@@ -116,7 +121,7 @@ export class OdysseyModel {
     this.modelHeader.radius = this.mdlReader.readSingle();
     this.modelHeader.scale = this.mdlReader.readSingle();
     this.mdlReader.seek(148);
-    this.modelHeader.superModelName = this.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.modelHeader.superModelName = mdlStringCleaner(this.mdlReader.readChars(32));
     
     /*
      * Names Array Header
@@ -132,7 +137,7 @@ export class OdysseyModel {
 
     this.names = OdysseyModelUtility.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
     for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
-      this.names[i] = this.names[i].replace(/\0[\s\S]*$/g,'').toLowerCase();
+      this.names[i] = mdlStringCleaner(this.names[i]);
     }
 
     /*

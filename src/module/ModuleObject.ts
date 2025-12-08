@@ -690,7 +690,7 @@ export class ModuleObject {
     }
 
     // Find the animation in the model's animation list
-    const animation = this.model.getAnimationByName(animationData.name);
+    const animation = this.model.odysseyAnimationMap.get(animationData.name.toLowerCase().trim());
     if (!animation) {
       return 0;
     }
@@ -710,7 +710,7 @@ export class ModuleObject {
     }
 
     // Find the animation in the model's animation list
-    const animation = this.model.getAnimationByName(animationName);
+    const animation = this.model.odysseyAnimationMap.get(animationName.toLowerCase().trim());
     if (!animation) {
       return 0;
     }

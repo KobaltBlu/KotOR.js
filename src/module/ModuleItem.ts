@@ -574,7 +574,7 @@ export class ModuleItem extends ModuleObject {
    * @param powered - Whether the weapon should be powered
    */
   setPowered(powered: boolean){
-    const currentAnimL = this.model.animationManager.currentAnimation || this.model.getAnimationByName('off');
+    const currentAnimL = this.model.animationManager.currentAnimation || this.model.odysseyAnimationMap.get('off');
     if(!currentAnimL){ return; }
 
     //power up

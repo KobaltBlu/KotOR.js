@@ -203,7 +203,7 @@ export class ModuleMGEnemy extends ModuleObject {
     //I think n3 may be loop
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
-      const anim = model.getAnimationByName(name);
+      const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
       if(anim){
         if(n3){
           console.log(anim);
@@ -225,7 +225,7 @@ export class ModuleMGEnemy extends ModuleObject {
     for(let i = 0; i < this.models.length; i++){
       model = this.models[i];
       if(model instanceof OdysseyModel3D){
-        let anim = model.getAnimationByName(name);
+        let anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
 
         if(anim){
           let animLoopIdx = model.animLoops.indexOf(anim);
