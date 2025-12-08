@@ -569,6 +569,42 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
+  /**
+   * Set the weapon powered state and update the powered animation
+   * @param powered - Whether the weapon should be powered
+   */
+  setPowered(powered: boolean){
+    const currentAnimL = this.model.animationManager.currentAnimation || this.model.getAnimationByName('off');
+    if(!currentAnimL){ return; }
+
+    //power up
+    if(powered){
+      switch(currentAnimL.name){
+        case 'off':
+          this.model.playAnimation('powerup');
+        break;
+        case 'powerup':
+        break;
+        default:
+          this.model.playAnimation('powered', true);
+        break;
+      }
+      return;
+    }
+    
+    //power down
+    switch(currentAnimL.name){
+      case 'powered':
+        this.model.playAnimation('powerdown');
+      break;
+      case 'powerdown':
+      break;
+      default:
+        this.model.playAnimation('off', true);
+      break;
+    }
+  }
+
   static FromResRef(resRef: string): ModuleItem {
     const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], resRef);
     if(buffer){

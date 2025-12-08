@@ -1894,86 +1894,17 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  weaponPowered(on = false){
+  /**
+   * Set the weapon powered state
+   * @param on - Whether the weapon should be powered
+   */
+  weaponPowered(on: boolean = false): void {
+    const weaponType = this.getCombatAnimationWeaponType();
+    const isSimple = this.isSimpleCreature();
+    if(isSimple || !weaponType){ return; }
 
-    let weaponType = this.getCombatAnimationWeaponType();
-    let isSimple = this.isSimpleCreature();
-    if(isSimple || !weaponType)
-      return;
-
-    //let modeltype = this.creatureAppearance.modeltype;
-    //let hasHands = this.model.rhand instanceof THREE.Object3D && this.model.lhand instanceof THREE.Object3D;
-
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    //let bothHands = (lWeapon) && (rWeapon);
-    
-    if(!isSimple){
-
-      if(weaponType){
-        
-        if(lWeapon && lWeapon.model){
-          let currentAnimL = this.equipment.LEFTHAND.model.animationManager.currentAnimation || this.equipment.LEFTHAND.model.getAnimationByName('off');
-          if(currentAnimL){
-            if(on){
-              switch(currentAnimL.name){
-                case 'off':
-                  this.equipment.LEFTHAND.model.playAnimation('powerup');
-                break;
-                case 'powerup':
-                break;
-                default:
-                  this.equipment.LEFTHAND.model.playAnimation('powered', true);
-                break;
-              }
-            }else{
-              switch(currentAnimL.name){
-                case 'powered':
-                  this.equipment.LEFTHAND.model.playAnimation('powerdown');
-                break;
-                case 'powerdown':
-                break;
-                default:
-                  this.equipment.LEFTHAND.model.playAnimation('off', true);
-                break;
-              }
-            }
-          }
-        }
-
-        if(rWeapon && rWeapon.model){
-          let currentAnimR = this.equipment.RIGHTHAND.model.animationManager.currentAnimation || this.equipment.RIGHTHAND.model.getAnimationByName('off');
-          if(currentAnimR){
-            if(on){
-              switch(currentAnimR.name){
-                case 'off':
-                  this.equipment.RIGHTHAND.model.playAnimation('powerup', false);
-                break;
-                case 'powerup':
-                break;
-                default:
-                  this.equipment.RIGHTHAND.model.playAnimation('powered', true);
-                break;
-              }
-            }else{
-              switch(currentAnimR.name){
-                case 'powered':
-                  this.equipment.RIGHTHAND.model.playAnimation('powerdown', false);
-                break;
-                case 'powerdown':
-                break;
-                default:
-                  this.equipment.RIGHTHAND.model.playAnimation('off', true);
-                break;
-              }
-            }
-          }
-        }
-
-      }
-
-    }
-
+    this.equipment.LEFTHAND?.setPowered(on);
+    this.equipment.RIGHTHAND?.setPowered(on);
   }
 
   setLIP(lip: LIPObject){
