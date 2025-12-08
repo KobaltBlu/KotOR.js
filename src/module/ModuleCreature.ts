@@ -2848,13 +2848,6 @@ export class ModuleCreature extends ModuleObject {
     return false;
   }
 
-  getSkillList(){
-    // if(this.template.RootNode.hasField('SkillList')){
-    //   return this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
-    // }
-    return this.skills;
-  }
-
   getHasSkill(value: number){
     return this.skills[value].rank > 0;
   }
@@ -2992,7 +2985,6 @@ export class ModuleCreature extends ModuleObject {
       return parseInt(ranges2DA.rows[this.perceptionRange].secondaryrange);
     }
   }
-
 
   isSimpleCreature(){
     if(!this.creatureAppearance) return false;

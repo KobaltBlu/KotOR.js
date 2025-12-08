@@ -69,7 +69,7 @@ export class ActionMenuManager {
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
 
-    const securityTalent = ActionMenuManager.oPC.getSkillList()[SkillType.SECURITY];
+    const securityTalent = ActionMenuManager.oPC.skills[SkillType.SECURITY];
     const bHasSecuritySkill = ActionMenuManager.oPC.getSkillLevel(SkillType.SECURITY) >= 1;
     const bHasDemolitionsSkill = ActionMenuManager.oPC.getSkillLevel(SkillType.DEMOLITIONS) >= 1;
 
