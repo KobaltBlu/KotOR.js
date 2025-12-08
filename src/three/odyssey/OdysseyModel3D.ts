@@ -28,6 +28,7 @@ import { type OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import { OdysseyObject3D } from "./OdysseyObject3D";
 import { OdysseyEmitter3D } from "./OdysseyEmitter3D";
 import { OdysseyLight3D } from "./OdysseyLight3D";
+import { type IGameContext } from "../../interface/engine/IGameContext";
 
 function odysseyOnBeforeCompile(this: THREE.ShaderMaterial, shader: any) {
   const lightCount = this.uniforms.animPointLights.value.length;
@@ -54,7 +55,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
   type = 'OdysseyModel';
   box = new THREE.Box3;
   sphere = new THREE.Sphere();
-  context: any = undefined;
+  context: IGameContext = undefined;
   meshes: any[] = [];
   danglyMeshes: any[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
