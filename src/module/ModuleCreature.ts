@@ -291,7 +291,7 @@ export class ModuleCreature extends ModuleObject {
     this.notReorienting = 0;
     this.palletID = 0; //for use in biowares editor
     this.partyInteract = 0;
-    this.perceptionRange = 0;
+    this.perceptionRange = GameState.SWRuleSet.ranges[11];
     this.phenotype = 0;
     this.plot = false;
     this.portraitId = 0;
@@ -2958,20 +2958,6 @@ export class ModuleCreature extends ModuleObject {
     return undefined;
   }
 
-  getPerceptionRange(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      return parseInt(ranges2DA.rows[this.perceptionRange].primaryrange);
-    }
-  }
-
-  getPerceptionRangeSecondary(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      return parseInt(ranges2DA.rows[this.perceptionRange].secondaryrange);
-    }
-  }
-
   isSimpleCreature(){
     if(!this.creatureAppearance) return false;
     return this.creatureAppearance.modeltype === 'S' || this.creatureAppearance.modeltype === 'L';
@@ -3606,12 +3592,12 @@ export class ModuleCreature extends ModuleObject {
         this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
 
       if(this.template.RootNode.hasField('PerceptionRange')){
-        this.perceptionRange = this.template.getFieldByLabel('PerceptionRange').getValue();
+        this.perceptionRange = GameState.SWRuleSet.ranges[this.template.getFieldByLabel('PerceptionRange').getValue()];
       }else{
         //https://forum.neverwintervault.org/t/perception-range/3191/9
         //It appears that PerceptionRange isn't saved inside the GIT file.
         //The original game appears to use PercepRngDefault when a creature is reloaded from a SaveGame
-        this.perceptionRange = 11;
+        this.perceptionRange = GameState.SWRuleSet.ranges[11];
       }
 
       if(this.template.RootNode.hasField('Phenotype'))
@@ -4269,7 +4255,7 @@ export class ModuleCreature extends ModuleObject {
       perceptionList.addChildStruct(perceptionStruct);
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange?.id || 0);
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(0);

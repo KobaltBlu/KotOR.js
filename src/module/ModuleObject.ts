@@ -50,6 +50,7 @@ import { NWScript } from "../nwscript/NWScript";
 import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerType, SkillType, TalkVolume } from "../enums";
 import type { SWPortrait } from "../engine/rules/SWPortrait";
 import type { IHeardString } from "../interface/dialog/IHeardString";
+import type { SWRange } from "../engine/rules/SWRange";
 
 /**
 * ModuleObject class.
@@ -170,7 +171,7 @@ export class ModuleObject {
   perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
   listeningPatterns: any = {};
-  perceptionRange: any;
+  perceptionRange: SWRange;
   
   spawned: boolean = false;
   _inventoryPointer: number;
@@ -3063,14 +3064,8 @@ export class ModuleObject {
    * @returns 
    */
   getPerceptionRangePrimary(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      let range = ranges2DA.rows[this.perceptionRange];
-      if(range){
-        return parseInt(range.primaryrange);
-      }
-    }
-    return 1;
+    if(!this.perceptionRange){ return 1; }
+    return this.perceptionRange.primaryRange;
   }
 
   /**
@@ -3078,14 +3073,8 @@ export class ModuleObject {
    * @returns 
    */
   getPerceptionRangeSecondary(){
-    const ranges2DA = GameState.TwoDAManager.datatables.get('ranges');
-    if(ranges2DA){
-      let range = ranges2DA.rows[this.perceptionRange];
-      if(range){
-        return parseInt(range.secondaryrange);
-      }
-    }
-    return 1;
+    if(!this.perceptionRange){ return 1; }
+    return this.perceptionRange.secondaryRange;
   }
 
   /**
