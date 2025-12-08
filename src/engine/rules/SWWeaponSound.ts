@@ -31,6 +31,66 @@ export class SWWeaponSound {
   clash0: string = '';
   clash1: string = '';
 
+  getClothResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.cloth0 : this.cloth1;
+  }
+
+  getLeatherResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.leather0 : this.leather1;
+  }
+
+  getArmorResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.armor0 : this.armor1;
+  }
+
+  getForceFieldResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.forceField0 : this.forceField1;
+  }
+
+  getMetalResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.metal0 : this.metal1;
+  }
+
+  getWoodResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.wood0 : this.wood1;
+  }
+
+  getStoneResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.stone0 : this.stone1;
+  }
+
+  getHitParryResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.parry0 : this.parry1;
+  }
+
+  getSwingShortResRef(){
+    const sndIdx = Math.round(Math.random()*2);
+    return sndIdx == 0 ? this.swingShort0 : sndIdx == 1 ? this.swingShort1 : this.swingShort2;
+  }
+
+  getSwingLongResRef(){
+    const sndIdx = Math.round(Math.random()*2);
+    return sndIdx == 0 ? this.swingLong0 : sndIdx == 1 ? this.swingLong1 : this.swingLong2;
+  }
+
+  getSwingTwirlResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.swingTwirl0 : this.swingTwirl1;
+  }
+
+  getClashResRef(){
+    const sndIdx = Math.round(Math.random()*1);
+    return sndIdx == 0 ? this.clash0 : this.clash1;
+  }
+
   static From2DA(row: any = {}){
     const weaponSound = new SWWeaponSound();
     weaponSound.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);

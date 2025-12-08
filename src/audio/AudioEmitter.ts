@@ -327,6 +327,14 @@ export class AudioEmitter {
     return (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
   }
 
+  getCurrentSoundName(): string {
+    return this.currentSound ? (this.currentSound as any).name || '' : '';
+  }
+
+  isPlayingSound(resRef: string): boolean {
+    return this.getCurrentSoundName() == resRef;
+  }
+
   playNextSound(): void {
     if(this.isDestroyed)
       return;

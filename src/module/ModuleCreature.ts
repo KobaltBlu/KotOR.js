@@ -1816,132 +1816,59 @@ export class ModuleCreature extends ModuleObject {
   playEvent(event: THREE.Event){
     this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
-    let appearance = this.creatureAppearance;
+    
+    const appearance = this.creatureAppearance;
+    const rhSounds = this.equipment.RIGHTHAND?.weaponSound;
+    const lhSounds = this.equipment.LEFTHAND?.weaponSound;
+    const footstepSounds = GameState.SWRuleSet.footSteps[appearance.footsteptype];
 
-    let rhSounds, lhSounds;
+    let rhWeaponSoundResRef = '';
+    let lhWeaponSoundResRef = '';
+    let footstepSoundResRef = '';
+    let footstepIsLooping = false;
 
-    if(this.equipment.RIGHTHAND)
-      rhSounds = GameState.TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.RIGHTHAND.baseItem.poweredItem];
-
-    if(this.equipment.LEFTHAND)
-      lhSounds = GameState.TwoDAManager.datatables.get('weaponsounds').rows[this.equipment.LEFTHAND.baseItem.poweredItem];
-
-
-    let sndIdx = Math.round(Math.random()*2);
-    let sndIdx2 = Math.round(Math.random()*1);
     switch(event.event){
       case 'snd_footstep':
-        let sndTable = GameState.TwoDAManager.datatables.get('footstepsounds').rows[appearance.footsteptype];
-        if(sndTable){
-          let sound = '****';
-          switch(this.collisionData.surfaceId){
-            case 1:
-              sound = (sndTable['dirt'+sndIdx]);
-            break;
-            case 3:
-              sound = (sndTable['grass'+sndIdx]);
-            break;
-            case 4:
-              sound = (sndTable['stone'+sndIdx]);
-            break;
-            case 5:
-              sound = (sndTable['wood'+sndIdx]);
-            break;
-            case 6:
-              sound = (sndTable['water'+sndIdx]);
-            break;
-            case 9:
-              sound = (sndTable['carpet'+sndIdx]);
-            break;
-            case 10:
-              sound = (sndTable['metal'+sndIdx]);
-            break;
-            case 11:
-            case 13:
-              sound = (sndTable['puddles'+sndIdx]);
-            break;
-            case 14:
-              sound = (sndTable['leaves'+sndIdx]);
-            break;
-            default:
-              sound = (sndTable['dirt'+sndIdx]);
-            break;
-          }
-
-          if(sound != '****'){
-            this.footstepEmitter.isLooping = false;
-            this.footstepEmitter.playSoundFireAndForget(sound);
-          }else if(sndTable['rolling'] != '****'){
-            this.footstepEmitter.isLooping = true;
-            if(!this.footstepEmitter.currentSound || (this.footstepEmitter.currentSound as any).name != sndTable['rolling']){
-              console.log('Playing rolling sound', sndTable['rolling']);
-              this.footstepEmitter.playSound(sndTable['rolling']);
-            }
-          }
+        if(footstepSounds){
+          const isRolling = footstepSounds.isRolling();
+          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionData.surfaceId);
+          footstepIsLooping = isRolling;
         }
       break;
       case 'Swingshort':
-        if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSoundFireAndForget(rhSounds['swingshort'+sndIdx]);
-        }
+        rhWeaponSoundResRef = rhSounds?.getSwingShortResRef() || '';
       break;
       case 'Swinglong':
-        if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSoundFireAndForget(rhSounds['swinglong'+sndIdx]);
-        }
+        rhWeaponSoundResRef = rhSounds?.getSwingLongResRef() || '';
       break;
       case 'HitParry':
-        if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSoundFireAndForget(rhSounds['parry'+sndIdx2]);
-        }
+        rhWeaponSoundResRef = rhSounds?.getHitParryResRef() || '';
       break;
       case 'Contact':
-        if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSoundFireAndForget(rhSounds['clash'+sndIdx2]);
-        }
+        rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
       break;
       case 'Clash':
-        if(this.equipment.RIGHTHAND){
-          this.audioEmitter.playSoundFireAndForget(rhSounds['clash'+sndIdx2]);
-        }
+        rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
       break;
       case 'Hit':
-        //console.log('Attack Hit Event');
-
         if(this.combatData.combatAction && this.combatData.combatAction.hits && this.combatData.combatAction.damage){
           this.combatData.combatAction.target.damage(this.combatData.combatAction.damage, this);
-        }else{
-          //console.error('playEvent Hit:', {hit: this.combatAction.hits, damage: this.combatAction.damage});
         }
 
-        if(this.equipment.RIGHTHAND){
-          if(this.equipment.RIGHTHAND){
-            this.audioEmitter.playSoundFireAndForget(rhSounds['leather'+Math.round(Math.random()*1)]);
-          }
-        }
-      break;
-    }
-  }
-
-  getIdleAnimation(){
-    let modeltype = this.creatureAppearance.modeltype;
-
-    switch(modeltype.toLowerCase()){
-      case 's':
-        if(this.combatData.combatState){
-
-        }else{
-          return 'walk';
-        }
-      break;
-      case 'l':
-
-      break;
-      default:
-
+        rhWeaponSoundResRef = rhSounds?.getLeatherResRef() || '';
       break;
     }
 
+    if(footstepSoundResRef && footstepIsLooping && !this.footstepEmitter.isPlayingSound(footstepSoundResRef)){
+      console.log('Playing rolling sound', footstepSoundResRef);
+      this.footstepEmitter.playSound(footstepSoundResRef);
+    }else if(footstepSoundResRef){
+      this.footstepEmitter.playSoundFireAndForget(footstepSoundResRef);
+    }
+
+    if(rhWeaponSoundResRef){
+      this.audioEmitter.playSoundFireAndForget(rhWeaponSoundResRef);
+    }
   }
 
   hasWeapons(){
@@ -2045,40 +1972,6 @@ export class ModuleCreature extends ModuleObject {
 
       }
 
-    }
-
-  }
-
-  getWalkAnimation(){
-    let modeltype = this.creatureAppearance.modeltype;
-
-    switch(modeltype){
-      case 'S':
-      case 'L':
-        return 'cwalk';
-      default:
-        if(this.getHP()/this.getMaxHP() > .1){
-          return 'walk';
-        }else{
-          return 'walkinj';
-        }
-    }
-
-  }
-
-  getRunAnimation(){
-    let modeltype = this.creatureAppearance.modeltype;
-
-    switch(modeltype){
-      case 'S':
-      case 'L':
-        return 'crun';
-      default:
-        if(this.getHP()/this.getMaxHP() > .1){
-          return 'run';
-        }else{
-          return 'runinj';
-        }
     }
 
   }
@@ -2414,38 +2307,6 @@ export class ModuleCreature extends ModuleObject {
       break;
       default:
         return null;
-      break;
-    }
-  }
-
-  hasItemInSlot(sTag='', slot = 0, ){
-    switch(slot){
-      case ModuleCreatureArmorSlot.ARMOR:
-        if(this.equipment.ARMOR){
-
-        }
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        try{
-          if(this.creatureAppearance.modeltype != 'S'){
-            if(this.equipment.RIGHTHAND && this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
-              this.model.rhand.add(this.equipment.RIGHTHAND.model);
-            }
-          }
-        }catch(e){
-          
-        }
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        try{
-          if(this.creatureAppearance.modeltype != 'S' && this.creatureAppearance.modeltype != 'L'){
-            if(this.equipment.LEFTHAND && this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
-              this.model.lhand.add(this.equipment.LEFTHAND.model);
-            }
-          }
-        }catch(e){
-          
-        }
       break;
     }
   }

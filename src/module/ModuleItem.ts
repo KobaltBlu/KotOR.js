@@ -7,7 +7,6 @@ import { WeaponType } from "../enums/combat/WeaponType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleItemProperty } from "../enums/module/ModuleItemProperty";
 import { GFFDataType } from "../enums/resource/GFFDataType";
-import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -22,6 +21,7 @@ import { Dice } from "../utility/Dice";
 import { ItemProperty } from "../engine/ItemProperty";
 import { GameState } from "../GameState";
 import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "../enums";
+import type { SWWeaponSound } from "../engine/rules/SWWeaponSound";
 
 /**
 * ModuleItem class.
@@ -70,6 +70,7 @@ export class ModuleItem extends ModuleObject {
   upgradeSlot3: number = -1;
   upgradeSlot4: number = -1;
   upgradeSlot5: number = -1;
+  weaponSound: SWWeaponSound;
 
   constructor ( gff = new GFFObject() ) {
     super();
@@ -744,6 +745,8 @@ export class ModuleItem extends ModuleObject {
 
     if(this.template.RootNode.hasField('PaletteID'))
       this.palleteID = this.template.RootNode.getFieldByLabel('PaletteID').getValue();
+
+    this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem.poweredItem];
 
     this.initialized = true
 

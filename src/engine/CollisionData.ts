@@ -29,8 +29,8 @@ export class CollisionData {
   lastBlockingObject: ModuleObject;
   blockingObject: ModuleObject;
   walkmesh: OdysseyWalkMesh;
-  surfaceId: any;
-  groundFace: any;
+  surfaceId: number;
+  groundFace: OdysseyFace3;
   lastGroundFace: any;
   wm_c_point: THREE.Vector3 = new THREE.Vector3();
   lastRoom: ModuleRoom;
