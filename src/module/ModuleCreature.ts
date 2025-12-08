@@ -2999,12 +2999,6 @@ export class ModuleCreature extends ModuleObject {
     return this.creatureAppearance.modeltype === 'S' || this.creatureAppearance.modeltype === 'L';
   }
 
-  hasPerceived(creature: ModuleObject){
-    if(creature == null)
-      return false;
-    
-  }
-
   setListening(bVal = false){
     this.isListening = bVal ? true : false;
   }
