@@ -215,10 +215,14 @@ export class Utility {
     }
     return mipmaps;
   }
-  
-  static Distance2D(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
+
+  static Distance2DSquared(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
     let dx = v0.x - v1.x, dy = v0.y - v1.y;
-		return Math.abs(Math.sqrt( dx * dx + dy * dy ));
+    return dx * dx + dy * dy;
+  }
+
+  static Distance2D(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
+    return Math.abs(Math.sqrt(Utility.Distance2DSquared(v0, v1)));
   }
 
   static LineLineIntersection (x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number) {
