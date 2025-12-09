@@ -20,7 +20,7 @@ export class ActionResumeDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    GameState.ConversationPaused = false;
+    GameState.CutsceneManager.paused = false;
     console.log('ActionResumeDialog', this.owner.getName(), this.owner.getTag());
     return ActionStatus.COMPLETE;
   }

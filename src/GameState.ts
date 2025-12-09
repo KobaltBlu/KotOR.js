@@ -287,8 +287,6 @@ export class GameState implements EngineContext {
   
   static loadingTextures: boolean;
 
-  static ConversationPaused: boolean = false;
-
   static preloadTextures: string[] = ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
     'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
     'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
@@ -1140,7 +1138,7 @@ export class GameState implements EngineContext {
     GameState.CursorManager.hoveredObject = undefined;
 
     GameState.staticCameras = [];
-    GameState.ConversationPaused = false;
+    GameState.CutsceneManager.paused = false;
 
     AudioEngine.Mute();
   }

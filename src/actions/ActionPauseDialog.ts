@@ -20,7 +20,7 @@ export class ActionPauseDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    GameState.ConversationPaused = true;
+    GameState.CutsceneManager.paused = true;
     return ActionStatus.COMPLETE;
   }
 

@@ -49,6 +49,8 @@ export class CutsceneManager {
 
   static audioEmitter: AudioEmitter;
 
+  static paused: boolean = false;
+
   static cameraState: ICameraState = {
     mode: CameraMode.DIALOG,
     cameraAngle: DLGCameraAngle.ANGLE_SPEAKER,
@@ -80,7 +82,7 @@ export class CutsceneManager {
     this.cameraState.currentCameraAnimation = undefined;
     this.owner = owner;
     this.listener = listener;
-    GameState.ConversationPaused = false;
+    this.paused = false;
     this.ended = false;
     this.currentEntry = null;
     this.state = ConversationState.INVALID;
@@ -402,7 +404,7 @@ export class CutsceneManager {
    */
   static endConversation(aborted = false) {
     this.active = false;
-    if (GameState.ConversationPaused) {
+    if (this.paused) {
       this.ended = true;
     }
     this.audioEmitter.stop();
@@ -766,7 +768,7 @@ export class CutsceneManager {
 
     this.updateCamera(delta);
 
-    if(GameState.ConversationPaused) return;
+    if(this.paused) return;
 
     if(this.currentEntry){
       const updateComplete = this.currentEntry.update(delta);
