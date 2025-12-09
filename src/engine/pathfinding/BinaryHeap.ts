@@ -1,4 +1,4 @@
-type ScoreFunctionType<T> = (node: T) => void;
+type ScoreFunctionType<T> = (node: T) => number;
 
 //https://github.com/bgrins/javascript-astar
 export class BinaryHeap<T> {
