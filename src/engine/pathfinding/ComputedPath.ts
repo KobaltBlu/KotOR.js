@@ -35,7 +35,7 @@ export class ComputedPath {
   }
 
   getCost( point: PathPoint ){
-    return point.vector.manhattanDistanceTo( this.destination.vector );
+    return point.vector.distanceToSquared( this.destination.vector );
   }
 
   clone(){
@@ -105,7 +105,7 @@ export class ComputedPath {
    * @returns void
    */
   prunePathPoints(){
-    return;
+    // return;
     if(!this.points.length)
       return;
 
@@ -139,7 +139,7 @@ export class ComputedPath {
       if(!lPoint)
         continue;
 
-      if(lastLOSOrigin && lastLOSOrigin.hasLOS(nPoint), this.owner){
+      if(lastLOSOrigin && lastLOSOrigin.hasLOS(nPoint, this.owner)){
         pruneList.push(i);
         continue;
       }

@@ -20,6 +20,7 @@ export * from "./TabUTWEditorState";
 export * from "./TabTextEditorState";
 export * from "./TabWOKEditorState";
 export * from "./TabERFEditorState";
+export * from "./TabPTHEditorState";
 
 export * from "./TabScriptErrorLogState";
 export * from "./TabScriptCompileLogState";
