@@ -28,6 +28,9 @@ export class TabPTHEditorState extends TabState {
   controlMode: TabPTHEditorControlMode = TabPTHEditorControlMode.POINT;
   selectedPointIndex: number = -1;
 
+  box3: THREE.Box3 = new THREE.Box3();
+  center: THREE.Vector3 = new THREE.Vector3();
+
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     
@@ -54,6 +57,15 @@ export class TabPTHEditorState extends TabState {
       }
     ];
     this.ui3DRenderer.controls.attachEventListener('onSelect', this.onSelect.bind(this));
+    
+    // Disable orbit controls when dragging transform controls
+    if(this.ui3DRenderer.transformControls){
+      this.ui3DRenderer.transformControls.addEventListener('dragging-changed', (event: any) => {
+        if(this.ui3DRenderer.orbitControls){
+          this.ui3DRenderer.orbitControls.enabled = !event.value;
+        }
+      });
+    }
   }
 
   public openFile(file?: EditorFile){
@@ -119,6 +131,15 @@ export class TabPTHEditorState extends TabState {
     this.updatePathVisualization();
   }
 
+  private updateCameraFocus(): void {
+    this.box3 = new THREE.Box3();
+    for(let i = 0; i < this.points.length; i++){
+      this.box3.expandByPoint(this.points[i].vector);
+    }
+    this.box3.getCenter(this.center);
+    this.ui3DRenderer.orbitControls.target.copy(this.center);
+  }
+
   private onSelect(intersect: THREE.Intersection): void {
     if(intersect && intersect.object){
       const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
@@ -127,7 +148,7 @@ export class TabPTHEditorState extends TabState {
         return;
       }
     }
-    this.selectPoint(-1);
+    // this.selectPoint(-1);
   }
   private selectPoint(pointIndex: number = -1): void {
     this.ui3DRenderer.transformControls.detach();
@@ -269,7 +290,7 @@ export class TabPTHEditorState extends TabState {
               if(wokBuffer && wokBuffer.length > 0){
                 const wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(wokBuffer));
                 model.wok = wok;
-                this.layoutGroup.add(wok.mesh);
+                this.ui3DRenderer.unselectable.add(wok.mesh);
                 this.walkmeshes.push(wok);
               }
             } catch (wokError) {
@@ -354,6 +375,8 @@ export class TabPTHEditorState extends TabState {
         point.vector.z = closestIntersection.point.z + 1; // Add 1 unit offset
       }
     }
+
+    this.updateCameraFocus();
 
     // Update visualization to reflect new Z positions
     this.updatePathVisualization();
