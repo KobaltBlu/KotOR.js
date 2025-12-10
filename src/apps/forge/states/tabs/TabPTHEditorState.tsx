@@ -257,7 +257,8 @@ export class TabPTHEditorState extends TabState {
         if(mdl){
           const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
             context: this.ui3DRenderer,
-            mergeStatic: false,
+            manageLighting: true,
+            mergeStatic: true,
           });
           if(model){
             model.position.copy(room.position);
