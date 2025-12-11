@@ -57,15 +57,6 @@ export class TabPTHEditorState extends TabState {
       }
     ];
     this.ui3DRenderer.controls.attachEventListener('onSelect', this.onSelect.bind(this));
-    
-    // Disable orbit controls when dragging transform controls
-    if(this.ui3DRenderer.transformControls){
-      this.ui3DRenderer.transformControls.addEventListener('dragging-changed', (event: any) => {
-        if(this.ui3DRenderer.orbitControls){
-          this.ui3DRenderer.orbitControls.enabled = !event.value;
-        }
-      });
-    }
   }
 
   public openFile(file?: EditorFile){

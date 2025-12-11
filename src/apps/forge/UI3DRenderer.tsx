@@ -170,6 +170,20 @@ export class UI3DRenderer extends EventListenerModel {
       this.transformControls.traverse( (obj) => {
         this.transformControls.userData.uuids.push(obj.uuid);
       });
+
+      this.transformControls.addEventListener('dragging-changed', (event: any) => {
+        const dragging = event.value === true;
+        if (this.orbitControls) {
+          this.orbitControls.enabled = !dragging;
+        }
+      });
+
+      this.transformControls.addEventListener('mouseDown', () => {
+        if (this.orbitControls) this.orbitControls.enabled = false;
+      });
+      this.transformControls.addEventListener('mouseUp', () => {
+        if (this.orbitControls) this.orbitControls.enabled = true;
+      });
     }
   }
 
