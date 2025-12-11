@@ -143,7 +143,6 @@ export class UI3DRenderer extends EventListenerModel {
     this.selectionBox.visible = false;
     this.buildTransformControls();
     this.buildViewHelper();
-    this.buildFlyControls();
 
     this.lightManager.init(this);
   }
@@ -185,13 +184,6 @@ export class UI3DRenderer extends EventListenerModel {
         if (this.orbitControls) this.orbitControls.enabled = true;
       });
     }
-  }
-
-  buildFlyControls() {
-    // if(this.flyControls) this.flyControls.dispose();
-    // if(this.canvas){
-    //   this.flyControls = new FirstPersonControls(this.currentCamera as any, this.canvas);
-    // }
   }
 
   buildViewHelper() {
@@ -282,7 +274,6 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       this.buildTransformControls();
       this.buildViewHelper();
-      this.buildFlyControls();
       if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
       this.controls.attachCanvasElement(this.canvas);
