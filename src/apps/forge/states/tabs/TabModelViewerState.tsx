@@ -5,10 +5,8 @@ import * as THREE from 'three';
 import React from "react";
 import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
 import { EditorFile } from "../../EditorFile";
 import { BinaryReader } from "../../../../utility/binary/BinaryReader";
-import { ModelViewerControls } from "../../ModelViewerControls";
 import { SceneGraphNode } from "../../SceneGraphNode";
 import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
 
@@ -47,8 +45,6 @@ export class TabModelViewerState extends TabState {
   mdx: Uint8Array;
 
   ui3DRenderer: UI3DRenderer;
-
-  // controls: ModelViewerControls;
 
   selectedAnimationIndex: number = -1;
   animations: KotOR.OdysseyModelAnimation[] = [];
@@ -98,11 +94,7 @@ export class TabModelViewerState extends TabState {
     // this.unselectable.add( this.groundMesh );
     
     this.ui3DRenderer = new UI3DRenderer();
-    // this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', (canvas: HTMLCanvasElement) => {
-    //   this.controls.attachCanvasElement(canvas);
-    // });
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.scene.add(this.groundMesh);
     this.ui3DRenderer.scene.add(this.layout_group);
 
@@ -172,18 +164,14 @@ export class TabModelViewerState extends TabState {
     super.show();
     this.ui3DRenderer.enabled = true;
     this.ui3DRenderer.render();
-    // if(this.ui3DRenderer.canvas)
-    //   this.controls.attachCanvasElement(this.ui3DRenderer.canvas);
   }
 
   hide(): void {
     super.hide();
     this.ui3DRenderer.enabled = false;
-    // this.controls.detachCanvasElement();
   }
 
   animate(delta: number = 0){
-    // this.controls.update(delta);
     if(this.model){
       if(this.currentAnimation != this.model.animationManager.currentAnimation){
         this.model.animationManager.currentAnimation = this.currentAnimation;

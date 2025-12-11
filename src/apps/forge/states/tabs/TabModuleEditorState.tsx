@@ -29,7 +29,6 @@ export class TabModuleEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.controlsEnabled = true;
 
     this.ui3DRenderer.scene.add(this.groundMesh);
 

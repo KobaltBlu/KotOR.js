@@ -2,16 +2,13 @@ import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager"
 import { EventListenerModel } from "./EventListenerModel";
 import * as KotOR from "./KotOR";
 import * as THREE from 'three';
-import { ModelViewerControls } from "./ModelViewerControls";
-import { SceneGraphNode } from "./SceneGraphNode";
-import { FlyControls } from 'three/examples/jsm/controls/FlyControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 
 export type UI3DRendererEventListenerTypes =
-  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached';
+  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect';
 
 export interface UI3DRendererEventListeners {
   onBeforeRender: Function[],
@@ -20,6 +17,7 @@ export interface UI3DRendererEventListeners {
   onDispose:      Function[],
   onResize:       Function[],
   onCanvasAttached: Function[],
+  onSelect: Function[],
 }
 
 const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({color: 0x00ff00}));
@@ -37,6 +35,8 @@ const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new TH
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class UI3DRenderer extends EventListenerModel {
+  
+  static CameraMoveSpeed: number = 10;
 
   uuid: string;
 
@@ -77,9 +77,6 @@ export class UI3DRenderer extends EventListenerModel {
   loadingTextures: boolean;
   enabled: boolean = false;
 
-  controls: ModelViewerControls;
-  controlsEnabled: boolean = false;
-
   queuedAnimationFrame: number;
 
   odysseyModels: KotOR.OdysseyModel3D[] = [];
@@ -96,6 +93,8 @@ export class UI3DRenderer extends EventListenerModel {
   };
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
+
+  transformControlsDragging: boolean = false;
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -136,13 +135,10 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildScene();
     }
     
-    this.controls = new ModelViewerControls(this);
-    this.controls.attachEventListener('onSelect', (intersect: THREE.Intersection) => {
-      this.selectObject(intersect?.object);
-    })
     this.selectionBox.visible = false;
     this.buildTransformControls();
     this.buildViewHelper();
+    this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
   }
@@ -171,9 +167,9 @@ export class UI3DRenderer extends EventListenerModel {
       });
 
       this.transformControls.addEventListener('dragging-changed', (event: any) => {
-        const dragging = event.value === true;
+        this.transformControlsDragging = event.value === true;  
         if (this.orbitControls) {
-          this.orbitControls.enabled = !dragging;
+          this.orbitControls.enabled = !this.transformControlsDragging;
         }
       });
 
@@ -191,6 +187,46 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       this.viewHelper = new ViewHelper(this.currentCamera as any, this.canvas);
     }
+  }
+
+  buildDOMEventHandlers() {
+    if(this.canvas){
+      this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
+      this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+    }
+  }
+
+  onMouseDown(event: MouseEvent) {
+    if(event.target != this.canvas){
+      return;
+    }
+
+    const offset = this.canvas.getBoundingClientRect();
+    KotOR.Mouse.ButtonState = event.which;
+    KotOR.Mouse.MouseDown = true;
+    KotOR.Mouse.MouseX = event.pageX - offset.left;
+    KotOR.Mouse.MouseY = event.pageY - offset.top;
+    KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.canvas.width ) * 2 - 1;
+    KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.canvas.height ) * 2 + 1;
+
+    if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT && !this.transformControlsDragging){
+      this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
+      const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
+      if(intersects.length){
+        const intersection = intersects.shift();
+        this.selectObject(intersection?.object);
+        this.processEventListener('onSelect', [intersection]);
+      }else{
+        this.selectObject(undefined);
+        this.processEventListener('onSelect', [undefined]);
+      }
+    }
+  }
+
+  onMouseUp(event: MouseEvent) {
+    KotOR.Mouse.MouseDown = false;
+    KotOR.Mouse.Dragging = false;
+    KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
   }
 
   attachObject(object: THREE.Object3D, selectable: boolean = true){
@@ -231,13 +267,12 @@ export class UI3DRenderer extends EventListenerModel {
     this.cameras.push(camera);
   }
 
-  selectObject(object: THREE.Object3D){
+  selectObject(object: THREE.Object3D | undefined){
     if(!object){
       this.selectionBox.visible = false;
       return;
     }
 
-    console.log(object);
     const nodeType: KotOR.OdysseyModelNodeType = (object as any).odysseyModelNode?.nodeType || 1;
     const isGeometry = (object instanceof THREE.Mesh) || (object instanceof THREE.Line) || (object instanceof THREE.Points) || ((nodeType & KotOR.OdysseyModelNodeType.Mesh) == KotOR.OdysseyModelNodeType.Mesh);
     const arr = ((this.selectionBox.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array)
@@ -274,9 +309,9 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       this.buildTransformControls();
       this.buildViewHelper();
-      if(this.canvas?.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
+      this.buildDOMEventHandlers();
+      if(this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
-      this.controls.attachCanvasElement(this.canvas);
       this.processEventListener('onCanvasAttached', [this.canvas]);
     }
   }
@@ -420,16 +455,8 @@ export class UI3DRenderer extends EventListenerModel {
       this.deltaTime += delta;
       this.deltaTimeFixed += (1/60);
 
-      // if(this.controlsEnabled && this.flyControls){
-      //   this.flyControls.update(delta);
-      // }
-
       if(this.viewHelper && this.viewHelper.animating === true ) {
         this.viewHelper.update(delta);
-      }
-
-      if(this.controlsEnabled){
-        this.controls.update(delta);
       }
 
       if(this.orbitControls){
@@ -469,8 +496,6 @@ export class UI3DRenderer extends EventListenerModel {
     cancelAnimationFrame(this.queuedAnimationFrame);
     if(this.renderer) this.renderer.dispose();
     this.renderer = undefined;
-
-    this.controls.dispose();
 
     if(this.orbitControls){
       this.orbitControls.dispose();

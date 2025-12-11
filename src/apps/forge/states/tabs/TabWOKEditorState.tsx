@@ -4,7 +4,7 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { UI3DRenderer } from "../../UI3DRenderer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
 
 export enum TabWOKEditorControlMode {
@@ -95,44 +95,13 @@ export class TabWOKEditorState extends TabState {
     this.faceHelperMesh = new THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial)
 
     this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.controlsEnabled = true;
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
     this.ui3DRenderer.scene.add(grid1);
     this.ui3DRenderer.scene.add(grid2);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
     this.ui3DRenderer.group.light_helpers.visible = false;
     
-    this.ui3DRenderer.controls.attachEventListener('onSelect', (intersect: THREE.Intersection) => {
-      this.ui3DRenderer.selectionBox.visible = false;
-
-      switch(this.controlMode){
-        case TabWOKEditorControlMode.FACE:
-          if(intersect && intersect.face){
-            if(intersect.object == this.wok.mesh){
-              const f_idx = Math.floor(intersect.face.a / 3);
-              const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
-              this.selectFace(face);
-            }else{
-              this.selectFace(undefined);
-            }
-          }else{
-            this.selectFace(undefined);
-          }
-        break;
-        case TabWOKEditorControlMode.VERTEX:
-          if(intersect && intersect.object){
-            if(intersect.object != this.wok.mesh){
-              const helperIndex = this.vertexHelpersGroup.children.indexOf(intersect.object);
-              if(helperIndex >= 0) this.selectVertex(helperIndex);
-            }else{
-              this.selectVertex(-1);
-            }
-          }else{
-            this.selectVertex(-1);
-          }
-        break;
-      }
-    })
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     this.setContentView(<TabWOKEditor tab={this}></TabWOKEditor>);
     this.openFile();
@@ -210,6 +179,38 @@ export class TabWOKEditorState extends TabState {
         });
       }
     });
+  }
+
+  onSelect(intersect: THREE.Intersection){
+    this.ui3DRenderer.selectionBox.visible = false;
+
+    switch(this.controlMode){
+      case TabWOKEditorControlMode.FACE:
+        if(intersect && intersect.face){
+          if(intersect.object == this.wok.mesh){
+            const f_idx = Math.floor(intersect.face.a / 3);
+            const face: KotOR.OdysseyFace3 = this.wok.faces.find( (f: KotOR.OdysseyFace3, index: number) => index == f_idx ) as KotOR.OdysseyFace3;
+            this.selectFace(face);
+          }else{
+            this.selectFace(undefined);
+          }
+        }else{
+          this.selectFace(undefined);
+        }
+      break;
+      case TabWOKEditorControlMode.VERTEX:
+        if(intersect && intersect.object){
+          if(intersect.object != this.wok.mesh){
+            const helperIndex = this.vertexHelpersGroup.children.indexOf(intersect.object);
+            if(helperIndex >= 0) this.selectVertex(helperIndex);
+          }else{
+            this.selectVertex(-1);
+          }
+        }else{
+          this.selectVertex(-1);
+        }
+      break;
+    }
   }
 
   setControlMode(mode: TabWOKEditorControlMode = 0) {

@@ -2,7 +2,7 @@ import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
 import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPthEditor";
-import { UI3DRenderer } from "../../UI3DRenderer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
@@ -36,7 +36,6 @@ export class TabPTHEditorState extends TabState {
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.controlsEnabled = true;
 
     // Create a group to hold all path visualization elements
     this.pathHelperGroup = new THREE.Group();
@@ -56,7 +55,7 @@ export class TabPTHEditorState extends TabState {
         }
       }
     ];
-    this.ui3DRenderer.controls.attachEventListener('onSelect', this.onSelect.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
   }
 
   public openFile(file?: EditorFile){
@@ -139,7 +138,7 @@ export class TabPTHEditorState extends TabState {
         return;
       }
     }
-    // this.selectPoint(-1);
+    this.selectPoint(-1);
   }
   private selectPoint(pointIndex: number = -1): void {
     this.ui3DRenderer.transformControls.detach();

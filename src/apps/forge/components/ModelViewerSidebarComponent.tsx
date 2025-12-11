@@ -5,7 +5,7 @@ import { Form } from "react-bootstrap";
 import { SceneGraphTreeView } from "./SceneGraphTreeView";
 
 import * as KotOR from "../KotOR";
-import { ModelViewerControls } from "../ModelViewerControls";
+import { UI3DRenderer } from "../UI3DRenderer";
 
 export const ModelViewerSidebarComponent = function(props: any){
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
@@ -19,7 +19,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   const [layouts, setLayouts] = useState<KotOR.IKEYEntry[]>([]);
   const [selectedLayout, setSelectedLayout] = useState<number>(tab.selectedLayoutIndex);
 
-  const [cameraSpeed, setCameraSpeed] = useState<number>(ModelViewerControls.CameraMoveSpeed);
+  const [cameraSpeed, setCameraSpeed] = useState<number>(UI3DRenderer.CameraMoveSpeed);
 
   const onEditorFileLoad = () => {
     setAnimations(tab.animations);
@@ -59,7 +59,7 @@ export const ModelViewerSidebarComponent = function(props: any){
     let value = parseFloat(e.target.value);
     if(isNaN(value)) value = 10;
     setCameraSpeed(value);
-    ModelViewerControls.CameraMoveSpeed = value;
+    UI3DRenderer.CameraMoveSpeed = value;
   };
 
   const onBtnAlignToCameraHook = function(e: React.MouseEvent<HTMLButtonElement>){
