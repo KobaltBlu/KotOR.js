@@ -62,6 +62,7 @@ export class TabWOKEditorState extends TabState {
   selectedVertexIndex: number = -1;
   selectedEdgeIndex: number = -1;
 
+  box3: THREE.Box3 = new THREE.Box3();
   center: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
 
   constructor(options: BaseTabStateOptions = {}){
@@ -172,7 +173,7 @@ export class TabWOKEditorState extends TabState {
             this.ui3DRenderer.unselectable.add(arrowHelper);
           });
           this.buildVertexHelpers();
-          this.recenterCamera();
+          this.updateCameraFocus();
 
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.wok);
@@ -218,31 +219,12 @@ export class TabWOKEditorState extends TabState {
     this.processEventListener('onControlModeChange', [mode]);
   }
 
-  updateCameraFocus(){
-    // if(!this.modulePlaceable || !this.modulePlaceable?.model) return;
-
-    // this.modulePlaceable.container.position.set(0, 0, 0);
-
-    // let center = new THREE.Vector3();
-    // this.modulePlaceable.box.getCenter(center);
-
-    // let size = new THREE.Vector3();
-    // this.modulePlaceable.box.getSize(size);
-
-    // //Center the object to 0
-    // let origin = new THREE.Vector3();
-    // this.modulePlaceable.container.position.set(-center.x, -center.y, -center.z);
-    // this.ui3DRenderer.camera.position.z = 0;
-    // this.ui3DRenderer.camera.position.y = size.x + size.y;
-    // this.ui3DRenderer.camera.lookAt(origin)
-  }
-
-  recenterCamera(){
-    const lookAt = this.wok.vertices.reduce( (acc, value) => {
-      return acc.add(value)
-    }, new THREE.Vector3);
-    lookAt.divideScalar(this.wok.vertices.length);
-    // this.ui3DRenderer.controls.lookAt(lookAt);
+  private updateCameraFocus(): void {
+    this.box3 = new THREE.Box3();
+    if(!this.wok) return;
+    this.box3.setFromObject(this.wok.mesh);
+    this.box3.getCenter(this.center);
+    this.ui3DRenderer.orbitControls.target.copy(this.center);
   }
 
   show(): void {
