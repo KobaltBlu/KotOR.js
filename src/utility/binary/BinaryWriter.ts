@@ -259,7 +259,6 @@ export class BinaryWriter {
    * @param single - The single-precision floating point number to write.
    */
   writeSingle(single: number = 0){
-    // Use Float32Array to properly convert float to bytes
     const floatView = new Float32Array(1);
     floatView[0] = single;
     const uint8View = new Uint8Array(floatView.buffer);
@@ -276,7 +275,6 @@ export class BinaryWriter {
    * @param double - The double-precision floating point number to write.
    */
   writeDouble(double: number = 0){
-    // Use Float64Array to properly convert double to bytes
     const doubleView = new Float64Array(1);
     doubleView[0] = double;
     const uint8View = new Uint8Array(doubleView.buffer);
