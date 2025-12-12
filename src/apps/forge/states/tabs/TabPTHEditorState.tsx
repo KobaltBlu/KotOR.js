@@ -60,6 +60,12 @@ export class TabPTHEditorState extends TabState {
       }
     ];
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
+
+    this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
+      if(e.key === 'f'){
+        this.fitCameraToScene();
+      }
+    });
   }
 
   public openFile(file?: EditorFile){

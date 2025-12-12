@@ -13,7 +13,7 @@ import { pathParse } from "../../helpers/PathParse";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
-  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabNameChange'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved';
+  'onTabDestroyed'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabNameChange'|'onEditorFileLoad'|'onEditorFileChange'|'onEditorFileSaved'|'onKeyDown'|'onKeyUp';
 
 export interface TabStateEventListeners {
   onTabDestroyed: Function[],
@@ -24,6 +24,8 @@ export interface TabStateEventListeners {
   onEditorFileLoad: Function[],
   onEditorFileChange: Function[],
   onEditorFileSaved: Function[],
+  onKeyDown: Function[],
+  onKeyUp: Function[],
 }
 
 export class TabState extends EventListenerModel {
@@ -46,6 +48,8 @@ export class TabState extends EventListenerModel {
 
   #_onSaveStateChanged: (file: EditorFile) => void;
   #_onNameChanged: (file: EditorFile) => void;
+  #_onKeyDown: (e: KeyboardEvent) => void;
+  #_onKeyUp: (e: KeyboardEvent) => void;
 
   constructor(options: BaseTabStateOptions = {}){
     super();
@@ -86,6 +90,15 @@ export class TabState extends EventListenerModel {
       this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
       this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     }
+    
+    this.#_onKeyDown = (e: KeyboardEvent) => {
+      this.processEventListener('onKeyDown', [e, this]);
+    };
+    
+    this.#_onKeyUp = (e: KeyboardEvent) => {
+      this.processEventListener('onKeyUp', [e, this]);
+    };
+    
     this.editorFileUpdated();
   }
 
@@ -152,12 +165,20 @@ export class TabState extends EventListenerModel {
     this.#tabManager.currentTab = this;
     this.#tabManager.triggerEventListener('onTabShow', [this]);
     this.processEventListener('onTabShow', [this]);
+    
+    // Attach keyboard event listeners
+    window.addEventListener('keydown', this.#_onKeyDown);
+    window.addEventListener('keyup', this.#_onKeyUp);
   }
 
   hide(){
     this.visible = false;
     this.#tabManager.triggerEventListener('onTabHide', [this]);
     this.processEventListener('onTabHide', [this]);
+    
+    // Remove keyboard event listeners
+    window.removeEventListener('keydown', this.#_onKeyDown);
+    window.removeEventListener('keyup', this.#_onKeyUp);
   }
 
   remove(){
@@ -177,6 +198,13 @@ export class TabState extends EventListenerModel {
 
   destroy() {
     this.isDestroyed = true;
+    
+    // Remove keyboard event listeners if tab is still visible
+    if(this.visible){
+      window.removeEventListener('keydown', this.#_onKeyDown);
+      window.removeEventListener('keyup', this.#_onKeyUp);
+    }
+    
     this.processEventListener('onTabDestroyed', [this]);
   }
 

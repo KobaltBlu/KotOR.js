@@ -127,6 +127,12 @@ export class TabWOKEditorState extends TabState {
         }
       }
     ];
+
+    this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
+      if(e.key === 'f'){
+        this.fitCameraToScene();
+      }
+    });
   }
 
   public openFile(file?: EditorFile){
