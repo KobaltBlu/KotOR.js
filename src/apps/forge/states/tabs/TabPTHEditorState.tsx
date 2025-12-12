@@ -9,6 +9,7 @@ import * as THREE from 'three';
 
 export enum TabPTHEditorControlMode {
   POINT = 0,
+  CONNECTION = 1,
 };
 
 export class TabPTHEditorState extends TabState {
@@ -30,6 +31,9 @@ export class TabPTHEditorState extends TabState {
 
   box3: THREE.Box3 = new THREE.Box3();
   center: THREE.Vector3 = new THREE.Vector3();
+
+  selectedPointA: KotOR.PathPoint;
+  selectedPointB: KotOR.PathPoint;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -87,6 +91,11 @@ export class TabPTHEditorState extends TabState {
     });
   }
 
+  public setControlMode(mode: any = 0): void {
+    this.controlMode = mode;
+    this.processEventListener('onControlModeChange', [mode]); 
+  }
+
   public setPropsFromBlueprint(): void {
 
     /**
@@ -128,6 +137,40 @@ export class TabPTHEditorState extends TabState {
     }
     this.box3.getCenter(this.center);
     this.ui3DRenderer.orbitControls.target.copy(this.center);
+  }
+
+  public fitCameraToScene(offset: number = 1.25): void {
+    this.updateCameraFocus();
+    if(!this.center) return;
+    const maxSize = Math.max(this.center.x, this.center.y, this.center.z);
+    const fov = THREE.MathUtils.degToRad(this.ui3DRenderer.camera.fov); // vertical fov in radians
+    const aspect = this.ui3DRenderer.camera.aspect;
+
+    // Distance required to fit box height in view
+    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
+    // Distance required to fit box width in view
+    const fitWidthDistance = fitHeightDistance / aspect;
+
+    // Take the larger one, then apply offset
+    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+
+    // Get the direction from target to camera so we keep the same orbit angles
+    const direction = new THREE.Vector3()
+      .subVectors(this.ui3DRenderer.camera.position, this.ui3DRenderer.orbitControls.target)
+      .normalize();
+
+    // New camera position
+    this.ui3DRenderer.camera.position.copy(this.center).add(direction.multiplyScalar(distance));
+
+    // Update controls target to center the box
+    this.ui3DRenderer.orbitControls.target.copy(this.center);
+
+    // Optionally update near/far to better match scene scale
+    this.ui3DRenderer.camera.near = distance / 100;
+    this.ui3DRenderer.camera.far = distance * 100;
+    this.ui3DRenderer.camera.updateProjectionMatrix();
+
+    this.ui3DRenderer.orbitControls.update();
   }
 
   private onSelect(intersect: THREE.Intersection): void {
@@ -366,7 +409,7 @@ export class TabPTHEditorState extends TabState {
       }
     }
 
-    this.updateCameraFocus();
+    this.fitCameraToScene();
 
     // Update visualization to reflect new Z positions
     this.updatePathVisualization();

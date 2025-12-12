@@ -173,7 +173,7 @@ export class TabWOKEditorState extends TabState {
             this.ui3DRenderer.unselectable.add(arrowHelper);
           });
           this.buildVertexHelpers();
-          this.updateCameraFocus();
+          this.fitCameraToScene();
 
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.wok);
@@ -225,6 +225,40 @@ export class TabWOKEditorState extends TabState {
     this.box3.setFromObject(this.wok.mesh);
     this.box3.getCenter(this.center);
     this.ui3DRenderer.orbitControls.target.copy(this.center);
+  }
+
+  public fitCameraToScene(offset: number = 1.25): void {
+    this.updateCameraFocus();
+    if(!this.center) return;
+    const maxSize = Math.max(this.center.x, this.center.y, this.center.z);
+    const fov = THREE.MathUtils.degToRad(this.ui3DRenderer.camera.fov); // vertical fov in radians
+    const aspect = this.ui3DRenderer.camera.aspect;
+
+    // Distance required to fit box height in view
+    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
+    // Distance required to fit box width in view
+    const fitWidthDistance = fitHeightDistance / aspect;
+
+    // Take the larger one, then apply offset
+    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+
+    // Get the direction from target to camera so we keep the same orbit angles
+    const direction = new THREE.Vector3()
+      .subVectors(this.ui3DRenderer.camera.position, this.ui3DRenderer.orbitControls.target)
+      .normalize();
+
+    // New camera position
+    this.ui3DRenderer.camera.position.copy(this.center).add(direction.multiplyScalar(distance));
+
+    // Update controls target to center the box
+    this.ui3DRenderer.orbitControls.target.copy(this.center);
+
+    // Optionally update near/far to better match scene scale
+    this.ui3DRenderer.camera.near = distance / 100;
+    this.ui3DRenderer.camera.far = distance * 100;
+    this.ui3DRenderer.camera.updateProjectionMatrix();
+
+    this.ui3DRenderer.orbitControls.update();
   }
 
   show(): void {
