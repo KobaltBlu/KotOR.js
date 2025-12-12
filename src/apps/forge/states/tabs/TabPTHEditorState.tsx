@@ -69,6 +69,19 @@ export class TabPTHEditorState extends TabState {
     ];
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
+    // Listen to transform controls changes to update point positions
+    // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
+    if(this.ui3DRenderer.transformControls){
+      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+    } else {
+      // Wait for canvas to be attached so transform controls are built
+      this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
+        if(this.ui3DRenderer.transformControls){
+          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+        }
+      });
+    }
+
     // Create ghost preview mesh
     const ghostGeometry = new THREE.SphereGeometry(0.5, 16, 16);
     const ghostMaterial = new THREE.MeshBasicMaterial({ 
@@ -401,6 +414,79 @@ export class TabPTHEditorState extends TabState {
     }
     // this.updatePathVisualization();
   }
+  
+  private onTransformControlsChange(): void {
+    if(this.selectedPointIndex < 0 || this.selectedPointIndex >= this.points.length) return;
+    
+    const mesh = this.pointMeshes[this.selectedPointIndex] as THREE.Mesh;
+    if(!mesh) return;
+    
+    const point = this.points[this.selectedPointIndex];
+    if(!point) return;
+    
+    // Update point vector from mesh position
+    point.vector.copy(mesh.position);
+    
+    // Update connection lines
+    this.updateConnectionLines();
+    
+    // Mark file as having unsaved changes
+    if(this.file){
+      this.file.unsaved_changes = true;
+      this.editorFileUpdated();
+    }
+  }
+  
+  private updateConnectionLines(): void {
+    if(!this.connectionLines) return;
+    
+    const positions: number[] = [];
+    const colors: number[] = [];
+    
+    for(let i = 0; i < this.points.length; i++){
+      const point = this.points[i];
+      for(let j = 0; j < point.connections.length; j++){
+        const connectedPoint = point.connections[j];
+        
+        // Add line from current point to connected point
+        positions.push(
+          point.vector.x, point.vector.y, point.vector.z || 0,
+          connectedPoint.vector.x, connectedPoint.vector.y, connectedPoint.vector.z || 0
+        );
+        
+        // Add colors (cyan for connections)
+        colors.push(
+          0, 1, 1, // cyan
+          0, 1, 1  // cyan
+        );
+      }
+    }
+    
+    if(positions.length > 0){
+      const positionArray = new Float32Array(positions);
+      const colorArray = new Float32Array(colors);
+      
+      const positionAttribute = this.connectionLines.geometry.getAttribute('position') as THREE.BufferAttribute;
+      if(positionAttribute && positionAttribute.array.length === positionArray.length){
+        // Update existing attribute
+        (positionAttribute.array as Float32Array).set(positionArray);
+        positionAttribute.needsUpdate = true;
+      } else {
+        // Recreate attribute if size changed
+        this.connectionLines.geometry.setAttribute('position', new THREE.Float32BufferAttribute(positionArray, 3));
+      }
+      
+      const colorAttribute = this.connectionLines.geometry.getAttribute('color') as THREE.BufferAttribute;
+      if(colorAttribute && colorAttribute.array.length === colorArray.length){
+        // Update existing attribute
+        (colorAttribute.array as Float32Array).set(colorArray);
+        colorAttribute.needsUpdate = true;
+      } else {
+        // Recreate attribute if size changed
+        this.connectionLines.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colorArray, 3));
+      }
+    }
+  }
 
   private updatePathVisualization(): void {
     // Clear existing meshes
@@ -682,6 +768,7 @@ export class TabPTHEditorState extends TabState {
     let connIdx = 0;
     for(let i = 0, len = this.points.length; i < len; i++){
       const point = this.points[i];
+      console.log(`point:${i}`, `${point.vector.x}, ${point.vector.y}, ${point.vector.z}`);
       const pathPointStruct = new KotOR.GFFStruct(2);
       pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'First_Conection', connIdx ) );
       pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Conections', point.connections.length ) );
@@ -698,6 +785,7 @@ export class TabPTHEditorState extends TabState {
         connIdx++;
       }
     }
-    
+
+    this.blueprint = pth;
   }
 }
