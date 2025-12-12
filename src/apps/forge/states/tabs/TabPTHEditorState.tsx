@@ -7,9 +7,12 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 
+const POINT_OFFSET_HEIGHT = 1;
+
 export enum TabPTHEditorControlMode {
-  POINT = 0,
-  CONNECTION = 1,
+  SELECT = 0,
+  ADD_POINT = 1,
+  ADD_CONNECTION = 2,
 };
 
 export class TabPTHEditorState extends TabState {
@@ -26,7 +29,7 @@ export class TabPTHEditorState extends TabState {
   layoutModels: KotOR.OdysseyModel3D[] = [];
   walkmeshes: KotOR.OdysseyWalkMesh[] = [];
 
-  controlMode: TabPTHEditorControlMode = TabPTHEditorControlMode.POINT;
+  controlMode: TabPTHEditorControlMode = TabPTHEditorControlMode.SELECT;
   selectedPointIndex: number = -1;
 
   box3: THREE.Box3 = new THREE.Box3();
@@ -34,6 +37,11 @@ export class TabPTHEditorState extends TabState {
 
   selectedPointA: KotOR.PathPoint;
   selectedPointB: KotOR.PathPoint;
+  
+  // Ghost preview for point placement
+  ghostPreviewMesh: THREE.Mesh;
+  previewPosition: THREE.Vector3 = new THREE.Vector3();
+  previewValid: boolean = false;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -61,9 +69,25 @@ export class TabPTHEditorState extends TabState {
     ];
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
+    // Create ghost preview mesh
+    const ghostGeometry = new THREE.SphereGeometry(0.5, 16, 16);
+    const ghostMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff00,
+      wireframe: false,
+      transparent: true,
+      opacity: 0.5
+    });
+    this.ghostPreviewMesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
+    this.ghostPreviewMesh.visible = false;
+    this.pathHelperGroup.add(this.ghostPreviewMesh);
+
     this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
       if(e.key === 'f'){
         this.fitCameraToScene();
+      } else if(e.key === 'Escape'){
+        this.setControlMode(TabPTHEditorControlMode.SELECT);
+        this.selectPoint(-1);
+        this.ui3DRenderer.selectObject(undefined);
       }
     });
   }
@@ -99,6 +123,30 @@ export class TabPTHEditorState extends TabState {
 
   public setControlMode(mode: any = 0): void {
     this.controlMode = mode;
+
+    this.ui3DRenderer.disableSelection = mode !== TabPTHEditorControlMode.SELECT;
+    if(this.ui3DRenderer.disableSelection){
+      this.ui3DRenderer.selectObject(undefined);
+    }
+    // Show/hide ghost preview based on mode
+    if(mode === TabPTHEditorControlMode.ADD_POINT){
+      this.ghostPreviewMesh.visible = this.previewValid;
+    } else {
+      this.ghostPreviewMesh.visible = false;
+    }
+    
+    // Clear selection when switching modes
+    if(mode !== TabPTHEditorControlMode.ADD_CONNECTION){
+      this.selectedPointA = undefined as any;
+      this.selectedPointB = undefined as any;
+    }
+    
+    // Detach transform controls when not in SELECT mode
+    if(mode !== TabPTHEditorControlMode.SELECT){
+      this.ui3DRenderer.transformControls.detach();
+      this.selectedPointIndex = -1;
+    }
+    
     this.processEventListener('onControlModeChange', [mode]); 
   }
 
@@ -180,14 +228,164 @@ export class TabPTHEditorState extends TabState {
   }
 
   private onSelect(intersect: THREE.Intersection): void {
-    if(intersect && intersect.object){
-      const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
-      if(pointIndex !== undefined){
+    if(this.controlMode === TabPTHEditorControlMode.SELECT){
+      // SELECT mode: select points for transform controls
+      if(intersect && intersect.object){
+        const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
+        if(pointIndex !== undefined){
+          this.selectPoint(pointIndex);
+          return;
+        }
+      }
+      this.selectPoint(-1);
+    } else if(this.controlMode === TabPTHEditorControlMode.ADD_POINT){
+      // POINT mode: add new point on walkable face
+      this.handlePointPlacement(intersect);
+    } else if(this.controlMode === TabPTHEditorControlMode.ADD_CONNECTION){
+      // CONNECTION mode: connect points
+      this.handleConnection(intersect);
+    }
+  }
+  
+  private handlePointPlacement(intersect: THREE.Intersection | undefined): void {
+    // Find walkable face intersection at current mouse position
+    const walkableIntersect = this.findWalkableFaceIntersection();
+    if(walkableIntersect && walkableIntersect.point){
+      this.addPathPoint(walkableIntersect.point);
+    }
+  }
+  
+  private handleConnection(intersect: THREE.Intersection | undefined): void {
+    if(!intersect || !intersect.object){
+      return;
+    }
+    
+    const pointIndex = (intersect.object as THREE.Mesh).userData.pointIndex;
+    if(pointIndex !== undefined && pointIndex >= 0 && pointIndex < this.points.length){
+      const clickedPoint = this.points[pointIndex];
+      
+      if(!this.selectedPointA){
+        // First point selected
+        this.selectedPointA = clickedPoint;
         this.selectPoint(pointIndex);
-        return;
+      } else if(this.selectedPointA !== clickedPoint){
+        // Second point selected - create connection
+        this.selectedPointB = clickedPoint;
+        this.connectPoints(this.selectedPointA, this.selectedPointB);
+        this.selectedPointA = undefined as any;
+        this.selectedPointB = undefined as any;
+        this.selectPoint(-1);
+      } else {
+        // Clicked same point - deselect
+        this.selectedPointA = undefined as any;
+        this.selectPoint(-1);
+      }
+    } else {
+      // Clicked empty space - deselect
+      this.selectedPointA = undefined as any;
+      this.selectPoint(-1);
+    }
+  }
+  
+  private findWalkableFaceIntersection(): THREE.Intersection | null {
+    if(!this.ui3DRenderer.canvas) return null;
+    
+    this.ui3DRenderer.raycaster.setFromCamera(KotOR.Mouse.Vector, this.ui3DRenderer.camera);
+    
+    let closestIntersection: THREE.Intersection | null = null;
+    let closestDistance = Infinity;
+    
+    // Raycast against all walkmeshes
+    for(let i = 0; i < this.layoutModels.length; i++){
+      const model = this.layoutModels[i];
+      
+      if(model.wok && model.wok.mesh){
+        // model.updateMatrixWorld(true);
+        
+        // Get walkable faces
+        const tempBox = new THREE.Box3();
+        const rayOrigin = this.ui3DRenderer.raycaster.ray.origin.clone();
+        tempBox.setFromCenterAndSize(rayOrigin, new THREE.Vector3(100, 100, 2000));
+        let faces = model.wok.getAABBCollisionFaces(tempBox);
+        
+        if(!faces || faces.length === 0){
+          faces = model.wok.walkableFaces;
+        }
+        
+        const intersects = model.wok.raycast(this.ui3DRenderer.raycaster, model.wok.walkableFaces);
+        
+        if(intersects && intersects.length > 0){
+          for(let j = 0; j < intersects.length; j++){
+            const intersect = intersects[j];
+            // Only consider walkable faces (materialIndex 7 or 2)
+            const face = (intersect as any).face;
+            if(face && face.walkCheck){
+              if(intersect.distance < closestDistance){
+                closestDistance = intersect.distance;
+                closestIntersection = intersect;
+              }
+            }
+          }
+        }
       }
     }
-    this.selectPoint(-1);
+    
+    return closestIntersection;
+  }
+  
+  private updateGhostPreview(): void {
+    if(this.controlMode !== TabPTHEditorControlMode.ADD_POINT){
+      this.ghostPreviewMesh.visible = false;
+      return;
+    }
+    
+    if(!this.ui3DRenderer.canvas) return;
+    
+    const walkableIntersect = this.findWalkableFaceIntersection();
+    console.log('walkableIntersect', walkableIntersect);
+    if(walkableIntersect && walkableIntersect.point){
+      this.previewPosition.copy(walkableIntersect.point);
+      this.previewPosition.z += POINT_OFFSET_HEIGHT; // Offset above surface
+      this.ghostPreviewMesh.position.copy(this.previewPosition);
+      this.ghostPreviewMesh.visible = true;
+      this.previewValid = true;
+    } else {
+      this.ghostPreviewMesh.visible = false;
+      this.previewValid = false;
+    }
+  }
+  
+  private addPathPoint(position: THREE.Vector3): void {
+    const newPoint = new KotOR.PathPoint({
+      id: this.points.length,
+      connections: [],
+      first_connection: 0,
+      num_connections: 0,
+      vector: position.clone()
+    });
+    newPoint.vector.z += POINT_OFFSET_HEIGHT; // Offset above surface
+    
+    this.points.push(newPoint);
+    this.updatePathVisualization();
+    
+    // Mark file as having unsaved changes
+    if(this.file){
+      this.file.unsaved_changes = true;
+      this.editorFileUpdated();
+    }
+  }
+  
+  private connectPoints(pointA: KotOR.PathPoint, pointB: KotOR.PathPoint): void {
+    if(!pointA || !pointB || pointA === pointB) return;
+    
+    pointA.addConnection(pointB);
+    this.updatePathVisualization();
+    
+    // Mark file as having unsaved changes
+    if(this.file){
+      this.file.unsaved_changes = true;
+      this.editorFileUpdated();
+    }
   }
   private selectPoint(pointIndex: number = -1): void {
     this.ui3DRenderer.transformControls.detach();
@@ -411,7 +609,7 @@ export class TabPTHEditorState extends TabState {
 
       // Update point Z position if we found an intersection
       if(closestIntersection && closestIntersection.point){
-        point.vector.z = closestIntersection.point.z + 1; // Add 1 unit offset
+        point.vector.z = closestIntersection.point.z + POINT_OFFSET_HEIGHT;
       }
     }
 
@@ -433,9 +631,23 @@ export class TabPTHEditorState extends TabState {
     });
     this.layoutModels = [];
   }
+  
+  public destroy(): void {
+    // Dispose ghost preview
+    if(this.ghostPreviewMesh){
+      this.pathHelperGroup.remove(this.ghostPreviewMesh);
+      this.ghostPreviewMesh.geometry.dispose();
+      (this.ghostPreviewMesh.material as THREE.Material).dispose();
+    }
+    
+    super.destroy();
+  }
 
   animate(delta: number = 0){
-    
+    // Update ghost preview when in POINT mode
+    if(this.controlMode === TabPTHEditorControlMode.ADD_POINT){
+      this.updateGhostPreview();
+    }
   }
 
   public show(): void {

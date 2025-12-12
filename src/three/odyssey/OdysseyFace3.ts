@@ -23,6 +23,7 @@ export class OdysseyFace3 {
 
 	blocksLineOfSight: boolean = false;
 	walkCheck: boolean = false;
+	walk: boolean = false;
 
 	triangle: THREE.Triangle;
 

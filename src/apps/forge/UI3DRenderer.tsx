@@ -81,6 +81,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   odysseyModels: KotOR.OdysseyModel3D[] = [];
   selectionBox = new THREE.BoxHelper(new THREE.Object3D(), 0xffffff);
+  disableSelection: boolean = false;
 
   flyControls: FirstPersonControls;
   transformControls: TransformControls;
@@ -193,6 +194,7 @@ export class UI3DRenderer extends EventListenerModel {
     if(this.canvas){
       this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
       this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
+      this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
     }
   }
 
@@ -227,6 +229,18 @@ export class UI3DRenderer extends EventListenerModel {
     KotOR.Mouse.MouseDown = false;
     KotOR.Mouse.Dragging = false;
     KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
+  }
+
+  onMouseMove(event: MouseEvent) {
+    if(event.target != this.canvas){
+      return;
+    }
+
+    const offset = this.canvas.getBoundingClientRect();
+    KotOR.Mouse.MouseX = event.pageX - offset.left;
+    KotOR.Mouse.MouseY = event.pageY - offset.top;
+    KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.canvas.width ) * 2 - 1;
+    KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.canvas.height ) * 2 + 1;
   }
 
   attachObject(object: THREE.Object3D, selectable: boolean = true){
@@ -268,7 +282,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   selectObject(object: THREE.Object3D | undefined){
-    if(!object){
+    if(!object || this.disableSelection){
       this.selectionBox.visible = false;
       return;
     }
@@ -475,6 +489,7 @@ export class UI3DRenderer extends EventListenerModel {
       }
 
       if(this.currentCamera){
+        this.currentCamera.updateProjectionMatrix();
         this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);

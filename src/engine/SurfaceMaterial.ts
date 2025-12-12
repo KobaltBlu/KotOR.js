@@ -24,8 +24,8 @@ export class SurfaceMaterial {
     if(typeof row.sound !== 'undefined') surface.sound = row.sound == '****' ? '' : row.sound;
     if(typeof row.name !== 'undefined') surface.name = row.name == '****' ? '' : row.name;
     if(typeof row.walk !== 'undefined') surface.walk = parseInt(row.walk) ? true : false;
-    if(typeof row.walkCheck !== 'undefined') surface.walkCheck = parseInt(row.walkCheck) ? true : false;
-    if(typeof row.lineOfSight !== 'undefined') surface.lineOfSight = parseInt(row.lineOfSight) ? true : false;
+    if(typeof row.walkcheck !== 'undefined') surface.walkCheck = parseInt(row.walkcheck) ? true : false;
+    if(typeof row.lineofsight !== 'undefined') surface.lineOfSight = parseInt(row.lineofsight) ? true : false;
     if(typeof row.grass !== 'undefined') surface.grass = parseInt(row.grass) ? true : false;
     return surface;
   }

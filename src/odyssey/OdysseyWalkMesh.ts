@@ -89,6 +89,7 @@ export class OdysseyWalkMesh {
 
       face.blocksLineOfSight = face.surfacemat.lineOfSight;
       face.walkCheck = face.surfacemat.walkCheck;
+      face.walk = face.surfacemat.walk;
 
       //Is this face walkable
       if(face.surfacemat.walk){

@@ -6,7 +6,7 @@ import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faArrowPointer, faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 
 
@@ -29,6 +29,13 @@ const UI3DToolPalette = function(props: any){
     <div className="UI3DToolPalette">
       <ul>
         <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}>
+          <a title="Select Point">
+            <span className="fa-layers fa-fw">
+              <FontAwesomeIcon icon={faArrowPointer} size='lg' color="white" />
+            </span>
+          </a>
+        </li>
+        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}>
           <a title="Add Point">
             <span className="fa-layers fa-fw">
               <FontAwesomeIcon icon={faCircle} size='lg' color="green" />
@@ -36,7 +43,7 @@ const UI3DToolPalette = function(props: any){
             </span>
           </a>
         </li>
-        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}>
+        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(2)}>
           <a title="Add Connection">
             <span className="fa-layers fa-fw">
               <FontAwesomeIcon icon={faCircleNodes} size='lg' color="yellow" />
