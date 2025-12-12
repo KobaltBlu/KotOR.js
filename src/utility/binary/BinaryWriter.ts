@@ -259,7 +259,11 @@ export class BinaryWriter {
    * @param single - The single-precision floating point number to write.
    */
   writeSingle(single: number = 0){
-    this.tmp32.set([single & 0xFF, (single >> 8) & 0xFF, (single >> 16) & 0xFF, (single >> 24) & 0xFF]);
+    // Use Float32Array to properly convert float to bytes
+    const floatView = new Float32Array(1);
+    floatView[0] = single;
+    const uint8View = new Uint8Array(floatView.buffer);
+    this.tmp32.set(uint8View);
     if(this.endians == Endians.BIG){
       this.tmp32.reverse();
     }
@@ -272,7 +276,11 @@ export class BinaryWriter {
    * @param double - The double-precision floating point number to write.
    */
   writeDouble(double: number = 0){
-    this.tmp64.set([double & 0xFF, (double >> 8) & 0xFF, (double >> 16) & 0xFF, (double >> 24) & 0xFF, (double >> 32) & 0xFF, (double >> 40) & 0xFF, (double >> 48) & 0xFF, (double >> 56) & 0xFF]);
+    // Use Float64Array to properly convert double to bytes
+    const doubleView = new Float64Array(1);
+    doubleView[0] = double;
+    const uint8View = new Uint8Array(doubleView.buffer);
+    this.tmp64.set(uint8View);
     if(this.endians == Endians.BIG){
       this.tmp64.reverse();
     }
