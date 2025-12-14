@@ -7,8 +7,19 @@ import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonCont
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 
+export enum CameraView {
+  Top = 'top',
+  Bottom = 'bottom',
+  Left = 'left',
+  Right = 'right',
+  Front = 'front',
+  Back = 'back',
+  Orthogonal = 'orthogonal',
+  Default = 'default'
+}
+
 export type UI3DRendererEventListenerTypes =
-  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect';
+  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect'|'onMouseDown'|'onMouseUp'|'onMouseMove'|'onMouseWheel'|'onKeyDown'|'onKeyUp';
 
 export interface UI3DRendererEventListeners {
   onBeforeRender: Function[],
@@ -18,6 +29,13 @@ export interface UI3DRendererEventListeners {
   onResize:       Function[],
   onCanvasAttached: Function[],
   onSelect: Function[],
+  onMouseDown: Function[],
+  onMouseUp: Function[],
+  onMouseMove: Function[],
+  onMouseWheel: Function[],
+  onKeyDown: Function[],
+  onKeyUp: Function[],
+  
 }
 
 const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({color: 0x00ff00}));
@@ -65,6 +83,7 @@ export class UI3DRenderer extends EventListenerModel {
   depthTarget: THREE.WebGLRenderTarget;
   raycaster: THREE.Raycaster = new THREE.Raycaster();
   orbitControls: OrbitControls;
+  cameraView: CameraView = CameraView.Default;
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 
@@ -190,15 +209,247 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
+  reorientCamera(view: CameraView) {
+    if(!this.camera || !this.orbitControls) return;
+
+    this.cameraView = view;
+    const distance = 10; // Distance from origin
+    const lookAt = new THREE.Vector3(0, 0, 0);
+    
+    switch(view) {
+      case CameraView.Top:
+        this.camera.position.set(0, 0, distance);
+        this.camera.up.set(0, 1, 0);
+        break;
+      case CameraView.Bottom:
+        this.camera.position.set(0, 0, -distance);
+        this.camera.up.set(0, 1, 0);
+        break;
+      case CameraView.Left:
+        this.camera.position.set(distance, 0, 0);
+        this.camera.up.set(0, 0, 1);
+        break;
+      case CameraView.Right:
+        this.camera.position.set(-distance, 0, 0);
+        this.camera.up.set(0, 0, 1);
+        break;
+      case CameraView.Front:
+        this.camera.position.set(0, distance, 0);
+        this.camera.up.set(0, 0, 1);
+        break;
+      case CameraView.Back:
+        this.camera.position.set(0, -distance, 0);
+        this.camera.up.set(0, 0, 1);
+        break;
+      case CameraView.Orthogonal:
+      case CameraView.Default:
+        // Isometric view: equal distance on all axes
+        const isoDistance = distance * 1.5;
+        this.camera.position.set(isoDistance, isoDistance, isoDistance);
+        this.camera.up.set(0, 0, 1);
+        break;
+    }
+
+    this.camera.lookAt(lookAt);
+    this.camera.updateProjectionMatrix();
+    
+    // Update orbit controls target to maintain the look-at point
+    if(this.orbitControls) {
+      this.orbitControls.target.copy(lookAt);
+      this.orbitControls.update();
+      this.orbitControls.enableRotate = view === CameraView.Default;
+    }
+  }
+
+  
+  #center: THREE.Vector3 = new THREE.Vector3();
+  #box3: THREE.Box3 = new THREE.Box3();
+
+  private updateCameraFocus(): void {
+    this.#box3 = new THREE.Box3();
+    for(let i = 0; i < this.selectable.children.length; i++){
+      this.#box3.expandByObject(this.selectable.children[i]);
+    }
+    this.#box3.getCenter(this.#center);
+    this.orbitControls.target.copy(this.#center);
+  }
+
+  public fitCameraToScene(offset: number = 1.25): void {
+    this.updateCameraFocus();
+    if(!this.#center) return;
+    
+    // Calculate bounding box size (box3 is already calculated in updateCameraFocus)
+    const boxSize = this.#box3.getSize(new THREE.Vector3());
+    const maxSize = Math.max(boxSize.x, boxSize.y, boxSize.z);
+    
+    const fov = THREE.MathUtils.degToRad(this.camera.fov); // vertical fov in radians
+    const aspect = this.camera.aspect;
+
+    // Distance required to fit box height in view
+    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
+    // Distance required to fit box width in view
+    const fitWidthDistance = fitHeightDistance / aspect;
+
+    // Take the larger one, then apply offset
+    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+
+    // Get the direction vector based on the current cameraView
+    const direction = this.getDirectionForView(this.cameraView);
+
+    // New camera position
+    this.camera.position.copy(this.#center).add(direction.multiplyScalar(distance));
+
+    // Update camera up vector based on view
+    this.updateCameraUpForView(this.cameraView);
+
+    // Update controls target to center the box
+    this.orbitControls.target.copy(this.#center);
+    this.camera.lookAt(this.#center);
+
+    // Optionally update near/far to better match scene scale
+    this.camera.near = distance / 100;
+    this.camera.far = distance * 100;
+    this.camera.updateProjectionMatrix();
+
+    this.orbitControls.update();
+  }
+
+  private getDirectionForView(view: CameraView): THREE.Vector3 {
+    const direction = new THREE.Vector3();
+    
+    switch(view) {
+      case CameraView.Top:
+        direction.set(0, 0, 1);
+        break;
+      case CameraView.Bottom:
+        direction.set(0, 0, -1);
+        break;
+      case CameraView.Left:
+        direction.set(1, 0, 0);
+        break;
+      case CameraView.Right:
+        direction.set(-1, 0, 0);
+        break;
+      case CameraView.Front:
+        direction.set(0, 1, 0);
+        break;
+      case CameraView.Back:
+        direction.set(0, -1, 0);
+        break;
+      case CameraView.Orthogonal:
+      case CameraView.Default:
+        // Isometric view: normalized vector for equal distance on all axes
+        direction.set(1, 1, 1).normalize();
+        break;
+    }
+    
+    return direction;
+  }
+
+  private updateCameraUpForView(view: CameraView): void {
+    switch(view) {
+      case CameraView.Top:
+      case CameraView.Bottom:
+        this.camera.up.set(0, 1, 0);
+        break;
+      case CameraView.Left:
+      case CameraView.Right:
+      case CameraView.Front:
+      case CameraView.Back:
+      case CameraView.Orthogonal:
+      case CameraView.Default:
+        this.camera.up.set(0, 0, 1);
+        break;
+    }
+  }
+
   buildDOMEventHandlers() {
     if(this.canvas){
       this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
       this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
       this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
+      this.canvas.addEventListener('wheel', this.onMouseWheel.bind(this));
+      this.canvas.addEventListener('keydown', this.onKeyDown.bind(this));
+      this.canvas.addEventListener('keyup', this.onKeyUp.bind(this));
+      // Make canvas focusable for keyboard events
+      this.canvas.setAttribute('tabindex', '0');
+      this.canvas.style.outline = 'none'; // Remove focus outline
     }
   }
 
+  removeDOMEventHandlers() {
+    if(this.canvas){
+      this.canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
+      this.canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
+      this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
+      this.canvas.removeEventListener('wheel', this.onMouseWheel.bind(this));
+      this.canvas.removeEventListener('keydown', this.onKeyDown.bind(this));
+      this.canvas.removeEventListener('keyup', this.onKeyUp.bind(this));
+    }
+  }
+
+  onKeyDown(event: KeyboardEvent) {
+    this.processEventListener('onKeyDown', [event]);
+    // Only handle key events when canvas is visible and enabled
+    if(!this.canvas || !this.enabled) {
+      return;
+    }
+
+    // Check if canvas is visible in the viewport
+    const rect = this.canvas.getBoundingClientRect();
+    if(rect.width === 0 || rect.height === 0) {
+      return;
+    }
+
+    // Prevent default behavior for camera view keys
+    const key = event.key.toLowerCase();
+    
+    switch(key) {
+      case '1':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Top);
+        break;
+      case '2':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Bottom);
+        break;
+      case '3':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Left);
+        break;
+      case '4':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Right);
+        break;
+      case '5':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Front);
+        break;
+      case '6':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Back);
+        break;
+      case '7':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Orthogonal);
+        break;
+      case '0':
+        event.preventDefault();
+        this.reorientCamera(CameraView.Default);
+        break;
+      case 'f':
+        event.preventDefault();
+        this.fitCameraToScene();
+        break;
+    }
+  }
+
+  onKeyUp(event: KeyboardEvent) {
+    this.processEventListener('onKeyUp', [event]);
+  }
+
   onMouseDown(event: MouseEvent) {
+    this.processEventListener('onMouseDown', [event]);
     if(event.target != this.canvas){
       return;
     }
@@ -226,12 +477,14 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseUp(event: MouseEvent) {
+    this.processEventListener('onMouseUp', [event]);
     KotOR.Mouse.MouseDown = false;
     KotOR.Mouse.Dragging = false;
     KotOR.Mouse.ButtonState = KotOR.MouseState.NONE;
   }
 
   onMouseMove(event: MouseEvent) {
+    this.processEventListener('onMouseMove', [event]);
     if(event.target != this.canvas){
       return;
     }
@@ -241,6 +494,10 @@ export class UI3DRenderer extends EventListenerModel {
     KotOR.Mouse.MouseY = event.pageY - offset.top;
     KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.canvas.width ) * 2 - 1;
     KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.canvas.height ) * 2 + 1;
+  }
+
+  onMouseWheel(event: WheelEvent) {
+    this.processEventListener('onMouseWheel', [event]);
   }
 
   attachObject(object: THREE.Object3D, selectable: boolean = true){
@@ -309,6 +566,9 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCanvas(canvas: HTMLCanvasElement){
+    //remove old event handlers
+    this.removeDOMEventHandlers();
+
     const oCanvas = this.canvas;
     if(oCanvas?.parentElement) this.resizeObserver.unobserve(oCanvas.parentElement);
     this.canvas = canvas;
@@ -507,8 +767,12 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   destroy(){
+    //remove old event handlers
+    this.removeDOMEventHandlers();
+    
     this.enabled = false;
     cancelAnimationFrame(this.queuedAnimationFrame);
+    
     if(this.renderer) this.renderer.dispose();
     this.renderer = undefined;
 

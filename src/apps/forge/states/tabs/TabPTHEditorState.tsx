@@ -95,12 +95,12 @@ export class TabPTHEditorState extends TabState {
     this.pathHelperGroup.add(this.ghostPreviewMesh);
 
     this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
-      if(e.key === 'f'){
-        this.fitCameraToScene();
-      } else if(e.key === 'Escape'){
+      if(e.key === 'Escape'){
         this.setControlMode(TabPTHEditorControlMode.SELECT);
         this.selectPoint(-1);
         this.ui3DRenderer.selectObject(undefined);
+      } else if(e.key === 'Delete'){
+        this.deleteSelectedPoint();
       }
     });
   }
@@ -204,40 +204,6 @@ export class TabPTHEditorState extends TabState {
     }
     this.box3.getCenter(this.center);
     this.ui3DRenderer.orbitControls.target.copy(this.center);
-  }
-
-  public fitCameraToScene(offset: number = 1.25): void {
-    this.updateCameraFocus();
-    if(!this.center) return;
-    const maxSize = Math.max(this.center.x, this.center.y, this.center.z);
-    const fov = THREE.MathUtils.degToRad(this.ui3DRenderer.camera.fov); // vertical fov in radians
-    const aspect = this.ui3DRenderer.camera.aspect;
-
-    // Distance required to fit box height in view
-    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
-    // Distance required to fit box width in view
-    const fitWidthDistance = fitHeightDistance / aspect;
-
-    // Take the larger one, then apply offset
-    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
-
-    // Get the direction from target to camera so we keep the same orbit angles
-    const direction = new THREE.Vector3()
-      .subVectors(this.ui3DRenderer.camera.position, this.ui3DRenderer.orbitControls.target)
-      .normalize();
-
-    // New camera position
-    this.ui3DRenderer.camera.position.copy(this.center).add(direction.multiplyScalar(distance));
-
-    // Update controls target to center the box
-    this.ui3DRenderer.orbitControls.target.copy(this.center);
-
-    // Optionally update near/far to better match scene scale
-    this.ui3DRenderer.camera.near = distance / 100;
-    this.ui3DRenderer.camera.far = distance * 100;
-    this.ui3DRenderer.camera.updateProjectionMatrix();
-
-    this.ui3DRenderer.orbitControls.update();
   }
 
   private onSelect(intersect: THREE.Intersection): void {
@@ -355,7 +321,6 @@ export class TabPTHEditorState extends TabState {
     if(!this.ui3DRenderer.canvas) return;
     
     const walkableIntersect = this.findWalkableFaceIntersection();
-    console.log('walkableIntersect', walkableIntersect);
     if(walkableIntersect && walkableIntersect.point){
       this.previewPosition.copy(walkableIntersect.point);
       this.previewPosition.z += POINT_OFFSET_HEIGHT; // Offset above surface
@@ -395,10 +360,49 @@ export class TabPTHEditorState extends TabState {
     this.updatePathVisualization();
     
     // Mark file as having unsaved changes
-    if(this.file){
-      this.file.unsaved_changes = true;
-      this.editorFileUpdated();
+    // if(this.file){
+    //   this.file.unsaved_changes = true;
+    //   this.editorFileUpdated();
+    // }
+  }
+  
+  private deleteSelectedPoint(): void {
+    // Only delete in SELECT mode
+    if(this.controlMode !== TabPTHEditorControlMode.SELECT) return;
+    
+    const pointToDelete = this.points[this.selectedPointIndex];
+    if(!pointToDelete) return;
+
+    console.log('selectedPointIndex', this.selectedPointIndex);
+    console.log('pointToDelete', pointToDelete);
+    
+    const connections = pointToDelete.connections.slice();
+    for(let i = 0; i < connections.length; i++){
+      const connection = connections[i];
+      pointToDelete.removeConnection(connection);
     }
+
+    console.log('connections', connections, pointToDelete.connections.slice());
+    
+    // Remove the point from the array
+    this.points.splice(this.selectedPointIndex, 1);
+    
+    // Update IDs for remaining points
+    for(let i = 0; i < this.points.length; i++){
+      this.points[i].id = i;
+    }
+    
+    // Clear selection
+    this.selectPoint(-1);
+    
+    // Update visualization
+    this.updatePathVisualization();
+    
+    // Mark file as having unsaved changes
+    // if(this.file){
+    //   this.file.unsaved_changes = true;
+    //   this.editorFileUpdated();
+    // }
   }
   private selectPoint(pointIndex: number = -1): void {
     this.ui3DRenderer.transformControls.detach();
@@ -699,8 +703,6 @@ export class TabPTHEditorState extends TabState {
       }
     }
 
-    this.fitCameraToScene();
-
     // Update visualization to reflect new Z positions
     this.updatePathVisualization();
   }
@@ -768,7 +770,6 @@ export class TabPTHEditorState extends TabState {
     let connIdx = 0;
     for(let i = 0, len = this.points.length; i < len; i++){
       const point = this.points[i];
-      console.log(`point:${i}`, `${point.vector.x}, ${point.vector.y}, ${point.vector.z}`);
       const pathPointStruct = new KotOR.GFFStruct(2);
       pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'First_Conection', connIdx ) );
       pathPointStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Conections', point.connections.length ) );
