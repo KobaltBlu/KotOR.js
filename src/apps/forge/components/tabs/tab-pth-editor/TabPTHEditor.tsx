@@ -26,7 +26,7 @@ const UI3DToolPalette = function(props: any){
   });
 
   return (
-    <div className="UI3DToolPalette">
+    <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
       <ul>
         <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}>
           <a title="Select Point">
@@ -66,7 +66,7 @@ export const TabPTHEditor = function(props: BaseTabProps){
   return (
     <LayoutContainerProvider>
       <LayoutContainer eastContent={eastPanel}>
-        <UI3DRendererView context={tab.ui3DRenderer}>
+        <UI3DRendererView context={tab.ui3DRenderer} showMenuBar={true}>
           <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
           <UI3DToolPalette tab={tab} />
         </UI3DRendererView>

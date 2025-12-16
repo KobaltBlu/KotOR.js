@@ -40,6 +40,12 @@ export interface UI3DRendererEventListeners {
 
 const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({color: 0x00ff00}));
 
+interface CameraViewCache {
+  position: THREE.Vector3;
+  lookAt: THREE.Vector3;
+  target: THREE.Vector3;
+}
+
 /**
  * UI3DRenderer class.
  * 
@@ -83,7 +89,30 @@ export class UI3DRenderer extends EventListenerModel {
   depthTarget: THREE.WebGLRenderTarget;
   raycaster: THREE.Raycaster = new THREE.Raycaster();
   orbitControls: OrbitControls;
+
+  /**
+   * Camera Views
+   */
   cameraView: CameraView = CameraView.Default;
+  cameraViewCache: {
+    top?: CameraViewCache,
+    bottom?: CameraViewCache,
+    left?: CameraViewCache,
+    right?: CameraViewCache,
+    front?: CameraViewCache,
+    back?: CameraViewCache,
+    orthogonal?: CameraViewCache,
+    default?: CameraViewCache
+  } = {
+    top: undefined,
+    bottom: undefined,
+    left: undefined,
+    right: undefined,
+    front: undefined,
+    back: undefined,
+    orthogonal: undefined,
+    default: undefined
+  }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 
