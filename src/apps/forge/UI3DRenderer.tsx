@@ -42,7 +42,6 @@ const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new TH
 
 interface CameraViewCache {
   position: THREE.Vector3;
-  lookAt: THREE.Vector3;
   target: THREE.Vector3;
 }
 
@@ -241,6 +240,24 @@ export class UI3DRenderer extends EventListenerModel {
   reorientCamera(view: CameraView) {
     if(!this.camera || !this.orbitControls) return;
 
+    const oldView = this.cameraView;
+    if(oldView == view) return;
+    this.cameraView = view;
+
+    this.cameraViewCache[oldView] = {
+      position: this.camera.position.clone(),
+      target: this.orbitControls.target.clone()
+    };
+
+    if(this.cameraViewCache[view]){
+      this.camera.position.copy(this.cameraViewCache[view].position);
+      this.camera.lookAt(this.cameraViewCache[view].target);
+      this.orbitControls.target.copy(this.cameraViewCache[view].target);
+      this.orbitControls.update();
+      this.orbitControls.enableRotate = view === CameraView.Default;
+      return;
+    }
+
     this.cameraView = view;
     const distance = 10; // Distance from origin
     const lookAt = new THREE.Vector3(0, 0, 0);
@@ -288,6 +305,8 @@ export class UI3DRenderer extends EventListenerModel {
       this.orbitControls.update();
       this.orbitControls.enableRotate = view === CameraView.Default;
     }
+
+    this.fitCameraToScene();
   }
 
   
