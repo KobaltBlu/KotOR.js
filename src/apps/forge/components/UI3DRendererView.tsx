@@ -27,8 +27,8 @@ const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const handleMenuClick = useCallback((label: string) => {
-    setOpenMenu(openMenu === label ? null : label);
+  const handleMenuClick = useCallback((label?: string) => {
+    setOpenMenu(openMenu === label ? null : label || null);
     setOpenSubmenu(null);
   }, [openMenu]);
 
