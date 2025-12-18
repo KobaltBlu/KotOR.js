@@ -2,7 +2,7 @@ import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
 import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPthEditor";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
@@ -47,6 +47,7 @@ export class TabPTHEditorState extends TabState {
     super(options);
     
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
 
     // Create a group to hold all path visualization elements

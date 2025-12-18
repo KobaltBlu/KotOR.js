@@ -4,7 +4,7 @@ import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
 
 export enum TabWOKEditorControlMode {
@@ -101,7 +101,7 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer.scene.add(grid2);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
     this.ui3DRenderer.group.light_helpers.visible = false;
-    
+    this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     this.setContentView(<TabWOKEditor tab={this}></TabWOKEditor>);

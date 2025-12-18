@@ -45,6 +45,11 @@ interface CameraViewCache {
   target: THREE.Vector3;
 }
 
+export enum CameraFocusMode {
+  SELECTABLE = 'selectable',
+  SCENE = 'scene',
+}
+
 /**
  * UI3DRenderer class.
  * 
@@ -143,6 +148,7 @@ export class UI3DRenderer extends EventListenerModel {
   viewportFrustum: THREE.Frustum;
 
   transformControlsDragging: boolean = false;
+  focusMode: CameraFocusMode = CameraFocusMode.SCENE;
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -309,14 +315,18 @@ export class UI3DRenderer extends EventListenerModel {
     this.fitCameraToScene();
   }
 
+  setCameraFocusMode(mode: CameraFocusMode) {
+    this.focusMode = mode;
+  }
   
   #center: THREE.Vector3 = new THREE.Vector3();
   #box3: THREE.Box3 = new THREE.Box3();
 
   private updateCameraFocus(): void {
     this.#box3 = new THREE.Box3();
-    for(let i = 0; i < this.selectable.children.length; i++){
-      this.#box3.expandByObject(this.selectable.children[i]);
+    const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
+    for(let i = 0; i < objects.length; i++){
+      this.#box3.expandByObject(objects[i]);
     }
     this.#box3.getCenter(this.#center);
     this.orbitControls.target.copy(this.#center);
