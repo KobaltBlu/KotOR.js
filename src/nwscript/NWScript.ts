@@ -9,20 +9,10 @@ import { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
 
 import {
-  OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
-  OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
-  OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP, OP_JSR,
-  OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
-  OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
+  OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
+  OP_DESTRUCT, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP, OP_STORE_STATE, OP_T
 } from './NWScriptOPCodes';
 
-import {
-  CALL_CPDOWNSP, CALL_RSADD, CALL_CPTOPSP, CALL_CONST, CALL_ACTION, CALL_LOGANDII, CALL_LOGORII, CALL_INCORII, CALL_EXCORII,
-  CALL_BOOLANDII, CALL_EQUAL, CALL_NEQUAL, CALL_GEQ, CALL_GT, CALL_LT, CALL_LEQ, CALL_SHLEFTII, CALL_SHRIGHTII, CALL_USHRIGHTII,
-  CALL_ADD, CALL_SUB, CALL_MUL, CALL_DIV, CALL_MOD, CALL_NEG, CALL_COMPI, CALL_MOVSP, CALL_STORE_STATEALL, CALL_JMP,   CALL_JSR,
-  CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
-  CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
-} from './NWScriptInstructionSet';
 import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
 import type { ModuleObject } from "../module/ModuleObject";
 import { GameState } from "../GameState";
@@ -154,51 +144,33 @@ export class NWScript {
 
   parseIntruction( reader: BinaryReader ) {
 
-    const position = reader.position;
+    const instructionAddress = reader.position;
+    const opCode = reader.readByte();
+    const opType = opCode != OP_T ? reader.readByte() : reader.readInt32();
 
-    let instruction = new NWScriptInstruction({
-      code: reader.readByte(),
-      type: reader.readByte(),
-      address: position,
-      prevInstr: ( this.lastOffset >= 0 ? this.instructions.get(this.lastOffset) : null ),
-      eof: false,
-      isArg: false,
-      index: this.instrIdx++
-    });
+    const instruction = new NWScriptInstruction(opCode, opType, instructionAddress);
+    
+    instruction.prevInstr = ( this.lastOffset >= 0 ? this.instructions.get(this.lastOffset) : null );
+    instruction.index = this.instrIdx++;
 
     //If we already have parsed an instruction set the property of nextInstr on the previous instruction to the current one
     if(this.lastOffset >= 0){
       this.instructions.get(this.lastOffset).nextInstr = instruction;
     }
 
-    switch(instruction.code){
+    switch(opCode){
       case OP_CPDOWNSP:
-        instruction.opCall = CALL_CPDOWNSP;
+      case OP_CPTOPSP:
         instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16();
         if(instruction.offset == undefined){
-          console.warn('CPDOWNSP', instruction.offset, instruction.size, reader.position);
+          console.warn(OP_CPDOWNSP == opCode ? 'CPDOWNSP' : 'CPTOPSP', instruction.offset, instruction.size, reader.position);
         }
         if(instruction.size == undefined){
-          console.warn('CPDOWNSP', instruction.offset, instruction.size, reader.position);
-        }
-      break;
-      case OP_RSADD:
-        instruction.opCall = CALL_RSADD;
-      break;
-      case OP_CPTOPSP:
-        instruction.opCall = CALL_CPTOPSP;
-        instruction.offset = reader.readInt32();
-        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-        if(instruction.offset == undefined){
-          console.warn('CPTOPSP', instruction.offset, instruction.size, reader.position);
-        }
-        if(instruction.size == undefined){
-          console.warn('CPTOPSP', instruction.pointer, instruction.size, reader.position);
+          console.warn(OP_CPDOWNSP == opCode ? 'CPDOWNSP' : 'CPTOPSP', instruction.offset, instruction.size, reader.position);
         }
       break;
       case OP_CONST:
-        instruction.opCall = CALL_CONST;
         switch(instruction.type){
           case 3:
             instruction.integer = reader.readInt32();
@@ -215,133 +187,39 @@ export class NWScript {
         }
       break;
       case OP_ACTION:
-        instruction.opCall = CALL_ACTION;
         instruction.action = reader.readUInt16();
         instruction.argCount = reader.readByte();
-        instruction.arguments = [];
         instruction.actionDefinition = this.actionsMap[instruction.action];
       break;
-      case OP_LOGANDII:
-        instruction.opCall = CALL_LOGANDII;
-      break;
-      case OP_LOGORII:
-        instruction.opCall = CALL_LOGORII;
-      break;
-      case OP_INCORII:
-        instruction.opCall = CALL_INCORII;
-      break;
-      case OP_EXCORII:
-        instruction.opCall = CALL_EXCORII;
-      break;
-      case OP_BOOLANDII:
-        instruction.opCall = CALL_BOOLANDII;
-      break;
-      case OP_BOOLANDII:
-        instruction.opCall = CALL_BOOLANDII;
-      break;
       case OP_EQUAL:
-        instruction.opCall = CALL_EQUAL;
-        if(instruction.type == NWScriptDataType.STRUCTURE){
-          instruction.sizeOfStructure = reader.readUInt16();
-        }
-      break;
       case OP_NEQUAL:
-        instruction.opCall = CALL_NEQUAL;
         if(instruction.type == NWScriptDataType.STRUCTURE){
           instruction.sizeOfStructure = reader.readUInt16();
         }
-      break;
-      case OP_GEQ:
-        instruction.opCall = CALL_GEQ;
-      break;
-      case OP_GT:
-        instruction.opCall = CALL_GT;
-      break;
-      case OP_LT:
-        instruction.opCall = CALL_LT;
-      break;
-      case OP_LEQ:
-        instruction.opCall = CALL_LEQ;
-      break;
-      case OP_SHLEFTII:
-        instruction.opCall = CALL_SHLEFTII;
-      break;
-      case OP_SHRIGHTII:
-        instruction.opCall = CALL_SHRIGHTII;
-      break;
-      case OP_USHRIGHTII:
-        instruction.opCall = CALL_USHRIGHTII;
-      break;
-      case OP_ADD:
-        instruction.opCall = CALL_ADD;
-      break;
-      case OP_SUB:
-        instruction.opCall = CALL_SUB;
-      break;
-      case OP_MUL:
-        instruction.opCall = CALL_MUL;
-      break;
-      case OP_DIV:
-        instruction.opCall = CALL_DIV;
-      break;
-      case OP_MODII:
-        instruction.opCall = CALL_MOD;
-      break;
-      case OP_NEG:
-        instruction.opCall = CALL_NEG;
-      break;
-      case OP_COMPI:
-        instruction.opCall = CALL_COMPI;
       break;
       case OP_MOVSP:
-        instruction.opCall = CALL_MOVSP;
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_STORE_STATEALL:
-        instruction.opCall = CALL_NOP;
-      break;
       case OP_JMP:
-        instruction.opCall = CALL_JMP;
-        instruction.offset = reader.readInt32();
-      break;
       case OP_JSR:
-        instruction.opCall = CALL_JSR;
-        instruction.offset = reader.readInt32();
-      break;
       case OP_JZ:
-        instruction.opCall = CALL_JZ;
+      case OP_DECISP:
+      case OP_INCISP:
+      case OP_JNZ:
+      case OP_DECIBP:
+      case OP_INCIBP:
         instruction.offset = reader.readInt32();
       break;
       case OP_RETN:
-        instruction.opCall = CALL_RETN;
         if(!this.eofFound){
           instruction.eof = true;
           this.eofFound = true;
         }
       break;
       case OP_DESTRUCT:
-        instruction.opCall = CALL_DESTRUCT;
         instruction.sizeToDestroy = reader.readInt16();
         instruction.offsetToSaveElement = reader.readInt16();
         instruction.sizeOfElementToSave = reader.readInt16();
       break;
-      case OP_NOTI:
-        instruction.opCall = CALL_NOTI;
-      break;
-      case OP_DECISP:
-        instruction.opCall = CALL_DECISP;
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_INCISP:
-        instruction.opCall = CALL_INCISP;
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_JNZ:
-        instruction.opCall = CALL_JNZ;
-        instruction.offset = reader.readInt32();
-      break;
       case OP_CPDOWNBP:
-        instruction.opCall = CALL_CPDOWNBP;
         instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16();
         if(instruction.offset == undefined){
@@ -352,45 +230,21 @@ export class NWScript {
         }
       break;
       case OP_CPTOPBP:
-        instruction.opCall = CALL_CPTOPBP;
         instruction.offset = reader.readInt32();
         instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
       break;
-      case OP_DECIBP:
-        instruction.opCall = CALL_DECIBP;
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_INCIBP:
-        instruction.opCall = CALL_INCIBP;
-        instruction.offset = reader.readInt32();
-      break;
-      case OP_SAVEBP:
-        instruction.opCall = CALL_SAVEBP;
-      break;
-      case OP_RESTOREBP:
-        instruction.opCall = CALL_RESTOREBP;
-      break;
       case OP_STORE_STATE:
-        instruction.opCall = CALL_STORE_STATE;
         instruction.bpOffset = reader.readInt32();
         instruction.spOffset = reader.readInt32();
       break;
       case OP_T:
-        instruction.opCall = CALL_NOP;
-        reader.position -= 2; //We need to go back 2bytes because this instruction
-        //doesn't have a int16 type arg. We then need to read the 4Byte Int32 size arg
-        instruction.size = reader.readInt32();
-      break;
-      case OP_NOP:
-        instruction.opCall = CALL_NOP;
-      break;
-      default:
-        console.error('Unhandled NWScript Instruction');
-        console.log(this, instruction);
+        instruction.size = opType
       break;
     }
-    
-    //this.instructions.push(instr);
+
+    //Calculate the size of the instruction
+    instruction.instructionSize = reader.position - instructionAddress;
+
     this.instructions.set(instruction.address, instruction);
     this.lastOffset = instruction.address;
   }
