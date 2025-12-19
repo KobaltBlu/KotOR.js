@@ -50,6 +50,18 @@ export enum CameraFocusMode {
   SCENE = 'scene',
 }
 
+export enum GroupType {
+  LIGHTS = 'lights',
+  LIGHT_HELPERS = 'light_helpers',
+  SHADOW_LIGHTS = 'shadow_lights',
+  ROOMS = 'rooms',
+}
+
+export enum ObjectType {
+  ROOM = 'room',
+  WALKMESH = 'walkmesh',
+}
+
 /**
  * UI3DRenderer class.
  * 
@@ -140,10 +152,19 @@ export class UI3DRenderer extends EventListenerModel {
   viewHelper: ViewHelper;
 
   group: { 
-    lights: THREE.Group; 
-    light_helpers: THREE.Group; 
-    shadow_lights: THREE.Group; 
+    [key in GroupType]: THREE.Group;
+  } = {
+    [GroupType.LIGHTS]: new THREE.Group(),
+    [GroupType.LIGHT_HELPERS]: new THREE.Group(),
+    [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
+    [GroupType.ROOMS]: new THREE.Group(),
   };
+
+  visibilityState: { [key in ObjectType]: boolean } = {
+    [ObjectType.ROOM]: true,
+    [ObjectType.WALKMESH]: false,
+  };
+
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
 
@@ -172,6 +193,7 @@ export class UI3DRenderer extends EventListenerModel {
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
       shadow_lights: new THREE.Group(),
+      rooms: new THREE.Group(),
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
@@ -499,6 +521,14 @@ export class UI3DRenderer extends EventListenerModel {
         event.preventDefault();
         this.fitCameraToScene();
         break;
+      case 'r':
+        event.preventDefault();
+        this.toggleVisibilityByType(ObjectType.ROOM);
+        break;
+      case 'w':
+        event.preventDefault();
+        this.toggleVisibilityByType(ObjectType.WALKMESH);
+        break;
     }
   }
 
@@ -556,6 +586,66 @@ export class UI3DRenderer extends EventListenerModel {
 
   onMouseWheel(event: WheelEvent) {
     this.processEventListener('onMouseWheel', [event]);
+  }
+
+  toggleVisibilityByType(type: ObjectType) {
+    switch(type) {
+      case 'room':
+        this.group.rooms.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.ROOM];
+        });
+        break;
+      case 'walkmesh':
+        this.group.rooms.children.forEach( (child) => {
+          ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
+        });
+        break;
+    }
+    this.visibilityState[type] = !this.visibilityState[type];
+  }
+
+  addObjectToGroup(object: THREE.Object3D, group: GroupType) {
+    switch(group) {
+      case GroupType.ROOMS:
+        this.group[GroupType.ROOMS].add(object);
+        object.visible = this.visibilityState[ObjectType.ROOM];
+        if(object instanceof KotOR.OdysseyModel3D){
+          (object.wok.mesh.material as THREE.Material).visible = this.visibilityState[ObjectType.WALKMESH];
+        }
+        break;
+      case GroupType.LIGHT_HELPERS:
+        this.group[GroupType.LIGHT_HELPERS].add(object);
+        break;
+      case GroupType.SHADOW_LIGHTS:
+        this.group[GroupType.SHADOW_LIGHTS].add(object);
+        break;
+      case GroupType.LIGHTS:
+        this.group[GroupType.LIGHTS].add(object);
+        break;
+      default:
+        console.warn(`addObjectToGroup: unhandled group type, ${group}`);
+        break;
+    }
+  }
+
+  removeObjectFromGroup(object: THREE.Object3D, group: GroupType) {
+    switch(group) {
+      case GroupType.ROOMS:
+        this.group[GroupType.ROOMS].remove(object);
+        break;
+      case GroupType.LIGHT_HELPERS:
+        this.group[GroupType.LIGHT_HELPERS].remove(object);
+        break;
+      case GroupType.SHADOW_LIGHTS:
+        this.group[GroupType.SHADOW_LIGHTS].remove(object);
+        break;
+      case GroupType.LIGHTS:
+        this.group[GroupType.LIGHTS].remove(object);
+        break;
+      default:
+        console.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
+        break;
+    }
   }
 
   attachObject(object: THREE.Object3D, selectable: boolean = true){
@@ -694,6 +784,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.group.lights);
     this.scene.add(this.group.light_helpers);
     this.scene.add(this.group.shadow_lights);
+    this.scene.add(this.group.rooms);
     this.sceneGraphManager.rebuild();
   }
   

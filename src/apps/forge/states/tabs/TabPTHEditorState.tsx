@@ -2,7 +2,7 @@ import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
 import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPthEditor";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import * as KotOR from "../../KotOR";
 import * as THREE from 'three';
@@ -24,7 +24,6 @@ export class TabPTHEditorState extends TabState {
   pathHelperGroup: THREE.Group;
   pointMeshes: THREE.Mesh[] = [];
   connectionLines: THREE.LineSegments;
-  layoutGroup: THREE.Group;
   layout: KotOR.LYTObject;
   layoutModels: KotOR.OdysseyModel3D[] = [];
   walkmeshes: KotOR.OdysseyWalkMesh[] = [];
@@ -53,10 +52,6 @@ export class TabPTHEditorState extends TabState {
     // Create a group to hold all path visualization elements
     this.pathHelperGroup = new THREE.Group();
     this.ui3DRenderer.scene.add(this.pathHelperGroup);
-
-    // Create a group to hold layout room models
-    this.layoutGroup = new THREE.Group();
-    this.ui3DRenderer.scene.add(this.layoutGroup);
 
     this.setContentView(<TabPTHEditor tab={this}></TabPTHEditor>);
     this.openFile();
@@ -626,7 +621,7 @@ export class TabPTHEditorState extends TabState {
               console.log(`No walkmesh found for room: ${room.name}`);
             }
             
-            this.layoutGroup.add(model);
+            this.ui3DRenderer.addObjectToGroup(model, GroupType.ROOMS);
             this.layoutModels.push(model);
           }
         }
@@ -711,7 +706,7 @@ export class TabPTHEditorState extends TabState {
   private disposeLayout(): void {
     // Remove and dispose of all layout models
     this.layoutModels.forEach(model => {
-      this.layoutGroup.remove(model);
+      this.ui3DRenderer.removeObjectFromGroup(model, GroupType.ROOMS);
       try {
         model.dispose();
       } catch (e) {
