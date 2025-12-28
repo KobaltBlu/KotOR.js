@@ -7,6 +7,8 @@ import { GameFileSystem } from "../utility/GameFileSystem";
 import { NWScriptInstance } from "./NWScriptInstance";
 import { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
+import { NWScriptControlFlowGraph } from "./decompiler/NWScriptControlFlowGraph";
+import { NWScriptDecompiler } from "./decompiler/NWScriptDecompiler";
 
 import {
   OP_CPDOWNSP, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_EQUAL, OP_NEQUAL, OP_MOVSP, OP_JMP, OP_JSR, OP_JZ, OP_RETN, 
@@ -52,14 +54,6 @@ export class NWScript {
    * The name of the script
    */
   name: string;
-
-  instrIdx: number;
-  lastOffset: number;
-  instances: NWScriptInstance[];
-  instanceUUIDMap: Map<string, NWScriptInstance> = new Map();
-  global: boolean = false;
-  verified: boolean = false;
-  instructions: Map<number, NWScriptInstruction>;
   
   /**
    * The program type of the script
@@ -78,19 +72,51 @@ export class NWScript {
    */
   code: Uint8Array = new Uint8Array();
 
+  /**
+   * The instances of the script
+   */
+  instances: NWScriptInstance[];
+  
+  /**
+   * The map of the instances of the script
+   */
+  instanceUUIDMap: Map<string, NWScriptInstance> = new Map();
+
+  /**
+   * The instructions of the script
+   */
+  instructions: Map<number, NWScriptInstruction>;
+  
+  /**
+   * Whether the script is a global script
+   * 
+   * Global scripts are scripts that are attached to Game Menus and are not part of the game world runtime
+   */
+  isGlobal: boolean = false;
+  
+  /**
+   * Whether the script is verified
+   * 
+   * This is used to verify that the script is a valid NCS file
+   * Cannot be used to verify ScriptSituations, because they do not have a header
+   */
+  isVerified: boolean = false;
+
+  /**
+   * The control flow graph of the script
+   */
+  controlFlowGraph: NWScriptControlFlowGraph | null = null;
+
   constructor ( dataOrFile?: string|Uint8Array ){
     this.actionsMap = (GameState.GameKey == GameEngineType.TSL) ? 
       NWScriptDefK2.Actions : NWScriptDefK1.Actions;
 
-    this.instrIdx = 0;
-    this.lastOffset = -1;
-
     this.instances = [];
-    this.global = false;
+    this.isGlobal = false;
 
     this.name = '';
     
-    this.verified = false;
+    this.isVerified = false;
 
     if( !dataOrFile ) {
       return;
@@ -111,13 +137,15 @@ export class NWScript {
   /**
    * Verify the NCS header
    * 
+   * This is used to verify that the script is a valid NCS file
+   * Cannot be used to verify ScriptSituations, because they do not have a header
    * @param {BinaryReader} reader
    * @returns {boolean}
    */
   verifyNCS (reader: BinaryReader){
     reader.seek(0);
-    if(this.verified || reader.readChars(8) == 'NCS V1.0')
-      return this.verified = true;
+    if(this.isVerified || reader.readChars(8) == 'NCS V1.0')
+      return this.isVerified = true;
 
     return false;
   }
@@ -132,8 +160,13 @@ export class NWScript {
     this.instructions = new Map();
     let reader = new BinaryReader(data, Endians.BIG);
 
-    if(!progSize){
+    //Initialize the program type and code
+    this.prog = OP_T
+    this.code = data;
+    this.progSize = progSize;
 
+    //If the program size is not provided, parse the program type and size from the data
+    if(!progSize){
       reader.skip(8);
       this.prog = reader.readByte();
       if(this.prog != OP_T){
@@ -146,16 +179,12 @@ export class NWScript {
       //Store a copy of the code for exporting ScriptSituations
       this.code = reader.buffer;
       this.progSize = this.code.length;
-    }else{
-      //Store a copy of the code for exporting ScriptSituations
-      this.prog = OP_T
-      this.code = data;
-      this.progSize = progSize;
     }
 
-    this.lastOffset = -1;
+    let instrIdx = 0;
+    let lastInstruction: NWScriptInstruction = null;
     while ( reader.position < this.progSize ){
-      this.parseIntruction(reader);
+      lastInstruction = this.parseIntruction(reader, lastInstruction, instrIdx++);
     };
     
     reader.position = 0;
@@ -167,31 +196,30 @@ export class NWScript {
    * 
    * @param {BinaryReader} reader
    */
-  parseIntruction( reader: BinaryReader ) {
+  parseIntruction( reader: BinaryReader, lastInstruction: NWScriptInstruction, index: number ): NWScriptInstruction {
     const instructionAddress = reader.position;
     const opCode = reader.readByte();
     const opType = opCode != OP_T ? reader.readByte() : reader.readInt32();
 
     const instruction = new NWScriptInstruction(opCode, opType, instructionAddress);
     
-    instruction.prevInstr = ( this.lastOffset >= 0 ? this.instructions.get(this.lastOffset) : null );
-    instruction.index = this.instrIdx++;
+    instruction.prevInstr = lastInstruction;
+    instruction.index = index;
 
     //If we already have parsed an instruction set the property of nextInstr on the previous instruction to the current one
-    if(this.lastOffset >= 0){
-      this.instructions.get(this.lastOffset).nextInstr = instruction;
+    if(lastInstruction){
+      lastInstruction.nextInstr = instruction;
     }
 
     switch(opCode){
       case OP_CPDOWNSP:
       case OP_CPTOPSP:
+      case OP_CPDOWNBP:
+      case OP_CPTOPBP:
         instruction.offset = reader.readInt32();
-        instruction.size = reader.readInt16();
-        if(instruction.offset == undefined){
-          console.warn(OP_CPDOWNSP == opCode ? 'CPDOWNSP' : 'CPTOPSP', instruction.offset, instruction.size, reader.position);
-        }
-        if(instruction.size == undefined){
-          console.warn(OP_CPDOWNSP == opCode ? 'CPDOWNSP' : 'CPTOPSP', instruction.offset, instruction.size, reader.position);
+        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
+        if(instruction.offset == undefined || instruction.size == undefined){
+          console.warn(instruction.codeName, instruction.offset, instruction.size, reader.position);
         }
       break;
       case OP_CONST:
@@ -237,20 +265,6 @@ export class NWScript {
         instruction.offsetToSaveElement = reader.readInt16();
         instruction.sizeOfElementToSave = reader.readInt16();
       break;
-      case OP_CPDOWNBP:
-        instruction.offset = reader.readInt32();
-        instruction.size = reader.readInt16();
-        if(instruction.offset == undefined){
-          console.warn('CPDOWNBP', instruction.offset, instruction.size, reader.position);
-        }
-        if(instruction.size == undefined){
-          console.warn('CPDOWNBP', instruction.offset, instruction.size, reader.position);
-        }
-      break;
-      case OP_CPTOPBP:
-        instruction.offset = reader.readInt32();
-        instruction.size = reader.readInt16(); //As far as I can tell this should always be 4. Because all stack objects are 4Bytes long
-      break;
       case OP_STORE_STATE:
         instruction.bpOffset = reader.readInt32();
         instruction.spOffset = reader.readInt32();
@@ -264,7 +278,7 @@ export class NWScript {
     instruction.instructionSize = reader.position - instructionAddress;
 
     this.instructions.set(instruction.address, instruction);
-    this.lastOffset = instruction.address;
+    return instruction;
   }
 
   /**
@@ -321,7 +335,7 @@ export class NWScript {
     }
 
     const script = NWScript.scripts.get( scriptName );
-    script.global = isGlobal;
+    script.isGlobal = isGlobal;
   }
 
   /**
@@ -362,7 +376,7 @@ export class NWScript {
     NWScript.scripts.forEach( (script, key) => {
       //Only dispose of non global scripts
       //global scripts would be like the ones attached to Game Menus
-      if(script.global){  return; }
+      if(script.isGlobal){  return; }
       script.disposeInstances();
       NWScript.scripts.delete(key);
     });
@@ -401,7 +415,14 @@ export class NWScript {
    * @returns {string}
    */
   decompile(binary: Uint8Array): string {
-    throw new Error("Method not implemented.");
+    // If instructions haven't been parsed yet, parse them first
+    if (!this.instructions || this.instructions.size === 0) {
+      this.init(binary);
+    }
+
+    // Use the decompiler to convert NCS to NSS
+    const decompiler = new NWScriptDecompiler(this);
+    return decompiler.decompile();
   }
 
   /**
