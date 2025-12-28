@@ -10,11 +10,11 @@ export const CheatConsole = () => {
   const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
   const [consoleInput, setConsoleInput] = useState('');
 
-  const handleConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
+  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
     setConsoleInput(e.target.value);
   }
 
-  const handleConsoleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const onConsoleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       appState.consoleCommand(consoleInput);
       setConsoleInput('');
@@ -22,14 +22,29 @@ export const CheatConsole = () => {
     }
   }
 
+  const onToggleDebugger = () => {
+    appState.toggleDebugger();
+    setShowCheatConsole(false);
+  }
+
+  const onTogglePerformanceMonitor = () => {
+    appState.togglePerformanceMonitor();
+    setShowCheatConsole(false);
+  }
+
+  const onReloadLastSave = () => {
+    appState.reloadLastSave();
+    setShowCheatConsole(false);
+  }
+
   return (
     <div className={`console on ${gameKey}`}>
       <div className="console-buttons">
-        <button className="console-btn" onClick={() => appState.toggleDebugger()}>Debugger</button>
-        <button className="console-btn" onClick={() => appState.togglePerformanceMonitor()}>Toggle Stats</button>
-        <button className="console-btn" onClick={() => appState.reloadLastSave()}>Reload Last Save</button>
+        <button className="console-btn" onClick={onToggleDebugger}>Debugger</button>
+        <button className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
+        <button className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>
       </div>
-      <input className="console-input" type="text" value={consoleInput} onChange={handleConsoleInput} onKeyDown={handleConsoleSubmit} />
+      <input className="console-input" type="text" value={consoleInput} onChange={onConsoleInput} onKeyDown={onConsoleSubmit} />
     </div>
   );
 };
