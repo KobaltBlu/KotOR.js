@@ -73,9 +73,12 @@ export class NWScriptGlobalVariableAnalyzer {
     if (globalInitBlocks.length > 0) {
       // Only analyze instructions within the global init blocks
       // AND before SAVEBP address (if SAVEBP exists)
+      // CRITICAL: Include instructions from blocks that contain SAVEBP, but only those before SAVEBP
       for (const block of globalInitBlocks) {
         for (const instr of block.instructions) {
           // Only include instructions before SAVEBP
+          // This allows us to include RSADD -> CONST -> CPDOWNSP -> MOVSP patterns
+          // that are in the same block as SAVEBP
           if (!savebpAddress || instr.address < savebpAddress) {
             instructionsToAnalyze.push(instr);
           }
@@ -648,7 +651,6 @@ export class NWScriptGlobalVariableAnalyzer {
     while (blockQueue.length > 0) {
       const block = blockQueue.shift()!;
       if (blockVisited.has(block)) continue;
-      if (block === savebpBlock) continue; // Stop at SAVEBP block
       blockVisited.add(block);
       
       // Check if any instruction in this block is at or after SAVEBP address
@@ -657,17 +659,23 @@ export class NWScriptGlobalVariableAnalyzer {
       );
       
       if (blockHasSavebp) {
-        // This block contains or is after SAVEBP - don't include it
+        // This block contains SAVEBP - we still want to include it
+        // because it may contain global variable initializations BEFORE SAVEBP
+        // The instruction filtering above (line 79) will exclude instructions at/after SAVEBP
+        blocks.push(block);
+        // Don't follow successors from SAVEBP block (they're after globals)
         continue;
       }
       
+      // Block is entirely before SAVEBP - include it
       blocks.push(block);
 
       // Follow successors, but stop at SAVEBP block
       // CRITICAL: Only follow execution edges within the function, NOT return edges
       // Return edges go back to the caller and are outside the function
       for (const successor of block.successors) {
-        if (!blockVisited.has(successor) && successor !== savebpBlock) {
+        // Include SAVEBP block if it hasn't been visited yet (it contains globals before SAVEBP)
+        if (!blockVisited.has(successor)) {
           // Skip RETURN edges - these go back to the caller (outside the function)
           const edge = this.cfg.getEdge(block, successor);
           if (edge && edge.type === EdgeType.RETURN) {
@@ -687,11 +695,13 @@ export class NWScriptGlobalVariableAnalyzer {
             }
           }
           
-          // Check if successor is before SAVEBP
+          // Check if successor is before SAVEBP or is the SAVEBP block itself
+          // We include the SAVEBP block because it may contain globals before SAVEBP
           const successorBeforeSavebp = successor.instructions.every(instr => 
             instr.address < savebpAddress!
           );
-          if (successorBeforeSavebp) {
+          const isSavebpBlock = successor === savebpBlock;
+          if (successorBeforeSavebp || isSavebpBlock) {
             blockQueue.push(successor);
           }
         }

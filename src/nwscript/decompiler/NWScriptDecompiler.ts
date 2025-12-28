@@ -6,6 +6,7 @@ import { NWScriptASTCodeGenerator } from "./NWScriptASTCodeGenerator";
 import { NWScriptGlobalVariableAnalyzer } from "./NWScriptGlobalVariableAnalyzer";
 import { NWScriptLocalVariableAnalyzer } from "./NWScriptLocalVariableAnalyzer";
 import { NWScriptControlNodeToASTConverter } from "./NWScriptControlNodeToASTConverter";
+import { NWScriptAST } from "./NWScriptAST";
 
 /**
  * Main decompiler orchestrator.
@@ -54,28 +55,34 @@ export class NWScriptDecompiler {
         return '// Error: No entry block found';
       }
 
+      console.log(JSON.stringify(this.cfg.toJSON(), null, 2));
+
       // Phase 2: Analyze global variable initializations
       console.log('Analyzing global variables...');
       this.globalVarAnalyzer = new NWScriptGlobalVariableAnalyzer(this.script, this.cfg);
       const globalInits = this.globalVarAnalyzer.analyze();
       console.log(`Found ${globalInits.length} global variables`);
+      console.log(globalInits);
 
       // Phase 3: Analyze local variable initializations
       console.log('Analyzing local variables...');
       this.localVarAnalyzer = new NWScriptLocalVariableAnalyzer(this.script, globalInits);
       const localInits = this.localVarAnalyzer.analyze();
       console.log(`Found ${localInits.length} local variables`);
+      console.log(localInits);
 
       // Phase 4: Analyze Functions
       console.log('Analyzing functions...');
       this.functionAnalyzer = new NWScriptFunctionAnalyzer(this.cfg, globalInits);
       const functions = this.functionAnalyzer.analyze();
       console.log(`Found ${functions.length} functions`);
+      console.log(functions);
 
       // Phase 5: Build Control Structures and ControlNode Tree
       console.log('Building control structures...');
       this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
       this.structureBuilder.analyze();
+      console.log(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
       
       // Use the main function's entry block, not the CFG entry block
       // The CFG entry block is the JSR caller, but we need the actual function entry block
@@ -99,6 +106,7 @@ export class NWScriptDecompiler {
       );
       const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
       console.log('AST built successfully');
+      console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
 
       // Phase 7: Generate NSS Code from AST
       console.log('Generating NSS source code...');

@@ -781,5 +781,237 @@ export class NWScriptAST {
     }
     return false;
   }
+
+  /**
+   * Serialize an AST node to JSON, handling circular references
+   * Removes parent references and converts object references to IDs
+   */
+  static toJSON(node: NWScriptASTNode): any {
+    return this.serializeNode(node, new Set());
+  }
+
+  /**
+   * Internal method to serialize a node, tracking visited nodes to prevent infinite recursion
+   */
+  private static serializeNode(node: NWScriptASTNode, visited: Set<NWScriptASTNode>): any {
+    // Prevent infinite recursion (though parent refs are excluded, this is a safety measure)
+    if (visited.has(node)) {
+      return { type: node.type, _circular: true };
+    }
+    visited.add(node);
+
+    const base: any = {
+      type: node.type
+    };
+
+    // Serialize location (convert blocks to IDs)
+    if (node.location) {
+      base.location = {
+        startBlockId: node.location.startBlock?.id,
+        endBlockId: node.location.endBlock?.id,
+        startAddress: node.location.startAddress,
+        endAddress: node.location.endAddress
+      };
+    }
+
+    // Serialize children (recursively, but don't include parent refs)
+    // For BLOCK nodes, children and statements are the same, so we skip children
+    // to avoid duplication. For other nodes, serialize children.
+    if (node.type !== NWScriptASTNodeType.BLOCK && node.children && node.children.length > 0) {
+      base.children = node.children.map(child => this.serializeNode(child, visited));
+    }
+
+    // Handle specific node types
+    switch (node.type) {
+      case NWScriptASTNodeType.PROGRAM: {
+        const programNode = node as NWScriptProgramNode;
+        base.globals = programNode.globals?.map(g => this.serializeNode(g, visited)) || [];
+        base.functions = programNode.functions?.map(f => this.serializeNode(f, visited)) || [];
+        if (programNode.mainBody) {
+          base.mainBody = this.serializeNode(programNode.mainBody, visited);
+        }
+        // Don't serialize children for PROGRAM - they're the same as globals + functions + mainBody
+        // This avoids duplication
+        break;
+      }
+      case NWScriptASTNodeType.FUNCTION: {
+        const funcNode = node as NWScriptFunctionNode;
+        base.name = funcNode.name;
+        base.returnType = funcNode.returnType;
+        base.parameters = funcNode.parameters?.map(p => {
+          const param: any = {
+            name: p.name,
+            type: p.type
+          };
+          // Include optional fields if they exist (from NWScriptFunctionAnalyzer)
+          if ('offset' in p && p.offset !== undefined) {
+            param.offset = p.offset;
+          }
+          if ('dataType' in p && p.dataType !== undefined) {
+            param.dataType = p.dataType;
+          }
+          return param;
+        }) || [];
+        base.locals = funcNode.locals?.map(l => this.serializeNode(l, visited)) || [];
+        base.body = funcNode.body ? this.serializeNode(funcNode.body, visited) : null;
+        base.entryBlockId = funcNode.entryBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.BLOCK: {
+        const blockNode = node as NWScriptBlockNode;
+        // Only serialize statements, not children (they're the same array)
+        // This avoids duplication in JSON output
+        base.statements = blockNode.statements?.map(s => this.serializeNode(s, visited)) || [];
+        // Don't serialize children for blocks - they're the same as statements
+        break;
+      }
+      case NWScriptASTNodeType.IF:
+      case NWScriptASTNodeType.IF_ELSE: {
+        const ifNode = node as NWScriptIfNode | NWScriptIfElseNode;
+        base.condition = this.serializeExpression(ifNode.condition);
+        base.thenBody = this.serializeNode(ifNode.thenBody, visited);
+        if (ifNode.elseBody) {
+          base.elseBody = this.serializeNode(ifNode.elseBody, visited);
+        }
+        base.headerBlockId = ifNode.headerBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.WHILE: {
+        const whileNode = node as NWScriptWhileNode;
+        base.condition = this.serializeExpression(whileNode.condition);
+        base.body = this.serializeNode(whileNode.body, visited);
+        base.headerBlockId = whileNode.headerBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.DO_WHILE: {
+        const doWhileNode = node as NWScriptDoWhileNode;
+        base.body = this.serializeNode(doWhileNode.body, visited);
+        base.condition = this.serializeExpression(doWhileNode.condition);
+        base.headerBlockId = doWhileNode.headerBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.FOR: {
+        const forNode = node as NWScriptForNode;
+        if (forNode.init) {
+          base.init = this.serializeNode(forNode.init, visited);
+        }
+        if (forNode.condition) {
+          base.condition = this.serializeExpression(forNode.condition);
+        }
+        if (forNode.increment) {
+          base.increment = this.serializeNode(forNode.increment, visited);
+        }
+        base.body = this.serializeNode(forNode.body, visited);
+        base.headerBlockId = forNode.headerBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.SWITCH: {
+        const switchNode = node as NWScriptSwitchNode;
+        base.expression = this.serializeExpression(switchNode.expression);
+        base.cases = switchNode.cases?.map(c => this.serializeNode(c, visited)) || [];
+        if (switchNode.defaultCase) {
+          base.defaultCase = this.serializeNode(switchNode.defaultCase, visited);
+        }
+        base.headerBlockId = switchNode.headerBlock?.id;
+        break;
+      }
+      case NWScriptASTNodeType.SWITCH_CASE: {
+        const caseNode = node as NWScriptSwitchCaseNode;
+        base.value = this.serializeExpression(caseNode.value);
+        base.body = this.serializeNode(caseNode.body, visited);
+        break;
+      }
+      case NWScriptASTNodeType.SWITCH_DEFAULT: {
+        const defaultNode = node as NWScriptSwitchDefaultNode;
+        base.body = this.serializeNode(defaultNode.body, visited);
+        break;
+      }
+      case NWScriptASTNodeType.EXPRESSION_STATEMENT: {
+        const exprStmtNode = node as NWScriptExpressionStatementNode;
+        base.expression = this.serializeExpression(exprStmtNode.expression);
+        break;
+      }
+      case NWScriptASTNodeType.ASSIGNMENT: {
+        const assignNode = node as NWScriptAssignmentNode;
+        base.variable = assignNode.variable;
+        base.isGlobal = assignNode.isGlobal;
+        base.value = this.serializeExpression(assignNode.value);
+        break;
+      }
+      case NWScriptASTNodeType.RETURN: {
+        const returnNode = node as NWScriptReturnNode;
+        if (returnNode.value) {
+          base.value = this.serializeExpression(returnNode.value);
+        }
+        break;
+      }
+      case NWScriptASTNodeType.VARIABLE_DECLARATION:
+      case NWScriptASTNodeType.GLOBAL_VARIABLE_DECLARATION: {
+        const varNode = node as NWScriptVariableDeclarationNode | NWScriptGlobalVariableDeclarationNode;
+        base.name = varNode.name;
+        base.dataType = varNode.dataType;
+        if (varNode.initializer) {
+          base.initializer = this.serializeExpression(varNode.initializer);
+        }
+        break;
+      }
+      // BREAK, CONTINUE, EMPTY have no additional properties
+    }
+
+    visited.delete(node);
+    return base;
+  }
+
+  /**
+   * Serialize an expression to JSON, handling potential circular references
+   */
+  private static serializeExpression(expr: any): any {
+    if (!expr) return null;
+    
+    // If it's already a plain object (from JSON), return as-is
+    if (typeof expr !== 'object' || expr === null) {
+      return expr;
+    }
+
+    // Handle NWScriptExpression objects
+    const serialized: any = {
+      type: expr.type,
+      dataType: expr.dataType
+    };
+
+    // Add properties based on expression type
+    switch (expr.type) {
+      case 'constant':
+        serialized.value = expr.value;
+        break;
+      case 'variable':
+        serialized.variableName = expr.variableName;
+        serialized.isGlobal = expr.isGlobal;
+        break;
+      case 'binary_op':
+      case 'comparison':
+      case 'logical':
+        serialized.operator = expr.operator;
+        if (expr.left) {
+          serialized.left = this.serializeExpression(expr.left);
+        }
+        if (expr.right) {
+          serialized.right = this.serializeExpression(expr.right);
+        }
+        break;
+      case 'unary_op':
+        serialized.operator = expr.operator;
+        if (expr.left) {
+          serialized.left = this.serializeExpression(expr.left);
+        }
+        break;
+      case 'function_call':
+        serialized.functionName = expr.functionName;
+        serialized.arguments = expr.arguments?.map((arg: any) => this.serializeExpression(arg)) || [];
+        break;
+    }
+
+    return serialized;
+  }
 }
 
