@@ -233,9 +233,6 @@ export class NWScriptControlNodeToASTConverter {
               // Create a temporary basic block node for just the pre-condition instructions
               // Actually, we should just process them directly using the same logic as convertBasicBlock
               
-              // Get variable tracking maps
-              const variableStackPositions = this.functionVariableStackPositions.get(functionContext) || new Map();
-              
               // Initialize if needed
               if (!this.functionVariableCounts.has(functionContext)) {
                 this.functionVariableCounts.set(functionContext, 0);
@@ -244,9 +241,16 @@ export class NWScriptControlNodeToASTConverter {
                 this.functionVariableStackPositions.set(functionContext, new Map());
               }
               
+              // Get the variable stack positions map for this function
+              const variableStackPositions = this.functionVariableStackPositions.get(functionContext)!;
+              
               const preConditionStatements: NWScriptASTNode[] = [];
               
               // Process each pre-condition instruction
+              // Update stack simulator's variable position map for stack-aware resolution
+              this.stackSimulator.setVariableStackPositions(variableStackPositions);
+              this.stackSimulator.setLocalVariableInits(this.localInits);
+              
               for (const instr of preConditionInstructions) {
                 // Track RSADD BEFORE processing
                 let isRsadd = false;
@@ -259,6 +263,9 @@ export class NWScriptControlNodeToASTConverter {
                   
                   variableStackPositions.set(stackPosBeforeRsadd, currentCount);
                   this.functionVariableCounts.set(functionContext, currentCount + 1);
+                  
+                  // Update the stack simulator's map after recording the new variable
+                  this.stackSimulator.setVariableStackPositions(variableStackPositions);
                   
                   // Process RSADD instruction
                   this.stackSimulator.processInstruction(instr);
@@ -431,6 +438,11 @@ export class NWScriptControlNodeToASTConverter {
     
     // Get the variable stack positions map for this function
     const variableStackPositions = this.functionVariableStackPositions.get(functionContext)!;
+    
+    // Update the stack simulator's variable position map for stack-aware CPTOPSP resolution
+    // This must be done at the start of each block to ensure accurate variable resolution
+    this.stackSimulator.setVariableStackPositions(variableStackPositions);
+    this.stackSimulator.setLocalVariableInits(this.localInits);
     
     console.log(`[Block] Processing block ${block.id} (${block.instructions.length} instructions), Function: ${functionContext?.name || 'main'}`);
     console.log(`[Block] Initial stack state - SP: ${this.stackSimulator.getStackPointer()}, Stack size: ${this.stackSimulator.getStackSize()}`);
@@ -616,14 +628,14 @@ export class NWScriptControlNodeToASTConverter {
       }
       
       // Check if CPTOPSP is reading from a local variable
-      // Note: The expression from stackSimulator should already have the correct variable name
-      // if the localVariables map is set up correctly. Variable reads are typically intermediate
-      // values that are part of larger expressions, so we don't need to create statements for them.
-      if (instruction.code === OP_CPTOPSP && expr) {
-        // CPTOPSP reads a variable and pushes it to the stack
-        // This is typically an intermediate value used in a larger expression
-        // We don't create a statement for it - it will be part of the expression that uses it
-        // Skip creating a statement for variable reads
+      // CPTOPSP reads a variable and pushes it to the stack
+      // The stack simulator now handles stack-aware variable resolution internally
+      // The variable position map is already updated at the start of the block
+      if (instruction.code === OP_CPTOPSP) {
+        // Process the instruction - it will resolve variables using stack-aware logic
+        this.stackSimulator.processInstruction(instruction);
+        
+        // Skip creating a statement for variable reads (they're intermediate values)
         continue;
       }
       

@@ -61,8 +61,22 @@ export class NWScriptStackSimulator {
   
   /**
    * Local variables (for mapping CPTOPSP offsets to local variable names)
+   * This is a static mapping based on heuristics - kept for backward compatibility
    */
   private localVariables: Map<number, { name: string, dataType: NWScriptDataType }> = new Map();
+  
+  /**
+   * Stack position to variable index mapping (for dynamic stack-aware variable resolution)
+   * Key: stack position (absolute), Value: variable index
+   * This is set by the converter and used for accurate CPTOPSP resolution
+   */
+  private variableStackPositions: Map<number, number> = new Map();
+  
+  /**
+   * Local variable initializations (for looking up variable info by index)
+   * Set by the converter to provide variable names and types
+   */
+  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }> = [];
 
   /**
    * Track stack state at each instruction address (for debugging/analysis)
@@ -427,19 +441,34 @@ export class NWScriptStackSimulator {
       }
     } else {
       // Local variable (CPTOPSP)
-      // Convert signed offset to unsigned for map lookup
+      // CRITICAL: CPTOPSP reads from stack[SP + offset] where SP is the CURRENT stack pointer
+      // We should resolve this dynamically using the actual stack state, not static offsets
       const offset = instruction.offset || 0;
-      const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+      const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
       
-      if (this.localVariables.has(offsetUnsigned)) {
-        // Use mapped local variable name
-        const localVar = this.localVariables.get(offsetUnsigned)!;
-        varName = localVar.name;
-        dataType = localVar.dataType;
+      // Calculate the actual stack position this instruction reads from
+      const sourceStackPos = this.stackPointer + offsetSigned;
+      
+      // First, try to resolve using the dynamic stack position map (stack-aware)
+      const varIndex = this.variableStackPositions.get(sourceStackPos);
+      if (varIndex !== undefined && this.localVariableInits[varIndex]) {
+        // Found variable using stack-aware resolution
+        const init = this.localVariableInits[varIndex];
+        varName = `localVar_${varIndex}`;
+        dataType = init.dataType;
       } else {
-        // Fallback to generated name
-        varName = this.generateVariableName(false, offset);
-        dataType = NWScriptDataType.INTEGER; // Default, could be improved
+        // Fallback to static offset-based mapping (for backward compatibility)
+        const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+        if (this.localVariables.has(offsetUnsigned)) {
+          // Use mapped local variable name from static mapping
+          const localVar = this.localVariables.get(offsetUnsigned)!;
+          varName = localVar.name;
+          dataType = localVar.dataType;
+        } else {
+          // Last resort: generate a generic name
+          varName = this.generateVariableName(false, offset);
+          dataType = NWScriptDataType.INTEGER; // Default, could be improved
+        }
       }
     }
     
@@ -745,6 +774,21 @@ export class NWScriptStackSimulator {
    */
   setLocalVariables(localVars: Map<number, { name: string, dataType: NWScriptDataType }>): void {
     this.localVariables = localVars;
+  }
+  
+  /**
+   * Set the stack position to variable index mapping for dynamic variable resolution
+   * This allows CPTOPSP to resolve variables based on actual stack state, not static offsets
+   */
+  setVariableStackPositions(positions: Map<number, number>): void {
+    this.variableStackPositions = positions;
+  }
+  
+  /**
+   * Set local variable initializations for variable info lookup
+   */
+  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }>): void {
+    this.localVariableInits = inits;
   }
 
   /**
