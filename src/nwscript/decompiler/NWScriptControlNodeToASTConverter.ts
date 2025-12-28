@@ -251,6 +251,11 @@ export class NWScriptControlNodeToASTConverter {
               this.stackSimulator.setVariableStackPositions(variableStackPositions);
               this.stackSimulator.setLocalVariableInits(this.localInits);
               
+              // Also update expression builder for consistency
+              this.expressionBuilder.setVariableStackPositions(variableStackPositions);
+              this.expressionBuilder.setLocalVariableInits(this.localInits);
+              this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
+              
               for (const instr of preConditionInstructions) {
                 // Track RSADD BEFORE processing
                 let isRsadd = false;
@@ -266,6 +271,8 @@ export class NWScriptControlNodeToASTConverter {
                   
                   // Update the stack simulator's map after recording the new variable
                   this.stackSimulator.setVariableStackPositions(variableStackPositions);
+                  this.expressionBuilder.setVariableStackPositions(variableStackPositions);
+                  this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
                   
                   // Process RSADD instruction
                   this.stackSimulator.processInstruction(instr);
@@ -444,6 +451,11 @@ export class NWScriptControlNodeToASTConverter {
     this.stackSimulator.setVariableStackPositions(variableStackPositions);
     this.stackSimulator.setLocalVariableInits(this.localInits);
     
+    // Also update expression builder for consistency (if it's used)
+    this.expressionBuilder.setVariableStackPositions(variableStackPositions);
+    this.expressionBuilder.setLocalVariableInits(this.localInits);
+    this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
+    
     console.log(`[Block] Processing block ${block.id} (${block.instructions.length} instructions), Function: ${functionContext?.name || 'main'}`);
     console.log(`[Block] Initial stack state - SP: ${this.stackSimulator.getStackPointer()}, Stack size: ${this.stackSimulator.getStackSize()}`);
     console.log(`[Block] Variable count: ${this.functionVariableCounts.get(functionContext) || 0}`);
@@ -477,6 +489,10 @@ export class NWScriptControlNodeToASTConverter {
         variableStackPositions.set(stackPosBeforeRsadd, currentCount);
         this.functionVariableCounts.set(functionContext, currentCount + 1);
         
+        // Update both simulators' variable position maps
+        this.stackSimulator.setVariableStackPositions(variableStackPositions);
+        this.expressionBuilder.setVariableStackPositions(variableStackPositions);
+        
         console.log(`[RSADD] Recorded variable ${currentCount} at stack position ${stackPosBeforeRsadd}`);
         console.log(`[RSADD] Variable stack positions map:`, Array.from(variableStackPositions.entries()).map(([pos, idx]) => `pos ${pos} -> var ${idx}`).join(', '));
       }
@@ -484,6 +500,9 @@ export class NWScriptControlNodeToASTConverter {
       // Process instruction through stack simulator
       // This ensures the stack state is correct when we check for return values
       const expr = this.stackSimulator.processInstruction(instruction);
+      
+      // Keep expression builder's stack pointer in sync after each instruction
+      this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
       
       // Skip creating statements for RSADD (it's just variable allocation)
       if (isRsadd) {
@@ -941,70 +960,28 @@ export class NWScriptControlNodeToASTConverter {
 
   /**
    * Setup function context for variable resolution
+   * 
+   * NOTE: CPTOPSP (variable reads) are now resolved using stack-aware resolution
+   * in NWScriptStackSimulator, which uses the actual stack state and variable
+   * position map. This method only sets up CPDOWNSP offsets (for writes) as
+   * a fallback, and provides variable info for the stack simulator.
    */
   private setupFunctionContext(func: NWScriptFunction): void {
     // Setup local variables for this function
-    // CRITICAL: The localVariables map in StackSimulator is keyed by CPTOPSP offset (unsigned)
-    // We need to map CPTOPSP offsets to variable names based on where variables live on the stack
-    // 
-    // CPTOPSP offsets are calculated based on the stack state:
-    // - Each variable allocation: RSADD -> CPDOWNSP -8 -> MOVSP -4
-    // - After n variables, SP has moved down by n*4 bytes
-    // - CPTOPSP offsets for reading: -8 - (numVars - i - 1)*4
-    //   For 3 vars: -12, -4, -8 (for vars 0, 1, 2)
+    // We only need to map CPDOWNSP offsets (for writes) - CPTOPSP uses stack-aware resolution
     const localVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
-    
-    const numVars = this.localInits.length;
     
     for (let i = 0; i < this.localInits.length; i++) {
       const init = this.localInits[i];
       const varName = `localVar_${i}`;
       
-      // Map by the CPDOWNSP offset (for writes) - convert to unsigned
+      // Map by the CPDOWNSP offset (for writes) - this is static and known from the analyzer
       const cpdownspOffset = init.offset;
-      const cpdownspOffsetUnsigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
       localVarMap.set(cpdownspOffset, { name: varName, dataType: init.dataType });
-      
-      // Calculate CPTOPSP offset based on variable index and total count
-      // After variable i is allocated, SP has moved down by (i+1)*4 bytes
-      // When reading variable i, CPTOPSP offset = -8 - (numVars - i - 1)*4
-      let cptopspOffset: number;
-      if (numVars === 3) {
-        // Common pattern: -12, -4, -8
-        const offsets = [0xFFFFFFF4, 0xFFFFFFFC, 0xFFFFFFF8]; // -12, -4, -8
-        cptopspOffset = offsets[i];
-      } else if (numVars === 2) {
-        // Pattern: -8, -4
-        const offsets = [0xFFFFFFF8, 0xFFFFFFFC]; // -8, -4
-        cptopspOffset = offsets[i];
-      } else if (numVars === 4) {
-        // Pattern: -16, -12, -4, -8
-        const offsets = [0xFFFFFFF0, 0xFFFFFFF4, 0xFFFFFFFC, 0xFFFFFFF8]; // -16, -12, -4, -8
-        cptopspOffset = offsets[i];
-      } else {
-        // General case: calculate based on stack movement
-        // After i variables, SP moved down by i*4
-        // CPTOPSP offset = -8 - (numVars - i - 1)*4
-        const offsetSigned = -8 - (numVars - i - 1) * 4;
-        cptopspOffset = offsetSigned < 0 ? offsetSigned + 0x100000000 : offsetSigned;
-      }
-      
-      // Map CPTOPSP offset (unsigned) to variable name
-      localVarMap.set(cptopspOffset, { name: varName, dataType: init.dataType });
-      
-      // Also map common alternative offsets that might be used
-      // Sometimes the compiler uses slightly different offsets
-      const alternativeOffsets = [
-        0xFFFFFFFC, // -4
-        0xFFFFFFF8, // -8
-        0xFFFFFFF4, // -12
-        0xFFFFFFF0, // -16
-      ];
-      if (i < alternativeOffsets.length) {
-        localVarMap.set(alternativeOffsets[i], { name: varName, dataType: init.dataType });
-      }
     }
     
+    // Set local variables in both builders (for backward compatibility and CPDOWNSP writes)
+    // The stack simulator will use stack-aware resolution for CPTOPSP reads
     this.expressionBuilder.setLocalVariables(localVarMap);
     this.stackSimulator.setLocalVariables(localVarMap);
     
