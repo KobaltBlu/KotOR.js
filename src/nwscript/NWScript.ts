@@ -14,7 +14,6 @@ import {
 } from './NWScriptOPCodes';
 
 import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
-import type { ModuleObject } from "../module/ModuleObject";
 import { GameState } from "../GameState";
 import { GameEngineType } from "../enums/engine/GameEngineType";
 import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
@@ -32,38 +31,56 @@ import { NWScriptDefK1 } from "./NWScriptDefK1";
  */
 export class NWScript {
 
+  /**
+   * Holds references the loaded NWScripts that are stored in memory
+   */
+  static scripts: Map<string, NWScript> = new Map();
+
+  /**
+   * Class references to the NWScriptInstance, NWScriptStack, and NWScriptInstanceMap
+   */
   static NWScriptInstance: typeof NWScriptInstance = NWScriptInstance;
   static NWScriptStack: typeof NWScriptStack = NWScriptStack;
   static NWScriptInstanceMap: Map<string, NWScriptInstance> = new Map();
 
+  /**
+   * Maps the action numbers to the action definitions
+   */
   actionsMap: { [key: number]: INWScriptDefAction; };
   
+  /**
+   * The name of the script
+   */
   name: string;
 
   instrIdx: number;
   lastOffset: number;
   instances: NWScriptInstance[];
   instanceUUIDMap: Map<string, NWScriptInstance> = new Map();
-  global: boolean;
-  stack: NWScriptStack;
-  state: any[];
-  params: number[];
-  paramString: string;
-  verified: boolean;
-  prevByteCode: number;
+  global: boolean = false;
+  verified: boolean = false;
   instructions: Map<number, NWScriptInstruction>;
-  eofFound: boolean;
-  prog: number;
-  progSize: number;
-  code: Uint8Array;
-  owner: ModuleObject;
+  
+  /**
+   * The program type of the script
+   * 
+   * should always be OP_T (0x42)
+   */
+  prog: number = OP_T;
+  
+  /**
+   * The size of the program
+   */
+  progSize: number = 0;
+  
+  /**
+   * The code of the script
+   */
+  code: Uint8Array = new Uint8Array();
 
   constructor ( dataOrFile?: string|Uint8Array ){
-    if(GameState.GameKey == GameEngineType.TSL){
-      this.actionsMap = NWScriptDefK2.Actions;
-    }else{
-      this.actionsMap = NWScriptDefK1.Actions;
-    }
+    this.actionsMap = (GameState.GameKey == GameEngineType.TSL) ? 
+      NWScriptDefK2.Actions : NWScriptDefK1.Actions;
 
     this.instrIdx = 0;
     this.lastOffset = -1;
@@ -71,11 +88,8 @@ export class NWScript {
     this.instances = [];
     this.global = false;
 
-    this.stack = new NWScriptStack();
     this.name = '';
-
-    this.params = [0, 0, 0, 0, 0];
-    this.paramString = '';
+    
     this.verified = false;
 
     if( !dataOrFile ) {
@@ -92,13 +106,14 @@ export class NWScript {
         this.init(dataOrFile);
       }
     }
-
-  }
-  
-  decompile(binary: Uint8Array) {
-    throw new Error("Method not implemented.");
   }
 
+  /**
+   * Verify the NCS header
+   * 
+   * @param {BinaryReader} reader
+   * @returns {boolean}
+   */
   verifyNCS (reader: BinaryReader){
     reader.seek(0);
     if(this.verified || reader.readChars(8) == 'NCS V1.0')
@@ -107,31 +122,36 @@ export class NWScript {
     return false;
   }
 
+  /**
+   * Initialize the script
+   * 
+   * @param {Uint8Array} data
+   * @param {number} progSize - The size of the program, will only be provided if the script is a ScriptSituation
+   */
   init (data: Uint8Array, progSize?: number){
-    this.prevByteCode = 0;
     this.instructions = new Map();
     let reader = new BinaryReader(data, Endians.BIG);
 
-    this.eofFound = false;
-
     if(!progSize){
+
       reader.skip(8);
       this.prog = reader.readByte();
+      if(this.prog != OP_T){
+        throw new Error(`Invalid program type, expected OP_T (0x42) but got ${this.prog}`);
+      }
       //This includes the initial 8Bytes of the NCS V1.0 header and the previous byte
-      this.progSize = reader.readUInt32(); 
-      
+      this.progSize = reader.readUInt32();
+      reader = reader.slice(13, this.progSize);
+
       //Store a copy of the code for exporting ScriptSituations
-      this.code = data.slice( 13, this.progSize );
+      this.code = reader.buffer;
       this.progSize = this.code.length;
-      
-      reader = new BinaryReader(this.code, Endians.BIG);
     }else{
       //Store a copy of the code for exporting ScriptSituations
+      this.prog = OP_T
       this.code = data;
       this.progSize = progSize;
     }
-
-    //PASS 1: Create a listing of all of the instructions in order as they occur
 
     this.lastOffset = -1;
     while ( reader.position < this.progSize ){
@@ -139,11 +159,15 @@ export class NWScript {
     };
     
     reader.position = 0;
-
+    reader = null;
   }
 
+  /**
+   * Parse an instruction from the binary data
+   * 
+   * @param {BinaryReader} reader
+   */
   parseIntruction( reader: BinaryReader ) {
-
     const instructionAddress = reader.position;
     const opCode = reader.readByte();
     const opType = opCode != OP_T ? reader.readByte() : reader.readInt32();
@@ -208,12 +232,6 @@ export class NWScript {
       case OP_INCIBP:
         instruction.offset = reader.readInt32();
       break;
-      case OP_RETN:
-        if(!this.eofFound){
-          instruction.eof = true;
-          this.eofFound = true;
-        }
-      break;
       case OP_DESTRUCT:
         instruction.sizeToDestroy = reader.readInt16();
         instruction.offsetToSaveElement = reader.readInt16();
@@ -249,28 +267,29 @@ export class NWScript {
     this.lastOffset = instruction.address;
   }
 
+  /**
+   * Clone the script
+   * 
+   * @returns {NWScript}
+   */
   clone(){
-    let script = new NWScript();
+    const script = new NWScript();
     script.name = this.name;
-    //script.Definition = this.Definition;
     script.instructions = new Map(this.instructions);
     return script;
   }
 
-  //newInstance
-  //When loading a new script always return a NWScriptInstance which will share large data from the parent NWScript
-  //like the instruction array, but will have it's own NWScriptStack
-  //This whould reduse memory overhead because only one instance of the large data is created per script
+  /**
+   * Create a new instance of the script
+   * 
+   * When loading a new script always return a NWScriptInstance which will share large data from the parent NWScript
+   * like the instruction array, but will have it's own NWScriptStack
+   * This whould reduse memory overhead because only one instance of the large data is created per script
+   */
   newInstance(parentInstance?: NWScriptInstance){
-
-    let instance = new NWScriptInstance(
-      this.instructions
-    );
-
+    const instance = new NWScriptInstance(this.instructions);
     instance.name = this.name;
-
     instance.nwscript = this;
-
 
     //Add the new instance to the instances array
     this.instances.push(instance);
@@ -293,44 +312,65 @@ export class NWScript {
     return instance;
   }
 
+  /**
+   * Set a script as global or not
+   */
   static SetGlobalScript( scriptName = '', isGlobal = true ){
-    if( NWScript.scripts.has( scriptName ) ){
-      let script = NWScript.scripts.get( scriptName );
-      script.global = isGlobal;
+    if( !scriptName || !NWScript.scripts.has( scriptName ) ){
+      return;
     }
+
+    const script = NWScript.scripts.get( scriptName );
+    script.global = isGlobal;
   }
 
+  /**
+   * Load a script from the game resources into memory and return an instance of the script
+   */
   static Load( scriptName = '', returnInstance = true, parentInstance?: NWScriptInstance ): NWScriptInstance {
-    if( NWScript.scripts.has( scriptName ) ){
-      let script = NWScript.scripts.get( scriptName );
-      //Create a new instance of the script and return it
-      return script.newInstance(parentInstance)
-    }else{
-      if(scriptName){
-        //Fetch the script from the game resource list
-        const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ncs'], scriptName);
-        if(buffer){
-          //Pass the buffer to a new script object
-          let script = new NWScript( buffer );
-          script.name = scriptName;
-          //Store a refernece to the script object inside the static "scripts" variable
-          NWScript.scripts.set( scriptName, script );
-
-          //Create a new instance of the script and return it
-          if(returnInstance){
-            return script.newInstance(parentInstance);
-          }else{
-            return undefined;
-          }
-        }else{
-          return undefined;
-        }
-      }else{
-        return undefined;
-      }
+    //If the script name is empty, return undefined
+    if(!scriptName){ 
+      return undefined; 
     }
+
+    //If the script is already loaded, create a new instance and return it
+    if( NWScript.scripts.has( scriptName ) ){
+      const script = NWScript.scripts.get( scriptName );
+      return script.newInstance(parentInstance)
+    }
+
+    //Fetch the script from the game resource list
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ncs'], scriptName);
+    if(!buffer){ 
+      return undefined;
+    }
+    
+    //Pass the buffer to a new script object
+    const script = new NWScript( buffer );
+    script.name = scriptName;
+    //Store a refernece to the script object inside the static "scripts" variable
+    NWScript.scripts.set( scriptName, script );
+
+    //Create a new instance of the script and return it
+    return returnInstance ? script.newInstance(parentInstance) : undefined;
   }
 
+  /**
+   * Reload all scripts
+   */
+  static Reload(){
+    NWScript.scripts.forEach( (script, key) => {
+      //Only dispose of non global scripts
+      //global scripts would be like the ones attached to Game Menus
+      if(script.global){  return; }
+      script.disposeInstances();
+      NWScript.scripts.delete(key);
+    });
+  }
+
+  /**
+   * Dispose of an instance of the script
+   */
   disposeInstance( instance: NWScriptInstance ){
     if(instance instanceof NWScriptInstance){
       let idx = this.instances.indexOf(instance);
@@ -341,6 +381,9 @@ export class NWScript {
     }
   }
 
+  /**
+   * Dispose of all instances of the script
+   */
   disposeInstances(){
     let i = this.instances.length;
     while(i--){
@@ -350,21 +393,30 @@ export class NWScript {
       }
     }
   }
-
-  static Reload(){
-    NWScript.scripts.forEach( (script,key,map) => {
-      //Only dispose of non global scripts
-      //global scripts would be like the ones attached to Game Menus
-      if(!script.global){
-        script.disposeInstances();
-        NWScript.scripts.delete(key);
-      }
-    });
+  
+  /**
+   * Decompile the script
+   * 
+   * @param {Uint8Array} binary
+   * @returns {string}
+   */
+  decompile(binary: Uint8Array): string {
+    throw new Error("Method not implemented.");
   }
 
-  static scripts: Map<string, NWScript> = new Map();
+  /**
+   * Convert the script to assembly text format
+   * Output format similar to disassembler output
+   */
+  toAssembly(): string {
+    if (!this.instructions || this.instructions.size === 0) {
+      return '';
+    }
+
+    const sortedInstructions = Array.from(this.instructions.values())
+      .sort((a, b) => a.address - b.address);
+      
+    return sortedInstructions.map(instr => instr.toAssemblyString()).join('\n');
+  }
 
 }
-
-//Holds references the the NWScripts that are stored in memory
-NWScript.scripts = new Map();

@@ -17,6 +17,7 @@ import {
   CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
   CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
 } from './NWScriptInstructionSet';
+import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 
 const OP_CALL_MAP: Map<number, ( this: NWScriptInstance, instruction: NWScriptInstruction ) => void> = new Map([
   [OP_CPDOWNSP, CALL_CPDOWNSP],
@@ -110,11 +111,6 @@ export class NWScriptInstruction {
    * The name of the instruction
    */
   codeName: string;
-
-  /**
-   * Whether the instruction is the end of the script file
-   */
-  eof: boolean = false;
   
   /**
    * Whether the instruction is an argument for an action (Unused in KotOR JS)
@@ -257,16 +253,198 @@ export class NWScriptInstruction {
   }
 
   /**
+   * Convert integer to hex bytes (big-endian)
+   */
+  private intToHexBytes(value: number, byteCount: number): string {
+    const bytes: string[] = [];
+    for (let i = byteCount - 1; i >= 0; i--) {
+      const byte = (value >>> (i * 8)) & 0xFF;
+      bytes.push(this.intToHex(byte, 2));
+    }
+    return bytes.join('');
+  }
+
+  /**
    * Convert a number to a hexadecimal string
    * @param number - The number to convert
    * @param min_length - The minimum length of the hexadecimal string
    * @returns The hexadecimal string
    */
-  intToHex( number = 0, min_length = 1 ){
-    let hex = (number).toString(16);
-    let hex_length = hex.length < min_length ? min_length : hex.length;
-    let hex_pad = (new Array(hex_length)).fill('0').join('');
-    return (hex_pad + hex).substr(-hex_length);
+  private intToHex(value: number, minLength: number): string {
+    let hex = value.toString(16).toUpperCase();
+    if (value < 0) {
+      // Handle negative numbers as two's complement
+      hex = (0x100000000 + value).toString(16).toUpperCase();
+    }
+    return hex.padStart(minLength, '0');
+  }
+
+  /**
+   * Convert float to int32 representation (for hex display)
+   */
+  private floatToInt32(float: number): number {
+    const buffer = new ArrayBuffer(4);
+    const view = new DataView(buffer);
+    view.setFloat32(0, float, false); // big-endian
+    return view.getInt32(0, false);
+  }
+
+  toAssemblyString(): string {
+    const address = this.intToHex(this.address, 8).toUpperCase();
+    const codeHex = this.code_hex.toUpperCase();
+    const typeHex = this.type_hex.toUpperCase();
+    
+    // Build byte representation
+    const bytes: string[] = [codeHex];
+    
+    // Add type byte (unless OP_T which uses 4-byte type)
+    if (this.code !== OP_T) {
+      bytes.push(typeHex);
+    } else {
+      // OP_T uses 4-byte type
+      const typeBytes = this.intToHexBytes(this.type, 4);
+      bytes.push(typeBytes);
+    }
+
+    // Add operand bytes based on instruction type
+    let operandStr = '';
+    
+    switch (this.code) {
+      case OP_CONST:
+        switch (this.type) {
+          case 3: // INTEGER
+            bytes.push(this.intToHexBytes(this.integer, 4));
+            operandStr = this.intToHex(this.integer, 8);
+            break;
+          case 4: // FLOAT
+            // Float is 4 bytes, but we'll show it as hex
+            bytes.push(this.intToHexBytes(this.floatToInt32(this.float), 4));
+            operandStr = this.float.toString();
+            break;
+          case 5: // STRING
+            const strLen = this.string ? this.string.length : 0;
+            bytes.push(this.intToHexBytes(strLen, 2));
+            bytes.push('str');
+            operandStr = `"${this.string || ''}"`;
+            break;
+          case 6: // OBJECT
+            bytes.push(this.intToHexBytes(this.object, 4));
+            operandStr = this.intToHex(this.object, 8);
+            break;
+        }
+        break;
+      
+      case OP_ACTION:
+        bytes.push(this.intToHexBytes(this.action, 2));
+        bytes.push(this.intToHex(this.argCount, 2));
+        const actionName = this.actionDefinition?.name || `Action_${this.intToHex(this.action, 4)}`;
+        operandStr = `${actionName}(${this.intToHex(this.action, 4)}), ${this.intToHex(this.argCount, 2)}`;
+        break;
+      
+      case OP_JSR:
+      case OP_JMP:
+      case OP_JZ:
+      case OP_JNZ:
+      case OP_MOVSP:
+      case OP_DECISP:
+      case OP_INCISP:
+      case OP_DECIBP:
+      case OP_INCIBP:
+        if (this.offset !== undefined) {
+          bytes.push(this.intToHexBytes(this.offset, 4));
+          // Calculate target address: base address + offset, then apply same shift as display address
+          const targetAddr = this.address + this.offset;
+          // Apply same shift: header offset + OP_T size
+          const targetHex = this.intToHex(targetAddr, 8);
+          if (this.code === OP_JSR) {
+            operandStr = `fn_${targetHex}`;
+          } else {
+            operandStr = `off_${targetHex}`;
+          }
+        }
+        break;
+      
+      case OP_CPDOWNSP:
+      case OP_CPTOPSP:
+        if (this.offset !== undefined && this.size !== undefined) {
+          bytes.push(this.intToHexBytes(this.offset, 4));
+          bytes.push(this.intToHexBytes(this.size, 2));
+          operandStr = `${this.intToHex(this.offset, 8)}, ${this.intToHex(this.size, 4)}`;
+        }
+        break;
+      
+      case OP_CPDOWNBP:
+      case OP_CPTOPBP:
+        if (this.offset !== undefined && this.size !== undefined) {
+          bytes.push(this.intToHexBytes(this.offset, 4));
+          bytes.push(this.intToHexBytes(this.size, 2));
+          operandStr = `${this.intToHex(this.offset, 8)}, ${this.intToHex(this.size, 4)}`;
+        }
+        break;
+      
+      case OP_DESTRUCT:
+        if (this.sizeToDestroy !== undefined && 
+            this.offsetToSaveElement !== undefined && 
+            this.sizeOfElementToSave !== undefined) {
+          bytes.push(this.intToHexBytes(this.sizeToDestroy, 2));
+          bytes.push(this.intToHexBytes(this.offsetToSaveElement, 2));
+          bytes.push(this.intToHexBytes(this.sizeOfElementToSave, 2));
+          operandStr = `${this.intToHex(this.sizeToDestroy, 4)}, ${this.intToHex(this.offsetToSaveElement, 4)}, ${this.intToHex(this.sizeOfElementToSave, 4)}`;
+        }
+        break;
+      
+      case OP_STORE_STATE:
+        if (this.bpOffset !== undefined && this.spOffset !== undefined) {
+          bytes.push(this.intToHexBytes(this.bpOffset, 4));
+          bytes.push(this.intToHexBytes(this.spOffset, 4));
+          operandStr = `${this.intToHex(this.bpOffset, 8)}, ${this.intToHex(this.spOffset, 8)}`;
+        }
+        break;
+      
+      case OP_EQUAL:
+      case OP_NEQUAL:
+        if (this.type === NWScriptDataType.STRUCTURE && this.sizeOfStructure !== undefined) {
+          bytes.push(this.intToHexBytes(this.sizeOfStructure, 2));
+          operandStr = this.intToHex(this.sizeOfStructure, 4);
+        }
+        break;
+      
+      case OP_T:
+        // Type is already included as 4 bytes above
+        operandStr = this.intToHex(this.type, 8);
+        break;
+      
+      default:
+        // No operand for default case
+        break;
+    }
+
+    // Get instruction name (may need type suffix)
+    let instrName = this.codeName || `OP_${this.code}`;
+    
+    // Some instructions have type-specific names
+    if (this.code === OP_RSADD) {
+      switch (this.type) {
+        case 3: instrName = 'RSADDI'; break;
+        case 4: instrName = 'RSADDF'; break;
+        case 5: instrName = 'RSADDS'; break;
+        case 6: instrName = 'RSADDO'; break;
+        default: instrName = 'RSADD'; break;
+      }
+    } else if (this.code === OP_CONST) {
+      switch (this.type) {
+        case 3: instrName = 'CONSTI'; break;
+        case 4: instrName = 'CONSTF'; break;
+        case 5: instrName = 'CONSTS'; break;
+        case 6: instrName = 'CONSTO'; break;
+        default: instrName = 'CONST'; break;
+      }
+    }
+
+    // Format the line: address bytes instruction operand
+    const bytesStr = bytes.join(' ').padEnd(24);
+    const line = `${address} ${bytesStr} ${instrName}${operandStr ? ' ' + operandStr : ''}`;
+    return line;
   }
 
 }

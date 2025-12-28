@@ -905,7 +905,6 @@ export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptIn
 export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
   if(!this.subRoutines.length){
     this.subRoutine = undefined;
-    instruction.eof = true;
     this.running = false;
     return;
   }
@@ -917,7 +916,6 @@ export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScript
 
   if(subRoutine.returnAddress == -1){
     this.seek = null;
-    instruction.eof = true;
   }else{
     this.seek = subRoutine.returnAddress;
   }
