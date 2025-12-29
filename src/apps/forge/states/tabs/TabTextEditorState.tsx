@@ -228,7 +228,12 @@ export class TabTextEditorState extends TabState {
 
   async compile(): Promise<void> {
     console.log('compile', 'parsing...');
-    ForgeState.nwScriptParser.parseScript(this.code);
+
+    // Resolve #include files and prepend them before parsing to mirror NWScript behavior
+    this.resolvedIncludes = await this.resolveIncludes(this.code, this.resolvedIncludes);
+    const mergedCode = [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n");
+
+    ForgeState.nwScriptParser.parseScript(mergedCode);
     if(!ForgeState.nwScriptParser.errors.length){
       const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.ast);
       console.log('compile', 'compiling...');
