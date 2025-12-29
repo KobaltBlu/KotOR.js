@@ -8,6 +8,7 @@ const NWCompileDataTypes: Record<string, number> = {
   float: 0x04,
   string: 0x05,
   object: 0x06,
+  struct: 0x12,
   vector: 0x0A, // you use 'V' elsewhere; parser just needs unary to exist
   action: 0x0E,
 };
@@ -91,7 +92,7 @@ export class NWScriptHandParser {
 
     if (this.is("keyword", "DEFINE")) return this.parseDefine();
     if (this.is("keyword", "INCLUDE")) return this.parseInclude();
-    if (this.is("keyword", "STRUCT")) return this.parseStructDecl();
+    if (this.is("keyword", "STRUCT")) return this.parseStructDeclOrVar();
     return this.parseDeclOrStatement();
   }
 
@@ -176,34 +177,43 @@ export class NWScriptHandParser {
     return { type: "include", value: target };
   }
 
-  private parseStructDecl(): any {
+  private parseStructDeclOrVar(): any {
     const kw = this.expect("keyword", "STRUCT");
     const nameTok = this.expect("name");
-    this.expect("punct", "{");
 
-    const properties: any[] = [];
-    while (!this.is("punct", "}")) {
-      // datatype name ;
-      const propType = this.mustParseDataType();
-      const propNameTok = this.expectNameToken();
-      this.expect("punct", ";");
-      properties.push({
-        type: "property",
-        datatype: propType,
-        name: propNameTok.value,
-        source: propNameTok.source,
-      });
+    // Struct definition
+    if (this.is("punct", "{")) {
+      this.next(); // consume '{'
+
+      const properties: any[] = [];
+      while (!this.is("punct", "}")) {
+        // datatype name ;
+        const propType = this.mustParseDataType();
+        const propNameTok = this.expectNameToken();
+        this.expect("punct", ";");
+        properties.push({
+          type: "property",
+          datatype: propType,
+          name: propNameTok.value,
+          source: propNameTok.source,
+        });
+      }
+      this.expect("punct", "}");
+      // optional ;
+      if (this.is("punct", ";")) this.next();
+
+      return {
+        type: "struct",
+        name: nameTok.value,
+        properties,
+        source: kw.source,
+      };
     }
-    this.expect("punct", "}");
-    // optional ;
-    if (this.is("punct", ";")) this.next();
 
-    return {
-      type: "struct",
-      name: nameTok.value,
-      properties,
-      source: kw.source,
-    };
+    // Struct-typed variable declaration: struct Name var1, var2;
+    const structDatatype = { type: "datatype", value: nameTok.value, unary: NWCompileDataTypes.struct, struct: nameTok.value };
+    const firstVarName = this.expectNameToken();
+    return this.finishVariableDecl(false, structDatatype, firstVarName.value, firstVarName);
   }
 
   private finishFunctionDecl(isConst: boolean, returntype: any, name: string, nameTok: Token): any {
