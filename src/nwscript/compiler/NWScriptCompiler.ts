@@ -481,7 +481,7 @@ export class NWScriptCompiler {
         default:        return 4;
       }
     }
-    throw 'Invalid datatype object';
+    throw 'Invalid datatype object ' + datatype;
   }
 
   getStatementDataTypeSize( statement: any ){
@@ -490,6 +490,8 @@ export class NWScriptCompiler {
       if(statement.returntype) return this.getDataTypeStackLength(statement.returntype);
       if(statement.function_reference) return this.getDataTypeStackLength(statement.function_reference.returntype);
     }
+    console.error('getStatementDataTypeSize');
+    console.log(statement);
     throw 'Invalid statement object';
   }
 
@@ -1217,8 +1219,8 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'if'){
-      // Build chain and drop any null/undefined entries to avoid null.condition access
-      const ifelses: any[] = ([] as any[]).concat([statement], statement.else || []).filter(Boolean);
+      // Build chain: if + elseIfs + else, drop any null/undefined
+      const ifelses: any[] = ([] as any[]).concat([statement], statement.elseIfs || [], statement.else || []).filter(Boolean);
       console.log('ifelses', ifelses);
 
       for(let i = 0; i < ifelses.length; i++){

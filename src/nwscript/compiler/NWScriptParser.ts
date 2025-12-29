@@ -415,7 +415,7 @@ export class NWScriptParser {
         }
 
       }else if(object.type == 'function'){
-
+        console.log('function', object);
         if(this.scope.is_global){
           if(!object.defined || !this.isNameInUse(object.name)){
             object.called = false;
@@ -665,6 +665,15 @@ export class NWScriptParser {
         for(let i = 0; i < conds.length; i++){
           this.walkASTStatement(conds[i]);
         } 
+
+        const elseIfs = Array.isArray(object.elseIfs) ? object.elseIfs : (object.elseIfs ? [object.elseIfs] : []);
+        for(let i = 0; i < elseIfs.length; i++){
+          this.walkASTStatement(elseIfs[i]);
+        }
+
+        if(object.else){
+          this.walkASTStatement(object.else);
+        }
 
         this.scope = new NWScriptScope(this.program);
         this.scopes.push(this.scope);
@@ -1004,6 +1013,7 @@ class NWScriptScope {
   }
 
   getVariable(name = ''){
+    console.log('getVariable', name, this.variables.slice(0), this.constants.slice(0));
     return this.variables.find( v => v.name == name ) || this.constants.find( v => v.name == name );
   }
 
