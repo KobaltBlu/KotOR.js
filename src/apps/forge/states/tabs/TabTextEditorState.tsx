@@ -6,12 +6,12 @@ import { EditorFile } from "../../EditorFile";
 import { EditorTabManager } from "../../managers/EditorTabManager";
 import { ForgeState } from "../ForgeState";
 // import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
-import { NWScriptParser } from "../../../../nwscript/NWScriptParser";
+import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
 import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from ".";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
 import * as KotOR from "../../KotOR";
-import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
+import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
 
 export class TabTextEditorState extends TabState {
 

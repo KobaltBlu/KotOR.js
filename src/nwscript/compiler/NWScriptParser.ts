@@ -1,4 +1,4 @@
-import { NWScriptHandParser } from "./compiler/NWScriptHandParser";
+import { NWScriptHandParser } from "./NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;

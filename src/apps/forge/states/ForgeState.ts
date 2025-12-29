@@ -10,7 +10,7 @@ import { pathParse } from "../helpers/PathParse";
 import { FileTypeManager } from "../FileTypeManager";
 import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import { TabStoreState } from "../interfaces/TabStoreState";
-import { NWScriptParser } from "../../../nwscript/NWScriptParser";
+import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
 import { ModalManagerState } from "./modal/ModalManagerState";
 import { MenuTopState } from "./MenuTopState";
 
