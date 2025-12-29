@@ -809,7 +809,11 @@ export class NWScriptCompiler {
     block.block_start_jmp = this.scope.bytes_written;
 
     for(let i = 0; i < block.statements.length; i++){
-      buffers.push( this.compileStatement( block.statements[i] ) as Uint8Array );
+      const stmt = block.statements[i];
+      if(stmt && typeof stmt === 'object'){
+        stmt.statement_context = 'statement';
+      }
+      buffers.push( this.compileStatement( stmt ) as Uint8Array );
     }
 
     block.postStatementsStackPointer = this.stackPointer;
@@ -905,6 +909,12 @@ export class NWScriptCompiler {
         buffers.push( this.writeJSR(jsrOffset) );
         this.stackPointer -= argumentsDataSize;
       }
+
+      // If this call returns a value but is used as a stand-alone statement, drop it now
+      const retSize = this.getDataTypeStackLength(statement.function_reference.returntype);
+      if(retSize && statement.statement_context === 'statement'){
+        buffers.push( this.writeMOVSP( -retSize ) );
+      }
     }
     
     return concatBuffers(buffers);
@@ -918,7 +928,11 @@ export class NWScriptCompiler {
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
+        const stmt = statement.statements[i];
+        if(stmt && typeof stmt === 'object'){
+          stmt.statement_context = 'statement';
+        }
+        buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -1296,7 +1310,11 @@ export class NWScriptCompiler {
 
       statement.statements_start = this.scope.bytes_written;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
+        const stmt = statement.statements[i];
+        if(stmt && typeof stmt === 'object'){
+          stmt.statement_context = 'statement';
+        }
+        buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
 
       const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
@@ -1364,7 +1382,11 @@ export class NWScriptCompiler {
 
       //Compile the block statements
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
+        const stmt = statement.statements[i];
+        if(stmt && typeof stmt === 'object'){
+          stmt.statement_context = 'statement';
+        }
+        buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
 
       //Get stack elements that should be removed from this scope
@@ -1400,6 +1422,9 @@ export class NWScriptCompiler {
       //Begin initializer
       statement.initializer_start = this.scope.bytes_written;
 
+      if(statement.initializer && typeof statement.initializer === 'object'){
+        statement.initializer.statement_context = 'statement';
+      }
       buffers.push( this.compileStatement( statement.initializer ) as Uint8Array );
 
       statement.initializer_end = this.scope.bytes_written;
@@ -1431,7 +1456,11 @@ export class NWScriptCompiler {
 
       statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
-        buffers.push( this.compileStatement( statement.statements[i] ) as Uint8Array );
+        const stmt = statement.statements[i];
+        if(stmt && typeof stmt === 'object'){
+          stmt.statement_context = 'statement';
+        }
+        buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
       const stackOffset = this.stackPointer - statement.preStatementsSPCache;
       if(stackOffset) buffers.push( this.writeMOVSP( -stackOffset ) );
@@ -1444,6 +1473,9 @@ export class NWScriptCompiler {
       //Begin incrementor
       statement.incrementor_start = this.scope.bytes_written;
 
+      if(statement.incrementor && typeof statement.incrementor === 'object'){
+        statement.incrementor.statement_context = 'statement';
+      }
       buffers.push( this.compileStatement( statement.incrementor ) as Uint8Array );
 
       statement.incrementor_end = this.scope.bytes_written;
