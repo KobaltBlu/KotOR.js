@@ -1,42 +1,32 @@
-import * as Jison from "jison";
-import { grammar } from "./AST/nwscript.jison";
+import { NWScriptHandParser } from "./compiler/NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
 
 const NWCompileDataTypes: any = {
-  'I' : 0x03,
-  'F' : 0x04,
-  'S' : 0x05,
-  'O' : 0x06,
-  'STRUCT': 0x12,
-  'II': 0x20,
-  'FF': 0x21,
-  'OO': 0x22,
-  'SS': 0x23,
-  'TT': 0x24,
-  'IF': 0x25,
-  'FI': 0x26,
+  I: 0x03,
+  F: 0x04,
+  S: 0x05,
+  O: 0x06,
+  STRUCT: 0x12,
 
-  'VV': 0x3A,
-  'VF': 0x3B,
-  'FV': 0x3C,
+  II: 0x20,
+  FF: 0x21,
+  OO: 0x22,
+  SS: 0x23,
+  TT: 0x24,
+  IF: 0x25,
+  FI: 0x26,
+
+  VV: 0x3A,
+  VF: 0x3B,
+  FV: 0x3C,
 };
 
-/**
- * NWScriptParser class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file NWScriptParser.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
- */
 export class NWScriptParser {
-
   ast: any = null;
   regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
-  
+
   engine_types: any[] = [];
   engine_constants: any[] = [];
   engine_actions: any[] = [];
@@ -45,91 +35,92 @@ export class NWScriptParser {
   local_functions: any[] = [];
   errors: any[] = [];
   script: any;
-  grammar: any;
+
   nwscript_source: string;
-  nwscript_gen: any;
-  nwscript_parser: any;
+
   scopes: any[] = [];
-  program: any = {}
+  program: any = {};
   scope: any;
 
-  constructor(nwscript?: string, script?: string){
-    this.grammar = JSON.parse(JSON.stringify(grammar));
-
-    if(nwscript){
+  constructor(nwscript?: string, script?: string) {
+    if (nwscript) {
       this.nwscript_source = nwscript;
       this.initializeNWScript();
     }
 
-    if(script){
+    if (script) {
       this.script = script;
       this.parseScript();
     }
   }
 
-  clone(){
+  clone() {
     const _parser = new NWScriptParser();
-    _parser.grammar = JSON.parse(JSON.stringify(this.grammar));
     _parser.engine_types = this.engine_types;
     _parser.engine_constants = this.engine_constants;
     _parser.engine_actions = this.engine_actions;
-    _parser.nwscript_gen = this.nwscript_gen;
+    _parser.nwscript_source = this.nwscript_source;
     return _parser;
   }
 
-  initializeNWScript(){
-    let define_matches = Array.from(
-      this.nwscript_source.matchAll(this.regex_define)
-    );
-    let define_count = define_matches.length;
+  private buildEngineTypeTableFromNWScript(): void {
+    this.engine_types = [];
+
+    const define_matches = Array.from(this.nwscript_source.matchAll(this.regex_define));
     let engine_type_index = 0;
-    for(let i = 0; i < define_count; i++){
-      let define = define_matches[i];
-      if(define[1].indexOf('ENGINE_STRUCTURE_') == 0){
-        let engine_type = define[2];
-        const engine_type_lower = engine_type.toLowerCase();
-        const engine_type_upper = engine_type.toUpperCase();
-        let engine_type_rule = [`${engine_type_lower}\\b|${engine_type_upper}\\b`, `return '${engine_type_upper}'`];
-        //insert these new engine type rules before the NAME rule
-        this.grammar.lex.rules.splice( this.grammar.lex.rules.length - 1, 0, engine_type_rule);
-        this.grammar.tokens += ` ${engine_type_upper}`;
-        this.grammar.bnf.NWDataType.push(
-          [`${engine_type_upper}`, `$$ = {type: "datatype", unary: ${NWEngineTypeUnaryTypeOffset + engine_type_index}, engine_type: true, value: $1}`]
-        );
-        
-        NWCompileDataTypes[engine_type_upper]                   = NWEngineTypeUnaryTypeOffset  + engine_type_index;
-        NWCompileDataTypes[engine_type_upper+engine_type_upper] = NWEngineTypeBinaryTypeOffset + engine_type_index;
-        engine_type_index++;
+
+    for (const define of define_matches) {
+      if (define[1].indexOf("ENGINE_STRUCTURE_") === 0) {
+        const engine_type = define[2];
+        const lower = engine_type.toLowerCase();
+        const upper = engine_type.toUpperCase();
+
+        NWCompileDataTypes[upper] = NWEngineTypeUnaryTypeOffset + engine_type_index;
+        NWCompileDataTypes[upper + upper] = NWEngineTypeBinaryTypeOffset + engine_type_index;
 
         this.engine_types.push({
           index: this.engine_types.length,
-          datatype: {type: 'datatype', unary: NWCompileDataTypes[engine_type_upper], value: engine_type_lower},
+          datatype: { type: "datatype", unary: NWCompileDataTypes[upper], value: lower },
           is_engine_type: true,
-          name: engine_type_lower,
+          name: lower,
           value: null,
         });
+
+        engine_type_index++;
       }
     }
+  }
 
-    this.nwscript_gen = (Jison.Jison.Generator(this.grammar) as any);
-    this.nwscript_parser = this.nwscript_gen.createParser();
+  initializeNWScript() {
+    if (!this.nwscript_source) return;
 
-    //console.log(util.inspect(this.grammar, {showHidden: false, depth: null, colors: true}));
+    this.buildEngineTypeTableFromNWScript();
 
-    const ast_nwscript = this.nwscript_parser.parse(this.nwscript_source);
+    // Parse nwscript.nss itself using the handwritten parser
+    const hp = new NWScriptHandParser(this.nwscript_source, {
+      engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
+    });
+
+    const ast_nwscript = hp.parseProgram();
+
+    // Extract actions/constants the same way your old code did
+    this.engine_actions = [];
+    this.engine_constants = [];
+
     const statement_count = ast_nwscript.statements.length;
-    for(let i = 0; i < statement_count; i++){
+    for (let i = 0; i < statement_count; i++) {
       const statement = ast_nwscript.statements[i];
-      if(statement.type == 'function'){
+
+      if (statement.type === "function") {
         this.engine_actions.push({
           index: this.engine_actions.length,
           returntype: statement.returntype,
           is_engine_action: true,
           name: statement.name,
-          arguments: statement.arguments
+          arguments: statement.arguments,
         });
-      } else if(statement.type == 'variable' || statement.type == 'variableList'){
-        if(statement.type == 'variableList'){
+      } else if (statement.type === "variable" || statement.type === "variableList") {
+        if (statement.type === "variableList") {
           this.engine_constants.push({
             index: this.engine_constants.length,
             datatype: statement.datatype,
@@ -137,9 +128,9 @@ export class NWScriptParser {
             is_engine_constant: true,
             name: statement.names[0].name,
             value: statement.value,
-            source: statement.names[0].source
+            source: statement.names[0].source,
           });
-        }else{
+        } else {
           this.engine_constants.push({
             index: this.engine_constants.length,
             datatype: statement.datatype,
@@ -151,41 +142,40 @@ export class NWScriptParser {
         }
       }
     }
+
     console.log(` `);
     console.log(` `);
     console.log(` `);
     console.log(`Found (${this.engine_constants.length}) Engine Constants`);
     console.log(`Found (${this.engine_actions.length}) Engine Actions`);
-
-    //console.log(util.inspect(NWCompileDataTypes, {showHidden: false, depth: null, colors: true}));
   }
 
-  parseScript( script?: string ){
+  parseScript(script?: string) {
     this.script = script ? script : this.script;
-    if(!this.script) return;
-    
-    this.nwscript_parser = this.nwscript_gen.createParser();
-    const ast_script = this.nwscript_parser.parse(this.script);
+    if (!this.script) return;
+
+    const hp = new NWScriptHandParser(this.script, {
+      engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
+    });
+
+    const ast_script = hp.parseProgram();
     this.ast = ast_script;
 
     this.errors = [];
     this.local_variables = [];
     this.local_functions = [];
 
-    //post process ast object
+    // reuse your existing post-pass (type resolution, scopes, validation, etc.)
     this.walkASTStatement(ast_script);
-    if(!this.errors.length){
+
+    if (!this.errors.length) {
       ast_script.parsed = true;
       console.log(`Script parsed without errors`);
-      //console.log(util.inspect(ast_script, {showHidden: false, depth: null, colors: true}));
-    }else{
+    } else {
       ast_script.parsed = false;
       console.log(`Script parsed with errors (${this.errors.length})`);
-      for(let i = 0; i < this.errors.length; i++){
-        console.log(
-          'Error', 
-          this.errors[i]
-        );
+      for (let i = 0; i < this.errors.length; i++) {
+        console.log("Error", this.errors[i]);
       }
     }
   }

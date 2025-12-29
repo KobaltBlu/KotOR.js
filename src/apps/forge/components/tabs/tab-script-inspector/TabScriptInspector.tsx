@@ -32,6 +32,7 @@ export const TabScriptInspector = function(props: any){
             <th>Code</th>
             <th>Type</th>
             <th>Value</th>
+            <th>Code Label</th>
           </tr>
         </thead>
         <tbody>

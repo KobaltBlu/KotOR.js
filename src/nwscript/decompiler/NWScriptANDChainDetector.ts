@@ -1,10 +1,10 @@
-import type { NWScriptBasicBlock } from "../NWScriptBasicBlock";
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "../NWScriptExpression";
-import { NWScriptExpressionBuilder } from "../NWScriptExpressionBuilder";
+import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
+import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
 import { OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_LOGANDII, OP_JZ, OP_JNZ, OP_CPTOPSP, OP_CPTOPBP } from '../NWScriptOPCodes';
-import type { NWScriptFunctionParameter } from "../NWScriptFunctionAnalyzer";
+import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
 
 /**
  * Detects and simplifies AND chains in NWScript bytecode.

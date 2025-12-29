@@ -399,11 +399,13 @@ export class NWScriptExpressionBuilder {
       
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
+      console.log(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
       if (varIndex !== undefined && this.localVariableInits[varIndex]) {
         // Found variable using stack-aware resolution
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
         dataType = init.dataType;
+        console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
@@ -429,11 +431,15 @@ export class NWScriptExpressionBuilder {
             const localVar = this.localVariables.get(offsetUnsigned)!;
             varName = localVar.name;
             dataType = localVar.dataType;
+            console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
           } else {
             // Generate a generic name as absolute last resort
             varName = this.generateVariableName(false, offset);
             dataType = NWScriptDataType.INTEGER; // Default, could be improved
+            console.log(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
           }
+        } else {
+          console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
         }
       }
     }

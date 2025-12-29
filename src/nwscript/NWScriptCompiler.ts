@@ -9,6 +9,29 @@ import {
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
 
+type ByteArray = Uint8Array;
+type WritableBuffer = Uint8Array & {
+  writeInt8(value: number, offset: number): void;
+  writeInt16BE(value: number, offset: number): void;
+  writeInt32BE(value: number, offset: number): void;
+  writeUInt16BE(value: number, offset: number): void;
+  writeFloatBE(value: number, offset: number): void;
+};
+
+const allocBuffer = (length: number): WritableBuffer => {
+  if (typeof Buffer !== "undefined" && typeof Buffer.alloc === "function") {
+    return Buffer.alloc(length) as WritableBuffer;
+  }
+  const arr = new Uint8Array(length) as WritableBuffer;
+  const dv = new DataView(arr.buffer);
+  arr.writeInt8 = (value: number, offset: number) => dv.setInt8(offset, value);
+  arr.writeInt16BE = (value: number, offset: number) => dv.setInt16(offset, value, false);
+  arr.writeInt32BE = (value: number, offset: number) => dv.setInt32(offset, value, false);
+  arr.writeUInt16BE = (value: number, offset: number) => dv.setUint16(offset, value, false);
+  arr.writeFloatBE = (value: number, offset: number) => dv.setFloat32(offset, value, false);
+  return arr;
+};
+
 const NWCompileDataTypes = {
   'I' : 0x03,
   'F' : 0x04,
@@ -29,7 +52,7 @@ const NWCompileDataTypes = {
   'FV': 0x3C,
 };
 
-const concatBuffers = (buffers: Uint8Array[]) => {
+const concatBuffers = (buffers: ByteArray[]) => {
   let totalLength = 0;
   for(let i = 0; i < buffers.length; i++){
     totalLength += buffers[i].length;
@@ -73,12 +96,14 @@ export class NWScriptCompiler {
   program_bytes_written: number;
   basePointerWriting: boolean;
   functionBlockStartOffset: any;
+  errors: { type: string, message: string, statement: any, offender: any }[] = [];
 
   constructor(ast: any){
 
     this.ast = ast;
     this.scopes = [];
     this._silent = false;
+    this.errors = [];
 
   }
 
@@ -162,6 +187,7 @@ export class NWScriptCompiler {
 
   compile(){
     this.log = [];
+    this.errors = [];
     if(typeof this.ast === 'object' && this.ast.type == 'program'){
       if(this.ast.main){
         return this.compileMain();
@@ -198,8 +224,8 @@ export class NWScriptCompiler {
     this.scopes = [];
     if(typeof this.ast === 'object' && this.ast.type == 'program'){
       console.log('CompileMain: Begin');
-      const buffer = new Uint8Array(0);
-      const buffers = [buffer];
+      const buffer: ByteArray = new Uint8Array(0);
+      const buffers: ByteArray[] = [buffer];
 
       this.program_bytes_written = 0;
       this.scopePush( new NWScriptScope() );
@@ -313,8 +339,8 @@ export class NWScriptCompiler {
     this.scopes = [];
     if(typeof this.ast === 'object' && this.ast.type == 'program'){
       console.log('CompileMain: Begin');
-      const buffer =  new Uint8Array(0);
-      const buffers = [buffer];
+      const buffer: ByteArray =  new Uint8Array(0);
+      const buffers: ByteArray[] = [buffer];
 
       this.program_bytes_written = 0;
       this.scopePush( new NWScriptScope() );
@@ -486,7 +512,9 @@ export class NWScriptCompiler {
         case 'while':         return this.compileWhileLoop( statement );
         case 'for':           return this.compileForLoop( statement );
         case 'incor':         return this.compileINCOR( statement );
-        case 'xor':           return this.compileEXCOR( statement );
+        case 'xor':           return this.compileEXCOR( statement );        
+        case 'booland':       return this.compileBOOLAND( statement );
+        case 'shift':         return this.compileShift( statement );
         case 'comp':          return this.compileComp( statement );
         case 'add':           return this.compileAdd( statement );
         case 'sub':           return this.compileSub( statement );
@@ -1568,6 +1596,71 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
+  // Boolean/bitwise AND (int & int)
+  // AST shape (from your handwritten parser or jison):
+  // { type:'booland', left:<expr>, right:<expr>, operator:{value:'&'} }
+  compileBOOLAND( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'booland'){
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
+
+      const ldt = this.getDataType(statement.left);
+      const rdt = this.getDataType(statement.right);
+      if(ldt?.unary == NWCompileDataTypes.I && rdt?.unary == NWCompileDataTypes.I){
+        buffers.push( this.writeBOOLANDII() );
+      }else{
+        // Keep the compiler from silently producing garbage
+        this.errors?.push?.({
+          type: 'compile',
+          message: `BOOLAND requires int & int (got ${ldt?.value ?? 'unknown'} & ${rdt?.value ?? 'unknown'})`,
+          statement,
+          offender: statement
+        });
+      }
+    }
+    return concatBuffers(buffers);
+  }
+
+  // Shifts (int << int), (int >> int), (int >>> int)
+  // AST shape:
+  // { type:'shift', left:<expr>, right:<expr>, operator:{value:'<<'|'>>'|'>>>'} }
+  compileShift( statement: any ): Uint8Array {
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'shift'){
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
+
+      const ldt = this.getDataType(statement.left);
+      const rdt = this.getDataType(statement.right);
+      if(ldt?.unary == NWCompileDataTypes.I && rdt?.unary == NWCompileDataTypes.I){
+        const op = statement?.operator?.value;
+        if(op == '<<'){
+          buffers.push( this.writeSHLEFTII() );
+        }else if(op == '>>'){
+          buffers.push( this.writeSHRIGHTII() );
+        }else if(op == '>>>'){
+          buffers.push( this.writeUSHRIGHTII() );
+        }else{
+          this.errors?.push?.({
+            type: 'compile',
+            message: `Unknown shift operator '${op}'`,
+            statement,
+            offender: statement
+          });
+        }
+      }else{
+        this.errors?.push?.({
+          type: 'compile',
+          message: `Shift requires int <op> int (got ${ldt?.value ?? 'unknown'} ${statement?.operator?.value ?? '?'} ${rdt?.value ?? 'unknown'})`,
+          statement,
+          offender: statement
+        });
+      }
+    }
+    return concatBuffers(buffers);
+  }
+
   //Inclusive OR
   compileINCOR( statement: any ): Uint8Array {
     const buffers: Uint8Array[] = [];
@@ -1595,7 +1688,7 @@ export class NWScriptCompiler {
   }
 
   writeCPDOWNSP( offsetRelativeToTopOfStack = 0, numBytesToCopy = 4 ){
-    const buffer =  Buffer.alloc(this.getInstructionLength(OP_CPDOWNSP));
+    const buffer =  allocBuffer(this.getInstructionLength(OP_CPDOWNSP));
     buffer.writeInt8(OP_CPDOWNSP, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt32BE(offsetRelativeToTopOfStack, 2);
@@ -1607,7 +1700,7 @@ export class NWScriptCompiler {
   }
 
   writeRSADD( type = 0x03 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_RSADD));
+    const buffer = allocBuffer(this.getInstructionLength(OP_RSADD));
     buffer.writeInt8(OP_RSADD, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4; //The value of SP is increased by the size of the type reserved.  (Always 4)
@@ -1617,7 +1710,7 @@ export class NWScriptCompiler {
   }
 
   writeCPTOPSP( offsetRelativeToTopOfStack = 0, numBytesToCopy = 4 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_CPTOPSP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_CPTOPSP));
     buffer.writeInt8(OP_CPTOPSP, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt32BE(offsetRelativeToTopOfStack, 2);
@@ -1632,7 +1725,7 @@ export class NWScriptCompiler {
     let data_length = this.getInstructionLength(OP_CONST);
     if(type == NWCompileDataTypes.S) data_length += value.length - 2;
 
-    const buffer = Buffer.alloc(data_length);
+    const buffer = allocBuffer(data_length);
     buffer.writeInt8(OP_CONST, 0);
     buffer.writeInt8(type, 1);
     switch(type){
@@ -1659,7 +1752,7 @@ export class NWScriptCompiler {
   }
 
   writeACTION( type = 0x00, routineNumber = 0, numArguments = 0, returnSize = 4, nArgumentDataSize: number = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_ACTION));
+    const buffer = allocBuffer(this.getInstructionLength(OP_ACTION));
     buffer.writeInt8(OP_ACTION, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeUInt16BE(routineNumber, 2);
@@ -1673,7 +1766,7 @@ export class NWScriptCompiler {
   }
 
   writeLOGANDII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_LOGANDII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_LOGANDII));
     buffer.writeInt8(OP_LOGANDII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1684,7 +1777,7 @@ export class NWScriptCompiler {
   }
 
   writeLOGORII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_LOGORII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_LOGORII));
     buffer.writeInt8(OP_LOGORII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1695,7 +1788,7 @@ export class NWScriptCompiler {
   }
 
   writeINCORII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_INCORII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_INCORII));
     buffer.writeInt8(OP_INCORII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1706,7 +1799,7 @@ export class NWScriptCompiler {
   }
 
   writeEXCORII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_EXCORII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_EXCORII));
     buffer.writeInt8(OP_EXCORII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1717,7 +1810,7 @@ export class NWScriptCompiler {
   }
 
   writeBOOLANDII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_BOOLANDII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_BOOLANDII));
     buffer.writeInt8(OP_BOOLANDII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1728,7 +1821,7 @@ export class NWScriptCompiler {
   }
 
   writeEQUAL( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_EQUAL));
+    const buffer = allocBuffer(this.getInstructionLength(OP_EQUAL));
     buffer.writeInt8(OP_EQUAL, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1739,7 +1832,7 @@ export class NWScriptCompiler {
   }
 
   writeNEQUAL( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_NEQUAL));
+    const buffer = allocBuffer(this.getInstructionLength(OP_NEQUAL));
     buffer.writeInt8(OP_NEQUAL, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1750,7 +1843,7 @@ export class NWScriptCompiler {
   }
 
   writeGEQ( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_GEQ));
+    const buffer = allocBuffer(this.getInstructionLength(OP_GEQ));
     buffer.writeInt8(OP_GEQ, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1761,7 +1854,7 @@ export class NWScriptCompiler {
   }
 
   writeGT( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_GT));
+    const buffer = allocBuffer(this.getInstructionLength(OP_GT));
     buffer.writeInt8(OP_GT, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1772,7 +1865,7 @@ export class NWScriptCompiler {
   }
 
   writeLT( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_LT));
+    const buffer = allocBuffer(this.getInstructionLength(OP_LT));
     buffer.writeInt8(OP_LT, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1783,7 +1876,7 @@ export class NWScriptCompiler {
   }
 
   writeLEQ( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_LEQ));
+    const buffer = allocBuffer(this.getInstructionLength(OP_LEQ));
     buffer.writeInt8(OP_LEQ, 0);
     buffer.writeInt8(type, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1794,7 +1887,7 @@ export class NWScriptCompiler {
   }
 
   writeSHLEFTII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_SHLEFTII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_SHLEFTII));
     buffer.writeInt8(OP_SHLEFTII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1805,7 +1898,7 @@ export class NWScriptCompiler {
   }
 
   writeSHRIGHTII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_SHRIGHTII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_SHRIGHTII));
     buffer.writeInt8(OP_SHRIGHTII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1816,7 +1909,7 @@ export class NWScriptCompiler {
   }
 
   writeUSHRIGHTII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_USHRIGHTII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_USHRIGHTII));
     buffer.writeInt8(OP_USHRIGHTII, 0);
     buffer.writeInt8(0x20, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1827,7 +1920,7 @@ export class NWScriptCompiler {
   }
 
   writeADD( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_ADD));
+    const buffer = allocBuffer(this.getInstructionLength(OP_ADD));
     buffer.writeInt8(OP_ADD, 0);
     buffer.writeInt8(type, 1);
 
@@ -1844,7 +1937,7 @@ export class NWScriptCompiler {
   }
 
   writeSUB( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_SUB));
+    const buffer = allocBuffer(this.getInstructionLength(OP_SUB));
     buffer.writeInt8(OP_SUB, 0);
     buffer.writeInt8(type, 1);
 
@@ -1860,7 +1953,7 @@ export class NWScriptCompiler {
   }
 
   writeMUL( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_MUL));
+    const buffer = allocBuffer(this.getInstructionLength(OP_MUL));
     buffer.writeInt8(OP_MUL, 0);
     buffer.writeInt8(type, 1);
 
@@ -1877,7 +1970,7 @@ export class NWScriptCompiler {
   }
 
   writeDIV( type = 0x20 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_DIV));
+    const buffer = allocBuffer(this.getInstructionLength(OP_DIV));
     buffer.writeInt8(OP_DIV, 0);
     buffer.writeInt8(type, 1);
 
@@ -1894,7 +1987,7 @@ export class NWScriptCompiler {
   }
 
   writeMODII( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_MODII));
+    const buffer = allocBuffer(this.getInstructionLength(OP_MODII));
     buffer.writeInt8(OP_MODII, 0);
     buffer.writeInt8(NWCompileDataTypes.II, 1);
     this.stackPointer += 4;//Increase by size of return value
@@ -1905,7 +1998,7 @@ export class NWScriptCompiler {
   }
 
   writeNEG( type = 0x03 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_NEG));
+    const buffer = allocBuffer(this.getInstructionLength(OP_NEG));
     buffer.writeInt8(OP_NEG, 0);
     buffer.writeInt8(type, 1);
     //SP remains unchanged because both the return value and the operand cosumed are of the same length
@@ -1915,7 +2008,7 @@ export class NWScriptCompiler {
   }
 
   writeCOMPI( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_COMPI));
+    const buffer = allocBuffer(this.getInstructionLength(OP_COMPI));
     buffer.writeInt8(OP_COMPI, 0);
     buffer.writeInt8(0x03, 1);
     //SP remains unchanged because both the return value and the operand cosumed are of the same length
@@ -1925,7 +2018,7 @@ export class NWScriptCompiler {
   }
 
   writeMOVSP( nSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_MOVSP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_MOVSP));
     buffer.writeInt8(OP_MOVSP, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nSize, 2);
@@ -1936,7 +2029,7 @@ export class NWScriptCompiler {
   }
 
   writeSTORE_STATEALL( nSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_STORE_STATEALL));
+    const buffer = allocBuffer(this.getInstructionLength(OP_STORE_STATEALL));
     buffer.writeInt8(OP_STORE_STATEALL, 0);
     buffer.writeInt8(nSize, 1);
     //SP remains unchanged
@@ -1946,7 +2039,7 @@ export class NWScriptCompiler {
   }
 
   writeJMP( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_JMP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_JMP));
     buffer.writeInt8(OP_JMP, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -1957,7 +2050,7 @@ export class NWScriptCompiler {
   }
 
   writeJSR( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_JSR));
+    const buffer = allocBuffer(this.getInstructionLength(OP_JSR));
     buffer.writeInt8(OP_JSR, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -1968,7 +2061,7 @@ export class NWScriptCompiler {
   }
 
   writeJZ( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_JZ));
+    const buffer = allocBuffer(this.getInstructionLength(OP_JZ));
     buffer.writeInt8(OP_JZ, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -1979,7 +2072,7 @@ export class NWScriptCompiler {
   }
 
   writeRETN( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_RETN));
+    const buffer = allocBuffer(this.getInstructionLength(OP_RETN));
     buffer.writeInt8(OP_RETN, 0);
     buffer.writeInt8(0x00, 1);
     //SP remains unchanged.  The return value is NOT placed on the stack.
@@ -1989,7 +2082,7 @@ export class NWScriptCompiler {
   }
 
   writeDESTRUCT( nTotalSizeToDestory = 0, nOffsetOfElementToKeep = 0, nSizeOfElementToKeep = 4 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_DESTRUCT));
+    const buffer = allocBuffer(this.getInstructionLength(OP_DESTRUCT));
     buffer.writeInt8(OP_DESTRUCT, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt16BE(nTotalSizeToDestory, 2); //total size of structure properties
@@ -2002,7 +2095,7 @@ export class NWScriptCompiler {
   }
 
   writeNOTI( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_NOTI));
+    const buffer = allocBuffer(this.getInstructionLength(OP_NOTI));
     buffer.writeInt8(OP_NOTI, 0);
     buffer.writeInt8(0x03, 1);
     //The value of SP remains unchanged since the operand and result are of the same size.
@@ -2012,7 +2105,7 @@ export class NWScriptCompiler {
   }
 
   writeDECISP( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_DECISP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_DECISP));
     buffer.writeInt8(OP_DECISP, 0);
     buffer.writeInt8(0x03, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2023,7 +2116,7 @@ export class NWScriptCompiler {
   }
 
   writeINCISP( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_INCISP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_INCISP));
     buffer.writeInt8(OP_INCISP, 0);
     buffer.writeInt8(0x03, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2034,7 +2127,7 @@ export class NWScriptCompiler {
   }
 
   writeJNZ( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_JNZ));
+    const buffer = allocBuffer(this.getInstructionLength(OP_JNZ));
     buffer.writeInt8(OP_JNZ, 0);
     buffer.writeInt8(0x00, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2045,7 +2138,7 @@ export class NWScriptCompiler {
   }
 
   writeCPDOWNBP( nOffset = 0, nSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_CPDOWNBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_CPDOWNBP));
     buffer.writeInt8(OP_CPDOWNBP, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2057,7 +2150,7 @@ export class NWScriptCompiler {
   }
 
   writeCPTOPBP( nOffset = 0, nSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_CPTOPBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_CPTOPBP));
     buffer.writeInt8(OP_CPTOPBP, 0);
     buffer.writeInt8(0x01, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2069,7 +2162,7 @@ export class NWScriptCompiler {
   }
 
   writeDECIBP( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_DECIBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_DECIBP));
     buffer.writeInt8(OP_DECIBP, 0);
     buffer.writeInt8(0x03, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2080,7 +2173,7 @@ export class NWScriptCompiler {
   }
 
   writeINCIBP( nOffset = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_INCIBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_INCIBP));
     buffer.writeInt8(OP_INCIBP, 0);
     buffer.writeInt8(0x03, 1);
     buffer.writeInt32BE(nOffset, 2);
@@ -2091,7 +2184,7 @@ export class NWScriptCompiler {
   }
 
   writeSAVEBP( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_SAVEBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_SAVEBP));
     buffer.writeInt8(OP_SAVEBP, 0);
     buffer.writeInt8(0x00, 1);
     //The value of SP remains unchanged.
@@ -2101,7 +2194,7 @@ export class NWScriptCompiler {
   }
 
   writeRESTOREBP( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_RESTOREBP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_RESTOREBP));
     buffer.writeInt8(OP_RESTOREBP, 0);
     buffer.writeInt8(0x00, 1);
     //The value of SP remains unchanged.
@@ -2111,7 +2204,7 @@ export class NWScriptCompiler {
   }
 
   writeSTORE_STATE( nBStackSize = 0, nStackSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_STORE_STATE));
+    const buffer = allocBuffer(this.getInstructionLength(OP_STORE_STATE));
     buffer.writeInt8(OP_STORE_STATE, 0);
     buffer.writeInt8(0x10, 1);
     buffer.writeInt32BE(nBStackSize, 2);
@@ -2123,7 +2216,7 @@ export class NWScriptCompiler {
   }
 
   writeNOP( ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_NOP));
+    const buffer = allocBuffer(this.getInstructionLength(OP_NOP));
     buffer.writeInt8(OP_NOP, 0);
     buffer.writeInt8(0x00, 1);
     //The value of SP remains unchanged.
@@ -2133,7 +2226,7 @@ export class NWScriptCompiler {
   }
 
   writeT( nScriptSize = 0 ){
-    const buffer = Buffer.alloc(this.getInstructionLength(OP_T));
+    const buffer = allocBuffer(this.getInstructionLength(OP_T));
     buffer.writeInt8(OP_T, 0);
     buffer.writeInt32BE(nScriptSize, 1);
     //The value of SP remains unchanged.
