@@ -650,27 +650,28 @@ export class NWScriptCompiler {
             }
             buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
           }else{ //retrieving
+            const varRef = statement.variable_reference;
             if(statement.is_global){
-              const lit = this.getConstantLiteral(statement.variable_reference);
+              const lit = this.getConstantLiteral(varRef);
               if(lit){
                 buffers.push( this.compileLiteral( lit ) );
-              }else{
-                buffers.push( this.writeCPTOPBP( statement.variable_reference.stackPointer - this.basePointer, this.getDataTypeStackLength(statement.datatype) ) );
+              }else if(varRef){
+                buffers.push( this.writeCPTOPBP( varRef.stackPointer - this.basePointer, this.getDataTypeStackLength(statement.datatype) ) );
               }
-            }else{
-              if(statement.variable_reference.is_engine_constant){
-                const lit = this.getConstantLiteral(statement.variable_reference);
+            }else if(varRef){
+              if(varRef.is_engine_constant){
+                const lit = this.getConstantLiteral(varRef);
                 if(lit){
                   buffers.push( this.compileLiteral( lit ) );
                 }else{
                   // fallback to stack copy if somehow not literal
-                  buffers.push( this.writeCPTOPSP( statement.variable_reference.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
+                  buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
                 }
-              }else if(statement.variable_reference.type == 'argument'){
-                const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + statement.variable_reference.stackPointer;
+              }else if(varRef.type == 'argument'){
+                const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + varRef.stackPointer;
                 buffers.push( this.writeCPTOPSP( -arg_stack_pointer, this.getDataTypeStackLength(statement.datatype) ) );
               }else{
-                buffers.push( this.writeCPTOPSP( statement.variable_reference.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
+                buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
               }
             }
           }
@@ -948,7 +949,23 @@ export class NWScriptCompiler {
   compileAdd( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'add'){
-      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      const leftBuf = this.compileStatement(statement.left) as Uint8Array;
+      buffers.push( leftBuf );
+
+      // Fallback: if left did not emit bytes (e.g., variable_reference not pushed), push it now
+      if(leftBuf.length === 0){
+        const varRef = statement.left?.variable_reference;
+        const dtSize = this.getStatementDataTypeSize(statement.left);
+        if(varRef && typeof varRef.stackPointer === 'number'){
+          if(varRef.is_global){
+            buffers.push( this.writeCPTOPBP( varRef.stackPointer - this.basePointer, dtSize ) );
+          }else{
+            buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, dtSize ) );
+          }
+        }else if(typeof statement.left?.stackPointer === 'number'){
+          buffers.push( this.writeCPTOPSP( statement.left.stackPointer - this.stackPointer, dtSize ) );
+        }
+      }
       buffers.push( this.compileStatement(statement.right) as Uint8Array );
       if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
         buffers.push( this.writeADD( NWCompileDataTypes.II ) );
@@ -1044,7 +1061,27 @@ export class NWScriptCompiler {
   compileCompare( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'compare'){
-      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      const leftBuf = this.compileStatement(statement.left) as Uint8Array;
+      buffers.push( leftBuf );
+
+      // Ensure left operand is on stack if it's a variable reference and nothing was emitted
+      if(statement.left?.type === 'variable_reference' && leftBuf.length === 0){
+        const varRef = statement.left.variable_reference;
+        const dtSize = this.getDataTypeStackLength(
+          statement.left.datatype ||
+          varRef?.datatype ||
+          this.getDataType(statement.left)
+        );
+        if(varRef && typeof varRef.stackPointer === 'number'){
+          if(varRef.is_global){
+            buffers.push( this.writeCPTOPBP( varRef.stackPointer - this.basePointer, dtSize ) );
+          }else{
+            buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, dtSize ) );
+          }
+        }else if(typeof statement.left?.stackPointer === 'number'){
+          buffers.push( this.writeCPTOPSP( statement.left.stackPointer - this.stackPointer, dtSize ) );
+        }
+      }
 
       console.log('right', statement.right);
       if(statement.type == 'compare'){
@@ -1061,19 +1098,37 @@ export class NWScriptCompiler {
       }
 
       buffers.push( this.compileStatement(statement.right) as Uint8Array );
+
+      const inferUnary = (node: any): number | undefined => {
+        if(!node) return undefined;
+        if(node.datatype?.unary !== undefined) return node.datatype.unary;
+        const dt = this.getDataType(node);
+        if(dt?.unary !== undefined) return dt.unary;
+        if(node.type === 'literal' && node.datatype?.unary !== undefined) return node.datatype.unary;
+        return undefined;
+      };
+
+      let lUnary = inferUnary(statement.left);
+      let rUnary = inferUnary(statement.right);
+
+      // Fallback: if one side is int and the other is unknown, assume int
+      if(!lUnary && rUnary === NWCompileDataTypes.I) lUnary = NWCompileDataTypes.I;
+      if(!rUnary && lUnary === NWCompileDataTypes.I) rUnary = NWCompileDataTypes.I;
+
       if(statement.operator.value == '=='){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.FF) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.S && this.getDataType(statement.right).unary == NWCompileDataTypes.S){
+        }else if(lUnary == NWCompileDataTypes.S && rUnary == NWCompileDataTypes.S){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.SS) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.O && this.getDataType(statement.right).unary == NWCompileDataTypes.O){
+        }else if(lUnary == NWCompileDataTypes.O && rUnary == NWCompileDataTypes.O){
           buffers.push( this.writeEQUAL(NWCompileDataTypes.OO) );
         }else{
-          const engine_type_left = this.getDataType(statement.left).unary;
-          const engine_type_right = this.getDataType(statement.right).unary;
-          if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
+          const engine_type_left = lUnary;
+          const engine_type_right = rUnary;
+          if( engine_type_left !== undefined && engine_type_right !== undefined &&
+              (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
             if(engine_type_left == engine_type_right){
               const engine_type_index = engine_type_left - 0x10;
               buffers.push( this.writeEQUAL(NWEngineTypeBinaryTypeOffset + engine_type_index) );
@@ -1081,18 +1136,19 @@ export class NWScriptCompiler {
           }
         }
       }else if(statement.operator.value == '!='){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.FF) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.S && this.getDataType(statement.right).unary == NWCompileDataTypes.S){
+        }else if(lUnary == NWCompileDataTypes.S && rUnary == NWCompileDataTypes.S){
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.SS) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.O && this.getDataType(statement.right).unary == NWCompileDataTypes.O){
+        }else if(lUnary == NWCompileDataTypes.O && rUnary == NWCompileDataTypes.O){
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.OO) );
         }else{
-          const engine_type_left = this.getDataType(statement.left).unary;
-          const engine_type_right = this.getDataType(statement.right).unary;
-          if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
+          const engine_type_left = lUnary;
+          const engine_type_right = rUnary;
+          if( engine_type_left !== undefined && engine_type_right !== undefined &&
+              (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
             if(engine_type_left == engine_type_right){
               const engine_type_index = engine_type_left - 0x10;
               buffers.push( this.writeNEQUAL(NWEngineTypeBinaryTypeOffset + engine_type_index) );
@@ -1100,7 +1156,7 @@ export class NWScriptCompiler {
           }
         }
       }else if(statement.operator.value == '&&'){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeLOGANDII() );
           statement.jz_2 = this.scope.bytes_written;
         }else{
@@ -1108,7 +1164,7 @@ export class NWScriptCompiler {
           console.error('Unsupported: LOGANDII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '||'){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           statement.jz_2 = this.scope.bytes_written;
           buffers.push( this.writeLOGORII() );
         }else{
@@ -1116,36 +1172,36 @@ export class NWScriptCompiler {
           console.error('Unsupported: LOGORII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '>='){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeGEQ(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeGEQ(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: GEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '>'){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeGT(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeGT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: GT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<'){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeLT(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeLT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: LT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<='){
-        if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeLEQ(NWCompileDataTypes.II) );
-        }else if(this.getDataType(statement.left).unary == NWCompileDataTypes.F && this.getDataType(statement.right).unary == NWCompileDataTypes.F){
+        }else if(lUnary == NWCompileDataTypes.F && rUnary == NWCompileDataTypes.F){
           buffers.push( this.writeLEQ(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
@@ -1161,17 +1217,17 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'if'){
-      const ifelses: any[] = ([] as any[]).concat([statement], statement.else);
+      // Build chain and drop any null/undefined entries to avoid null.condition access
+      const ifelses: any[] = ([] as any[]).concat([statement], statement.else || []).filter(Boolean);
       console.log('ifelses', ifelses);
 
       for(let i = 0; i < ifelses.length; i++){
         const ifelse = ifelses[i];
 
-        //Compile the condition statements
-        if(ifelse.condition && ifelse.condition.length){
-          for(let j = 0; j < ifelse.condition.length; j++){
-            buffers.push( this.compileStatement( ifelse.condition[j] ) as Uint8Array );
-          }
+        //Compile the condition statements (support single or array)
+        const conds = Array.isArray(ifelse.condition) ? ifelse.condition : (ifelse.condition ? [ifelse.condition] : []);
+        for(let j = 0; j < conds.length; j++){
+          buffers.push( this.compileStatement( conds[j] ) as Uint8Array );
         }
         
         //the offset prior to writing the JZ statement
@@ -1326,8 +1382,9 @@ export class NWScriptCompiler {
       statement.continue_start = this.scope.bytes_written;
 
       statement.condition_start = this.scope.bytes_written;
-      for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
+      const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
+      for(let i = 0; i < conds.length; i++){
+        buffers.push( this.compileStatement( conds[i] ) as Uint8Array );
       }
 
       //If the condition is false Jump out of the loop
@@ -1366,9 +1423,10 @@ export class NWScriptCompiler {
 
       statement.continue_start = this.scope.bytes_written;
 
-      //Compile the while condition statements
-      for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
+      //Compile the while condition statements (support single)
+      const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
+      for(let i = 0; i < conds.length; i++){
+        buffers.push( this.compileStatement( conds[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
 
@@ -1436,8 +1494,9 @@ export class NWScriptCompiler {
       statement.condition_start = this.scope.bytes_written;
       statement.continue_start = this.scope.bytes_written;
 
-      for(let i = 0; i < statement.condition.length; i++){
-        buffers.push( this.compileStatement( statement.condition[i] ) as Uint8Array );
+      const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
+      for(let i = 0; i < conds.length; i++){
+        buffers.push( this.compileStatement( conds[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
       buffers.push( 
