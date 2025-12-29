@@ -242,7 +242,7 @@ export class NWScriptParser {
         if(value.type == 'variable') { 
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
-      if(value.type == 'assign') return this.getValueDataType(value.right);
+        if(value.type == 'assign') return this.getValueDataType(value.right);
         if(value.type == 'variable_reference') {
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
@@ -303,6 +303,32 @@ export class NWScriptParser {
       statement: statement,
       offender: offender
     });
+  }
+
+  /**
+   * Produce a JSON-safe snapshot of the parser state (no circular refs, no functions).
+   */
+  toJSON(){
+    const snapshot = {
+      ast: this.ast,
+      errors: this.errors,
+      engine_types: this.engine_types,
+      engine_constants: this.engine_constants,
+      engine_actions: this.engine_actions,
+      local_variables: this.local_variables,
+      local_functions: this.local_functions,
+      program: this.program,
+    };
+    const seen = new WeakSet();
+    const replacer = (_key: string, value: any) => {
+      if(typeof value === 'function') return undefined;
+      if(value && typeof value === 'object'){
+        if(seen.has(value)) return undefined;
+        seen.add(value);
+      }
+      return value;
+    };
+    return JSON.parse(JSON.stringify(snapshot, replacer));
   }
 
   walkASTStatement( object: any = undefined ){
@@ -517,7 +543,6 @@ export class NWScriptParser {
         // Resolve reference against engine constants, locals, or globals
         object.variable_reference = this.getVariableByName(object.name);
         object.datatype = object?.variable_reference?.datatype;
-
         if(!object.variable_reference){
           this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
         }
@@ -636,10 +661,9 @@ export class NWScriptParser {
                 object.type == 'while'
               ){
 
-        if(typeof object.condition == 'object' && object.condition.length){
-          for(let i = 0; i < object.condition.length; i++){
-            this.walkASTStatement(object.condition[i]);
-          }
+        const conds = Array.isArray(object.condition) ? object.condition : (object.condition ? [object.condition] : []);
+        for(let i = 0; i < conds.length; i++){
+          this.walkASTStatement(conds[i]);
         } 
 
         this.scope = new NWScriptScope(this.program);
@@ -684,10 +708,9 @@ export class NWScriptParser {
         if(object.initializer) this.walkASTStatement(object.initializer);
 
         //walk condition
-        if(typeof object.condition == 'object' && object.condition.length){
-          for(let i = 0; i < object.condition.length; i++){
-            this.walkASTStatement(object.condition[i]);
-          }
+        const conds = Array.isArray(object.condition) ? object.condition : (object.condition ? [object.condition] : []);
+        for(let i = 0; i < conds.length; i++){
+          this.walkASTStatement(conds[i]);
         }
 
         //walk incrementor
