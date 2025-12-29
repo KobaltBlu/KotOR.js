@@ -11,6 +11,7 @@ import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorSta
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
 import * as KotOR from "../../KotOR";
+import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
 
 export class TabTextEditorState extends TabState {
 
@@ -19,6 +20,7 @@ export class TabTextEditorState extends TabState {
 
   nwScriptParser: NWScriptParser;
   ncs: Uint8Array = new Uint8Array(0);
+  nwScript: KotOR.NWScript;
 
   #southTabManager = new EditorTabManager();
   #tabErrorLogState: TabScriptErrorLogState;
@@ -78,14 +80,28 @@ export class TabTextEditorState extends TabState {
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
-        file.readFile().then( (response) => {
-          let decoder = new TextDecoder('utf8');
-          this.code = decoder.decode(response.buffer);
-          this.triggerLinterTimeout();
-          
-          this.processEventListener('onEditorFileLoad');
-          resolve();
-        });
+
+        if(file.ext == 'ncs'){
+          file.readFile().then( (buffer) => {
+            this.ncs = buffer.buffer;
+            this.nwScript = new KotOR.NWScript(this.ncs);
+            this.nwScript.name = file?.getFilename().split('.')[0] || '';
+            this.code = this.nwScript.toAssembly();
+            console.log(this.code);
+            this.triggerLinterTimeout();
+            this.processEventListener('onEditorFileLoad');
+            resolve();
+          });
+        }else{
+          file.readFile().then( (response) => {
+            let decoder = new TextDecoder('utf8');
+            this.code = decoder.decode(response.buffer);
+            this.triggerLinterTimeout();
+            
+            this.processEventListener('onEditorFileLoad');
+            resolve();
+          });
+        }
       }
     });
 
@@ -214,17 +230,17 @@ export class TabTextEditorState extends TabState {
     console.log('compile', 'parsing...');
     ForgeState.nwScriptParser.parseScript(this.code);
     if(!ForgeState.nwScriptParser.errors.length){
-      // const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.ast);
-      // console.log('compile', 'compiling...');
-      // let buffer = nwScriptCompiler.compile();
-      // if(buffer){
-      //   this.ncs = buffer;
-      //   console.log('compile', 'success');
-      //   console.log(this.ncs);
-      //   this.processEventListener('onCompile');
-      // }else{
-      //   console.warn('compile', 'failed: no buffer returned');
-      // }
+      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.ast);
+      console.log('compile', 'compiling...');
+      let buffer = nwScriptCompiler.compile();
+      if(buffer){
+        this.ncs = buffer;
+        console.log('compile', 'success');
+        console.log(this.ncs);
+        this.processEventListener('onCompile');
+      }else{
+        console.warn('compile', 'failed: no buffer returned');
+      }
     }else{
       console.error(`compile Failed with (${ForgeState.nwScriptParser.errors.length}) error!`);
     }
