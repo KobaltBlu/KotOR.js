@@ -568,6 +568,9 @@ export class NWScriptHandParser {
       case "/":
       case "%": return 110;
 
+      case "++":
+      case "--": return 120;
+
       case ".": return 140;
 
       default: return 0;
@@ -749,6 +752,14 @@ export class NWScriptHandParser {
     if (op.endsWith("=") && op !== "==" && op !== "!=" && op !== "<=" && op !== ">=") {
       const right = this.parseExpression(this.lbp(op) - 1);
       return { type: "assign", left, right, operator: { type: "operator", value: op }, source: opTok.source };
+    }
+
+    // postfix inc/dec
+    if (op === "++") {
+      return { type: "inc", value: left, postfix: true, source: opTok.source };
+    }
+    if (op === "--") {
+      return { type: "dec", value: left, postfix: true, source: opTok.source };
     }
 
     // comparisons + logical

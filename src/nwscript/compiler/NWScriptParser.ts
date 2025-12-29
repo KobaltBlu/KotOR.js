@@ -242,6 +242,7 @@ export class NWScriptParser {
         if(value.type == 'variable') { 
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
+      if(value.type == 'assign') return this.getValueDataType(value.right);
         if(value.type == 'variable_reference') {
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
@@ -268,6 +269,7 @@ export class NWScriptParser {
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.unary;
         if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
+      if(value.type == 'assign') return this.getValueDataTypeUnary(value.right);
         if(value.type == 'variable_reference') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'argument') return value.datatype?.unary;
         if(value.type == 'function_call') return value.function_reference?.returntype?.unary;
