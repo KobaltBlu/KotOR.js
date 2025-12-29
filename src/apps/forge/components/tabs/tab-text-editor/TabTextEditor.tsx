@@ -53,15 +53,12 @@ export const TabTextEditor = function(props: any){
       <LayoutContainerProvider>
         <LayoutContainer southContent={southContent}>
           <MonacoEditor
-            width={`100%`}
-            height={`100%`}
             language="nwscript"
             theme="nwscript-dark"
             value={code}
             options={options}
             onChange={onChange}
             editorDidMount={editorDidMount}
-            
           />
         </LayoutContainer>
       </LayoutContainerProvider>

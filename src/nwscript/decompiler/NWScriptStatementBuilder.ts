@@ -134,40 +134,42 @@ export class NWScriptStatementBuilder {
    * Pattern: Each RSADD -> CPDOWNSP -8 -> MOVSP -4 sequence moves SP down by 4
    * So CPTOPSP offsets are: first var at -12, second at -4, third at -8, etc.
    */
+  /**
+   * @deprecated This method uses non-stack-aware heuristics and hardcoded offset patterns.
+   * The current decompiler pipeline uses stack-aware variable resolution via variableStackPositions maps.
+   * This method is kept for backward compatibility but should not be used in new code.
+   * 
+   * NOTE: This class (NWScriptStatementBuilder) is not used in the current ControlNode-first pipeline.
+   * Variable resolution is handled by NWScriptStackSimulator and NWScriptExpressionBuilder using
+   * dynamic stack position tracking.
+   */
   private setupLocalVariableMapping(): void {
+    // WARNING: This method uses hardcoded offset patterns and heuristics, not stack-aware tracking.
+    // It should not be used in the current decompiler pipeline.
     // Create mapping from SP offset to local variable info
     const localVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
     
-    // Track stack pointer state to calculate CPTOPSP offsets
-    // Each variable allocation: RSADD -> CPDOWNSP -8 -> MOVSP -4
-    // After n variables, SP has moved down by n*4 bytes
-    // CPTOPSP offsets for reading:
-    // - First variable: -8 - (n-1)*4 = -12 (if 3 vars, SP moved down by 8)
-    // - Second variable: -8 - (n-2)*4 = -4 (if 3 vars, SP moved down by 4)
-    // - Third variable: -8 - (n-3)*4 = -8 (if 3 vars, SP at current)
+    // NON-STACK-AWARE: This uses hardcoded patterns and heuristics
+    // The current pipeline should use stack-aware resolution instead
     const numVars = this.localInits.length;
     
     for (let i = 0; i < this.localInits.length; i++) {
       const init = this.localInits[i];
       const varName = `localVar_${i + 1}`; // Match AST builder naming (localVar_1, localVar_2, etc.)
       
-      // Calculate CPTOPSP offset based on variable index and total count
-      // After variable i is allocated, SP has moved down by (i+1)*4 bytes
-      // When reading variable i, CPTOPSP offset = -8 - (numVars - i - 1)*4
-      // Simplified: for 3 vars, offsets are -12, -4, -8
+      // NON-STACK-AWARE: Hardcoded offset calculations based on patterns
+      // This should be replaced with actual stack state tracking
       let cptopspOffset: number;
       if (numVars === 3) {
-        // Common pattern: -12, -4, -8
+        // Hardcoded pattern: -12, -4, -8
         const offsets = [0xFFFFFFF4, 0xFFFFFFFC, 0xFFFFFFF8]; // -12, -4, -8
         cptopspOffset = offsets[i];
       } else if (numVars === 2) {
-        // Pattern: -8, -4
+        // Hardcoded pattern: -8, -4
         const offsets = [0xFFFFFFF8, 0xFFFFFFFC]; // -8, -4
         cptopspOffset = offsets[i];
       } else {
-        // General case: calculate based on stack movement
-        // After i variables, SP moved down by i*4
-        // CPTOPSP offset = -8 - (numVars - i - 1)*4
+        // Heuristic-based calculation (still not stack-aware)
         const offsetSigned = -8 - (numVars - i - 1) * 4;
         cptopspOffset = offsetSigned < 0 ? offsetSigned + 0x100000000 : offsetSigned;
       }

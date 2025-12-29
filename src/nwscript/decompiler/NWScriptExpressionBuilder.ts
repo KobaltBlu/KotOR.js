@@ -405,17 +405,35 @@ export class NWScriptExpressionBuilder {
         varName = `localVar_${varIndex}`;
         dataType = init.dataType;
       } else {
-        // Fallback to static offset-based mapping (for backward compatibility)
-        const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
-        if (this.localVariables.has(offsetUnsigned)) {
-          // Use mapped local variable name from static mapping
-          const localVar = this.localVariables.get(offsetUnsigned)!;
-          varName = localVar.name;
-          dataType = localVar.dataType;
-        } else {
-          // Last resort: generate a generic name
-          varName = this.generateVariableName(false, offset);
-          dataType = NWScriptDataType.INTEGER; // Default, could be improved
+        // Stack-aware fallback: Check all variable positions with tolerance
+        // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
+        let foundVar = false;
+        for (const [varPos, idx] of this.variableStackPositions.entries()) {
+          const distance = Math.abs(sourceStackPos - varPos);
+          // Allow tolerance (±8 bytes) since the stack may have grown
+          if (distance <= 8 && this.localVariableInits[idx]) {
+            const init = this.localVariableInits[idx];
+            varName = `localVar_${idx}`;
+            dataType = init.dataType;
+            foundVar = true;
+            break;
+          }
+        }
+        
+        if (!foundVar) {
+          // Last resort: Fallback to static offset-based mapping (for backward compatibility)
+          // This should rarely be needed if stack-aware tracking is working correctly
+          const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+          if (this.localVariables.has(offsetUnsigned)) {
+            // Use mapped local variable name from static mapping
+            const localVar = this.localVariables.get(offsetUnsigned)!;
+            varName = localVar.name;
+            dataType = localVar.dataType;
+          } else {
+            // Generate a generic name as absolute last resort
+            varName = this.generateVariableName(false, offset);
+            dataType = NWScriptDataType.INTEGER; // Default, could be improved
+          }
         }
       }
     }

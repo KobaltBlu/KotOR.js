@@ -10,7 +10,7 @@ import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
 import { NWScriptStackSimulator } from "./NWScriptStackSimulator";
 import { NWScriptExpression } from "./NWScriptExpression";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_RETN, OP_JMP, OP_CPDOWNSP, OP_MOVSP, OP_RSADD, OP_CPTOPSP } from '../NWScriptOPCodes';
+import { OP_RETN, OP_JMP, OP_CPDOWNSP, OP_MOVSP, OP_RSADD, OP_CPTOPSP, OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_LOGANDII, OP_LOGORII, OP_JSR, OP_JZ, OP_JNZ } from '../NWScriptOPCodes';
 import type { NWScriptInstruction } from '../NWScriptInstruction';
 
 /**
@@ -306,7 +306,7 @@ export class NWScriptControlNodeToASTConverter {
                       continue;
                     }
                     
-                    // Try nearby positions
+                    // Try nearby positions (stack-aware tolerance)
                     for (let delta = -4; delta <= 4; delta += 4) {
                       const nearbyPos = targetStackPos + delta;
                       const nearbyVarIndex = variableStackPositions.get(nearbyPos);
@@ -318,17 +318,16 @@ export class NWScriptControlNodeToASTConverter {
                       }
                     }
                     
-                    // Fallback
-                    if (offsetSigned === -8) {
-                      const varCount = this.functionVariableCounts.get(functionContext) || 0;
-                      if (varCount > 0) {
-                        const fallbackVarIndex = varCount - 1;
-                        if (fallbackVarIndex >= 0 && fallbackVarIndex < this.localInits.length) {
-                          const varName = `localVar_${fallbackVarIndex}`;
-                          console.log(`[CPDOWNSP] Pre-condition: ✓ Using fallback variable: ${varName}`);
-                          preConditionStatements.push(NWScriptAST.createAssignment(varName, valueExpr, false));
-                          continue;
-                        }
+                    // Stack-aware fallback: Check all variable positions with tolerance
+                    // The stack may have grown between RSADD and CPDOWNSP, so check all recorded positions
+                    for (const [varPos, varIndex] of variableStackPositions.entries()) {
+                      const distance = Math.abs(targetStackPos - varPos);
+                      // Allow tolerance (±8 bytes) since the stack may have grown
+                      if (distance <= 8 && varIndex >= 0 && varIndex < this.localInits.length) {
+                        const varName = `localVar_${varIndex}`;
+                        console.log(`[CPDOWNSP] Pre-condition: ✓ Found variable by position proximity: ${varName} (distance: ${distance})`);
+                        preConditionStatements.push(NWScriptAST.createAssignment(varName, valueExpr, false));
+                        continue;
                       }
                     }
                     
@@ -497,6 +496,18 @@ export class NWScriptControlNodeToASTConverter {
         console.log(`[RSADD] Variable stack positions map:`, Array.from(variableStackPositions.entries()).map(([pos, idx]) => `pos ${pos} -> var ${idx}`).join(', '));
       }
       
+      // For CPDOWNSP, we need to calculate the target stack position BEFORE processing
+      // because processing will modify the stack state
+      let cpdownspSpBefore: number | undefined = undefined;
+      let cpdownspTargetPos: number | undefined = undefined;
+      if (instruction.code === OP_CPDOWNSP) {
+        cpdownspSpBefore = this.stackSimulator.getStackPointer();
+        const offset = instruction.offset || 0;
+        const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
+        cpdownspTargetPos = cpdownspSpBefore + offsetSigned;
+        console.log(`[CPDOWNSP-PRE] Address: 0x${instruction.address.toString(16).padStart(8, '0')}, SP before: ${cpdownspSpBefore}, Offset: ${offsetSigned}, Target pos: ${cpdownspTargetPos}`);
+      }
+      
       // Process instruction through stack simulator
       // This ensures the stack state is correct when we check for return values
       const expr = this.stackSimulator.processInstruction(instruction);
@@ -513,6 +524,7 @@ export class NWScriptControlNodeToASTConverter {
       let isReturnWrite = false;
       if (instruction.code === OP_CPDOWNSP) {
         isReturnWrite = this.isReturnValueWrite(instruction, block, i);
+        console.log(`[CPDOWNSP-CHECK] Address: 0x${instruction.address.toString(16).padStart(8, '0')}, isReturnWrite: ${isReturnWrite}, cpdownspTargetPos: ${cpdownspTargetPos}`);
         if (isReturnWrite) {
           // This is a return value assignment - the expression should be on the stack
           // CPDOWNSP keeps the value on the stack, so we can get it after processing
@@ -571,24 +583,20 @@ export class NWScriptControlNodeToASTConverter {
       }
       
       // Check if CPDOWNSP is writing to a local variable (assignment)
-      if (instruction.code === OP_CPDOWNSP && !isReturnWrite) {
-        // CRITICAL: CPDOWNSP writes to stack[SP + offset] where SP is BEFORE the instruction
-        // Calculate the target position BEFORE processing the instruction
-        const spBefore = this.stackSimulator.getStackPointer();
-        const offset = instruction.offset || 0;
-        const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-        const targetStackPos = spBefore + offsetSigned;
+      if (instruction.code === OP_CPDOWNSP) {
+        console.log(`[CPDOWNSP-HANDLE] Address: 0x${instruction.address.toString(16).padStart(8, '0')}, isReturnWrite: ${isReturnWrite}, cpdownspTargetPos: ${cpdownspTargetPos}`);
+      }
+      if (instruction.code === OP_CPDOWNSP && !isReturnWrite && cpdownspTargetPos !== undefined) {
+        // We already calculated targetStackPos before processing the instruction
+        const targetStackPos = cpdownspTargetPos;
         
-        console.log(`[CPDOWNSP] Address: 0x${instruction.address.toString(16).padStart(8, '0')}, SP before: ${spBefore}, Offset: ${offsetSigned} (0x${offset.toString(16)}), Target pos: ${targetStackPos}`);
+        console.log(`[CPDOWNSP] Address: 0x${instruction.address.toString(16).padStart(8, '0')}, SP before: ${cpdownspSpBefore}, Offset: ${instruction.offset ? ((instruction.offset > 0x7FFFFFFF ? instruction.offset - 0x100000000 : instruction.offset)) : 0} (0x${instruction.offset?.toString(16)}), Target pos: ${targetStackPos}`);
         
-        // Now process the instruction (this may modify the stack)
-        const processedExpr = this.stackSimulator.processInstruction(instruction);
-        
-        console.log(`[CPDOWNSP] Stack size after: ${this.stackSimulator.getStackSize()}, Has expr: ${!!processedExpr}`);
+        console.log(`[CPDOWNSP] Stack size after: ${this.stackSimulator.getStackSize()}, Has expr: ${!!expr}`);
         
         // Get the expression from the stack (CPDOWNSP copies from top of stack)
-        // If processedExpr is null, try to get it from the stack
-        const valueExpr = processedExpr || this.stackSimulator.peek()?.expression;
+        // The instruction was already processed at line 501, so use that result
+        const valueExpr = expr || this.stackSimulator.peek()?.expression;
         
         if (!valueExpr) {
           console.log(`[CPDOWNSP] No expression found - skipping assignment`);
@@ -628,18 +636,19 @@ export class NWScriptControlNodeToASTConverter {
           }
         }
         
-        // Last resort fallback: CPDOWNSP -8 typically writes to the most recently allocated variable
-        if (offsetSigned === -8) {
-          const varCount = this.functionVariableCounts.get(functionContext) || 0;
-          console.log(`[CPDOWNSP] Using fallback heuristic: offset -8, var count: ${varCount}`);
-          if (varCount > 0) {
-            const fallbackVarIndex = varCount - 1;
-            if (fallbackVarIndex >= 0 && fallbackVarIndex < this.localInits.length) {
-              const varName = `localVar_${fallbackVarIndex}`;
-              console.log(`[CPDOWNSP] ✓ Using fallback variable: ${varName}`);
-              blockStatements.push(NWScriptAST.createAssignment(varName, valueExpr, false));
-              continue;
-            }
+        // Stack-aware fallback: Check all variable positions with tolerance
+        // Sometimes the stack has grown between RSADD and CPDOWNSP, so the exact position doesn't match
+        // Try to find the variable by checking all recorded positions
+        console.log(`[CPDOWNSP] Trying stack-aware fallback: checking all variable positions...`);
+        for (const [varPos, varIndex] of variableStackPositions.entries()) {
+          // Check if the target position is close to any variable position
+          // Allow some tolerance (±8 bytes) since the stack may have grown
+          const distance = Math.abs(targetStackPos - varPos);
+          if (distance <= 8 && varIndex >= 0 && varIndex < this.localInits.length) {
+            const varName = `localVar_${varIndex}`;
+            console.log(`[CPDOWNSP] ✓ Found variable by position proximity: ${varName} (distance: ${distance})`);
+            blockStatements.push(NWScriptAST.createAssignment(varName, valueExpr, false));
+            continue;
           }
         }
         
@@ -688,16 +697,67 @@ export class NWScriptControlNodeToASTConverter {
         
         // Skip binary operations, comparisons, and logical operations
         // These are typically intermediate (part of conditions or larger expressions)
+        // BUT: If the next instruction is CPDOWNSP, this is the value being assigned, not intermediate
         if (expr.type === 'binary_op' || expr.type === 'comparison' || expr.type === 'logical') {
-          // Binary operations, comparisons, and logical operations are typically intermediate
-          // They'll be part of conditions, assignments, or other expressions
-          continue;
+          // Check if this expression is being assigned to a variable (next instruction is CPDOWNSP)
+          // If so, don't skip it - let the CPDOWNSP handler create the assignment
+          let isBeingAssigned = false;
+          if (i + 1 < block.instructions.length) {
+            const nextInstr = block.instructions[i + 1];
+            if (nextInstr.code === OP_CPDOWNSP) {
+              isBeingAssigned = true;
+            }
+          }
+          
+          // Only skip if it's NOT being assigned
+          if (!isBeingAssigned) {
+            // Binary operations, comparisons, and logical operations are typically intermediate
+            // They'll be part of conditions, assignments, or other expressions
+            continue;
+          }
+          // If it IS being assigned, fall through to let CPDOWNSP handler process it
         }
         
-        // For function calls, create an expression statement (they might have side effects)
-        // Most other expression types are intermediate values and should be skipped
+        // For function calls, only create an expression statement if they're not part of a larger expression
+        // We need to look ahead to see if this function call result is consumed by a later instruction
+        // Patterns to detect:
+        // - ACTION -> CONST -> EQUAL (comparison)
+        // - ACTION -> (any op that consumes stack) -> CPDOWNSP (assignment)
+        // - ACTION -> (any op) -> (comparison/binary op)
         if (expr.type === 'function_call') {
-          blockStatements.push(NWScriptAST.createExpressionStatement(expr));
+          // Look ahead to see if this function call is part of a larger expression
+          // Check up to 5 instructions ahead for patterns that consume the function result
+          let isPartOfExpression = false;
+          const lookAheadLimit = Math.min(i + 6, block.instructions.length);
+          
+          for (let j = i + 1; j < lookAheadLimit; j++) {
+            const futureInstr = block.instructions[j];
+            
+            // If we find a comparison, binary op, or assignment, the function call is part of an expression
+            if (futureInstr.code === OP_EQUAL || futureInstr.code === OP_NEQUAL || 
+                futureInstr.code === OP_GT || futureInstr.code === OP_GEQ || 
+                futureInstr.code === OP_LT || futureInstr.code === OP_LEQ ||
+                futureInstr.code === OP_ADD || futureInstr.code === OP_SUB ||
+                futureInstr.code === OP_MUL || futureInstr.code === OP_DIV ||
+                futureInstr.code === OP_LOGANDII || futureInstr.code === OP_LOGORII ||
+                futureInstr.code === OP_CPDOWNSP) {
+              isPartOfExpression = true;
+              break;
+            }
+            
+            // If we hit a terminator (JMP, JZ, JNZ, RETN, JSR), stop looking ahead
+            // The function call is not part of an expression in this block
+            if (futureInstr.code === OP_JMP || futureInstr.code === OP_RETN ||
+                futureInstr.code === OP_JSR || futureInstr.code === OP_JZ ||
+                futureInstr.code === OP_JNZ) {
+              break;
+            }
+          }
+          
+          // Only create expression statement if it's not part of a larger expression
+          if (!isPartOfExpression) {
+            blockStatements.push(NWScriptAST.createExpressionStatement(expr));
+          }
         }
         // For other expression types, be conservative and skip them
         // Most expressions are intermediate values
@@ -1014,7 +1074,7 @@ export class NWScriptControlNodeToASTConverter {
     const mainFunction = this.functions.find(f => f.isMain);
     if (mainFunction && mainControlNode) {
       const body = this.convertControlNodeToBlock(mainControlNode, mainFunction);
-      const locals = this.buildLocalVariableDeclarations(mainFunction);
+      const locals = this.buildLocalVariableDeclarations(mainFunction, body);
       functionNodes.push(NWScriptAST.createFunction(
         mainFunction.name,
         mainFunction.returnType,
@@ -1035,8 +1095,8 @@ export class NWScriptControlNodeToASTConverter {
         // Convert ControlNode tree to block
         const body = this.convertControlNodeToBlock(functionControlNode, func);
         
-        // Build local variable declarations
-        const locals = this.buildLocalVariableDeclarations(func);
+        // Build local variable declarations (merge with assignments)
+        const locals = this.buildLocalVariableDeclarations(func, body);
         
         return NWScriptAST.createFunction(
           func.name,
@@ -1052,10 +1112,25 @@ export class NWScriptControlNodeToASTConverter {
 
   /**
    * Build local variable declarations for a function
+   * Merges declarations with their first assignment if they occur together
    */
-  private buildLocalVariableDeclarations(func: NWScriptFunction): import('./NWScriptAST').NWScriptVariableDeclarationNode[] {
-    // TODO: Filter local variables by function (currently all locals are assigned to all functions)
-    return this.localInits.map((init, index) => {
+  private buildLocalVariableDeclarations(
+    func: NWScriptFunction,
+    body?: NWScriptBlockNode
+  ): import('./NWScriptAST').NWScriptVariableDeclarationNode[] {
+    // Filter local variables by function - only include variables whose RSADD instruction
+    // is within this function's body blocks
+    const functionLocalInits = this.localInits.filter(init => {
+      // Check if the RSADD instruction address is within any of the function's body blocks
+      for (const block of func.bodyBlocks) {
+        if (block.containsAddress(init.instructionAddress)) {
+          return true;
+        }
+      }
+      return false;
+    });
+    
+    const declarations = functionLocalInits.map((init, index) => {
       const name = `localVar_${index}`;
       const initializer = init.hasInitializer && init.initialValue !== undefined
         ? NWScriptExpression.constant(init.initialValue, init.dataType)
@@ -1063,11 +1138,50 @@ export class NWScriptControlNodeToASTConverter {
       
       return NWScriptAST.createVariableDeclaration(name, init.dataType, initializer);
     });
+    
+    // If body is provided, merge declarations with their first assignment
+    if (body && body.statements) {
+      const assignmentsToRemove: number[] = [];
+      
+      for (let i = 0; i < declarations.length; i++) {
+        const decl = declarations[i];
+        const varName = decl.name;
+        
+        // Find the first assignment to this variable in the body
+        for (let j = 0; j < body.statements.length; j++) {
+          const stmt = body.statements[j];
+          if (stmt.type === NWScriptASTNodeType.ASSIGNMENT) {
+            const assignStmt = stmt as import('./NWScriptAST').NWScriptAssignmentNode;
+            if (assignStmt.variable === varName &&
+                !assignmentsToRemove.includes(j) &&
+                !decl.initializer) { // Only merge if declaration doesn't already have an initializer
+              // Found first assignment - merge into declaration
+              decl.initializer = assignStmt.value;
+              assignmentsToRemove.push(j);
+              break; // Only merge the first assignment
+            }
+          }
+        }
+      }
+      
+      // Remove merged assignments from body (in reverse order to maintain indices)
+      assignmentsToRemove.sort((a, b) => b - a);
+      for (const index of assignmentsToRemove) {
+        body.statements.splice(index, 1);
+      }
+    }
+    
+    return declarations;
   }
 
   /**
    * Check if a CPDOWNSP instruction is writing a return value
-   * Pattern: CPDOWNSP -> MOVSP -> (JMP ->) RETN
+   * Pattern: CPDOWNSP -> MOVSP -> (intermediate instructions) -> (JMP ->) RETN
+   * 
+   * We need to look ahead past intermediate instructions (CPTOPSP, other CPDOWNSP, etc.)
+   * to find RETN or JMP to RETN. If we see too many intermediate instructions or
+   * instructions that indicate this is NOT a return value (like another CPDOWNSP to a variable),
+   * we return false.
    */
   private isReturnValueWrite(cpdownsp: NWScriptInstruction, block: NWScriptBasicBlock, cpdownspIndex: number): boolean {
     // Check if CPDOWNSP is followed by MOVSP
@@ -1080,15 +1194,21 @@ export class NWScriptControlNodeToASTConverter {
       return false;
     }
     
-    // Check if MOVSP is followed by RETN or JMP to RETN
-    if (cpdownspIndex + 2 < block.instructions.length) {
-      const nextInstr = block.instructions[cpdownspIndex + 2];
-      if (nextInstr.code === OP_RETN) {
+    // Look ahead past intermediate instructions to find RETN or JMP to RETN
+    // Intermediate instructions that we can skip: CPTOPSP, other CPDOWNSP (to different locations), MOVSP
+    // Limit: look ahead up to 5 instructions to avoid false positives
+    const lookAheadLimit = Math.min(cpdownspIndex + 7, block.instructions.length);
+    for (let i = cpdownspIndex + 2; i < lookAheadLimit; i++) {
+      const instr = block.instructions[i];
+      
+      // If we find RETN directly, this is a return value write
+      if (instr.code === OP_RETN) {
         return true;
       }
-      if (nextInstr.code === OP_JMP && nextInstr.offset !== undefined) {
-        // Check if JMP targets a RETN block
-        const jmpTarget = nextInstr.address + nextInstr.offset;
+      
+      // If we find JMP, check if it targets RETN
+      if (instr.code === OP_JMP && instr.offset !== undefined) {
+        const jmpTarget = instr.address + instr.offset;
         const targetBlock = this.cfg.getBlockForAddress(jmpTarget);
         if (targetBlock) {
           // Check if target block ends with RETN
@@ -1100,17 +1220,26 @@ export class NWScriptControlNodeToASTConverter {
             return true;
           }
         }
+        // JMP found but doesn't target RETN - not a return value write
+        return false;
       }
+      
+      // If we find another CPDOWNSP before RETN/JMP, this is NOT a return value write
+      // (it means there's another assignment happening)
+      if (instr.code === OP_CPDOWNSP) {
+        return false;
+      }
+      
+      // If we find a terminator that's not RETN or JMP, this is not a return value write
+      if (instr.code === OP_JSR || instr.code === OP_JZ || instr.code === OP_JNZ) {
+        return false;
+      }
+      
+      // Continue looking for RETN/JMP (skip intermediate instructions like CPTOPSP, MOVSP)
     }
     
-    // Check successors for RETN
-    for (const successor of block.successors) {
-      if (successor.exitType === 'return' || 
-          (successor.endInstruction && successor.endInstruction.code === OP_RETN)) {
-        return true;
-      }
-    }
-    
+    // If we didn't find RETN or JMP to RETN within the look-ahead limit,
+    // this is NOT a return value write
     return false;
   }
 }

@@ -281,17 +281,13 @@ export class NWScriptLocalVariableAnalyzer {
           default: continue; // Skip unknown types
         }
 
-        // For uninitialized variables, we need to find what offset they use
-        // Look for CPTOPSP instructions that read from this variable
-        // For now, use a default offset based on order (will be corrected if we find CPTOPSP)
-        // Default: -8 for first, -12 for second, -16 for third, etc.
-        // But actually, we should track the stack state...
-        // For simplicity, use -8 - (index * 4) as a heuristic
-        const index = this.localInits.length;
-        const defaultOffset = 0xFFFFFFF8 - (index * 4); // -8, -12, -16, etc.
-        
+        // For uninitialized variables, we cannot determine the offset statically
+        // The offset depends on the actual stack state at the time of use
+        // Stack-aware components (NWScriptStackSimulator, NWScriptExpressionBuilder) will
+        // resolve variable positions dynamically using the variableStackPositions map
+        // Set offset to 0 as a placeholder - it will be resolved by stack-aware resolution
         this.localInits.push({
-          offset: defaultOffset,
+          offset: 0, // Placeholder - will be resolved by stack-aware components using actual stack positions
           dataType: dataType,
           initialValue: undefined,
           hasInitializer: false,
