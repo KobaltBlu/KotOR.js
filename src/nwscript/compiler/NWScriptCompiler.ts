@@ -551,6 +551,7 @@ export class NWScriptCompiler {
   getDataType( value?: any ): any {
     if(typeof value == 'object'){
       if(value.type == 'literal') return value.datatype;
+      if(value.type == 'variable_reference') return value?.variable_reference?.datatype;
       if(value.type == 'variable') { return value.datatype || value?.variable_reference?.datatype || value?.variable_reference?.datatype; }
       if(value.type == 'variableList') { return value.datatype }
       if(value.type == 'argument') return value.datatype;

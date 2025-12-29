@@ -423,9 +423,13 @@ export class NWScriptParser {
             this.scope = new NWScriptScope(this.program, object.returntype);
             this.scopes.push(this.scope);
 
+            let argStackOffset = 0;
             for(let i = 0; i < object.arguments.length; i++){
+              argStackOffset += 4;//this.getDataTypeStackLength(object.arguments[i]);
               this.walkASTStatement(object.arguments[i]);
-              this.scope.addVariable(object.arguments[i]);
+              // this.scope.addVariable(object.arguments[i]);
+              this.scope.addArgument(object.arguments[i]);
+              object.arguments[i].stackOffset = argStackOffset;
             }
 
             for(let i = 0; i < object.statements.length; i++){
@@ -776,6 +780,14 @@ export class NWScriptParser {
         const right_type = this.getValueDataType(object.right);
         const right_type_unary = this.getValueDataTypeUnary(object.right);
 
+        if(object.type == 'mul'){
+          console.log('mul', object.left, object.right);
+          console.log('left_type', left_type);
+          console.log('right_type', right_type);
+          console.log('left_type_unary', left_type_unary);
+          console.log('right_type_unary', right_type_unary);
+        }
+
         if(object.type == 'add'){
           if(    !(left_type == 'int'    && right_type == 'int')
               && !(left_type == 'int'    && right_type == 'float')
@@ -981,9 +993,25 @@ export class NWScriptParser {
     }
   }
 
+  getDataTypeStackLength( datatype?: any ): number {
+    if(datatype && datatype.type == 'datatype'){
+      switch(datatype.value){
+        case 'void':    return 0;
+        case 'vector':  return 12;
+        case 'int':     return 4;
+        case 'float':   return 4;
+        case 'string':  return 4;
+        case 'object':  return 4;
+        default:        return 4;
+      }
+    }
+    throw 'Invalid datatype object ' + datatype;
+  }
+
 }
 
 class NWScriptScope {
+  arguments: any[] = [];
   variables: any[] = [];
   constants: any[] = [];
   program: any = null;
@@ -1008,13 +1036,27 @@ class NWScriptScope {
     }
   }
 
+  addArgument(argument: any){
+    if(!this.hasArgument(argument.name)){
+      this.arguments.push(argument);
+    }
+  }
+
+  hasArgument(name = ''){
+    return this.getArgument(name) ? true : false;
+  }
+
+  getArgument(name = ''){
+    return this.arguments.find( v => v.name == name );
+  }
+
   hasVariable(name = ''){
     return this.getVariable(name) ? true : false;
   }
 
   getVariable(name = ''){
     console.log('getVariable', name, this.variables.slice(0), this.constants.slice(0));
-    return this.variables.find( v => v.name == name ) || this.constants.find( v => v.name == name );
+    return this.variables.find( v => v.name == name ) || this.arguments.find( v => v.name == name ) || this.constants.find( v => v.name == name );
   }
 
   popped(){
