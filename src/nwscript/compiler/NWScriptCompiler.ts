@@ -499,6 +499,7 @@ export class NWScriptCompiler {
         case 'literal':       return this.compileLiteral( statement );
         case 'variable':      return this.compileVariable( statement );
         case 'variableList':      return this.compileVariableList( statement );
+        case 'variable_reference':return this.compileVariable( statement );
         case 'argument':      return this.compileArgument( statement );
         case 'struct':        return this.compileStruct( statement );
         case 'compare':       return this.compileCompare( statement );
@@ -574,7 +575,7 @@ export class NWScriptCompiler {
 
   compileVariable( statement: any ){
     const buffers: Uint8Array[] = [];
-    if(statement && statement.type == 'variable'){
+    if(statement && (statement.type == 'variable' || statement.type == 'variable_reference')){
       //console.log('variable', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
       if(statement.struct){
         if(statement.declare === true){
@@ -650,14 +651,21 @@ export class NWScriptCompiler {
             buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
           }else{ //retrieving
             if(statement.is_global){
-              if(statement.variable_reference.value.type == 'literal'){
-                buffers.push( this.compileLiteral( statement.variable_reference.value ) );
+              const lit = this.getConstantLiteral(statement.variable_reference);
+              if(lit){
+                buffers.push( this.compileLiteral( lit ) );
               }else{
                 buffers.push( this.writeCPTOPBP( statement.variable_reference.stackPointer - this.basePointer, this.getDataTypeStackLength(statement.datatype) ) );
               }
             }else{
-              if(statement.variable_reference.is_engine_constant && statement.variable_reference.value.type == 'literal'){
-                buffers.push( this.compileLiteral( statement.variable_reference.value ) );
+              if(statement.variable_reference.is_engine_constant){
+                const lit = this.getConstantLiteral(statement.variable_reference);
+                if(lit){
+                  buffers.push( this.compileLiteral( lit ) );
+                }else{
+                  // fallback to stack copy if somehow not literal
+                  buffers.push( this.writeCPTOPSP( statement.variable_reference.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
+                }
               }else if(statement.variable_reference.type == 'argument'){
                 const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + statement.variable_reference.stackPointer;
                 buffers.push( this.writeCPTOPSP( -arg_stack_pointer, this.getDataTypeStackLength(statement.datatype) ) );
@@ -670,6 +678,23 @@ export class NWScriptCompiler {
       }
     }
     return concatBuffers(buffers);
+  }
+
+  // Normalize an engine constant into a literal node the emitter understands.
+  // Returns undefined if it cannot be resolved as a literal.
+  getConstantLiteral(constant: any){
+    if(!constant) return undefined;
+    // If already a literal node, return as-is
+    if(constant.value && constant.value.type === 'literal') return constant.value;
+    // If value is a primitive number/string, wrap it as a literal with the constant's datatype
+    if(typeof constant.value === 'number' || typeof constant.value === 'string'){
+      return {
+        type: 'literal',
+        datatype: constant.datatype,
+        value: constant.value
+      };
+    }
+    return undefined;
   }
 
   compileStruct( statement: any ){

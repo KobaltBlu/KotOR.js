@@ -242,6 +242,9 @@ export class NWScriptParser {
         if(value.type == 'variable') { 
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
+        if(value.type == 'variable_reference') {
+          return value.datatype?.value || value?.variable_reference?.datatype?.value;
+        }
         if(value.type == 'argument') return value.datatype?.value;
         if(value.type == 'function_call') return value.function_reference?.returntype?.value;
         if(value.type == 'add') return this.getValueDataType(value.left);
@@ -265,6 +268,7 @@ export class NWScriptParser {
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.unary;
         if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
+        if(value.type == 'variable_reference') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'argument') return value.datatype?.unary;
         if(value.type == 'function_call') return value.function_reference?.returntype?.unary;
         if(value.type == 'add') return this.getValueDataTypeUnary(value.left);
@@ -504,6 +508,16 @@ export class NWScriptParser {
 
         for(let i = 0; i < object.variables.length; i++){
           this.walkASTStatement(object.variables[i]);
+        }
+
+      }else if(object.type == 'variable_reference'){
+
+        // Resolve reference against engine constants, locals, or globals
+        object.variable_reference = this.getVariableByName(object.name);
+        object.datatype = object?.variable_reference?.datatype;
+
+        if(!object.variable_reference){
+          this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
         }
 
       }else if(object.type == 'variable'){
