@@ -1033,7 +1033,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeEQUAL(NWCompileDataTypes.OO) );
         }else{
           const engine_type_left = this.getDataType(statement.left).unary;
-          const engine_type_right = this.getDataType(statement.left).unary;
+          const engine_type_right = this.getDataType(statement.right).unary;
           if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
             if(engine_type_left == engine_type_right){
               const engine_type_index = engine_type_left - 0x10;
@@ -1052,7 +1052,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeNEQUAL(NWCompileDataTypes.OO) );
         }else{
           const engine_type_left = this.getDataType(statement.left).unary;
-          const engine_type_right = this.getDataType(statement.left).unary;
+          const engine_type_right = this.getDataType(statement.right).unary;
           if( (engine_type_left >= 0x10 && engine_type_left <= 0x1F) && (engine_type_right >= 0x10 && engine_type_right <= 0x1F) ){
             if(engine_type_left == engine_type_right){
               const engine_type_index = engine_type_left - 0x10;
