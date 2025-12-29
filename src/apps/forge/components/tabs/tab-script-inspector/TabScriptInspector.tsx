@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as KotOR from "../../../KotOR";
 import { TabTextEditorState } from "../../../states/tabs";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;
@@ -25,7 +26,7 @@ export const TabScriptInspector = function(props: any){
 
   return (
     <div className="tab-pane-content scroll-y log-list bg-dark">
-      <table className="table table-stripped text-light" style={{width: `auto`}}>
+      <table className="table table-stripped text-light" style={{width: `auto`, fontFamily: `'Courier New', monospace`, whiteSpace: `pre`}}>
         <thead>
           <tr>
             <th>Address</th>
@@ -33,6 +34,7 @@ export const TabScriptInspector = function(props: any){
             <th>Type</th>
             <th>Value</th>
             <th>Code Label</th>
+            <th>Assembly</th>
           </tr>
         </thead>
         <tbody>
@@ -43,7 +45,7 @@ export const TabScriptInspector = function(props: any){
               const type_hex = instruction.type_hex.toUpperCase();
               let value = ``;
 
-              if(instruction.code == 4){
+              if(instruction.code == OP_CONST){
                 switch(instruction.type){
                   case 3:
                     value = (instruction as any).integer;
@@ -64,6 +66,10 @@ export const TabScriptInspector = function(props: any){
                     console.warn('CONST', instruction.type, instruction);
                   break;
                 }
+              }else if(instruction.code == OP_MOVSP || instruction.code == OP_JMP || instruction.code == OP_JSR || instruction.code == OP_JZ || instruction.code == OP_JNZ){
+                value = `${(instruction as any).offset}`;
+              }else if(instruction.code == OP_CPTOPSP || instruction.code == OP_CPDOWNSP || instruction.code == OP_CPDOWNBP || instruction.code == OP_CPTOPBP){
+                value = `${(instruction as any).offset}, ${(instruction as any).size}`;
               }
 
               // const padding = '                                  ';
@@ -75,6 +81,7 @@ export const TabScriptInspector = function(props: any){
                   <td>{type_hex}</td>
                   <td>{value}</td>
                   <td>{KotOR.NWScriptByteCode[instruction.code]}</td>
+                  <td>{instruction.toAssemblyString()}</td>
                 </tr>
               )
             })
