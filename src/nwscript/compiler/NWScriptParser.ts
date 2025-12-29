@@ -780,6 +780,15 @@ export class NWScriptParser {
         const right_type = this.getValueDataType(object.right);
         const right_type_unary = this.getValueDataTypeUnary(object.right);
 
+        // propagate datatype onto this arithmetic/compare node
+        if(!object.datatype){
+          if(left_type){
+            object.datatype = { type:'datatype', value:left_type, unary:left_type_unary };
+          }else if(right_type){
+            object.datatype = { type:'datatype', value:right_type, unary:right_type_unary };
+          }
+        }
+
         if(object.type == 'mul'){
           console.log('mul', object.left, object.right);
           console.log('left_type', left_type);
