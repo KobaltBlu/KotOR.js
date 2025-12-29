@@ -16,7 +16,7 @@ export const TabTextEditor = function(props: any){
   const [code, setCode] = useState<string>(tab.code);
 
   const options: any = {
-
+    automaticLayout: true
   };
 
   const onChange = (newValue: any, e: any) => {
@@ -53,6 +53,8 @@ export const TabTextEditor = function(props: any){
       <LayoutContainerProvider>
         <LayoutContainer southContent={southContent}>
           <MonacoEditor
+            width="100%"
+            height="100%"
             language="nwscript"
             theme="nwscript-dark"
             value={code}
