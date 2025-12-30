@@ -662,11 +662,11 @@ export class NWScriptHandParser {
     }
     if (this.is("keyword", "OBJECT_SELF")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 1, source: t.source };
+      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source };
     }
     if (this.is("keyword", "OBJECT_INVALID")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source };
+      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 1, source: t.source };
     }
 
     // parens
