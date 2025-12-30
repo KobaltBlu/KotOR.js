@@ -396,9 +396,9 @@ export class NWScriptParser {
         }
 
         //parse global functions
-        for(let i = 0; i < global_functions.length; i++){
-          this.walkASTStatement(global_functions[i]);
-        }
+        // for(let i = 0; i < global_functions.length; i++){
+        //   this.walkASTStatement(global_functions[i]);
+        // }
 
         this.program.basePointer = this.program.stackPointer;
 
@@ -416,9 +416,9 @@ export class NWScriptParser {
 
       }else if(object.type == 'function'){
         console.log('function', object);
-        if(this.scope.is_global){
+        // if(this.scope.is_global){
           if(!object.defined || !this.isNameInUse(object.name)){
-            object.called = false;
+            // object.called = false;
             object.defined = true;
             this.scope = new NWScriptScope(this.program, object.returntype);
             this.scopes.push(this.scope);
@@ -441,9 +441,9 @@ export class NWScriptParser {
           }else{
             this.throwError("this function name is already in use", object, object);
           }
-        }else{
-          this.throwError("functions cannot be declared outside of the global scope", object, object);
-        }
+        // }else{
+        //   this.throwError("functions cannot be declared outside of the global scope", object, object);
+        // }
 
       }else if(object.type == 'block'){
         this.scope = new NWScriptScope(this.program);
@@ -466,7 +466,10 @@ export class NWScriptParser {
           object.action_id = -1;
           const scriptFunction = this.getFunctionByName(object.name);
           if(scriptFunction){
-            if(!scriptFunction.called) scriptFunction.called = true;
+            if(!scriptFunction.called){
+              scriptFunction.called = true;
+              this.walkASTStatement(scriptFunction);
+            } 
             object.function_reference = scriptFunction;
           }else{
             this.throwError("Tried to call an undefined function", object, object);
@@ -547,6 +550,7 @@ export class NWScriptParser {
         // Resolve reference against engine constants, locals, or globals
         object.variable_reference = this.getVariableByName(object.name);
         object.datatype = object?.variable_reference?.datatype;
+        object.is_global = object?.variable_reference?.is_global;
         if(!object.variable_reference){
           this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
         }
@@ -614,6 +618,7 @@ export class NWScriptParser {
         }else if(!object.struct){
           object.variable_reference = this.getVariableByName(object.name);
           object.datatype = object?.variable_reference?.datatype;
+          object.is_global = object?.variable_reference?.is_global;
         }
 
         if(typeof object.value == 'object') this.walkASTStatement(object.value);
@@ -627,6 +632,7 @@ export class NWScriptParser {
                 if(property.name == object.name){
                   object.variable_reference = property;
                   object.datatype = property.datatype;
+                  object.is_global = object?.variable_reference?.is_global;
                 }
               }
             }else if(object.struct_reference.type == 'variable'){
@@ -635,6 +641,7 @@ export class NWScriptParser {
                 if(property.name == object.name){
                   object.variable_reference = property;
                   object.datatype = property.datatype;
+                  object.is_global = object?.variable_reference?.is_global;
                 }
               }
             }
@@ -988,6 +995,7 @@ export class NWScriptParser {
         object.variable_reference = this.getVariableByName(object?.value?.name);
         if(object.variable_reference){
           object.datatype = object.variable_reference.datatype;
+          object.is_global = object.variable_reference.is_global;
           if( !(object.datatype.value == 'int') )
           {
             this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);

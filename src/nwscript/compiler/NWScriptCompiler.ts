@@ -681,7 +681,11 @@ export class NWScriptCompiler {
                 const arg_stack_pointer = (this.stackPointer - this.scope.block.preStatementsStackPointer) + varRef.stackPointer;
                 buffers.push( this.writeCPTOPSP( -arg_stack_pointer, this.getDataTypeStackLength(statement.datatype) ) );
               }else{
-                buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
+                if(varRef.is_global){
+                  buffers.push( this.writeCPTOPBP( varRef.stackPointer - this.basePointer, this.getDataTypeStackLength(statement.datatype) ) );
+                }else{
+                  buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
+                }
               }
             }
           }
