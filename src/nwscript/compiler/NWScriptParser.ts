@@ -202,7 +202,7 @@ export class NWScriptParser {
 
   getVariableByName( name: any = '' ){
     if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
-    if(!name) return undefined;
+    if(!name || (typeof name === 'object')) return undefined;
     let variable = this.engine_constants.find( v => v.name == name);
     if(!variable){
       for(let i = 0; i < this.scopes.length; i++){
@@ -534,6 +534,17 @@ export class NWScriptParser {
 
         this.program.structs.push(object);
         this.scope.addVariable(object);
+      }else if(object.type == 'property'){
+        if(object.left && object.left.type == 'variable_reference'){
+          object.variable_reference = this.getVariableByName(`${object.left.name}.${object.name}`);
+          object.datatype = object.left?.variable_reference?.datatype;
+          object.is_global = object.left?.variable_reference?.is_global;
+          console.log('property', object, `${object.left.name}.${object.name}`, object.variable_reference);
+        }
+
+        if(object.right){
+          this.walkASTStatement(object.right);
+        }
       }else if(object.type == 'variableList'){
         object.variables = [];
         for(let i = 0; i < object.names.length; i++){
@@ -615,6 +626,14 @@ export class NWScriptParser {
         if(object.declare){
           this.local_variables.push(object);
           this.scope.addVariable(object);
+          if(object.datatype.struct){
+            const structReference = this.getVariableByName(object.datatype.struct);
+            if(structReference){
+              object.struct_reference = structReference;
+            }else{
+              this.throwError(`Tried to access a struct [${object.datatype.struct}] that is not in this scope.`, object, object);
+            }
+          }
         }else if(!object.struct){
           object.variable_reference = this.getVariableByName(object.name);
           object.datatype = object?.variable_reference?.datatype;
@@ -1068,6 +1087,20 @@ class NWScriptScope {
 
   getVariable(name = ''){
     console.log('getVariable', name, this.variables.slice(0), this.constants.slice(0));
+    if(!name || typeof name != 'string'){
+      console.error('getVariable: name is not a string');
+    }
+    const isStructProperty = name?.includes('.');
+    if(isStructProperty){
+      const parts = name.split('.');
+      const structName = parts[0];
+      const propertyName = parts[1];
+      const struct = this.getVariable(structName);
+      if(struct){
+        console.log(struct);
+        return struct?.struct_reference?.properties?.find( p => p.name == propertyName );
+      }
+    }
     return this.variables.find( v => v.name == name ) || this.arguments.find( v => v.name == name ) || this.constants.find( v => v.name == name );
   }
 
