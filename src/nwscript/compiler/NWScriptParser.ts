@@ -158,21 +158,21 @@ export class NWScriptParser {
       engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
     });
 
-    const ast_script = hp.parseProgram();
-    this.ast = ast_script;
+    const program = hp.parseProgram();
+    this.ast = program;
 
     this.errors = [];
     this.local_variables = [];
     this.local_functions = [];
 
     // reuse your existing post-pass (type resolution, scopes, validation, etc.)
-    this.walkASTStatement(ast_script);
+    this.walkASTStatement(program);
 
     if (!this.errors.length) {
-      ast_script.parsed = true;
+      program.parsed = true;
       console.log(`Script parsed without errors`);
     } else {
-      ast_script.parsed = false;
+      program.parsed = false;
       console.log(`Script parsed with errors (${this.errors.length})`);
       for (let i = 0; i < this.errors.length; i++) {
         console.log("Error", this.errors[i]);
@@ -203,15 +203,44 @@ export class NWScriptParser {
   getVariableByName( name: any = '' ){
     if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
     if(!name || (typeof name === 'object')) return undefined;
-    let variable = this.engine_constants.find( v => v.name == name);
-    if(!variable){
-      for(let i = 0; i < this.scopes.length; i++){
-        if(variable) break;
-        const scope = this.scopes[i];
-        variable = scope.getVariable(name);
+
+    // Engine constants are always global.
+    const engineConst = this.engine_constants.find( v => v.name == name);
+    if(engineConst) return engineConst;
+
+    // Limit lookup to the global scope plus the active function scope (and its child blocks),
+    // ignoring variables from callers or previously processed sibling scopes.
+    const scopes: any[] = this.scopes ?? [];
+    if(!scopes.length) return undefined;
+
+    // Find the most-recent function/global scope boundary in the active stack.
+    let fnStartIdx = 0; // default to global scope
+    for(let i = scopes.length - 1; i >= 0; i--){
+      const sc = scopes[i];
+      if(sc?.is_global || typeof sc?.returntype !== 'undefined'){
+        fnStartIdx = i;
+        break;
       }
     }
-    return variable;
+
+    const allowedScopes: any[] = [];
+    // Always consider the global scope first in the outer chain (scopes[0] should be global).
+    if(scopes[0]) allowedScopes.push(scopes[0]);
+    for(let i = fnStartIdx; i < scopes.length; i++){
+      const sc = scopes[i];
+      if(sc && allowedScopes.indexOf(sc) === -1){
+        allowedScopes.push(sc);
+      }
+    }
+
+    // Search from innermost to outermost within the allowed set.
+    for(let i = allowedScopes.length - 1; i >= 0; i--){
+      const scope = allowedScopes[i];
+      const variable = scope.getVariable(name);
+      if(variable) return variable;
+    }
+
+    return undefined;
   }
 
   getStatementName( name: any = '' ){
