@@ -771,6 +771,7 @@ export class NWScriptParser {
         || object.type == 'incor'
         || object.type == 'booland'
         || object.type == 'xor'
+        || object.type == 'assign'
       ){
         if(typeof object.left == 'object') this.walkASTStatement(object.left);
         if(typeof object.right == 'object') this.walkASTStatement(object.right);
@@ -950,6 +951,10 @@ export class NWScriptParser {
               this.throwError(`Can't Inclusive OR types of [${left_type}] and [${right_type}] together`, object, object.right);
             }
           }
+        }else if(object.type == 'assign'){
+          if(left_type != right_type){
+            this.throwError(`Can't assign a value of type [${right_type}] to a variable of type [${left_type}]`, object, object.right);
+          }
         }
       }else if(object.type == 'not'
         || object.type == 'neg'
@@ -978,24 +983,14 @@ export class NWScriptParser {
             this.throwError(`Can't Not a value of type [${value_type}]`, object, object.value);
           }
         }
-      }else if(object.type == 'inc'){
+      }else if(object.type == 'inc' || object.type == 'dec'){
         let value_type = this.getValueDataType(object.value);
-        object.variable_reference = this.getVariableByName(object.name);
+        object.variable_reference = this.getVariableByName(object?.value?.name);
         if(object.variable_reference){
           object.datatype = object.variable_reference.datatype;
           if( !(object.datatype.value == 'int') )
           {
             this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
-          }
-        }
-      }else if(object.type == 'dec'){
-        let value_type = this.getValueDataType(object.value);
-        object.variable_reference = this.getVariableByName(object.name);
-        if(object.variable_reference){
-          object.datatype = object.variable_reference.datatype;
-          if( !(object.datatype.value == 'int') )
-          {
-            this.throwError(`Can't Decrement a value of type [${value_type}]`, object, object.value);
           }
         }
       }

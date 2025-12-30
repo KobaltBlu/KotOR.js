@@ -529,7 +529,9 @@ export class NWScriptCompiler {
         case 'dec':           return this.compileDEC( statement );
         case 'continue':      return this.compileContinue( statement );
         case 'break':         return this.compileBreak( statement );
+        case 'assign':         return this.compileAssign( statement );
         default: console.error('unhandled statement', statement.type);
+        console.log(statement);
       }
     }
   }
@@ -563,7 +565,12 @@ export class NWScriptCompiler {
       if(value.type == 'div') return this.getDataType(value.left);
       if(value.type == 'compare') return this.getDataType(value.left);
       if(value.type == 'not') return this.getDataType(value.value);
+      if(value.type == 'neg') return this.getDataType(value.value);
+      if(value.type == 'inc') return this.getDataType(value.value);
+      if(value.type == 'dec') return this.getDataType(value.value);
     }
+    console.log('getDataType', value);
+    throw 'Invalid value for getDataType: ' + value;
   }
 
   compileVariableList( statement: any ){
@@ -680,6 +687,24 @@ export class NWScriptCompiler {
           }
         }
       }
+    }
+    return concatBuffers(buffers);
+  }
+
+  compileAssign( statement: any ){
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'assign'){
+      if(statement.left.type != 'variable_reference'){
+        throw 'Invalid left type for assign: Must be a variable reference';
+      }
+      const varRef = statement.left.variable_reference;
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
+      if(varRef.is_global){
+        buffers.push( this.writeCPDOWNBP( (varRef.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
+      }else{
+        buffers.push( this.writeCPDOWNSP( (varRef.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
+      }
+      buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
     }
     return concatBuffers(buffers);
   }
