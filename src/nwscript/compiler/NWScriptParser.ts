@@ -38,7 +38,7 @@ export class NWScriptParser {
 
   nwscript_source: string;
 
-  scopes: any[] = [];
+  scopes: NWScriptScope[] = [];
   program: any = {};
   scope: any;
 
@@ -166,7 +166,7 @@ export class NWScriptParser {
     this.local_functions = [];
 
     // reuse your existing post-pass (type resolution, scopes, validation, etc.)
-    this.walkASTStatement(program);
+    this.parseASTStatement(program);
 
     if (!this.errors.length) {
       program.parsed = true;
@@ -298,7 +298,7 @@ export class NWScriptParser {
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.unary;
         if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
-      if(value.type == 'assign') return this.getValueDataTypeUnary(value.right);
+        if(value.type == 'assign') return this.getValueDataTypeUnary(value.right);
         if(value.type == 'variable_reference') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'argument') return value.datatype?.unary;
         if(value.type == 'function_call') return value.function_reference?.returntype?.unary;
@@ -360,696 +360,826 @@ export class NWScriptParser {
     return JSON.parse(JSON.stringify(snapshot, replacer));
   }
 
-  walkASTStatement( object: any = undefined ){
-    if(object != null && typeof object === 'object'){
-      if(object.type == 'program'){
+  parseProgram(program: any){
+    this.program = program;
+    this.program.basePointer = 0;
+    this.program.stackPointer = 0;
 
-        this.program = object;
-        this.program.basePointer = 0;
-        this.program.stackPointer = 0;
+    this.program.functions = [];
+    this.program.structs = [];
+    this.program.scope = new NWScriptScope(this.program);
+    this.program.scope.is_global = true;
 
-        this.program.functions = [];
-        this.program.structs = [];
-        this.program.scope = new NWScriptScope(this.program);
-        this.program.scope.is_global = true;
-
-        this.scope = this.program.scope;
-        this.scopes = [this.program.scope];
+    this.scope = this.program.scope;
+    this.scopes = [this.program.scope];
 
 
 
-        //detect void main()
-        object.main = object.statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
-        if(object.main){
-          //remove main function from the program's statement list
-          object.statements.splice( object.statements.indexOf(object.main, 1) );
-        }
+    //detect void main()
+    program.main = program.statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
+    if(program.main){
+      //remove main function from the program's statement list
+      program.statements.splice( program.statements.indexOf(program.main, 1) );
+    }
 
-        //detect int startingConditional()
-        object.startingConditional = object.statements.find( (s: any) => s.type == 'function' && s.name == 'StartingConditional' && s.returntype && this.isDataType(s.returntype, 'int') );
-        if(object.startingConditional){
-          //remove startingConditional function from the program's statement list
-          object.statements.splice( object.statements.indexOf(object.startingConditional, 1) );
-        }
+    //detect int startingConditional()
+    program.startingConditional = program.statements.find( (s: any) => s.type == 'function' && s.name == 'StartingConditional' && s.returntype && this.isDataType(s.returntype, 'int') );
+    if(program.startingConditional){
+      //remove startingConditional function from the program's statement list
+      program.statements.splice( program.statements.indexOf(program.startingConditional, 1) );
+    }
 
-        //detect the global function headers
-        let global_functions_headers = object.statements.filter( (s: any) => s.type == 'function' && s.header_only );
-        for(let i = 0; i < global_functions_headers.length; i++){
-          //remove function header from the program's statement list
-          object.statements.splice( object.statements.indexOf(global_functions_headers[i]), 1 );
-        }
+    //detect the global function headers
+    let global_functions_headers = program.statements.filter( (s: any) => s.type == 'function' && s.header_only );
+    for(let i = 0; i < global_functions_headers.length; i++){
+      //remove function header from the program's statement list
+      program.statements.splice( program.statements.indexOf(global_functions_headers[i]), 1 );
+    }
 
-        //detect the global functions with header and body
-        let global_functions = object.statements.filter( (s: any) => s.type == 'function' && !s.header_only );
-        for(let i = 0; i < global_functions.length; i++){
-          //remove function from the program's statement list
-          const function_header = global_functions_headers.find( (f:any) => f.name == global_functions[i].name );
-          if(function_header){
-            global_functions[i].arguments = function_header.arguments;
-          }
-          this.local_functions.push(global_functions[i]);
-          this.program.functions.push(global_functions[i]);
-          object.statements.splice( object.statements.indexOf(global_functions[i]), 1 );
-        }
+    //detect the global functions with header and body
+    let global_functions = program.statements.filter( (s: any) => s.type == 'function' && !s.header_only );
+    for(let i = 0; i < global_functions.length; i++){
+      //remove function from the program's statement list
+      const function_header = global_functions_headers.find( (f:any) => f.name == global_functions[i].name );
+      if(function_header){
+        global_functions[i].arguments = function_header.arguments;
+      }
+      this.local_functions.push(global_functions[i]);
+      this.program.functions.push(global_functions[i]);
+      program.statements.splice( program.statements.indexOf(global_functions[i]), 1 );
+    }
 
-        //validate presence of void main() and int StartingConditional()
-        if(object.main && object.startingConditional){
-          this.throwError("You cannot have both `void main()` and `int StartingConditional()` declared in the same script", object, object);
-        }else if(!object.main && !object.startingConditional){
-          this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", object, object);
-        }
+    //validate presence of void main() and int StartingConditional()
+    if(program.main && program.startingConditional){
+      this.throwError("You cannot have both `void main()` and `int StartingConditional()` declared in the same script", program, program);
+    }else if(!program.main && !program.startingConditional){
+      this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", program, program);
+    }
 
-        //parse global statements
-        for(let i = 0; i < object.statements.length; i++){
-          this.walkASTStatement(object.statements[i]);
-        }
+    //parse global statements
+    for(let i = 0; i < program.statements.length; i++){
+      this.parseASTStatement(program.statements[i]);
+    }
 
-        //parse global functions
-        // for(let i = 0; i < global_functions.length; i++){
-        //   this.walkASTStatement(global_functions[i]);
-        // }
+    //parse global functions
+    // for(let i = 0; i < global_functions.length; i++){
+    //   this.walkASTStatement(global_functions[i]);
+    // }
 
-        this.program.basePointer = this.program.stackPointer;
+    this.program.basePointer = this.program.stackPointer;
 
-        if(object.main){
-          object.main.called = true;
-          this.walkASTStatement(object.main);
-          //remove startingConditional from the functions list if it got added to it
-          object.functions.splice( object.functions.indexOf(object.main), 1 );
-        }else if(object.startingConditional){
-          object.startingConditional.called = true;
-          this.walkASTStatement(object.startingConditional);
-          //remove startingConditional from the functions list if it got added to it
-          object.functions.splice( object.functions.indexOf(object.startingConditional), 1 );
-        }
+    if(program.main){
+      program.main.called = true;
+      this.parseASTStatement(program.main);
+      //remove startingConditional from the functions list if it got added to it
+      program.functions.splice( program.functions.indexOf(program.main), 1 );
+    }else if(program.startingConditional){
+      program.startingConditional.called = true;
+      this.parseASTStatement(program.startingConditional);
+      //remove startingConditional from the functions list if it got added to it
+      program.functions.splice( program.functions.indexOf(program.startingConditional), 1 );
+    }
+  }
 
-      }else if(object.type == 'function'){
-        console.log('function', object);
-        // if(this.scope.is_global){
-          if(!object.defined || !this.isNameInUse(object.name)){
-            // object.called = false;
-            object.defined = true;
-            this.scope = new NWScriptScope(this.program, object.returntype);
-            this.scopes.push(this.scope);
+  parseFunctionNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'function'){
+      this.throwError("Invalid function node", statement, statement);
+    }
+    console.log('function', statement);
+    if(!statement.defined || !this.isNameInUse(statement.name)){
+      statement.defined = true;
+      this.scope = new NWScriptScope(this.program, statement.returntype);
+      this.scopes.push(this.scope);
 
-            let argStackOffset = 0;
-            for(let i = 0; i < object.arguments.length; i++){
-              argStackOffset += 4;//this.getDataTypeStackLength(object.arguments[i]);
-              this.walkASTStatement(object.arguments[i]);
-              // this.scope.addVariable(object.arguments[i]);
-              this.scope.addArgument(object.arguments[i]);
-              object.arguments[i].stackOffset = argStackOffset;
-            }
+      let argStackOffset = 0;
+      for(let i = 0; i < statement.arguments.length; i++){
+        argStackOffset += 4;//this.getDataTypeStackLength(object.arguments[i]);
+        this.parseASTStatement(statement.arguments[i]);
+        // this.scope.addVariable(object.arguments[i]);
+        this.scope.addArgument(statement.arguments[i]);
+        statement.arguments[i].stackOffset = argStackOffset;
+      }
 
-            for(let i = 0; i < object.statements.length; i++){
-              this.walkASTStatement(object.statements[i]);
-            }
+      for(let i = 0; i < statement.statements.length; i++){
+        this.parseASTStatement(statement.statements[i]);
+      }
 
-            this.scopes.pop().popped();
-            this.scope = this.scopes[this.scopes.length - 1];
-          }else{
-            this.throwError("this function name is already in use", object, object);
-          }
-        // }else{
-        //   this.throwError("functions cannot be declared outside of the global scope", object, object);
-        // }
+      this.scopes.pop()?.popped();
+      this.scope = this.scopes[this.scopes.length - 1];
+    }else{
+      this.throwError("this function name is already in use", statement, statement);
+    }
+  }
 
-      }else if(object.type == 'block'){
-        this.scope = new NWScriptScope(this.program);
-        this.scopes.push(this.scope);
+  parseBlockNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'block'){
+      this.throwError("Invalid block node", statement, statement);
+    }
+    this.scope = new NWScriptScope(this.program);
+    this.scopes.push(this.scope);
 
-        for(let i = 0; i < object.statements.length; i++){
-          this.walkASTStatement(object.statements[i]);
-        }
+    for(let i = 0; i < statement.statements.length; i++){
+      this.parseASTStatement(statement.statements[i]);
+    }
 
-        this.scopes.pop().popped();
-        this.scope = this.scopes[this.scopes.length - 1];
-      }else if(object.type == 'function_call'){
+    this.scopes.pop()?.popped();
+    this.scope = this.scopes[this.scopes.length - 1];
+  }
 
-        object.function_reference = undefined;
-        const engineAction = this.getActionByName(object.name);
-        if(engineAction){
-          object.action_id = engineAction.index;
-          object.function_reference = engineAction;
-        }else{
-          object.action_id = -1;
-          const scriptFunction = this.getFunctionByName(object.name);
-          if(scriptFunction){
-            if(!scriptFunction.called){
-              scriptFunction.called = true;
-              this.walkASTStatement(scriptFunction);
-            } 
-            object.function_reference = scriptFunction;
-          }else{
-            this.throwError("Tried to call an undefined function", object, object);
-          }
-        }
-
-        if(object.function_reference){
-          //walk arguments passed to the function
-          const args = object.arguments;
-          const ref_args = object.function_reference.arguments;
-          for(let i = 0; i < ref_args.length; i++){
-            let arg = args[i];
-            const arg_ref = ref_args[i];
-
-            //Check to see if an argument was not supplied and the function reference 
-            //has a default argument value to use in place of unsupplied arguments
-            if(!arg && (typeof arg_ref.value !== 'undefined') ){
-              //generate a default argument if one is not supplied
-              const var_ref = this.getVariableByName(arg_ref.value);
-              if(var_ref){
-                arg = var_ref.value;
-                object.arguments.splice(i, 0, arg);
-              }else{
-                arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
-                object.arguments.splice(i, 0, arg);
-              }
-            }
-
-            if(arg){
-              this.walkASTStatement(arg);
-
-              if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
-                const argDataType = this.getValueDataType(arg);
-                const argRefDataType = this.getValueDataType(arg_ref);
-                
-                if(arg_ref.datatype.value == 'action'){
-                  if(!arg.function_reference){
-                    this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
-                  }
-                }else{
-                  const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
-                  this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to ${arg_ref.datatype.value} ${arg_ref.name}`, object, arg);
-                }
-              }else if(!arg_ref){
-                const argDataType = this.getValueDataType(arg);
-                const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
-                this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to [no argument]`, object, arg);
-              }
-            }else{
-              this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, object, arg);
-            }
-          }
-        }else{
-          this.throwError(`Missing definition for function ${object.name}`, object, object);
-        }
-        
-      }else if(object.type == 'struct'){
-        //If this is a variable declaration and the name is available
-        if(this.isNameInUse(object.name)){
-          this.throwError("Struct name is already in use", object, object);
-        }
-
-        this.program.structs.push(object);
-        this.scope.addVariable(object);
-      }else if(object.type == 'property'){
-        if(object.left && object.left.type == 'variable_reference'){
-          object.variable_reference = this.getVariableByName(`${object.left.name}.${object.name}`);
-          object.datatype = object.left?.variable_reference?.datatype;
-          object.is_global = object.left?.variable_reference?.is_global;
-          console.log('property', object, `${object.left.name}.${object.name}`, object.variable_reference);
-        }
-
-        if(object.right){
-          this.walkASTStatement(object.right);
-        }
-      }else if(object.type == 'variableList'){
-        object.variables = [];
-        for(let i = 0; i < object.names.length; i++){
-          const _var = { type: 'variable', is_const: object.is_const, declare: object.declare, datatype: object.datatype, name: object.names[i].name, value: object.value, source: object.names[i].source };
-          object.variables[i] = _var;
-        }
-
-        for(let i = 0; i < object.variables.length; i++){
-          this.walkASTStatement(object.variables[i]);
-        }
-
-      }else if(object.type == 'variable_reference'){
-
-        // Resolve reference against engine constants, locals, or globals
-        object.variable_reference = this.getVariableByName(object.name);
-        object.datatype = object?.variable_reference?.datatype;
-        object.is_global = object?.variable_reference?.is_global;
-        if(!object.variable_reference){
-          this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
-        }
-
-      }else if(object.type == 'variable'){
-        //If this is a variable declaration and the name is available
-        if(object.declare && this.isNameInUse(object.name)){
-          this.throwError("Variable name is already in use", object, object);
-        }
-
-        //If this is a variable declaration and the name is available
-        if(object.declare && object.is_const){
-          if(!this.isValueLiteral(object.value) || (this.getValueDataType(object.value) != 'int' && this.getValueDataType(object.value) != 'float' && this.getValueDataType(object.value) != 'string') ){
-            this.throwError("Variables with declared with the keyword [const] must have a literal value of type [int], [float], or [string]", object, object.value);
-          }
-        }
-
-        //Struct Variable Validation
-        if(object.struct){
-          if(object.declare){
-            let structVar = this.getVariableByName(object.struct);
-            if(structVar){
-              if(structVar.type == 'struct'){
-                object.struct_reference = structVar;
-              }else{
-                this.throwError(`Tried to access a struct [${object.struct}], but the returned type was [${structVar.type}].`, object, structVar);
-              }
-            }else{
-              this.throwError(`Tried to access a struct [${object.struct}] that is not in this scope.`, object, object);
-            }
-          }else{
-            let structVar = this.getVariableByName(object.struct);
-            if(structVar){
-              if(structVar.datatype.value == 'struct'){
-                if(structVar.struct_reference){
-                  if(structVar.struct_reference.type == 'struct'){
-                    //object.struct_reference = structVar.struct_reference;
-                    object.struct_reference = structVar;
-                  }else{
-                    this.throwError(`Tried to access a variable [${object.struct}] expecting a type of [struct], but the returned type was [${structVar.datatype.value}].`, object, object);
-                  }
-                }else{
-                  this.throwError(`Tried to access a variable [${object.struct}], but struct_reference is undefined.`, object, object);
-                }
-              }else{
-                //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
-                this.throwError(`Tried to access a variable [${object.struct}] with a type of [${structVar.datatype.value}], but expected type of [struct].`, object, structVar);
-              }
-            }else{
-              //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
-              this.throwError(`Tried to access a variable [${object.struct}] with a type of [struct] that is not in this scope.`, object, object);
-            }
-          }
-        }else{
-          //If this is a variable reference and the name is in scope
-          if(!object.declare && !this.isNameInUse(object.name)){
-            this.throwError(`Tried to access a variable name [${object.name}] that is not in this scope.`, object, object);
-          }
-        }
-
-        //Push this declared variable to the current scope
-        if(object.declare){
-          this.local_variables.push(object);
-          this.scope.addVariable(object);
-          if(object.datatype.struct){
-            const structReference = this.getVariableByName(object.datatype.struct);
-            if(structReference){
-              object.struct_reference = structReference;
-            }else{
-              this.throwError(`Tried to access a struct [${object.datatype.struct}] that is not in this scope.`, object, object);
-            }
-          }
-        }else if(!object.struct){
-          object.variable_reference = this.getVariableByName(object.name);
-          object.datatype = object?.variable_reference?.datatype;
-          object.is_global = object?.variable_reference?.is_global;
-        }
-
-        if(typeof object.value == 'object') this.walkASTStatement(object.value);
-
-        //Struct Property Access Validation
-        if(object.struct && object.name){
-          if(object.struct_reference){
-            if(object.struct_reference.type == 'struct'){
-              for(let i = 0; i < object.struct_reference.properties.length; i++){
-                const property = object.struct_reference.properties[i];
-                if(property.name == object.name){
-                  object.variable_reference = property;
-                  object.datatype = property.datatype;
-                  object.is_global = object?.variable_reference?.is_global;
-                }
-              }
-            }else if(object.struct_reference.type == 'variable'){
-              for(let i = 0; i < object.struct_reference.struct_reference.properties.length; i++){
-                const property = object.struct_reference.struct_reference.properties[i];
-                if(property.name == object.name){
-                  object.variable_reference = property;
-                  object.datatype = property.datatype;
-                  object.is_global = object?.variable_reference?.is_global;
-                }
-              }
-            }
-          }
-        }
-        
-        if(object.value && object.datatype && object?.datatype?.value != this.getValueDataType(object.value) ){
-          this.throwError(`Can't assign a value with a datatype type of [${this.getValueDataType(object.value)}] to ${object.datatype.value} ${object.name}`, object, object.value);
-        }
-
-      }else if(object.type == 'return'){
-        if(typeof object.value == 'object') this.walkASTStatement(object.value);
-
-        let scopeReturnType = this.scopes.slice(0).reverse().find( sc => typeof sc.returntype !== 'undefined' )?.returntype;
-        if(scopeReturnType){
-          const valueDataType = this.getValueDataType(object.value);
-          if(scopeReturnType.value == 'void'){
-            if(object.value != null) this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object, object.value);
-          }else if( scopeReturnType.value != valueDataType){
-            this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, object, object.value);
-          }
-        }
-
-      }else if( object.type == 'if' || 
-                object.type == 'elseif' || 
-                object.type == 'else' || 
-                object.type == 'do' || 
-                object.type == 'while'
-              ){
-
-        const conds = Array.isArray(object.condition) ? object.condition : (object.condition ? [object.condition] : []);
-        for(let i = 0; i < conds.length; i++){
-          this.walkASTStatement(conds[i]);
+  parseFunctionCallNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'function_call'){
+      this.throwError("Invalid function call node", statement, statement);
+    }
+    statement.function_reference = undefined;
+    const engineAction = this.getActionByName(statement.name);
+    if(engineAction){
+      statement.action_id = engineAction.index;
+      statement.function_reference = engineAction;
+    }else{
+      statement.action_id = -1;
+      const scriptFunction = this.getFunctionByName(statement.name);
+      if(scriptFunction){
+        if(!scriptFunction.called){
+          scriptFunction.called = true;
+          this.parseASTStatement(scriptFunction);
         } 
+        statement.function_reference = scriptFunction;
+      }else{
+        this.throwError("Tried to call an undefined function", statement, statement);
+      }
+    }
 
-        const elseIfs = Array.isArray(object.elseIfs) ? object.elseIfs : (object.elseIfs ? [object.elseIfs] : []);
-        for(let i = 0; i < elseIfs.length; i++){
-          this.walkASTStatement(elseIfs[i]);
+    if(statement.function_reference){
+      //walk arguments passed to the function
+      const args = statement.arguments;
+      const ref_args = statement.function_reference.arguments;
+      for(let i = 0; i < ref_args.length; i++){
+        let arg = args[i];
+        const arg_ref = ref_args[i];
+
+        //Check to see if an argument was not supplied and the function reference 
+        //has a default argument value to use in place of unsupplied arguments
+        if(!arg && (typeof arg_ref.value !== 'undefined') ){
+          //generate a default argument if one is not supplied
+          const var_ref = this.getVariableByName(arg_ref.value);
+          if(var_ref){
+            arg = var_ref.value;
+            statement.arguments.splice(i, 0, arg);
+          }else{
+            arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
+            statement.arguments.splice(i, 0, arg);
+          }
         }
 
-        if(object.else){
-          this.walkASTStatement(object.else);
-        }
+        if(arg){
+          this.parseASTStatement(arg);
 
-        this.scope = new NWScriptScope(this.program);
-        this.scopes.push(this.scope);
-
-        for(let i = 0; i < object.statements.length; i++){
-          this.walkASTStatement(object.statements[i]);
-        }
-
-        this.scopes.pop().popped();
-        this.scope = this.scopes[this.scopes.length - 1];
-
-        if(typeof object.else == 'object' && Array.isArray(object.else)){
-          let else_declared = false;
-          for(let i = 0; i < object.else.length; i++){
-            this.scope = new NWScriptScope(this.program);
-            this.scopes.push(this.scope);
-
-            const elseIf = object.else[i];
-            if(elseIf.type == 'else'){
-              if(else_declared){
-                this.throwError('Only one else statement can be chained in an If Else statement', object, elseIf);
+          if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
+            const argDataType = this.getValueDataType(arg);
+            const argRefDataType = this.getValueDataType(arg_ref);
+            
+            if(arg_ref.datatype.value == 'action'){
+              if(!arg.function_reference){
+                this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, statement, arg);
               }
-
-              if(i != (object.else.length-1)){
-                this.throwError('Else statements can only be declared at the end of an If Else statement', object, elseIf);
-              }
-
-              else_declared = true;
+            }else{
+              const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+              this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to ${arg_ref.datatype.value} ${arg_ref.name}`, statement, arg);
             }
-
-            this.walkASTStatement(elseIf);
-
-            this.scopes.pop().popped();
-            this.scope = this.scopes[this.scopes.length - 1];
+          }else if(!arg_ref){
+            const argDataType = this.getValueDataType(arg);
+            const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+            this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to [no argument]`, statement, arg);
           }
+        }else{
+          this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, statement, arg);
         }
-        
-      }else if( object.type == 'for'){
+      }
+    }else{
+      this.throwError(`Missing definition for function ${statement.name}`, statement, statement);
+    }
+  }
 
-        //walk initializer
-        if(object.initializer) this.walkASTStatement(object.initializer);
+  parseStructNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'struct'){
+      this.throwError("Invalid struct node", statement, statement);
+    }
+    //If this is a variable declaration and the name is available
+    if(this.isNameInUse(statement.name)){
+      this.throwError("Struct name is already in use", statement, statement);
+    }
+    this.program.structs.push(statement);
+    this.scope.addVariable(statement);
+  }
 
-        //walk condition
-        const conds = Array.isArray(object.condition) ? object.condition : (object.condition ? [object.condition] : []);
-        for(let i = 0; i < conds.length; i++){
-          this.walkASTStatement(conds[i]);
+  parsePropertyNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'property'){
+      this.throwError("Invalid property node", statement, statement);
+    }
+    if(statement.left && statement.left.type == 'variable_reference'){
+      statement.variable_reference = this.getVariableByName(`${statement.left.name}.${statement.name}`);
+      statement.datatype = statement.left?.variable_reference?.datatype;
+      statement.is_global = statement.left?.variable_reference?.is_global;
+      console.log('property', statement, `${statement.left.name}.${statement.name}`, statement.variable_reference);
+    }
+
+    if(statement.right){
+      this.parseASTStatement(statement.right);
+    }
+  }
+
+  parseVariableListNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'variableList'){
+      this.throwError("Invalid variable list node", statement, statement);
+    }
+    statement.variables = [];
+    for(let i = 0; i < statement.names.length; i++){
+      const _var = { type: 'variable', is_const: statement.is_const, declare: statement.declare, datatype: statement.datatype, name: statement.names[i].name, value: statement.value, source: statement.names[i].source };
+      statement.variables[i] = _var;
+    }
+
+    for(let i = 0; i < statement.variables.length; i++){
+      this.parseASTStatement(statement.variables[i]);
+    }
+  }
+
+  parseVariableReferenceNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'variable_reference'){
+      this.throwError("Invalid variable reference node", statement, statement);
+    }
+    // Resolve reference against engine constants, locals, or globals
+    statement.variable_reference = this.getVariableByName(statement.name);
+    statement.datatype = statement?.variable_reference?.datatype;
+    statement.is_global = statement?.variable_reference?.is_global;
+    if(!statement.variable_reference){
+      this.throwError(`Tried to access a variable name [${statement.name}] that is not in this scope.`, statement, statement);
+    }
+  }
+
+  parseVariableNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'variable'){
+      this.throwError("Invalid variable node", statement, statement);
+    }
+    //If this is a variable declaration and the name is available
+    if(statement.declare && this.isNameInUse(statement.name)){
+      this.throwError("Variable name is already in use", statement, statement);
+    }
+
+    //If this is a variable declaration and the name is available
+    if(statement.declare && statement.is_const){
+      if(!this.isValueLiteral(statement.value) || (this.getValueDataType(statement.value) != 'int' && this.getValueDataType(statement.value) != 'float' && this.getValueDataType(statement.value) != 'string') ){
+        this.throwError("Variables with declared with the keyword [const] must have a literal value of type [int], [float], or [string]", statement, statement.value);
+      }
+    }
+
+    //Struct Variable Validation
+    if(statement.struct){
+      const structVar = this.getVariableByName(statement.struct);
+      if(!structVar){
+        //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
+        this.throwError(`Tried to access a variable [${statement.struct}] with a type of [struct] that is not in this scope.`, statement, statement);
+        return;
+      }
+      statement.struct_reference = structVar || statement.struct_reference;
+      if(statement.declare){
+        if(structVar.type == 'struct'){
+          statement.struct_reference = structVar;
+        }else{
+          this.throwError(`Tried to access a struct [${statement.struct}], but the returned type was [${structVar.type}].`, statement, structVar);
         }
-
-        //walk incrementor
-        if(object.incrementor) this.walkASTStatement(object.incrementor);
-        
-        this.scope = new NWScriptScope(this.program);
-        this.scopes.push(this.scope);
-
-        for(let i = 0; i < object.statements.length; i++){
-          this.walkASTStatement(object.statements[i]);
+      }else{
+        if(structVar.datatype.value == 'struct'){
+          if(structVar.struct_reference){
+            if(structVar.struct_reference.type == 'struct'){
+              //object.struct_reference = structVar.struct_reference;
+              statement.struct_reference = structVar;
+            }else{
+              this.throwError(`Tried to access a variable [${statement.struct}] expecting a type of [struct], but the returned type was [${structVar.datatype.value}].`, statement, statement);
+            }
+          }else{
+            this.throwError(`Tried to access a variable [${statement.struct}], but struct_reference is undefined.`, statement, statement);
+          }
+        }else{
+          this.throwError(`Tried to access a variable [${statement.struct}] with a type of [${structVar.datatype.value}], but expected type of [struct].`, statement, structVar);
         }
-        
-        this.scopes.pop().popped();
-        this.scope = this.scopes[this.scopes.length - 1];
-        
-      }else if(object.type == 'switch'){
+      }
+    }else{
+      //If this is a variable reference and the name is in scope
+      if(!statement.declare && !this.isNameInUse(statement.name)){
+        this.throwError(`Tried to access a variable name [${statement.name}] that is not in this scope.`, statement, statement);
+      }
+    }
 
-        //walk switch conditions
-        if(object.condition) this.walkASTStatement(object.condition);
-
-        //walk switch case statements
-        for(let i = 0; i < object.cases.length; i++){
-          this.walkASTStatement(object.cases[i]);
-          for(let j = 0; j < object.cases[i].statements.length; j++){
-            if(object.cases[i].statements[j].type == 'break') object.cases[i].fallthrough = false;
-          }
+    //Push this declared variable to the current scope
+    if(statement.declare){
+      this.local_variables.push(statement);
+      this.scope.addVariable(statement);
+      if(statement.datatype.struct){
+        const structReference = this.getVariableByName(statement.datatype.struct);
+        if(structReference){
+          statement.struct_reference = structReference;
+        }else{
+          this.throwError(`Tried to access a struct [${statement.datatype.struct}] that is not in this scope.`, statement, statement);
         }
+      }
+    }else if(!statement.struct){
+      statement.variable_reference = this.getVariableByName(statement.name);
+      statement.datatype = statement?.variable_reference?.datatype;
+      statement.is_global = statement?.variable_reference?.is_global;
+    }
 
-        //walk switch default statement
-        if(object.default && object.default.type == 'default') this.walkASTStatement(object.default);
-      }else if(object.type == 'case' || object.type == 'default'){
-        //walk case/default conditions
-        if(object.condition) this.walkASTStatement(object.condition);
+    if(typeof statement.value == 'object') this.parseASTStatement(statement.value);
 
-        //walk case/default statements
-        for(let i = 0; i < object.statements.length; i++){
-          this.walkASTStatement(object.statements[i]);
-        }
-      }else if(object.type == 'add' 
-        || object.type == 'sub'
-        || object.type == 'compare'
-        || object.type == 'mul'
-        || object.type == 'div'
-        || object.type == 'mod'
-        || object.type == 'incor'
-        || object.type == 'booland'
-        || object.type == 'xor'
-        || object.type == 'assign'
-      ){
-        if(typeof object.left == 'object') this.walkASTStatement(object.left);
-        if(typeof object.right == 'object') this.walkASTStatement(object.right);
-
-        const left_type = this.getValueDataType(object.left);
-        const left_type_unary = this.getValueDataTypeUnary(object.left);
-        const right_type = this.getValueDataType(object.right);
-        const right_type_unary = this.getValueDataTypeUnary(object.right);
-
-        // propagate datatype onto this arithmetic/compare node
-        if(!object.datatype){
-          if(left_type){
-            object.datatype = { type:'datatype', value:left_type, unary:left_type_unary };
-          }else if(right_type){
-            object.datatype = { type:'datatype', value:right_type, unary:right_type_unary };
-          }
-        }
-
-        if(object.type == 'mul'){
-          console.log('mul', object.left, object.right);
-          console.log('left_type', left_type);
-          console.log('right_type', right_type);
-          console.log('left_type_unary', left_type_unary);
-          console.log('right_type_unary', right_type_unary);
-        }
-
-        if(object.type == 'add'){
-          if(    !(left_type == 'int'    && right_type == 'int')
-              && !(left_type == 'int'    && right_type == 'float')
-              && !(left_type == 'float'  && right_type == 'int')
-              && !(left_type == 'float'  && right_type == 'float')
-              && !(left_type == 'string' && right_type == 'string')
-              && !(left_type == 'vector' && right_type == 'vector') 
-            )
-          {
-            this.throwError(`Can't add types of [${left_type}] and [${right_type}] together`, object, object.right);
-          }
-        }else if(object.type == 'sub'){
-          if(    !(left_type == 'int'    && right_type == 'int')
-              && !(left_type == 'int'    && right_type == 'float')
-              && !(left_type == 'float'  && right_type == 'int')
-              && !(left_type == 'float'  && right_type == 'float')
-              && !(left_type == 'vector' && right_type == 'vector') 
-            )
-          {
-            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object, object.right);
-          }
-        }else if(object.type == 'multiply'){
-          if(    !(left_type == 'int'    && right_type == 'int')
-              && !(left_type == 'int'    && right_type == 'float')
-              && !(left_type == 'float'  && right_type == 'int')
-              && !(left_type == 'float'  && right_type == 'float')
-              && !(left_type == 'vector' && right_type == 'vector') 
-            )
-          {
-            this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, object, object.right);
-          }
-        }else if(object.type == 'divide'){
-          if(    !(left_type == 'int'    && right_type == 'int')
-              && !(left_type == 'int'    && right_type == 'float')
-              && !(left_type == 'float'  && right_type == 'int')
-              && !(left_type == 'float'  && right_type == 'float')
-              && !(left_type == 'vector' && right_type == 'vector') 
-            )
-          {
-            this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, object, object.right);
-          }
-        }else if(object.type == 'modulus'){
-          if(    !(left_type == 'int'    && right_type == 'int')
-            )
-          {
-            this.throwError(`Can't modulus types of [${left_type}] and [${right_type}] together`, object, object.right);
-          }
-        }else if(object.type == 'compare'){
-          if(object.operator.value == '&&'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't AND types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '=='){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-                && !(left_type == 'object' && right_type == 'object')
-                && !(left_type == 'string' && right_type == 'string')
-                && !(left_type == 'struct' && right_type == 'struct')
-              )
-            {
-              if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
-                //
-              }else{
-                this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
-              }
-            }
-          }else if(object.operator.value == '!='){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-                && !(left_type == 'object' && right_type == 'object')
-                && !(left_type == 'string' && right_type == 'string')
-                && !(left_type == 'struct' && right_type == 'struct')
-              )
-            {
-              if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
-                //
-              }else{
-                this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, object, object.right);
-              }
-            }
-          }else if(object.operator.value == '>='){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-              )
-            {
-              this.throwError(`Can't GEQ types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '>'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-              )
-            {
-              this.throwError(`Can't GT types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '<='){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-              )
-            {
-              this.throwError(`Can't LEQ types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '<'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-                && !(left_type == 'float'  && right_type == 'float')
-              )
-            {
-              this.throwError(`Can't LT types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '<<'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Left Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '>>'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Right Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '>>>'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Unsigned Right Shift types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '%'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Modulus types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '^'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Exclusive OR types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '||'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't OR types of [${left_type}] and [${right_type}] together`, object, object.right);
-            }
-          }else if(object.operator.value == '|'){
-            if(    !(left_type == 'int'    && right_type == 'int')
-              )
-            {
-              this.throwError(`Can't Inclusive OR types of [${left_type}] and [${right_type}] together`, object, object.right);
+    //Struct Property Access Validation
+    if(statement.struct && statement.name){
+      if(statement.struct_reference){
+        if(statement.struct_reference.type == 'struct'){
+          for(let i = 0; i < statement.struct_reference.properties.length; i++){
+            const property = statement.struct_reference.properties[i];
+            if(property.name == statement.name){
+              statement.variable_reference = property;
+              statement.datatype = property.datatype;
+              statement.is_global = statement?.variable_reference?.is_global;
             }
           }
-        }else if(object.type == 'assign'){
-          if(left_type != right_type){
-            this.throwError(`Can't assign a value of type [${right_type}] to a variable of type [${left_type}]`, object, object.right);
-          }
-        }
-      }else if(object.type == 'not'
-        || object.type == 'neg'
-        || object.type == 'comp'
-      ){
-        if(typeof object.value == 'object') this.walkASTStatement(object.value);
-
-        let value_type = this.getValueDataType(object.value);
-        let value_type_unary = this.getValueDataTypeUnary(object.value);
-        object.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
-        if(object.type == 'neg'){
-          if(    !(value_type == 'int')
-              && !(value_type == 'float')
-            )
-          {
-            this.throwError(`Can't negate a value of type [${value_type}]`, object, object.value);
-          }
-        }else if(object.type == 'comp'){
-          if( !(value_type == 'int') )
-          {
-            this.throwError(`Can't Ones Compliment a value of type [${value_type}]`, object, object.value);
-          }
-        }else if(object.type == 'not'){
-          if( !(value_type == 'int') )
-          {
-            this.throwError(`Can't Not a value of type [${value_type}]`, object, object.value);
-          }
-        }
-      }else if(object.type == 'inc' || object.type == 'dec'){
-        let value_type = this.getValueDataType(object.value);
-        object.variable_reference = this.getVariableByName(object?.value?.name);
-        if(object.variable_reference){
-          object.datatype = object.variable_reference.datatype;
-          object.is_global = object.variable_reference.is_global;
-          if( !(object.datatype.value == 'int') )
-          {
-            this.throwError(`Can't Increment a value of type [${value_type}]`, object, object.value);
+        }else if(statement.struct_reference.type == 'variable'){
+          for(let i = 0; i < statement.struct_reference.struct_reference.properties.length; i++){
+            const property = statement.struct_reference.struct_reference.properties[i];
+            if(property.name == statement.name){
+              statement.variable_reference = property;
+              statement.datatype = property.datatype;
+              statement.is_global = statement?.variable_reference?.is_global;
+            }
           }
         }
       }
+    }
+
+    if(statement.value && statement.datatype && statement?.datatype?.value != this.getValueDataType(statement.value) ){
+      this.throwError(`Can't assign a value with a datatype type of [${this.getValueDataType(statement.value)}] to ${statement.datatype.value} ${statement.name}`, statement, statement.value);
+    }
+  }
+
+  parseReturnNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'return'){
+      this.throwError("Invalid return node", statement, statement);
+    }
+    if(typeof statement.value == 'object') this.parseASTStatement(statement.value);
+
+    let scopeReturnType = this.scopes.slice(0).reverse().find( sc => typeof sc.returntype !== 'undefined' )?.returntype;
+    if(scopeReturnType){
+      const valueDataType = this.getValueDataType(statement.value);
+      if(scopeReturnType.value == 'void'){
+        if(statement.value != null) this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, statement, statement.value);
+      }else if( scopeReturnType.value != valueDataType){
+        this.throwError(`Can't return a value with a datatype type of [${valueDataType}] in a scope that expects a datatype of ${scopeReturnType.value}`, statement, statement.value);
+      }
+    }
+  }
+
+  parseConditionNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || (statement.type !== 'if' && statement.type !== 'elseif' && statement.type !== 'else' && statement.type !== 'do' && statement.type !== 'while')){
+      this.throwError("Invalid condition node", statement, statement);
+    }
+    const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
+    for(let i = 0; i < conds.length; i++){
+      this.parseASTStatement(conds[i]);
+    } 
+
+    const elseIfs = Array.isArray(statement.elseIfs) ? statement.elseIfs : (statement.elseIfs ? [statement.elseIfs] : []);
+    for(let i = 0; i < elseIfs.length; i++){
+      this.parseASTStatement(elseIfs[i]);
+    }
+
+    if(statement.else){
+      this.parseASTStatement(statement.else);
+    }
+
+    this.scope = new NWScriptScope(this.program);
+    this.scopes.push(this.scope);
+
+    for(let i = 0; i < statement.statements.length; i++){
+      this.parseASTStatement(statement.statements[i]);
+    }
+
+    this.scopes.pop()?.popped();
+    this.scope = this.scopes[this.scopes.length - 1];
+
+    if(typeof statement.else == 'object' && Array.isArray(statement.else)){
+      let else_declared = false;
+      for(let i = 0; i < statement.else.length; i++){
+        this.scope = new NWScriptScope(this.program);
+        this.scopes.push(this.scope);
+
+        const elseIf = statement.else[i];
+        if(elseIf.type == 'else'){
+          if(else_declared){
+            this.throwError('Only one else statement can be chained in an If Else statement', statement, elseIf);
+          }
+
+          if(i != (statement.else.length-1)){
+            this.throwError('Else statements can only be declared at the end of an If Else statement', statement, elseIf);
+          }
+
+          else_declared = true;
+        }
+
+        this.parseASTStatement(elseIf);
+
+        this.scopes.pop()?.popped();
+        this.scope = this.scopes[this.scopes.length - 1];
+      }
+    }
+  }
+
+  parseForNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'for'){
+      this.throwError("Invalid for node", statement, statement);
+    }
+    //walk initializer
+    if(statement.initializer) this.parseASTStatement(statement.initializer);
+
+    //walk condition
+    const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
+    for(let i = 0; i < conds.length; i++){
+      this.parseASTStatement(conds[i]);
+    }
+
+    //walk incrementor
+    if(statement.incrementor) this.parseASTStatement(statement.incrementor);
+
+    this.scope = new NWScriptScope(this.program);
+    this.scopes.push(this.scope);
+
+    for(let i = 0; i < statement.statements.length; i++){
+      this.parseASTStatement(statement.statements[i]);
+    }
+
+    this.scopes.pop()?.popped();
+    this.scope = this.scopes[this.scopes.length - 1];
+  }
+
+  parseSwitchNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'switch'){
+      this.throwError("Invalid switch node", statement, statement);
+    }
+    //walk switch conditions
+    if(statement.condition) this.parseASTStatement(statement.condition);
+
+    //walk switch case statements
+    for(let i = 0; i < statement.cases.length; i++){
+      this.parseASTStatement(statement.cases[i]);
+      for(let j = 0; j < statement.cases[i].statements.length; j++){
+        if(statement.cases[i].statements[j].type == 'break') statement.cases[i].fallthrough = false;
+      }
+    }
+
+    //walk switch default statement
+    if(statement.default && statement.default.type == 'default') this.parseASTStatement(statement.default);
+  }
+
+  parseCaseStatement( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
+      this.throwError("Invalid case node", statement, statement);
+    }
+    //walk case/default conditions
+    if(statement.condition) this.parseASTStatement(statement.condition);
+
+    //walk case/default statements
+    for(let i = 0; i < statement.statements.length; i++){
+      this.parseASTStatement(statement.statements[i]);
+    }
+  }
+
+  parseDefaultStatement( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
+      this.throwError("Invalid case node", statement, statement);
+    }
+    //walk case/default conditions
+    if(statement.condition) this.parseASTStatement(statement.condition);
+
+    //walk case/default statements
+    for(let i = 0; i < statement.statements.length; i++){
+      this.parseASTStatement(statement.statements[i]);
+    }
+  }
+
+  parseArithmeticNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || (statement.type !== 'add' && statement.type !== 'sub' && statement.type !== 'compare' && statement.type !== 'mul' && statement.type !== 'div' && statement.type !== 'mod' && statement.type !== 'incor' && statement.type !== 'booland' && statement.type !== 'xor' && statement.type !== 'assign')){
+      this.throwError("Invalid arithmetic node", statement, statement);
+    }
+    if(typeof statement.left == 'object') this.parseASTStatement(statement.left);
+    if(typeof statement.right == 'object') this.parseASTStatement(statement.right);
+
+    const left_type = this.getValueDataType(statement.left);
+    const left_type_unary = this.getValueDataTypeUnary(statement.left);
+    const right_type = this.getValueDataType(statement.right);
+    const right_type_unary = this.getValueDataTypeUnary(statement.right);
+
+    // propagate datatype onto this arithmetic/compare node
+    if(!statement.datatype){
+      if(left_type){
+        statement.datatype = { type:'datatype', value:left_type, unary:left_type_unary };
+      }else if(right_type){
+        statement.datatype = { type:'datatype', value:right_type, unary:right_type_unary };
+      }
+    }
+
+    if(statement.type == 'mul'){
+      console.log('mul', statement.left, statement.right);
+      console.log('left_type', left_type);
+      console.log('right_type', right_type);
+      console.log('left_type_unary', left_type_unary);
+      console.log('right_type_unary', right_type_unary);
+    }
+
+    if(statement.type == 'add'){
+      if(    !(left_type == 'int'    && right_type == 'int')
+          && !(left_type == 'int'    && right_type == 'float')
+          && !(left_type == 'float'  && right_type == 'int')
+          && !(left_type == 'float'  && right_type == 'float')
+          && !(left_type == 'string' && right_type == 'string')
+          && !(left_type == 'vector' && right_type == 'vector') 
+        )
+      {
+        this.throwError(`Can't add types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+      }
+    }else if(statement.type == 'sub'){
+      if(    !(left_type == 'int'    && right_type == 'int')
+          && !(left_type == 'int'    && right_type == 'float')
+          && !(left_type == 'float'  && right_type == 'int')
+          && !(left_type == 'float'  && right_type == 'float')
+          && !(left_type == 'vector' && right_type == 'vector') 
+        )
+      {
+        this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+      }
+    }else if(statement.type == 'multiply'){
+      if(    !(left_type == 'int'    && right_type == 'int')
+          && !(left_type == 'int'    && right_type == 'float')
+          && !(left_type == 'float'  && right_type == 'int')
+          && !(left_type == 'float'  && right_type == 'float')
+          && !(left_type == 'vector' && right_type == 'vector') 
+        )
+      {
+        this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+      }
+    }else if(statement.type == 'divide'){
+      if(    !(left_type == 'int'    && right_type == 'int')
+          && !(left_type == 'int'    && right_type == 'float')
+          && !(left_type == 'float'  && right_type == 'int')
+          && !(left_type == 'float'  && right_type == 'float')
+          && !(left_type == 'vector' && right_type == 'vector') 
+        )
+      {
+        this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+      }
+    }else if(statement.type == 'modulus'){
+      if(    !(left_type == 'int'    && right_type == 'int')
+        )
+      {
+        this.throwError(`Can't modulus types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+      }
+    }else if(statement.type == 'compare'){
+      if(statement.operator.value == '&&'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't AND types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '=='){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+            && !(left_type == 'object' && right_type == 'object')
+            && !(left_type == 'string' && right_type == 'string')
+            && !(left_type == 'struct' && right_type == 'struct')
+          )
+        {
+          if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
+            //
+          }else{
+            this.throwError(`Can't EQUAL types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+          }
+        }
+      }else if(statement.operator.value == '!='){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+            && !(left_type == 'object' && right_type == 'object')
+            && !(left_type == 'string' && right_type == 'string')
+            && !(left_type == 'struct' && right_type == 'struct')
+          )
+        {
+          if( (left_type_unary == right_type_unary) && (left_type_unary >= 0x10 && left_type_unary <= 0x1F) && (right_type_unary >= 0x10 && right_type_unary <= 0x1F) ){
+            //
+          }else{
+            this.throwError(`Can't NEQUAL types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+          }
+        }
+      }else if(statement.operator.value == '>='){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+          )
+        {
+          this.throwError(`Can't GEQ types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '>'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+          )
+        {
+          this.throwError(`Can't GT types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '<='){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+          )
+        {
+          this.throwError(`Can't LEQ types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '<'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+            && !(left_type == 'float'  && right_type == 'float')
+          )
+        {
+          this.throwError(`Can't LT types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '<<'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Left Shift types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '>>'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Right Shift types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '>>>'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Unsigned Right Shift types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '%'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Modulus types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '^'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Exclusive OR types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '||'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't OR types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }else if(statement.operator.value == '|'){
+        if(    !(left_type == 'int'    && right_type == 'int')
+          )
+        {
+          this.throwError(`Can't Inclusive OR types of [${left_type}] and [${right_type}] together`, statement, statement.right);
+        }
+      }
+    }else if(statement.type == 'assign'){
+      if(left_type != right_type){
+        this.throwError(`Can't assign a value of type [${right_type}] to a variable of type [${left_type}]`, statement, statement.right);
+      }
+    }
+  }
+
+  parseUnaryNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || (statement.type !== 'not' && statement.type !== 'neg' && statement.type !== 'comp')){
+      this.throwError("Invalid unary node", statement, statement);
+    }
+    if(typeof statement.value == 'object') this.parseASTStatement(statement.value);
+
+    let value_type = this.getValueDataType(statement.value);
+    let value_type_unary = this.getValueDataTypeUnary(statement.value);
+    statement.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
+    if(statement.type == 'neg'){
+      if(    !(value_type == 'int')
+          && !(value_type == 'float')
+        )
+      {
+        this.throwError(`Can't negate a value of type [${value_type}]`, statement, statement.value);
+      }
+    }else if(statement.type == 'comp'){
+      if( !(value_type == 'int') )
+      {
+        this.throwError(`Can't Ones Compliment a value of type [${value_type}]`, statement, statement.value);
+      }
+    }else if(statement.type == 'not'){
+      if( !(value_type == 'int') )
+      {
+        this.throwError(`Can't Not a value of type [${value_type}]`, statement, statement.value);
+      }
+    }
+  }
+
+  parseIncDecNode( statement: any = undefined ){
+    if(!statement || (typeof statement !== 'object') || (statement.type !== 'inc' && statement.type !== 'dec')){
+      this.throwError("Invalid inc/dec node", statement, statement);
+    }
+    const value_type = this.getValueDataType(statement.value);
+    statement.variable_reference = this.getVariableByName(statement?.value?.name);
+    if(statement.variable_reference){
+      statement.datatype = statement.variable_reference.datatype;
+      statement.is_global = statement.variable_reference.is_global;
+      if( !(statement.datatype.value == 'int') )
+      {
+        this.throwError(`Can't Increment a value of type [${value_type}]`, statement, statement.value);
+      }
+    }
+  }
+
+  parseASTStatement( statement: any = undefined ){
+    console.log('statement', statement);
+    if(!statement || (typeof statement !== 'object')){
+      this.throwError("Invalid statement", statement, statement);
+      return;
+    }
+
+    switch(statement.type){
+      case 'program':
+        this.parseProgram(statement);
+        break;
+      case 'function':
+        this.parseFunctionNode(statement);
+        break;
+      case 'block':
+        this.parseBlockNode(statement);
+        break;
+      case 'function_call':
+        this.parseFunctionCallNode(statement);
+        break;
+      case 'struct':
+        this.parseStructNode(statement);
+        break;
+      case 'property':
+        this.parsePropertyNode(statement);
+        break;
+      case 'variableList':
+        this.parseVariableListNode(statement);
+        break;
+      case 'variable_reference':
+        this.parseVariableReferenceNode(statement);
+        break;
+      case 'variable':
+        this.parseVariableNode(statement);
+        break;
+      case 'return':
+        this.parseReturnNode(statement);
+        break;
+      case 'if':
+      case 'elseif':
+      case 'else':
+      case 'do':
+      case 'while':
+        this.parseConditionNode(statement);
+        break;
+      case 'for':
+        this.parseForNode(statement);
+        break;
+      case 'switch':
+        this.parseSwitchNode(statement);
+        break;
+      case 'case':
+        this.parseCaseStatement(statement);
+        break;
+      case 'default':
+        this.parseDefaultStatement(statement);
+        break;
+      case 'add':
+      case 'sub':
+      case 'compare':
+      case 'mul':
+      case 'div':
+      case 'mod':
+      case 'incor':
+      case 'booland':
+      case 'xor':
+      case 'assign':
+        this.parseArithmeticNode(statement);
+        break;
+      case 'not':
+      case 'neg':
+      case 'comp':
+        this.parseUnaryNode(statement);
+        break;
+      case 'inc':
+      case 'dec':
+        this.parseIncDecNode(statement);
+        break;
+      default:
+        console.warn('unhandled statement', statement.type);
+        console.log(statement);
+      break;
     }
   }
 
