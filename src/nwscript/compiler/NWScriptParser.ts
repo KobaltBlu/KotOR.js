@@ -1,4 +1,5 @@
-import { NWScriptHandParser } from "./NWScriptHandParser";
+import type { Token } from "./NWScriptToken";
+import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode } from "./NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -23,8 +24,302 @@ const NWCompileDataTypes: any = {
   FV: 0x3C,
 };
 
+type SourceInfo = Token["source"] | undefined;
+
+interface AnnotatedNode {
+  type: string;
+  source?: SourceInfo;
+}
+
+// Program-level
+interface SemanticProgramNode extends AnnotatedNode {
+  type: "program";
+  statements: SemanticStatementNode[];
+  functions: SemanticFunctionNode[];
+  structs: SemanticStructNode[];
+  scope: SemanticScope;
+  basePointer: number;
+  stackPointer: number;
+  main?: SemanticFunctionNode;
+  startingConditional?: SemanticFunctionNode;
+  parsed?: boolean;
+}
+
+// Scope metadata (not part of AST, but handy to type)
+interface SemanticScope {
+  arguments: SemanticArgumentNode[];
+  variables: SemanticVariableNode[];
+  constants: SemanticVariableNode[];
+  program: SemanticProgramNode;
+  returntype?: SemanticDataType;
+  is_global: boolean;
+  is_anonymous: boolean;
+}
+
+// Data types
+interface SemanticDataType {
+  type: "datatype";
+  value: string;
+  unary: number;
+  engine_type?: boolean;
+  struct?: string;
+}
+
+// Structs
+interface SemanticStructNode extends AnnotatedNode {
+  type: "struct";
+  name: string;
+  properties: SemanticStructPropertyNode[];
+  is_global?: boolean;
+}
+
+interface SemanticStructPropertyNode extends AnnotatedNode {
+  type: "property";
+  name: string;
+  datatype: SemanticDataType;
+}
+
+// Functions
+interface SemanticFunctionNode extends AnnotatedNode {
+  type: "function";
+  name: string;
+  header_only: boolean;
+  defined?: boolean;
+  called?: boolean;
+  returntype: SemanticDataType;
+  arguments: SemanticArgumentNode[];
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticArgumentNode extends AnnotatedNode {
+  type: "argument";
+  name: string;
+  datatype: SemanticDataType;
+  value?: SemanticExpressionNode; // default value
+  stackOffset?: number;
+}
+
+// Variables
+interface SemanticVariableNode extends AnnotatedNode {
+  type: "variable";
+  name: string;
+  declare: boolean;
+  is_const: boolean;
+  datatype: SemanticDataType;
+  value: SemanticExpressionNode | null;
+  is_global?: boolean;
+  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode;
+  struct?: string;
+  struct_reference?: SemanticStructNode | SemanticVariableNode;
+  stackPointer?: number;
+}
+
+interface SemanticVariableListNode extends AnnotatedNode {
+  type: "variableList";
+  is_const: boolean;
+  declare: boolean;
+  datatype: SemanticDataType;
+  names: Array<{ name: string; source?: SourceInfo }>;
+  value: SemanticExpressionNode | null;
+  variables?: SemanticVariableNode[]; // filled during post-pass
+}
+
+// Expressions / calls / props
+interface SemanticVariableReferenceNode extends AnnotatedNode {
+  type: "variable_reference";
+  name: string;
+  datatype?: SemanticDataType;
+  is_global?: boolean;
+  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode;
+}
+
+interface SemanticFunctionCallNode extends AnnotatedNode {
+  type: "function_call";
+  name: string;
+  arguments: SemanticExpressionNode[];
+  function_reference?: SemanticFunctionNode | EngineActionRef;
+  action_id?: number; // engine action index, -1 if script function
+}
+
+interface EngineActionRef {
+  index: number;
+  name: string;
+  returntype: SemanticDataType;
+  arguments: SemanticArgumentNode[];
+}
+
+interface SemanticPropertyNode extends AnnotatedNode {
+  type: "property";
+  left: SemanticExpressionNode;
+  name: string;
+  datatype?: SemanticDataType;
+  is_global?: boolean;
+  variable_reference?: SemanticStructPropertyNode;
+  right?: SemanticExpressionNode; // if assignment
+}
+
+// Control flow
+interface SemanticBlockNode extends AnnotatedNode {
+  type: "block";
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticIfNode extends AnnotatedNode {
+  type: "if";
+  condition: SemanticExpressionNode;
+  statements: SemanticStatementNode[];
+  elseIfs: SemanticElseIfNode[];
+  else: SemanticElseNode | null;
+}
+
+interface SemanticElseIfNode extends AnnotatedNode {
+  type: "elseif";
+  condition: SemanticExpressionNode;
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticElseNode extends AnnotatedNode {
+  type: "else";
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticWhileNode extends AnnotatedNode {
+  type: "while";
+  condition: SemanticExpressionNode;
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticDoWhileNode extends AnnotatedNode {
+  type: "do";
+  condition: SemanticExpressionNode;
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticForNode extends AnnotatedNode {
+  type: "for";
+  initializer: SemanticVariableNode | SemanticVariableListNode | SemanticExpressionNode | null;
+  condition: SemanticExpressionNode | null;
+  incrementor: SemanticExpressionNode | null;
+  statements: SemanticStatementNode[];
+}
+
+interface SemanticSwitchNode extends AnnotatedNode {
+  type: "switch";
+  condition: SemanticExpressionNode;
+  cases: SemanticCaseNode[];
+  default: SemanticDefaultNode | null;
+}
+
+interface SemanticCaseNode extends AnnotatedNode {
+  type: "case";
+  value: SemanticExpressionNode;
+  statements: SemanticStatementNode[];
+  fallthrough?: boolean;
+}
+
+interface SemanticDefaultNode extends AnnotatedNode {
+  type: "default";
+  statements: SemanticStatementNode[];
+}
+
+// Returns / break / continue
+interface SemanticReturnNode extends AnnotatedNode {
+  type: "return";
+  value: SemanticExpressionNode | null;
+}
+
+interface SemanticBreakNode extends AnnotatedNode { type: "break"; }
+interface SemanticContinueNode extends AnnotatedNode { type: "continue"; }
+
+// Arithmetic / logical / unary / inc/dec
+interface SemanticCompareNode extends AnnotatedNode {
+  type: "compare";
+  left: SemanticExpressionNode;
+  right: SemanticExpressionNode;
+  operator: { type: "operator"; value: string };
+  datatype: SemanticDataType;
+}
+
+interface SemanticBinaryNode extends AnnotatedNode {
+  type: "add" | "sub" | "mul" | "div" | "mod" | "incor" | "xor" | "booland" | "assign";
+  left: SemanticExpressionNode;
+  right: SemanticExpressionNode;
+  operator?: { type: "operator"; value: string };
+  datatype?: SemanticDataType;
+}
+
+interface SemanticUnaryNode extends AnnotatedNode {
+  type: "not" | "neg" | "comp";
+  value: SemanticExpressionNode;
+  datatype?: SemanticDataType;
+}
+
+interface SemanticIncDecNode extends AnnotatedNode {
+  type: "inc" | "dec";
+  value: SemanticExpressionNode;
+  postfix?: boolean;
+  datatype?: SemanticDataType;
+  is_global?: boolean;
+  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode;
+}
+
+// Literals / arrays / index / call / property reuse existing shapes but typed as SemanticExpressionNode
+type SemanticLiteralNode = LiteralNode & { datatype: SemanticDataType };
+type SemanticArrayLiteralNode = ArrayLiteralNode & { elements: SemanticExpressionNode[] };
+type SemanticIndexNode = IndexNode & { left: SemanticExpressionNode; index: SemanticExpressionNode };
+type SemanticCallNode = CallNode & { callee: SemanticExpressionNode; arguments: SemanticExpressionNode[] };
+
+// Unions
+type SemanticExpressionNode =
+  | SemanticLiteralNode
+  | SemanticVariableReferenceNode
+  | SemanticArrayLiteralNode
+  | SemanticFunctionCallNode
+  | SemanticCallNode
+  | SemanticIndexNode
+  | SemanticPropertyNode
+  | SemanticAssignNode
+  | SemanticIncDecNode
+  | SemanticUnaryNode
+  | SemanticCompareNode
+  | SemanticBinaryNode;
+
+interface SemanticAssignNode extends AnnotatedNode {
+  type: "assign";
+  left: SemanticExpressionNode;
+  right: SemanticExpressionNode;
+  operator: { type: "operator"; value: string };
+  datatype?: SemanticDataType;
+}
+
+type SemanticStatementNode =
+  | SemanticStructNode
+  | SemanticVariableNode
+  | SemanticVariableListNode
+  | SemanticFunctionNode
+  | SemanticIfNode
+  | SemanticElseIfNode
+  | SemanticElseNode
+  | SemanticWhileNode
+  | SemanticDoWhileNode
+  | SemanticForNode
+  | SemanticSwitchNode
+  | SemanticCaseNode
+  | SemanticDefaultNode
+  | SemanticReturnNode
+  | SemanticBreakNode
+  | SemanticContinueNode
+  | SemanticBlockNode
+  | SemanticExpressionNode;
+
+interface ParserError {
+  type: 'compile' | 'parse';
+  message: string;
+  statement: any;
+  offender: any;
+}
+
 export class NWScriptParser {
-  ast: any = null;
   regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
 
   engine_types: any[] = [];
@@ -33,12 +328,13 @@ export class NWScriptParser {
 
   local_variables: any[] = [];
   local_functions: any[] = [];
-  errors: any[] = [];
-  script: any;
+  errors: ParserError[] = [];
+  script: string;
 
   nwscript_source: string;
 
   scopes: NWScriptScope[] = [];
+  ast: ProgramNode;
   program: any = {};
   scope: any;
 
@@ -166,7 +462,7 @@ export class NWScriptParser {
     this.local_functions = [];
 
     // reuse your existing post-pass (type resolution, scopes, validation, etc.)
-    this.parseASTStatement(program);
+    this.parseProgram(program);
 
     if (!this.errors.length) {
       program.parsed = true;
@@ -206,7 +502,7 @@ export class NWScriptParser {
 
     // Limit lookup to the global scope plus the active function scope (and its child blocks),
     // ignoring variables from callers or previously processed sibling scopes.
-    const scopes: any[] = this.scopes ?? [];
+    const scopes: NWScriptScope[] = this.scopes ?? [];
     if(!scopes.length) return undefined;
 
     // Find the most-recent function/global scope boundary in the active stack.
@@ -219,7 +515,7 @@ export class NWScriptParser {
       }
     }
 
-    const allowedScopes: any[] = [];
+    const allowedScopes: NWScriptScope[] = [];
     // Always consider the global scope first in the outer chain (scopes[0] should be global).
     if(scopes[0]) allowedScopes.push(scopes[0]);
     for(let i = fnStartIdx; i < scopes.length; i++){
