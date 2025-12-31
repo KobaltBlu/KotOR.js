@@ -118,6 +118,7 @@ export class TabTextEditorState extends TabState {
 
   setEditor(editor: monacoEditor.editor.IStandaloneCodeEditor){
     this.editor = editor;
+    editor.getModel()?.updateOptions({ tabSize: 2 })
   }
 
   setMonaco(monaco: typeof monacoEditor){
@@ -232,10 +233,11 @@ export class TabTextEditorState extends TabState {
     // Resolve #include files and prepend them before parsing to mirror NWScript behavior
     this.resolvedIncludes = await this.resolveIncludes(this.code, this.resolvedIncludes);
     const mergedCode = [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n");
-
+    console.log(mergedCode);
     ForgeState.nwScriptParser.parseScript(mergedCode);
     if(!ForgeState.nwScriptParser.errors.length){
-      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.ast);
+      console.log('AST', ForgeState.nwScriptParser.toJSON());
+      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program);
       console.log('compile', 'compiling...');
       let buffer = nwScriptCompiler.compile();
       if(buffer){
@@ -248,6 +250,10 @@ export class TabTextEditorState extends TabState {
       }
     }else{
       console.error(`compile Failed with (${ForgeState.nwScriptParser.errors.length}) error!`);
+      for(let i = 0; i < ForgeState.nwScriptParser.errors.length; i++){
+        const error = ForgeState.nwScriptParser.errors[i];
+        console.error(`Error ${i}:`, error.message, error.offender?.source?.first_line, error.offender?.source?.first_column);
+      }
     }
 
       // const nss_path = path.parse(this.file.path);

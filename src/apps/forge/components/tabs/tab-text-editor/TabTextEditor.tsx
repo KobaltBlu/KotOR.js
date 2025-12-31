@@ -15,7 +15,7 @@ export const TabTextEditor = function(props: any){
   // const [height, setHeight] = useState<any>(`100%`);
   const [code, setCode] = useState<string>(tab.code);
 
-  const options: any = {
+  const options: monacoEditor.editor.IEditorOptions = {
     automaticLayout: true
   };
 
