@@ -180,10 +180,6 @@ export class NWScriptParser {
     }
   }
 
-  compile(){
-
-  }
-
   isDataType( dataType?: any, value = '' ){
     return (dataType && typeof dataType == 'object' && dataType.value == value);
   }
