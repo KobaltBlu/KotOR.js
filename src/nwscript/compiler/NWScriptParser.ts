@@ -1134,23 +1134,21 @@ export class NWScriptParser {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
       this.throwError("Invalid case node", statement, statement);
     }
-    //walk case/default conditions
+    //walk case conditions
     if(statement.condition) this.parseASTStatement(statement.condition);
 
-    //walk case/default statements
+    //walk case statements
     for(let i = 0; i < statement.statements.length; i++){
       this.parseASTStatement(statement.statements[i]);
     }
   }
 
   parseDefaultNode( statement: any = undefined ){
-    if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
-      this.throwError("Invalid case node", statement, statement);
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'default'){
+      this.throwError("Invalid default node", statement, statement);
     }
-    //walk case/default conditions
-    if(statement.condition) this.parseASTStatement(statement.condition);
 
-    //walk case/default statements
+    //walk default statements
     for(let i = 0; i < statement.statements.length; i++){
       this.parseASTStatement(statement.statements[i]);
     }
@@ -1206,7 +1204,7 @@ export class NWScriptParser {
       {
         this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, statement, statement.right);
       }
-    }else if(statement.type == 'multiply'){
+    }else if(statement.type == 'mul'){
       if(    !(left_type == 'int'    && right_type == 'int')
           && !(left_type == 'int'    && right_type == 'float')
           && !(left_type == 'float'  && right_type == 'int')
@@ -1216,7 +1214,7 @@ export class NWScriptParser {
       {
         this.throwError(`Can't multiply types of [${left_type}] and [${right_type}] together`, statement, statement.right);
       }
-    }else if(statement.type == 'divide'){
+    }else if(statement.type == 'div'){
       if(    !(left_type == 'int'    && right_type == 'int')
           && !(left_type == 'int'    && right_type == 'float')
           && !(left_type == 'float'  && right_type == 'int')
@@ -1226,7 +1224,7 @@ export class NWScriptParser {
       {
         this.throwError(`Can't subtract types of [${left_type}] and [${right_type}] together`, statement, statement.right);
       }
-    }else if(statement.type == 'modulus'){
+    }else if(statement.type == 'mod'){
       if(    !(left_type == 'int'    && right_type == 'int')
         )
       {
