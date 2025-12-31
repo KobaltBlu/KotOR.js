@@ -452,8 +452,15 @@ export class NWScriptParser {
         engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
       });
       return hp.parseAST();
-    }catch(e){
-      console.error(e);
+    }catch(e: any){
+      console.log(e);
+      // Normalize hand-parser errors into parser error objects for the editor console
+      this.errors.push({
+        type: (e && e.type) ? e.type : 'parse',
+        message: e?.message || 'Parse error',
+        statement: e?.statement,
+        offender: e?.offender,
+      });
     }
     return undefined;
   }
@@ -578,6 +585,7 @@ export class NWScriptParser {
     try{
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.value;
+        if(value.type == 'property') return value.variable_reference?.datatype?.value;
         if(value.type == 'variable') { 
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
@@ -607,6 +615,7 @@ export class NWScriptParser {
     try{
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.unary;
+        if(value.type == 'property') return value.variable_reference?.datatype?.unary;
         if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'assign') return this.getValueDataTypeUnary(value.right);
         if(value.type == 'variable_reference') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
@@ -895,8 +904,8 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticPropertyNode;
     if(semanticNode.left && semanticNode.left.type == 'variable_reference'){
       semanticNode.variable_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
-      semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
-      semanticNode.is_global = semanticNode.left?.variable_reference?.is_global;
+      // semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
+      // semanticNode.is_global = semanticNode.left?.variable_reference?.is_global;
       console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
     }
 
@@ -1653,9 +1662,13 @@ class NWScriptScope {
       const parts = name.split('.');
       const structName = parts[0];
       const propertyName = parts[1];
-      const struct = this.getStruct(structName);
+      const struct = this.variables.find( v => v.name == structName ) || this.getStruct(structName);
       if(struct){
-        return struct?.properties?.find( p => p.name == propertyName ) as SemanticStructPropertyNode;
+        if(struct.type == 'variable'){
+          return (struct?.struct_reference as SemanticStructNode)?.properties?.find( p => p.name == propertyName ) as SemanticStructPropertyNode;
+        }else{
+          return struct?.properties?.find( p => p.name == propertyName ) as SemanticStructPropertyNode;
+        }
       }
     }
     return this.variables.find( v => v.name == name ) || this.structs.find( v => v.name == name ) || this.arguments.find( v => v.name == name ) || this.constants.find( v => v.name == name );
