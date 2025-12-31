@@ -73,7 +73,7 @@ export class NWScriptLexer {
   private src: string;
   private i = 0;
 
-  private line = 1;
+  private line = 0; // zero-based for compatibility with editor diagnostics
   private col = 0;
 
   constructor(source: string) {

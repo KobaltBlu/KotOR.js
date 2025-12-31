@@ -177,6 +177,19 @@ export interface ProgramNode {
   parsed?: boolean;
 }
 
+// Error shape compatible with NWScriptParser error console consumption
+export class NWScriptHandParserError extends Error {
+  type: "parse" = "parse";
+  statement: any;
+  offender: any;
+  constructor(message: string, offender: any = undefined) {
+    super(message);
+    this.name = "NWScriptHandParserError";
+    this.offender = offender;
+    this.statement = offender;
+  }
+}
+
 function dt(value: string, unary: number, engine_type = false): DataTypeNode {
   return { type: "datatype", value, unary, engine_type: engine_type || undefined };
 }
@@ -214,7 +227,10 @@ export class NWScriptHandParser {
     if (!this.is(type, value)) {
       const got = `${this.tok.type}:${this.tok.value}`;
       const want = `${type}${value ? ":" + value : ""}`;
-      throw new Error(`Parse error: expected ${want}, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`);
+      throw new NWScriptHandParserError(
+        `Parse error: expected ${want}, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
+        this.tok
+      );
     }
     const t = this.tok;
     this.next();
@@ -232,7 +248,10 @@ export class NWScriptHandParser {
       return t;
     }
     const got = `${this.tok.type}:${this.tok.value}`;
-    throw new Error(`Parse error: expected name, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`);
+    throw new NWScriptHandParserError(
+      `Parse error: expected name, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
+      this.tok
+    );
   }
 
   parseAST(): ProgramNode {
@@ -697,7 +716,12 @@ export class NWScriptHandParser {
 
   private mustParseDataType(): DataTypeNode {
     const d = this.tryParseDataType();
-    if (!d) throw new Error(`Parse error: expected datatype @ ${this.tok.source.first_line}:${this.tok.source.first_column}`);
+    if (!d) {
+      throw new NWScriptHandParserError(
+        `Parse error: expected datatype @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
+        this.tok
+      );
+    }
     return d;
   }
 
