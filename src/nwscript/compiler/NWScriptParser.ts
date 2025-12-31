@@ -644,8 +644,8 @@ export class NWScriptParser {
     return false;
   }
   
-  beginScope(): NWScriptScope {
-    this.scope = new NWScriptScope(this.program);
+  beginScope(statement: any = undefined): NWScriptScope {
+    this.scope = new NWScriptScope(this.program, statement);
     this.scopes.push(this.scope);
     return this.scope;
   }
@@ -773,7 +773,7 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticFunctionNode;
     if(!semanticNode.defined || !this.isNameInUse(semanticNode.name)){
       semanticNode.defined = true;
-      this.beginScope();
+      this.beginScope(statement);
 
       let argStackOffset = 0;
       for(let i = 0; i < semanticNode.arguments.length; i++){
@@ -902,14 +902,14 @@ export class NWScriptParser {
       this.throwError("Invalid property node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticPropertyNode;
-    if(semanticNode.left && semanticNode.left.type == 'variable_reference'){
+    if(semanticNode.left && typeof semanticNode.left == 'object' && semanticNode.left.type == 'variable_reference'){
       semanticNode.variable_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
       // semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
       // semanticNode.is_global = semanticNode.left?.variable_reference?.is_global;
       console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
     }
 
-    if(semanticNode.right){
+    if(semanticNode.right && typeof semanticNode.right == 'object'){
       semanticNode.right = this.parseASTStatement(semanticNode.right);
     }
     return semanticNode;
@@ -1087,13 +1087,15 @@ export class NWScriptParser {
       this.throwError("Invalid ifNode node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticIfNode;
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
 
     this.beginScope();
-    semanticNode.statements = statement.statements?.map(this.parseASTStatement) || [];
+    semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
-    semanticNode.elseIfs = statement.elseIfs?.map(this.parseASTStatement) || [];
+    semanticNode.elseIfs = statement.elseIfs?.map(s => this.parseASTStatement(s)) || [];
     semanticNode.else = statement.else ? this.parseASTStatement(statement.else) : null;
 
     return semanticNode;
@@ -1105,9 +1107,11 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticElseIfNode;
     this.beginScope();
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
     
-    semanticNode.statements = statement.statements?.map(this.parseASTStatement) || [];
+    semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
     return semanticNode;
@@ -1120,7 +1124,7 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticElseNode;
 
     this.beginScope();
-    semanticNode.statements = statement.statements?.map(this.parseASTStatement) || [];
+    semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
     return semanticNode;
@@ -1132,8 +1136,11 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticWhileNode;
     this.beginScope();
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
-    semanticNode.statements = statement.statements?.map(this.parseASTStatement) || [];
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
+
+    semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
     return semanticNode;
@@ -1145,8 +1152,10 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticDoWhileNode;
     this.beginScope();
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
-    semanticNode.statements = statement.statements?.map(this.parseASTStatement) || [];
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
+    semanticNode.statements = statement.statements?.map(s => this.parseASTStatement(s)) || [];
     this.endScope();
 
     return semanticNode;
@@ -1158,17 +1167,23 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticForNode;
     //walk initializer
-    if(typeof semanticNode.initializer == 'object') semanticNode.initializer = this.parseASTStatement(semanticNode.initializer);
+    if(!!semanticNode.initializer && typeof semanticNode.initializer == 'object'){
+      semanticNode.initializer = this.parseASTStatement(semanticNode.initializer);
+    }
 
     //walk condition
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
 
     //walk incrementor
-    if(typeof semanticNode.incrementor == 'object') semanticNode.incrementor = this.parseASTStatement(semanticNode.incrementor);
+    if(!!semanticNode.incrementor && typeof semanticNode.incrementor == 'object'){
+      semanticNode.incrementor = this.parseASTStatement(semanticNode.incrementor);
+    }
 
     this.beginScope();
 
-    semanticNode.statements = statement.statements.map(this.parseASTStatement);
+    semanticNode.statements = statement.statements.map(s => this.parseASTStatement(s));
 
     this.endScope();
     return semanticNode;
@@ -1180,10 +1195,12 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticSwitchNode;
     //walk switch conditions
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
 
     //walk switch case statements
-    semanticNode.cases = statement.cases.map(this.parseASTStatement);
+    semanticNode.cases = statement.cases.map(s => this.parseASTStatement(s));
     for(let i = 0; i < semanticNode.cases.length; i++){
       for(let j = 0; j < semanticNode.cases[i].statements.length; j++){
         if(semanticNode.cases[i].statements[j].type == 'break') semanticNode.cases[i].fallthrough = false;
@@ -1191,7 +1208,7 @@ export class NWScriptParser {
     }
 
     //walk switch default statement
-    if(typeof semanticNode.default == 'object') semanticNode.default = this.parseASTStatement(semanticNode.default);
+    if(!!semanticNode.default && typeof semanticNode.default == 'object') semanticNode.default = this.parseASTStatement(semanticNode.default);
     return semanticNode;
   }
 
@@ -1201,10 +1218,12 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticCaseNode;
     //walk case conditions
-    if(typeof semanticNode.condition == 'object') semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    if(!!semanticNode.condition && typeof semanticNode.condition == 'object'){
+      semanticNode.condition = this.parseASTStatement(semanticNode.condition);
+    }
 
     //walk case statements
-    semanticNode.statements = statement.statements.map(this.parseASTStatement);
+    semanticNode.statements = statement.statements.map(s => this.parseASTStatement(s));
     return semanticNode;
   }
 
@@ -1214,7 +1233,7 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticDefaultNode;
     //walk default statements
-    semanticNode.statements = statement.statements.map(this.parseASTStatement);
+    semanticNode.statements = statement.statements.map(s => this.parseASTStatement(s));
     return semanticNode;
   }
 
@@ -1223,8 +1242,12 @@ export class NWScriptParser {
       this.throwError("Invalid compare node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticCompareNode;
-    if(typeof semanticNode.left == 'object') this.parseASTStatement(semanticNode.left);
-    if(typeof semanticNode.right == 'object') this.parseASTStatement(semanticNode.right);
+    if(!!semanticNode.left && typeof semanticNode.left == 'object'){ 
+      semanticNode.left = this.parseASTStatement(semanticNode.left); 
+    }
+    if(!!semanticNode.right && typeof semanticNode.right == 'object'){
+      semanticNode.right = this.parseASTStatement(semanticNode.right);
+    }
 
     const left_type = this.getValueDataType(semanticNode.left);
     const left_type_unary = this.getValueDataTypeUnary(semanticNode.left);
@@ -1354,8 +1377,12 @@ export class NWScriptParser {
       this.throwError("Invalid assign node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticAssignNode;
-    if(typeof semanticNode.left == 'object') semanticNode.left = this.parseASTStatement(semanticNode.left);
-    if(typeof semanticNode.right == 'object') semanticNode.right = this.parseASTStatement(semanticNode.right);
+    if(!!semanticNode.left && typeof semanticNode.left == 'object'){
+      semanticNode.left = this.parseASTStatement(semanticNode.left);
+    }
+    if(!!semanticNode.right && typeof semanticNode.right == 'object'){
+      semanticNode.right = this.parseASTStatement(semanticNode.right);
+    }
 
     const left_type = this.getValueDataType(semanticNode.left);
     const left_type_unary = this.getValueDataTypeUnary(semanticNode.left);
@@ -1384,8 +1411,12 @@ export class NWScriptParser {
       this.throwError("Invalid arithmetic node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticBinaryNode;
-    if(typeof semanticNode.left == 'object') semanticNode.left = this.parseASTStatement(semanticNode.left);
-    if(typeof semanticNode.right == 'object') semanticNode.right = this.parseASTStatement(semanticNode.right);
+    if(!!semanticNode.left && typeof semanticNode.left == 'object'){
+      semanticNode.left = this.parseASTStatement(semanticNode.left);
+    }
+    if(!!semanticNode.right && typeof semanticNode.right == 'object'){
+      semanticNode.right = this.parseASTStatement(semanticNode.right);
+    }
 
     const left_type = this.getValueDataType(semanticNode.left);
     const left_type_unary = this.getValueDataTypeUnary(semanticNode.left);
@@ -1601,13 +1632,15 @@ class NWScriptScope {
   constants: SemanticVariableNode[] = [];
   structs: SemanticStructNode[] = [];
   program: SemanticProgramNode;
+  statement: any = undefined;
   returntype: any = undefined;
   is_global = false;
   is_anonymous = false;
 
-  constructor(program: SemanticProgramNode, returntype: any = undefined){
+  constructor(program: SemanticProgramNode, statement: any = undefined){
     this.program = program;
-    this.returntype = returntype;
+    this.statement = statement;
+    this.returntype = statement?.returntype;
   }
 
   addVariable(variable: SemanticArgumentNode|SemanticVariableNode|SemanticStructNode){
