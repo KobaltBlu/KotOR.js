@@ -721,9 +721,7 @@ export class NWScriptParser {
     }
 
     //parse global statements
-    for(let i = 0; i < program.statements.length; i++){
-      this.parseASTStatement(program.statements[i]);
-    }
+    program.statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
 
     //parse global functions
     // for(let i = 0; i < global_functions.length; i++){
