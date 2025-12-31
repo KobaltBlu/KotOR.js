@@ -516,7 +516,7 @@ export class NWScriptParser {
     return this.program.structs.find( (a:any) => a.name == name );
   }
 
-  getVariableByName( name: any = '' ): SemanticVariableNode | SemanticStructPropertyNode | SemanticStructNode | undefined {
+  getVariableByName( name: any = '' ): SemanticVariableNode | SemanticStructPropertyNode | SemanticStructNode | SemanticArgumentNode | undefined {
     console.log('getVariableByName', name);
     if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
     if(!name || (typeof name === 'object')) return undefined;
@@ -577,8 +577,16 @@ export class NWScriptParser {
 
     //Has this name already been used by a script variable
     const isScriptVariableNameInUse = this.getVariableByName(name);
+    //It appears that in the original compiler, local variables declarations are allowed to reuse the same name as an argument.
+    //
+    //example: k_inc_generic line# 5014
+    //5011:  talent GN_GetTargetedForcePower(int nDroid = FALSE)
+    //5012:  {
+    //5013:    talent tUse;
+    //5014:    int nChoke, nAfflict, nPlague, nPush, nWind, nLightning, nKill, nHorror, nWound, nStasis, nDroid, nKnock, nHowl, nCnt;
+    const isScriptArgumentNameInUse = isScriptVariableNameInUse?.type == 'argument';
 
-    return isEngineActionName || isScriptFunctionNameInUse || isScriptStructNameInUse || isScriptVariableNameInUse;
+    return isEngineActionName || isScriptFunctionNameInUse || isScriptStructNameInUse || (isScriptVariableNameInUse && !isScriptArgumentNameInUse);
   }
 
   getValueDataType( value: any ): any {
@@ -772,6 +780,8 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticFunctionNode;
     if(!semanticNode.defined || !this.isNameInUse(semanticNode.name)){
+      const funcIdx = this.program.functions.findIndex( (f: any) => f.name == semanticNode.name );
+      this.program.functions[funcIdx] = semanticNode;
       semanticNode.defined = true;
       this.beginScope(statement);
 
@@ -819,11 +829,11 @@ export class NWScriptParser {
       semanticNode.action_id = -1;
       const scriptFunction = this.getFunctionByName(semanticNode.name);
       if(scriptFunction){
+        semanticNode.function_reference = scriptFunction;
         if(!scriptFunction.called){
           scriptFunction.called = true;
           this.parseASTStatement(scriptFunction);
-        } 
-        semanticNode.function_reference = scriptFunction;
+        }
       }else{
         this.throwError("Tried to call an undefined function", semanticNode, semanticNode);
       }
@@ -1634,12 +1644,14 @@ class NWScriptScope {
   program: SemanticProgramNode;
   statement: any = undefined;
   returntype: any = undefined;
+  type: string = 'block';
   is_global = false;
   is_anonymous = false;
 
   constructor(program: SemanticProgramNode, statement: any = undefined){
     this.program = program;
     this.statement = statement;
+    this.type = statement?.type || 'block';
     this.returntype = statement?.returntype;
   }
 
