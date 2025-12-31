@@ -26,7 +26,6 @@ export interface ArrayLiteralNode { type: "array_literal"; elements: ExpressionN
 export interface FunctionCallNode { type: "function_call"; name: string; arguments: ExpressionNode[]; source: SourceInfo; }
 export interface CallNode { type: "call"; callee: ExpressionNode; arguments: ExpressionNode[]; source: SourceInfo; }
 export interface IndexNode { type: "index"; left: ExpressionNode; index: ExpressionNode; source: SourceInfo; }
-export interface PropertyNode { type: "property"; left: ExpressionNode; name: string; source: SourceInfo; }
 export interface AssignNode { type: "assign"; left: ExpressionNode; right: ExpressionNode; operator: OperatorNode; source: SourceInfo; }
 export interface IncDecNode { type: "inc" | "dec"; value: ExpressionNode; postfix?: boolean; source: SourceInfo; }
 export interface UnaryNode { type: "not" | "comp" | "neg"; value: ExpressionNode; source: SourceInfo; }
@@ -53,7 +52,7 @@ export type ExpressionNode =
   | FunctionCallNode
   | CallNode
   | IndexNode
-  | PropertyNode
+  | StructPropertyNode
   | AssignNode
   | IncDecNode
   | UnaryNode
@@ -64,7 +63,8 @@ export type ExpressionNode =
 export interface DefineNode { type: "define"; name: NameNode; value: DataTypeNode | NameNode | LiteralNode; }
 export interface IncludeNode { type: "include"; value: LiteralNode | NameNode; }
 
-export interface StructPropertyNode { type: "property"; datatype: DataTypeNode; name: string; source: SourceInfo; }
+// Used both for struct field declarations (datatype known) and member access (datatype resolved later)
+export interface StructPropertyNode { type: "property"; datatype?: DataTypeNode; name: string; left: ExpressionNode; source: SourceInfo; }
 export interface StructNode { type: "struct"; name: string; properties: StructPropertyNode[]; source: SourceInfo; }
 
 export interface VariableNode {
