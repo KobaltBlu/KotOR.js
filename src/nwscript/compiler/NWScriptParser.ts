@@ -838,7 +838,7 @@ export class NWScriptParser {
     if(statement.default && statement.default.type == 'default') this.parseASTStatement(statement.default);
   }
 
-  parseCaseStatement( statement: any = undefined ){
+  parseCaseNode( statement: any = undefined ){
     if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
       this.throwError("Invalid case node", statement, statement);
     }
@@ -851,7 +851,7 @@ export class NWScriptParser {
     }
   }
 
-  parseDefaultStatement( statement: any = undefined ){
+  parseDefaultNode( statement: any = undefined ){
     if(!statement || (typeof statement !== 'object') || statement.type !== 'case'){
       this.throwError("Invalid case node", statement, statement);
     }
@@ -1150,10 +1150,10 @@ export class NWScriptParser {
         this.parseSwitchNode(statement);
         break;
       case 'case':
-        this.parseCaseStatement(statement);
+        this.parseCaseNode(statement);
         break;
       case 'default':
-        this.parseDefaultStatement(statement);
+        this.parseDefaultNode(statement);
         break;
       case 'add':
       case 'sub':
