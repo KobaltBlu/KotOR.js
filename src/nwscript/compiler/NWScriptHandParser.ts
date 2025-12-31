@@ -235,7 +235,7 @@ export class NWScriptHandParser {
     throw new Error(`Parse error: expected name, got ${got} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`);
   }
 
-  parseProgram(): ProgramNode {
+  parseAST(): ProgramNode {
     const statements: StatementNode[] = [];
     while (!this.is("eof")) {
       const st = this.parseTopLevelStatement();

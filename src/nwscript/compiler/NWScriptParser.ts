@@ -328,8 +328,6 @@ export class NWScriptParser {
   engine_constants: any[] = [];
   engine_actions: any[] = [];
 
-  local_variables: any[] = [];
-  local_functions: any[] = [];
   errors: ParserError[] = [];
   script: string;
 
@@ -399,7 +397,7 @@ export class NWScriptParser {
       engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
     });
 
-    const ast_nwscript = hp.parseProgram();
+    const ast_nwscript = hp.parseAST();
 
     // Extract actions/constants the same way your old code did
     this.engine_actions = [];
@@ -448,24 +446,41 @@ export class NWScriptParser {
     console.log(`Found (${this.engine_actions.length}) Engine Actions`);
   }
 
-  parseScript(script?: string) {
-    this.script = script ? script : this.script;
-    if (!this.script) return;
+  parseAST(script: string): ProgramNode | undefined {
+    try{
+      const hp = new NWScriptHandParser(script, {
+        engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
+      });
+      return hp.parseAST();
+    }catch(e){
+      console.error(e);
+    }
+    return undefined;
+  }
 
-    const hp = new NWScriptHandParser(this.script, {
-      engineTypes: this.engine_types.map((t) => ({ name: t.name, unary: t.datatype.unary })),
-    });
-
-    const program = hp.parseProgram();
-    this.ast = program;
-
-    this.errors = [];
-    this.local_variables = [];
-    this.local_functions = [];
-
-    // reuse your existing post-pass (type resolution, scopes, validation, etc.)
+  semanticAnalysisPass(program: ProgramNode): SemanticProgramNode {
     this.program = this.parseProgramNode(program) as SemanticProgramNode;
+    return this.program;
+  }
 
+  parseScript(script?: string) {
+    //reset the parser
+    this.errors = [];
+
+    const ast = this.parseAST(script || '');
+    if(!ast){
+      console.error('Lexer/Parser Failed to parse script');
+      this.logParseErrors();
+      return;
+    }
+
+    this.ast = ast;
+
+    this.semanticAnalysisPass(ast);
+    this.logParseErrors();
+  }
+
+  logParseErrors(){
     if (!this.errors.length) {
       this.program.parsed = true;
       console.log(`Script parsed without errors`);
@@ -654,8 +669,6 @@ export class NWScriptParser {
       engine_types: this.engine_types,
       engine_constants: this.engine_constants,
       engine_actions: this.engine_actions,
-      local_variables: this.local_variables,
-      local_functions: this.local_functions,
       program: this.program,
     };
     const seen = new WeakSet();
@@ -712,7 +725,6 @@ export class NWScriptParser {
       if(function_header){
         global_functions[i].arguments = function_header.arguments;
       }
-      this.local_functions.push(global_functions[i]);
       this.program.functions.push(global_functions[i]);
       statements.splice( statements.indexOf(global_functions[i]), 1 );
     }
@@ -724,18 +736,9 @@ export class NWScriptParser {
       this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", program, program);
     }
 
-    console.log(this.scope.variables.slice(0));
-    console.log(this.scope.constants.slice(0));
-    console.log(this.scope.arguments.slice(0));
-    console.log(this.scope.structs.slice(0));
-
     //parse global statements
     this.program.statements = statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
 
-    console.log(this.scope.variables.slice(0));
-    console.log(this.scope.constants.slice(0));
-    console.log(this.scope.arguments.slice(0));
-    console.log(this.scope.structs.slice(0));
     this.program.basePointer = this.program.stackPointer;
 
     if(main){
@@ -962,7 +965,6 @@ export class NWScriptParser {
     if(semanticNode.struct){
       const structVar = this.getVariableByName(semanticNode.struct);
       if(!structVar){
-        //console.log(util.inspect(this.scopes, {showHidden: false, depth: null, colors: true}));
         this.throwError(`Tried to access a variable [${semanticNode.struct}] with a type of [struct] that is not in this scope.`, semanticNode, semanticNode);
         return semanticNode;
       }
@@ -998,7 +1000,6 @@ export class NWScriptParser {
 
     //Push this declared variable to the current scope
     if(semanticNode.declare){
-      this.local_variables.push(semanticNode);
       this.scope.addVariable(semanticNode);
       if(semanticNode.datatype.struct){
         const structReference = this.getVariableByName(semanticNode.datatype.struct);
@@ -1391,14 +1392,6 @@ export class NWScriptParser {
       }
     }
 
-    if(semanticNode.type == 'mul'){
-      console.log('mul', semanticNode.left, semanticNode.right);
-      console.log('left_type', left_type);
-      console.log('right_type', right_type);
-      console.log('left_type_unary', left_type_unary);
-      console.log('right_type_unary', right_type_unary);
-    }
-
     if(semanticNode.type == 'add'){
       if(    !(left_type == 'int'    && right_type == 'int')
           && !(left_type == 'int'    && right_type == 'float')
@@ -1458,7 +1451,7 @@ export class NWScriptParser {
     if(!!semanticNode.value && typeof semanticNode.value == 'object'){
       semanticNode.value = this.parseASTStatement(semanticNode.value);
     }
-    
+
     let value_type = this.getValueDataType(semanticNode.value);
     let value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
     semanticNode.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
@@ -1502,7 +1495,6 @@ export class NWScriptParser {
   }
 
   parseASTStatement( statement: any = undefined ): any {
-    console.log('statement', statement);
     if(!statement || (typeof statement !== 'object')){
       this.throwError("Invalid statement", statement, statement);
       return;
@@ -1663,7 +1655,6 @@ class NWScriptScope {
       const propertyName = parts[1];
       const struct = this.getStruct(structName);
       if(struct){
-        console.log(struct);
         return struct?.properties?.find( p => p.name == propertyName ) as SemanticStructPropertyNode;
       }
     }
