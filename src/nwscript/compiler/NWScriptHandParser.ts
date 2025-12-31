@@ -65,7 +65,7 @@ export interface IncludeNode { type: "include"; value: LiteralNode | NameNode; }
 
 // Used both for struct field declarations (datatype known) and member access (datatype resolved later)
 export interface StructPropertyNode { type: "property"; datatype?: DataTypeNode; name: string; left: ExpressionNode; source: SourceInfo; }
-export interface StructNode { type: "struct"; name: string; properties: StructPropertyNode[]; source: SourceInfo; }
+export interface StructNode { type: "struct"; datatype?: DataTypeNode; name: string; properties: StructPropertyNode[]; source: SourceInfo; }
 
 export interface VariableNode {
   type: "variable";
@@ -365,6 +365,7 @@ export class NWScriptHandParser {
 
       return {
         type: "struct",
+        datatype: { type: "datatype", value: "struct", unary: NWCompileDataTypes.struct, struct: nameTok.value },
         name: nameTok.value,
         properties,
         source: kw.source,

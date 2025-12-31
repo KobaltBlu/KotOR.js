@@ -1,5 +1,5 @@
 import type { Token } from "./NWScriptToken";
-import { ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
+import { ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -71,6 +71,7 @@ interface SemanticStructNode extends AnnotatedNode {
   name: string;
   properties: SemanticStructPropertyNode[];
   is_global: boolean;
+  stackPointer?: number;
 }
 
 interface SemanticStructPropertyNode extends AnnotatedNode {
@@ -96,7 +97,7 @@ interface SemanticArgumentNode extends AnnotatedNode {
   name: string;
   datatype: SemanticDataType;
   value?: SemanticExpressionNode; // default value
-  stackOffset?: number;
+  stackPointer?: number;
 }
 
 // Variables
@@ -493,7 +494,8 @@ export class NWScriptParser {
     return this.program.structs.find( (a:any) => a.name == name );
   }
 
-  getVariableByName( name: any = '' ){
+  getVariableByName( name: any = '' ): SemanticVariableNode | SemanticStructPropertyNode | SemanticStructNode | undefined {
+    console.log('getVariableByName', name);
     if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
     if(!name || (typeof name === 'object')) return undefined;
 
@@ -670,38 +672,40 @@ export class NWScriptParser {
 
   parseProgramNode(program: ProgramNode ): SemanticProgramNode {
     const semanticNode = Object.assign({}, program) as SemanticProgramNode;
-    // this.program = program;
+    this.program = semanticNode;
     semanticNode.basePointer = 0;
     semanticNode.stackPointer = 0;
 
     semanticNode.functions = [];
     semanticNode.structs = [];
+    this.scopes = [];
     semanticNode.scope = this.beginScope();
     semanticNode.scope.is_global = true;
+    const statements = program.statements.slice()
 
     //detect void main()
-    const main = semanticNode.statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
+    const main = statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
     if(main){
       //remove main function from the program's statement list
-      semanticNode.statements.splice( semanticNode.statements.indexOf(main, 1) );
+      statements.splice( statements.indexOf(main, 1) );
     }
 
     //detect int startingConditional()
     const startingConditional = program.statements.find( (s: any) => s.type == 'function' && s.name == 'StartingConditional' && s.returntype && this.isDataType(s.returntype, 'int') );
     if(startingConditional){
       //remove startingConditional function from the program's statement list
-      semanticNode.statements.splice( semanticNode.statements.indexOf(startingConditional as any, 1) );
+      statements.splice( statements.indexOf(startingConditional as any, 1) );
     }
 
     //detect the global function headers
-    let global_functions_headers = program.statements.filter( (s: any) => s.type == 'function' && s.header_only );
+    const global_functions_headers = statements.filter( (s: any) => s.type == 'function' && s.header_only ) as FunctionNode[];
     for(let i = 0; i < global_functions_headers.length; i++){
       //remove function header from the program's statement list
-      program.statements.splice( program.statements.indexOf(global_functions_headers[i]), 1 );
+      statements.splice( statements.indexOf(global_functions_headers[i]), 1 );
     }
 
     //detect the global functions with header and body
-    let global_functions = program.statements.filter( (s: any) => s.type == 'function' && !s.header_only );
+    const global_functions = statements.filter( (s: any) => s.type == 'function' && !s.header_only ) as FunctionNode[];
     for(let i = 0; i < global_functions.length; i++){
       //remove function from the program's statement list
       const function_header = global_functions_headers.find( (f:any) => f.name == global_functions[i].name );
@@ -710,7 +714,7 @@ export class NWScriptParser {
       }
       this.local_functions.push(global_functions[i]);
       this.program.functions.push(global_functions[i]);
-      program.statements.splice( program.statements.indexOf(global_functions[i]), 1 );
+      statements.splice( statements.indexOf(global_functions[i]), 1 );
     }
 
     //validate presence of void main() and int StartingConditional()
@@ -720,14 +724,18 @@ export class NWScriptParser {
       this.throwError("You cannot compile a script without either a void main() or int StartingConditional() declared in the script", program, program);
     }
 
+    console.log(this.scope.variables.slice(0));
+    console.log(this.scope.constants.slice(0));
+    console.log(this.scope.arguments.slice(0));
+    console.log(this.scope.structs.slice(0));
+
     //parse global statements
-    program.statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
+    this.program.statements = statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
 
-    //parse global functions
-    // for(let i = 0; i < global_functions.length; i++){
-    //   this.walkASTStatement(global_functions[i]);
-    // }
-
+    console.log(this.scope.variables.slice(0));
+    console.log(this.scope.constants.slice(0));
+    console.log(this.scope.arguments.slice(0));
+    console.log(this.scope.structs.slice(0));
     this.program.basePointer = this.program.stackPointer;
 
     if(main){
@@ -750,7 +758,6 @@ export class NWScriptParser {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'function'){
       this.throwError("Invalid function node", statement, statement);
     }
-    console.log('function', statement);
     const semanticNode = Object.assign({}, statement) as SemanticFunctionNode;
     if(!semanticNode.defined || !this.isNameInUse(semanticNode.name)){
       semanticNode.defined = true;
@@ -759,16 +766,13 @@ export class NWScriptParser {
       let argStackOffset = 0;
       for(let i = 0; i < semanticNode.arguments.length; i++){
         argStackOffset += 4;//this.getDataTypeStackLength(object.arguments[i]);
-        this.parseASTStatement(semanticNode.arguments[i]);
+        semanticNode.arguments[i] = this.parseASTStatement(semanticNode.arguments[i]);
         // this.scope.addVariable(object.arguments[i]);
         this.scope.addArgument(semanticNode.arguments[i]);
-        semanticNode.arguments[i].stackOffset = argStackOffset;
+        semanticNode.arguments[i].stackPointer = argStackOffset;
       }
 
-      for(let i = 0; i < statement.statements.length; i++){
-        this.parseASTStatement(statement.statements[i]);
-      }
-
+      semanticNode.statements = semanticNode.statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
       this.endScope();
     }else{
       this.throwError("this function name is already in use", statement, statement);
@@ -789,7 +793,7 @@ export class NWScriptParser {
     return semanticNode;
   }
 
-  parseFunctionCallNode( statement: any = undefined ): any {
+  parseFunctionCallNode( statement: FunctionCallNode ): SemanticFunctionCallNode {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'function_call'){
       this.throwError("Invalid function call node", statement, statement);
     }
@@ -813,54 +817,55 @@ export class NWScriptParser {
       }
     }
 
-    if(semanticNode.function_reference){
-      //walk arguments passed to the function
-      const args = semanticNode.arguments;
-      const ref_args = semanticNode.function_reference.arguments;
-      for(let i = 0; i < ref_args.length; i++){
-        let arg = args[i];
-        const arg_ref = ref_args[i];
+    if(!semanticNode.function_reference){
+      this.throwError(`Missing definition for function ${semanticNode.name}`, semanticNode, semanticNode);
+      return semanticNode;
+    }
 
-        //Check to see if an argument was not supplied and the function reference 
-        //has a default argument value to use in place of unsupplied arguments
-        if(!arg && (typeof arg_ref.value !== 'undefined') ){
-          //generate a default argument if one is not supplied
-          const var_ref = this.getVariableByName(arg_ref.value);
-          if(var_ref){
-            arg = var_ref.value;
-            semanticNode.arguments.splice(i, 0, arg);
-          }else{
-            arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
-            semanticNode.arguments.splice(i, 0, arg);
-          }
-        }
+    //walk arguments passed to the function
+    const args = semanticNode.arguments;
+    const ref_args = semanticNode.function_reference.arguments;
+    for(let i = 0; i < ref_args.length; i++){
+      let arg = typeof args[i] == 'object' ? this.parseASTStatement(args[i]) as SemanticExpressionNode : args[i];
+      const arg_ref = ref_args[i] as SemanticArgumentNode;
 
-        if(arg){
-          semanticNode.arguments[i] = this.parseASTStatement(arg) as SemanticExpressionNode;
-
-          if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
-            const argDataType = this.getValueDataType(arg);
-            const argRefDataType = this.getValueDataType(arg_ref);
-            
-            if(arg_ref.datatype.value == 'action'){
-              if(!arg.function_reference){
-                this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, semanticNode, arg);
-              }
-            }else{
-              const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
-              this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to ${arg_ref.datatype.value} ${arg_ref.name}`, semanticNode, arg);
-            }
-          }else if(!arg_ref){
-            const argDataType = this.getValueDataType(arg);
-            const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
-            this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to [no argument]`, semanticNode, arg);
-          }
+      //Check to see if an argument was not supplied and the function reference 
+      //has a default argument value to use in place of unsupplied arguments
+      if(!arg && (typeof arg_ref.value !== 'undefined') ){
+        //generate a default argument if one is not supplied
+        const var_ref = this.getVariableByName(arg_ref.value);
+        if(var_ref){
+          arg = var_ref.value;
+          semanticNode.arguments.splice(i, 0, arg);
         }else{
-          this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, semanticNode, arg);
+          arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
+          semanticNode.arguments.splice(i, 0, arg);
         }
       }
-    }else{
-      this.throwError(`Missing definition for function ${semanticNode.name}`, semanticNode, semanticNode);
+
+      if(!arg){
+        this.throwError(`Function call argument missing a value for ${arg_ref.datatype.value} ${arg_ref.name} and no default value is available`, semanticNode, arg);
+        continue;
+      }
+      semanticNode.arguments[i] = this.parseASTStatement(arg) as SemanticExpressionNode;
+
+      if(arg_ref && ( this.getValueDataType(arg_ref) != this.getValueDataType(arg) ) ){
+        const argDataType = this.getValueDataType(arg);
+        const argRefDataType = this.getValueDataType(arg_ref);
+        
+        if(arg_ref.datatype.value == 'action'){
+          if(!arg.function_reference){
+            this.throwError(`Can't pass a function call to ${arg_ref.datatype.value} ${arg_ref.name}`, semanticNode, arg);
+          }
+        }else{
+          const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+          this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to ${arg_ref.datatype.value} ${arg_ref.name}`, semanticNode, arg);
+        }
+      }else if(!arg_ref){
+        const argDataType = this.getValueDataType(arg);
+        const argTypeStr = argDataType !== undefined ? argDataType : 'unknown';
+        this.throwError(`Can't pass a value with a datatype type of [${argTypeStr}] to [no argument]`, semanticNode, arg);
+      }
     }
     return semanticNode;
   }
@@ -886,7 +891,7 @@ export class NWScriptParser {
     }
     const semanticNode = Object.assign({}, statement) as SemanticPropertyNode;
     if(semanticNode.left && semanticNode.left.type == 'variable_reference'){
-      semanticNode.variable_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`);
+      semanticNode.variable_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
       semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
       semanticNode.is_global = semanticNode.left?.variable_reference?.is_global;
       console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
@@ -961,7 +966,7 @@ export class NWScriptParser {
         this.throwError(`Tried to access a variable [${semanticNode.struct}] with a type of [struct] that is not in this scope.`, semanticNode, semanticNode);
         return semanticNode;
       }
-      semanticNode.struct_reference = structVar || semanticNode.struct_reference;
+      semanticNode.struct_reference = structVar as SemanticStructNode || semanticNode.struct_reference;
       if(statement.declare){
         if(structVar.type == 'struct'){
           semanticNode.struct_reference = structVar;
@@ -1010,7 +1015,9 @@ export class NWScriptParser {
       semanticNode.is_global = !!varRef?.is_global;
     }
 
-    if(typeof semanticNode.value == 'object') semanticNode.value = this.parseASTStatement(semanticNode.value);
+    if(!!semanticNode.value && typeof semanticNode.value == 'object'){
+      semanticNode.value = this.parseASTStatement(semanticNode.value);
+    }
 
     //Struct Property Access Validation
     if(semanticNode.struct && semanticNode.name){
@@ -1049,7 +1056,9 @@ export class NWScriptParser {
       this.throwError("Invalid return node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticReturnNode;
-    if(typeof semanticNode.value == 'object') semanticNode.value = this.parseASTStatement(semanticNode.value);
+    if(!!semanticNode.value && typeof semanticNode.value == 'object'){
+      semanticNode.value = this.parseASTStatement(semanticNode.value);
+    }
 
     const scopeReturnType = this.scopes.slice(0).reverse().find( sc => typeof sc.returntype !== 'undefined' )?.returntype;
     if(scopeReturnType){
@@ -1133,62 +1142,6 @@ export class NWScriptParser {
     return semanticNode;
   }
 
-  // parseConditionNode( statement: any = undefined ): any {
-  //   if(!statement || (typeof statement !== 'object') || (statement.type !== 'if' && statement.type !== 'elseif' && statement.type !== 'else' && statement.type !== 'do' && statement.type !== 'while')){
-  //     this.throwError("Invalid condition node", statement, statement);
-  //   }
-  //   const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
-  //   for(let i = 0; i < conds.length; i++){
-  //     this.parseASTStatement(conds[i]);
-  //   } 
-
-  //   const elseIfs = Array.isArray(statement.elseIfs) ? statement.elseIfs : (statement.elseIfs ? [statement.elseIfs] : []);
-  //   for(let i = 0; i < elseIfs.length; i++){
-  //     this.parseASTStatement(elseIfs[i]);
-  //   }
-
-  //   if(statement.else){
-  //     this.parseASTStatement(statement.else);
-  //   }
-
-  //   this.scope = new NWScriptScope(this.program);
-  //   this.scopes.push(this.scope);
-
-  //   for(let i = 0; i < statement.statements.length; i++){
-  //     this.parseASTStatement(statement.statements[i]);
-  //   }
-
-  //   this.scopes.pop()?.popped();
-  //   this.scope = this.scopes[this.scopes.length - 1];
-
-  //   if(typeof statement.else == 'object' && Array.isArray(statement.else)){
-  //     let else_declared = false;
-  //     for(let i = 0; i < statement.else.length; i++){
-  //       this.scope = new NWScriptScope(this.program);
-  //       this.scopes.push(this.scope);
-
-  //       const elseIf = statement.else[i];
-  //       if(elseIf.type == 'else'){
-  //         if(else_declared){
-  //           this.throwError('Only one else statement can be chained in an If Else statement', statement, elseIf);
-  //         }
-
-  //         if(i != (statement.else.length-1)){
-  //           this.throwError('Else statements can only be declared at the end of an If Else statement', statement, elseIf);
-  //         }
-
-  //         else_declared = true;
-  //       }
-
-  //       this.parseASTStatement(elseIf);
-
-  //       this.scopes.pop()?.popped();
-  //       this.scope = this.scopes[this.scopes.length - 1];
-  //     }
-  //   }
-  //   return statement;
-  // }
-
   parseForNode( statement: ForNode ): SemanticForNode {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'for'){
       this.throwError("Invalid for node", statement, statement);
@@ -1203,13 +1156,11 @@ export class NWScriptParser {
     //walk incrementor
     if(typeof semanticNode.incrementor == 'object') semanticNode.incrementor = this.parseASTStatement(semanticNode.incrementor);
 
-    this.scope = new NWScriptScope(this.program);
-    this.scopes.push(this.scope);
+    this.beginScope();
 
     semanticNode.statements = statement.statements.map(this.parseASTStatement);
 
-    this.scopes.pop()?.popped();
-    this.scope = this.scopes[this.scopes.length - 1];
+    this.endScope();
     return semanticNode;
   }
 
@@ -1504,8 +1455,10 @@ export class NWScriptParser {
       this.throwError("Invalid unary node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticUnaryNode;
-    if(typeof semanticNode.value == 'object') semanticNode.value = this.parseASTStatement(semanticNode.value);
-
+    if(!!semanticNode.value && typeof semanticNode.value == 'object'){
+      semanticNode.value = this.parseASTStatement(semanticNode.value);
+    }
+    
     let value_type = this.getValueDataType(semanticNode.value);
     let value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
     semanticNode.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
@@ -1614,6 +1567,8 @@ export class NWScriptParser {
       case 'inc':
       case 'dec':
         return this.parseIncDecNode(statement);
+      case 'literal':
+        return statement as SemanticLiteralNode;
       default:
         console.warn('unhandled statement', statement.type);
         console.log(statement);
@@ -1640,21 +1595,25 @@ export class NWScriptParser {
 }
 
 class NWScriptScope {
-  arguments: any[] = [];
-  variables: any[] = [];
-  constants: any[] = [];
-  program: any = null;
+  arguments: SemanticArgumentNode[] = [];
+  variables: SemanticVariableNode[] = [];
+  constants: SemanticVariableNode[] = [];
+  structs: SemanticStructNode[] = [];
+  program: SemanticProgramNode;
   returntype: any = undefined;
   is_global = false;
   is_anonymous = false;
 
-  constructor(program: any, returntype: any = undefined){
+  constructor(program: SemanticProgramNode, returntype: any = undefined){
     this.program = program;
     this.returntype = returntype;
   }
 
-  addVariable(variable: any){
-    if(!this.hasVariable(variable.name)){
+  addVariable(variable: SemanticArgumentNode|SemanticVariableNode|SemanticStructNode){
+    if(this.hasVariable(variable.name)){ return; }
+    if(variable.type == 'struct'){
+      this.structs.push(variable);
+    }else if(variable.type == 'variable'){
       if(variable.is_const){
         this.constants.push(variable);
       }else{
@@ -1662,6 +1621,8 @@ class NWScriptScope {
         variable.stackPointer = this.program.stackPointer;
         this.program.stackPointer += 4;
       }
+    }else if(variable.type == 'argument'){
+      this.arguments.push(variable);
     }
   }
 
@@ -1679,12 +1640,19 @@ class NWScriptScope {
     return this.arguments.find( v => v.name == name );
   }
 
+  hasStruct(name = ''): boolean {
+    return this.structs.find( s => s.name == name ) ? true : false;
+  }
+
+  getStruct(name = ''): SemanticStructNode | undefined {
+    return this.structs.find( s => s.name == name );
+  }
+
   hasVariable(name = ''){
     return this.getVariable(name) ? true : false;
   }
 
   getVariable(name = ''){
-    console.log('getVariable', name, this.variables.slice(0), this.constants.slice(0));
     if(!name || typeof name != 'string'){
       console.error('getVariable: name is not a string');
     }
@@ -1693,13 +1661,13 @@ class NWScriptScope {
       const parts = name.split('.');
       const structName = parts[0];
       const propertyName = parts[1];
-      const struct = this.getVariable(structName);
+      const struct = this.getStruct(structName);
       if(struct){
         console.log(struct);
-        return struct?.struct_reference?.properties?.find( p => p.name == propertyName );
+        return struct?.properties?.find( p => p.name == propertyName ) as SemanticStructPropertyNode;
       }
     }
-    return this.variables.find( v => v.name == name ) || this.arguments.find( v => v.name == name ) || this.constants.find( v => v.name == name );
+    return this.variables.find( v => v.name == name ) || this.structs.find( v => v.name == name ) || this.arguments.find( v => v.name == name ) || this.constants.find( v => v.name == name );
   }
 
   popped(){
