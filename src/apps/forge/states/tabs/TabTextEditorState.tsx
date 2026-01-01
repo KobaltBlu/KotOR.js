@@ -193,32 +193,49 @@ export class TabTextEditorState extends TabState {
 
   resolveIncludes( code: string = ``, includeMap: Map<string, string> = new Map(), includeOrder: string[] = [] ){
     return new Promise<Map<string, string>>( async (resolve, reject) => {
-      const includes = [...code.matchAll(/#include\s?"(\w+)"/g)];
-      for(let i = 0; i < includes.length; i++){
-        const match = includes[i];
-        const resref = match[1];
-        if(!includeMap.has(resref)){
-          if(resref){
-            const key = KotOR.KEYManager.Key.getFileKey(resref, KotOR.ResourceTypes.nss);
-            if(key){
-              const buffer = await KotOR.KEYManager.Key.getFileBuffer(key);
-              if(buffer){
-                const textDecoder = new TextDecoder();
-                const source = textDecoder.decode(buffer);
-                includeMap.set(resref, source);
-                includeOrder.push(resref);
-                await this.resolveIncludes(source, includeMap, includeOrder);
-              }
-            }
+      const visited = new Set<string>();
+
+      const loadInclude = async (resref: string) => {
+        if(!resref || visited.has(resref)) return;
+        visited.add(resref);
+
+        const key = KotOR.KEYManager.Key.getFileKey(resref, KotOR.ResourceTypes.nss);
+        if(!key) return;
+        const buffer = await KotOR.KEYManager.Key.getFileBuffer(key);
+        if(!buffer) return;
+
+        const textDecoder = new TextDecoder();
+        const source = textDecoder.decode(buffer);
+
+        // Resolve nested includes first so they appear before this include
+        const nestedIncludes = [...source.matchAll(/#include\s*"?([\w\.]+)"?/g)];
+        console.log(nestedIncludes);
+        for(const m of nestedIncludes){
+          const nestedResref = m[1];
+          if(nestedResref && !includeMap.has(nestedResref)){
+            console.log('loading include', nestedResref);
+            await loadInclude(nestedResref);
           }
-        }else{
-          // let index = includeOrder.indexOf(resref);
-          // if(index >= 0){
-          //   includeOrder.splice(index, 1);
-          //   includeOrder.unshift(resref);
-          // }
+        }
+
+        if(!includeMap.has(resref)){
+          includeMap.set(resref, source);
+          includeOrder.push(resref);
+        }
+      };
+
+      // seed includes from the root code
+      const rootIncludes = [...code.matchAll(/#include\s*"?([\w\.]+)"?/g)];
+      console.log(rootIncludes);
+      for(const m of rootIncludes){
+        const resref = m[1];
+        if(resref && !includeMap.has(resref)){
+          console.log('loading include', resref);
+          await loadInclude(resref);
         }
       }
+
+      console.log(includeMap.keys());
       resolve(includeMap);
     });
   }
