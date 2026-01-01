@@ -77,7 +77,7 @@ const concatBuffers = (buffers: ByteArray[]) => {
  */
 export class NWScriptCompiler {
 
-  ast: any = null;
+  program: any = null;
   basePointer = 0;
   stackPointer = 0;
   log: any = [];
@@ -100,7 +100,7 @@ export class NWScriptCompiler {
 
   constructor(ast: any){
 
-    this.ast = ast;
+    this.program = ast;
     this.scopes = [];
     this._silent = false;
     this.errors = [];
@@ -163,7 +163,7 @@ export class NWScriptCompiler {
 
   opcodeDebug(name: string, buffer: Uint8Array){
     if( this._silent ) return;
-    console.log( (name + "                ").slice(0, 16), buffer );
+    // console.log( (name + "                ").slice(0, 16), buffer );
   }
 
   scopePush( scope: NWScriptScope ){
@@ -188,10 +188,10 @@ export class NWScriptCompiler {
   compile(){
     this.log = [];
     this.errors = [];
-    if(typeof this.ast === 'object' && this.ast.type == 'program'){
-      if(this.ast.main){
+    if(typeof this.program === 'object' && this.program.type == 'program'){
+      if(this.program.main){
         return this.compileMain();
-      }else if(this.ast.startingConditional){
+      }else if(this.program.startingConditional){
         return this.compileStartingConditional();
       }
     }
@@ -208,21 +208,11 @@ export class NWScriptCompiler {
     return buffer.length;
   }
 
-  getBlockOffset( func?: any ){
-    let offset = this.main_offset_start + this.ast.main.offset;
-    let index = this.ast.functions.indexOf(func);
-    for(let i = 0; i < index; i++){
-      //offset
-    }
-
-    return offset;
-  }
-
   compileMain(){
     this.basePointer  = 0;
     this.stackPointer = 0;
     this.scopes = [];
-    if(typeof this.ast === 'object' && this.ast.type == 'program'){
+    if(typeof this.program === 'object' && this.program.type == 'program'){
       console.log('CompileMain: Begin');
       const buffer: ByteArray = new Uint8Array(0);
       const buffers: ByteArray[] = [buffer];
@@ -230,7 +220,7 @@ export class NWScriptCompiler {
       this.program_bytes_written = 0;
       this.scopePush( new NWScriptScope() );
 
-      const globalStatements = this.ast.statements.filter( (s: any) => {
+      const globalStatements = this.program.statements.filter( (s: any) => {
         return ((s.type == 'variable' || s.type == 'variableList') && s.is_const == false) || s.type == 'struct';
       });
 
@@ -277,21 +267,24 @@ export class NWScriptCompiler {
         buffers.push( this.writeRETN() );
       }
 
+      const subroutines = this.program.functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
+      console.log(subroutines);
       //PASS 1 - Build Offsets
       this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
       this.main_offset_start = this.program_bytes_written;
-      this.ast.main.blockOffset = this.program_bytes_written;
-      this.compileFunction( this.ast.main );
+      this.program.main.blockOffset = this.program_bytes_written;
+      this.compileFunction( this.program.main );
 
-      this.program_bytes_written = this.ast.main.blockOffset + this.ast.main.blockSize;
-      this.functionBlockStartOffset = this.ast.main.blockOffset + this.ast.main.blockSize;
+      this.program_bytes_written = this.program.main.blockOffset + this.program.main.blockSize;
+      this.functionBlockStartOffset = this.program.main.blockOffset + this.program.main.blockSize;
 
       let functionBlockOffset = this.functionBlockStartOffset;
-      for(let i = 0; i < this.ast.functions.length; i++){
-        const global_function = this.ast.functions[i];
+      for(let i = 0; i < subroutines.length; i++){
+        const global_function = subroutines[i];
         if(global_function.called){
           global_function.blockOffset = functionBlockOffset;
+          console.log(global_function.blockOffset)
           this.compileFunction( global_function );
           functionBlockOffset += global_function.blockSize;
         }
@@ -299,15 +292,15 @@ export class NWScriptCompiler {
 
       //PASS 2 - Write Blocks
       this.stackPointer = 0;
-      this.program_bytes_written = this.ast.main.blockOffset;
+      this.program_bytes_written = this.program.main.blockOffset;
 
       //Compile MAIN
-      buffers.push( this.compileFunction( this.ast.main ) );
-      this.program_bytes_written += this.ast.main.blockSize;
+      buffers.push( this.compileFunction( this.program.main ) );
+      this.program_bytes_written += this.program.main.blockSize;
 
       //Compile Global Functions
-      for(let i = 0; i < this.ast.functions.length; i++){
-        const global_function = this.ast.functions[i];
+      for(let i = 0; i < subroutines.length; i++){
+        const global_function = subroutines[i];
         if(global_function.called){
           buffers.push( this.compileFunction( global_function ) );
           this.program_bytes_written += global_function.blockSize;
@@ -337,7 +330,7 @@ export class NWScriptCompiler {
     this.basePointer  = 0;
     this.stackPointer = 0;
     this.scopes = [];
-    if(typeof this.ast === 'object' && this.ast.type == 'program'){
+    if(typeof this.program === 'object' && this.program.type == 'program'){
       console.log('CompileMain: Begin');
       const buffer: ByteArray =  new Uint8Array(0);
       const buffers: ByteArray[] = [buffer];
@@ -345,7 +338,7 @@ export class NWScriptCompiler {
       this.program_bytes_written = 0;
       this.scopePush( new NWScriptScope() );
 
-      const globalStatements = this.ast.statements.filter( (s: any) => {
+      const globalStatements = this.program.statements.filter( (s: any) => {
         return ( (s.type == 'variable' || s.type == 'variableList') && s.is_const == false) || s.type == 'struct';
       });
 
@@ -404,28 +397,23 @@ export class NWScriptCompiler {
         this.basePointer = this.stackPointer - 4;
         this.stackPointer = 4;
         this.basePointerWriting = false;
-
-        // buffers.push( this.writeCPDOWNSP( -(12 + this.basePointer) ) );
-        // buffers.push( this.writeMOVSP( -4 ) ); 
-        // buffers.push( this.writeRESTOREBP() );
-        // buffers.push( this.writeMOVSP( -this.basePointer ) );
-        // buffers.push( this.writeRETN() );
-
       }
+
+      const subroutines = this.program.functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
 
       //PASS 1 - Build Offsets
       this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
       this.main_offset_start = this.program_bytes_written;
-      this.ast.startingConditional.blockOffset = this.program_bytes_written;
-      this.compileFunction( this.ast.startingConditional );
+      this.program.startingConditional.blockOffset = this.program_bytes_written;
+      this.compileFunction( this.program.startingConditional );
 
-      this.program_bytes_written = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
-      this.functionBlockStartOffset = this.ast.startingConditional.blockOffset + this.ast.startingConditional.blockSize;
+      this.program_bytes_written = this.program.startingConditional.blockOffset + this.program.startingConditional.blockSize;
+      this.functionBlockStartOffset = this.program.startingConditional.blockOffset + this.program.startingConditional.blockSize;
 
       let functionBlockOffset = this.functionBlockStartOffset;
-      for(let i = 0; i < this.ast.functions.length; i++){
-        const global_function = this.ast.functions[i];
+      for(let i = 0; i < subroutines.length; i++){
+        const global_function = subroutines[i];
         if(global_function.called){
           global_function.blockOffset = functionBlockOffset;
           this.compileFunction( global_function );
@@ -435,15 +423,15 @@ export class NWScriptCompiler {
 
       //PASS 2 - Write Blocks
       this.stackPointer = 0;
-      this.program_bytes_written = this.ast.startingConditional.blockOffset;
+      this.program_bytes_written = this.program.startingConditional.blockOffset;
 
       //Compile MAIN
-      buffers.push( this.compileFunction( this.ast.startingConditional ) );
-      this.program_bytes_written += this.ast.startingConditional.blockSize;
+      buffers.push( this.compileFunction( this.program.startingConditional ) );
+      this.program_bytes_written += this.program.startingConditional.blockSize;
 
       //Compile Global Functions
-      for(let i = 0; i < this.ast.functions.length; i++){
-        const global_function = this.ast.functions[i];
+      for(let i = 0; i < subroutines.length; i++){
+        const global_function = subroutines[i];
         if(global_function.called){
           buffers.push( this.compileFunction( global_function ) );
           this.program_bytes_written += global_function.blockSize;
@@ -598,18 +586,14 @@ export class NWScriptCompiler {
   compileVariable( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && (statement.type == 'variable' || statement.type == 'variable_reference')){
-      //console.log('variable', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
       if(statement.struct_reference){
         if(statement.declare === true){
           statement.stackPointer = this.stackPointer;
           statement.is_global = this.basePointerWriting;
-          //console.log('struct.declare', statement);
 
           for(let i = 0; i < statement.struct_reference.properties.length; i++){
             const prop = statement.struct_reference.properties[i];
             prop.is_global = statement.is_global;
-            console.log('prop', prop);
-            console.log('this.getDataType(prop)', this.getDataType(prop));
             if( this.getDataType(prop).value == 'vector'){
               buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
             }else{
@@ -620,7 +604,6 @@ export class NWScriptCompiler {
         }else{
           if(statement.struct_reference && statement.variable_reference){
             if(statement.value){ //assigning
-              //console.log('struct.assign', statement);
               buffers.push( this.compileStatement(statement.value) as Uint8Array );
               const propertyStackPointer = (statement.struct_reference.stackPointer + statement.variable_reference.offsetPointer);
               if(statement.struct_reference.is_global){
@@ -630,7 +613,6 @@ export class NWScriptCompiler {
               }
               buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
             }else{ //retrieving
-              //console.log('struct.retrieve', statement);
               if(statement.struct_reference.is_global){
                 buffers.push( this.writeCPTOPBP( statement.struct_reference.stackPointer - this.basePointer, statement.struct_reference.struct_reference.structDataLength ) );
               }else{
@@ -722,7 +704,6 @@ export class NWScriptCompiler {
         const varRef = left.left.variable_reference;
         const isGlobal = varRef?.is_global;
         const propRef = left.property_reference;
-        console.log(statement);
         buffers.push( this.compileStatement(right) as Uint8Array );
         // @todo support vectors, currently we only support single slot datatypes
         if(isGlobal){
@@ -869,7 +850,6 @@ export class NWScriptCompiler {
 
     //Jump to the end of the current executing block
     const jmpOffset = ( this.scope.block.retn_jmp || 0 ) - ( this.scope.bytes_written + 0 );
-    // console.log( jmpOffset.toString(16), 0x7FFFFFFF )
     buffers.push( this.writeJMP( this.scope.block.retn_jmp ? jmpOffset : 0x7FFFFFFF ) );
 
     //clear the return data off the stack
@@ -964,7 +944,6 @@ export class NWScriptCompiler {
   compileFunctionCall( statement: any ){
     const buffers: Uint8Array[] = [];
     
-    //console.log('function_call', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
     if(statement && statement.type == "function_call"){
       //RETURNTYPE
       if(statement.function_reference.returntype){
@@ -1016,7 +995,8 @@ export class NWScriptCompiler {
         const returnSize = this.getDataTypeStackLength(statement.function_reference.returntype);
         buffers.push( this.writeACTION(0x00, statement.action_id, statement.arguments.length, returnSize, argumentsDataSize) );
       }else{ //LOCAL FUNCTION
-        const jsrOffset = statement.function_reference.blockOffset - (this.program_bytes_written + this.scope.bytes_written);
+        const funcRef = this.program.functions.find( (f: any) => f.name == statement.function_reference.name );
+        const jsrOffset = funcRef.blockOffset - (this.program_bytes_written + this.scope.bytes_written);
         buffers.push( this.writeJSR(jsrOffset) );
         this.stackPointer -= argumentsDataSize;
       }
@@ -1193,7 +1173,6 @@ export class NWScriptCompiler {
         }
       }
 
-      console.log('right', statement.right);
       if(statement.type == 'compare'){
         if(statement.operator.value == '||'){
           buffers.push( this.writeCPTOPSP(-4) );
@@ -1329,7 +1308,6 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'if'){
       // Build chain: if + elseIfs + else, drop any null/undefined
       const ifelses: any[] = ([] as any[]).concat([statement], statement.elseIfs || [], statement.else || []).filter(Boolean);
-      console.log('ifelses', ifelses);
 
       for(let i = 0; i < ifelses.length; i++){
         const ifelse = ifelses[i];
@@ -1376,7 +1354,6 @@ export class NWScriptCompiler {
         if(ifelse.type != 'else'){
           if(!ifelse.jz){
             ifelse.jz = ifelse.block_end - ifelse.jz_start;
-            //console.log('jz', ifelse.jz.toString(16));
           }
         }
       }
@@ -1386,7 +1363,6 @@ export class NWScriptCompiler {
         ifelses[i].end_of_if_else_block = this.scope.bytes_written;
         if(!ifelses[i].jmp){
           ifelses[i].jmp = ifelses[i].end_of_if_else_block - ifelses[i].jmp_start;
-          //console.log('jmp', ifelses[i].jmp.toString(16));
         }
       }
 
@@ -1983,7 +1959,6 @@ export class NWScriptCompiler {
     buffer.writeInt8(0x00, 1);
     buffer.writeUInt16BE(routineNumber, 2);
     buffer.writeInt8(numArguments, 4);
-    // console.log('writeACTION', routineNumber, returnSize, nArgumentDataSize, this.stackPointer);
     this.stackPointer += returnSize;//Increase by size of return value
     this.stackPointer -= nArgumentDataSize;//Decrease by the size of the arguments;
     this.opcodeDebug('OP_ACTION', buffer);
