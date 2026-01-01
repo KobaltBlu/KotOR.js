@@ -469,6 +469,16 @@ export class NWScriptCompiler {
     }
   }
 
+  /**
+   * Get the stack length of a datatype
+   * 
+   * all non void datatypes when placed on the stack take up 4 bytes
+   * these positions on the stack are just pointers to the actual data
+   * 
+   * vectors take up 12 bytes because they are stored as 3 floats ( 4 bytes each ) packed end to end on the stack
+   * @param datatype - The datatype to get the stack length for
+   * @returns The stack length of bytes required to store the datatype
+   */
   getDataTypeStackLength( datatype?: any ): number {
     if(datatype && datatype.type == 'datatype'){
       switch(datatype.value){
@@ -489,6 +499,7 @@ export class NWScriptCompiler {
       if(statement.datatype) return this.getDataTypeStackLength(statement.datatype);
       if(statement.returntype) return this.getDataTypeStackLength(statement.returntype);
       if(statement.function_reference) return this.getDataTypeStackLength(statement.function_reference.returntype);
+      if(statement.property_reference) return this.getDataTypeStackLength(statement.property_reference.datatype);
     }
     console.error('getStatementDataTypeSize');
     console.log(statement);
@@ -504,6 +515,7 @@ export class NWScriptCompiler {
         case 'variable_reference':return this.compileVariable( statement );
         case 'argument':      return this.compileArgument( statement );
         case 'struct':        return this.compileStruct( statement );
+        case 'property':      return this.compileStructProperty( statement );
         case 'compare':       return this.compileCompare( statement );
         case 'function':      return this.compileFunction( statement );
         case 'function_call': return this.compileFunctionCall( statement );
@@ -587,7 +599,7 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
     if(statement && (statement.type == 'variable' || statement.type == 'variable_reference')){
       //console.log('variable', util.inspect(statement, {showHidden: false, depth: null, colors: true}));
-      if(statement.struct){
+      if(statement.struct_reference){
         if(statement.declare === true){
           statement.stackPointer = this.stackPointer;
           statement.is_global = this.basePointerWriting;
@@ -595,6 +607,9 @@ export class NWScriptCompiler {
 
           for(let i = 0; i < statement.struct_reference.properties.length; i++){
             const prop = statement.struct_reference.properties[i];
+            prop.is_global = statement.is_global;
+            console.log('prop', prop);
+            console.log('this.getDataType(prop)', this.getDataType(prop));
             if( this.getDataType(prop).value == 'vector'){
               buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
             }else{
@@ -698,15 +713,31 @@ export class NWScriptCompiler {
   compileAssign( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'assign'){
-      if(statement.left.type != 'variable_reference'){
-        throw 'Invalid left type for assign: Must be a variable reference';
+      if(statement.left.type != 'variable_reference' && statement.left.type != 'property'){
+        throw 'Invalid left type for assign: Must be a variable reference or property';
       }
-      const varRef = statement.left.variable_reference;
-      buffers.push( this.compileStatement(statement.right) as Uint8Array );
-      if(varRef.is_global){
-        buffers.push( this.writeCPDOWNBP( (varRef.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
+      const left = statement.left;
+      const right = statement.right;
+      if(left.type == 'property'){
+        const varRef = left.left.variable_reference;
+        const isGlobal = varRef?.is_global;
+        const propRef = left.property_reference;
+        console.log(statement);
+        buffers.push( this.compileStatement(right) as Uint8Array );
+        // @todo support vectors, currently we only support single slot datatypes
+        if(isGlobal){
+          buffers.push( this.writeCPDOWNBP( (varRef.stackPointer - this.basePointer) + propRef.offsetPointer, this.getDataTypeStackLength(statement.datatype) ) );
+        }else{
+          buffers.push( this.writeCPDOWNSP( (varRef.stackPointer - this.stackPointer) + propRef.offsetPointer, this.getDataTypeStackLength(statement.datatype) ) );
+        }
       }else{
-        buffers.push( this.writeCPDOWNSP( (varRef.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
+        const varRef = left.variable_reference;
+        buffers.push( this.compileStatement(right) as Uint8Array );
+        if(varRef.is_global){
+          buffers.push( this.writeCPDOWNBP( (varRef.stackPointer - this.basePointer), this.getDataTypeStackLength(statement.datatype) ) );
+        }else{
+          buffers.push( this.writeCPDOWNSP( (varRef.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
+        }
       }
       buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
     }
@@ -730,6 +761,14 @@ export class NWScriptCompiler {
     return undefined;
   }
 
+  /**
+   * Compile a struct statement
+   * 
+   * This is used when declaring a struct
+   * 
+   * @param statement - The struct statement to compile
+   * @returns The compiled struct statement as a Uint8Array
+   */
   compileStruct( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'struct'){
@@ -750,6 +789,45 @@ export class NWScriptCompiler {
           // commented this out because we don't add struct definitions to the stack
           // buffers.push( this.writeRSADD( prop.datatype.unary ) );
           statement.structDataLength += 4;
+        }
+      }
+    }
+    return concatBuffers(buffers);
+  }
+
+  /**
+   * Compile a struct property statement
+   * 
+   * This is used when accessing a property of a struct
+   * 
+   * @param statement - The property statement to compile
+   * @returns The compiled property statement as a Uint8Array
+   */
+  compileStructProperty( statement: any ){
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'property'){
+      const left = statement.left;
+      const varRef = left.variable_reference;
+      const propRef = statement.property_reference;
+      if(propRef.datatype.value == 'vector'){
+        if(varRef.is_global){
+          const offset = (varRef.stackPointer - this.basePointer) + propRef.offsetPointer;
+          buffers.push( this.writeCPTOPBP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
+          buffers.push( this.writeCPTOPBP( offset + 4, this.getDataTypeStackLength(propRef.datatype) ) );
+          buffers.push( this.writeCPTOPBP( offset + 8, this.getDataTypeStackLength(propRef.datatype) ) );
+        }else{
+          const offset = (varRef.stackPointer - this.stackPointer) + propRef.offsetPointer;
+          buffers.push( this.writeCPTOPSP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
+          buffers.push( this.writeCPTOPSP( offset + 4, this.getDataTypeStackLength(propRef.datatype) ) );
+          buffers.push( this.writeCPTOPSP( offset + 8, this.getDataTypeStackLength(propRef.datatype) ) );
+        }
+      }else{
+        if(varRef.is_global){
+          const offset = (varRef.stackPointer - this.basePointer) + propRef.offsetPointer;
+          buffers.push( this.writeCPTOPBP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
+        }else{
+          const offset = (varRef.stackPointer - this.stackPointer) + propRef.offsetPointer;
+          buffers.push( this.writeCPTOPSP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
         }
       }
     }

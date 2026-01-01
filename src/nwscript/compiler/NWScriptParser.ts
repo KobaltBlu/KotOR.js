@@ -155,7 +155,7 @@ interface SemanticPropertyNode extends AnnotatedNode {
   name: string;
   datatype?: SemanticDataType;
   is_global?: boolean;
-  variable_reference?: SemanticStructPropertyNode;
+  property_reference?: SemanticStructPropertyNode;
   right?: SemanticExpressionNode; // if assignment
 }
 
@@ -593,7 +593,7 @@ export class NWScriptParser {
     try{
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.value;
-        if(value.type == 'property') return value.variable_reference?.datatype?.value;
+        if(value.type == 'property') return value.property_reference?.datatype?.value;
         if(value.type == 'variable') { 
           return value.datatype?.value || value?.variable_reference?.datatype?.value;
         }
@@ -623,7 +623,7 @@ export class NWScriptParser {
     try{
       if(value && typeof value == 'object'){
         if(value.type == 'literal') return value.datatype?.unary;
-        if(value.type == 'property') return value.variable_reference?.datatype?.unary;
+        if(value.type == 'property') return value.property_reference?.datatype?.unary;
         if(value.type == 'variable') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
         if(value.type == 'assign') return this.getValueDataTypeUnary(value.right);
         if(value.type == 'variable_reference') { return value.datatype?.unary || value?.variable_reference?.datatype?.unary; }
@@ -912,11 +912,12 @@ export class NWScriptParser {
       this.throwError("Invalid property node", statement, statement);
     }
     const semanticNode = Object.assign({}, statement) as SemanticPropertyNode;
-    if(semanticNode.left && typeof semanticNode.left == 'object' && semanticNode.left.type == 'variable_reference'){
-      semanticNode.variable_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
-      // semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
-      // semanticNode.is_global = semanticNode.left?.variable_reference?.is_global;
-      console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
+    if(semanticNode.left && typeof semanticNode.left == 'object'){
+      semanticNode.left = this.parseASTStatement(semanticNode.left) as SemanticVariableReferenceNode;
+      semanticNode.property_reference = this.getVariableByName(`${semanticNode.left.name}.${semanticNode.name}`) as SemanticStructPropertyNode;
+      // // semanticNode.datatype = semanticNode.left?.variable_reference?.datatype;
+      // semanticNode.is_global = semanticNode.left.is_global;
+      // console.log('property', semanticNode, `${semanticNode.left.name}.${semanticNode.name}`, semanticNode.variable_reference);
     }
 
     if(semanticNode.right && typeof semanticNode.right == 'object'){
