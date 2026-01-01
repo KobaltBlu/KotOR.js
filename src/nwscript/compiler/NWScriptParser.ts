@@ -87,6 +87,7 @@ interface SemanticFunctionNode extends AnnotatedNode {
   header_only: boolean;
   defined?: boolean;
   called?: boolean;
+  callIndex?: number;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
   statements: SemanticStatementNode[];
@@ -338,6 +339,8 @@ export class NWScriptParser {
   program: SemanticProgramNode;
   scope: NWScriptScope;
 
+  callIndex = 0;
+
   constructor(nwscript?: string, script?: string) {
     if (nwscript) {
       this.nwscript_source = nwscript;
@@ -517,7 +520,6 @@ export class NWScriptParser {
   }
 
   getVariableByName( name: any = '' ): SemanticVariableNode | SemanticStructPropertyNode | SemanticStructNode | SemanticArgumentNode | undefined {
-    console.log('getVariableByName', name);
     if(name && typeof name == 'object' && typeof name.value == 'string') name = name.value;
     if(!name || (typeof name === 'object')) return undefined;
 
@@ -701,6 +703,7 @@ export class NWScriptParser {
   }
 
   parseProgramNode(program: ProgramNode ): SemanticProgramNode {
+    this.callIndex = 0;
     const semanticNode = Object.assign({}, program) as SemanticProgramNode;
     this.program = semanticNode;
     semanticNode.basePointer = 0;
@@ -832,6 +835,7 @@ export class NWScriptParser {
         semanticNode.function_reference = scriptFunction;
         if(!scriptFunction.called){
           scriptFunction.called = true;
+          scriptFunction.callIndex = this.callIndex++;
           this.parseASTStatement(scriptFunction);
         }
       }else{
