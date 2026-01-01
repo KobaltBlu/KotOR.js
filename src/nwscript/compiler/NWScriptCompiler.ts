@@ -790,27 +790,19 @@ export class NWScriptCompiler {
       const left = statement.left;
       const varRef = left.variable_reference;
       const propRef = statement.property_reference;
-      if(propRef.datatype.value == 'vector'){
-        if(varRef.is_global){
-          const offset = (varRef.stackPointer - this.basePointer) + propRef.offsetPointer;
-          buffers.push( this.writeCPTOPBP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
-          buffers.push( this.writeCPTOPBP( offset + 4, this.getDataTypeStackLength(propRef.datatype) ) );
-          buffers.push( this.writeCPTOPBP( offset + 8, this.getDataTypeStackLength(propRef.datatype) ) );
-        }else{
-          const offset = (varRef.stackPointer - this.stackPointer) + propRef.offsetPointer;
-          buffers.push( this.writeCPTOPSP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
-          buffers.push( this.writeCPTOPSP( offset + 4, this.getDataTypeStackLength(propRef.datatype) ) );
-          buffers.push( this.writeCPTOPSP( offset + 8, this.getDataTypeStackLength(propRef.datatype) ) );
-        }
+      const propOffset = propRef.offsetPointer;
+      const propSize = this.getDataTypeStackLength(propRef.datatype);
+      console.log(varRef);
+      const structDataLength = varRef.struct_reference?.structDataLength || 0;
+      //propRef.datatype.value == 'vector'
+      if(varRef.is_global){
+        const offset = (varRef.stackPointer - this.basePointer);
+        buffers.push( this.writeCPTOPBP( offset, structDataLength ) );
       }else{
-        if(varRef.is_global){
-          const offset = (varRef.stackPointer - this.basePointer) + propRef.offsetPointer;
-          buffers.push( this.writeCPTOPBP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
-        }else{
-          const offset = (varRef.stackPointer - this.stackPointer) + propRef.offsetPointer;
-          buffers.push( this.writeCPTOPSP( offset, this.getDataTypeStackLength(propRef.datatype) ) );
-        }
+        const offset = (varRef.stackPointer - this.stackPointer);
+        buffers.push( this.writeCPTOPSP( offset, structDataLength ) );
       }
+      buffers.push( this.writeDESTRUCT( structDataLength, propOffset, propSize ) );
     }
     return concatBuffers(buffers);
   }
