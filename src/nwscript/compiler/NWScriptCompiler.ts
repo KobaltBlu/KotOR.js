@@ -1413,7 +1413,7 @@ export class NWScriptCompiler {
       for(let i = 0; i < statement.cases.length; i++){
         const _case = statement.cases[i];
         buffers.push( this.writeCPTOPSP( (switch_condition_sp - this.stackPointer), 0x04) );
-        buffers.push( this.compileStatement( _case.condition ) as Uint8Array );
+        buffers.push( this.compileStatement( _case.value ) as Uint8Array );
         buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
         buffers.push( this.writeJNZ( _case.block_start ? _case.block_start - this.scope.bytes_written : 0x7FFFFFFF ) );
       }
