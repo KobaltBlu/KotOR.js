@@ -1,5 +1,5 @@
 import type { Token } from "./NWScriptToken";
-import { ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
+import { ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, BreakNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -268,7 +268,7 @@ interface SemanticIncDecNode extends AnnotatedNode {
 
 // Literals / arrays / index / call / property reuse existing shapes but typed as SemanticExpressionNode
 type SemanticLiteralNode = LiteralNode & { datatype: SemanticDataType };
-type SemanticArrayLiteralNode = ArrayLiteralNode & { elements: SemanticExpressionNode[] };
+type SemanticArrayLiteralNode = ArrayLiteralNode & { datatype: SemanticDataType; elements: SemanticExpressionNode[] };
 type SemanticIndexNode = IndexNode & { left: SemanticExpressionNode; index: SemanticExpressionNode };
 type SemanticCallNode = CallNode & { callee: SemanticExpressionNode; arguments: SemanticExpressionNode[] };
 
@@ -390,6 +390,27 @@ export class NWScriptParser {
     }
   }
 
+  postProcessFunctionDefinition(statement: FunctionNode): FunctionNode {
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'function'){
+      this.throwError("Invalid function node", statement, statement);
+    }
+    for(let j = 0; j < statement.arguments.length; j++){
+      const arg = statement.arguments[j];
+      if(arg.type == 'argument' && arg.value?.type == 'neg'){
+        const negNode = arg.value as UnaryNode;
+        if(!negNode || negNode.type != 'neg') continue;
+
+        const literalNode = negNode.value as LiteralNode;
+        if(!literalNode || literalNode.type != 'literal' && typeof literalNode.value !== 'undefined') continue;
+
+        //negate the value
+        literalNode.value = -literalNode.value;
+        statement.arguments[j].value = literalNode;
+      }
+    }
+    return statement;
+  }
+
   initializeNWScript() {
     if (!this.nwscript_source) return;
 
@@ -418,6 +439,9 @@ export class NWScriptParser {
           name: statement.name,
           arguments: statement.arguments,
         });
+        for(let i = 0; i < this.engine_actions.length; i++){
+          this.postProcessFunctionDefinition(this.engine_actions[i]);
+        }
       } else if (statement.type === "variable" || statement.type === "variableList") {
         if (statement.type === "variableList") {
           this.engine_constants.push({
@@ -745,6 +769,7 @@ export class NWScriptParser {
       if(function_header){
         global_functions[i].arguments = function_header.arguments;
       }
+      global_functions[i] = this.postProcessFunctionDefinition(global_functions[i]);
       this.program.functions.push(global_functions[i]);
       statements.splice( statements.indexOf(global_functions[i]), 1 );
     }
@@ -773,6 +798,17 @@ export class NWScriptParser {
       semanticNode.startingConditional = startingConditionalNode;
       //remove startingConditional from the functions list if it got added to it
       semanticNode.functions.splice( semanticNode.functions.indexOf(startingConditionalNode), 1 );
+    }
+    return semanticNode;
+  }
+
+  parseArgumentNode( statement: ArgumentNode ): SemanticArgumentNode {
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'argument'){
+      this.throwError("Invalid argument node", statement, statement);
+    }
+    const semanticNode = Object.assign({}, statement) as SemanticArgumentNode;
+    if(!!statement.value && typeof statement.value == 'object'){
+      semanticNode.value = this.parseASTStatement(statement.value);
     }
     return semanticNode;
   }
@@ -859,14 +895,9 @@ export class NWScriptParser {
       //has a default argument value to use in place of unsupplied arguments
       if(!arg && (typeof arg_ref.value !== 'undefined') ){
         //generate a default argument if one is not supplied
-        const var_ref = this.getVariableByName(arg_ref.value);
-        if(var_ref){
-          arg = var_ref.value;
-          semanticNode.arguments.splice(i, 0, arg);
-        }else{
-          arg = { type: 'literal', datatype: arg_ref.datatype, value: arg_ref.value };
-          semanticNode.arguments.splice(i, 0, arg);
-        }
+        arg = this.parseASTStatement(arg_ref);
+        console.log('arg default value', arg_ref, arg);
+        semanticNode.arguments.splice(i, 0, arg);
       }
 
       if(!arg){
@@ -1076,6 +1107,39 @@ export class NWScriptParser {
     return semanticNode;
   }
 
+  parseLiteralNode( statement: LiteralNode ): SemanticLiteralNode {
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'literal'){
+      this.throwError("Invalid literal node", statement, statement);
+    }
+    const semanticNode = Object.assign({}, statement) as SemanticLiteralNode;
+    if(!!statement.value && typeof statement.value == 'object' && statement.value.type == 'literal'){
+      semanticNode.value = this.parseASTStatement(statement.value);
+    }
+    return semanticNode;
+  }
+
+  parseArrayLiteralNode( statement: ArrayLiteralNode ): SemanticArrayLiteralNode {
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'array_literal'){
+      this.throwError("Invalid array literal node", statement, statement);
+    }
+    const semanticNode = Object.assign({}, statement) as SemanticArrayLiteralNode;
+    if(!!statement.elements && Array.isArray(statement.elements) && statement.elements.length > 0){
+      semanticNode.elements = statement.elements.map(e => this.parseASTStatement(e));
+      for(let i = 0; i < semanticNode.elements.length; i++){
+        const element = semanticNode.elements[i];
+        if(element.type != 'literal'){
+          this.throwError(`${semanticNode.datatype.value} literal elements must be literal at index ${i}`, element, element);
+          continue;
+        }
+        if(element.datatype.value != 'float'){
+          this.throwError(`Array literal elements must be of type float at index ${i}`, element, element);
+          continue;
+        }
+      }
+    }
+    return semanticNode;
+  }
+
   parseReturnNode( statement: ReturnNode ): SemanticReturnNode {
     if(!statement || (typeof statement !== 'object') || statement.type !== 'return'){
       this.throwError("Invalid return node", statement, statement);
@@ -1249,6 +1313,14 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticDefaultNode;
     //walk default statements
     semanticNode.statements = statement.statements.map(s => this.parseASTStatement(s));
+    return semanticNode;
+  }
+
+  parseBreakNode( statement: BreakNode ): SemanticBreakNode {
+    if(!statement || (typeof statement !== 'object') || statement.type !== 'break'){
+      this.throwError("Invalid break node", statement, statement);
+    }
+    const semanticNode = Object.assign({}, statement) as SemanticBreakNode;
     return semanticNode;
   }
 
@@ -1562,12 +1634,18 @@ export class NWScriptParser {
         return this.parseFunctionNode(statement);
       case 'block':
         return this.parseBlockNode(statement);
+      case 'argument':
+        return this.parseArgumentNode(statement);
       case 'function_call':
         return this.parseFunctionCallNode(statement);
       case 'struct':
         return this.parseStructNode(statement);
       case 'property':
         return this.parsePropertyNode(statement);
+      case 'literal':
+        return this.parseLiteralNode(statement);
+      case 'array_literal':
+        return this.parseArrayLiteralNode(statement);
       case 'variableList':
         return this.parseVariableListNode(statement);
       case 'variable_reference':
@@ -1594,6 +1672,8 @@ export class NWScriptParser {
         return this.parseCaseNode(statement);
       case 'default':
         return this.parseDefaultNode(statement);
+      case 'break':
+        return this.parseBreakNode(statement);
       case 'compare':
         return this.parseCompareNode(statement);
       case 'assign':
@@ -1614,8 +1694,9 @@ export class NWScriptParser {
       case 'inc':
       case 'dec':
         return this.parseIncDecNode(statement);
-      case 'literal':
-        return statement as SemanticLiteralNode;
+      case 'include':
+        //silently ignore include statements
+      break;
       default:
         console.warn('unhandled statement', statement.type);
         console.log(statement);
