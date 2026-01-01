@@ -1312,48 +1312,6 @@ input[type="range"].volume:before {
 }
 
 // =============================================================================
-// SCRIPT ERRORS
-// =============================================================================
-
-.script-error {
-  padding: $spacing-sm;
-  margin: $spacing-sm;
-  white-space: nowrap;
-  display: flex;
-
-  &:hover {
-    cursor: pointer;
-    background: $bg-overlay-light;
-  }
-
-  > .icon {
-    float: left;
-    margin-right: $spacing-sm;
-    color: $error;
-    font-size: 14pt;
-
-    > i {
-      vertical-align: top;
-    }
-  }
-
-  > .message {
-    color: $text-white;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-    display: inline-block;
-  }
-
-  > .line-column {
-    color: $text-quaternary;
-    font-weight: bold;
-    margin-left: $spacing-sm;
-  }
-}
-
-// =============================================================================
 // TAB HOST
 // =============================================================================
 
