@@ -817,12 +817,12 @@ export class NWScriptHandParser {
     if (this.is("op", "++")) {
       const t = this.tok; this.next();
       const v = this.parseExpression(120);
-      return { type: "inc", value: v, source: t.source };
+      return { type: "inc", value: v, postfix: false, source: t.source };
     }
     if (this.is("op", "--")) {
       const t = this.tok; this.next();
       const v = this.parseExpression(120);
-      return { type: "dec", value: v, source: t.source };
+      return { type: "dec", value: v, postfix: false, source: t.source };
     }
     if (this.is("op", "!")) {
       const t = this.tok; this.next();

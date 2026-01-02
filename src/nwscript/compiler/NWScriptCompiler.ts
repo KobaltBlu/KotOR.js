@@ -1744,29 +1744,47 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'inc'){
       const varRef = statement.variable_reference;
       if(varRef.is_global){
+        if(!statement.postfix){
+          buffers.push( 
+            this.writeINCIBP( 
+              varRef.stackPointer - this.stackPointer
+            ) 
+          );
+        }
         buffers.push( 
           this.writeCPTOPBP(
             varRef.stackPointer - this.basePointer,
             this.getDataTypeStackLength(varRef.datatype)
           )
         );
-        buffers.push( 
-          this.writeINCIBP( 
-            varRef.stackPointer - this.basePointer
-          ) 
-        );
+        if(statement.postfix){
+          buffers.push( 
+            this.writeINCIBP( 
+              varRef.stackPointer - this.basePointer
+            ) 
+          );
+        }
       }else{
+        if(!statement.postfix){
+          buffers.push( 
+            this.writeINCISP( 
+              varRef.stackPointer - this.stackPointer
+            ) 
+          );
+        }
         buffers.push( 
           this.writeCPTOPSP(
             varRef.stackPointer - this.stackPointer,
             this.getDataTypeStackLength(varRef.datatype)
           )
         );
-        buffers.push( 
-          this.writeINCISP( 
-            varRef.stackPointer - this.stackPointer
-          ) 
-        );
+        if(statement.postfix){
+          buffers.push( 
+            this.writeINCISP( 
+              varRef.stackPointer - this.stackPointer
+            ) 
+          );
+        }
       }
       if(!this.getCurrentScope()?.consumingValue){
         buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );
@@ -1780,25 +1798,43 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'dec'){
       const varRef = statement.variable_reference;
       if(varRef.is_global){
+        if(!statement.postFix){
+          buffers.push( 
+            this.writeDECIBP( 
+              varRef.stackPointer - this.basePointer 
+            ) 
+          );
+        }
         buffers.push( this.writeCPTOPBP(
           varRef.stackPointer - this.basePointer,
           this.getDataTypeStackLength(varRef.datatype)
         ) );
-        buffers.push( 
-          this.writeDECIBP( 
-            varRef.stackPointer - this.basePointer 
-          ) 
-        );
+        if(statement.postFix){
+          buffers.push( 
+            this.writeDECIBP( 
+              varRef.stackPointer - this.basePointer 
+            ) 
+          );
+        }
       }else{
+        if(!statement.postFix){
+          buffers.push( 
+            this.writeDECISP( 
+              varRef.stackPointer - this.stackPointer 
+            ) 
+          );
+        }
         buffers.push( this.writeCPTOPSP(
           varRef.stackPointer - this.stackPointer,
           this.getDataTypeStackLength(varRef.datatype)
         ) );
-        buffers.push( 
-          this.writeDECISP( 
-            varRef.stackPointer - this.stackPointer
-          ) 
-        );
+        if(statement.postFix){
+          buffers.push( 
+            this.writeDECISP( 
+              varRef.stackPointer - this.stackPointer
+            ) 
+          );
+        }
       }
       if(!this.getCurrentScope()?.consumingValue){
         buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );

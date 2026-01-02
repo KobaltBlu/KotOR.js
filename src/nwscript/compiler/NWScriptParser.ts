@@ -1,5 +1,5 @@
 import type { Token } from "./NWScriptToken";
-import { ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, BreakNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
+import { ArgumentNode, ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, BreakNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, NWScriptHandParser, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./NWScriptHandParser";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -260,10 +260,10 @@ interface SemanticUnaryNode extends AnnotatedNode {
 interface SemanticIncDecNode extends AnnotatedNode {
   type: "inc" | "dec";
   value: SemanticExpressionNode;
-  postfix?: boolean;
+  postFix?: boolean;
   datatype?: SemanticDataType;
   is_global?: boolean;
-  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode;
+  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode | undefined;
 }
 
 // Literals / arrays / index / call / property reuse existing shapes but typed as SemanticExpressionNode
@@ -742,27 +742,15 @@ export class NWScriptParser {
 
     //detect void main()
     const main = statements.find( (s: any) => s.type == 'function' && s.name == 'main' && s.returntype && this.isDataType(s.returntype, 'void') );
-    if(main){
-      //remove main function from the program's statement list
-      statements.splice( statements.indexOf(main, 1) );
-    }
 
     //detect int startingConditional()
     const startingConditional = program.statements.find( (s: any) => s.type == 'function' && s.name == 'StartingConditional' && s.returntype && this.isDataType(s.returntype, 'int') );
-    if(startingConditional){
-      //remove startingConditional function from the program's statement list
-      statements.splice( statements.indexOf(startingConditional as any, 1) );
-    }
 
     //detect the global function headers
-    const global_functions_headers = statements.filter( (s: any) => s.type == 'function' && s.header_only ) as FunctionNode[];
-    for(let i = 0; i < global_functions_headers.length; i++){
-      //remove function header from the program's statement list
-      statements.splice( statements.indexOf(global_functions_headers[i]), 1 );
-    }
+    const global_functions_headers = statements.filter( (s: any) => s.type == 'function' && s.header_only && s.name != 'main' && s.name != 'StartingConditional' ) as FunctionNode[];
 
     //detect the global functions with header and body
-    const global_functions = statements.filter( (s: any) => s.type == 'function' && !s.header_only ) as FunctionNode[];
+    const global_functions = statements.filter( (s: any) => s.type == 'function' && !s.header_only && s.name != 'main' && s.name != 'StartingConditional' ) as FunctionNode[];
     for(let i = 0; i < global_functions.length; i++){
       //remove function from the program's statement list
       const function_header = global_functions_headers.find( (f:any) => f.name == global_functions[i].name );
@@ -770,9 +758,8 @@ export class NWScriptParser {
         global_functions[i].arguments = function_header.arguments;
       }
       global_functions[i] = this.postProcessFunctionDefinition(global_functions[i]);
-      this.program.functions.push(global_functions[i]);
-      statements.splice( statements.indexOf(global_functions[i]), 1 );
     }
+    this.program.functions = global_functions as SemanticFunctionNode[];
 
     //validate presence of void main() and int StartingConditional()
     if(main && startingConditional){
@@ -782,7 +769,7 @@ export class NWScriptParser {
     }
 
     //parse global statements
-    this.program.statements = statements.map( s => this.parseASTStatement(s) as SemanticStatementNode );
+    this.program.statements = statements.filter( (s: any) => s.type != 'function' ).map( s => this.parseASTStatement(s) as SemanticStatementNode );
 
     this.program.basePointer = this.program.stackPointer;
 
@@ -790,14 +777,10 @@ export class NWScriptParser {
       const mainNode = this.parseASTStatement(main) as SemanticFunctionNode;
       mainNode.called = true;
       semanticNode.main = mainNode;
-      //remove startingConditional from the functions list if it got added to it
-      semanticNode.functions.splice( semanticNode.functions.indexOf(mainNode), 1 );
     }else if(startingConditional){
       const startingConditionalNode = this.parseASTStatement(startingConditional) as SemanticFunctionNode;
       startingConditionalNode.called = true;
       semanticNode.startingConditional = startingConditionalNode;
-      //remove startingConditional from the functions list if it got added to it
-      semanticNode.functions.splice( semanticNode.functions.indexOf(startingConditionalNode), 1 );
     }
     return semanticNode;
   }
@@ -820,7 +803,10 @@ export class NWScriptParser {
     const semanticNode = Object.assign({}, statement) as SemanticFunctionNode;
     if(!semanticNode.defined || !this.isNameInUse(semanticNode.name)){
       const funcIdx = this.program.functions.findIndex( (f: any) => f.name == semanticNode.name );
-      this.program.functions[funcIdx] = semanticNode;
+      if(statement.name != 'main' && statement.name != 'StartingConditional'){
+        console.log('function', semanticNode.name, funcIdx);
+        this.program.functions[funcIdx] = semanticNode;
+      }
       semanticNode.defined = true;
       this.beginScope(statement);
 
