@@ -178,6 +178,10 @@ export class NWScriptCompiler {
     this.scope = this.scopes[this.scopes.length-1];
   }
 
+  getCurrentScope(){
+    return this.scopes[this.scopes.length - 1];
+  }
+
   scopeAddBytesWritten( nNumBytes = 0 ){
     //if( this._silent ) return;
     if(this.scope instanceof NWScriptScope){
@@ -735,7 +739,9 @@ export class NWScriptCompiler {
           buffers.push( this.writeCPDOWNSP( (varRef.stackPointer - this.stackPointer), this.getDataTypeStackLength(statement.datatype) ) );
         }
       }
-      buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
+      if(!this.getCurrentScope()?.consumingValue){
+        buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
+      }
     }
     return concatBuffers(buffers);
   }
@@ -840,7 +846,10 @@ export class NWScriptCompiler {
     const nReturnDataSize = this.getStatementDataTypeSize(this.scope.block);
     //Push the return value to the stack if we have one
     if(statement.value){
+      const currentScope = this.getCurrentScope();
+      currentScope.consumingValue = true;
       buffers.push( this.compileStatement( statement.value ) as Uint8Array );
+      currentScope.consumingValue = false;
       const returnStackOffset = this.scope.block.returnStackPointer;
       const blockStackOffset = (this.stackPointer - this.scope.block.preStatementsStackPointer);
       const returnStackPointer = returnStackOffset - blockStackOffset;
@@ -1024,7 +1033,7 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'block'){
       statement.block_start = this.scope.bytes_written;
 
-      statement.preStatementsSPCache = this.stackPointer;
+      // statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
         const stmt = statement.statements[i];
         if(stmt && typeof stmt === 'object'){
@@ -1033,11 +1042,15 @@ export class NWScriptCompiler {
         buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
 
-      const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
-      if(stackElementsToRemove){
-        buffers.push( this.writeMOVSP( -stackElementsToRemove ) );
-      }
-
+      /**
+       * I no longer believe that a block needs to clean up the stack
+       * This is from my obervations of anonymous blocks in switch cases inside GN_GetGrenadeTalent
+       * and other places.
+       */
+      // const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
+      // if(stackElementsToRemove){
+      //   buffers.push( this.writeMOVSP( -stackElementsToRemove ) );
+      // }
       statement.block_end = this.scope.bytes_written;
     }
     return concatBuffers(buffers);
@@ -1729,35 +1742,35 @@ export class NWScriptCompiler {
   compileINC( statement: any ): Uint8Array {
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'inc'){
-      //buffers.push( this.compileStatement( statement.variable_reference ) );
-      if(statement.variable_reference.is_global){
+      const varRef = statement.variable_reference;
+      if(varRef.is_global){
         buffers.push( 
           this.writeCPTOPBP(
-            statement.variable_reference.stackPointer - this.basePointer,
-            this.getDataTypeStackLength(statement.variable_reference.datatype)
+            varRef.stackPointer - this.basePointer,
+            this.getDataTypeStackLength(varRef.datatype)
           )
         );
         buffers.push( 
           this.writeINCIBP( 
-            statement.variable_reference.stackPointer - this.basePointer, 
-            // this.getDataTypeStackLength(statement.variable_reference.datatype) 
+            varRef.stackPointer - this.basePointer
           ) 
         );
       }else{
         buffers.push( 
           this.writeCPTOPSP(
-            statement.variable_reference.stackPointer - this.stackPointer,
-            this.getDataTypeStackLength(statement.variable_reference.datatype)
+            varRef.stackPointer - this.stackPointer,
+            this.getDataTypeStackLength(varRef.datatype)
           )
         );
         buffers.push( 
           this.writeINCISP( 
-            statement.variable_reference.stackPointer - this.stackPointer, 
-            // this.getDataTypeStackLength(statement.variable_reference.datatype) 
+            varRef.stackPointer - this.stackPointer
           ) 
         );
       }
-      buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );
+      if(!this.getCurrentScope()?.consumingValue){
+        buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );
+      }
     }
     return concatBuffers(buffers);
   }
@@ -1765,21 +1778,30 @@ export class NWScriptCompiler {
   compileDEC( statement: any ): Uint8Array {
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'dec'){
-      //buffers.push( this.compileStatement( statement.variable_reference ) );
-      if(statement.variable_reference.is_global){
+      const varRef = statement.variable_reference;
+      if(varRef.is_global){
+        buffers.push( this.writeCPTOPBP(
+          varRef.stackPointer - this.basePointer,
+          this.getDataTypeStackLength(varRef.datatype)
+        ) );
         buffers.push( 
-          this.writeINCIBP( 
-            statement.variable_reference.stackPointer - this.basePointer, 
-            // this.getDataTypeStackLength(statement.variable_reference.datatype) 
+          this.writeDECIBP( 
+            varRef.stackPointer - this.basePointer 
           ) 
         );
       }else{
+        buffers.push( this.writeCPTOPSP(
+          varRef.stackPointer - this.stackPointer,
+          this.getDataTypeStackLength(varRef.datatype)
+        ) );
         buffers.push( 
-          this.writeINCISP( 
-            statement.variable_reference.stackPointer - this.stackPointer, 
-            // this.getDataTypeStackLength(statement.variable_reference.datatype) 
+          this.writeDECISP( 
+            varRef.stackPointer - this.stackPointer
           ) 
         );
+      }
+      if(!this.getCurrentScope()?.consumingValue){
+        buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.variable_reference.datatype) ) );
       }
     }
     return concatBuffers(buffers);
@@ -2553,6 +2575,7 @@ class NWScriptScope {
   bytes_written = 0;
   nested_states: NWScriptNestedState[] = [];
   block: any;
+  consumingValue = false;
 
   constructor( ){
     

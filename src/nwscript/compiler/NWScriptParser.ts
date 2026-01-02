@@ -1281,8 +1281,11 @@ export class NWScriptParser {
     //walk switch case statements
     semanticNode.cases = statement.cases.map(s => this.parseASTStatement(s));
     for(let i = 0; i < semanticNode.cases.length; i++){
-      for(let j = 0; j < semanticNode.cases[i].statements.length; j++){
-        if(semanticNode.cases[i].statements[j].type == 'break') semanticNode.cases[i].fallthrough = false;
+      const _case = semanticNode.cases[i];
+      _case.fallthrough = true;
+      if(_case.statements.length > 0 && _case.statements[_case.statements.length - 1].type == 'break'){
+        _case.statements.pop();
+        _case.fallthrough = false;
       }
     }
 
@@ -1303,6 +1306,7 @@ export class NWScriptParser {
 
     //walk case statements
     semanticNode.statements = statement.statements.map(s => this.parseASTStatement(s));
+
     return semanticNode;
   }
 
