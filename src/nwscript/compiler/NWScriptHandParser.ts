@@ -600,6 +600,9 @@ export class NWScriptHandParser {
       } else {
         initializer = this.parseExpression(0);
         this.expect("punct", ";");
+        if (initializer && (initializer as VariableReferenceNode).type === "variable_reference") {
+          (initializer as VariableReferenceNode).terminated = true;
+        }
       }
     } else {
       this.expect("punct", ";");
