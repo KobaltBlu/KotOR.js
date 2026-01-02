@@ -498,6 +498,7 @@ export class NWScriptCompiler {
     if(statement){
       switch(statement.type){
         case 'literal':       return this.compileLiteral( statement );
+        case 'array_literal': return this.compileArrayLiteral( statement );
         case 'variable':      return this.compileVariable( statement );
         case 'variableList':      return this.compileVariableList( statement );
         case 'variable_reference':return this.compileVariable( statement );
@@ -545,6 +546,16 @@ export class NWScriptCompiler {
         buffers.push( this.writeCONST(NWCompileDataTypes.F, statement.value.z) );
       }else{
         buffers.push( this.writeCONST(statement.datatype.unary, statement.value) );
+      }
+    }
+    return concatBuffers(buffers);
+  }
+
+  compileArrayLiteral( statement: any ){
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'array_literal'){
+      for(let i = 0; i < statement.elements.length; i++){
+        buffers.push( this.compileStatement( statement.elements[i] ) as Uint8Array );
       }
     }
     return concatBuffers(buffers);
@@ -684,6 +695,10 @@ export class NWScriptCompiler {
                   buffers.push( this.writeCPTOPSP( varRef.stackPointer - this.stackPointer, this.getDataTypeStackLength(statement.datatype) ) );
                 }
               }
+
+              if(statement.type == 'variable_reference' && statement.terminated){
+                buffers.push( this.writeMOVSP( -this.getDataTypeStackLength(statement.datatype) ) );
+              }
             }
           }
         }
@@ -810,7 +825,7 @@ export class NWScriptCompiler {
   compileArgument( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'argument'){
-
+      buffers.push( this.compileStatement(statement.value) as Uint8Array );
     }
     return concatBuffers(buffers);
   }

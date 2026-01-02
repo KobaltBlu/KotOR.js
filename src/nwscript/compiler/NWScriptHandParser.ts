@@ -21,7 +21,7 @@ type OperatorNode = { type: "operator"; value: string };
 
 // Expression nodes produced by the hand parser
 export interface LiteralNode { type: "literal"; datatype: DataTypeNode; value: number | string; source: SourceInfo; }
-export interface VariableReferenceNode { type: "variable_reference"; name: string; source: SourceInfo; }
+export interface VariableReferenceNode { type: "variable_reference"; name: string; source: SourceInfo; terminated?: boolean; }
 export interface ArrayLiteralNode { type: "array_literal"; elements: ExpressionNode[]; source: SourceInfo; }
 export interface FunctionCallNode { type: "function_call"; name: string; arguments: ExpressionNode[]; source: SourceInfo; }
 export interface CallNode { type: "call"; callee: ExpressionNode; arguments: ExpressionNode[]; source: SourceInfo; }
@@ -318,6 +318,9 @@ export class NWScriptHandParser {
 
     const expr = this.parseExpression(0);
     this.expect("punct", ";");
+    if (expr && (expr as VariableReferenceNode).type === "variable_reference") {
+      (expr as VariableReferenceNode).terminated = true;
+    }
     return expr;
   }
 
