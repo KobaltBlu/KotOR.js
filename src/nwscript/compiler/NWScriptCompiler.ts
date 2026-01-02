@@ -998,7 +998,9 @@ export class NWScriptCompiler {
               this.getInstructionLength(OP_RETN) 
             ) 
           );
+          this.scopePush( new NWScriptScope() );
           buffers.push( this.compileStatement(arg) as Uint8Array );
+          this.scopePop();
           buffers.push( this.writeRETN() );
         }else{
           buffers.push( this.compileStatement(arg) as Uint8Array );
