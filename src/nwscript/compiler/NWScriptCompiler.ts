@@ -272,7 +272,6 @@ export class NWScriptCompiler {
       }
 
       const subroutines = this.program.functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
-      console.log(subroutines);
       //PASS 1 - Build Offsets
       this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
@@ -288,7 +287,6 @@ export class NWScriptCompiler {
         const global_function = subroutines[i];
         if(global_function.called){
           global_function.blockOffset = functionBlockOffset;
-          console.log(global_function.blockOffset)
           this.compileFunction( global_function );
           functionBlockOffset += global_function.blockSize;
         }
@@ -813,7 +811,6 @@ export class NWScriptCompiler {
       const propRef = statement.property_reference;
       const propOffset = propRef.offsetPointer;
       const propSize = this.getDataTypeStackLength(propRef.datatype);
-      console.log(varRef);
       const structDataLength = varRef.struct_reference?.structDataLength || 0;
       //propRef.datatype.value == 'vector'
       if(varRef.is_global){
@@ -1800,7 +1797,7 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'dec'){
       const varRef = statement.variable_reference;
       if(varRef.is_global){
-        if(!statement.postFix){
+        if(!statement.postfix){
           buffers.push( 
             this.writeDECIBP( 
               varRef.stackPointer - this.basePointer 
@@ -1811,7 +1808,7 @@ export class NWScriptCompiler {
           varRef.stackPointer - this.basePointer,
           this.getDataTypeStackLength(varRef.datatype)
         ) );
-        if(statement.postFix){
+        if(statement.postfix){
           buffers.push( 
             this.writeDECIBP( 
               varRef.stackPointer - this.basePointer 
@@ -1819,7 +1816,7 @@ export class NWScriptCompiler {
           );
         }
       }else{
-        if(!statement.postFix){
+        if(!statement.postfix){
           buffers.push( 
             this.writeDECISP( 
               varRef.stackPointer - this.stackPointer 
@@ -1830,7 +1827,7 @@ export class NWScriptCompiler {
           varRef.stackPointer - this.stackPointer,
           this.getDataTypeStackLength(varRef.datatype)
         ) );
-        if(statement.postFix){
+        if(statement.postfix){
           buffers.push( 
             this.writeDECISP( 
               varRef.stackPointer - this.stackPointer
