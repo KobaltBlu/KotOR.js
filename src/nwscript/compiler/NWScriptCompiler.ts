@@ -5,6 +5,23 @@ import {
   OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
 } from '../NWScriptOPCodes';
+import {
+  CompilerProgramNode,
+  CompilerFunctionNode,
+  CompilerStatementNode,
+  CompilerBlockNode,
+  CompilerStructNode,
+  CompilerStructPropertyNode,
+  CompilerVariableNode,
+  CompilerVariableReferenceNode,
+  CompilerBreakNode,
+  CompilerContinueNode,
+  CompilerForNode,
+  CompilerIfNode,
+  CompilerSwitchNode,
+  CompilerCaseNode,
+  CompilerDefaultNode,
+} from './CompilerNodeTypes';
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -77,7 +94,7 @@ const concatBuffers = (buffers: ByteArray[]) => {
  */
 export class NWScriptCompiler {
 
-  program: any = null;
+  program: CompilerProgramNode | null = null;
   basePointer = 0;
   stackPointer = 0;
   log: any = [];
@@ -98,7 +115,7 @@ export class NWScriptCompiler {
   functionBlockStartOffset: any;
   errors: { type: string, message: string, statement: any, offender: any }[] = [];
 
-  constructor(ast: any){
+  constructor(ast: CompilerProgramNode){
 
     this.program = ast;
     this.scopes = [];
@@ -192,6 +209,7 @@ export class NWScriptCompiler {
   compile(){
     this.log = [];
     this.errors = [];
+    if(!this.program) return;
     if(typeof this.program === 'object' && this.program.type == 'program'){
       if(this.program.main){
         return this.compileMain();
@@ -216,7 +234,8 @@ export class NWScriptCompiler {
     this.basePointer  = 0;
     this.stackPointer = 0;
     this.scopes = [];
-    if(typeof this.program === 'object' && this.program.type == 'program'){
+    if(!this.program || this.program.type != 'program') return;
+    {
       console.log('CompileMain: Begin');
       const buffer: ByteArray = new Uint8Array(0);
       const buffers: ByteArray[] = [buffer];
@@ -271,41 +290,43 @@ export class NWScriptCompiler {
         buffers.push( this.writeRETN() );
       }
 
-      const subroutines = this.program.functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
+      const functions = this.program.functions as unknown as CompilerFunctionNode[];
+      const subroutines = functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
       //PASS 1 - Build Offsets
       this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
       this.main_offset_start = this.program_bytes_written;
-      this.program.main.blockOffset = this.program_bytes_written;
-      this.compileFunction( this.program.main );
+      const mainFn = this.program.main as CompilerFunctionNode;
+      mainFn.blockOffset = this.program_bytes_written;
+      this.compileFunction( mainFn );
 
-      this.program_bytes_written = this.program.main.blockOffset + this.program.main.blockSize;
-      this.functionBlockStartOffset = this.program.main.blockOffset + this.program.main.blockSize;
+      this.program_bytes_written = mainFn.blockOffset! + (mainFn.blockSize || 0);
+      this.functionBlockStartOffset = mainFn.blockOffset! + (mainFn.blockSize || 0);
 
       let functionBlockOffset = this.functionBlockStartOffset;
       for(let i = 0; i < subroutines.length; i++){
-        const global_function = subroutines[i];
+        const global_function = subroutines[i] as CompilerFunctionNode;
         if(global_function.called){
           global_function.blockOffset = functionBlockOffset;
           this.compileFunction( global_function );
-          functionBlockOffset += global_function.blockSize;
+          functionBlockOffset += global_function.blockSize || 0;
         }
       }
 
       //PASS 2 - Write Blocks
       this.stackPointer = 0;
-      this.program_bytes_written = this.program.main.blockOffset;
+      this.program_bytes_written = mainFn.blockOffset!;
 
       //Compile MAIN
-      buffers.push( this.compileFunction( this.program.main ) );
-      this.program_bytes_written += this.program.main.blockSize;
+      buffers.push( this.compileFunction( mainFn ) );
+      this.program_bytes_written += mainFn.blockSize || 0;
 
       //Compile Global Functions
       for(let i = 0; i < subroutines.length; i++){
-        const global_function = subroutines[i];
+        const global_function = subroutines[i] as CompilerFunctionNode;
         if(global_function.called){
           buffers.push( this.compileFunction( global_function ) );
-          this.program_bytes_written += global_function.blockSize;
+          this.program_bytes_written += global_function.blockSize || 0;
         }
       }
 
@@ -332,7 +353,8 @@ export class NWScriptCompiler {
     this.basePointer  = 0;
     this.stackPointer = 0;
     this.scopes = [];
-    if(typeof this.program === 'object' && this.program.type == 'program'){
+    if(!this.program || this.program.type != 'program') return;
+    {
       console.log('CompileMain: Begin');
       const buffer: ByteArray =  new Uint8Array(0);
       const buffers: ByteArray[] = [buffer];
@@ -401,42 +423,44 @@ export class NWScriptCompiler {
         this.basePointerWriting = false;
       }
 
-      const subroutines = this.program.functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
+      const functions = this.program.functions as unknown as CompilerFunctionNode[];
+      const subroutines = functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
 
       //PASS 1 - Build Offsets
       this.stackPointer = 0;
       this.program_bytes_written = this.scope.bytes_written;
       this.main_offset_start = this.program_bytes_written;
-      this.program.startingConditional.blockOffset = this.program_bytes_written;
-      this.compileFunction( this.program.startingConditional );
+      const startFn = this.program.startingConditional as CompilerFunctionNode;
+      startFn.blockOffset = this.program_bytes_written;
+      this.compileFunction( startFn );
 
-      this.program_bytes_written = this.program.startingConditional.blockOffset + this.program.startingConditional.blockSize;
-      this.functionBlockStartOffset = this.program.startingConditional.blockOffset + this.program.startingConditional.blockSize;
+      this.program_bytes_written = startFn.blockOffset! + (startFn.blockSize || 0);
+      this.functionBlockStartOffset = startFn.blockOffset! + (startFn.blockSize || 0);
 
       let functionBlockOffset = this.functionBlockStartOffset;
       for(let i = 0; i < subroutines.length; i++){
-        const global_function = subroutines[i];
+        const global_function = subroutines[i] as CompilerFunctionNode;
         if(global_function.called){
           global_function.blockOffset = functionBlockOffset;
           this.compileFunction( global_function );
-          functionBlockOffset += global_function.blockSize;
+          functionBlockOffset += global_function.blockSize || 0;
         }
       }
 
       //PASS 2 - Write Blocks
       this.stackPointer = 0;
-      this.program_bytes_written = this.program.startingConditional.blockOffset;
+      this.program_bytes_written = startFn.blockOffset!;
 
       //Compile MAIN
-      buffers.push( this.compileFunction( this.program.startingConditional ) );
-      this.program_bytes_written += this.program.startingConditional.blockSize;
+      buffers.push( this.compileFunction( startFn ) );
+      this.program_bytes_written += startFn.blockSize || 0;
 
       //Compile Global Functions
       for(let i = 0; i < subroutines.length; i++){
-        const global_function = subroutines[i];
+        const global_function = subroutines[i] as CompilerFunctionNode;
         if(global_function.called){
           buffers.push( this.compileFunction( global_function ) );
-          this.program_bytes_written += global_function.blockSize;
+          this.program_bytes_written += global_function.blockSize || 0;
         }
       }
 
@@ -496,7 +520,7 @@ export class NWScriptCompiler {
     throw 'Invalid statement object';
   }
 
-  compileStatement( statement: any ){
+  compileStatement( statement: CompilerStatementNode | any ){
     if(statement){
       switch(statement.type){
         case 'literal':       return this.compileLiteral( statement );
@@ -877,7 +901,7 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
-  compileFunction( block: any ): Uint8Array {
+  compileFunction( block: CompilerFunctionNode ): Uint8Array {
     const buffers: Uint8Array[] = [];
     this.scopePush( new NWScriptScope() );
     this.scope.block = block;
@@ -895,7 +919,7 @@ export class NWScriptCompiler {
     let nArgumentDataSize = 0;
     if(block.arguments.length){
       for(let i = 0; i < block.arguments.length; i++){
-        const arg = block.arguments[i];
+        const arg: any = block.arguments[i];
         arg.index = i;
         arg.datasize = (this.getStatementDataTypeSize(arg)) || 4;
         nArgumentDataSize += arg.datasize;
@@ -915,7 +939,7 @@ export class NWScriptCompiler {
     for(let i = 0; i < block.statements.length; i++){
       const stmt = block.statements[i];
       if(stmt && typeof stmt === 'object'){
-        stmt.statement_context = 'statement';
+        (stmt as any).statement_context = 'statement';
       }
       buffers.push( this.compileStatement( stmt ) as Uint8Array );
     }
@@ -1010,8 +1034,8 @@ export class NWScriptCompiler {
         const returnSize = this.getDataTypeStackLength(statement.function_reference.returntype);
         buffers.push( this.writeACTION(0x00, statement.action_id, statement.arguments.length, returnSize, argumentsDataSize) );
       }else{ //LOCAL FUNCTION
-        const funcRef = this.program.functions.find( (f: any) => f.name == statement.function_reference.name );
-        const jsrOffset = funcRef.blockOffset - (this.program_bytes_written + this.scope.bytes_written);
+        const funcRef = this.program?.functions.find( (f: any) => f.name == statement.function_reference.name ) as CompilerFunctionNode | undefined;
+        const jsrOffset = (funcRef?.blockOffset ?? 0) - (this.program_bytes_written + this.scope.bytes_written);
         buffers.push( this.writeJSR(jsrOffset) );
         this.stackPointer -= argumentsDataSize;
       }
@@ -1036,7 +1060,7 @@ export class NWScriptCompiler {
       for(let i = 0; i < statement.statements.length; i++){
         const stmt = statement.statements[i];
         if(stmt && typeof stmt === 'object'){
-          stmt.statement_context = 'statement';
+          (stmt as any).statement_context = 'statement';
         }
         buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
@@ -1473,7 +1497,7 @@ export class NWScriptCompiler {
       for(let i = 0; i < statement.statements.length; i++){
         const stmt = statement.statements[i];
         if(stmt && typeof stmt === 'object'){
-          stmt.statement_context = 'statement';
+        (stmt as any).statement_context = 'statement';
         }
         buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
@@ -1586,7 +1610,7 @@ export class NWScriptCompiler {
       statement.initializer_start = this.scope.bytes_written;
 
       if(statement.initializer && typeof statement.initializer === 'object'){
-        statement.initializer.statement_context = 'statement';
+        (statement.initializer as any).statement_context = 'statement';
       }
       buffers.push( this.compileStatement( statement.initializer ) as Uint8Array );
 
@@ -1622,7 +1646,7 @@ export class NWScriptCompiler {
       for(let i = 0; i < statement.statements.length; i++){
         const stmt = statement.statements[i];
         if(stmt && typeof stmt === 'object'){
-          stmt.statement_context = 'statement';
+        (stmt as any).statement_context = 'statement';
         }
         buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
@@ -1638,7 +1662,7 @@ export class NWScriptCompiler {
       statement.incrementor_start = this.scope.bytes_written;
 
       if(statement.incrementor && typeof statement.incrementor === 'object'){
-        statement.incrementor.statement_context = 'statement';
+        (statement.incrementor as any).statement_context = 'statement';
       }
       buffers.push( this.compileStatement( statement.incrementor ) as Uint8Array );
 
@@ -1658,74 +1682,66 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
-  compileContinue( statement: any ){
+  compileContinue( statement: CompilerContinueNode ){
     const buffers: Uint8Array[] = [];
-    if(statement.type == 'continue'){
-      statement.block_start = this.scope.bytes_written;
-
-      const active_loop = this.scope.getTopContinueableNestedState();
-      if(active_loop){
-        const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
-        if(stackOffset){
-          buffers.push( this.writeMOVSP( -stackOffset ) );
-          //return the stack pointer to it's previous state so that the outer loop is not affected
-          this.stackPointer += stackOffset;
-        }else{
-          //console.log('noting to remove')
-        }
-        buffers.push( 
-          this.writeJMP( 
-            active_loop.statement.continue_start ? -(this.scope.bytes_written - active_loop.statement.continue_start) : 0x7FFFFFFF 
-          )
-        );  
-      }else{
-        //console.log('no active loop');
-        //can't use continue outside of a loop
-      }
-
-      statement.block_end = this.scope.bytes_written;
+    if(statement.type !== 'continue'){
+      throw new Error('Invalid statement type: expected continue, got ' + statement.type);
     }
+    statement.block_start = this.scope.bytes_written;
+
+    const active_loop = this.scope.getTopContinueableNestedState();
+    if(active_loop){
+      const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
+      if(stackOffset){
+        buffers.push( this.writeMOVSP( -stackOffset ) );
+        //return the stack pointer to it's previous state so that the outer loop is not affected
+        this.stackPointer += stackOffset;
+      }else{
+        //console.log('noting to remove')
+      }
+      buffers.push( 
+        this.writeJMP( 
+          active_loop.statement.continue_start ? -(this.scope.bytes_written - active_loop.statement.continue_start) : 0x7FFFFFFF 
+        )
+      );  
+    }else{
+      //console.log('no active loop');
+      //can't use continue outside of a loop
+    }
+
+    statement.block_end = this.scope.bytes_written;
     
     return concatBuffers(buffers);
   }
 
-  compileBreak( statement: any ){
+  compileBreak( statement: CompilerBreakNode ){
     const buffers: Uint8Array[] = [];
-    if(statement.type == 'break'){
-      statement.block_start = this.scope.bytes_written;
+    if(statement.type !== 'break'){
+      throw new Error('Invalid statement type: expected break, got ' + statement.type);
+    }
+    statement.block_start = this.scope.bytes_written;
 
-      const active_loop = this.scope.getTopContinueableNestedState();
-      if(active_loop){
-        const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
-        if(stackOffset){
-          buffers.push( this.writeMOVSP( -stackOffset ) );
-          //return the stack pointer to it's previous state so that the outer loop is not affected
-          this.stackPointer += stackOffset;
-        }else{
-          //console.log('noting to remove')
-        }
-        buffers.push( 
-          this.writeJMP( 
-            active_loop.statement.block_end ? -(this.scope.bytes_written - active_loop.statement.block_end) : 0x7FFFFFFF 
-          )
-        );  
+    const active_loop = this.scope.getTopContinueableNestedState();
+    if(active_loop){
+      const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
+      if(stackOffset){
+        buffers.push( this.writeMOVSP( -stackOffset ) );
+        //return the stack pointer to it's previous state so that the outer loop is not affected
+        this.stackPointer += stackOffset;
       }else{
-        //console.log('no active loop');
-        //can't use break outside of a loop
+        //console.log('noting to remove')
       }
-
-      statement.block_end = this.scope.bytes_written;
+      buffers.push( 
+        this.writeJMP( 
+          active_loop.statement.block_end ? -(this.scope.bytes_written - active_loop.statement.block_end) : 0x7FFFFFFF 
+        )
+      );  
+    }else{
+      //console.log('no active loop');
+      //can't use break outside of a loop
     }
-    
-    return concatBuffers(buffers);
-  }
 
-  compileTernery( statement: any ): Uint8Array {
-    const buffers: Uint8Array[] = [];
-
-    if(statement && statement.type == 'ternery'){
-      
-    }
+    statement.block_end = this.scope.bytes_written;
     
     return concatBuffers(buffers);
   }
