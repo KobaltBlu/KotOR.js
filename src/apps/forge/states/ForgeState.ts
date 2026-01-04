@@ -603,19 +603,27 @@ export class ForgeState {
 
           const parser = (ForgeState.tabManager.currentTab as any).nwScriptParser;
           if(parser){
-            //Local Variables
-            const l_variables = parser.local_variables;
-            for(let i = 0; i < l_variables.length; i++){
-              const l_variable = l_variables[i];
-              // console.log(l_variable);
-              const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
-              local_suggestions.push({
-                label: l_variable.name,
-                kind: kind,
-                insertText: `${l_variable.name}`,
-                insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                documentation: `Variable:\n\n${l_variable.datatype.value} ${l_variable.name};`
-              });
+            try {
+              //Local Variables - safely access, parser might be in error state
+              const l_variables = parser.local_variables || (parser.program?.scope?.variables || []);
+              if (Array.isArray(l_variables)) {
+                for(let i = 0; i < l_variables.length; i++){
+                  const l_variable = l_variables[i];
+                  if (!l_variable || !l_variable.name) continue;
+                  // console.log(l_variable);
+                  const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
+                  local_suggestions.push({
+                    label: l_variable.name,
+                    kind: kind,
+                    insertText: `${l_variable.name}`,
+                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: `Variable:\n\n${l_variable.datatype?.value || 'unknown'} ${l_variable.name};`
+                  });
+                }
+              }
+            } catch (e) {
+              // Silently fail - don't break autocomplete if variable access fails
+              console.warn('Error accessing parser variables:', e);
             }
           }
           console.log('Autocomplete', ([] as any[]).concat(local_suggestions, nw_suggestions))
@@ -624,7 +632,12 @@ export class ForgeState {
             suggestions: ([] as any[]).concat(local_suggestions, nw_suggestions) 
           };
         }catch(e){
-          console.error(e);
+          console.error('Autocomplete error:', e);
+          // Always return at least the engine suggestions even on error
+          return { 
+            incomplete: true, 
+            suggestions: nw_suggestions 
+          };
         }
       }
     });

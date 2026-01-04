@@ -280,28 +280,80 @@ export class NWScriptParser {
   }
 
   semanticAnalysisPass(program: ProgramNode): SemanticProgramNode {
-    this.program = this.parseProgramNode(program) as SemanticProgramNode;
-    return this.program;
+    try {
+      this.program = this.parseProgramNode(program) as SemanticProgramNode;
+      return this.program;
+    } catch (e: any) {
+      console.error('Semantic analysis failed:', e);
+      // Create a minimal program structure to prevent null reference errors
+      if (!this.program) {
+        this.program = {
+          functions: [],
+          structs: [],
+          scope: { variables: [], functions: [], structs: [] } as any,
+          parsed: false
+        } as any;
+      }
+      return this.program;
+    }
   }
 
   parseScript(script?: string) {
     //reset the parser
     this.errors = [];
 
-    const ast = this.parseAST(script || '');
-    if(!ast){
-      console.error('Lexer/Parser Failed to parse script');
+    try {
+      const ast = this.parseAST(script || '');
+      if(!ast){
+        console.error('Lexer/Parser Failed to parse script');
+        this.logParseErrors();
+        // Ensure program exists even on parse failure
+        if (!this.program) {
+          this.program = {
+            functions: [],
+            structs: [],
+            scope: { variables: [], functions: [], structs: [] } as any,
+            parsed: false
+          } as any;
+        }
+        return;
+      }
+
+      this.ast = ast;
+
+      this.semanticAnalysisPass(ast);
       this.logParseErrors();
-      return;
+    } catch (e: any) {
+      console.error('Parse script error:', e);
+      // Ensure program exists even on exception
+      if (!this.program) {
+        this.program = {
+          functions: [],
+          structs: [],
+          scope: { variables: [], functions: [], structs: [] } as any,
+          parsed: false
+        } as any;
+      }
+      // Add error to errors array
+      this.errors.push({
+        type: 'parse',
+        message: e?.message || 'Parse error',
+        statement: e?.statement,
+        offender: e?.offender,
+      });
     }
-
-    this.ast = ast;
-
-    this.semanticAnalysisPass(ast);
-    this.logParseErrors();
   }
 
   logParseErrors(){
+    if (!this.program) {
+      // Ensure program exists before accessing it
+      this.program = {
+        functions: [],
+        structs: [],
+        scope: { variables: [], functions: [], structs: [] } as any,
+        parsed: false
+      } as any;
+    }
     if (!this.errors.length) {
       this.program.parsed = true;
       console.log(`Script parsed without errors`);
