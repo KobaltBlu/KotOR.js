@@ -187,6 +187,14 @@ export const TabTextEditor = function(props: any){
       event.stopPropagation();
       tab.compile();
     }
+    // Ctrl+Shift+F / Cmd+Shift+F - Format Document
+    else if (isCtrlOrCmd && event.key === 'f' && event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      if(tab.editor && tab.monaco) {
+        tab.editor.getAction('editor.action.formatDocument')?.run();
+      }
+    }
   };
 
   useEffectOnce(() => {
@@ -219,6 +227,19 @@ export const TabTextEditor = function(props: any){
           label: 'Compile',
           onClick: () => {
             tab.compile();
+          }
+        }
+      ]
+    },
+    {
+      label: 'Edit',
+      children: [
+        {
+          label: 'Format Document',
+          onClick: () => {
+            if(tab.editor && tab.monaco) {
+              tab.editor.getAction('editor.action.formatDocument')?.run();
+            }
           }
         }
       ]

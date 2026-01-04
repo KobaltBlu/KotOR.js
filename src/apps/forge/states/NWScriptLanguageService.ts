@@ -6,6 +6,132 @@ import * as KotOR from '../KotOR';
 
 declare const monaco: any;
 
+// Format NWScript code
+function formatNWScript(code: string, options: any = {}): string {
+  const tabSize = options.tabSize || 2;
+  const insertSpaces = options.insertSpaces !== false;
+  const indentChar = insertSpaces ? ' '.repeat(tabSize) : '\t';
+  
+  const lines = code.split('\n');
+  let formatted: string[] = [];
+  let indentLevel = 0;
+  let inComment = false;
+  let inString = false;
+  let stringChar = '';
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    const originalLine = line;
+    const trimmed = line.trim();
+    
+    // Track comment and string state
+    let lineInComment = inComment;
+    let lineInString = inString;
+    
+    // Simple state tracking for comments and strings
+    for (let j = 0; j < line.length - 1; j++) {
+      if (!lineInString && !lineInComment) {
+        if (line[j] === '/' && line[j + 1] === '*') {
+          lineInComment = true;
+          j++;
+        } else if (line[j] === '/' && line[j + 1] === '/') {
+          // Single line comment, rest of line is comment
+          break;
+        } else if (line[j] === '"' || line[j] === "'") {
+          lineInString = true;
+          stringChar = line[j];
+        }
+      } else if (lineInComment && line[j] === '*' && line[j + 1] === '/') {
+        lineInComment = false;
+        j++;
+      } else if (lineInString && line[j] === stringChar && line[j - 1] !== '\\') {
+        lineInString = false;
+      }
+    }
+    
+    // Calculate indent adjustment before processing
+    let indentAdjust = 0;
+    
+    // Decrease indent for closing braces/brackets on this line
+    if (trimmed.startsWith('}') || trimmed.startsWith(']') || (trimmed.startsWith(')') && !trimmed.includes('('))) {
+      indentAdjust = -1;
+    }
+    
+    // Don't format lines that are in comments (preserve comment formatting)
+    if (lineInComment || trimmed.startsWith('//') || trimmed.startsWith('/*')) {
+      // Apply indentation to comment lines too
+      const indent = indentChar.repeat(Math.max(0, indentLevel + indentAdjust));
+      formatted.push(indent + trimmed);
+      inComment = lineInComment;
+      inString = lineInString;
+      continue;
+    }
+    
+    // Skip empty lines but preserve them
+    if (trimmed === '') {
+      formatted.push('');
+      continue;
+    }
+    
+    // Apply indentation
+    const indent = indentChar.repeat(Math.max(0, indentLevel + indentAdjust));
+    
+    // Clean up spacing around operators and brackets (but preserve strings)
+    // Do formatting on trimmed content first, then add indentation
+    let formattedContent = trimmed;
+    if (!lineInString) {
+      formattedContent = trimmed
+        .replace(/\s*{\s*/g, ' { ')
+        .replace(/\s*}\s*/g, ' } ')
+        .replace(/\s*\(\s*/g, ' (')
+        .replace(/\s*\)\s*/g, ') ')
+        .replace(/\s*\[\s*/g, ' [')
+        .replace(/\s*\]\s*/g, '] ')
+        .replace(/\s*;\s*/g, '; ')
+        .replace(/\s*,\s*/g, ', ')
+        .replace(/\s*=\s*/g, ' = ')
+        .replace(/\s*\+\s*/g, ' + ')
+        .replace(/\s*-\s*/g, ' - ')
+        .replace(/\s*\*\s*/g, ' * ')
+        .replace(/\s*\/\s*/g, ' / ')
+        .replace(/\s*%\s*/g, ' % ')
+        .replace(/\s*==\s*/g, ' == ')
+        .replace(/\s*!=\s*/g, ' != ')
+        .replace(/\s*<=\s*/g, ' <= ')
+        .replace(/\s*>=\s*/g, ' >= ')
+        .replace(/\s*<\s*/g, ' < ')
+        .replace(/\s*>\s*/g, ' > ')
+        .replace(/\s*&&\s*/g, ' && ')
+        .replace(/\s*\|\|\s*/g, ' || ')
+        .replace(/\s+;/g, ';') // Remove space before semicolon
+        .replace(/;\s+/g, '; ') // Ensure space after semicolon
+        .replace(/\s+/g, ' ') // Collapse multiple spaces
+        .trim();
+    }
+    
+    // Combine indentation with formatted content
+    const formattedLine = indent + formattedContent;
+    formatted.push(formattedLine);
+    
+    // Update indent level for next line
+    // Count opening/closing braces to determine next indent level
+    const openBraces = (trimmed.match(/{/g) || []).length;
+    const closeBraces = (trimmed.match(/}/g) || []).length;
+    const openBrackets = (trimmed.match(/\[/g) || []).length;
+    const closeBrackets = (trimmed.match(/\]/g) || []).length;
+    const openParens = (trimmed.match(/\(/g) || []).length;
+    const closeParens = (trimmed.match(/\)/g) || []).length;
+    
+    indentLevel += (openBraces - closeBraces) + (openBrackets - closeBrackets) + (openParens - closeParens);
+    indentLevel = Math.max(0, indentLevel);
+    
+    inComment = lineInComment;
+    inString = lineInString;
+  }
+  
+  return formatted.join('\n');
+}
+
 export class NWScriptLanguageService {
   static initNWScriptLanguage() {
     const arg_value_parser = function( value: any ): any {
@@ -475,6 +601,35 @@ export class NWScriptLanguageService {
             suggestions: nw_suggestions 
           };
         }
+      }
+    });
+
+    // Register document formatter for NWScript
+    monaco.languages.registerDocumentFormattingEditProvider('nwscript', {
+      provideDocumentFormattingEdits: (model: any, options: any, token: any) => {
+        const text = model.getValue();
+        
+        // Get editor options from the model
+        const modelOptions = model.getOptions();
+        const tabSize = modelOptions.tabSize || 2;
+        const insertSpaces = modelOptions.insertSpaces !== false;
+        
+        // Pass options to formatter
+        const formatOptions = {
+          tabSize: tabSize,
+          insertSpaces: insertSpaces,
+          ...options
+        };
+        
+        const formatted = formatNWScript(text, formatOptions);
+        
+        if (formatted !== text) {
+          return [{
+            range: model.getFullModelRange(),
+            text: formatted
+          }];
+        }
+        return [];
       }
     });
 
