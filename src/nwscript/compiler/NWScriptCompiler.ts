@@ -870,7 +870,6 @@ export class NWScriptCompiler {
     this.stackPointer = storeSP;
     this.scopePop();
 
-    console.log(`func: ${block.name} size: ${concatBuffers(buffers).length}`);
     return concatBuffers(buffers);
   }
 
