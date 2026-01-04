@@ -47,12 +47,27 @@ export const TabTextEditor = function(props: any){
     tab.setEditor(editor);
     tab.setMonaco(monaco);
     tab.triggerLinterTimeout();
+    
+    // Ensure cursor is at the beginning with no selection when editor mounts
+    if(editor && monaco) {
+      setTimeout(() => {
+        editor.setPosition({ lineNumber: 1, column: 1 });
+        editor.setSelection(new monaco.Selection(1, 1, 1, 1));
+      }, 0);
+    }
   };
 
   const onEditorFileLoad = () => {
     setCode(tab.code);
     if(tab.isDiffMode && tab.modifiedModel) {
       tab.modifiedModel.setValue(tab.code);
+    }
+    // Reset cursor position to beginning to prevent auto-selection
+    if(tab.editor && tab.monaco) {
+      setTimeout(() => {
+        tab.editor.setPosition({ lineNumber: 1, column: 1 });
+        tab.editor.setSelection(new tab.monaco.Selection(1, 1, 1, 1));
+      }, 0);
     }
   };
 
