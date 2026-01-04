@@ -37,6 +37,7 @@ export class TabTextEditorState extends TabState {
   modifiedModel: monacoEditor.editor.ITextModel | null = null;
 
   resolvedIncludes: Map<string, string> = new Map();
+  tabSize: number = 2;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -129,7 +130,45 @@ export class TabTextEditorState extends TabState {
 
   setEditor(editor: monacoEditor.editor.IStandaloneCodeEditor){
     this.editor = editor;
-    editor.getModel()?.updateOptions({ tabSize: 2 })
+    this.updateTabSize();
+  }
+
+  setTabSize(size: number): void {
+    this.tabSize = size;
+    this.updateTabSize();
+  }
+
+  updateTabSize(): void {
+    // Update regular editor model (tabSize is a model option, not editor option)
+    if(this.editor) {
+      const model = this.editor.getModel();
+      if(model) {
+        model.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      }
+    }
+    
+    // Update diff editor models
+    if(this.diffEditor) {
+      const originalEditor = this.diffEditor.getOriginalEditor();
+      const modifiedEditor = this.diffEditor.getModifiedEditor();
+      const originalModel = originalEditor.getModel();
+      const modifiedModel = modifiedEditor.getModel();
+      
+      if(originalModel) {
+        originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      }
+      if(modifiedModel) {
+        modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      }
+    }
+    
+    // Update standalone models if they exist
+    if(this.originalModel) {
+      this.originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+    }
+    if(this.modifiedModel) {
+      this.modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+    }
   }
 
   setMonaco(monaco: typeof monacoEditor){
@@ -149,6 +188,10 @@ export class TabTextEditorState extends TabState {
     // Create models for original and modified text
     this.originalModel = this.monaco.editor.createModel(this.originalText, 'nwscript');
     this.modifiedModel = this.monaco.editor.createModel(this.code, 'nwscript');
+    
+    // Apply tab size to models
+    this.originalModel.updateOptions({ tabSize: this.tabSize });
+    this.modifiedModel.updateOptions({ tabSize: this.tabSize });
     
     this.isDiffMode = true;
     this.processEventListener('onDiffModeChanged');

@@ -92,6 +92,9 @@ export const TabTextEditor = function(props: any){
     }
 
     tab.setDiffEditor(diffEditor);
+    
+    // Apply tab size to the diff editor
+    tab.updateTabSize();
 
     // Listen for changes in the modified editor
     const modifiedEditor = diffEditor.getModifiedEditor();
@@ -126,6 +129,13 @@ export const TabTextEditor = function(props: any){
       tab.modifiedModel.setValue(tab.code);
     }
   }, [tab.code, tab.isDiffMode]);
+
+  // Update editor options when tabSize changes
+  useEffect(() => {
+    if(tab.editor) {
+      tab.updateTabSize();
+    }
+  }, [tab.tabSize]);
 
   // Handle keyboard shortcuts using TabState's keybinding system
   const onKeyDown = (event: KeyboardEvent, tabState: TabTextEditorState) => {
@@ -197,6 +207,39 @@ export const TabTextEditor = function(props: any){
               tab.switchToDiffMode();
             }
           }
+        },
+        {
+          separator: true
+        },
+        {
+          label: 'Tab Size',
+          children: [
+            {
+              label: '2 Spaces',
+              onClick: () => {
+                // Use setTimeout to ensure update happens after menu closes
+                setTimeout(() => {
+                  tab.setTabSize(2);
+                }, 0);
+              }
+            },
+            {
+              label: '4 Spaces',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setTabSize(4);
+                }, 0);
+              }
+            },
+            {
+              label: '8 Spaces',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setTabSize(8);
+                }, 0);
+              }
+            }
+          ]
         }
       ]
     }
