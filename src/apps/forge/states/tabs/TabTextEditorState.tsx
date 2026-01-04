@@ -12,6 +12,7 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
 import * as KotOR from "../../KotOR";
 import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
+import { NWScriptLanguageService } from "../NWScriptLanguageService";
 
 export class TabTextEditorState extends TabState {
 
@@ -205,7 +206,7 @@ export class TabTextEditorState extends TabState {
         
         // Update local functions in the tokenizer for syntax highlighting
         const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: any) => f.name);
-        ForgeState.updateLocalFunctions(localFunctions);
+        NWScriptLanguageService.updateLocalFunctions(localFunctions);
         
         console.log(this.nwScriptParser.errors);
         const markers: any[] = [ ];
