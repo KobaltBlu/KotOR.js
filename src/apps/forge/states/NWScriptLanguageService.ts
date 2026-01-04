@@ -207,7 +207,8 @@ export class NWScriptLanguageService {
         { open: '{', close: '}' },
         { open: '(', close: ')' },
         { open: "'", close: "'", notIn: ['string', 'comment'] },
-        { open: '"', close: '"', notIn: ['string'] }
+        { open: '"', close: '"', notIn: ['string'] },
+        // { open: '/**', close: ' */', notIn: ['string'] }
       ],
       surroundingPairs: [
         { open: '{', close: '}' },
@@ -215,6 +216,23 @@ export class NWScriptLanguageService {
         { open: '(', close: ')' },
         { open: '"', close: '"' },
         { open: "'", close: "'" }
+      ],
+      onEnterRules: [
+        {
+          // Inside a /** comment block */
+          beforeText: /^\s*\/\*\*(?!\/).*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: " * " }
+        },
+        {
+          // After a line that starts with " *"
+          beforeText: /^\s*\*(?!\/).*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, appendText: "* " }
+        },
+        {
+          // Closing the block
+          beforeText: /^\s*\*\/\s*$/,
+          action: { indentAction: monaco.languages.IndentAction.None, removeText: 1 }
+        }
       ]
     });
 

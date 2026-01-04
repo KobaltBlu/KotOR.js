@@ -55,8 +55,23 @@ export const TabTextEditor = function(props: any){
         editor.setSelection(new monaco.Selection(1, 1, 1, 1));
       }, 0);
     }
-  };
 
+    // Register custom handler for smart comment continuation
+    if(editor && monaco) {
+      // Use onKeyDown to intercept Enter key in comments
+      const disposable = editor.onKeyDown((e: monacoEditor.IKeyboardEvent) => {
+        if (e.keyCode === monaco.KeyCode.Enter) {
+          // @stub
+        }
+      });
+
+      // Store disposable for cleanup if needed
+      (editor as any)._nwscriptCommentDisposable = disposable;
+    }
+  };
+/**
+
+ */
   const onEditorFileLoad = () => {
     setCode(tab.code);
     if(tab.isDiffMode && tab.modifiedModel) {
