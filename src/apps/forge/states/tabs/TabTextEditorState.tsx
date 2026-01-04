@@ -202,6 +202,11 @@ export class TabTextEditorState extends TabState {
       this.resolvedIncludes = resolvedIncludes;
       try{
         this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
+        
+        // Update local functions in the tokenizer for syntax highlighting
+        const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: any) => f.name);
+        ForgeState.updateLocalFunctions(localFunctions);
+        
         console.log(this.nwScriptParser.errors);
         const markers: any[] = [ ];
         for(let i = 0; i < this.nwScriptParser.errors.length; i++){

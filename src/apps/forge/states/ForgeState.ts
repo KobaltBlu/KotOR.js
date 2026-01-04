@@ -20,7 +20,8 @@ declare const monaco: any;
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
-  static project: Project;
+  static project: Project
+  static nwScriptTokenConfig: any = null;;
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
   static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();
@@ -276,6 +277,12 @@ export class ForgeState {
         //'GN_SetListeningPatterns'
       ],
 
+      engineActions: [] as string[],
+
+      engineConstants: [] as string[],
+
+      localFunctions: [] as string[],
+
       parenFollows: [
         'if', 'for', 'while', 'switch',
       ],
@@ -293,6 +300,9 @@ export class ForgeState {
             cases: {
               //'@namespaceFollows': { token: 'keyword.$0', next: '@namespace' },
               '@keywords': { token: 'keyword.$0', next: '@qualified' },
+              '@engineActions': { token: 'engineAction', next: '@qualified' },
+              '@engineConstants': { token: 'engineConstant', next: '@qualified' },
+              '@localFunctions': { token: 'localFunction', next: '@qualified' },
               '@functions': { token: 'functions', next: '@qualified' },
               '@default': { token: 'identifier', next: '@qualified' }
             }
@@ -324,6 +334,9 @@ export class ForgeState {
           [/[a-zA-Z0-9_][\w]*/, {
             cases: {
               '@keywords': { token: 'keyword.$0' },
+              '@engineActions': { token: 'engineAction' },
+              '@engineConstants': { token: 'engineConstant' },
+              '@localFunctions': { token: 'localFunction' },
               '@functions': { token: 'functions.$0' },
               '@default': 'identifier'
             }
@@ -388,6 +401,23 @@ export class ForgeState {
       tokenConfig.keywords.push(nw_type.name);
     }
 
+    //Engine Actions
+    const _nw_actions = this.nwScriptParser.engine_actions.slice(0);
+    for(let i = 0; i < _nw_actions.length; i++){
+      const nw_action = _nw_actions[i];
+      tokenConfig.engineActions.push(nw_action.name);
+    }
+
+    //Engine Constants
+    const _nw_constants = this.nwScriptParser.engine_constants.slice(0);
+    for(let i = 0; i < _nw_constants.length; i++){
+      const nw_constant = _nw_constants[i];
+      tokenConfig.engineConstants.push(nw_constant.name);
+    }
+
+    // Store token config for dynamic updates
+    ForgeState.nwScriptTokenConfig = tokenConfig;
+
     monaco.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
 
     monaco.languages.setLanguageConfiguration('nwscript', {
@@ -426,6 +456,9 @@ export class ForgeState {
         // { token: 'operator', foreground: '000000' },
         // { token: 'namespace', foreground: '66afce' },
         { token: 'functions', foreground: 'ce63eb' },
+        { token: 'engineAction', foreground: '4EC9B0' },
+        { token: 'engineConstant', foreground: 'C586C0' },
+        { token: 'localFunction', foreground: 'DCDCAA' },
         // { token: 'lineComment', foreground: '60cf30' },
         // { token: 'blockComment', foreground: '60cf30' },
         // { token: 'HEXADECIMAL', foreground: 'CD5AC5' },
@@ -962,6 +995,24 @@ export class ForgeState {
         }
       }
     });
+
+    // Register semantic token provider for local functions
+    // Note: Monaco's semantic tokens require enabling semantic highlighting in editor options
+    // For now, we'll use a simpler approach: update the monarch tokenizer dynamically
+    // by adding local functions to a localFunctions array when files are parsed
+  }
+
+  static updateLocalFunctions(localFunctions: string[]) {
+    if (!ForgeState.nwScriptTokenConfig) return;
+    
+    // Update the local functions array
+    ForgeState.nwScriptTokenConfig.localFunctions = localFunctions;
+    
+    // Re-register the tokenizer with updated config
+    const monaco = (window as any).monaco;
+    if (monaco) {
+      monaco.languages.setMonarchTokensProvider('nwscript', ForgeState.nwScriptTokenConfig);
+    }
   }
 
   static getRecentProjects(): string[] {
