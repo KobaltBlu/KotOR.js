@@ -4,6 +4,7 @@ import { EditorTabManager } from "../managers/EditorTabManager";
 import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
+import { TabTextEditorState } from "./tabs/TabTextEditorState";
 import { ProjectFileSystem } from "../ProjectFileSystem";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
 import { pathParse } from "../helpers/PathParse";
@@ -1010,6 +1011,365 @@ export class ForgeState {
         }
       }
     });
+
+    // Register definition provider for "Go to Definition" (F12 / Ctrl+Click)
+    monaco.languages.registerDefinitionProvider('nwscript', {
+      provideDefinition: function (model: any, position: any) {
+        try {
+          const wordObject = model.getWordAtPosition(position);
+          if (!wordObject) {
+            return [];
+          }
+
+          const currentTab = ForgeState.tabManager.currentTab as any;
+          if (!currentTab || !currentTab.nwScriptParser) {
+            return [];
+          }
+
+          const parser = currentTab.nwScriptParser;
+          const word = wordObject.word;
+
+          // Helper to calculate which file a line number belongs to
+          const getFileForLine = (lineNumber: number): { resref: string | null; adjustedLine: number } => {
+            if (!currentTab.resolvedIncludes || currentTab.resolvedIncludes.size === 0) {
+              return { resref: null, adjustedLine: lineNumber };
+            }
+
+            // Calculate line offsets for each included file
+            const includeOrder = Array.from(currentTab.resolvedIncludes.keys()) as string[];
+            let currentOffset = 0;
+            
+            for (const resref of includeOrder) {
+              const source = currentTab.resolvedIncludes.get(resref);
+              if (source) {
+                const lineCount = source.split('\n').length;
+                if (lineNumber <= currentOffset + lineCount) {
+                  return { resref: resref as string, adjustedLine: lineNumber - currentOffset };
+                }
+                currentOffset += lineCount;
+              }
+            }
+
+            // If not in includes, it's in the main file
+            return { resref: null, adjustedLine: lineNumber - currentOffset };
+          };
+
+          // Helper to open/focus a tab and scroll to a line
+          const navigateToDefinition = (resref: string | null, lineNumber: number, column: number) => {
+            if (resref) {
+              // Definition is in an included file
+              // Check if file is already open
+              let targetTab: any = null;
+              
+              // Find tab by file resref
+              for (const tab of ForgeState.tabManager.tabs) {
+                if (tab.file && tab.file.resref === resref && tab.file.ext === 'nss') {
+                  targetTab = tab;
+                  break;
+                }
+              }
+
+              if (targetTab) {
+                // File is already open - focus it and scroll
+                targetTab.show();
+                if (targetTab.editor && targetTab.monaco) {
+                  setTimeout(() => {
+                    targetTab.editor.revealLineInCenter(lineNumber);
+                    targetTab.editor.setPosition({ lineNumber, column });
+                  }, 100);
+                }
+              } else {
+                // File is not open - load from KEY system and open it
+                const key = KotOR.KEYManager.Key.getFileKey(resref, KotOR.ResourceTypes.nss);
+                if (key) {
+                  // Load the file buffer from KEY system first (fire and forget)
+                  KotOR.KEYManager.Key.getFileBuffer(key).then((buffer: Uint8Array) => {
+                    if (buffer) {
+                      // Create EditorFile with the buffer already loaded
+                      const editorFile = new EditorFile({ 
+                        resref, 
+                        reskey: KotOR.ResourceTypes.nss,
+                        buffer: buffer
+                      });
+                      
+                      // Use FileTypeManager to open the file - this will create the tab
+                      FileTypeManager.onOpenResource(editorFile);
+                  
+                      // Find the newly opened tab and wait for file to load, then scroll
+                      const findAndScroll = () => {
+                        const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                          tab.file && tab.file.resref === resref && tab.file.ext === 'nss'
+                        ) as any;
+                        
+                        if (newTab) {
+                          // Set up a one-time listener for when the file loads
+                          const onFileLoad = () => {
+                            newTab.removeEventListener('onEditorFileLoad', onFileLoad);
+                            // Wait a bit for the editor to be ready, then scroll
+                            setTimeout(() => {
+                              if (newTab.editor && newTab.monaco) {
+                                newTab.editor.revealLineInCenter(lineNumber);
+                                newTab.editor.setPosition({ lineNumber, column });
+                              }
+                            }, 200);
+                          };
+                          
+                          newTab.addEventListener('onEditorFileLoad', onFileLoad);
+                          
+                          // If file is already loaded, trigger scroll immediately
+                          if (newTab.code && newTab.code.length > 0) {
+                            setTimeout(() => {
+                              onFileLoad();
+                            }, 100);
+                          }
+                        } else {
+                          // Tab not found yet, try again
+                          setTimeout(findAndScroll, 50);
+                        }
+                      };
+                      
+                      // Start looking for the tab after a short delay
+                      setTimeout(findAndScroll, 50);
+                    }
+                  }).catch((error: any) => {
+                    console.error('Error loading file from KEY system:', error);
+                  });
+                }
+              }
+            } else {
+              // Definition is in current file - just scroll
+              if (currentTab.editor && currentTab.monaco) {
+                currentTab.editor.revealLineInCenter(lineNumber);
+                currentTab.editor.setPosition({ lineNumber, column });
+              }
+            }
+          };
+
+          // Check engine constants
+          const nw_constant = ForgeState.nwScriptParser.engine_constants.find((obj: any) => obj.name === word);
+          if (nw_constant && nw_constant.source) {
+            // Engine constants are in nwscript.nss - open it and navigate
+            const lineNumber = nw_constant.source.first_line || 1;
+            const column = nw_constant.source.first_column || 1;
+            
+            // Check if nwscript.nss is already open
+            let nwscriptTab = ForgeState.tabManager.tabs.find((tab: any) => 
+              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
+            ) as any;
+            
+            if (nwscriptTab) {
+              // File is already open - focus it and scroll
+              nwscriptTab.show();
+              if (nwscriptTab.editor && nwscriptTab.monaco) {
+                setTimeout(() => {
+                  nwscriptTab.editor.revealLineInCenter(lineNumber);
+                  nwscriptTab.editor.setPosition({ lineNumber, column });
+                }, 100);
+              }
+            } else {
+              // File is not open - create EditorFile with the buffer and open it
+              if (ForgeState.nwscript_nss) {
+                const textDecoder = new TextDecoder();
+                const nwscriptSource = textDecoder.decode(ForgeState.nwscript_nss);
+                const editorFile = new EditorFile({ 
+                  resref: 'nwscript', 
+                  reskey: KotOR.ResourceTypes.nss,
+                  buffer: ForgeState.nwscript_nss
+                });
+                
+                FileTypeManager.onOpenResource(editorFile);
+                
+                // Find the newly opened tab and scroll
+                const findAndScroll = () => {
+                  const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
+                  ) as any;
+                  
+                  if (newTab) {
+                    const onFileLoad = () => {
+                      newTab.removeEventListener('onEditorFileLoad', onFileLoad);
+                      setTimeout(() => {
+                        if (newTab.editor && newTab.monaco) {
+                          newTab.editor.revealLineInCenter(lineNumber);
+                          newTab.editor.setPosition({ lineNumber, column });
+                        }
+                      }, 200);
+                    };
+                    
+                    newTab.addEventListener('onEditorFileLoad', onFileLoad);
+                    
+                    if (newTab.code && newTab.code.length > 0) {
+                      setTimeout(() => {
+                        onFileLoad();
+                      }, 100);
+                    }
+                  } else {
+                    setTimeout(findAndScroll, 50);
+                  }
+                };
+                
+                setTimeout(findAndScroll, 50);
+              }
+            }
+            
+            // Return definition location
+            return [{
+              uri: model.uri,
+              range: new monaco.Range(
+                lineNumber,
+                column,
+                nw_constant.source.last_line || lineNumber,
+                nw_constant.source.last_column || column
+              )
+            }];
+          }
+
+          // Check engine actions
+          const nw_action = ForgeState.nwScriptParser.engine_actions.find((obj: any) => obj.name === word);
+          if (nw_action && nw_action.source) {
+            // Engine actions are in nwscript.nss - open it and navigate
+            const lineNumber = nw_action.source.first_line || 1;
+            const column = nw_action.source.first_column || 1;
+            
+            // Check if nwscript.nss is already open
+            let nwscriptTab = ForgeState.tabManager.tabs.find((tab: any) => 
+              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
+            ) as any;
+            
+            if (nwscriptTab) {
+              // File is already open - focus it and scroll
+              nwscriptTab.show();
+              if (nwscriptTab.editor && nwscriptTab.monaco) {
+                setTimeout(() => {
+                  nwscriptTab.editor.revealLineInCenter(lineNumber);
+                  nwscriptTab.editor.setPosition({ lineNumber, column });
+                }, 100);
+              }
+            } else {
+              // File is not open - create EditorFile with the buffer and open it
+              if (ForgeState.nwscript_nss) {
+                const editorFile = new EditorFile({ 
+                  resref: 'nwscript', 
+                  reskey: KotOR.ResourceTypes.nss,
+                  buffer: ForgeState.nwscript_nss
+                });
+                
+                FileTypeManager.onOpenResource(editorFile);
+                
+                // Find the newly opened tab and scroll
+                const findAndScroll = () => {
+                  const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
+                  ) as any;
+                  
+                  if (newTab) {
+                    const onFileLoad = () => {
+                      newTab.removeEventListener('onEditorFileLoad', onFileLoad);
+                      setTimeout(() => {
+                        if (newTab.editor && newTab.monaco) {
+                          newTab.editor.revealLineInCenter(lineNumber);
+                          newTab.editor.setPosition({ lineNumber, column });
+                        }
+                      }, 200);
+                    };
+                    
+                    newTab.addEventListener('onEditorFileLoad', onFileLoad);
+                    
+                    if (newTab.code && newTab.code.length > 0) {
+                      setTimeout(() => {
+                        onFileLoad();
+                      }, 100);
+                    }
+                  } else {
+                    setTimeout(findAndScroll, 50);
+                  }
+                };
+                
+                setTimeout(findAndScroll, 50);
+              }
+            }
+            
+            // Return definition location
+            return [{
+              uri: model.uri,
+              range: new monaco.Range(
+                lineNumber,
+                column,
+                nw_action.source.last_line || lineNumber,
+                nw_action.source.last_column || column
+              )
+            }];
+          }
+
+          // Check local variables
+          const l_variable = (parser.local_variables || []).find((obj: any) => obj.name === word);
+          if (l_variable && l_variable.source) {
+            const fileInfo = getFileForLine(l_variable.source.first_line);
+            const lineNumber = fileInfo.adjustedLine;
+            const column = l_variable.source.first_column || 1;
+
+            // Navigate to definition
+            navigateToDefinition(fileInfo.resref, lineNumber, column);
+
+            if (fileInfo.resref) {
+              // Return a definition that will trigger navigation
+              // We'll handle the actual navigation in navigateToDefinition
+              return [{
+                uri: model.uri, // This will be updated when the file opens
+                range: new monaco.Range(lineNumber, column, lineNumber, column)
+              }];
+            } else {
+              return [{
+                uri: model.uri,
+                range: new monaco.Range(
+                  lineNumber,
+                  column,
+                  l_variable.source.last_line || lineNumber,
+                  l_variable.source.last_column || column
+                )
+              }];
+            }
+          }
+
+          // Check local functions
+          let l_function = (parser.local_functions || []).find((obj: any) => obj.name === word);
+          if (!l_function && parser.program && parser.program.functions) {
+            l_function = parser.program.functions.find((obj: any) => obj.name === word);
+          }
+
+          if (l_function && l_function.source) {
+            const fileInfo = getFileForLine(l_function.source.first_line);
+            const lineNumber = fileInfo.adjustedLine;
+            const column = l_function.source.first_column || 1;
+
+            // Navigate to definition
+            navigateToDefinition(fileInfo.resref, lineNumber, column);
+
+            if (fileInfo.resref) {
+              return [{
+                uri: model.uri,
+                range: new monaco.Range(lineNumber, column, lineNumber, column)
+              }];
+            } else {
+              return [{
+                uri: model.uri,
+                range: new monaco.Range(
+                  lineNumber,
+                  column,
+                  l_function.source.last_line || lineNumber,
+                  l_function.source.last_column || column
+                )
+              }];
+            }
+          }
+
+          return [];
+        } catch (e) {
+          console.error('Error providing definition:', e);
+          return [];
+        }
+      }
+    } as any);
 
     // Register semantic token provider for local functions
     // Note: Monaco's semantic tokens require enabling semantic highlighting in editor options
