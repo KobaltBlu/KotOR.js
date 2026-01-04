@@ -514,7 +514,6 @@ export class NWScriptParser {
     if(!semanticNode.defined || !this.isNameInUse(semanticNode.name)){
       const funcIdx = this.program.functions.findIndex( (f: any) => f.name == semanticNode.name );
       if(statement.name != 'main' && statement.name != 'StartingConditional'){
-        console.log('function', semanticNode.name, funcIdx);
         this.program.functions[funcIdx] = semanticNode;
       }
       semanticNode.defined = true;
@@ -592,7 +591,6 @@ export class NWScriptParser {
       if(!arg && (typeof arg_ref.value !== 'undefined') ){
         //generate a default argument if one is not supplied
         arg = this.parseASTStatement(arg_ref);
-        console.log('arg default value', arg_ref, arg);
         semanticNode.arguments.splice(i, 0, arg);
       }
 
