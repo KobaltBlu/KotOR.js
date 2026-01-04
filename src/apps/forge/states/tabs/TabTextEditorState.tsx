@@ -27,7 +27,13 @@ export class TabTextEditorState extends TabState {
   #tabCompileLogState: TabScriptCompileLogState;
   #tabScriptInspectorState: TabScriptInspectorState;
   editor: monacoEditor.editor.IStandaloneCodeEditor;
+  diffEditor: monacoEditor.editor.IStandaloneDiffEditor | null = null;
   monaco: typeof monacoEditor;
+
+  isDiffMode: boolean = false;
+  originalText: string = ``;
+  originalModel: monacoEditor.editor.ITextModel | null = null;
+  modifiedModel: monacoEditor.editor.ITextModel | null = null;
 
   resolvedIncludes: Map<string, string> = new Map();
 
@@ -113,6 +119,10 @@ export class TabTextEditorState extends TabState {
 
   setCode(code: string = ``){
     this.code = code;
+    // Update diff editor modified model if in diff mode
+    if(this.isDiffMode && this.modifiedModel && this.modifiedModel.getValue() !== code) {
+      this.modifiedModel.setValue(code);
+    }
     this.triggerLinterTimeout();
   }
 
@@ -123,6 +133,57 @@ export class TabTextEditorState extends TabState {
 
   setMonaco(monaco: typeof monacoEditor){
     this.monaco = monaco;
+  }
+
+  setDiffEditor(diffEditor: monacoEditor.editor.IStandaloneDiffEditor){
+    this.diffEditor = diffEditor;
+  }
+
+  switchToDiffMode(): void {
+    if(!this.monaco || !this.editor) return;
+    
+    // Capture current text as original (left side)
+    this.originalText = this.code;
+    
+    // Create models for original and modified text
+    this.originalModel = this.monaco.editor.createModel(this.originalText, 'nwscript');
+    this.modifiedModel = this.monaco.editor.createModel(this.code, 'nwscript');
+    
+    this.isDiffMode = true;
+    this.processEventListener('onDiffModeChanged');
+  }
+
+  switchToRegularMode(): void {
+    if(!this.diffEditor) return;
+    
+    // Get the current modified text from the diff editor
+    const modifiedEditor = this.diffEditor.getModifiedEditor();
+    const modifiedText = modifiedEditor.getValue();
+    this.code = modifiedText;
+    
+    // Dispose models
+    if(this.originalModel) {
+      this.originalModel.dispose();
+      this.originalModel = null;
+    }
+    if(this.modifiedModel) {
+      this.modifiedModel.dispose();
+      this.modifiedModel = null;
+    }
+    
+    // Dispose diff editor
+    this.diffEditor.dispose();
+    this.diffEditor = null;
+    
+    this.isDiffMode = false;
+    this.originalText = ``;
+    this.processEventListener('onDiffModeChanged');
+  }
+
+  updateDiffModifiedText(): void {
+    if(this.isDiffMode && this.modifiedModel) {
+      this.modifiedModel.setValue(this.code);
+    }
   }
 
   _linter_timeout: any;

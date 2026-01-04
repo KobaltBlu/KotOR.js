@@ -3,6 +3,7 @@ import * as KotOR from "../../../KotOR";
 import { TabTextEditorState } from "../../../states/tabs";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
+import { MenuBar, MenuItem } from "../../common/MenuBar";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;
@@ -17,6 +18,30 @@ export const TabScriptInspector = function(props: any){
     setInstructions([...script.instructions.values()]);
   };
 
+  const onCopyAssemblyToClipboard = async () => {
+    try {
+      const assemblyText = instructions
+        .map(instruction => instruction.toAssemblyString())
+        .join('\n');
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(assemblyText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = assemblyText;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+    } catch (err) {
+      console.error('Failed to copy assembly to clipboard:', err);
+    }
+  };
+
   useEffectOnce( () => {
     parentTab.addEventListener('onCompile', onCompile);
     return () => {
@@ -24,9 +49,31 @@ export const TabScriptInspector = function(props: any){
     }
   });
 
+  const menuItems: MenuItem[] = [
+    {
+      label: 'Options',
+      children: [
+        {
+          label: 'Copy Assembly to Clipboard',
+          onClick: onCopyAssemblyToClipboard,
+          disabled: instructions.length === 0
+        }
+      ]
+    }
+  ];
+
   return (
-    <div className="tab-pane-content scroll-y log-list bg-dark">
-      <table className="table table-stripped text-light" style={{width: `auto`, fontFamily: `'Courier New', monospace`, whiteSpace: `pre`}}>
+    <div className="tab-pane-content scroll-y log-list bg-dark" style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <MenuBar items={menuItems} />
+      <div style={{ 
+        position: 'absolute',
+        top: '24px',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        overflow: 'auto'
+      }}>
+        <table className="table table-stripped text-light" style={{width: `auto`, fontFamily: `'Courier New', monospace`, whiteSpace: `pre`}}>
         <thead>
           <tr>
             <th>Address</th>
@@ -34,7 +81,7 @@ export const TabScriptInspector = function(props: any){
             <th>Type</th>
             <th>Value</th>
             <th>Code Label</th>
-            <th>Assembly</th>
+            <th style={{ width: '100%' }}>Assembly</th>
           </tr>
         </thead>
         <tbody>
@@ -72,8 +119,6 @@ export const TabScriptInspector = function(props: any){
                 value = `${(instruction as any).offset}, ${(instruction as any).size}`;
               }
 
-              // const padding = '                                  ';
-              // const output = (`${address} ${code_hex} ${type_hex}` + padding).substr(0, 34);
               return (
                 <tr key={instruction.address}>
                   <td>{address}</td>
@@ -88,6 +133,7 @@ export const TabScriptInspector = function(props: any){
           }
         </tbody>
       </table>
+      </div>
     </div>
   )
 }
