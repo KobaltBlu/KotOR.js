@@ -142,12 +142,89 @@ export class NWScriptParser {
       const statement = ast_nwscript.statements[i];
 
       if (statement.type === "function") {
+        // Extract comment block preceding this function
+        let comment = '';
+        if (statement.source && statement.source.first_line > 1) {
+          const lines = this.nwscript_source.split('\n');
+          const funcLine = statement.source.first_line - 1; // Convert to 0-based index
+          
+          // Look backwards for comment blocks
+          let commentLines: string[] = [];
+          let inBlockComment = false;
+          
+          for (let i = funcLine - 1; i >= 0; i--) {
+            const line = lines[i];
+            const trimmed = line.trim();
+            
+            if (trimmed === '') {
+              if (commentLines.length > 0 && !inBlockComment) {
+                break; // Stop at blank line if we found comments (unless in block comment)
+              }
+              if (inBlockComment) {
+                commentLines.unshift(''); // Preserve blank lines in block comments
+              }
+              continue;
+            }
+            
+            // Check for block comment end */
+            if (trimmed.includes('*/') && !trimmed.includes('/*')) {
+              inBlockComment = true;
+              const endMatch = trimmed.match(/\*\/(.*)/);
+              if (endMatch && endMatch[1].trim()) {
+                // Comment continues after */, stop here
+                break;
+              }
+              // Continue collecting until we find /*
+              continue;
+            }
+            
+            // Check for block comment start /*
+            if (trimmed.includes('/*')) {
+              const startMatch = trimmed.match(/\/\*(.*?)(\*\/)?/);
+              if (startMatch) {
+                if (startMatch[2]) {
+                  // Single line block comment /* ... */
+                  commentLines.unshift(startMatch[1].trim());
+                  inBlockComment = false;
+                } else {
+                  // Multi-line block comment start
+                  inBlockComment = false; // We found the start, so we're done
+                  if (startMatch[1].trim()) {
+                    commentLines.unshift(startMatch[1].trim());
+                  }
+                  break;
+                }
+              }
+              continue;
+            }
+            
+            // If we're in a block comment, collect the line
+            if (inBlockComment) {
+              commentLines.unshift(trimmed);
+              continue;
+            }
+            
+            // Handle single-line comments
+            if (trimmed.startsWith('//')) {
+              commentLines.unshift(trimmed.replace(/^\/\/\s*/, ''));
+              continue;
+            }
+            
+            // Stop at non-comment code
+            break;
+          }
+          
+          comment = commentLines.join('\n').trim();
+        }
+        
         this.engine_actions.push({
           index: this.engine_actions.length,
           returntype: statement.returntype,
           is_engine_action: true,
           name: statement.name,
           arguments: statement.arguments,
+          comment: comment,
+          source: statement.source,
         });
         for(let i = 0; i < this.engine_actions.length; i++){
           this.postProcessFunctionDefinition(this.engine_actions[i]);

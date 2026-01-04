@@ -506,9 +506,10 @@ export class ForgeState {
       const action = entry[1];
       const args: any[] = [];
       const args2: any[] = [];
-      const action_definition = this.nwScriptParser.engine_actions.find((a: any) => a.name === entry[0]);
+      // Look up by function name, not by the key (entry[0] might be a numeric index)
+      const action_definition = this.nwScriptParser.engine_actions.find((a: any) => a.name === action.name);
       if(!action_definition) {
-        console.warn('Action definition not found for:', entry[0]);
+        // Silently skip if not found - some actions might not be in nwscript.nss
         return;
       }
       for(let i = 0; i < action.args.length; i++){
@@ -615,9 +616,30 @@ export class ForgeState {
           if(action){
             // console.log(action);
             let args = '';
-            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a: any) => a.name === action[0]);
+            // Match by function name - try wordObject.word first, then action[1].name, then action[0] as fallback
+            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a: any) => 
+              a.name === wordObject.word || 
+              a.name === action[1].name || 
+              a.name === action[0]
+            );
             if(!function_definition) {
-              return null;
+              // If we can't find the definition, still show the hover with info from NWScriptDef
+              let args_fallback = '';
+              for(let i = 0; i < action[1].args.length; i++){
+                const arg = action[1].args[i];
+                if(i > 0) args_fallback += ', ';
+                args_fallback += arg;
+              }
+              let hoverContent = `\`\`\`nwscript\n${action[1].name}(${args_fallback})\n\`\`\``;
+              if (action[1].comment && action[1].comment.trim()) {
+                hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action[1].comment.trim()}\n\`\`\``;
+              }
+              return {
+                contents: [
+                  { value: `**nwscript.nss**` },
+                  { value: hoverContent }
+                ]
+              };
             }
             // console.log(function_definition);
             for(let i = 0; i < action[1].args.length; i++){
@@ -635,10 +657,21 @@ export class ForgeState {
                 console.warn('invalid argument', i, function_definition)
               }
             }
+            // Build hover content with comment from nwscript.nss
+            let hoverContent = `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n\`\`\``;
+            
+            // Add comment from nwscript.nss if available
+            if (function_definition.comment && function_definition.comment.trim()) {
+              hoverContent += `\n\n**Documentation:**\n\`\`\`\n${function_definition.comment.trim()}\n\`\`\``;
+            } else if (action[1].comment && action[1].comment.trim()) {
+              // Fallback to comment from NWScriptDef if nwscript.nss comment not available
+              hoverContent += `\n\n**Documentation:**\n\`\`\`\n${action[1].comment.trim()}\n\`\`\``;
+            }
+            
             return {
               contents: [
                 { value: `**nwscript.nss**` },
-                { value: `\`\`\`nwscript\n${function_definition.returntype.value} ${action[1].name}(${args})\n/*\n ${action[1].comment.trim()} '\n*/ \n\`\`\`` }
+                { value: hoverContent }
               ]
             };
           }
@@ -657,7 +690,7 @@ export class ForgeState {
               const structPropertyName = parts[1];
               if(structName){
                 //Local Variables
-                const l_struct = parser.local_variables.find( (obj: any) => obj.name == structName );
+                const l_struct = (parser.local_variables || []).find( (obj: any) => obj.name == structName );
                 if(l_struct?.datatype?.value == 'struct'){
                   const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
                   for(let i = 0; i < struct_ref.properties.length; i++){
@@ -678,7 +711,7 @@ export class ForgeState {
 
 
             //Local Variables
-            const l_variable = parser.local_variables.find( (obj: any) => obj.name == wordObject.word );
+            const l_variable = (parser.local_variables || []).find( (obj: any) => obj.name == wordObject.word );
             if(l_variable){
               // console.log(l_variable);
               return {
@@ -689,9 +722,85 @@ export class ForgeState {
               };
             }
 
-            //Local Function
-            const l_function = parser.local_functions.find( (obj: any) => obj.name == wordObject.word );
+            //Local Function - check both local_functions (if exists) and program.functions
+            let l_function = (parser.local_functions || []).find( (obj: any) => obj.name == wordObject.word );
+            if(!l_function && parser.program && parser.program.functions) {
+              l_function = parser.program.functions.find( (obj: any) => obj.name == wordObject.word );
+            }
+            
             if(l_function){
+              // Extract comment from source if available
+              let functionComment = '';
+              if (l_function.source && l_function.source.first_line > 1) {
+                const scriptText = model.getValue();
+                const lines = scriptText.split('\n');
+                const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
+                
+                // Look backwards for comment blocks (similar to engine actions)
+                let commentLines: string[] = [];
+                let inBlockComment = false;
+                
+                for (let i = funcLine - 1; i >= 0; i--) {
+                  const line = lines[i];
+                  const trimmed = line.trim();
+                  
+                  if (trimmed === '') {
+                    if (commentLines.length > 0 && !inBlockComment) {
+                      break;
+                    }
+                    if (inBlockComment) {
+                      commentLines.unshift('');
+                    }
+                    continue;
+                  }
+                  
+                  // Check for block comment end */
+                  if (trimmed.includes('*/') && !trimmed.includes('/*')) {
+                    inBlockComment = true;
+                    const endMatch = trimmed.match(/\*\/(.*)/);
+                    if (endMatch && endMatch[1].trim()) {
+                      break;
+                    }
+                    continue;
+                  }
+                  
+                  // Check for block comment start /*
+                  if (trimmed.includes('/*')) {
+                    const startMatch = trimmed.match(/\/\*(.*?)(\*\/)?/);
+                    if (startMatch) {
+                      if (startMatch[2]) {
+                        commentLines.unshift(startMatch[1].trim());
+                        inBlockComment = false;
+                      } else {
+                        inBlockComment = false;
+                        if (startMatch[1].trim()) {
+                          commentLines.unshift(startMatch[1].trim());
+                        }
+                        break;
+                      }
+                    }
+                    continue;
+                  }
+                  
+                  // If we're in a block comment, collect the line
+                  if (inBlockComment) {
+                    commentLines.unshift(trimmed);
+                    continue;
+                  }
+                  
+                  // Handle single-line comments
+                  if (trimmed.startsWith('//')) {
+                    commentLines.unshift(trimmed.replace(/^\/\/\s*/, ''));
+                    continue;
+                  }
+                  
+                  // Stop at non-comment code
+                  break;
+                }
+                
+                functionComment = commentLines.join('\n').trim();
+              }
+              
               // console.log(l_function);
               let args: any[] = [];
               for(let i = 0; i < l_function.arguments.length; i++){
@@ -707,10 +816,18 @@ export class ForgeState {
                   console.warn('invalid argument', i, l_function)
                 }
               }
+              
+              // Build hover content with comment
+              let hoverContent = `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}(${args.join(', ')})\n\`\`\``;
+              
+              if (functionComment) {
+                hoverContent += `\n\n**Documentation:**\n\`\`\`\n${functionComment}\n\`\`\``;
+              }
+              
               return {
                 contents: [
                   { value: '**SOURCE**' },
-                  { value: `\`\`\`nwscript\n${l_function.returntype.value} ${l_function.name}(${args.join(', ')}) \n\`\`\`` }
+                  { value: hoverContent }
                 ]
               };
             }
@@ -727,6 +844,124 @@ export class ForgeState {
         };
       }
     } as any);
+
+    // Register document symbol provider for outline/navigation (Ctrl+Shift+O / Cmd+Shift+O)
+    monaco.languages.registerDocumentSymbolProvider('nwscript', {
+      provideDocumentSymbols: function (model: any) {
+        try {
+          const symbols: any[] = [];
+          const text = model.getValue();
+          
+          // Get the parser from the current tab if available
+          const currentTab = ForgeState.tabManager.currentTab as any;
+          let parser = currentTab?.nwScriptParser;
+          
+          // If no parser available, create a temporary one
+          if (!parser) {
+            parser = new NWScriptParser(ForgeState.nwScriptParser?.nwscript_source, text);
+          } else {
+            // Parse the current script to get symbols
+            parser.parseScript(text);
+          }
+
+          if (!parser.ast || !parser.ast.statements) {
+            return { symbols: [] };
+          }
+
+          // Extract symbols from AST
+          for (const statement of parser.ast.statements) {
+            if (statement.type === 'function') {
+              const func = statement as any;
+              const args = func.arguments.map((arg: any) => `${arg.datatype.value} ${arg.name}`).join(', ');
+              const detail = `${func.returntype.value} ${func.name}(${args})`;
+              
+              symbols.push({
+                name: func.name,
+                detail: detail,
+                kind: monaco.languages.SymbolKind.Function,
+                range: {
+                  startLineNumber: func.source?.first_line || 1,
+                  startColumn: func.source?.first_column || 1,
+                  endLineNumber: func.source?.last_line || func.source?.first_line || 1,
+                  endColumn: func.source?.last_column || func.source?.first_column || 1,
+                },
+                selectionRange: {
+                  startLineNumber: func.source?.first_line || 1,
+                  startColumn: func.source?.first_column || 1,
+                  endLineNumber: func.source?.last_line || func.source?.first_line || 1,
+                  endColumn: func.source?.last_column || func.source?.first_column || 1,
+                },
+                children: [] // Could extract local variables here if needed
+              });
+            } else if (statement.type === 'struct') {
+              const struct = statement as any;
+              symbols.push({
+                name: struct.name,
+                detail: `struct ${struct.name}`,
+                kind: monaco.languages.SymbolKind.Struct,
+                range: {
+                  startLineNumber: struct.source?.first_line || 1,
+                  startColumn: struct.source?.first_column || 1,
+                  endLineNumber: struct.source?.last_line || struct.source?.first_line || 1,
+                  endColumn: struct.source?.last_column || struct.source?.first_column || 1,
+                },
+                selectionRange: {
+                  startLineNumber: struct.source?.first_line || 1,
+                  startColumn: struct.source?.first_column || 1,
+                  endLineNumber: struct.source?.last_line || struct.source?.first_line || 1,
+                  endColumn: struct.source?.last_column || struct.source?.first_column || 1,
+                },
+                children: struct.properties?.map((prop: any) => ({
+                  name: prop.name,
+                  detail: prop.datatype ? `${prop.datatype.value} ${prop.name}` : prop.name,
+                  kind: monaco.languages.SymbolKind.Property,
+                  range: {
+                    startLineNumber: prop.source?.first_line || struct.source?.first_line || 1,
+                    startColumn: prop.source?.first_column || struct.source?.first_column || 1,
+                    endLineNumber: prop.source?.last_line || struct.source?.first_line || 1,
+                    endColumn: prop.source?.last_column || struct.source?.first_column || 1,
+                  },
+                  selectionRange: {
+                    startLineNumber: prop.source?.first_line || struct.source?.first_line || 1,
+                    startColumn: prop.source?.first_column || struct.source?.first_column || 1,
+                    endLineNumber: prop.source?.last_line || struct.source?.first_line || 1,
+                    endColumn: prop.source?.last_column || struct.source?.first_column || 1,
+                  },
+                })) || []
+              });
+            } else if (statement.type === 'variable' || statement.type === 'variableList') {
+              const variable = statement as any;
+              const names = statement.type === 'variableList' ? variable.names : [{ name: variable.name, source: variable.source }];
+              
+              for (const nameInfo of names) {
+                symbols.push({
+                  name: nameInfo.name,
+                  detail: `${variable.datatype.value} ${nameInfo.name}${variable.is_const ? ' (const)' : ''}`,
+                  kind: variable.is_const ? monaco.languages.SymbolKind.Constant : monaco.languages.SymbolKind.Variable,
+                  range: {
+                    startLineNumber: nameInfo.source?.first_line || variable.source?.first_line || 1,
+                    startColumn: nameInfo.source?.first_column || variable.source?.first_column || 1,
+                    endLineNumber: nameInfo.source?.last_line || variable.source?.last_line || 1,
+                    endColumn: nameInfo.source?.last_column || variable.source?.last_column || 1,
+                  },
+                  selectionRange: {
+                    startLineNumber: nameInfo.source?.first_line || variable.source?.first_line || 1,
+                    startColumn: nameInfo.source?.first_column || variable.source?.first_column || 1,
+                    endLineNumber: nameInfo.source?.last_line || variable.source?.last_line || 1,
+                    endColumn: nameInfo.source?.last_column || variable.source?.last_column || 1,
+                  },
+                });
+              }
+            }
+          }
+
+          return { symbols: symbols };
+        } catch (e) {
+          console.error('Error providing document symbols:', e);
+          return { symbols: [] };
+        }
+      }
+    });
   }
 
   static getRecentProjects(): string[] {
