@@ -127,6 +127,37 @@ export const TabTextEditor = function(props: any){
     }
   }, [tab.code, tab.isDiffMode]);
 
+  // Handle keyboard shortcuts using TabState's keybinding system
+  const onKeyDown = (event: KeyboardEvent, tabState: TabTextEditorState) => {
+    const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+    
+    // Ctrl+S / Cmd+S - Save
+    if (isCtrlOrCmd && event.key === 's' && !event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      tab.save();
+    }
+    // Ctrl+Shift+S / Cmd+Shift+S - Save As
+    else if (isCtrlOrCmd && event.key === 's' && event.shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      tab.saveAs();
+    }
+    // Ctrl+B / Cmd+B - Compile
+    else if (isCtrlOrCmd && event.key === 'b') {
+      event.preventDefault();
+      event.stopPropagation();
+      tab.compile();
+    }
+  };
+
+  useEffectOnce(() => {
+    tab.addEventListener('onKeyDown', onKeyDown);
+    return () => {
+      tab.removeEventListener('onKeyDown', onKeyDown);
+    };
+  });
+
   const menuItems: MenuItem[] = [
     {
       label: 'File',
