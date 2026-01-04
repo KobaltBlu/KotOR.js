@@ -1431,6 +1431,7 @@ class NWScriptScope {
   statement: any = undefined;
   returntype: any = undefined;
   type: string = 'block';
+  name: string = '';
   is_global = false;
   is_anonymous = false;
 
@@ -1438,14 +1439,15 @@ class NWScriptScope {
     this.program = program;
     this.statement = statement;
     this.type = statement?.type || 'block';
+    this.name = statement?.name || '';
     this.returntype = statement?.returntype;
   }
 
   addVariable(variable: SemanticArgumentNode|SemanticVariableNode|SemanticStructNode){
-    if(this.hasVariable(variable.name)){ return; }
-    if(variable.type == 'struct'){
+    // if(this.hasVariable(variable.name)){ return; }
+    if(variable.type == 'struct' && !this.hasStruct(variable.name)){
       this.structs.push(variable);
-    }else if(variable.type == 'variable'){
+    }else if(variable.type == 'variable' && !this.hasVariable(variable.name)){
       if(variable.is_const){
         this.constants.push(variable);
       }else{
@@ -1453,9 +1455,10 @@ class NWScriptScope {
         variable.stackPointer = this.program.stackPointer;
         this.program.stackPointer += 4;
       }
-    }else if(variable.type == 'argument'){
+    }else if(variable.type == 'argument' && !this.hasArgument(variable.name)){
       this.arguments.push(variable);
     }
+    return;
   }
 
   addArgument(argument: any){
@@ -1464,7 +1467,7 @@ class NWScriptScope {
     }
   }
 
-  hasArgument(name = ''){
+  hasArgument(name = ''): boolean {
     return this.getArgument(name) ? true : false;
   }
 
@@ -1480,8 +1483,8 @@ class NWScriptScope {
     return this.structs.find( s => s.name == name );
   }
 
-  hasVariable(name = ''){
-    return this.getVariable(name) ? true : false;
+  hasVariable(name = ''): boolean {
+    return this.variables.find( v => v.name == name ) ? true : false;
   }
 
   getVariable(name = ''){
