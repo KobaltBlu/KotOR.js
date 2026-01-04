@@ -506,7 +506,11 @@ export class ForgeState {
       const action = entry[1];
       const args: any[] = [];
       const args2: any[] = [];
-      const action_definition = this.nwScriptParser.engine_actions[entry[0]];
+      const action_definition = this.nwScriptParser.engine_actions.find((a: any) => a.name === entry[0]);
+      if(!action_definition) {
+        console.warn('Action definition not found for:', entry[0]);
+        return;
+      }
       for(let i = 0; i < action.args.length; i++){
         const arg = action.args[i];
         const def_arg = action_definition.arguments[i];
@@ -611,7 +615,10 @@ export class ForgeState {
           if(action){
             // console.log(action);
             let args = '';
-            const function_definition = ForgeState.nwScriptParser.engine_actions[action[0]];
+            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a: any) => a.name === action[0]);
+            if(!function_definition) {
+              return null;
+            }
             // console.log(function_definition);
             for(let i = 0; i < action[1].args.length; i++){
               const arg = action[1].args[i];
