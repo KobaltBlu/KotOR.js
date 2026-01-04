@@ -69,9 +69,7 @@ export const TabTextEditor = function(props: any){
       (editor as any)._nwscriptCommentDisposable = disposable;
     }
   };
-/**
-
- */
+  
   const onEditorFileLoad = () => {
     setCode(tab.code);
     if(tab.isDiffMode && tab.modifiedModel) {
