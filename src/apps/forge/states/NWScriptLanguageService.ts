@@ -11,17 +11,19 @@ declare const monaco: any;
 // Format NWScript code using AST
 function formatNWScript(code: string, options: any = {}): string {
   try {
+    const parser = new NWScriptParser(ForgeState.nwScriptParser?.nwscript_source, code);
     // Parse the code into an AST using the AST builder directly
     // We don't need engine types for formatting - just the structure
-    const astBuilder = new NWScriptASTBuilder(code);
-    const ast = astBuilder.parseAST();
+    const ast = parser.parseAST(code);
     
     if (!ast) {
       // If parsing fails, return original code
+      console.warn('AST formatting failed, returning original');
       return code;
     }
     
     // Generate formatted code from AST
+    console.log('AST formatting successful, generating code from AST');
     const codeGen = new NWScriptASTCodeGen({
       tabSize: options.tabSize || 2,
       insertSpaces: options.insertSpaces !== false,
@@ -35,6 +37,7 @@ function formatNWScript(code: string, options: any = {}): string {
     if (error?.name !== 'NWScriptASTBuilderError' && error?.type !== 'parse') {
       console.warn('AST formatting failed, returning original code:', error);
     }
+    console.error(error);
     return code;
   }
 }

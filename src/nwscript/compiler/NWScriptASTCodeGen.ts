@@ -59,7 +59,14 @@ export class NWScriptASTCodeGen {
     this.indentLevel = 0;
     const lines: string[] = [];
     
-    for (const statement of program.statements) {
+    for (let i = 0; i < program.statements.length; i++) {
+      const statement = program.statements[i];
+      
+      // Add a newline before function declarations (except the first statement)
+      if (statement.type === 'function' && i > 0) {
+        lines.push('');
+      }
+      
       const code = this.generateStatement(statement);
       if (code) {
         lines.push(code);
@@ -105,7 +112,7 @@ export class NWScriptASTCodeGen {
         return this.generateBlock(stmt);
       default:
         // Expression statements
-        return this.generateExpression(stmt as ExpressionNode) + ';';
+        return this.indent() + this.generateExpression(stmt as ExpressionNode) + ';';
     }
   }
 
@@ -138,7 +145,7 @@ export class NWScriptASTCodeGen {
   private generateStruct(struct: StructNode): string {
     let result = this.indent() + 'struct ' + struct.name;
     if (struct.properties.length > 0) {
-      result += ' {\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const prop of struct.properties) {
         result += this.indent() + this.generateDataType(prop.datatype!) + ' ' + prop.name + ';\n';
@@ -186,7 +193,7 @@ export class NWScriptASTCodeGen {
     if (func.header_only) {
       result += ';';
     } else {
-      result += ' {\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const stmt of func.statements) {
         result += this.generateStatement(stmt) + '\n';
@@ -206,16 +213,17 @@ export class NWScriptASTCodeGen {
   }
 
   private generateIf(ifNode: IfNode): string {
-    let result = this.indent() + 'if (' + this.generateExpression(ifNode.condition) + ') ';
+    let result = this.indent() + 'if (' + this.generateExpression(ifNode.condition) + ')';
     
     if (ifNode.statements.length === 1 && ifNode.statements[0].type !== 'block') {
       // Single statement, no braces
+      result += ' ';
       const savedIndent = this.indentLevel;
       this.indentLevel = 0;
       result += this.generateStatement(ifNode.statements[0]);
       this.indentLevel = savedIndent;
     } else {
-      result += '{\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const stmt of ifNode.statements) {
         result += this.generateStatement(stmt) + '\n';
@@ -226,14 +234,15 @@ export class NWScriptASTCodeGen {
     
     // Handle else ifs
     for (const elseIf of ifNode.elseIfs) {
-      result += ' else if (' + this.generateExpression(elseIf.condition) + ') ';
+      result += '\n' + this.indent() + 'else if (' + this.generateExpression(elseIf.condition) + ')';
       if (elseIf.statements.length === 1 && elseIf.statements[0].type !== 'block') {
+        result += ' ';
         const savedIndent = this.indentLevel;
         this.indentLevel = 0;
         result += this.generateStatement(elseIf.statements[0]);
         this.indentLevel = savedIndent;
       } else {
-        result += '{\n';
+        result += '\n' + this.indent() + '{\n';
         this.indentLevel++;
         for (const stmt of elseIf.statements) {
           result += this.generateStatement(stmt) + '\n';
@@ -245,14 +254,15 @@ export class NWScriptASTCodeGen {
     
     // Handle else
     if (ifNode.else) {
-      result += ' else ';
+      result += '\n' + this.indent() + 'else';
       if (ifNode.else.statements.length === 1 && ifNode.else.statements[0].type !== 'block') {
+        result += ' ';
         const savedIndent = this.indentLevel;
         this.indentLevel = 0;
         result += this.generateStatement(ifNode.else.statements[0]);
         this.indentLevel = savedIndent;
       } else {
-        result += '{\n';
+        result += '\n' + this.indent() + '{\n';
         this.indentLevel++;
         for (const stmt of ifNode.else.statements) {
           result += this.generateStatement(stmt) + '\n';
@@ -266,14 +276,15 @@ export class NWScriptASTCodeGen {
   }
 
   private generateWhile(whileNode: WhileNode): string {
-    let result = this.indent() + 'while (' + this.generateExpression(whileNode.condition) + ') ';
+    let result = this.indent() + 'while (' + this.generateExpression(whileNode.condition) + ')';
     if (whileNode.statements.length === 1 && whileNode.statements[0].type !== 'block') {
+      result += ' ';
       const savedIndent = this.indentLevel;
       this.indentLevel = 0;
       result += this.generateStatement(whileNode.statements[0]);
       this.indentLevel = savedIndent;
     } else {
-      result += '{\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const stmt of whileNode.statements) {
         result += this.generateStatement(stmt) + '\n';
@@ -285,14 +296,15 @@ export class NWScriptASTCodeGen {
   }
 
   private generateDoWhile(doWhile: DoWhileNode): string {
-    let result = this.indent() + 'do ';
+    let result = this.indent() + 'do';
     if (doWhile.statements.length === 1 && doWhile.statements[0].type !== 'block') {
+      result += ' ';
       const savedIndent = this.indentLevel;
       this.indentLevel = 0;
       result += this.generateStatement(doWhile.statements[0]);
       this.indentLevel = savedIndent;
     } else {
-      result += '{\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const stmt of doWhile.statements) {
         result += this.generateStatement(stmt) + '\n';
@@ -321,15 +333,16 @@ export class NWScriptASTCodeGen {
     if (forNode.incrementor) {
       result += this.generateExpression(forNode.incrementor);
     }
-    result += ') ';
+    result += ')';
     
     if (forNode.statements.length === 1 && forNode.statements[0].type !== 'block') {
+      result += ' ';
       const savedIndent = this.indentLevel;
       this.indentLevel = 0;
       result += this.generateStatement(forNode.statements[0]);
       this.indentLevel = savedIndent;
     } else {
-      result += '{\n';
+      result += '\n' + this.indent() + '{\n';
       this.indentLevel++;
       for (const stmt of forNode.statements) {
         result += this.generateStatement(stmt) + '\n';
@@ -341,7 +354,8 @@ export class NWScriptASTCodeGen {
   }
 
   private generateSwitch(switchNode: SwitchNode): string {
-    let result = this.indent() + 'switch (' + this.generateExpression(switchNode.condition) + ') {\n';
+    let result = this.indent() + 'switch (' + this.generateExpression(switchNode.condition) + ')\n';
+    result += this.indent() + '{\n';
     this.indentLevel++;
     
     for (const caseNode of switchNode.cases) {
@@ -439,8 +453,21 @@ export class NWScriptASTCodeGen {
   }
 
   private generateLiteral(literal: LiteralNode): string {
+    // Restore original text if available (TRUE, FALSE, NULL, etc.)
+    if (literal.originalText) {
+      return literal.originalText;
+    }
+    
     if (literal.datatype.value === 'string') {
       return '"' + String(literal.value).replace(/"/g, '\\"') + '"';
+    }
+    if (literal.datatype.value === 'float') {
+      const val = Number(literal.value);
+      // If it's a whole number, add .0 to preserve float representation
+      if (Number.isInteger(val)) {
+        return val + '.0';
+      }
+      return String(literal.value);
     }
     return String(literal.value);
   }
@@ -496,22 +523,33 @@ export class NWScriptASTCodeGen {
 
   private generateCompare(compare: CompareNode, precedence: number): string {
     const op = compare.operator.value;
-    const expr = this.generateExpression(compare.left, 80) + ' ' + op + ' ' + this.generateExpression(compare.right, 80);
+    const opPrecedence = this.getOperatorPrecedence(op);
+    
+    // Similar to binary operators: left needs parens if precedence <=, right if <
+    const left = this.generateExpression(compare.left, opPrecedence);
+    const right = this.generateExpression(compare.right, opPrecedence + 1);
+    const expr = left + ' ' + op + ' ' + right;
     // Comparison has precedence 70-80, so we need parentheses for higher precedence
-    return precedence > 80 ? '(' + expr + ')' : expr;
+    return precedence > opPrecedence ? '(' + expr + ')' : expr;
   }
 
   private generateBinary(binary: BinaryOpNode, precedence: number): string {
     let op = binary.operator.value;
     let opPrecedence = this.getOperatorPrecedence(op);
     
+    // For left-associative operators:
+    // - Left side: parenthesize if its precedence is <= current (same or lower)
+    // - Right side: parenthesize only if its precedence is < current (strictly lower)
+    // This ensures correct grouping: A || B && C becomes A || (B && C)
+    // and (A || B) && C becomes (A || B) && C
+    
     const left = this.generateExpression(binary.left, opPrecedence);
-    const right = this.generateExpression(binary.right, opPrecedence);
+    const right = this.generateExpression(binary.right, opPrecedence + 1); // +1 to avoid parenthesizing same precedence on right
     
     // Add spaces around operators
     let expr = left + ' ' + op + ' ' + right;
     
-    // Add parentheses if needed based on precedence
+    // Add parentheses if needed based on outer precedence
     if (precedence > opPrecedence) {
       expr = '(' + expr + ')';
     }

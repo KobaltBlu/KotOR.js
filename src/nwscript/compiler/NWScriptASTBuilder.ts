@@ -716,23 +716,23 @@ export class NWScriptASTBuilder {
     }
     if (this.is("keyword", "TRUE")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 1, source: t.source };
+      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 1, source: t.source, originalText: "TRUE" };
     }
     if (this.is("keyword", "FALSE")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 0, source: t.source };
+      return { type: "literal", datatype: dt("int", NWCompileDataTypes.int), value: 0, source: t.source, originalText: "FALSE" };
     }
     if (this.is("keyword", "NULL")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source };
+      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source, originalText: "NULL" };
     }
     if (this.is("keyword", "OBJECT_SELF")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source };
+      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 0, source: t.source, originalText: "OBJECT_SELF" };
     }
     if (this.is("keyword", "OBJECT_INVALID")) {
       const t = this.tok; this.next();
-      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 1, source: t.source };
+      return { type: "literal", datatype: dt("object", NWCompileDataTypes.object), value: 1, source: t.source, originalText: "OBJECT_INVALID" };
     }
 
     // parens

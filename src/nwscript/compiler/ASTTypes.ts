@@ -7,7 +7,13 @@ export type NameNode = { type: "name"; value: string; source?: SourceInfo };
 export type OperatorNode = { type: "operator"; value: string };
 
 // Expression nodes produced by the hand parser
-export interface LiteralNode { type: "literal"; datatype: DataTypeNode; value: number | string; source: SourceInfo; }
+export interface LiteralNode { 
+  type: "literal"; 
+  datatype: DataTypeNode; 
+  value: number | string; 
+  source: SourceInfo;
+  originalText?: "TRUE" | "FALSE" | "NULL" | "OBJECT_SELF" | "OBJECT_INVALID"; // Preserve original keyword text for code generation
+}
 export interface VariableReferenceNode { type: "variable_reference"; name: string; source: SourceInfo; terminated?: boolean; }
 export interface ArrayLiteralNode { type: "array_literal"; elements: ExpressionNode[]; source: SourceInfo; }
 export interface FunctionCallNode { type: "function_call"; name: string; arguments: ExpressionNode[]; source: SourceInfo; }
