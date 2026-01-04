@@ -366,11 +366,56 @@ export class NWScriptLanguageService {
               documentation: 'int StartingConditional() Statement'
             },
             {
+              label: 'if',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: 'if (${1:condition}) {\n\t$0\n}',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'if statement',
+              filterText: 'if',
+              sortText: '0if'
+            },
+            {
               label: 'ifelse',
               kind: monaco.languages.CompletionItemKind.Snippet,
               insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
               insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'If-Else Statement'
+            },
+            {
+              label: 'for',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: 'for (${1:int i = 0}; ${2:i < ${3:10}}; ${4:i++}) {\n\t$0\n}',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'for loop',
+              filterText: 'for',
+              sortText: '0for'
+            },
+            {
+              label: 'while',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: 'while (${1:condition}) {\n\t$0\n}',
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'while loop',
+              filterText: 'while',
+              sortText: '0while'
+            },
+            {
+              label: 'switch',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: ['switch (${1:expression}) {', '\tcase ${2:value}:', '\t\t$0', '\t\tbreak;', '\tdefault:', '\t\tbreak;', '}'].join('\n'),
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'switch statement',
+              filterText: 'switch',
+              sortText: '0switch'
+            },
+            {
+              label: 'struct',
+              kind: monaco.languages.CompletionItemKind.Snippet,
+              insertText: ['struct ${1:StructName} {', '\t${2:int} ${3:member};', '\t$0', '};'].join('\n'),
+              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'struct declaration',
+              filterText: 'struct',
+              sortText: '0struct'
             }
           ];
 
