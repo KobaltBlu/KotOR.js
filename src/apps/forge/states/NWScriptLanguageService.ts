@@ -1,157 +1,42 @@
 import { EditorFile } from "../EditorFile";
 import { FileTypeManager } from "../FileTypeManager";
 import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
+import { NWScriptASTBuilder } from "../../../nwscript/compiler/NWScriptASTBuilder";
+import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGen";
 import { ForgeState } from "./ForgeState";
 import * as KotOR from '../KotOR';
 
 declare const monaco: any;
 
-// Format NWScript code
+// Format NWScript code using AST
 function formatNWScript(code: string, options: any = {}): string {
-  const tabSize = options.tabSize || 2;
-  const insertSpaces = options.insertSpaces !== false;
-  const indentChar = insertSpaces ? ' '.repeat(tabSize) : '\t';
-  
-  const lines = code.split('\n');
-  let formatted: string[] = [];
-  let indentLevel = 0;
-  let inComment = false;
-  let inString = false;
-  let stringChar = '';
-  
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    const originalLine = line;
-    const trimmed = line.trim();
+  try {
+    // Parse the code into an AST using the AST builder directly
+    // We don't need engine types for formatting - just the structure
+    const astBuilder = new NWScriptASTBuilder(code);
+    const ast = astBuilder.parseAST();
     
-    // Track comment and string state
-    let lineInComment = inComment;
-    let lineInString = inString;
-    
-    // Simple state tracking for comments and strings
-    for (let j = 0; j < line.length - 1; j++) {
-      if (!lineInString && !lineInComment) {
-        if (line[j] === '/' && line[j + 1] === '*') {
-          lineInComment = true;
-          j++;
-        } else if (line[j] === '/' && line[j + 1] === '/') {
-          // Single line comment, rest of line is comment
-          break;
-        } else if (line[j] === '"' || line[j] === "'") {
-          lineInString = true;
-          stringChar = line[j];
-        }
-      } else if (lineInComment && line[j] === '*' && line[j + 1] === '/') {
-        lineInComment = false;
-        j++;
-      } else if (lineInString && line[j] === stringChar && line[j - 1] !== '\\') {
-        lineInString = false;
-      }
+    if (!ast) {
+      // If parsing fails, return original code
+      return code;
     }
     
-    // Calculate indent adjustment before processing
-    let indentAdjust = 0;
+    // Generate formatted code from AST
+    const codeGen = new NWScriptASTCodeGen({
+      tabSize: options.tabSize || 2,
+      insertSpaces: options.insertSpaces !== false,
+    });
     
-    // Decrease indent for closing braces/brackets on this line
-    if (trimmed.startsWith('}') || trimmed.startsWith(']') || (trimmed.startsWith(')') && !trimmed.includes('('))) {
-      indentAdjust = -1;
+    return codeGen.generate(ast);
+  } catch (error: any) {
+    // If anything goes wrong, return original code
+    // Don't log parse errors - they're expected when formatting incomplete/incorrect code
+    // Only log unexpected errors (not parse errors)
+    if (error?.name !== 'NWScriptASTBuilderError' && error?.type !== 'parse') {
+      console.warn('AST formatting failed, returning original code:', error);
     }
-    
-    // Don't format lines that are in comments (preserve comment formatting)
-    if (lineInComment || trimmed.startsWith('//') || trimmed.startsWith('/*')) {
-      // Apply indentation to comment lines too
-      const indent = indentChar.repeat(Math.max(0, indentLevel + indentAdjust));
-      formatted.push(indent + trimmed);
-      inComment = lineInComment;
-      inString = lineInString;
-      continue;
-    }
-    
-    // Skip empty lines but preserve them
-    if (trimmed === '') {
-      formatted.push('');
-      continue;
-    }
-    
-    // Apply indentation
-    const indent = indentChar.repeat(Math.max(0, indentLevel + indentAdjust));
-    
-    // Clean up spacing around operators and brackets (but preserve strings)
-    // Do formatting on trimmed content first, then add indentation
-    let formattedContent = trimmed;
-    if (!lineInString) {
-      formattedContent = trimmed
-        .replace(/\s*{\s*/g, ' { ')
-        .replace(/\s*}\s*/g, ' } ')
-        .replace(/\s*\(\s*/g, ' (')
-        .replace(/\s*\)\s*/g, ') ')
-        .replace(/\s*\[\s*/g, ' [')
-        .replace(/\s*\]\s*/g, '] ')
-        .replace(/\s*;\s*/g, '; ')
-        .replace(/\s*,\s*/g, ', ')
-        // Handle compound operators first (before simple operators)
-        .replace(/\s*\+\+(\s|$)/g, '++$1') // ++ (preserve no space before, space after if present)
-        .replace(/(\s|^)\+\+\s*/g, '$1++') // ++ (preserve space before if present, no space after)
-        .replace(/\s*--(\s|$)/g, '--$1') // -- (preserve no space before, space after if present)
-        .replace(/(\s|^)--\s*/g, '$1--') // -- (preserve space before if present, no space after)
-        .replace(/\s*\+=\s*/g, ' += ')
-        .replace(/\s*-=\s*/g, ' -= ')
-        .replace(/\s*\*=\s*/g, ' *= ')
-        .replace(/\s*\/=\s*/g, ' /= ')
-        .replace(/\s*%=\s*/g, ' %= ')
-        .replace(/\s*==\s*/g, ' == ')
-        .replace(/\s*!=\s*/g, ' != ')
-        .replace(/\s*<=\s*/g, ' <= ')
-        .replace(/\s*>=\s*/g, ' >= ')
-        .replace(/\s*<<=\s*/g, ' <<= ')
-        .replace(/\s*>>=\s*/g, ' >>= ')
-        .replace(/\s*&=\s*/g, ' &= ')
-        .replace(/\s*\|=\s*/g, ' |= ')
-        .replace(/\s*\^=\s*/g, ' ^= ')
-        .replace(/\s*<<\s*/g, ' << ')
-        .replace(/\s*>>\s*/g, ' >> ')
-        .replace(/\s*>>>\s*/g, ' >>> ')
-        // Simple operators (must come after compound operators)
-        .replace(/\s*=\s*/g, ' = ')
-        .replace(/(?<!\+)\s*\+\s*(?!\+)/g, ' + ') // + but not ++
-        .replace(/(?<!-)\s*-\s*(?!-)/g, ' - ') // - but not --
-        .replace(/\s*\*\s*/g, ' * ')
-        .replace(/\s*\/\s*/g, ' / ')
-        .replace(/\s*%\s*/g, ' % ')
-        .replace(/\s*<\s*/g, ' < ')
-        .replace(/\s*>\s*/g, ' > ')
-        .replace(/\s*&&\s*/g, ' && ')
-        .replace(/\s*\|\|\s*/g, ' || ')
-        .replace(/\s*&\s*/g, ' & ')
-        .replace(/\s*\|\s*/g, ' | ')
-        .replace(/\s*\^\s*/g, ' ^ ')
-        .replace(/\s+;/g, ';') // Remove space before semicolon
-        .replace(/;\s+/g, '; ') // Ensure space after semicolon
-        .replace(/\s+/g, ' ') // Collapse multiple spaces
-        .trim();
-    }
-    
-    // Combine indentation with formatted content
-    const formattedLine = indent + formattedContent;
-    formatted.push(formattedLine);
-    
-    // Update indent level for next line
-    // Count opening/closing braces to determine next indent level
-    const openBraces = (trimmed.match(/{/g) || []).length;
-    const closeBraces = (trimmed.match(/}/g) || []).length;
-    const openBrackets = (trimmed.match(/\[/g) || []).length;
-    const closeBrackets = (trimmed.match(/\]/g) || []).length;
-    const openParens = (trimmed.match(/\(/g) || []).length;
-    const closeParens = (trimmed.match(/\)/g) || []).length;
-    
-    indentLevel += (openBraces - closeBraces) + (openBrackets - closeBrackets) + (openParens - closeParens);
-    indentLevel = Math.max(0, indentLevel);
-    
-    inComment = lineInComment;
-    inString = lineInString;
+    return code;
   }
-  
-  return formatted.join('\n');
 }
 
 export class NWScriptLanguageService {

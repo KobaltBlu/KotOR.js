@@ -7,7 +7,8 @@ export type TokenType =
   | "hex"
   | "keyword"
   | "op"
-  | "punct";
+  | "punct"
+  | "comment";
 
 export interface SourceSpan {
   first_line: number;

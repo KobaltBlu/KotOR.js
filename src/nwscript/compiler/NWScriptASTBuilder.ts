@@ -1,4 +1,4 @@
-import { ArgumentNode, BlockNode, BreakNode, CaseNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
+import { ArgumentNode, BlockNode, BreakNode, CaseNode, CommentNode, ContinueNode, DataTypeNode, DefaultNode, DefineNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionNode, IfNode, IncludeNode, ProgramNode, ReturnNode, StatementNode, StructNode, SwitchNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
 import { NWScriptLexer } from "./NWScriptLexer";
 import type { Token } from "./NWScriptToken";
 
@@ -107,13 +107,33 @@ export class NWScriptASTBuilder {
       return null;
     }
 
+    // Handle comments
+    if (this.is("comment")) {
+      return this.parseComment();
+    }
+
     if (this.is("keyword", "DEFINE")) return this.parseDefine();
     if (this.is("keyword", "INCLUDE")) return this.parseInclude();
     if (this.is("keyword", "STRUCT")) return this.parseStructDeclOrVar();
     return this.parseDeclOrStatement();
   }
 
+  private parseComment(): CommentNode {
+    const tok = this.tok;
+    this.next();
+    return {
+      type: "comment",
+      value: tok.value,
+      source: tok.source,
+    };
+  }
+
   private parseDeclOrStatement(): StatementNode {
+    // Handle comments
+    if (this.is("comment")) {
+      return this.parseComment();
+    }
+
     // const? datatype name ...
     // or control-flow statements
     if (this.is("keyword", "IF")) return this.parseIf();

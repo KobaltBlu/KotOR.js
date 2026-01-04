@@ -139,6 +139,7 @@ export interface ReturnNode { type: "return"; value: ExpressionNode | null; sour
 export interface BreakNode { type: "break"; source: SourceInfo; }
 export interface ContinueNode { type: "continue"; source: SourceInfo; }
 export interface BlockNode { type: "block"; statements: StatementNode[]; }
+export interface CommentNode { type: "comment"; value: string; source: SourceInfo; }
 
 export type StatementNode =
   | DefineNode
@@ -156,6 +157,7 @@ export type StatementNode =
   | BreakNode
   | ContinueNode
   | BlockNode
+  | CommentNode
   | ExpressionNode;
 
 export interface ProgramNode {

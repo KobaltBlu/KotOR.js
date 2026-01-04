@@ -104,7 +104,7 @@ export class NWScriptLexer {
     return { type, value, source: span(startLine, startCol, endLine, endCol) };
   }
 
-  private skipWhitespaceAndComments(): void {
+  private skipWhitespace(): void {
     while (true) {
       const ch = this.peekChar(0);
 
@@ -114,36 +114,46 @@ export class NWScriptLexer {
         continue;
       }
 
-      // // comment
-      if (ch === "/" && this.peekChar(1) === "/") {
-        this.nextChar(); this.nextChar();
-        while (this.peekChar(0) !== "\n" && this.peekChar(0) !== "\0") this.nextChar();
-        continue;
-      }
-
-      // /* comment */
-      if (ch === "/" && this.peekChar(1) === "*") {
-        this.nextChar(); this.nextChar();
-        while (true) {
-          if (this.peekChar(0) === "\0") return;
-          if (this.peekChar(0) === "*" && this.peekChar(1) === "/") {
-            this.nextChar(); this.nextChar();
-            break;
-          }
-          this.nextChar();
-        }
-        continue;
-      }
-
       break;
     }
   }
 
   next(): Token {
-    this.skipWhitespaceAndComments();
+    this.skipWhitespace();
 
     const startLine = this.line;
     const startCol = this.col;
+
+    // Check for // comment
+    if (this.peekChar(0) === "/" && this.peekChar(1) === "/") {
+      this.nextChar(); // consume first /
+      this.nextChar(); // consume second /
+      let comment = "";
+      while (this.peekChar(0) !== "\n" && this.peekChar(0) !== "\0") {
+        comment += this.nextChar();
+      }
+      return this.makeToken("comment", "//" + comment, startLine, startCol, this.line, this.col);
+    }
+
+    // Check for /* comment */
+    if (this.peekChar(0) === "/" && this.peekChar(1) === "*") {
+      this.nextChar(); // consume /
+      this.nextChar(); // consume *
+      let comment = "";
+      while (true) {
+        if (this.peekChar(0) === "\0") {
+          // Unterminated comment
+          return this.makeToken("comment", "/*" + comment, startLine, startCol, this.line, this.col);
+        }
+        if (this.peekChar(0) === "*" && this.peekChar(1) === "/") {
+          this.nextChar(); // consume *
+          this.nextChar(); // consume /
+          break;
+        }
+        comment += this.nextChar();
+      }
+      return this.makeToken("comment", "/*" + comment + "*/", startLine, startCol, this.line, this.col);
+    }
 
     const ch = this.peekChar(0);
     if (ch === "\0") {
