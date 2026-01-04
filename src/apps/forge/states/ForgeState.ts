@@ -295,8 +295,17 @@ export class ForgeState {
 
       tokenizer: {
         root: [
+          // whitespace
+          { include: '@whitespace' },
+
+          // numbers - MUST come before identifiers! Order matters - more specific patterns first
+          [/0[xX][0-9a-fA-F_]+/, 'number.hex'],
+          [/0[bB][01_]+/, 'number.hex'], // binary: use same theme style as hex
+          [/[0-9]+\.[0-9]+([eE][\-+]?[0-9]+)?[fFdD]?/, 'number.float'],
+          [/[0-9]+/, 'number'],
+
           // identifiers and keywords
-          [/\@?[a-zA-Z0-9_]\w*/, {
+          [/\@?[a-zA-Z_][a-zA-Z0-9_]*/, {
             cases: {
               //'@namespaceFollows': { token: 'keyword.$0', next: '@namespace' },
               '@keywords': { token: 'keyword.$0', next: '@qualified' },
@@ -307,15 +316,6 @@ export class ForgeState {
               '@default': { token: 'identifier', next: '@qualified' }
             }
           }],
-
-          // whitespace
-          { include: '@whitespace' },
-
-          // numbers
-          [/[0-9_]*\.[0-9_]+([eE][\-+]?\d+)?[fFdD]?/, 'number.float'],
-          [/0[xX][0-9a-fA-F_]+/, 'number.hex'],
-          [/0[bB][01_]+/, 'number.hex'], // binary: use same theme style as hex
-          [/[0-9_]+/, 'number'],
 
           // strings
           [/"([^"\\]|\\.)*$/, 'string.invalid'],  // non-teminated string
@@ -459,11 +459,12 @@ export class ForgeState {
         { token: 'engineAction', foreground: '4EC9B0' },
         { token: 'engineConstant', foreground: 'C586C0' },
         { token: 'localFunction', foreground: 'DCDCAA' },
+        // Number literals - order matters, more specific first
+        { token: 'number.hex', foreground: 'D7BA7D' },
+        { token: 'number.float', foreground: 'CE9178' },
+        { token: 'number', foreground: 'B5CEA8' },
         // { token: 'lineComment', foreground: '60cf30' },
         // { token: 'blockComment', foreground: '60cf30' },
-        // { token: 'HEXADECIMAL', foreground: 'CD5AC5' },
-        // { token: 'INTEGER', foreground: 'A6E22E' },
-        // { token: 'FLOAT', foreground: '90E7F7' },
         // { token: 'TEXT', foreground: 'FFEE99' },
         // { token: 'NAME', foreground: 'C8C8C8' },
         // { token: 'CONST', foreground: 'C586C0' },
