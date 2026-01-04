@@ -848,7 +848,6 @@ export class NWScriptCompiler {
     //removing any left over local variables created by this function
     const stackOffset = (block.postStatementsStackPointer - block.preStatementsStackPointer);
     if(stackOffset > 0){
-      console.log(`${block.name}: removing any left over local variables created by this function: ${stackOffset}`);
       buffers.push( this.writeMOVSP(-stackOffset));
     }else if(stackOffset < 0){
       console.warn(`${block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
@@ -917,10 +916,10 @@ export class NWScriptCompiler {
               this.getInstructionLength(OP_RETN) 
             ) 
           );
-          const ssScope = new NWScriptScope();
-          this.scopePush( ssScope );
+          // const ssScope = new NWScriptScope();
+          // this.scopePush( ssScope );
           buffers.push( this.compileStatement(arg) as Uint8Array );
-          this.scopePop();
+          // this.scopePop();
           buffers.push( this.writeRETN() );
         }else{
           buffers.push( this.compileStatement(arg) as Uint8Array );
@@ -1273,7 +1272,8 @@ export class NWScriptCompiler {
 
         //write the JZ statement
         if(ifelse.type != 'else'){
-          buffers.push( this.writeJZ(ifelse.jz ? ifelse.jz : 0x7FFFFFFF) ); //jump to next ifelse or else statement if condition is false
+          //jump to next ifelse or else statement if condition is false
+          buffers.push( this.writeJZ(ifelse.jz ? ifelse.jz : 0x7FFFFFFF) ); 
         }
 
         //the offset prior to writing the statements
