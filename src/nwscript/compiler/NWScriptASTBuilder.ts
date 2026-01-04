@@ -33,6 +33,7 @@ function dt(value: string, unary: number, engine_type = false): DataTypeNode {
 
 export interface ASTBuilderOptions {
   engineTypes?: Array<{ name: string; unary: number }>;
+  ignoreComments?: boolean; // If true, comments are skipped as whitespace. If false, comments are parsed as statements.
 }
 
 export class NWScriptASTBuilder {
@@ -40,10 +41,12 @@ export class NWScriptASTBuilder {
   private tok: Token;
 
   private engineTypesByLower = new Map<string, number>();
+  private ignoreComments: boolean;
 
   constructor(source: string, opts?: ASTBuilderOptions) {
     this.lex = new NWScriptLexer(source);
     this.tok = this.lex.next();
+    this.ignoreComments = opts?.ignoreComments ?? true; // Default to ignoring comments
 
     for (const t of opts?.engineTypes ?? []) {
       this.engineTypesByLower.set(t.name.toLowerCase(), t.unary);
@@ -101,14 +104,19 @@ export class NWScriptASTBuilder {
   }
 
   private parseTopLevelStatement(): StatementNode | null {
+    // Skip comments if ignoreComments is enabled
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
+
     // allow stray semicolons
     if (this.is("punct", ";")) {
       this.next();
       return null;
     }
 
-    // Handle comments
-    if (this.is("comment")) {
+    // Handle comments (only if not ignoring them)
+    if (!this.ignoreComments && this.is("comment")) {
       return this.parseComment();
     }
 
@@ -128,9 +136,21 @@ export class NWScriptASTBuilder {
     };
   }
 
+  // Helper method to skip all consecutive comments
+  private skipComments(): void {
+    while (this.is("comment")) {
+      this.next();
+    }
+  }
+
   private parseDeclOrStatement(): StatementNode {
-    // Handle comments
-    if (this.is("comment")) {
+    // Skip comments if ignoreComments is enabled
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
+
+    // Handle comments (only if not ignoring them)
+    if (!this.ignoreComments && this.is("comment")) {
       return this.parseComment();
     }
 
@@ -366,7 +386,15 @@ export class NWScriptASTBuilder {
   private parseBlock(): BlockNode {
     this.expect("punct", "{");
     const statements: StatementNode[] = [];
-    while (!this.is("punct", "}")) {
+    while (true) {
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
+      
+      // Stop if we encounter closing brace
+      if (this.is("punct", "}")) break;
+      
       const st = this.parseDeclOrStatement();
       if (st) statements.push(st);
     }
@@ -385,10 +413,24 @@ export class NWScriptASTBuilder {
       : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
 
     const elseIfs: ElseIfNode[] = [];
-    while (this.is("keyword", "ELSEIF")) {
+    while (true) {
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
+      if (!this.is("keyword", "ELSEIF")) break;
+      
       const e = this.expect("keyword", "ELSEIF");
+      // Skip comments if ignoreComments is enabled (e.g., elseif//comment)
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
       this.expect("punct", "(");
       const c = this.parseExpression(0);
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
       this.expect("punct", ")");
 
       const b = this.is("punct", "{")
@@ -398,8 +440,16 @@ export class NWScriptASTBuilder {
     }
 
     let elseBlock: ElseNode | null = null;
+    // Skip comments if ignoreComments is enabled
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
     if (this.is("keyword", "ELSE")) {
       this.next();
+      // Skip comments if ignoreComments is enabled (e.g., else//comment)
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
       const b = this.is("punct", "{")
         ? this.parseBlock()
         : { type: "block", statements: [this.parseDeclOrStatement()].filter(Boolean) as StatementNode[] };
@@ -485,6 +535,10 @@ export class NWScriptASTBuilder {
     const kw = this.expect("keyword", "SWITCH");
     this.expect("punct", "(");
     const condition = this.parseExpression(0);
+    // Skip comments if ignoreComments is enabled
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
     this.expect("punct", ")");
     this.expect("punct", "{");
 
@@ -644,9 +698,19 @@ export class NWScriptASTBuilder {
   }
 
   private parseExpression(rbp: number): ExpressionNode {
+    // Skip comments if ignoreComments is enabled before starting expression parsing
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
+    
     let left = this.nud();
 
     while (true) {
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
+      
       // postfix call / index handled in led as well
       if (this.is("punct", "(") || this.is("punct", "[")) {
         left = this.ledPostfix(left);
@@ -662,6 +726,11 @@ export class NWScriptASTBuilder {
       // consume operator
       const opTok = this.tok;
       this.next();
+      
+      // Skip comments if ignoreComments is enabled (comments can appear after operators)
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
 
       left = this.led(left, op, opTok);
     }
@@ -670,6 +739,11 @@ export class NWScriptASTBuilder {
   }
 
   private nud(): ExpressionNode {
+    // Skip comments if ignoreComments is enabled (safety check)
+    if (this.ignoreComments) {
+      this.skipComments();
+    }
+    
     // prefix ops
     if (this.is("op", "++")) {
       const t = this.tok; this.next();
@@ -739,6 +813,10 @@ export class NWScriptASTBuilder {
     if (this.is("punct", "(")) {
       this.next();
       const e = this.parseExpression(0);
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
       this.expect("punct", ")");
       return e;
     }
@@ -765,7 +843,19 @@ export class NWScriptASTBuilder {
       return { type: "variable_reference", name: t.value, source: t.source };
     }
 
-    throw new Error(`Parse error: unexpected token ${this.tok.type}:${this.tok.value} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`);
+    // If we encounter a comment and ignoreComments is enabled, this shouldn't happen
+    // (comments should be skipped before nud is called), but handle it gracefully
+    if (this.ignoreComments && this.is("comment")) {
+      throw new NWScriptASTBuilderError(
+        `Parse error: comment encountered in expression (should have been skipped) @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
+        this.tok
+      );
+    }
+
+    throw new NWScriptASTBuilderError(
+      `Parse error: unexpected token ${this.tok.type}:${this.tok.value} @ ${this.tok.source.first_line}:${this.tok.source.first_column}`,
+      this.tok
+    );
   }
 
   private ledPostfix(left: ExpressionNode): ExpressionNode {
@@ -776,9 +866,17 @@ export class NWScriptASTBuilder {
       if (!this.is("punct", ")")) {
         while (true) {
           args.push(this.parseExpression(0));
+          // Skip comments if ignoreComments is enabled
+          if (this.ignoreComments) {
+            this.skipComments();
+          }
           if (this.is("punct", ",")) { this.next(); continue; }
           break;
         }
+      }
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
       }
       this.expect("punct", ")");
 
@@ -800,6 +898,10 @@ export class NWScriptASTBuilder {
     if (this.is("punct", "[")) {
       this.expect("punct", "[");
       const idx = this.parseExpression(0);
+      // Skip comments if ignoreComments is enabled
+      if (this.ignoreComments) {
+        this.skipComments();
+      }
       this.expect("punct", "]");
       return { type: "index", left, index: idx, source: left.source };
     }
