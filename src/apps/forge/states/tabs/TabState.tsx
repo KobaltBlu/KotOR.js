@@ -264,6 +264,7 @@ export class TabState extends EventListenerModel {
                   await ws.write(saveBuffer as any);
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
+                  await ws.close();
                   resolve(true);
                 }catch(e){
                   console.error(e);

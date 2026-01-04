@@ -241,7 +241,16 @@ export class TabTextEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    return new TextEncoder().encode(this.code);
+    this.updateFile();
+    return this.file.buffer ? this.file.buffer : new Uint8Array(0);
+  }
+
+  updateFile(): void {
+    super.updateFile();
+    if(this.file){
+      this.file.buffer = new TextEncoder().encode(this.code);
+      this.file.unsaved_changes = true;
+    }
   }
 
   async compile(): Promise<void> {
@@ -254,7 +263,7 @@ export class TabTextEditorState extends TabState {
     ForgeState.nwScriptParser.parseScript(mergedCode);
     if(!ForgeState.nwScriptParser.errors.length){
       console.log('AST', ForgeState.nwScriptParser.toJSON());
-      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program);
+      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program as any);
       console.log('compile', 'compiling...');
       let buffer = nwScriptCompiler.compile();
       if(buffer){
