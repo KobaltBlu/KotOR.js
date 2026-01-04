@@ -775,6 +775,7 @@ export class ForgeState {
                 
                 for (let i = funcLine - 1; i >= 0; i--) {
                   const line = lines[i];
+                  if (!line) continue; // Skip if line doesn't exist
                   const trimmed = line.trim();
                   
                   if (trimmed === '') {
