@@ -1,5 +1,5 @@
 import { NWScriptASTBuilder } from "./NWScriptASTBuilder";
-import { ArgumentNode, ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, BreakNode, CallNode, CaseNode, CompareNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, ProgramNode, ReturnNode, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
+import { ArgumentNode, ArrayLiteralNode, AssignNode, BinaryOpNode, BlockNode, BreakNode, CallNode, CaseNode, CompareNode, DataTypeNode, DefaultNode, DoWhileNode, ElseIfNode, ElseNode, ExpressionNode, ForNode, FunctionCallNode, FunctionNode, IfNode, IncDecNode, IndexNode, LiteralNode, ProgramNode, ReturnNode, SourceInfo, StructNode, StructPropertyNode, SwitchNode, UnaryNode, VariableListNode, VariableNode, VariableReferenceNode, WhileNode } from "./ASTTypes";
 import { SemanticProgramNode, SemanticVariableNode, SemanticStructPropertyNode, SemanticStructNode, SemanticArgumentNode, SemanticFunctionNode, SemanticStatementNode, SemanticBlockNode, SemanticFunctionCallNode, SemanticExpressionNode, SemanticPropertyNode, SemanticVariableReferenceNode, SemanticVariableListNode, SemanticLiteralNode, SemanticArrayLiteralNode, SemanticReturnNode, SemanticIfNode, SemanticElseIfNode, SemanticElseNode, SemanticWhileNode, SemanticDoWhileNode, SemanticForNode, SemanticSwitchNode, SemanticCaseNode, SemanticDefaultNode, SemanticBreakNode, SemanticCompareNode, SemanticAssignNode, SemanticBinaryNode, SemanticUnaryNode, SemanticIncDecNode } from "./ASTSemanticTypes";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
@@ -32,12 +32,42 @@ interface ParserError {
   offender: any;
 }
 
+export type EngineType = {
+  index: number;
+  datatype: DataTypeNode;
+  is_engine_type: boolean;
+  name: string;
+  value: any;
+};
+
+export type EngineAction = {
+  index: number;
+  returntype: DataTypeNode;
+  is_engine_action: boolean;
+  name: string;
+  arguments: ArgumentNode[];
+  comment: string;
+  source: SourceInfo;
+  type: string;
+};
+
+export type EngineConstant = {
+  index: number;
+  datatype: DataTypeNode;
+  is_const: boolean;
+  is_engine_constant: boolean;
+  name: string;
+  value: ExpressionNode | null;
+  source: SourceInfo;
+  type: string;
+};
+
 export class NWScriptParser {
   regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
 
-  engine_types: any[] = [];
-  engine_constants: any[] = [];
-  engine_actions: any[] = [];
+  engine_types: EngineType[] = [];
+  engine_constants: EngineConstant[] = [];
+  engine_actions: EngineAction[] = [];
 
   errors: ParserError[] = [];
   script: string;
@@ -225,6 +255,7 @@ export class NWScriptParser {
           arguments: statement.arguments,
           comment: comment,
           source: statement.source,
+          type: statement.type,
         });
         for(let i = 0; i < this.engine_actions.length; i++){
           this.postProcessFunctionDefinition(this.engine_actions[i]);
@@ -239,6 +270,7 @@ export class NWScriptParser {
             name: statement.names[0].name,
             value: statement.value,
             source: statement.names[0].source,
+            type: statement.type,
           });
         } else {
           this.engine_constants.push({
@@ -248,6 +280,7 @@ export class NWScriptParser {
             is_engine_constant: true,
             name: statement.name,
             value: statement.value,
+            type: statement.type,
           });
         }
       }
@@ -388,7 +421,7 @@ export class NWScriptParser {
 
     // Engine constants are always global.
     const engineConst = this.engine_constants.find( v => v.name == name);
-    if(engineConst) return engineConst;
+    if(engineConst) return engineConst as any;
 
     // Limit lookup to the global scope plus the active function scope (and its child blocks),
     // ignoring variables from callers or previously processed sibling scopes.

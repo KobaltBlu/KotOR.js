@@ -357,36 +357,21 @@ export class NWScriptLanguageService {
     }
 
     //Engine Routines
-    const nw_actions = Object.entries(
-      KotOR.ApplicationProfile.GameKey == KotOR.GameEngineType.KOTOR ? 
-      KotOR.NWScriptDefK1.Actions : 
-      KotOR.NWScriptDefK2.Actions
-    );
-    nw_actions.forEach( (entry: any) =>{
-      const action = entry[1];
-      const args: any[] = [];
-      const args2: any[] = [];
-      // Look up by function name, not by the key (entry[0] might be a numeric index)
-      const action_definition = ForgeState.nwScriptParser.engine_actions.find((a: any) => a.name === action.name);
-      if(!action_definition) {
-        // Silently skip if not found - some actions might not be in nwscript.nss
-        return;
-      }
-      for(let i = 0; i < action.args.length; i++){
-        const arg = action.args[i];
-        const def_arg = action_definition.arguments[i];
-        if(def_arg){
-          // if(i > 0) args += ', ';
-          if(def_arg.value){
-            const value = arg_value_parser(def_arg.value);
-            args.push(`\${${(i+1)}:${arg} ${def_arg.name} = ${value}}`);
-            args2.push(`${arg} ${def_arg.name} = ${value}`);
-          }else{
-            args.push(`\${${(i+1)}:${arg} ${def_arg.name}}`);
-            args2.push(`${arg} ${def_arg.name}`);
-          }
+    // const nw_actions = Object.entries(
+    //   KotOR.ApplicationProfile.GameKey == KotOR.GameEngineType.KOTOR ? 
+    //   KotOR.NWScriptDefK1.Actions : 
+    //   KotOR.NWScriptDefK2.Actions
+    // );
+    const nw_actions = ForgeState.nwScriptParser.engine_actions.slice(0);
+    nw_actions.forEach( (action) =>{
+      const args: string[] = [];
+      
+      for(let i = 0; i < action.arguments.length; i++){
+        const arg = action.arguments[i];
+        if(arg.value){
+          args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name} = ${arg_value_parser(arg.value)}}`);
         }else{
-          console.warn('invalid argument', i, action_definition)
+          args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name}}`);
         }
       }
       
@@ -395,7 +380,7 @@ export class NWScriptLanguageService {
         kind: monaco.languages.CompletionItemKind.Function,
         insertText: `${action.name}(${args.join(', ')})`,
         insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `Engine Routine #${action_definition.index}:\n\n${action_definition.returntype.value} ${action.name}(${args2.join(', ')})\n\n`+action.comment
+        documentation: `Engine Routine #${action.index}:\n\n${action.returntype.value} ${action.name}(${args.join(', ')})\n\n`+action.comment
       });
     });
 
