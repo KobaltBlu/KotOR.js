@@ -320,10 +320,7 @@ export class NWScriptCompiler {
     const functions = this.program.functions as unknown as CompilerFunctionNode[];
     const subroutines = functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
 
-    console.log(`compilePass: ${funcMain.name} stack state: ${this.basePointer}, ${this.stackPointer}`);
-
     funcMain.blockOffset = this.bytesWritten;
-    console.log(`func: ${funcMain.name} blockOffset: ${funcMain.blockOffset.toString(16)}`);
     buffers.push( this.compileFunction( funcMain ) );
 
     for(let i = 0; i < subroutines.length; i++){
@@ -906,7 +903,6 @@ export class NWScriptCompiler {
         }
 
         if(arg_ref.datatype.value == 'action'){
-          console.log(`${statement.function_reference.name}: storing state: ${this.basePointer}, ${this.stackPointer}`);
           buffers.push( this.writeSTORE_STATE( this.basePointer, this.stackPointer ) );
           buffers.push(
             this.writeJMP( 
