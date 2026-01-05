@@ -47,6 +47,10 @@ The recent transition to TypeScript has brought many improvements to the codebas
 [Demo Link]: https://play.swkotor.net/ 'Online Playable Demo'
 [Demo Icon]: https://img.shields.io/badge/Online_Playable_Demo-37a779?style=for-the-badge&logoColor=white&logo=google-chrome
 
+## Containerized Deployment
+
+See `DOCKER.md`.
+
 ## Getting Started
 
 ### Prerequisites
@@ -208,6 +212,7 @@ And many many more!
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines and development workflow
 - [SETUP.md](SETUP.md) - Detailed setup instructions
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure overview
+- [FAQ.md](FAQ.md) - Frequently asked questions
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Code of conduct
 
 ## License
