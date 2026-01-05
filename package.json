@@ -13,7 +13,7 @@
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache ./src/tests"
+    "test": "jest --verbose --coverage --no-cache"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",

@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        RUN_TESTS: "0"
+    ports:
+      - "8080:8080"
+    environment:
+      NGINX_LISTEN_PORT: "8080"
+      # Example: serve under a prefix (must be matched by your reverse proxy routing).
+      # RUNTIME_BASE_PATH: "/kotor"
+      RUNTIME_BASE_PATH: ""
+
+
