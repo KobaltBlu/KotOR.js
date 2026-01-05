@@ -3,8 +3,6 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "ms-vscode.vscode-typescript-next",
-    "orta.vscode-jest",
-    "bradlc.vscode-tailwindcss"
+    "orta.vscode-jest"
   ]
 }
-
