@@ -1,11 +1,51 @@
 extends:
   - eslint:recommended
   - plugin:import/recommended
-# the following lines do the trick
   - plugin:import/typescript
+parser: '@typescript-eslint/parser'
+parserOptions:
+  ecmaVersion: 2022
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+plugins:
+  - '@typescript-eslint'
+  - import
+env:
+  node: true
+  browser: true
+  es2022: true
 settings:
   import/resolver:
-    # You will also need to install and configure the TypeScript resolver
-    # See also https://github.com/import-js/eslint-import-resolver-typescript#configuration
     typescript: true
     node: true
+rules:
+  # TypeScript specific rules
+  '@typescript-eslint/no-unused-vars':
+    - error
+    - argsIgnorePattern: '^_'
+        varsIgnorePattern: '^_'
+  '@typescript-eslint/explicit-function-return-type': off
+  '@typescript-eslint/no-explicit-any': warn
+
+  # General code quality
+  no-console: warn
+  no-debugger: error
+  no-unused-vars: off  # Use TypeScript version instead
+
+  # Import rules
+  import/order:
+    - error
+    - groups:
+        - builtin
+        - external
+        - internal
+        - parent
+        - sibling
+        - index
+      newlines-between: always
+      alphabetize:
+        order: asc
+        caseInsensitive: true
+  import/no-unresolved: error
+  import/no-duplicates: error
