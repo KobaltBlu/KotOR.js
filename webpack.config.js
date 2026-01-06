@@ -127,7 +127,8 @@ const libraryConfig = (name, color) => ({
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
         { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
-        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' }
+        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
+        { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]
     }),
   ],
