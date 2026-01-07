@@ -173,7 +173,7 @@ export class CombatAttackData {
      * Unarmed Strike
      */
     if(!this.attackWeapon){
-      let damageMultiplier = isCritial ? 2.0 : 1.0;
+      const damageMultiplier = isCritial ? 2.0 : 1.0;
       const nDamage = Dice.roll(1, DiceType.d4);
       this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
 
