@@ -39,6 +39,13 @@ interface AnimStateInfo {
   started: boolean;
 };
 
+enum ModulePlaceableEvent {
+  OPEN_START,
+  OPEN_END,
+  CLOSE_START,
+  CLOSE_END,
+}
+
 /**
 * ModulePlaceable class.
 * 
@@ -229,9 +236,11 @@ export class ModulePlaceable extends ModuleObject {
             switch(this.animStateInfo.currentAnimState){
               case ModulePlaceableAnimState.OPEN_CLOSE:
                 this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
+                this.triggerEvent(ModulePlaceableEvent.CLOSE_END);
               break;
               case ModulePlaceableAnimState.CLOSE_OPEN:
                 this.setAnimationState(ModulePlaceableAnimState.OPEN);
+                this.triggerEvent(ModulePlaceableEvent.OPEN_END);
               break;
               default:
                 this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
@@ -299,41 +308,6 @@ export class ModulePlaceable extends ModuleObject {
     this.state = state;
     if(this.state == ModulePlaceableState.OPEN) this.openState = true;
     else this.openState = false
-  }
-
-  getOnClosed(){
-    if(this.template.RootNode.hasField('OnClosed')){
-      return this.template.RootNode.getFieldByLabel('OnClosed').getValue();
-    }
-    return 0;
-  }
-
-  getOnDamaged(){
-    if(this.template.RootNode.hasField('OnDamaged')){
-      return this.template.RootNode.getFieldByLabel('OnDamaged').getValue();
-    }
-    return 0;
-  }
-  
-  getOnDeath(){
-    if(this.template.RootNode.hasField('OnDeath')){
-      return this.template.RootNode.getFieldByLabel('OnDeath').getValue();
-    }
-    return 0;
-  }
-  
-  getOnDialog(){
-    if(this.template.RootNode.hasField('OnDialog')){
-      return this.template.RootNode.getFieldByLabel('OnDialog').getValue();
-    }
-    return 0;
-  }
-
-  getOnUsed(){
-    if(this.template.RootNode.hasField('OnUsed')){
-      return this.template.RootNode.getFieldByLabel('OnUsed').getValue();
-    }
-    return 0;
   }
 
   isStatic(){
@@ -454,10 +428,54 @@ export class ModulePlaceable extends ModuleObject {
     if(this.model) this.model.stopAnimation();
   }
 
+  triggerEvent(state: ModulePlaceableEvent){
+    switch(state){
+      case ModulePlaceableEvent.OPEN_START:
+        this.setOpenState(ModulePlaceableState.OPEN);
+        this.playObjectSound(ModulePlaceableObjectSound.OPENED);
+      break;
+      case ModulePlaceableEvent.OPEN_END:
+        if(this.hasInventory){
+          GameState.MenuManager.MenuContainer.AttachContainer(this);
+          GameState.MenuManager.MenuContainer.open();
+        }
+    
+        this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
+      break;
+      case ModulePlaceableEvent.CLOSE_START:
+        this.setOpenState(ModulePlaceableState.CLOSED);
+        this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
+      break;
+      case ModulePlaceableEvent.CLOSE_END:
+        this.scripts[ModuleObjectScript.PlaceableOnClosed]?.run(this)
+      break;
+    }
+  }
+
   use(object: ModuleObject){
 
     this.lastUsedBy = object;
 
+    this.attemptUnlockWithKey(object);
+
+    if(this.isLocked()){
+      this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
+    }else{
+      if(!this.isOpen() && (this.state == ModulePlaceableState.CLOSED || this.state == ModulePlaceableState.DEFAULT)){
+        this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);
+        this.triggerEvent(ModulePlaceableEvent.OPEN_START);
+      }else{
+        this.setAnimationState(ModulePlaceableAnimState.OPEN);
+        this.triggerEvent(ModulePlaceableEvent.OPEN_END);
+      }
+    }
+  
+    const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
+    if(!instance){ return; }
+    instance.run(this);
+  }
+
+  attemptUnlockWithKey(object: ModuleObject){
     if(this.keyRequired){
       if(this.keyName.length){
         const keyItem = GameState.InventoryManager.getItemByTag(this.keyName);
@@ -472,35 +490,6 @@ export class ModulePlaceable extends ModuleObject {
 
       object.playSoundSet(SSFType.UNLOCK_FAIL);
     }
-
-    if(this.isLocked()){
-      this.playObjectSound(ModulePlaceableObjectSound.LOCKED);
-    }else{
-      if(!this.isOpen()){
-        this.setAnimationState(ModulePlaceableAnimState.CLOSE_OPEN);
-      }else{
-        this.setAnimationState(ModulePlaceableAnimState.OPEN);
-      }
-  
-      this.setOpenState(ModulePlaceableState.OPEN);
-  
-      this.playObjectSound(ModulePlaceableObjectSound.OPENED);
-  
-      if(this.hasInventory){
-        GameState.MenuManager.MenuContainer.AttachContainer(this);
-        GameState.MenuManager.MenuContainer.open();
-      }
-  
-      const instance = this.scripts[ModuleObjectScript.PlaceableOnOpen];
-      if(instance){
-        instance.run(this); 
-      }
-    }
-  
-    const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
-    if(!instance){ return; }
-    instance.run(this);
-
   }
 
   lock(object: ModuleObject){
@@ -547,19 +536,13 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   close(object: ModuleObject){
-    const instance = this.scripts[ModuleObjectScript.PlaceableOnClosed];
-    if(!instance){ return; }
-    instance.run(this);
-
-    if(this.isOpen()){
+    if(this.isOpen() && this.state == ModulePlaceableState.OPEN){
       this.setAnimationState(ModulePlaceableAnimState.OPEN_CLOSE);
+      this.triggerEvent(ModulePlaceableEvent.CLOSE_START);
     }else{
       this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+      this.triggerEvent(ModulePlaceableEvent.CLOSE_END);
     }
-
-    this.setOpenState(ModulePlaceableState.CLOSED);
-
-    this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
   }
 
   load(){
