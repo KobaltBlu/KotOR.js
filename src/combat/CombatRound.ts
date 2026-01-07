@@ -20,7 +20,23 @@ import { BitWise } from "../utility/BitWise";
 import { CombatAttackData } from "./CombatAttackData";
 import type { CombatRoundAction } from "./CombatRoundAction";
 
+/**
+ * CombatRound class.
+ * 
+ * The CombatRound class manages a single combat round for a ModuleObject (typically a ModuleCreature)
+ * It handles the timing and execution of combat actions, including attack rolls, damage calculations, and animations.
+ * It also manages the dueling/engagement state between creatures, as well as the pause/resume mechanics.
+ * 
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * @file CombatRound.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
 export class CombatRound {
+  /**
+   * The length of a combat round in milliseconds
+   */
   static ROUND_LENGTH: number = 3000;
   owner: ModuleObject;
 
@@ -66,6 +82,9 @@ export class CombatRound {
     this.initialize();
   }
 
+  /**
+   * Initialize the combat round
+   */
   initialize(){
     this.roundStarted = false;
     this.spellCastRound = false;
@@ -102,6 +121,9 @@ export class CombatRound {
     }
   }
 
+  /**
+   * Begin the combat round
+   */
   beginCombatRound(){
     console.log('beginCombatRound', this.owner.tag);
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
@@ -110,7 +132,7 @@ export class CombatRound {
 
     this.roundStarted = true;
 
-    this.onHandAttacks = owner.equipment.LEFTHAND ? 1 : 0;
+    this.onHandAttacks = owner.equipment.RIGHTHAND ? 1 : 0;
     this.additionalAttacks = 0;
     this.offHandTaken = false;
     this.extraTaken = false;
@@ -169,6 +191,9 @@ export class CombatRound {
     }
   }
 
+  /**
+   * End the combat round
+   */
   endCombatRound(){
     console.log('endCombatRound', this.owner.tag);
     this.roundStarted = false;
@@ -222,10 +247,17 @@ export class CombatRound {
     this.owner.onCombatRoundEnd();
   }
 
+  /**
+   * Reset the combat round
+   */
   reset(){
     //
   }
 
+  /**
+   * Update the combat round
+   * @param delta - The delta time to update the round for
+   */
   update(delta: number = 0){
     if(!this.roundStarted) return;
 
@@ -245,12 +277,21 @@ export class CombatRound {
     }
   }
 
+  /**
+   * Pause the round for the given pause owner and pause timer
+   * @param pauseOwner - The pause owner to pause the round for
+   * @param pauseTimer - The pause timer to pause the round for
+   */
   pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0){
     this.roundPaused = true;
     this.roundPausedBy = pauseOwner;
     this.pauseTimer = pauseTimer;
   }
 
+  /**
+   * Unpause the round for the given pause owner
+   * @param pauseOwner - The pause owner to unpause the round for
+   */
   unpauseRound(pauseOwner: ModuleObject){
     if(this.roundPausedBy == pauseOwner){
       this.roundPaused = false;
@@ -258,16 +299,28 @@ export class CombatRound {
     }
   }
 
+  /**
+   * Add an action to the scheduled action list
+   * @param action - The action to add
+   */
   addAction(action: CombatRoundAction){
     action.owner = this.owner;
     this.scheduledActionList.push(action);
   }
 
+  /**
+   * Clear all actions
+   */
   clearActions(){
     this.action = undefined;
     this.scheduledActionList = [];
   }
 
+  /**
+   * Clear the action for the given combat action
+   * @param action - The action to clear
+   * @returns True if the action was cleared, false otherwise
+   */
   clearAction(action: CombatRoundAction){
     let index = this.scheduledActionList.indexOf(action);
     if(index >= 0){
@@ -277,6 +330,10 @@ export class CombatRound {
     return false;
   }
 
+  /**
+   * Clear the actions by target
+   * @param target - The target to clear the actions for
+   */
   clearActionsByTarget(target: ModuleObject){
     let index = this.scheduledActionList.length;
     while(index--){
@@ -287,6 +344,11 @@ export class CombatRound {
     }
   }
 
+  /**
+   * Set the attack target for the given combat action
+   * @param target - The target to set the attack target for
+   * @returns True if the attack target was set, false otherwise
+   */
   setAttackTarget(target: ModuleObject): boolean {
     if(!target) return false;
     for(let i = 0, len = this.scheduledActionList.length; i < len; i++){
@@ -294,6 +356,11 @@ export class CombatRound {
     }
   }
 
+  /**
+   * Calculate the attack damage for the given creature and combat action
+   * @param creature - The creature to calculate the attack damage for
+   * @param combatAction - The combat action to calculate the attack damage for
+   */
   calculateAttackDamage(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction || combatAction.resultsCalculated)
       return;
@@ -305,245 +372,52 @@ export class CombatRound {
     this.currentAttack = 0;
 
     if(!combatAction.isCutsceneAttack){
-      combatAction.attackResult = AttackResult.MISS
+      combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
       combatAction.attackDamage = 0;
-      if(creature){
-        const bab = creature.getBaseAttackBonus();
-        if(!creature.isSimpleCreature()){
+      if(creature && !creature.isSimpleCreature()){
+        /**
+         * Unarmed Strike
+         */
+        if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
+          this.calculateWeaponAttack(creature, undefined, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+        }
 
-          let isDualWielding = (
-            creature.equipment.RIGHTHAND && (
-              // !creature.equipment.RIGHTHAND.getBaseItem().rangedWeapon && 
-              creature.equipment.RIGHTHAND.getBaseItem().weaponWield != WeaponWield.STUN_BATON 
-            ) && 
-            creature.equipment.LEFTHAND && ( 
-              // !creature.equipment.LEFTHAND.getBaseItem().rangedWeapon && 
-              creature.equipment.LEFTHAND.getBaseItem().weaponWield != WeaponWield.STUN_BATON
-            )
-          );
+        /**
+         * Main Hand Attack
+         */
+        if(creature.equipment.RIGHTHAND){
+          this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
+        }
 
-          /**
-           * Unarmed Strike
-           */
-          if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab);
-            if(BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModulePlaceable) || BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleDoor)){
-              attackRoll = 20 + bab;
-            }
-            let isCritical = (attackRoll >= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = undefined;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = undefined;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = undefined;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            //TODO: Log to combat menu
-          }
-
-          if(creature.equipment.RIGHTHAND){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.RIGHTHAND.getAttackBonus());
-            let isCritical = (attackRoll > creature.equipment.RIGHTHAND.getCriticalThreatRangeMin() && attackRoll <= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              if(isDualWielding){
-                attackRoll -= this.calculateTwoWeaponPenalty(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND);
-              }
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            //TODO: Log to combat menu
-          }
-
-          if(creature.equipment.LEFTHAND){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab) + creature.equipment.LEFTHAND.getAttackBonus();
-            let isCritical = (attackRoll > creature.equipment.LEFTHAND.getCriticalThreatRangeMin() && attackRoll <= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              if(isDualWielding){
-                attackRoll -= this.calculateTwoWeaponPenalty(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND);
-              }
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = creature.equipment.LEFTHAND;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            //TODO: Log to combat menu
-          }
-          
-          if(this.additionalAttacks > 0){
-            for(let i = 0; i < this.additionalAttacks; i++){
-              if(creature.equipment.RIGHTHAND){
-                //Roll to hit
-                let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.RIGHTHAND.getAttackBonus());
-                let isCritical = (attackRoll > creature.equipment.RIGHTHAND.getCriticalThreatRangeMin() && attackRoll <= 20);
-                if(hasAssuredHit || isCritical || attackRoll > 1){
-                  if(isDualWielding){
-                    attackRoll -= this.calculateTwoWeaponPenalty(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND);
-                  }
-                  let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-                  if(hits){
-                    combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                    this.attackList[this.currentAttack].reactObject = combatAction.target;
-                    this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-                    this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                    this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
-                    this.currentAttack++;
-                  }else{
-                    this.attackList[this.currentAttack].reactObject = combatAction.target;
-                    this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-                    this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                    this.currentAttack++;
-                  }
-                }else{
-                  this.attackList[this.currentAttack].reactObject = combatAction.target;
-                  this.attackList[this.currentAttack].attackWeapon = creature.equipment.RIGHTHAND;
-                  this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                  this.currentAttack++;
-                }
-                // TODO: Log to combat menu
-              }
-            }
-          }
-
-        }else{
-
-          if(creature.equipment.CLAW1){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.CLAW1.getAttackBonus());
-            let isCritical = (attackRoll > creature.equipment.CLAW1.getCriticalThreatRangeMin() && attackRoll <= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC()
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW1;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            // TODO: Log to combat menu
-          }
-
-          if(creature.equipment.CLAW2){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.CLAW2.getAttackBonus());
-            let isCritical = (attackRoll > creature.equipment.CLAW2.getCriticalThreatRangeMin() && attackRoll <= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW2;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            // TODO: Log to combat menu
-          }
-
-          if(creature.equipment.CLAW3){
-            //Roll to hit
-            let attackRoll = Dice.roll(1, DiceType.d20, bab + creature.equipment.CLAW3.getAttackBonus());
-            let isCritical = (attackRoll > creature.equipment.CLAW3.getCriticalThreatRangeMin() && attackRoll <= 20);
-            if(hasAssuredHit || isCritical || attackRoll > 1){
-              let hits = hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC();
-              if(hits){
-                combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
-                this.attackList[this.currentAttack].attackResult = combatAction.attackResult;
-                this.attackList[this.currentAttack].calculateDamage(creature, !hasAssuredHit && isCritical);
-                this.currentAttack++;
-              }else{
-                this.attackList[this.currentAttack].reactObject = combatAction.target;
-                this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
-                this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-                this.currentAttack++;
-              }
-            }else{
-              this.attackList[this.currentAttack].reactObject = combatAction.target;
-              this.attackList[this.currentAttack].attackWeapon = creature.equipment.CLAW3;
-              this.attackList[this.currentAttack].attackResult = AttackResult.MISS;
-              this.currentAttack++;
-            }
-            // TODO: Log to combat menu
+        /**
+         * Off Hand Attack
+         */
+        if(creature.equipment.LEFTHAND){
+          this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
+        }
+        
+        /**
+         * Additional Attacks
+         */
+        if(this.additionalAttacks > 0){
+          for(let i = 0; i < this.additionalAttacks; i++){
+            if(!creature.equipment.RIGHTHAND){ continue; }
+            this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
           }
         }
-      }
-    }
+      }else if(creature && creature.isSimpleCreature()){
+        if(creature.equipment.CLAW1){
+          this.calculateWeaponAttack(creature, creature.equipment.CLAW1, ModuleCreatureArmorSlot.CLAW1, combatAction);
+        }
 
-    if(hasAssuredHit && !combatAction.isCutsceneAttack){
-      combatAction.attackResult = AttackResult.AUTOMATIC_HIT;
+        if(creature.equipment.CLAW2){
+          this.calculateWeaponAttack(creature, creature.equipment.CLAW2, ModuleCreatureArmorSlot.CLAW2, combatAction);
+        }
+
+        if(creature.equipment.CLAW3){
+          this.calculateWeaponAttack(creature, creature.equipment.CLAW3, ModuleCreatureArmorSlot.CLAW3, combatAction);
+        }
+      }
     }
 
     combatAction.target.combatData.lastAttacker = creature;
@@ -592,6 +466,137 @@ export class CombatRound {
 
   }
 
+  /**
+   * Calculate the attack roll for the given creature and weapon
+   * @param creature - The creature to calculate the attack roll for
+   * @param weapon - The weapon to calculate the attack roll for
+   * @returns The attack roll
+   */
+  calculateAttackRoll(creature: ModuleCreature, weapon: ModuleItem){
+    return Dice.roll(1, DiceType.d20, creature.getBaseAttackBonus() + (weapon?.getAttackBonus() || 0));
+  }
+
+  /**
+   * Check if the attack roll is a critical hit
+   * @param attackRoll - The attack roll to check
+   * @param weapon - The weapon to check the critical hit for
+   * @returns True if the attack roll is a critical hit, false otherwise
+   */
+  isCritical(attackRoll: number, weapon: ModuleItem | undefined = undefined): boolean {
+    if(!weapon) return attackRoll == 20;
+    return (attackRoll > weapon.getCriticalThreatRangeMin() && attackRoll <= 20);
+  }
+
+  /**
+   * Check if the creature is dual-wielding
+   * @param creature - The creature to check if it is dual-wielding
+   * @returns True if the creature is dual-wielding, false otherwise
+   */
+  isDualWielding(creature: ModuleCreature): boolean {
+    const rightHand = creature.equipment.RIGHTHAND;
+    const leftHand = creature.equipment.LEFTHAND;
+    return (
+      rightHand && ( rightHand.getBaseItem().weaponWield != WeaponWield.STUN_BATON ) && 
+      leftHand && ( leftHand.getBaseItem().weaponWield != WeaponWield.STUN_BATON )
+    );
+  }
+
+  /**
+   * Calculate the two-weapon penalty for the given creature and slot
+   * @param creature - The creature to calculate the penalty for
+   * @param slot - The slot to calculate the penalty for
+   * @returns The two-weapon penalty
+   */
+  calculateTwoWeaponPenalty(creature: ModuleCreature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
+    if(!creature) return 0;
+    if(creature.isSimpleCreature()) return 0;
+
+    const rightHand = creature.equipment.RIGHTHAND;
+    const leftHand = creature.equipment.LEFTHAND;
+
+    /**
+     * Main Hand Penalty
+     */
+    if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
+      let penalty = 6;
+      if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
+        penalty = 2;
+      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
+        penalty = 4;
+      }
+      if(
+        rightHand.getBaseItem().weaponWield == WeaponWield.TWO_HANDED_SWORD || 
+        rightHand.getBaseItem().weaponWield == WeaponWield.BLASTER_PISTOL
+      ){
+        penalty -= 2;
+      }
+      return Math.max(penalty, 0);
+    }
+    
+    /**
+     * Off Hand Penalty
+     */
+    if(slot == ModuleCreatureArmorSlot.LEFTHAND){
+      let penalty = 10;
+      if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
+        penalty = 2;
+      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
+        penalty = 4;
+      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_FIGHTING)){
+        penalty = 6;
+      }
+      if(leftHand.getBaseItem().weaponSize == WeaponSize.SMALL){
+        penalty -= 2;
+      }
+      return Math.max(penalty, 0);
+    }
+
+    return 0;
+  }
+
+  /**
+   * Calculate the weapon attack for the given creature and weapon
+   * @param creature - The creature to calculate the attack for
+   * @param weapon - The weapon to calculate the attack for
+   * @param weaponSlot - The slot of the weapon
+   * @param combatAction - The combat action to calculate the attack for
+   */
+  calculateWeaponAttack(creature: ModuleCreature, weapon: ModuleItem | undefined = undefined, weaponSlot: ModuleCreatureArmorSlot, combatAction: CombatRoundAction) {
+    //Roll to hit
+    let attackRoll = this.calculateAttackRoll(creature, weapon);
+    const isDualWielding = this.isDualWielding(creature);
+    const isMainHand = weapon && weaponSlot == ModuleCreatureArmorSlot.RIGHTHAND;
+    const isOffHand = weapon && weaponSlot == ModuleCreatureArmorSlot.LEFTHAND;
+    if(isDualWielding && (isMainHand || isOffHand)){
+      const penalty = this.calculateTwoWeaponPenalty(creature, weaponSlot);
+      attackRoll -= penalty;
+    }
+    const isCritical = this.isCritical(attackRoll, weapon);
+    const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
+    const attack = this.attackList[this.currentAttack];
+    if(hasAssuredHit || isCritical || attackRoll > combatAction.target.getAC()){
+      combatAction.attackResult = (!hasAssuredHit && isCritical) ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
+      attack.reactObject = combatAction.target;
+      attack.attackWeapon = weapon;
+      attack.attackResult = combatAction.attackResult;
+      attack.calculateDamage(creature, !hasAssuredHit && isCritical, combatAction.feat);
+    }else{
+      combatAction.attackResult = AttackResult.MISS;
+      attack.reactObject = combatAction.target;
+      attack.attackWeapon = weapon;
+      attack.attackResult = combatAction.attackResult;
+    }
+
+    // TODO: Log to combat menu
+
+    this.currentAttack++;
+  }
+
+  /**
+   * Calculate the round animations for the given creature and combat action
+   * @param creature - The creature to calculate the animations for
+   * @param combatAction - The combat action to calculate the animations for
+   */
   calculateRoundAnimations(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction) return;
 
@@ -690,43 +695,10 @@ export class CombatRound {
 
   }
 
-  calculateTwoWeaponPenalty(creature: ModuleCreature, weapon: ModuleItem, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND){
-    let penalty = 0;
-    if(!creature) return penalty;
-    if(creature.isSimpleCreature()) return penalty;
-    if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
-      if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_FIGHTING)){
-        penalty += 6;
-      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
-        penalty += 4;
-      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
-        penalty += 2;
-      }else{
-        penalty += 6;
-      }
-      if(
-        creature.equipment.RIGHTHAND.getBaseItem().weaponWield == WeaponWield.TWO_HANDED_SWORD || 
-        creature.equipment.RIGHTHAND.getBaseItem().weaponWield == WeaponWield.BLASTER_PISTOL
-      ){
-        penalty -= 2;
-      }
-    }else{
-      if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_FIGHTING)){
-        penalty += 6;
-      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_ADVANCED)){
-        penalty += 4;
-      }else if(creature.getHasFeat(CombatFeatType.TWO_WEAPON_MASTERY)){
-        penalty += 2;
-      }else{
-        penalty += 10;
-      }
-      if(creature.equipment.LEFTHAND.getBaseItem().weaponSize == WeaponSize.SMALL){
-        penalty -= 2;
-      }
-    }
-    return penalty;
-  }
-
+  /**
+   * Check if the attacks include a killing blow
+   * @returns True if the attacks include a killing blow, false otherwise
+   */
   attacksIncludeKillingBlow(){
     for(let i = 0; i < 5; i++){
       if(this.attackList[i].killingBlow) return true;
@@ -734,12 +706,22 @@ export class CombatRound {
     return false;
   }
 
+  /**
+   * Convert the combat round to a GFF struct
+   * @param structIdx - The index of the struct
+   * @returns The GFF struct
+   */
   toStruct(structIdx: number = 0xCADA){
     const struct = new GFFStruct(structIdx);
 
     return struct;
   }
 
+  /**
+   * Calculate the ability modifier for the given value
+   * @param val - The value to calculate the modifier for
+   * @returns The ability modifier
+   */
   static GetMod(val=0){
     return Math.floor( ( val - 10 ) / 2 );
   }
