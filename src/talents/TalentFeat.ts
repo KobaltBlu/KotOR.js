@@ -38,8 +38,6 @@ export class TalentFeat extends TalentObject {
   gainMultiple: number;
   effectsStack: number;
   allClassesCanUse: number;
-  declare category: number;
-  maxCR: number;
   spellId: number;
   successor: number;
   crValue: number;

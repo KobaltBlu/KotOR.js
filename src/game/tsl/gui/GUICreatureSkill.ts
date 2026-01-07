@@ -48,7 +48,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       buttonLabel.extent.left = 0;
       buttonLabel.extent.width = labelWidth;
       buttonLabel.extent.height = protoHeight;
-      buttonLabel.setText(GameState.TLKManager.GetStringById(this.node.getNameStrRef())?.Value || '');
+      buttonLabel.setText(this.node.getName() || '');
       buttonLabel.autoCalculatePosition = false;
       this.children.push(buttonLabel);
 
