@@ -11,6 +11,7 @@ import { CombatFeatType } from "../enums/combat/CombatFeatType";
 import { WeaponWield } from "../enums/combat/WeaponWield";
 import { Dice } from "../utility/Dice";
 import { DiceType } from "../enums/combat/DiceType";
+import { WeaponType } from "../enums/combat/WeaponType";
 
 /**
  * CombatAttackData class.
@@ -222,7 +223,7 @@ export class CombatAttackData {
     }
 
     //Add strength MOD to melee damage
-    if(this.attackWeapon.getWeaponType() == 1){
+    if(this.attackWeapon.getWeaponType() == WeaponType.PIERCING){
       this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
     }
 
