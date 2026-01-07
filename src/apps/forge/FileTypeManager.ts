@@ -78,6 +78,7 @@ export class FileTypeManager {
         // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
       break;
       case 'ncs':
+        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
         // ForgeState.tabManager.addTab(new TabScriptEditorState({editorFile: res}));
       break;
       case 'tpc':

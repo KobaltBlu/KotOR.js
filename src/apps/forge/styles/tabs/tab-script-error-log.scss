@@ -1,0 +1,185 @@
+.tab-pane-content.error-list {
+  background: #1e1e1e;
+  color: #dcdcdc;
+  font-size: 13px;
+  padding: 0;
+  overflow: auto;
+
+  .error-list__header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #1e1e1e;
+    border-bottom: 1px solid #262626;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .error-list__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    color: #f3f3f3;
+  }
+
+  .error-list__counts {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-wrap: wrap;
+  }
+
+  .error-list__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    border: 1px solid #2c2c2c;
+    background: #252526;
+    color: #c5c5c5;
+    font-size: 12px;
+    line-height: 1;
+
+    i {
+      font-size: 12px;
+    }
+
+    &--error {
+      border-color: #5a1d1d;
+      background: #271818;
+      color: #f14c4c;
+    }
+
+    &--warning {
+      border-color: #5a4a1d;
+      background: #2b2416;
+      color: #cca700;
+    }
+
+    &--info {
+      border-color: #234869;
+      background: #1c2731;
+      color: #4aa8ff;
+    }
+  }
+
+  .error-list__empty {
+    padding: 14px 12px;
+    color: #9a9a9a;
+    font-style: italic;
+  }
+
+  .error-list__items {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px 12px;
+  }
+
+  .error-list__row {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #1e1e1e;
+    border: 1px solid #262626;
+    border-radius: 6px;
+    color: inherit;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  .error-list__row:hover {
+    background: #242424;
+    border-color: #2f2f2f;
+  }
+
+  .error-list__row:focus-visible {
+    outline: 1px solid #3794ff;
+    outline-offset: 2px;
+  }
+
+  .error-list__icon {
+    width: 18px;
+    display: flex;
+    justify-content: center;
+    padding-top: 2px;
+  }
+
+  .error-list__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .error-list__message {
+    display: block;
+    color: #f3f3f3;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .error-list__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #9d9d9d;
+  }
+
+  .error-list__meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .error-list__location,
+  .error-list__code {
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: #252526;
+    border: 1px solid #2f2f2f;
+    font-family: "Consolas", "Menlo", "Monaco", monospace;
+  }
+
+  .error-list__source {
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  .error-list__row--error {
+    border-color: #3a1c1c;
+  }
+
+  .error-list__row--error .error-list__icon {
+    color: #f14c4c;
+  }
+
+  .error-list__row--warning {
+    border-color: #3a311b;
+  }
+
+  .error-list__row--warning .error-list__icon {
+    color: #cca700;
+  }
+
+  .error-list__row--info .error-list__icon {
+    color: #4aa8ff;
+  }
+
+  .error-list__row--hint .error-list__icon {
+    color: #4ec9b0;
+  }
+}
+
