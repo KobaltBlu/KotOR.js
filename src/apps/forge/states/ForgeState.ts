@@ -20,7 +20,6 @@ import { NWScriptLanguageService } from "./NWScriptLanguageService";
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
   static project: Project
-  static nwScriptTokenConfig: any = null;;
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
   static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();

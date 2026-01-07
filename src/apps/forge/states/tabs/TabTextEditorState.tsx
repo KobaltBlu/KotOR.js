@@ -13,6 +13,7 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as KotOR from "../../KotOR";
 import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
 import { NWScriptLanguageService } from "../NWScriptLanguageService";
+import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
 
 export class TabTextEditorState extends TabState {
 
@@ -248,7 +249,7 @@ export class TabTextEditorState extends TabState {
         this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
         
         // Update local functions in the tokenizer for syntax highlighting
-        const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: any) => f.name);
+        const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: SemanticFunctionNode) => f.name);
         NWScriptLanguageService.updateLocalFunctions(localFunctions);
         
         console.log(this.nwScriptParser.errors);

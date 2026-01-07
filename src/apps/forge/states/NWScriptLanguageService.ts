@@ -5,11 +5,15 @@ import { NWScriptASTBuilder } from "../../../nwscript/compiler/NWScriptASTBuilde
 import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGen";
 import { ForgeState } from "./ForgeState";
 import * as KotOR from '../KotOR';
-
-declare const monaco: any;
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+// import { languages } from "monaco-editor";
+import type { TabState } from "./tabs/TabState";
+import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
+import type { TabTextEditorState } from "./tabs/TabTextEditorState";
+import { SemanticFunctionNode } from "../../../nwscript/compiler/ASTSemanticTypes";
 
 // Format NWScript code using AST
-function formatNWScript(code: string, options: any = {}): string {
+function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {
   try {
     const parser = new NWScriptParser(ForgeState.nwScriptParser?.nwscript_source, code);
     // Parse the code into an AST using the AST builder directly
@@ -43,6 +47,9 @@ function formatNWScript(code: string, options: any = {}): string {
 }
 
 export class NWScriptLanguageService {
+
+  static nwScriptTokenConfig: monacoEditor.languages.IMonarchLanguage | null = null;
+
   static initNWScriptLanguage() {
     const arg_value_parser = function( value: any ): any {
       if(typeof value === 'undefined') return 'NULL';
@@ -72,9 +79,9 @@ export class NWScriptLanguageService {
     }
 
     // Register a new language
-    monaco.languages.register({ id: 'nwscript' });
+    monacoEditor.languages.register({ id: 'nwscript' });
 
-    const tokenConfig: any = {
+    const tokenConfig: monacoEditor.languages.IMonarchLanguage = {
       keywords: [
         'int', 'float', 'object', 'vector', 'string', 'void', 'action', 
         'default', 'const', 'if', 'else', 'switch', 'case',
@@ -224,11 +231,11 @@ export class NWScriptLanguageService {
     }
 
     // Store token config for dynamic updates
-    ForgeState.nwScriptTokenConfig = tokenConfig;
+    NWScriptLanguageService.nwScriptTokenConfig = tokenConfig;
 
-    monaco.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
+    monacoEditor.languages.setMonarchTokensProvider( 'nwscript', tokenConfig);
 
-    monaco.languages.setLanguageConfiguration('nwscript', {
+    monacoEditor.languages.setLanguageConfiguration('nwscript', {
       comments: {
         lineComment: '//',
         blockComment: ['/*', '*/']
@@ -257,23 +264,23 @@ export class NWScriptLanguageService {
         {
           // Inside a /** comment block */
           beforeText: /^\s*\/\*\*(?!\/).*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: " * " }
+          action: { indentAction: monacoEditor.languages.IndentAction.None, appendText: " * " }
         },
         {
           // After a line that starts with " *"
           beforeText: /^\s*\*(?!\/).*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, appendText: "* " }
+          action: { indentAction: monacoEditor.languages.IndentAction.None, appendText: "* " }
         },
         {
           // Closing the block
           beforeText: /^\s*\*\/\s*$/,
-          action: { indentAction: monaco.languages.IndentAction.None, removeText: 1 }
+          action: { indentAction: monacoEditor.languages.IndentAction.None, removeText: 1 }
         }
       ]
     });
 
     // Define a new theme that contains only rules that match this language
-    monaco.editor.defineTheme('nwscript-dark', {
+    monacoEditor.editor.defineTheme('nwscript-dark', {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -318,15 +325,16 @@ export class NWScriptLanguageService {
       }
     });
 
-    const nw_suggestions: any[] = [];
+    const nw_suggestions: monacoEditor.languages.CompletionItem[] = [];
     const keywords = ['void', 'int', 'float', 'string', 'object', 'vector', 'struct', 'action'];
 
     for(let i = 0; i < keywords.length; i++){
       nw_suggestions.push({
         label: keywords[i],
-        kind: monaco.languages.CompletionItemKind.Keyword,
+        kind: monacoEditor.languages.CompletionItemKind.Keyword,
         insertText: keywords[i],
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet
+        insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        range: null as any
       });
     }
 
@@ -336,10 +344,11 @@ export class NWScriptLanguageService {
       const nw_type = nw_types[i];
       nw_suggestions.push({
         label: nw_type.name,
-        kind: monaco.languages.CompletionItemKind.Keyword,
+        kind: monacoEditor.languages.CompletionItemKind.Keyword,
         insertText: `${nw_type.name}`,
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`
+        insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`,
+        range: null as any
       });
     }
 
@@ -349,10 +358,11 @@ export class NWScriptLanguageService {
       const nw_constant = nw_constants[i];
       nw_suggestions.push({
         label: nw_constant.name,
-        kind: monaco.languages.CompletionItemKind.Constant,
+        kind: monacoEditor.languages.CompletionItemKind.Constant,
         insertText: `${nw_constant.name}`,
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `Engine Constant #${nw_constant.index+1}:\n\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)};`
+        insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Constant #${nw_constant.index+1}:\n\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)};`,
+        range: null as any
       });
     }
 
@@ -372,89 +382,98 @@ export class NWScriptLanguageService {
           args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name} = ${arg_value_parser(arg.value)}}`);
         }else{
           args.push(`\${${(i+1)}:${arg.datatype.value} ${arg.name}}`);
-        }
+        } 
       }
       
       nw_suggestions.push({
         label: action.name,
-        kind: monaco.languages.CompletionItemKind.Function,
+        kind: monacoEditor.languages.CompletionItemKind.Function,
         insertText: `${action.name}(${args.join(', ')})`,
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        documentation: `Engine Routine #${action.index}:\n\n${action.returntype.value} ${action.name}(${args.join(', ')})\n\n`+action.comment
+        insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        documentation: `Engine Routine #${action.index}:\n\n${action.returntype.value} ${action.name}(${args.join(', ')})\n\n`+action.comment,
+        range: null as any
       });
     });
 
     // Register a completion item provider for the new language
-    monaco.languages.registerCompletionItemProvider('nwscript', {
+    monacoEditor.languages.registerCompletionItemProvider('nwscript', {
       provideCompletionItems: () => {
         // console.log('auto complete');
         try{
-          const local_suggestions: any[] = [
+          const local_suggestions: monacoEditor.languages.CompletionItem[] = [
             {
               label: 'void main()',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: ['void main () {', '\t$0', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'void main() Statement'
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'void main() Statement',
+              range: null as any
             },
             {
               label: 'int StartingConditional()',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'int StartingConditional() Statement'
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'int StartingConditional() Statement',
+              range: null as any
             },
             {
               label: 'if',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: 'if (${1:condition}) {\n\t$0\n}',
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'if statement',
               filterText: 'if',
-              sortText: '0if'
+              sortText: '0if',
+              range: null as any
             },
             {
               label: 'ifelse',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-              documentation: 'If-Else Statement'
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              documentation: 'If-Else Statement',
+              range: null as any
             },
             {
               label: 'for',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: 'for (${1:int i = 0}; ${2:i < ${3:10}}; ${4:i++}) {\n\t$0\n}',
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'for loop',
               filterText: 'for',
-              sortText: '0for'
+              sortText: '0for',
+              range: null as any
             },
             {
               label: 'while',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: 'while (${1:condition}) {\n\t$0\n}',
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'while loop',
               filterText: 'while',
-              sortText: '0while'
+              sortText: '0while',
+              range: null as any
             },
             {
               label: 'switch',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: ['switch (${1:expression}) {', '\tcase ${2:value}:', '\t\t$0', '\t\tbreak;', '\tdefault:', '\t\tbreak;', '}'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'switch statement',
               filterText: 'switch',
-              sortText: '0switch'
+              sortText: '0switch',
+              range: null as any
             },
             {
               label: 'struct',
-              kind: monaco.languages.CompletionItemKind.Snippet,
+              kind: monacoEditor.languages.CompletionItemKind.Snippet,
               insertText: ['struct ${1:StructName} {', '\t${2:int} ${3:member};', '\t$0', '};'].join('\n'),
-              insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+              insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'struct declaration',
               filterText: 'struct',
-              sortText: '0struct'
+              sortText: '0struct',
+              range: null as any
             }
           ];
 
@@ -468,13 +487,14 @@ export class NWScriptLanguageService {
                   const l_variable = l_variables[i];
                   if (!l_variable || !l_variable.name) continue;
                   // console.log(l_variable);
-                  const kind = l_variable.is_const ? monaco.languages.CompletionItemKind.Constant : monaco.languages.CompletionItemKind.Variable;
+                  const kind = l_variable.is_const ? monacoEditor.languages.CompletionItemKind.Constant : monacoEditor.languages.CompletionItemKind.Variable;
                   local_suggestions.push({
                     label: l_variable.name,
                     kind: kind,
                     insertText: `${l_variable.name}`,
-                    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-                    documentation: `Variable:\n\n${l_variable.datatype?.value || 'unknown'} ${l_variable.name};`
+                    insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+                    documentation: `Variable:\n\n${l_variable.datatype?.value || 'unknown'} ${l_variable.name};`,
+                    range: null as any
                   });
                 }
               }
@@ -500,20 +520,18 @@ export class NWScriptLanguageService {
     });
 
     // Register document formatter for NWScript
-    monaco.languages.registerDocumentFormattingEditProvider('nwscript', {
-      provideDocumentFormattingEdits: (model: any, options: any, token: any) => {
+    monacoEditor.languages.registerDocumentFormattingEditProvider('nwscript', {
+      provideDocumentFormattingEdits: (model: monacoEditor.editor.ITextModel, options: monacoEditor.languages.FormattingOptions, token: monacoEditor.CancellationToken) => {
         const text = model.getValue();
         
         // Get editor options from the model
         const modelOptions = model.getOptions();
         const tabSize = modelOptions.tabSize || 2;
         const insertSpaces = modelOptions.insertSpaces !== false;
-        
         // Pass options to formatter
         const formatOptions = {
           tabSize: tabSize,
-          insertSpaces: insertSpaces,
-          ...options
+          insertSpaces: insertSpaces
         };
         
         const formatted = formatNWScript(text, formatOptions);
@@ -528,13 +546,13 @@ export class NWScriptLanguageService {
       }
     });
 
-    monaco.languages.registerHoverProvider('nwscript', {
-      provideHover: function (model: any, position: any) {
+    monacoEditor.languages.registerHoverProvider('nwscript', {
+      provideHover: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, token: monacoEditor.CancellationToken) {
         const wordObject = model.getWordAtPosition(position);
         if(wordObject){
           
           //Engine Constants
-          const nw_constant = ForgeState.nwScriptParser.engine_constants.find( (obj: any) => obj.name == wordObject.word );
+          const nw_constant = ForgeState.nwScriptParser.engine_constants.find( (obj) => obj.name == wordObject.word );
           if(nw_constant){
             return {
               contents: [
@@ -544,12 +562,12 @@ export class NWScriptLanguageService {
             };
           }
 
-          const action: any = nw_actions.find( (obj: any) => obj[1].name == wordObject.word );
+          const action = nw_actions.find( (obj) => obj[1].name == wordObject.word );
           if(action){
             // console.log(action);
             let args = '';
             // Match by function name - try wordObject.word first, then action[1].name, then action[0] as fallback
-            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a: any) => 
+            const function_definition = ForgeState.nwScriptParser.engine_actions.find((a) => 
               a.name === wordObject.word || 
               a.name === action[1].name || 
               a.name === action[0]
@@ -622,7 +640,7 @@ export class NWScriptLanguageService {
               const structPropertyName = parts[1];
               if(structName){
                 //Local Variables
-                const l_struct = (parser.local_variables || []).find( (obj: any) => obj.name == structName );
+                const l_struct = (parser.local_variables || []).find( (obj) => obj.name == structName );
                 if(l_struct?.datatype?.value == 'struct'){
                   const struct_ref = (l_struct.type == 'variable') ? l_struct.struct_reference : l_struct ;
                   for(let i = 0; i < struct_ref.properties.length; i++){
@@ -643,7 +661,7 @@ export class NWScriptLanguageService {
 
 
             //Local Variables
-            const l_variable = (parser.local_variables || []).find( (obj: any) => obj.name == wordObject.word );
+            const l_variable = (parser.local_variables || []).find( (obj) => obj.name == wordObject.word );
             if(l_variable){
               // console.log(l_variable);
               return {
@@ -655,9 +673,9 @@ export class NWScriptLanguageService {
             }
 
             //Local Function - check both local_functions (if exists) and program.functions
-            let l_function = (parser.local_functions || []).find( (obj: any) => obj.name == wordObject.word );
+            let l_function = (parser.local_functions || []).find( (obj) => obj.name == wordObject.word );
             if(!l_function && parser.program && parser.program.functions) {
-              l_function = parser.program.functions.find( (obj: any) => obj.name == wordObject.word );
+              l_function = parser.program.functions.find( (obj) => obj.name == wordObject.word );
             }
             
             if(l_function){
@@ -735,7 +753,7 @@ export class NWScriptLanguageService {
               }
               
               // console.log(l_function);
-              let args: any[] = [];
+              const args: string[] = [];
               for(let i = 0; i < l_function.arguments.length; i++){
                 const def_arg = l_function.arguments[i];
                 if(def_arg){
@@ -768,7 +786,7 @@ export class NWScriptLanguageService {
 
         }
         return {
-          range: new monaco.Range(
+          range: new monacoEditor.Range(
             1,
             1,
             model.getLineCount(),
@@ -779,10 +797,10 @@ export class NWScriptLanguageService {
     } as any);
 
     // Register document symbol provider for outline/navigation (Ctrl+Shift+O / Cmd+Shift+O)
-    monaco.languages.registerDocumentSymbolProvider('nwscript', {
-      provideDocumentSymbols: function (model: any) {
+    monacoEditor.languages.registerDocumentSymbolProvider('nwscript', {
+      provideDocumentSymbols: function (model: monacoEditor.editor.ITextModel, token: monacoEditor.CancellationToken) {
+        const symbols: monacoEditor.languages.DocumentSymbol[] = [];
         try {
-          const symbols: any[] = [];
           const text = model.getValue();
           
           // Get the parser from the current tab if available
@@ -798,20 +816,20 @@ export class NWScriptLanguageService {
           }
 
           if (!parser.ast || !parser.ast.statements) {
-            return { symbols: [] };
+            return [];
           }
 
           // Extract symbols from AST
           for (const statement of parser.ast.statements) {
             if (statement.type === 'function') {
-              const func = statement as any;
-              const args = func.arguments.map((arg: any) => `${arg.datatype.value} ${arg.name}`).join(', ');
+              const func = statement as FunctionNode;
+              const args = func.arguments.map((arg) => `${arg.datatype.value} ${arg.name}`).join(', ');
               const detail = `${func.returntype.value} ${func.name}(${args})`;
               
               symbols.push({
                 name: func.name,
                 detail: detail,
-                kind: monaco.languages.SymbolKind.Function,
+                kind: monacoEditor.languages.SymbolKind.Function,
                 range: {
                   startLineNumber: func.source?.first_line || 1,
                   startColumn: func.source?.first_column || 1,
@@ -824,14 +842,15 @@ export class NWScriptLanguageService {
                   endLineNumber: func.source?.last_line || func.source?.first_line || 1,
                   endColumn: func.source?.last_column || func.source?.first_column || 1,
                 },
-                children: [] // Could extract local variables here if needed
+                children: [], // Could extract local variables here if needed
+                tags: []
               });
             } else if (statement.type === 'struct') {
-              const struct = statement as any;
+              const struct = statement as StructNode;
               symbols.push({
                 name: struct.name,
                 detail: `struct ${struct.name}`,
-                kind: monaco.languages.SymbolKind.Struct,
+                kind: monacoEditor.languages.SymbolKind.Struct,
                 range: {
                   startLineNumber: struct.source?.first_line || 1,
                   startColumn: struct.source?.first_column || 1,
@@ -844,10 +863,10 @@ export class NWScriptLanguageService {
                   endLineNumber: struct.source?.last_line || struct.source?.first_line || 1,
                   endColumn: struct.source?.last_column || struct.source?.first_column || 1,
                 },
-                children: struct.properties?.map((prop: any) => ({
+                children: struct.properties?.map((prop) => ({
                   name: prop.name,
                   detail: prop.datatype ? `${prop.datatype.value} ${prop.name}` : prop.name,
-                  kind: monaco.languages.SymbolKind.Property,
+                  kind: monacoEditor.languages.SymbolKind.Property,
                   range: {
                     startLineNumber: prop.source?.first_line || struct.source?.first_line || 1,
                     startColumn: prop.source?.first_column || struct.source?.first_column || 1,
@@ -860,45 +879,69 @@ export class NWScriptLanguageService {
                     endLineNumber: prop.source?.last_line || struct.source?.first_line || 1,
                     endColumn: prop.source?.last_column || struct.source?.first_column || 1,
                   },
-                })) || []
+                  tags: []
+                })) || [],
+                tags: []
               });
-            } else if (statement.type === 'variable' || statement.type === 'variableList') {
-              const variable = statement as any;
-              const names = statement.type === 'variableList' ? variable.names : [{ name: variable.name, source: variable.source }];
-              
-              for (const nameInfo of names) {
+            } else if (statement.type === 'variableList') {
+              const variable = statement as VariableListNode;
+              for (const nameInfo of variable.names) {
                 symbols.push({
                   name: nameInfo.name,
                   detail: `${variable.datatype.value} ${nameInfo.name}${variable.is_const ? ' (const)' : ''}`,
-                  kind: variable.is_const ? monaco.languages.SymbolKind.Constant : monaco.languages.SymbolKind.Variable,
+                  kind: variable.is_const ? monacoEditor.languages.SymbolKind.Constant : monacoEditor.languages.SymbolKind.Variable,
                   range: {
-                    startLineNumber: nameInfo.source?.first_line || variable.source?.first_line || 1,
-                    startColumn: nameInfo.source?.first_column || variable.source?.first_column || 1,
-                    endLineNumber: nameInfo.source?.last_line || variable.source?.last_line || 1,
-                    endColumn: nameInfo.source?.last_column || variable.source?.last_column || 1,
+                    startLineNumber: nameInfo.source?.first_line || nameInfo.source?.first_line || 1,
+                    startColumn: nameInfo.source?.first_column || nameInfo.source?.first_column || 1,
+                    endLineNumber: nameInfo.source?.last_line || nameInfo.source?.last_line || 1,
+                    endColumn: nameInfo.source?.last_column || nameInfo.source?.last_column || 1,
                   },
                   selectionRange: {
-                    startLineNumber: nameInfo.source?.first_line || variable.source?.first_line || 1,
-                    startColumn: nameInfo.source?.first_column || variable.source?.first_column || 1,
-                    endLineNumber: nameInfo.source?.last_line || variable.source?.last_line || 1,
-                    endColumn: nameInfo.source?.last_column || variable.source?.last_column || 1,
+                    startLineNumber: nameInfo.source?.first_line || nameInfo.source?.first_line || 1,
+                    startColumn: nameInfo.source?.first_column || nameInfo.source?.first_column || 1,
+                    endLineNumber: nameInfo.source?.last_line || nameInfo.source?.last_line || 1,
+                    endColumn: nameInfo.source?.last_column || nameInfo.source?.last_column || 1,
                   },
+                  tags: []
                 });
               }
+            } else if (statement.type === 'variable') {
+              const variable = statement as VariableNode;
+              // const names = statement.type === 'variableList' ? variable.names : [{ name: variable.name, source: variable.source }];
+              
+              symbols.push({
+                name: variable.name,
+                detail: `${variable.datatype.value} ${variable.name}${variable.is_const ? ' (const)' : ''}`,
+                kind: variable.is_const ? monacoEditor.languages.SymbolKind.Constant : monacoEditor.languages.SymbolKind.Variable,
+                range: {
+                  startLineNumber: variable.source?.first_line || variable.source?.first_line || 1,
+                  startColumn: variable.source?.first_column || variable.source?.first_column || 1,
+                  endLineNumber: variable.source?.last_line || variable.source?.last_line || 1,
+                  endColumn: variable.source?.last_column || variable.source?.last_column || 1,
+                },
+                selectionRange: {
+                  startLineNumber: variable.source?.first_line || variable.source?.first_line || 1,
+                  startColumn: variable.source?.first_column || variable.source?.first_column || 1,
+                  endLineNumber: variable.source?.last_line || variable.source?.last_line || 1,
+                  endColumn: variable.source?.last_column || variable.source?.last_column || 1,
+                },
+                tags: []
+              });
+                
             }
           }
 
-          return { symbols: symbols };
+          return symbols;
         } catch (e) {
           console.error('Error providing document symbols:', e);
-          return { symbols: [] };
+          return [];
         }
       }
     });
 
     // Register definition provider for "Go to Definition" (F12 / Ctrl+Click)
-    monaco.languages.registerDefinitionProvider('nwscript', {
-      provideDefinition: function (model: any, position: any) {
+    monacoEditor.languages.registerDefinitionProvider('nwscript', {
+      provideDefinition: function (model: monacoEditor.editor.ITextModel, position: monacoEditor.Position, token: monacoEditor.CancellationToken) {
         try {
           const wordObject = model.getWordAtPosition(position);
           if (!wordObject) {
@@ -943,7 +986,7 @@ export class NWScriptLanguageService {
             if (resref) {
               // Definition is in an included file
               // Check if file is already open
-              let targetTab: any = null;
+              let targetTab: TabState | undefined = undefined;
               
               // Find tab by file resref
               for (const tab of ForgeState.tabManager.tabs) {
@@ -953,13 +996,14 @@ export class NWScriptLanguageService {
                 }
               }
 
-              if (targetTab) {
+              if (targetTab && targetTab.constructor.name === 'TabTextEditorState') {
+                const editorTab = targetTab as TabTextEditorState;
                 // File is already open - focus it and scroll
-                targetTab.show();
-                if (targetTab.editor && targetTab.monaco) {
+                editorTab.show();
+                if (editorTab.editor && editorTab.monaco) {
                   setTimeout(() => {
-                    targetTab.editor.revealLineInCenter(lineNumber);
-                    targetTab.editor.setPosition({ lineNumber, column });
+                    editorTab.editor.revealLineInCenter(lineNumber);
+                    editorTab.editor.setPosition({ lineNumber, column });
                   }, 100);
                 }
               } else {
@@ -981,7 +1025,7 @@ export class NWScriptLanguageService {
                   
                       // Find the newly opened tab and wait for file to load, then scroll
                       const findAndScroll = () => {
-                        const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                        const newTab = ForgeState.tabManager.tabs.find((tab) => 
                           tab.file && tab.file.resref === resref && tab.file.ext === 'nss'
                         ) as any;
                         
@@ -1015,7 +1059,7 @@ export class NWScriptLanguageService {
                       // Start looking for the tab after a short delay
                       setTimeout(findAndScroll, 50);
                     }
-                  }).catch((error: any) => {
+                  }).catch((error: Error) => {
                     console.error('Error loading file from KEY system:', error);
                   });
                 }
@@ -1030,14 +1074,14 @@ export class NWScriptLanguageService {
           };
 
           // Check engine constants
-          const nw_constant = ForgeState.nwScriptParser.engine_constants.find((obj: any) => obj.name === word);
+          const nw_constant = ForgeState.nwScriptParser.engine_constants.find((obj) => obj.name === word);
           if (nw_constant && nw_constant.source) {
             // Engine constants are in nwscript.nss - open it and navigate
             const lineNumber = nw_constant.source.first_line || 1;
             const column = nw_constant.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab: any) => 
+            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             
@@ -1065,7 +1109,7 @@ export class NWScriptLanguageService {
                 
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
-                  const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                  const newTab = ForgeState.tabManager.tabs.find((tab) => 
                     tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
                   ) as any;
                   
@@ -1099,7 +1143,7 @@ export class NWScriptLanguageService {
             // Return definition location
             return [{
               uri: model.uri,
-              range: new monaco.Range(
+              range: new monacoEditor.Range(
                 lineNumber,
                 column,
                 nw_constant.source.last_line || lineNumber,
@@ -1109,14 +1153,14 @@ export class NWScriptLanguageService {
           }
 
           // Check engine actions
-          const nw_action = ForgeState.nwScriptParser.engine_actions.find((obj: any) => obj.name === word);
+          const nw_action = ForgeState.nwScriptParser.engine_actions.find((obj) => obj.name === word);
           if (nw_action && nw_action.source) {
             // Engine actions are in nwscript.nss - open it and navigate
             const lineNumber = nw_action.source.first_line || 1;
             const column = nw_action.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab: any) => 
+            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             
@@ -1142,7 +1186,7 @@ export class NWScriptLanguageService {
                 
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
-                  const newTab = ForgeState.tabManager.tabs.find((tab: any) => 
+                  const newTab = ForgeState.tabManager.tabs.find((tab: TabState) => 
                     tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
                   ) as any;
                   
@@ -1176,7 +1220,7 @@ export class NWScriptLanguageService {
             // Return definition location
             return [{
               uri: model.uri,
-              range: new monaco.Range(
+              range: new monacoEditor.Range(
                 lineNumber,
                 column,
                 nw_action.source.last_line || lineNumber,
@@ -1186,7 +1230,7 @@ export class NWScriptLanguageService {
           }
 
           // Check local variables
-          const l_variable = (parser.local_variables || []).find((obj: any) => obj.name === word);
+          const l_variable = (parser.local_variables || []).find((obj) => obj.name === word);
           if (l_variable && l_variable.source) {
             const fileInfo = getFileForLine(l_variable.source.first_line);
             const lineNumber = fileInfo.adjustedLine;
@@ -1200,12 +1244,12 @@ export class NWScriptLanguageService {
               // We'll handle the actual navigation in navigateToDefinition
               return [{
                 uri: model.uri, // This will be updated when the file opens
-                range: new monaco.Range(lineNumber, column, lineNumber, column)
+                range: new monacoEditor.Range(lineNumber, column, lineNumber, column)
               }];
             } else {
               return [{
                 uri: model.uri,
-                range: new monaco.Range(
+                range: new monacoEditor.Range(
                   lineNumber,
                   column,
                   l_variable.source.last_line || lineNumber,
@@ -1216,9 +1260,9 @@ export class NWScriptLanguageService {
           }
 
           // Check local functions
-          let l_function = (parser.local_functions || []).find((obj: any) => obj.name === word);
+          let l_function = (parser.local_functions || []).find((obj) => obj.name === word);
           if (!l_function && parser.program && parser.program.functions) {
-            l_function = parser.program.functions.find((obj: any) => obj.name === word);
+            l_function = parser.program.functions.find((obj) => obj.name === word);
           }
 
           if (l_function && l_function.source) {
@@ -1232,12 +1276,12 @@ export class NWScriptLanguageService {
             if (fileInfo.resref) {
               return [{
                 uri: model.uri,
-                range: new monaco.Range(lineNumber, column, lineNumber, column)
+                range: new monacoEditor.Range(lineNumber, column, lineNumber, column)
               }];
             } else {
               return [{
                 uri: model.uri,
-                range: new monaco.Range(
+                range: new monacoEditor.Range(
                   lineNumber,
                   column,
                   l_function.source.last_line || lineNumber,
@@ -1253,20 +1297,15 @@ export class NWScriptLanguageService {
           return [];
         }
       }
-    } as any);
+    });
   }
 
   static updateLocalFunctions(localFunctions: string[]) {
-    if (!ForgeState.nwScriptTokenConfig) return;
+    if (!NWScriptLanguageService.nwScriptTokenConfig) return;
     
     // Update the local functions array
-    ForgeState.nwScriptTokenConfig.localFunctions = localFunctions;
-    
-    // Re-register the tokenizer with updated config
-    const monaco = (window as any).monaco;
-    if (monaco) {
-      monaco.languages.setMonarchTokensProvider('nwscript', ForgeState.nwScriptTokenConfig);
-    }
+    NWScriptLanguageService.nwScriptTokenConfig.localFunctions = localFunctions;
+    monacoEditor.languages.setMonarchTokensProvider('nwscript', NWScriptLanguageService.nwScriptTokenConfig);
   }
 }
 
