@@ -1781,7 +1781,6 @@ export class NWScriptCompiler {
   }
 
   // Boolean/bitwise AND (int & int)
-  // AST shape (from your handwritten parser or jison):
   // { type:'booland', left:<expr>, right:<expr>, operator:{value:'&'} }
   compileBOOLAND( statement: any ): Uint8Array {
     const buffers: Uint8Array[] = [];

@@ -646,7 +646,6 @@ export class NWScriptASTBuilder {
   // Expression parsing (Pratt)
   // -------------------------
   private lbp(op: string): number {
-    // mirrors the jison operator precedence blocks (roughly)
     switch (op) {
       case "=":
       case "+=":
@@ -950,7 +949,6 @@ export class NWScriptASTBuilder {
       return { type, left, right, operator: { type: "operator", value: op }, source: opTok.source };
     }
 
-    // bitwise-ish nodes to match your jison output
     if (op === "|") {
       const right = this.parseExpression(this.lbp(op));
       return { type: "incor", left, right, operator: { type: "operator", value: op }, source: opTok.source };
