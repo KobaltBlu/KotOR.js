@@ -2787,7 +2787,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     let strMod = Math.floor(( this.getSTR() - 10) / 2);
-    let dexMod = Math.floor(( this.getSTR() - 10) / 2);
+    let dexMod = Math.floor(( this.getDEX() - 10) / 2);
 
     if(strMod > dexMod){
       bab += strMod;
