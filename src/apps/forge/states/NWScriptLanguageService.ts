@@ -6,11 +6,9 @@ import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGe
 import { ForgeState } from "./ForgeState";
 import * as KotOR from '../KotOR';
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-// import { languages } from "monaco-editor";
 import type { TabState } from "./tabs/TabState";
 import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
 import type { TabTextEditorState } from "./tabs/TabTextEditorState";
-import { SemanticFunctionNode } from "../../../nwscript/compiler/ASTSemanticTypes";
 
 // Format NWScript code using AST
 function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {
