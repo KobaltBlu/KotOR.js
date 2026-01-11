@@ -769,29 +769,30 @@ export class ModuleArea extends ModuleObject {
 
   lastRoom: ModuleRoom = undefined;
   updateRoomVisibility(delta: number = 0){
-    const roomList: ModuleRoom[] = [];
-    let pos = undefined;
-
     switch(GameState.Mode){
       case EngineMode.DIALOG:
-        pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
+        this.lastRoom = undefined;
+        const roomInView: boolean[] = [];
+        const pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
 
-        for(let i = 0, il = this.rooms.length; i < il; i++){
+
+        for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
           const room = this.rooms[i];
           const inCamera = GameState.viewportFrustum.intersectsBox(room.box);
-          if(!room.visObject || room.box.containsPoint(pos) || inCamera){
-            roomList.push(room);
+          roomInView[i] = (!room.visObject || room.box.containsPoint(pos) || inCamera);
+          if(!roomInView[i]){
+            room.hide();
+            continue;
           }
-        }
-  
-        for(let i = 0; i < roomList.length; i++){
-          roomList[i].show(true);
+          room.show(false);
         }
       break;
       case EngineMode.MINIGAME:
+        this.lastRoom = undefined;
         for(let i = 0, len = this.rooms.length; i < len; i++){
-          let room = this.rooms[i];
-          if(room) room.show(false);
+          const room = this.rooms[i];
+          if(!room) continue;
+          room.show(false);
         }
       break;
       case EngineMode.INGAME:
@@ -804,8 +805,9 @@ export class ModuleArea extends ModuleObject {
           return;
         }
         this.lastRoom = player.room;
-        if(this.lastRoom.envAudio >= 0){
-          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom.envAudio);
+
+        if(this.lastRoom?.envAudio >= 0){
+          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom?.envAudio || 0);
         }
 
         //Reset all room's visibility to hidden
@@ -815,18 +817,12 @@ export class ModuleArea extends ModuleObject {
           room.hide();
         }
 
-        if(player.room){
-          player.room.show(true);
+        if(!player.room){
+          return;
         }
 
-        //SKYBOX Fix
-        for(let i = 0, len = this.rooms.length; i < len; i++){
-          let room = this.rooms[i];
-          if(!room.visObject || room.box.containsPoint(player.position)){
-            //Show the room, but don't recursively show it's children
-            room.show(false);
-          }
-        }
+        //Show the current room and all of it's linked rooms
+        player.room.show(true);
       break;
     }
   }

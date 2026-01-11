@@ -196,7 +196,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  show(recurse = false){
+  show(showLinkedRooms = false){
     if(this.model){
       this.model.visible = true;
     }
@@ -205,13 +205,16 @@ export class ModuleRoom extends ModuleObject {
       this.grass.visible = true;
     }
 
-    if(recurse){
+    if(showLinkedRooms){
       const linkedRooms = Array.from(this.linkedRooms.values());
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
-        if(typeof linkedRooms[i].model != 'object'){
-          continue;
+        const room = linkedRooms[i];
+        if(room.grass){
+          room.grass.visible = true;
         }
-        linkedRooms[i].model.visible = true;
+        if(typeof room.model === 'object'){
+          room.model.visible = true;
+        }
       }
     }
 
@@ -228,7 +231,7 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  hide(){
+  hide(hideLinkedRooms = false){
     if(this.model){
       this.model.visible = false;
     }
@@ -237,12 +240,14 @@ export class ModuleRoom extends ModuleObject {
       this.grass.visible = false;
     }
 
-    const linkedRooms = Array.from(this.linkedRooms.values());
-    for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
-      if(typeof linkedRooms[i].model != 'object'){
-        continue;
+    if(hideLinkedRooms){
+      const linkedRooms = Array.from(this.linkedRooms.values());
+      for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
+        if(typeof linkedRooms[i].model != 'object'){
+          continue;
+        }
+        linkedRooms[i].model.visible = false;
       }
-      linkedRooms[i].model.visible = false;
     }
     
     //Remove the walkmesh back to the scene
