@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
@@ -8,6 +8,17 @@ import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 
 export const TabModuleEditor = function(props: BaseTabProps){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
+
+  const onModuleLoaded = () => {
+    console.log('module loaded');
+  }
+
+  useEffect(() => {
+    tab.addEventListener('onModuleLoaded', onModuleLoaded);
+    return () => {
+      tab.removeEventListener('onModuleLoaded', onModuleLoaded);
+    };
+  }, []);
 
   const southPanel = (
     <></>

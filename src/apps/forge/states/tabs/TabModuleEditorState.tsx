@@ -5,13 +5,16 @@ import { TabState } from "./";
 import * as THREE from 'three';
 import * as KotOR from '../../KotOR';
 import { Project } from "../../Project";
+import { ForgeArea } from "../../module-editor/ForgeArea";
+import { ForgeModule } from "../../module-editor/ForgeModule";
+import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
 
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
 
   ui3DRenderer: UI3DRenderer;
-  module: KotOR.Module | undefined;
+  module: ForgeModule | undefined;
   groundColor: THREE.Color;
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
@@ -32,6 +35,7 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
 
     this.ui3DRenderer.scene.add(this.groundMesh);
+    this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
   }
 
   show(): void {
@@ -53,17 +57,18 @@ export class TabModuleEditorState extends TabState {
 
   animate(delta: number = 0){
 
+    this.processEventListener('onAnimate', [delta]);
   }
 
   //This should only be used inside KotOR Forge
-  static async FromProject(project: Project): Promise<KotOR.Module | undefined> {
+  static async FromProject(project: Project): Promise<ForgeModule | undefined> {
     console.log('BuildFromExisting', project);
     if(!project){
       return undefined;
     }
-    const module = new KotOR.Module();
+    const module = new ForgeModule(new KotOR.GFFObject());
     module.transWP = '';
-    KotOR.ModuleObjectManager.module = module;
+    // KotOR.ModuleObjectManager.module = module;
 
     /**
      * Load the IFO file
@@ -100,10 +105,9 @@ export class TabModuleEditorState extends TabState {
     /**
      * Create the area
      */
-    module.area = new KotOR.ModuleArea(module.entryArea, are, git);
+    module.area = new ForgeArea(git, are);
     module.area.module = module;
     module.areas = [module.area];
-    await module.area.load();
     return module;
   }
 

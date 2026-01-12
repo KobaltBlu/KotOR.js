@@ -1,11 +1,13 @@
-import { ForgeArea } from "./ForgeArea";
+import type { ForgeArea } from "./ForgeArea";
 import * as KotOR from "../KotOR";
+import type { UI3DRenderer } from "../UI3DRenderer";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
 export class ForgeModule {
 
   ifo: KotOR.GFFObject;
+  context: UI3DRenderer;
 
   area: ForgeArea;
   areas: ForgeArea[] = [];
@@ -114,8 +116,17 @@ export class ForgeModule {
     this.setFromIFO(ifo);
   }
 
+  setContext(context: UI3DRenderer){
+    this.context = context;
+    this.area.setContext(context);
+  }
+
   setFromIFO(ifo: KotOR.GFFObject){
     this.ifo = ifo;
+  }
+
+  async load(){
+    await this.area.load();
   }
 
   exportToIFO(){
@@ -128,7 +139,7 @@ export class ForgeModule {
     // Mod_Area_list - KotOR only supports one Area per module
     const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'))!;
     const areaStruct = new KotOR.GFFStruct(6);
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getString()));
+    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getValue()));
     areaList.addChildStruct(areaStruct);
 
     // Mod_Creator_ID

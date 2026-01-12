@@ -25,7 +25,7 @@ export class Project {
   files: any[];
   settings: ProjectSettings = {} as ProjectSettings;
   moduleEditor: TabModuleEditorState | undefined;
-  module: KotOR.Module | undefined;
+  module: ForgeModule | undefined;
 
   module_ifo: EditorFile | undefined;
   module_are: EditorFile | undefined;
@@ -221,6 +221,8 @@ export class Project {
     this.moduleEditor = new TabModuleEditorState();
     ForgeState.tabManager.addTab(this.moduleEditor);
     this.moduleEditor.module = await TabModuleEditorState.FromProject(this);
+    this.moduleEditor.module?.setContext(this.moduleEditor.ui3DRenderer);
+    await this.moduleEditor.module?.load();
   }
 
   openModuleEditor(){
@@ -284,7 +286,7 @@ export class Project {
       const room = new KotOR.ModuleRoom(rooms[i].roomName, area as any);
       room.setEnvAudio(rooms[i].envAudio);
       room.setAmbientScale(rooms[i].ambientScale);
-      area.roomList.push(room);
+      area.rooms.push(room);
     }
     mod.areas = [area];
     mod.entryArea = areaName;

@@ -1,23 +1,19 @@
 import * as KotOR from "../KotOR";
-
-interface AreaMap {
-  mapPt1X: number;
-  mapPt1Y: number;
-  mapPt2X: number;
-  mapPt2Y: number;
-  mapResX: number;
-  mapZoom: number;
-  northAxis: number;
-  worldPt1X: number;
-  worldPt1Y: number;
-  worldPt2X: number;
-  worldPt2Y: number;
-}
+import type { ForgeModule } from "./ForgeModule";
+import { AreaMap } from "../../../module/AreaMap";
+import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+import { ProjectFileSystem } from "../ProjectFileSystem";
+import { ResourceTypes } from "../KotOR";
 
 export class ForgeArea {
 
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
+  layout: KotOR.LYTObject;
+  visObject: KotOR.VISObject;
+
+  module: ForgeModule;
+  context: UI3DRenderer;
 
   /**
    * ARE Fields
@@ -73,19 +69,7 @@ export class ForgeArea {
 
   loadScreenId: number = 0;
 
-  map: AreaMap = {
-    mapPt1X: 0.0,
-    mapPt1Y: 0.0,
-    mapPt2X: 0.0,
-    mapPt2Y: 0.0,
-    mapResX: 0,
-    mapZoom: 0,
-    northAxis: 0,
-    worldPt1X: 0.0,
-    worldPt1Y: 0.0,
-    worldPt2X: 0.0,
-    worldPt2Y: 0.0,
-  };
+  areaMap: AreaMap = new AreaMap();
 
   modListenCheck: number = 0;
 
@@ -182,7 +166,7 @@ export class ForgeArea {
   pathList: KotOR.ModulePath[] = [];
   placeableList: KotOR.ModulePlaceable[] = [];
   playerList: KotOR.ModulePlayer[] = [];
-  roomList: KotOR.ModuleRoom[] = [];
+  rooms: KotOR.ModuleRoom[] = [];
   soundList: KotOR.ModuleSound[] = [];
   storeList: KotOR.ModuleStore[] = [];
   triggerList: KotOR.ModuleTrigger[] = [];
@@ -192,6 +176,422 @@ export class ForgeArea {
   constructor(git: KotOR.GFFObject, are: KotOR.GFFObject){
     this.git = git;
     this.are = are;
+  }
+
+  setContext(context: UI3DRenderer){
+    this.context = context;
+  }
+
+  async load(){
+    //BEGIN AREA LOAD
+
+    if(this.are.RootNode.hasField('ObjectId'))
+      this.id = this.are.getFieldByLabel('ObjectId').getValue();
+
+    let rooms = this.are.getFieldByLabel('Rooms');
+
+    this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
+    this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
+    this.chanceLightning = this.are.getFieldByLabel('ChanceLightning').getValue();
+    this.chanceRain = this.are.getFieldByLabel('ChanceRain').getValue();
+    this.chanceSnow = this.are.getFieldByLabel('ChanceSnow').getValue();
+    this.comments = this.are.getFieldByLabel('Comments').getValue();
+    this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
+    this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
+    this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
+    this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.expansionList = [];
+
+    this.flags = this.are.getFieldByLabel('Flags').getValue();
+    // this.grass = {
+    //   ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
+    //   density: this.are.getFieldByLabel('Grass_Density').getValue(),
+    //   diffuse: this.are.getFieldByLabel('Grass_Diffuse').getValue(),
+    //   probability: {
+    //     lowerLeft: this.are.getFieldByLabel('Grass_Prob_LL').getValue(),
+    //     lowerRight: this.are.getFieldByLabel('Grass_Prob_LR').getValue(),
+    //     upperLeft: this.are.getFieldByLabel('Grass_Prob_UL').getValue(),
+    //     upperRight: this.are.getFieldByLabel('Grass_Prob_UR').getValue()
+    //   },
+    //   quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
+    //   textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
+    // };
+
+    this.id = this.are.getFieldByLabel('ID').getValue();
+    this.isNight = this.are.getFieldByLabel('IsNight').getValue();
+    this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
+    this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
+
+    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    if(map){
+      this.areaMap = AreaMap.FromStruct(map) as AreaMap;
+    }
+
+    // if(this.are.RootNode.hasField('MiniGame')){
+    //   this.miniGame = new ModuleMiniGame(
+    //     this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
+    //   );
+    // }
+
+    this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
+    this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
+    this.moonAmbientColor = this.are.getFieldByLabel('MoonAmbientColor').getValue();
+    this.moonDiffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
+    this.moonFogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
+    this.moonFogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
+    this.moonFogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
+    this.moonFogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
+    this.moonShadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
+    this.name = this.are.getFieldByLabel('Name').getCExoLocString();
+
+    this.noHangBack = !!this.are.getFieldByLabel('NoHangBack').getValue();
+    this.noRest = !!this.are.getFieldByLabel('NoRest').getValue();
+
+    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnEnter)){
+    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnEnter, this.are.getFieldByLabel(ModuleObjectScript.AreaOnEnter).getValue());
+    // }
+
+    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnExit)){
+    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnExit, this.are.getFieldByLabel(ModuleObjectScript.AreaOnExit).getValue());
+    // }
+
+    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnHeartbeat)){
+    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnHeartbeat, this.are.getFieldByLabel(ModuleObjectScript.AreaOnHeartbeat).getValue());
+    // }
+
+    // if(this.are.RootNode.hasField(ModuleObjectScript.AreaOnUserDefined)){
+    //   this.scriptResRefs.set(ModuleObjectScript.AreaOnUserDefined, this.are.getFieldByLabel(ModuleObjectScript.AreaOnUserDefined).getValue());
+    // }
+
+    this.playerOnly = !!this.are.getFieldByLabel('PlayerOnly').getValue();
+    this.playerVsPlayer = this.are.getFieldByLabel('PlayerVsPlayer').getValue();
+
+    //Rooms
+    for(let i = 0; i < rooms.childStructs.length; i++ ){
+      let strt = rooms.childStructs[i];
+      const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
+      const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
+      const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
+      const room = new KotOR.ModuleRoom(roomName, this as any);
+      room.setAmbientScale(ambientScale);
+      room.setEnvAudio(envAudio);
+      this.rooms.push(room);
+    }
+
+    this.shadowOpacity = this.are.getFieldByLabel('ShadowOpacity').getValue();
+
+    this.stealthXPEnabled = this.are.getFieldByLabel('StealthXPEnabled').getValue();
+    this.stealthXPLoss = this.are.getFieldByLabel('StealthXPLoss').getValue();
+    this.stealthXPMax = this.are.getFieldByLabel('StealthXPMax').getValue();
+
+    this.sunAmbientColor = this.are.getFieldByLabel('SunAmbientColor').getValue();
+    this.sunDiffuseColor = this.are.getFieldByLabel('SunDiffuseColor').getValue();
+    this.sunFogColor = this.are.getFieldByLabel('SunFogColor').getValue();
+    this.sunFogFar = this.are.getFieldByLabel('SunFogFar').getValue();
+    this.sunFogNear = this.are.getFieldByLabel('SunFogNear').getValue();
+    this.sunFogOn = this.are.getFieldByLabel('SunFogOn').getValue();
+    this.sunShadows = this.are.getFieldByLabel('SunShadows').getValue();
+    this.tag = this.are.getFieldByLabel('Tag').getValue();
+    this.unescapable = this.are.getFieldByLabel('Unescapable').getValue() ? true : false;
+    this.version = this.are.getFieldByLabel('Version').getValue();
+    this.windPower = this.are.getFieldByLabel('WindPower').getValue();
+
+    // this.fog = undefined;
+
+    // if(this.sun.fogOn){
+    //   this.fog = new THREE.Fog(
+    //     this.sun.fogColor,
+    //     this.sun.fogNear,
+    //     this.sun.fogFar
+    //   );
+    //   GameState.scene.fog = this.fog;
+    // }else{
+    //   GameState.scene.fog = undefined;
+    // }
+
+    //BEGIN GIT LOAD
+
+    // const areaMap = this.git.getFieldByLabel('AreaMap');
+    // const areaProps = this.git.getFieldByLabel('AreaProperties');
+    // const areaEffects = this.git.getFieldByLabel('AreaEffectList');
+    // const cameras = this.git.getFieldByLabel('CameraList');
+    // const creatures = this.git.getFieldByLabel('Creature List');
+    // const doors = this.git.getFieldByLabel('Door List');
+    // const encounters = this.git.getFieldByLabel('Encounter List');
+    // const placeables = this.git.getFieldByLabel('Placeable List');
+    // const sounds = this.git.getFieldByLabel('SoundList');
+    // const stores = this.git.getFieldByLabel('StoreList');
+    // const triggers = this.git.getFieldByLabel('TriggerList');
+    // const waypoints = this.git.getFieldByLabel('WaypointList');
+
+    // const areaPropsField = areaProps.getChildStructs()[0].getFields();
+    // this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
+    // this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
+    // this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
+    // this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
+    // if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
+    //   this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
+    // }else{
+    //   this.audio.environmentAudio = -1;
+    // }
+    
+    // this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
+    // this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
+    // this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
+    // this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
+    // AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
+
+    // //Cameras
+    // if(cameras){
+    //   for(let i = 0; i < cameras.childStructs.length; i++){
+    //     const strt = cameras.childStructs[i];
+    //     const camera = new ModuleCamera(GFFObject.FromStruct(strt) );
+    //     this.cameras.push(camera);
+    //   }
+    // }
+
+    // //AreaEffects
+    // if(areaEffects){
+    //   for(let i = 0; i < areaEffects.childStructs.length; i++){
+    //     const strt = areaEffects.childStructs[i];
+    //     this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Creatures
+    // if(creatures){
+    //   for(let i = 0; i < creatures.childStructs.length; i++){
+    //     const strt = creatures.childStructs[i];
+    //     this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Triggers
+    // if(triggers){
+    //   for(let i = 0; i < triggers.childStructs.length; i++){
+    //     const strt = triggers.childStructs[i];
+    //     this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Encounter
+    // if(encounters){
+    //   for(let i = 0; i < encounters.childStructs.length; i++){
+    //     const strt = encounters.childStructs[i];
+    //     this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Doors
+    // if(doors){
+    //   for(let i = 0; i < doors.childStructs.length; i++ ){
+    //     const strt = doors.childStructs[i];
+    //     this.attachObject( new ModuleDoor(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Placeables
+    // if(placeables){
+    //   for(let i = 0; i < placeables.childStructs.length; i++ ){
+    //     const strt = placeables.childStructs[i];
+    //     this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Sounds
+    // if(sounds){
+    //   for(let i = 0; i < sounds.childStructs.length; i++ ){
+    //     const strt = sounds.childStructs[i];
+    //     this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
+    //   }
+    // }
+
+    // //Stores
+    // if(stores){
+    //   for(let i = 0; i < stores.childStructs.length; i++ ){
+    //     const strt = stores.childStructs[i];
+    //     this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //Waypoints
+    // if(waypoints){
+    //   for(let i = 0; i < waypoints.childStructs.length; i++ ){
+    //     const strt = waypoints.childStructs[i];
+
+    //     if(this.transWP){
+    //       if(typeof this.transWP === 'string'){
+    //         if(this.transWP.toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
+    //           this.transWP = GFFObject.FromStruct(strt);
+    //         }
+    //       }else if(this.transWP instanceof GFFObject){
+    //         if(this.transWP.getFieldByLabel('Tag').getValue().toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
+    //           this.transWP = GFFObject.FromStruct(strt);
+    //         }
+    //       }
+    //     }
+        
+    //     this.attachObject( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
+    //   }
+    // }
+
+    // //AreaMapData
+    // if(areaMap){
+    //   const areaMapStruct = areaMap.getChildStructs()[0];
+    //   if(areaMapStruct){
+    //     this.areaMap.loadDataStruct(areaMapStruct);
+    //   }
+    // }
+
+    // if(!(this.transWP instanceof GFFObject)){
+    //   this.transWP = null;
+    // }
+
+    // if(this.git.RootNode.hasField('SWVarTable')){
+    //   console.log("SWVarTable", this.git);
+    //   let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+    //   //console.log(localBools);
+    //   for(let i = 0; i < localBools.length; i++){
+    //     let data = localBools[i].getFieldByLabel('Variable').getValue();
+    //     for(let bit = 0; bit < 32; bit++){
+    //       this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+    //     }
+    //   }
+    // }
+
+    // GameState.AlphaTest = this.alphaTest;
+
+    // AudioEngine.GetAudioEngine().setReverbProfile(this.audio.environmentAudio);
+
+    // FollowerCamera.setCameraStyle(this.getCameraStyle());
+    // if(this.miniGame){
+    //   FollowerCamera.setCameraFOV(this.miniGame.cameraViewAngle);
+    // }else{
+    //   FollowerCamera.setCameraFOV(FollowerCamera.DEFAULT_FOV);
+    // }
+
+    try{
+      const lyt = await ProjectFileSystem.readFile(`${this.name.getValue()}.lyt`);
+      if(lyt){
+        this.layout = new KotOR.LYTObject(lyt);
+
+        //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
+        let sortedRooms: KotOR.ModuleRoom[] = [];
+        for(let i = 0; i < this.layout.rooms.length; i++){
+          let roomLYT = this.layout.rooms[i];
+          for(let r = 0; r != this.rooms.length; r++ ){
+            let room = this.rooms[r];
+            if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
+              room.position.copy(roomLYT.position);
+              sortedRooms.push(room);
+            }
+          }
+        }
+
+        this.rooms = sortedRooms;
+
+        // for(let i = 0; i < this.layout.doorhooks.length; i++){
+        //   let _doorHook = this.layout.doorhooks[i];
+        //   this.doorhooks.push(_doorHook);
+        // }
+
+        // if(this.miniGame){
+        //   for(let i = 0; i < this.layout.tracks.length; i++){
+        //     this.miniGame.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
+        //   }
+    
+        //   for(let i = 0; i < this.layout.obstacles.length; i++){
+        //     this.miniGame.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
+        //   }
+        // }
+      }
+
+      const vis = await ProjectFileSystem.readFile(`${this.name.getValue()}.vis`);
+      if(vis){
+        this.visObject = new KotOR.VISObject(vis);
+        this.visObject.read();
+        this.visObject.attachArea(this as any);
+      }
+
+      console.log('lyt', this.layout);
+      console.log('vis', this.visObject);
+    }catch(e){
+      console.error(e);
+    }
+
+    // await this.loadVis();
+    // await this.loadLayout();
+    // await this.loadScripts();
+    // GameState.scene.fog = this.fog;
+
+    await this.loadRooms();
+  }
+
+  /**
+   * Load the area's rooms
+   */
+  async loadRooms(): Promise<void> {
+    console.log('Loading Rooms');
+    // this.walkEdges = [];
+    // this.walkFaces = [];
+    
+    for(let i = 0; i < this.rooms.length; i++){
+      const room = this.rooms[i];
+      const model = await room.loadModel();
+      if(model instanceof KotOR.OdysseyModel3D){
+        // if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
+        //   this.context.walkmeshList.push( room.collisionData.walkmesh.mesh );
+        //   this.context.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
+        // }
+
+        // if(typeof model.walkmesh != 'undefined'){
+        //   this.context.collisionList.push(model.walkmesh);
+        // }
+
+        // if(typeof model.wok != 'undefined'){
+        //   this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
+        //   this.walkFaces = [...this.walkFaces, ...model.wok.walkableFaces];
+        // }
+        
+        model.name = room.roomName;
+        this.context.addObjectToGroup(room.container, GroupType.ROOMS);
+
+        room.computeBoundingBox();
+        room.model.updateMatrix();
+      }
+    }
+
+    for(let j = 0; j < this.rooms.length; j++){
+      this.rooms[j].linkRooms();
+    }
+
+    //Room Linking Pass 2
+    for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
+      let room1 = this.rooms[i];
+      //console.log(room1.linked_rooms);
+      //Look for all rooms that can see this room
+      for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
+        let room2 = this.rooms[j];
+        //console.log(room2.linked_rooms);
+        if(room2 instanceof KotOR.ModuleRoom){
+          const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
+          const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
+          const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
+          const room1_links_to_room2 = room1_room_links.indexOf(room2.roomName) >= 0;
+
+          const should_link = room2_links_to_room1 || room1_links_to_room2;
+          //console.log('room', room1.roomName, room2.roomName, should_link);
+          if(should_link && !room1.linkedRooms.has(room2.roomName)){
+            room1.linkedRooms.set(room2.roomName, room2);
+          }
+
+          if(should_link && !room2.linkedRooms.has(room1.roomName)){
+            room2.linkedRooms.set(room1.roomName, room1);
+          }
+        }
+      }
+      // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
+    }
   }
 
   exportToARE(){
@@ -274,21 +674,8 @@ export class ForgeArea {
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'LoadScreenID', this.loadScreenId));
 
     // Map (STRUCT with nested structure)
-    const mapField = new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Map');
-    const mapStruct = new KotOR.GFFStruct(0);
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MapPt1X', this.map.mapPt1X));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MapPt1Y', this.map.mapPt1Y));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MapPt2X', this.map.mapPt2X));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MapPt2Y', this.map.mapPt2Y));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'MapResX', this.map.mapResX));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'MapZoom', this.map.mapZoom));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'NorthAxis', this.map.northAxis));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'WorldPt1X', this.map.worldPt1X));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'WorldPt1Y', this.map.worldPt1Y));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'WorldPt2X', this.map.worldPt2X));
-    mapStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'WorldPt2Y', this.map.worldPt2Y));
-    mapField.addChildStruct(mapStruct);
-    are.RootNode.addField(mapField);
+    const mapField =  are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Map'));
+    mapField?.addChildStruct(this.areaMap.export());
 
     // ModListenCheck
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'ModListenCheck', this.modListenCheck));
@@ -350,11 +737,11 @@ export class ForgeArea {
 
     // Rooms
     const roomsField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Rooms');
-    for(let i = 0, len = this.roomList.length; i < len; i++){
+    for(let i = 0, len = this.rooms.length; i < len; i++){
       const roomStruct = new KotOR.GFFStruct(3);
-      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'RoomName', this.roomList[i].roomName));
-      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'EnvAudio', this.roomList[i].envAudio));
-      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'AmbientScale', this.roomList[i].ambientScale));
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'RoomName', this.rooms[i].roomName));
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'EnvAudio', this.rooms[i].envAudio));
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'AmbientScale', this.rooms[i].ambientScale));
       roomsField.addChildStruct(roomStruct);
     }
     are.RootNode.addField(roomsField);
