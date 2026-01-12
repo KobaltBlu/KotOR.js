@@ -36,9 +36,13 @@ export class ProjectFileSystem {
         useProjectFileSystem: true,
       });
     }else{
-      const handle = await this.open(resource, "w") as FileSystemFileHandle;
+      // const handle = await this.open(resource, "w") as FileSystemFileHandle;
+      // return new EditorFile({
+      //   handle: handle,
+      //   useProjectFileSystem: true,
+      // });
       return new EditorFile({
-        handle: handle,
+        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
         useProjectFileSystem: true,
       });
     }

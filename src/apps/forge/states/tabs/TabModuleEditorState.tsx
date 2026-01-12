@@ -4,13 +4,14 @@ import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./";
 import * as THREE from 'three';
 import * as KotOR from '../../KotOR';
-import * as path from "path";
+import { Project } from "../../Project";
 
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
 
   ui3DRenderer: UI3DRenderer;
+  module: KotOR.Module | undefined;
   groundColor: THREE.Color;
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
@@ -31,7 +32,6 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
 
     this.ui3DRenderer.scene.add(this.groundMesh);
-
   }
 
   show(): void {
@@ -55,52 +55,55 @@ export class TabModuleEditorState extends TabState {
 
   }
 
-  
-
   //This should only be used inside KotOR Forge
-  static FromProject(directory?: string, onComplete?: Function){
-    console.log('BuildFromExisting', directory);
+  static async FromProject(project: Project): Promise<KotOR.Module | undefined> {
+    console.log('BuildFromExisting', project);
+    if(!project){
+      return undefined;
+    }
     const module = new KotOR.Module();
     module.transWP = '';
-    if(directory != null){
-      KotOR.GameFileSystem.readFile(path.join(directory, 'module.ifo')).then( (ifo_data) => {
-        new KotOR.GFFObject(ifo_data, (ifo) => {
-          //console.log('Module.FromProject', 'IFO', ifo);
-          try{
-            module.setFromIFO(ifo);
-            KotOR.GameState.time = module.timeManager.pauseTime / 1000;
-            KotOR.GameFileSystem.readFile(path.join(directory, module.entryArea+'.git')).then( (buffer) => {
-              new KotOR.GFFObject(buffer, (git) => {
-                //console.log('Module.FromProject', 'GIT', git);
-                KotOR.GameFileSystem.readFile(path.join(directory, module.entryArea+'.are')).then( (buffer) => {
-                  new KotOR.GFFObject(buffer, (are) => {
-                    //console.log('Module.FromProject', 'ARE', are);
-                    module.area = new KotOR.ModuleArea(module.entryArea, are, git);
-                    module.area.module = module;
-                    module.areas = [module.area];
-                    module.area.setTransitionWaypoint(module.transWP);
+    KotOR.ModuleObjectManager.module = module;
 
-                    KotOR.ModuleObjectManager.module = module;
-                    module.area.load().then(() => {
-                      if(typeof onComplete == 'function')
-                        onComplete(module);
-                    });                        
-                  });
-                }).catch( (e) => {
-                  console.error(e);
-                });
-              });
-            }).catch( (e) => {
-              console.error(e);
-            });
-          }catch(e){
-            console.error(e);
-          }
-        });
-      }).catch( (e) => {
-        console.error(e);
-      });
+    /**
+     * Load the IFO file
+     */
+    const ifoFile = await project.module_ifo?.readFile();
+    if(!ifoFile){
+      console.error('IFO file not found');
+      return undefined;
     }
+    const ifo = new KotOR.GFFObject(ifoFile.buffer);
+    module.setFromIFO(ifo);
+    KotOR.GameState.time = module.timeManager.pauseTime / 1000;
+
+    /**
+     * Load the ARE file
+     */
+    const areFile = await project.module_are?.readFile();
+    if(!areFile){
+      console.error('ARE file not found');
+      return undefined;
+    }
+    const are = new KotOR.GFFObject(areFile.buffer);
+
+    /**
+     * Load the GIT file
+     */
+    const gitFile = await project.module_git?.readFile();
+    if(!gitFile){
+      console.error('GIT file not found');
+      return undefined;
+    }
+    const git = new KotOR.GFFObject(gitFile.buffer);
+
+    /**
+     * Create the area
+     */
+    module.area = new KotOR.ModuleArea(module.entryArea, are, git);
+    module.area.module = module;
+    module.areas = [module.area];
+    await module.area.load();
     return module;
   }
 

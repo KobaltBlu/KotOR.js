@@ -7,6 +7,7 @@ import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSys
 import { ForgeState } from "../../states/ForgeState";
 import { ProjectFileSystem } from "../../ProjectFileSystem";
 import { Project } from "../../Project";
+import path from "path";
 
 type GameModule = {
   moduleName: string;
@@ -17,6 +18,7 @@ type GameModule = {
   ifo: KotOR.GFFObject;
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
+  rooms: { roomName: string, envAudio: number, ambientScale: number }[];
 }
 
 const DEFAULT_PROJECT_NAME = '';
@@ -33,7 +35,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
   const modal = props.modal;
   const [show, setShow] = useState(modal.visible);
   const [gameModules, setGameModules] = useState<GameModule[]>([]);
-  const [selectedGameModule, setSelectedGameModule] = useState<string>('');
+  const [selectedGameModule, setSelectedGameModule] = useState<number>(-1);
   const [projectName, setProjectName] = useState<string>(DEFAULT_PROJECT_NAME);
   const [projectType, setProjectType] = useState<ProjectType>(ProjectType.MODULE);
   const [moduleName, setModuleName] = useState<string>('');
@@ -92,8 +94,21 @@ export const ModalNewProject = (props: BaseModalProps) => {
       ForgeState.project = project;
       project.saveSettings();
       if(projectType === ProjectType.MODULE){
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName);
+        const gameModule = gameModules[selectedGameModule];
+        if(gameModule){
+          console.log('selectedGameModule', gameModule.entryArea);
+          const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
+          if(lyt){  
+            await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
+          }
+          const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
+          if(vis){
+            await ProjectFileSystem.writeFile(areaName + '.vis', vis);
+          }
+        }
+        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
+      modal.close();
       return;
     }
     
@@ -108,8 +123,21 @@ export const ModalNewProject = (props: BaseModalProps) => {
       ForgeState.project = project;
       project.saveSettings();
       if(projectType === ProjectType.MODULE){
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName);
+        const gameModule = gameModules[selectedGameModule];
+        if(gameModule){
+          console.log('selectedGameModule', gameModule.entryArea);
+          const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
+          if(lyt){  
+            await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
+          }
+          const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
+          if(vis){
+            await ProjectFileSystem.writeFile(areaName + '.vis', vis);
+          }
+        }
+        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
+      modal.close();
       return;
     }
   };
@@ -118,7 +146,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
     const newProjectType = parseInt(e.target.value) as ProjectType;
     setProjectType(newProjectType);
     if(newProjectType !== ProjectType.MODULE){
-      setSelectedGameModule('');
+      setSelectedGameModule(-1);
       setModuleName('');
       setAreaName('');
     }
@@ -147,7 +175,8 @@ export const ModalNewProject = (props: BaseModalProps) => {
   };
 
   const onModuleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedGameModule(e.target.value);
+    setSelectedGameModule(parseInt(e.target.value));
+    console.log('selectedGameModule', e.target.value);
   };
 
   return (
@@ -199,10 +228,10 @@ export const ModalNewProject = (props: BaseModalProps) => {
             </InputGroup>
             <InputGroup>
               <InputGroup.Text>Template Module</InputGroup.Text>
-              <FormSelect className="game-modules" value={selectedGameModule} onChange={onModuleTemplateChange}>
-                <option value="">Select a template module</option>
+              <FormSelect className="game-modules" value={selectedGameModule as any} onChange={onModuleTemplateChange}>
+                <option value="-1">None</option>
                 {gameModules.map((module, index) => (
-                  <option key={module.moduleName} value={module.moduleName}>{module.moduleName} - {module.areaName}</option>
+                  <option key={module.moduleName} value={index as any}>{module.moduleName} - {module.areaName}</option>
                 ))}
               </FormSelect>
             </InputGroup>

@@ -22,12 +22,14 @@ export class Project {
   className: string;
   files: any[];
   settings: ProjectSettings = {} as ProjectSettings;
-  moduleEditor: any;
-  module: any;
+  moduleEditor: TabModuleEditorState | undefined;
+  module: KotOR.Module | undefined;
 
   module_ifo: EditorFile | undefined;
   module_are: EditorFile | undefined;
   module_git: EditorFile | undefined;
+  module_lyt: EditorFile | undefined;
+  module_vis: EditorFile | undefined;
 
   static Types: any;
 
@@ -88,7 +90,8 @@ export class Project {
     this.module_ifo = undefined;
     this.module_are = undefined;
     this.module_git = undefined;
-    
+    this.module_lyt = undefined;
+    this.module_vis = undefined;
     //check if the module.ifo file exists
     if ( !await ProjectFileSystem.exists('module.ifo') ) {
       return false;
@@ -158,78 +161,41 @@ export class Project {
   }
 
   //Opens a project from it's location
-  open(onSuccess?: Function, deferInit = false){
-    // ForgeState.loader.SetMessage("Loading Project..");
-    // ForgeState.loader.Show();
+  async open(deferInit = false){
     //load project.json
-    this.load().then( () => {
-      try{
-        console.log('project', this.settings);
+    await this.load();
+    try{
+      console.log('project', this.settings);
 
-        let quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
-        if(quickStart){
-          console.log(quickStart);
-          ForgeState.tabManager.removeTab(quickStart);
-        }
-
-        // let pjIndex = KotOR.ConfigClient.options.recent_projects.indexOf(this.directory);
-        // if (pjIndex > -1) {
-        //   KotOR.ConfigClient.options.recent_projects.splice(pjIndex, 1);
-        // }
-
-        // //Append this project to the beginning of the list
-        // KotOR.ConfigClient.options.recent_projects.unshift(this.directory);
-        // KotOR.ConfigClient.save(undefined, true); //Save the configuration silently
-
-        // this.getFiles(()=>{
-
-          let project = this;
-
-          KotOR.GameInitializer.Init(this.settings.game).then( () => {
-            //This is where we initialize ProjectType specific operations
-            if(!deferInit){
-              project.initializeProject( () => {
-                // ForgeState.loader.SetMessage("Loading Complete");
-                //When everything is done
-                if(typeof onSuccess == 'function')
-                  onSuccess();
-              });
-            }else{
-              if(typeof onSuccess == 'function')
-                onSuccess();
-            }
-          });
-
-        // });
-
-        ForgeState.project = this;
-
-      }catch(e){
-        console.log(e);
-        alert('Project Open Failed');
-        if(typeof onSuccess == 'function')
-          onSuccess();
+      const quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
+      if(quickStart){
+        console.log(quickStart);
+        ForgeState.tabManager.removeTab(quickStart);
       }
-    });
+
+      await KotOR.GameInitializer.Init(this.settings.game);
+      //This is where we initialize ProjectType specific operations
+      if(!deferInit){
+        await this.initializeProject();
+      }
+
+      ForgeState.project = this;
+    }catch(e){
+      console.error(e);
+      alert('Project Open Failed');
+    }
 
   }
 
-  initializeProject(onComplete?: Function){
+  async initializeProject(){
     switch(this.settings.type){
       case ProjectType.MODULE:
         //Initialize the Map Editor
         if(this.settings.module_editor.open)
-          this.initEditor();
-
-        //All done??? ok Complete
-        if(typeof onComplete == 'function')
-          onComplete();
+          await this.initEditor();
       break;
       case ProjectType.OTHER:
-
-        //All done??? ok Complete
-        if(typeof onComplete == 'function')
-          onComplete();
+        //TODO: Implement other project types
       break;
     }
     console.log('Project Init');
@@ -246,58 +212,13 @@ export class Project {
 
   }
 
-  // async getFiles(onSuccess?: Function){
-
-  //   // await this.parseProjectFolder();
-
-  //   // ForgeState.projectExplorerTab.initialize();
-      
-  //   if(typeof onSuccess == 'function')
-  //     onSuccess(this.files);
-
-  // }
-
-  // async parseProjectFolder( folder: string = '' ){
-  //   return new Promise<void>( async (resolve, reject) => {
-  //     if(typeof folder === 'undefined')
-  //       folder = this.directory;
-
-  //     console.log('parseProjectFolder', folder);
-
-  //     fs.readdir(folder, {withFileTypes: true}, async (err, directory_objects) => {
-  //       if (err){
-  //         resolve();
-  //       }
-
-  //       for(let i = 0, len = directory_objects.length; i < len; i++){
-  //         let directory_object = directory_objects[i];
-  //         let name = directory_object.name;
-  //         let args = name.split('.');
-
-  //         if(directory_object.isDirectory()){
-  //           //DIRECTORY
-  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: null, type: 'group'});
-  //           await this.parseProjectFolder( path.join(folder, name) );
-  //         }else{
-  //           //FILE
-  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: args[1], type: 'resource'});
-  //         }
-  //       }
-
-  //       resolve();
-          
-  //     });
-  //   });
-  // }
-
-
   /**
    * Creates a new THREE.js Engine and initialize the scene
    */
-  initEditor() {
+  async initEditor() {
     this.moduleEditor = new TabModuleEditorState();
     ForgeState.tabManager.addTab(this.moduleEditor);
-    //this.moduleEditor.Init();
+    this.moduleEditor.module = await TabModuleEditorState.FromProject(this);
   }
 
   openModuleEditor(){
@@ -348,13 +269,13 @@ export class Project {
     }
   }
 
-  async buildModuleAndArea(name: string, areaName: string = 'm01aa'){
+  async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const ifo = this.generateNewModule(name, areaName);
-    const are = this.generateNewArea(areaName);
+    const are = this.generateNewArea(areaName, rooms);
     const git = this.generateNewGit();
     await ProjectFileSystem.writeFile(`module.ifo`, ifo.getExportBuffer());
-    await ProjectFileSystem.writeFile(`area.are`, are.getExportBuffer());
-    await ProjectFileSystem.writeFile(`area.git`, git.getExportBuffer());
+    await ProjectFileSystem.writeFile(`${areaName}.are`, are.getExportBuffer());
+    await ProjectFileSystem.writeFile(`${areaName}.git`, git.getExportBuffer());
 
     return { ifo, are, git };
   }
@@ -438,7 +359,7 @@ export class Project {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrLvlUp', ''));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrRest', ''));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnSpawnBtnDn', ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUnAqreltem', ''));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUnAqreItem', ''));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUsrDefined', ''));
 
     // Start Date/Time
@@ -463,7 +384,7 @@ export class Project {
     return ifo;
   }
 
-  generateNewArea(name: string){
+  generateNewArea(name: string, rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const are = new KotOR.GFFObject();
     are.FileType = 'ARE ';
 
@@ -617,7 +538,15 @@ export class Project {
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PlayerVsPlayer', 0));
 
     // Rooms
-    are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Rooms'));
+    const roomsField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Rooms');
+    for(let i = 0, len = rooms.length; i < len; i++){
+      const roomStruct = new KotOR.GFFStruct(3);
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'RoomName', rooms[i].roomName));
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'EnvAudio', rooms[i].envAudio));
+      roomStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'AmbientScale', rooms[i].ambientScale));
+      roomsField.addChildStruct(roomStruct);
+    }
+    are.RootNode.addField(roomsField);
 
     // ShadowOpacity
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ShadowOpacity', 0));

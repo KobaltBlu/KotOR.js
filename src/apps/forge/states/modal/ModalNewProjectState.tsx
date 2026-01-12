@@ -13,6 +13,7 @@ type GameModule = {
   ifo: KotOR.GFFObject;
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
+  rooms: { roomName: string, envAudio: number, ambientScale: number }[];
 }
 
 const GameModules: Map<string, GameModule> = new Map();
@@ -50,6 +51,17 @@ const loadGameModules = async () => {
 
       const areaName = are_gff.getFieldByLabel('Name').getValue() || '';
 
+      const rooms = are_gff.getFieldByLabel('Rooms').getChildStructs();
+      const roomData: { roomName: string, envAudio: number, ambientScale: number }[] = [];
+      for(const room of rooms){
+        roomData.push({
+          roomName: room.getFieldByLabel('RoomName').getValue(),
+          envAudio: room.getFieldByLabel('EnvAudio').getValue(),
+          ambientScale: room.getFieldByLabel('AmbientScale').getValue()
+        });
+      }
+
+
       const gameModule: GameModule = {
         moduleName: moduleName,
         entryArea: entryArea,
@@ -58,7 +70,8 @@ const loadGameModules = async () => {
         type: 'rim',
         ifo: ifo_gff,
         git: git_gff,
-        are: are_gff
+        are: are_gff,
+        rooms: roomData
       };
       GameModules.set(moduleName, gameModule);
       results.push(gameModule);
