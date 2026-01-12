@@ -7,7 +7,6 @@ export class ForgeModule {
 
   ifo: KotOR.GFFObject;
 
-  areaName: string = 'm01aa';
   area: ForgeArea;
   areas: ForgeArea[] = [];
   entryArea: string = 'm01aa';
@@ -25,11 +24,6 @@ export class ForgeModule {
   customTokens: Map<number, string>;
   transition: any;
   transWP: string;
-
-  /**
-   * List of Areas in the module
-   */
-  areaList: KotOR.IAreaListItem[] = [];
 
   /**
    * Description of module
@@ -134,7 +128,7 @@ export class ForgeModule {
     // Mod_Area_list - KotOR only supports one Area per module
     const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'))!;
     const areaStruct = new KotOR.GFFStruct(6);
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areaName));
+    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getString()));
     areaList.addChildStruct(areaStruct);
 
     // Mod_Creator_ID
