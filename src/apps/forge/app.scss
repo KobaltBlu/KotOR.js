@@ -439,10 +439,11 @@ div#editor-content {
 // =============================================================================
 
 .input-group {
+  margin-bottom: $spacing-sm;
   .input-group-text {
     background-color: $form-bg;
     color: $text-primary;
-    margin-bottom: $spacing-sm;
+    margin-bottom: 0 !important;
     border-color: $form-border;
     z-index: 1;
     border-width: $border-width;
@@ -451,6 +452,18 @@ div#editor-content {
   > input {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+  }
+
+  > select {
+    margin-bottom: 0 !important;
+  }
+
+  > input {
+    margin-bottom: 0 !important;
+  }
+
+  > button {
+    margin-bottom: 0 !important;
   }
 }
 

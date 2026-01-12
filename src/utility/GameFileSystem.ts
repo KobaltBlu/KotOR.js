@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { ApplicationProfile } from "./ApplicationProfile";
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFileSystemReadDirOptions";
+declare const dialog: any;
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {
@@ -540,15 +541,6 @@ export class GameFileSystem {
       let fileHandle = await window.showSaveFilePicker({
         // d
       });
-    }
-  }
-
-  static async showOpenDirectoryDialog(){
-    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      
-    }else{
-      let directoryHandle = await window.showDirectoryPicker({ });
-      return directoryHandle;
     }
   }
 
