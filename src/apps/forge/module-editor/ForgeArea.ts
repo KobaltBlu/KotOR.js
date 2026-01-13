@@ -3,7 +3,7 @@ import type { ForgeModule } from "./ForgeModule";
 import { AreaMap } from "../../../module/AreaMap";
 import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
 import { ProjectFileSystem } from "../ProjectFileSystem";
-import { ResourceTypes } from "../KotOR";
+import { ForgeMiniGame } from "./ForgeMiniGame";
 
 export class ForgeArea {
 
@@ -153,25 +153,21 @@ export class ForgeArea {
     musicNight: 0,
   }
 
-  cameraList: KotOR.ModuleCamera[] = [];
-  creatureList: KotOR.ModuleCreature[] = [];
-  doorList: KotOR.ModuleDoor[] = [];
-  encounterList: KotOR.ModuleEncounter[] = [];
-  itemList: KotOR.ModuleItem[] = [];
-  mgEnemyList: KotOR.ModuleMGEnemy[] = [];
-  mgObstacleList: KotOR.ModuleMGObstacle[] = [];
-  mgPlayerList: KotOR.ModuleMGPlayer[] = [];
-  mgTrackList: KotOR.ModuleMGTrack[] = [];
+  miniGame: ForgeMiniGame;
+  cameras: KotOR.ModuleCamera[] = [];
+  creatures: KotOR.ModuleCreature[] = [];
+  doors: KotOR.ModuleDoor[] = [];
+  encounters: KotOR.ModuleEncounter[] = [];
+  items: KotOR.ModuleItem[] = [];
   miniGameList: KotOR.ModuleMiniGame[] = [];
-  pathList: KotOR.ModulePath[] = [];
-  placeableList: KotOR.ModulePlaceable[] = [];
+  placeables: KotOR.ModulePlaceable[] = [];
   playerList: KotOR.ModulePlayer[] = [];
   rooms: KotOR.ModuleRoom[] = [];
-  soundList: KotOR.ModuleSound[] = [];
-  storeList: KotOR.ModuleStore[] = [];
-  triggerList: KotOR.ModuleTrigger[] = [];
-  waypointList: KotOR.ModuleWaypoint[] = [];
-  useTemplate: boolean = false;
+  sounds: KotOR.ModuleSound[] = [];
+  stores: KotOR.ModuleStore[] = [];
+  triggers: KotOR.ModuleTrigger[] = [];
+  waypoints: KotOR.ModuleWaypoint[] = [];
+  useTemplate: boolean = true;
 
   constructor(git: KotOR.GFFObject, are: KotOR.GFFObject){
     this.git = git;
@@ -227,11 +223,11 @@ export class ForgeArea {
       this.areaMap = AreaMap.FromStruct(map) as AreaMap;
     }
 
-    // if(this.are.RootNode.hasField('MiniGame')){
-    //   this.miniGame = new ModuleMiniGame(
-    //     this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
-    //   );
-    // }
+    if(this.are.RootNode.hasField('MiniGame')){
+      this.miniGame = new ForgeMiniGame(
+        this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
+      );
+    }
 
     this.modListenCheck = this.are.getFieldByLabel('ModListenCheck').getValue();
     this.modSpotCheck = this.are.getFieldByLabel('ModSpotCheck').getValue();
@@ -677,6 +673,11 @@ export class ForgeArea {
     const mapField =  are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Map'));
     mapField?.addChildStruct(this.areaMap.export());
 
+    if(this.miniGame){
+      const miniGameField = are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'MiniGame'));
+      miniGameField?.addChildStruct(this.miniGame.exportToGFFStruct());
+    }
+
     // ModListenCheck
     are.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'ModListenCheck', this.modListenCheck));
 
@@ -815,64 +816,64 @@ export class ForgeArea {
 
     // CameraList
     const cameraListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'CameraList');
-    for(let i = 0, len = this.cameraList.length; i < len; i++){
-      cameraListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.cameraList[i]));
+    for(let i = 0, len = this.cameras.length; i < len; i++){
+      cameraListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.cameras[i]));
     }
     git.RootNode.addField(cameraListField);
 
     // Creature List
     const creatureListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Creature List');
-    for(let i = 0, len = this.creatureList.length; i < len; i++){
-      creatureListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.creatureList[i]));
+    for(let i = 0, len = this.creatures.length; i < len; i++){
+      creatureListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.creatures[i]));
     }
     git.RootNode.addField(creatureListField);
 
     // Door List
     const doorListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Door List');
-    for(let i = 0, len = this.doorList.length; i < len; i++){
-      doorListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.doorList[i]));
+    for(let i = 0, len = this.doors.length; i < len; i++){
+      doorListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.doors[i]));
     }
     git.RootNode.addField(doorListField);
 
     // Encounter List
     const encounterListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Encounter List');
-    for(let i = 0, len = this.encounterList.length; i < len; i++){
-      encounterListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.encounterList[i]));
+    for(let i = 0, len = this.encounters.length; i < len; i++){
+      encounterListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.encounters[i]));
     }
     git.RootNode.addField(encounterListField);
 
     // List (generic/unnamed list for items)
     const listField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'List');
-    for(let i = 0, len = this.itemList.length; i < len; i++){
-      listField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.itemList[i]));
+    for(let i = 0, len = this.items.length; i < len; i++){
+      listField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.items[i]));
     }
     git.RootNode.addField(listField);
 
     // Placeable List
     const placeableListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Placeable List');
-    for(let i = 0, len = this.placeableList.length; i < len; i++){
-      placeableListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.placeableList[i]));
+    for(let i = 0, len = this.placeables.length; i < len; i++){
+      placeableListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.placeables[i]));
     }
     git.RootNode.addField(placeableListField);
 
     // SoundList
     const soundListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SoundList');
-    for(let i = 0, len = this.soundList.length; i < len; i++){
-      soundListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.soundList[i]));
+    for(let i = 0, len = this.sounds.length; i < len; i++){
+      soundListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.sounds[i]));
     }
     git.RootNode.addField(soundListField);
 
     // StoreList
     const storeListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'StoreList');
-    for(let i = 0, len = this.storeList.length; i < len; i++){
-      storeListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.storeList[i]));
+    for(let i = 0, len = this.stores.length; i < len; i++){
+      storeListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.stores[i]));
     }
     git.RootNode.addField(storeListField);
 
     // TriggerList
     const triggerListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'TriggerList');
-    for(let i = 0, len = this.triggerList.length; i < len; i++){
-      triggerListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.triggerList[i]));
+    for(let i = 0, len = this.triggers.length; i < len; i++){
+      triggerListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.triggers[i]));
     }
     git.RootNode.addField(triggerListField);
 
@@ -881,8 +882,8 @@ export class ForgeArea {
 
     // WaypointList
     const waypointListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'WaypointList');
-    for(let i = 0, len = this.waypointList.length; i < len; i++){
-      waypointListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.waypointList[i]));
+    for(let i = 0, len = this.waypoints.length; i < len; i++){
+      waypointListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.waypoints[i]));
     }
     git.RootNode.addField(waypointListField);
 
