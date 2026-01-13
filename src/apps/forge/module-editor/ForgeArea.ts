@@ -4,6 +4,7 @@ import { AreaMap } from "../../../module/AreaMap";
 import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
 import { ProjectFileSystem } from "../ProjectFileSystem";
 import { ForgeMiniGame } from "./ForgeMiniGame";
+import { ForgeCreature } from "./ForgeCreature";
 
 export class ForgeArea {
 
@@ -155,7 +156,7 @@ export class ForgeArea {
 
   miniGame: ForgeMiniGame;
   cameras: KotOR.ModuleCamera[] = [];
-  creatures: KotOR.ModuleCreature[] = [];
+  creatures: ForgeCreature[] = [];
   doors: KotOR.ModuleDoor[] = [];
   encounters: KotOR.ModuleEncounter[] = [];
   items: KotOR.ModuleItem[] = [];
@@ -311,7 +312,7 @@ export class ForgeArea {
     // const areaProps = this.git.getFieldByLabel('AreaProperties');
     // const areaEffects = this.git.getFieldByLabel('AreaEffectList');
     // const cameras = this.git.getFieldByLabel('CameraList');
-    // const creatures = this.git.getFieldByLabel('Creature List');
+    const creatures = this.git.getFieldByLabel('Creature List');
     // const doors = this.git.getFieldByLabel('Door List');
     // const encounters = this.git.getFieldByLabel('Encounter List');
     // const placeables = this.git.getFieldByLabel('Placeable List');
@@ -355,12 +356,14 @@ export class ForgeArea {
     // }
 
     // //Creatures
-    // if(creatures){
-    //   for(let i = 0; i < creatures.childStructs.length; i++){
-    //     const strt = creatures.childStructs[i];
-    //     this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    if(creatures){
+      for(let i = 0; i < creatures.childStructs.length; i++){
+        const strt = creatures.childStructs[i];
+        const creature = new ForgeCreature();
+        creature.setGITInstance(strt);
+        this.creatures.push(creature);
+      }
+    }
 
     // //Triggers
     // if(triggers){
@@ -521,6 +524,17 @@ export class ForgeArea {
     // GameState.scene.fog = this.fog;
 
     await this.loadRooms();
+    await this.loadCreatures();
+  }
+
+  async loadCreatures(): Promise<void> {
+    for(let i = 0; i < this.creatures.length; i++){
+      const creature = this.creatures[i];
+      creature.setContext(this.context);
+      await creature.loadBlueprint();
+      await creature.load();
+      this.context.addObjectToGroup(creature.container, GroupType.CREATURE);
+    }
   }
 
   /**
@@ -824,7 +838,7 @@ export class ForgeArea {
     // Creature List
     const creatureListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Creature List');
     for(let i = 0, len = this.creatures.length; i < len; i++){
-      creatureListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.creatures[i]));
+      creatureListField.addChildStruct(this.creatures[i].getGITInstance());
     }
     git.RootNode.addField(creatureListField);
 
