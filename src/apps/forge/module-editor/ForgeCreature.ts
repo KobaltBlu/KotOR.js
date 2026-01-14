@@ -402,8 +402,6 @@ export class ForgeCreature extends ForgeGameObject {
     }
     this.container.add(this.model);
 
-    this.context.addObjectToGroup(this.container, GroupType.CREATURE);
-
     // this.updateCameraFocus();
 
     return this.model;

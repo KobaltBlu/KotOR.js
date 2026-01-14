@@ -264,13 +264,7 @@ export class TabModuleEditorState extends TabState {
 
     // Set context and area
     gameObject.setContext(this.ui3DRenderer);
-    gameObject.setArea(this.module.area);
-
-    // Add to appropriate array in ForgeArea
-    this.addGameObjectToArea(gameObject, this.selectedGameObjectType);
-
-    // Add to scene group
-    this.addGameObjectToSceneGroup(gameObject, this.selectedGameObjectType);
+    this.module.area.attachObject(gameObject);
 
     // Load blueprint and then the object
     if(this.selectedBlueprintResRef){
@@ -364,90 +358,6 @@ export class TabModuleEditorState extends TabState {
         console.error(`Unknown game object type: ${type}`);
         return null;
     }
-  }
-
-  addGameObjectToArea(gameObject: ForgeGameObject, type: GameObjectType){
-    if(!this.module?.area){
-      return;
-    }
-
-    switch(type){
-      case GameObjectType.CREATURE:
-        this.module.area.creatures.push(gameObject as ForgeCreature);
-        break;
-      case GameObjectType.CAMERA:
-        this.module.area.cameras.push(gameObject as ForgeCamera);
-        break;
-      case GameObjectType.DOOR:
-        this.module.area.doors.push(gameObject as ForgeDoor);
-        break;
-      case GameObjectType.ENCOUNTER:
-        this.module.area.encounters.push(gameObject as ForgeEncounter);
-        break;
-      case GameObjectType.ITEM:
-        this.module.area.items.push(gameObject as ForgeItem);
-        break;
-      case GameObjectType.PLACEABLE:
-        this.module.area.placeables.push(gameObject as ForgePlaceable);
-        break;
-      case GameObjectType.SOUND:
-        this.module.area.sounds.push(gameObject as ForgeSound);
-        break;
-      case GameObjectType.STORE:
-        this.module.area.stores.push(gameObject as ForgeStore);
-        break;
-      case GameObjectType.TRIGGER:
-        this.module.area.triggers.push(gameObject as ForgeTrigger);
-        break;
-      case GameObjectType.WAYPOINT:
-        this.module.area.waypoints.push(gameObject as ForgeWaypoint);
-        break;
-    }
-  }
-
-  addGameObjectToSceneGroup(gameObject: ForgeGameObject, type: GameObjectType){
-    if(!this.ui3DRenderer){
-      return;
-    }
-
-    let groupType: GroupType;
-    switch(type){
-      case GameObjectType.CREATURE:
-        groupType = GroupType.CREATURE;
-        break;
-      case GameObjectType.CAMERA:
-        groupType = GroupType.CAMERA;
-        break;
-      case GameObjectType.DOOR:
-        groupType = GroupType.DOOR;
-        break;
-      case GameObjectType.ENCOUNTER:
-        groupType = GroupType.ENCOUNTER;
-        break;
-      case GameObjectType.ITEM:
-        groupType = GroupType.ITEM;
-        break;
-      case GameObjectType.PLACEABLE:
-        groupType = GroupType.PLACEABLE;
-        break;
-      case GameObjectType.SOUND:
-        groupType = GroupType.SOUND;
-        break;
-      case GameObjectType.STORE:
-        groupType = GroupType.STORE;
-        break;
-      case GameObjectType.TRIGGER:
-        groupType = GroupType.TRIGGER;
-        break;
-      case GameObjectType.WAYPOINT:
-        groupType = GroupType.WAYPOINT;
-        break;
-      default:
-        console.warn(`No group type mapping for: ${type}`);
-        return;
-    }
-
-    this.ui3DRenderer.addObjectToGroup(gameObject.container, groupType);
   }
 
   //This should only be used inside KotOR Forge

@@ -545,9 +545,47 @@ export class ForgeArea extends ForgeGameObject{
     object.setArea(this);
     if(object instanceof ForgeRoom){
       this.rooms.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.ROOMS);
     }
     if(object instanceof ForgeCreature){
       this.creatures.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.CREATURE);
+    }
+    if(object instanceof ForgeCamera){
+      this.cameras.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.CAMERA);
+    }
+    if(object instanceof ForgeDoor){
+      this.doors.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.DOOR);
+    }
+    if(object instanceof ForgeEncounter){
+      this.encounters.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.ENCOUNTER);
+    }
+    if(object instanceof ForgeItem){
+      this.items.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.ITEM);
+    }
+    if(object instanceof ForgePlaceable){
+      this.placeables.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.PLACEABLE);
+    }
+    if(object instanceof ForgeSound){
+      this.sounds.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.SOUND);
+    }
+    if(object instanceof ForgeStore){
+      this.stores.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.STORE);
+    }
+    if(object instanceof ForgeTrigger){
+      this.triggers.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.TRIGGER);
+    }
+    if(object instanceof ForgeWaypoint){
+      this.waypoints.push(object);
+      this.context.addObjectToGroup(object.container, GroupType.WAYPOINT);
     }
     if(object instanceof ForgeMiniGame){
       this.miniGame = object;
