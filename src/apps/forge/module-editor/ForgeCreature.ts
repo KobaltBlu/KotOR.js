@@ -968,7 +968,7 @@ export class ForgeCreature extends ForgeGameObject {
   }
 
   getGITInstance(): KotOR.GFFStruct {
-    const instance = new KotOR.GFFStruct(0);
+    const instance = new KotOR.GFFStruct(4);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', Math.cos(this.container.rotation.z + (Math.PI/2))));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.container.position.x));
