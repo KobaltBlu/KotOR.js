@@ -3,17 +3,36 @@ import * as KotOR from "../KotOR";
 import { TabState } from "../states/tabs/TabState";
 import { UI3DRenderer } from "../UI3DRenderer";
 import * as THREE from 'three';
+import type { ForgeArea } from "./ForgeArea";
 
 export class ForgeGameObject extends EventListenerModel {
   context: UI3DRenderer;
   container: THREE.Object3D = new THREE.Object3D();
   blueprint: KotOR.GFFObject = new KotOR.GFFObject();
+  uuid: string = crypto.randomUUID();
+
+  area: ForgeArea;
+
+  position: THREE.Vector3 = new THREE.Vector3();
+  rotation: THREE.Euler = new THREE.Euler();
+  scale: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
+  quaternion: THREE.Quaternion = new THREE.Quaternion();
+  box: THREE.Box3 = new THREE.Box3();
+  sphere: THREE.Sphere = new THREE.Sphere();
 
   templateResRef: string = '';
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.NA;
 
   constructor(){
     super();
+    this.position = this.container.position;
+    this.rotation = this.container.rotation;
+    this.scale = this.container.scale;
+    this.quaternion = this.container.quaternion;
+  }
+
+  setArea(area: ForgeArea){
+    this.area = area;
   }
 
   setContext(context: UI3DRenderer){
@@ -37,6 +56,10 @@ export class ForgeGameObject extends EventListenerModel {
 
   loadFromBlueprint(){
     // stub method to be overridden by child classes
+  }
+  
+  getEditorName(): string {
+    return this.templateResRef;
   }
 
   /**

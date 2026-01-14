@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import { ForgeModule } from "./module-editor/ForgeModule";
+import { ForgeGameObject } from "./module-editor/ForgeGameObject";
 
 export enum CameraView {
   Top = 'top',
@@ -62,6 +64,8 @@ export enum GroupType {
   LIGHT_HELPERS = 'light_helpers',
   SHADOW_LIGHTS = 'shadow_lights',
   ROOMS = 'rooms',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
 }
 
 export enum ObjectType {
@@ -74,6 +78,8 @@ export enum ObjectType {
   SOUND = 'sound',
   ROOM = 'room',
   WALKMESH = 'walkmesh',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
 }
 
 /**
@@ -103,6 +109,8 @@ export class UI3DRenderer extends EventListenerModel {
   canvas?: HTMLCanvasElement;
   width: number = 640;
   height: number = 480;
+
+  module: ForgeModule;
 
   guiMode: boolean = false;
   clock: THREE.Clock;
@@ -179,6 +187,8 @@ export class UI3DRenderer extends EventListenerModel {
     [GroupType.TRIGGER]: new THREE.Group(),
     [GroupType.WAYPOINT]: new THREE.Group(),
     [GroupType.SOUND]: new THREE.Group(),
+    [GroupType.STORE]: new THREE.Group(),
+    [GroupType.ENCOUNTER]: new THREE.Group(),
   };
 
   visibilityState: { [key in ObjectType]: boolean } = {
@@ -191,6 +201,8 @@ export class UI3DRenderer extends EventListenerModel {
     [ObjectType.TRIGGER]: true,
     [ObjectType.WAYPOINT]: true,
     [ObjectType.SOUND]: true,
+    [ObjectType.STORE]: true,
+    [ObjectType.ENCOUNTER]: true,
   };
 
   frustumMat4: THREE.Matrix4;
@@ -229,6 +241,8 @@ export class UI3DRenderer extends EventListenerModel {
       trigger: new THREE.Group(),
       waypoint: new THREE.Group(),
       sound: new THREE.Group(),
+      store: new THREE.Group(),
+      encounter: new THREE.Group(),
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
@@ -252,6 +266,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
+  }
+
+  setModule(module: ForgeModule) {
+    this.module = module;
+    if(module){
+      this.processEventListener('onModuleSet', [module]);
+    }
   }
 
   buildTransformControls() {
@@ -807,6 +828,11 @@ export class UI3DRenderer extends EventListenerModel {
   selectObject(object: THREE.Object3D | undefined){
     if(!object || this.disableSelection){
       this.selectionBox.visible = false;
+      return;
+    }
+
+    if(object instanceof ForgeGameObject){
+      console.warn('selectObject: object picking is not supported yet for ForgeGameObject');
       return;
     }
 

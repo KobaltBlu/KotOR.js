@@ -1,6 +1,8 @@
+import { icon } from "@fortawesome/fontawesome-svg-core";
 import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "../KotOR";
 import { SceneGraphNode } from "../SceneGraphNode";
-import { UI3DRenderer } from "../UI3DRenderer";
+import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+import { ForgeGameObject } from "../module-editor/ForgeGameObject";
 
 export class SceneGraphTreeViewManager {
 
@@ -12,6 +14,8 @@ export class SceneGraphTreeViewManager {
   lightingNode: SceneGraphNode = new SceneGraphNode({name: 'Lights'});
   objectsNode: SceneGraphNode = new SceneGraphNode({name: 'Objects'});
 
+  groupNodes: Map<GroupType, SceneGraphNode> = new Map();
+
   constructor(){
     this.sceneNode.addChildNode(this.camerasNode);
     this.sceneNode.addChildNode(this.lightingNode);
@@ -22,6 +26,7 @@ export class SceneGraphTreeViewManager {
 
   attachUI3DRenderer(context: UI3DRenderer){
     this.context = context;
+    this.context.addEventListener('onModuleSet', this.rebuild.bind(this));
     this.rebuild();
   }
 
@@ -71,6 +76,93 @@ export class SceneGraphTreeViewManager {
             },
           })
         );
+      }
+
+      if(this.context.module){
+        const groupKeys = Object.keys(this.context.group);
+        for(let i = 0; i < groupKeys.length; i++){
+          const groupKey = groupKeys[i];
+          const group = this.context.group[groupKey as GroupType];
+
+          let icon = '';
+          let objects: ForgeGameObject[] = [];
+          if (groupKey == GroupType.CREATURE){
+            icon = 'fa-solid fa-person';
+          }
+
+          if (groupKey == GroupType.DOOR){
+            icon = 'fa-solid fa-door-open';
+            objects = this.context.module.area.doors as any[];
+          } else if (groupKey == GroupType.PLACEABLE){
+            icon = 'fa-solid fa-toolbox';
+            objects = this.context.module.area.placeables as any[];
+          } else if (groupKey == GroupType.ITEM){
+            icon = 'fa-solid fa-wand-sparkles';
+            objects = this.context.module.area.items as any[];
+          } else if (groupKey == GroupType.TRIGGER){
+            icon = 'fa-solid fa-triangle-exclamation';
+            objects = this.context.module.area.triggers as any[];
+          } else if (groupKey == GroupType.WAYPOINT){
+            icon = 'fa-solid fa-location-pin';
+            objects = this.context.module.area.waypoints as any[];
+          } else if (groupKey == GroupType.SOUND){
+            icon = 'fa-solid fa-music';
+            objects = this.context.module.area.sounds as any[];
+          } else if (groupKey == GroupType.STORE){
+            icon = 'fa-solid fa-store';
+            objects = this.context.module.area.stores as any[];
+          } else if (groupKey == GroupType.ENCOUNTER){
+            icon = 'fa-solid fa-paw';
+            objects = this.context.module.area.encounters as any[];
+          } else if (groupKey == GroupType.ROOMS){
+            icon = 'fa-solid fa-dungeon';
+            objects = this.context.module.area.rooms as any[];
+          }
+
+          let groupNode = this.groupNodes.get(groupKey as GroupType);
+          if(!groupNode){
+            groupNode = new SceneGraphNode({
+              uuid: groupKey,
+              name: groupKey,
+              data: group,
+              icon: icon,
+              nodes: [],
+              onClick: (node) => {
+                
+              },
+            });
+            this.sceneNode.addChildNode(groupNode);
+            this.groupNodes.set(groupKey as GroupType, groupNode);
+          }
+
+          for(let j = 0; j < objects.length; j++){
+            const child = objects[j];
+            if(!child){
+              continue;
+            }
+
+            const nodeNode =  new SceneGraphNode({
+              uuid: child.uuid,
+              name: child.getEditorName(),
+              icon: icon,
+              data: child,
+              onClick: (node) => {
+                this.context.selectObject(node.data);
+              },
+            });
+            // const nodeNode =  new SceneGraphNode({
+            //   uuid: node.uuid,
+            //   name: node.name,
+            //   icon: icon,
+            //   data: node,
+            //   onClick: (node) => {
+            //     this.context.selectObject(node.data);
+            //   },
+            // });
+
+            groupNode.addChildNode(nodeNode);
+          }
+        }
       }
 
       for(let i = 0; i < this.context.odysseyModels.length; i++){

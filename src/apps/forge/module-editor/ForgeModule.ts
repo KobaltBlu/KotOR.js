@@ -118,6 +118,7 @@ export class ForgeModule {
 
   setContext(context: UI3DRenderer){
     this.context = context;
+    this.context.setModule(this);
     this.area.setContext(context);
   }
 

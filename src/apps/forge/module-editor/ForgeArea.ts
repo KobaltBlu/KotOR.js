@@ -5,8 +5,19 @@ import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
 import { ProjectFileSystem } from "../ProjectFileSystem";
 import { ForgeMiniGame } from "./ForgeMiniGame";
 import { ForgeCreature } from "./ForgeCreature";
+import { ForgeRoom } from "./ForgeRoom";
+import { ForgeGameObject } from "./ForgeGameObject";
+import { ForgeCamera } from "./ForgeCamera";
+import { ForgeDoor } from "./ForgeDoor";
+import { ForgeEncounter } from "./ForgeEncounter";
+import { ForgePlaceable } from "./ForgePlaceable";
+import { ForgeItem } from "./ForgeItem";
+import { ForgeSound } from "./ForgeSound";
+import { ForgeStore } from "./ForgeStore";
+import { ForgeTrigger } from "./ForgeTrigger";
+import { ForgeWaypoint } from "./ForgeWaypoint";
 
-export class ForgeArea {
+export class ForgeArea extends ForgeGameObject{
 
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
@@ -14,7 +25,6 @@ export class ForgeArea {
   visObject: KotOR.VISObject;
 
   module: ForgeModule;
-  context: UI3DRenderer;
 
   /**
    * ARE Fields
@@ -155,22 +165,22 @@ export class ForgeArea {
   }
 
   miniGame: ForgeMiniGame;
-  cameras: KotOR.ModuleCamera[] = [];
+  cameras: ForgeCamera[] = [];
   creatures: ForgeCreature[] = [];
-  doors: KotOR.ModuleDoor[] = [];
-  encounters: KotOR.ModuleEncounter[] = [];
-  items: KotOR.ModuleItem[] = [];
-  miniGameList: KotOR.ModuleMiniGame[] = [];
-  placeables: KotOR.ModulePlaceable[] = [];
-  playerList: KotOR.ModulePlayer[] = [];
-  rooms: KotOR.ModuleRoom[] = [];
-  sounds: KotOR.ModuleSound[] = [];
-  stores: KotOR.ModuleStore[] = [];
-  triggers: KotOR.ModuleTrigger[] = [];
-  waypoints: KotOR.ModuleWaypoint[] = [];
+  doors: ForgeDoor[] = [];
+  encounters: ForgeEncounter[] = [];
+  items: ForgeItem[] = [];
+  miniGameList: ForgeMiniGame[] = [];
+  placeables: ForgePlaceable[] = [];
+  rooms: ForgeRoom[] = [];
+  sounds: ForgeSound[] = [];
+  stores: ForgeStore[] = [];
+  triggers: ForgeTrigger[] = [];
+  waypoints: ForgeWaypoint[] = [];
   useTemplate: boolean = true;
 
   constructor(git: KotOR.GFFObject, are: KotOR.GFFObject){
+    super();
     this.git = git;
     this.are = are;
   }
@@ -269,7 +279,7 @@ export class ForgeArea {
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
-      const room = new KotOR.ModuleRoom(roomName, this as any);
+      const room = new ForgeRoom(roomName);
       room.setAmbientScale(ambientScale);
       room.setEnvAudio(envAudio);
       this.rooms.push(room);
@@ -311,15 +321,15 @@ export class ForgeArea {
     // const areaMap = this.git.getFieldByLabel('AreaMap');
     // const areaProps = this.git.getFieldByLabel('AreaProperties');
     // const areaEffects = this.git.getFieldByLabel('AreaEffectList');
-    // const cameras = this.git.getFieldByLabel('CameraList');
+    const cameras = this.git.getFieldByLabel('CameraList');
     const creatures = this.git.getFieldByLabel('Creature List');
-    // const doors = this.git.getFieldByLabel('Door List');
-    // const encounters = this.git.getFieldByLabel('Encounter List');
-    // const placeables = this.git.getFieldByLabel('Placeable List');
-    // const sounds = this.git.getFieldByLabel('SoundList');
-    // const stores = this.git.getFieldByLabel('StoreList');
-    // const triggers = this.git.getFieldByLabel('TriggerList');
-    // const waypoints = this.git.getFieldByLabel('WaypointList');
+    const doors = this.git.getFieldByLabel('Door List');
+    const encounters = this.git.getFieldByLabel('Encounter List');
+    const placeables = this.git.getFieldByLabel('Placeable List');
+    const sounds = this.git.getFieldByLabel('SoundList');
+    const stores = this.git.getFieldByLabel('StoreList');
+    const triggers = this.git.getFieldByLabel('TriggerList');
+    const waypoints = this.git.getFieldByLabel('WaypointList');
 
     // const areaPropsField = areaProps.getChildStructs()[0].getFields();
     // this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
@@ -338,14 +348,15 @@ export class ForgeArea {
     // this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
     // AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
-    // //Cameras
-    // if(cameras){
-    //   for(let i = 0; i < cameras.childStructs.length; i++){
-    //     const strt = cameras.childStructs[i];
-    //     const camera = new ModuleCamera(GFFObject.FromStruct(strt) );
-    //     this.cameras.push(camera);
-    //   }
-    // }
+    //Cameras
+    if(cameras){
+      for(let i = 0; i < cameras.childStructs.length; i++){
+        const strt = cameras.childStructs[i];
+        const camera = new ForgeCamera();
+        camera.setGITInstance(strt);
+        this.cameras.push(camera);
+      }
+    }
 
     // //AreaEffects
     // if(areaEffects){
@@ -355,7 +366,7 @@ export class ForgeArea {
     //   }
     // }
 
-    // //Creatures
+    //Creatures
     if(creatures){
       for(let i = 0; i < creatures.childStructs.length; i++){
         const strt = creatures.childStructs[i];
@@ -365,74 +376,75 @@ export class ForgeArea {
       }
     }
 
-    // //Triggers
-    // if(triggers){
-    //   for(let i = 0; i < triggers.childStructs.length; i++){
-    //     const strt = triggers.childStructs[i];
-    //     this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Triggers
+    if(triggers){
+      for(let i = 0; i < triggers.childStructs.length; i++){
+        const strt = triggers.childStructs[i];
+        const trigger = new ForgeTrigger();
+        trigger.setGITInstance(strt);
+        this.triggers.push(trigger);
+      }
+    }
 
-    // //Encounter
-    // if(encounters){
-    //   for(let i = 0; i < encounters.childStructs.length; i++){
-    //     const strt = encounters.childStructs[i];
-    //     this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Encounter
+    if(encounters){
+      for(let i = 0; i < encounters.childStructs.length; i++){
+        const strt = encounters.childStructs[i];
+        const encounter = new ForgeEncounter();
+        encounter.setGITInstance(strt);
+        this.encounters.push(encounter);
+      }
+    }
 
-    // //Doors
-    // if(doors){
-    //   for(let i = 0; i < doors.childStructs.length; i++ ){
-    //     const strt = doors.childStructs[i];
-    //     this.attachObject( new ModuleDoor(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Doors
+    if(doors){
+      for(let i = 0; i < doors.childStructs.length; i++ ){
+        const strt = doors.childStructs[i];
+        const door = new ForgeDoor();
+        door.setGITInstance(strt);
+        this.doors.push(door);
+      }
+    }
 
-    // //Placeables
-    // if(placeables){
-    //   for(let i = 0; i < placeables.childStructs.length; i++ ){
-    //     const strt = placeables.childStructs[i];
-    //     this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Placeables
+    if(placeables){
+      for(let i = 0; i < placeables.childStructs.length; i++ ){
+        const strt = placeables.childStructs[i];
+        const placeable = new ForgePlaceable();
+        placeable.setGITInstance(strt);
+        this.placeables.push(placeable);
+      }
+    }
 
-    // //Sounds
-    // if(sounds){
-    //   for(let i = 0; i < sounds.childStructs.length; i++ ){
-    //     const strt = sounds.childStructs[i];
-    //     this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
-    //   }
-    // }
+    //Sounds
+    if(sounds){
+      for(let i = 0; i < sounds.childStructs.length; i++ ){
+        const strt = sounds.childStructs[i];
+        const sound = new ForgeSound();
+        sound.setGITInstance(strt);
+        this.sounds.push(sound);
+      }
+    }
 
-    // //Stores
-    // if(stores){
-    //   for(let i = 0; i < stores.childStructs.length; i++ ){
-    //     const strt = stores.childStructs[i];
-    //     this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Stores
+    if(stores){
+      for(let i = 0; i < stores.childStructs.length; i++ ){
+        const strt = stores.childStructs[i];
+        const store = new ForgeStore();
+        store.setGITInstance(strt);
+        this.stores.push(store);
+      }
+    }
 
-    // //Waypoints
-    // if(waypoints){
-    //   for(let i = 0; i < waypoints.childStructs.length; i++ ){
-    //     const strt = waypoints.childStructs[i];
-
-    //     if(this.transWP){
-    //       if(typeof this.transWP === 'string'){
-    //         if(this.transWP.toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
-    //           this.transWP = GFFObject.FromStruct(strt);
-    //         }
-    //       }else if(this.transWP instanceof GFFObject){
-    //         if(this.transWP.getFieldByLabel('Tag').getValue().toLowerCase() == strt.getFieldByLabel('Tag').getValue().toLowerCase()){
-    //           this.transWP = GFFObject.FromStruct(strt);
-    //         }
-    //       }
-    //     }
-        
-    //     this.attachObject( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
-    //   }
-    // }
+    //Waypoints
+    if(waypoints){
+      for(let i = 0; i < waypoints.childStructs.length; i++ ){
+        const strt = waypoints.childStructs[i];
+        const waypoint = new ForgeWaypoint();
+        waypoint.setGITInstance(strt);
+        this.waypoints.push(waypoint);
+      }
+    }
 
     // //AreaMapData
     // if(areaMap){
@@ -475,7 +487,7 @@ export class ForgeArea {
         this.layout = new KotOR.LYTObject(lyt);
 
         //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-        let sortedRooms: KotOR.ModuleRoom[] = [];
+        let sortedRooms: ForgeRoom[] = [];
         for(let i = 0; i < this.layout.rooms.length; i++){
           let roomLYT = this.layout.rooms[i];
           for(let r = 0; r != this.rooms.length; r++ ){
@@ -525,6 +537,22 @@ export class ForgeArea {
 
     await this.loadRooms();
     await this.loadCreatures();
+    this.context.sceneGraphManager.rebuild();
+  }
+
+  attachObject(object: ForgeGameObject){
+    if(!object){ return; }
+    object.setArea(this);
+    if(object instanceof ForgeRoom){
+      this.rooms.push(object);
+    }
+    if(object instanceof ForgeCreature){
+      this.creatures.push(object);
+    }
+    if(object instanceof ForgeMiniGame){
+      this.miniGame = object;
+    }
+    this.context.sceneGraphManager.rebuild();
   }
 
   async loadCreatures(): Promise<void> {
@@ -547,27 +575,12 @@ export class ForgeArea {
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
-      const model = await room.loadModel();
+      await room.load();
+      const model = room.model;
+      
       if(model instanceof KotOR.OdysseyModel3D){
-        // if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
-        //   this.context.walkmeshList.push( room.collisionData.walkmesh.mesh );
-        //   this.context.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
-        // }
-
-        // if(typeof model.walkmesh != 'undefined'){
-        //   this.context.collisionList.push(model.walkmesh);
-        // }
-
-        // if(typeof model.wok != 'undefined'){
-        //   this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
-        //   this.walkFaces = [...this.walkFaces, ...model.wok.walkableFaces];
-        // }
-        
         model.name = room.roomName;
         this.context.addObjectToGroup(room.container, GroupType.ROOMS);
-
-        room.computeBoundingBox();
-        room.model.updateMatrix();
       }
     }
 
@@ -583,7 +596,7 @@ export class ForgeArea {
       for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
         let room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
-        if(room2 instanceof KotOR.ModuleRoom){
+        if(room2 instanceof ForgeRoom){
           const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
           const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
           const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
@@ -602,6 +615,15 @@ export class ForgeArea {
       }
       // this.walkmesh_rooms = [room1].concat(Array.from(room1.linkedRooms.values()));
     }
+  }
+
+  /**
+   * Get a room by name
+   * @param roomName - The name of the room to get
+   * @returns The room or null if it is not found
+   */
+  getRoomByName(roomName: string): ForgeRoom | null {
+    return this.rooms.find(room => room.roomName.toLocaleLowerCase() === roomName.toLocaleLowerCase()) || null;
   }
 
   exportToARE(){
@@ -831,7 +853,7 @@ export class ForgeArea {
     // CameraList
     const cameraListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'CameraList');
     for(let i = 0, len = this.cameras.length; i < len; i++){
-      cameraListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.cameras[i]));
+      cameraListField.addChildStruct(this.cameras[i].getGITInstance());
     }
     git.RootNode.addField(cameraListField);
 
@@ -845,49 +867,49 @@ export class ForgeArea {
     // Door List
     const doorListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Door List');
     for(let i = 0, len = this.doors.length; i < len; i++){
-      doorListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.doors[i]));
+      doorListField.addChildStruct(this.doors[i].getGITInstance());
     }
     git.RootNode.addField(doorListField);
 
     // Encounter List
     const encounterListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Encounter List');
     for(let i = 0, len = this.encounters.length; i < len; i++){
-      encounterListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.encounters[i]));
+      encounterListField.addChildStruct(this.encounters[i].getGITInstance());
     }
     git.RootNode.addField(encounterListField);
 
     // List (generic/unnamed list for items)
     const listField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'List');
     for(let i = 0, len = this.items.length; i < len; i++){
-      listField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.items[i]));
+      listField.addChildStruct(this.items[i].getGITInstance());
     }
     git.RootNode.addField(listField);
 
     // Placeable List
     const placeableListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Placeable List');
     for(let i = 0, len = this.placeables.length; i < len; i++){
-      placeableListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.placeables[i]));
+      placeableListField.addChildStruct(this.placeables[i].getGITInstance());
     }
     git.RootNode.addField(placeableListField);
 
     // SoundList
     const soundListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SoundList');
     for(let i = 0, len = this.sounds.length; i < len; i++){
-      soundListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.sounds[i]));
+      soundListField.addChildStruct(this.sounds[i].getGITInstance());
     }
     git.RootNode.addField(soundListField);
 
     // StoreList
     const storeListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'StoreList');
     for(let i = 0, len = this.stores.length; i < len; i++){
-      storeListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.stores[i]));
+      storeListField.addChildStruct(this.stores[i].getGITInstance());
     }
     git.RootNode.addField(storeListField);
 
     // TriggerList
     const triggerListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'TriggerList');
     for(let i = 0, len = this.triggers.length; i < len; i++){
-      triggerListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.triggers[i]));
+      triggerListField.addChildStruct(this.triggers[i].getGITInstance());
     }
     git.RootNode.addField(triggerListField);
 
@@ -897,138 +919,11 @@ export class ForgeArea {
     // WaypointList
     const waypointListField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'WaypointList');
     for(let i = 0, len = this.waypoints.length; i < len; i++){
-      waypointListField.addChildStruct(ForgeArea.exportGameObjectToGITInstance(this.waypoints[i]));
+      waypointListField.addChildStruct(this.waypoints[i].getGITInstance());
     }
     git.RootNode.addField(waypointListField);
 
     return git;
   }
-
-  static exportGameObjectToGITInstance(gameObject: KotOR.ModuleCamera | KotOR.ModuleCreature | KotOR.ModuleDoor | KotOR.ModuleEncounter | KotOR.ModuleItem | KotOR.ModulePlaceable | KotOR.ModuleSound | KotOR.ModuleStore | KotOR.ModuleTrigger | KotOR.ModuleWaypoint): KotOR.GFFStruct {
-    const instance = new KotOR.GFFStruct(0);
-
-    let structID = 0;
-
-    if(gameObject instanceof KotOR.ModuleCamera){
-      structID = 14;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'CameraID', gameObject.cameraID));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'FieldOfView', gameObject.fov));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Height', gameObject.height));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MicRange', gameObject.micRange));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.ORIENTATION, 'Orientation', gameObject.orientation));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Pitch', gameObject.pitch));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.VECTOR, 'Position', gameObject.position));
-    }else if(gameObject instanceof KotOR.ModuleCreature){
-      structID = 4;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', gameObject.rotation.z));
-    }else if(gameObject instanceof KotOR.ModuleDoor){
-      structID = 8;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Bearing', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', gameObject.linkedTo));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'LinkedToFlags', gameObject.linkedToFlags));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'LinkedToModule', gameObject.linkedToModule));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', gameObject.tag));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'TransitionDestin', gameObject.transitionDestin));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleEncounter){
-      structID = 7;
-      const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
-      for(let i = 0, len = gameObject.vertices.length; i < len; i++){
-        const geometryStruct = new KotOR.GFFStruct(3);
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', gameObject.vertices[i].x));
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', gameObject.vertices[i].y));
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', gameObject.vertices[i].z));
-        geometryField?.addChildStruct(geometryStruct);
-      }
-      const spawnPointListField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpawnPointList'));
-      for(let i = 0, len = gameObject.spawnPointList.length; i < len; i++){
-        const spawnPointStruct = new KotOR.GFFStruct(3);
-        spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', gameObject.spawnPointList[i].position.x));
-        spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', gameObject.spawnPointList[i].position.y));
-        spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', gameObject.spawnPointList[i].position.z));
-        spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Orientation', gameObject.spawnPointList[i].orientation));
-        spawnPointListField?.addChildStruct(spawnPointStruct);
-      }
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleItem){
-      structID = 0;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModulePlaceable){
-      structID = 9;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Bearing', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleSound){
-      structID = 6;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'GeneratedType', gameObject.generatedType));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleStore){
-      structID = 11;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', gameObject.resref));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleTrigger){
-      structID = 1;
-      const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
-      for(let i = 0, len = gameObject.vertices.length; i < len; i++){
-        const geometryStruct = new KotOR.GFFStruct(3);
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', gameObject.vertices[i].x));
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', gameObject.vertices[i].y));
-        geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', gameObject.vertices[i].z));
-        geometryField?.addChildStruct(geometryStruct);
-      }
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-    }else if(gameObject instanceof KotOR.ModuleWaypoint){
-      structID = 5;
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Appearance', gameObject.appearance));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', gameObject.description));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'HasMapNote', gameObject.hasMapNote ? 1 : 0));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'LinkedTo', gameObject.linkedTo));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'MapNote', gameObject.mapNote));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'MapNoteEnabled', gameObject.mapNoteEnabled ? 1 : 0));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', gameObject.tag));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', gameObject.getTemplateResRef()));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', gameObject.position.x));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', gameObject.rotation.z));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', gameObject.position.y));
-      instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', gameObject.position.z));
-    }
-
-    return instance;
-
-  }
-
   
 }

@@ -11,6 +11,7 @@ import { ForgeFileSystem } from "./ForgeFileSystem";
 import { ProjectSettings } from "./interfaces/ProjectSettings";
 import { ForgeArea } from "./module-editor/ForgeArea";
 import { ForgeModule } from "./module-editor/ForgeModule";
+import { ForgeRoom } from "./module-editor/ForgeRoom";
 
 const DIR_FORGE = '.forge';
 const DIR_RESOURCES = 'resources';
@@ -283,7 +284,8 @@ export class Project {
     const area = new ForgeArea(new KotOR.GFFObject(), new KotOR.GFFObject());
     area.name.addSubString(areaName, 0); // Male English (StringID 0 = language 0, gender 0)
     for(let i = 0, len = rooms.length; i < len; i++){
-      const room = new KotOR.ModuleRoom(rooms[i].roomName, area as any);
+      const room = new ForgeRoom(rooms[i].roomName);
+      room.setArea(area);
       room.setEnvAudio(rooms[i].envAudio);
       room.setAmbientScale(rooms[i].ambientScale);
       area.rooms.push(room);
