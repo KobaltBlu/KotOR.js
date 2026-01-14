@@ -185,7 +185,7 @@ npm cache clean --force
 # Delete node_modules and package-lock.json
 rm -rf node_modules package-lock.json  # Linux/macOS
 # or
-rmdir /s node_modules & del package-lock.json  # Windows
+rmdir /s /q node_modules & del package-lock.json  # Windows
 
 # Reinstall
 npm install
