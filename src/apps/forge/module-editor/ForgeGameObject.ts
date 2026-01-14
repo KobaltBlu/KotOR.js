@@ -207,7 +207,7 @@ export class ForgeGameObject extends EventListenerModel {
     instance: T,
     tab: TabState,
   ) => {
-    return (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    return (e: React.ChangeEvent<HTMLTextAreaElement|HTMLInputElement>) => {
       setter(e.target.value);
       instance.setProperty(property as keyof T, e.target.value);
       tab.updateFile();
