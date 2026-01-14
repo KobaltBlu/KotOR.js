@@ -766,24 +766,4 @@ export class ModuleRoom extends ModuleObject {
     }
   }
 
-  toToolsetInstance(){
-
-    let instance = new GFFStruct();
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'AmbientScale', this.ambientScale)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.INT, 'EnvAudio', this.envAudio)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.CEXOSTRING, 'RoomName', this.roomName)
-    );
-
-    return instance;
-
-  }
-
 }

@@ -4330,38 +4330,6 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  toToolsetInstance(){
-
-    let instance = new GFFStruct(4);
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-
-    return instance;
-
-  }
-
   static GenerateTemplate(){
     let template = new GFFObject();
     template.FileType = 'UTC ';

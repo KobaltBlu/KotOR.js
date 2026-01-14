@@ -3574,42 +3574,6 @@ export class ModuleObject {
   }
 
   /**
-   * Convert the object to a toolset instance
-   * @returns 
-   */
-  toToolsetInstance(){
-
-    let instance = new GFFStruct();
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
-    );
-
-    return instance;
-
-  }
-
-  /**
    * Convert the action queue to an action list
    * @returns 
    */

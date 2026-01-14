@@ -210,36 +210,4 @@ export class ModuleStore extends ModuleObject {
     return gff;
   }
 
-  toToolsetInstance(){
-
-    let instance = new GFFStruct(11);
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'ResRef', this.resref)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', 0.0)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', 1.0)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-
-    return instance;
-
-  }
-
 }

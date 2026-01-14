@@ -1014,34 +1014,6 @@ export class ModulePlaceable extends ModuleObject {
     return gff;
   }
 
-  toToolsetInstance(){
-
-    let instance = new GFFStruct(9);
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'Bearing', this.rotation.z)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'X', this.position.x)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'Y', this.position.y)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'Z', this.position.z)
-    );
-
-    return instance;
-
-  }
-
   animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
