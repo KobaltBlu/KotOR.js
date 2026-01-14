@@ -29,8 +29,5 @@
     "outDir": "dist",
   },
   "include": ["src/apps/debugger/debugger.ts", "src/types", "src/index.d.ts"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"],
-  "paths" :{
-    // "jison":["src/types/jison"],
-  }
+  "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

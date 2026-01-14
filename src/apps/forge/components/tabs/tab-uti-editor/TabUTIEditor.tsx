@@ -7,7 +7,8 @@ import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEdit
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "../../SubTabHost";
 import { UI3DRendererView } from "../../UI3DRendererView";
-import { sanitizeResRef, clampByte, clampWord, createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
+import { ForgeItem } from "../../../module-editor/ForgeItem";
+import { clampByte } from "../../../helpers/UTxEditorHelpers";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 
@@ -34,24 +35,25 @@ export const TabUTIEditor = function(props: BaseTabProps){
   const [upgradeLevel, setUpgradeLevel] = useState<number>(0);
 
   const onItemChange = useCallback(() => {
-    setLocName(tab.locName);
-    setDescription(tab.description);
-    setDescIdentified(tab.descIdentified);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
-    setComment(tab.comment);
-    setPaletteID(tab.paletteID);
-    setBaseItem(tab.baseItem);
-    setAddCost(tab.addCost);
-    setCost(tab.cost);
-    setCharges(tab.charges);
-    setStackSize(tab.stackSize);
-    setPlot(tab.plot);
-    setStolen(tab.stolen);
-    setProperties(tab.properties.map((prop) => ({...prop})));
-    setIdentified(tab.identified);
-    setModelVariation(tab.modelVariation);
-    setUpgradeLevel(tab.upgradeLevel);
+    if (!tab.item || !tab.blueprint) return;
+    setLocName(tab.item.locName);
+    setDescription(tab.item.description);
+    setDescIdentified(tab.item.descIdentified);
+    setTag(tab.item.tag);
+    setTemplateResRef(tab.item.templateResRef);
+    setComment(tab.item.comment);
+    setPaletteID(tab.item.paletteID);
+    setBaseItem(tab.item.baseItem);
+    setAddCost(tab.item.addCost);
+    setCost(tab.item.cost);
+    setCharges(tab.item.charges);
+    setStackSize(tab.item.stackSize);
+    setPlot(tab.item.plot);
+    setStolen(tab.item.stolen);
+    setProperties(tab.item.properties.map((prop) => ({...prop})));
+    setIdentified(tab.item.identified);
+    setModelVariation(tab.item.modelVariation);
+    setUpgradeLevel(tab.item.upgradeLevel);
   }, [tab]);
 
   useEffect(() => {
@@ -63,36 +65,36 @@ export const TabUTIEditor = function(props: BaseTabProps){
       tab.removeEventListener('onEditorFileLoad', onItemChange);
       tab.removeEventListener('onEditorFileChange', onItemChange);
     };
-  }, []);
+  }, [tab, onItemChange]);
 
-  // Helper functions using shared utilities
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTIEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
+  // Helper functions using ForgeItem methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeItem, parser: (value: number) => number = (v) => v) => 
+    tab.item.createNumberFieldHandler(setter, property, tab.item, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => 
-    createByteFieldHandler(setter, property, tab);
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeItem) => 
+    tab.item.createByteFieldHandler(setter, property, tab.item, tab);
   
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTIEditorState) => 
-    createWordFieldHandler(setter, property, tab);
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeItem) => 
+    tab.item.createWordFieldHandler(setter, property, tab.item, tab);
   
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTIEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
+    tab.item.createBooleanFieldHandler(setter, property, tab.item, tab);
   
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTIEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeItem) => 
+    tab.item.createResRefFieldHandler(setter, property, tab.item, tab);
   
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTIEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeItem) => 
+    tab.item.createCExoStringFieldHandler(setter, property, tab.item, tab);
   
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTIEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeItem) => 
+    tab.item.createCExoLocStringFieldHandler(setter, property, tab.item, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTIEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeItem) => 
+    tab.item.createForgeCheckboxFieldHandler(setter, property, tab.item, tab);
 
   const updateProperties = (next: ItemPropertyEntry[]) => {
     setProperties(next);
-    tab.setProperty('properties', next.map((prop) => ({...prop})));
+    tab.item.properties = next.map((prop) => ({...prop}));
     tab.updateFile();
   }
 

@@ -13,7 +13,8 @@ import type { ModuleObject } from "../module";
 export class TalentObject {
   id: number;
   objectType: number = TalentObjectType.TalentObject;
-  category: number;
+  category: number = -1;
+  maxCR: number = 0;
   item: ModuleObject;
   itemPropertyIndex: number;
   casterLevel: number;

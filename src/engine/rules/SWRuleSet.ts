@@ -3,6 +3,7 @@ import type { INIConfig } from "../../engine/INIConfig";
 import { CreatureClass } from "../../combat/CreatureClass";
 import { TalentFeat } from "../../talents/TalentFeat";
 import { TalentSpell } from "../../talents/TalentSpell";
+import { TalentSkill } from "../../talents/TalentSkill";
 import { SWRace } from "./SWRace";
 import { SWEffectIcon } from "./SWEffectIcon";
 import { SWItemPropsDef } from "./SWItemPropsDef";
@@ -24,7 +25,6 @@ import { SWSoundSet } from "./SWSoundSet";
 import { SWCreatureSize } from "./SWCreatureSize";
 import { SWCreatureSpeed } from "./SWCreatureSpeed";
 import { SWRange } from "./SWRange";
-import { SWSkill } from "./SWSkill";
 import { SWFaction } from "./SWFaction";
 import { SWBaseItem } from "./SWBaseItem";
 import { SWCreatureAppearance } from "./SWCreatureAppearance";
@@ -109,7 +109,7 @@ export class SWRuleSet {
   static ranges: SWRange[] = [];
   static rangeCount: number = 0;
 
-  static skills: SWSkill[] = [];
+  static skills: TalentSkill[] = [];
   static skillCount: number = 0;
 
   static creatureAppearances: SWCreatureAppearance[] = [];
@@ -459,7 +459,7 @@ export class SWRuleSet {
       SWRuleSet.skillCount = skills.RowCount;
       SWRuleSet.skills = new Array(SWRuleSet.skillCount);
       for(let i = 0; i < skills.RowCount; i++){
-        SWRuleSet.skills[i] = SWSkill.From2DA(skills.rows[i]);
+        SWRuleSet.skills[i] = TalentSkill.From2DA(skills.rows[i]);
       }
     }
 

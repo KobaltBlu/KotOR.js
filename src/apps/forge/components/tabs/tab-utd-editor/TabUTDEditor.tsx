@@ -8,7 +8,7 @@ import * as KotOR from "../../../KotOR";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { InfoBubble } from "../../info-bubble/info-bubble";
 import { FormField } from "../../form-field/FormField";
-import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
+import { ForgeDoor } from "../../../module-editor/ForgeDoor";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
@@ -67,73 +67,80 @@ export const TabUTDEditor = function(props: BaseTabProps){
   const [loadingModel, setLoadingModel] = useState<boolean>(false);
 
   const loadDoorData = useCallback(() => {
-    if (!tab.blueprint) return;
+    if (!tab.door || !tab.blueprint) return;
 
-    setLocName(tab.locName);
-    setTag(tab.tag);
-    setGenericType(tab.genericType);
-    setPlot(tab.plot);
-    setStatic(tab.static);
-    setHardness(tab.hardness);
-    setHitpoints(tab.hp);
-    setFort(tab.fort);
-    setRef(tab.ref);
-    setWill(tab.will);
+    setLocName(tab.door.locName);
+    setTag(tab.door.tag);
+    setGenericType(tab.door.genericType);
+    setPlot(tab.door.plot);
+    setStatic(tab.door.static);
+    setHardness(tab.door.hardness);
+    setHitpoints(tab.door.hp);
+    setFort(tab.door.fort);
+    setRef(tab.door.ref);
+    setWill(tab.door.will);
 
-    setLocked(tab.locked);
-    setLockable(tab.lockable);
-    setAutoRemoveKey(tab.autoRemoveKey);
-    setKeyRequired(tab.keyRequired);
-    setOpenLockDC(tab.openLockDC);
-    setCloseLockDC(tab.closeLockDC);
-    setKeyName(tab.keyName);
+    setLocked(tab.door.locked);
+    setLockable(tab.door.lockable);
+    setAutoRemoveKey(tab.door.autoRemoveKey);
+    setKeyRequired(tab.door.keyRequired);
+    setOpenLockDC(tab.door.openLockDC);
+    setCloseLockDC(tab.door.closeLockDC);
+    setKeyName(tab.door.keyName);
 
-    setTemplateResRef(tab.templateResRef);
-    setFactionId(tab.factionId || 0);
-    setConversationResRef(tab.conversation);
-    setInterruptable(tab.interruptable);
-    setAnimationState(tab.animationState);
+    setTemplateResRef(tab.door.templateResRef);
+    setFactionId(tab.door.factionId || 0);
+    setConversationResRef(tab.door.conversation);
+    setInterruptable(tab.door.interruptable);
+    setAnimationState(tab.door.animationState);
 
-    setOnClick(tab.onClick);
-    setOnClosed(tab.onClosed);
-    setOnDamaged(tab.onDamaged);
-    setOnDeath(tab.onDeath);
-    setOnDisarm(tab.onDisarm);
-    setOnFailToOpen(tab.onFailToOpen);
-    setOnHeartbeat(tab.onHeartbeat);
-    setOnLock(tab.onLock);
-    setOnMeleeAttacked(tab.onMeleeAttacked);
-    setOnOpen(tab.onOpen);
-    setOnSpellCastAt(tab.onSpellCastAt);
-    setOnTrapTriggered(tab.onTrapTriggered);
-    setOnUnlock(tab.onUnlock);
-    setOnUserDefined(tab.onUserDefined);
+    setOnClick(tab.door.onClick);
+    setOnClosed(tab.door.onClosed);
+    setOnDamaged(tab.door.onDamaged);
+    setOnDeath(tab.door.onDeath);
+    setOnDisarm(tab.door.onDisarm);
+    setOnFailToOpen(tab.door.onFailToOpen);
+    setOnHeartbeat(tab.door.onHeartbeat);
+    setOnLock(tab.door.onLock);
+    setOnMeleeAttacked(tab.door.onMeleeAttacked);
+    setOnOpen(tab.door.onOpen);
+    setOnSpellCastAt(tab.door.onSpellCastAt);
+    setOnTrapTriggered(tab.door.onTrapTriggered);
+    setOnUnlock(tab.door.onUnlock);
+    setOnUserDefined(tab.door.onUserDefined);
 
-    setDescription(tab.description);
-    setComments(''); // Comments not stored in door
-    setLoadingModel(tab.modelLoading);
+    setDescription(tab.door.description);
+    setComments(tab.door.comment || ''); // Comments stored in door.comment
+    setLoadingModel(tab.door.modelLoading);
   }, [tab]);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTDEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
+  // Helper functions using ForgeDoor methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeDoor, parser: (value: number) => number = (v) => v) => 
+    tab.door.createNumberFieldHandler(setter, property, tab.door, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
+    tab.door.createByteFieldHandler(setter, property, tab.door, tab);
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeDoor) => 
+    tab.door.createWordFieldHandler(setter, property, tab.door, tab);
+  
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeDoor) => 
+    tab.door.createBooleanFieldHandler(setter, property, tab.door, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeDoor) => 
+    tab.door.createResRefFieldHandler(setter, property, tab.door, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeDoor) => 
+    tab.door.createCExoStringFieldHandler(setter, property, tab.door, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeDoor) => 
+    tab.door.createCExoLocStringFieldHandler(setter, property, tab.door, tab);
 
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTDEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
-
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTDEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
-
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTDEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
-
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTDEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
-
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTDEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeDoor) => 
+    tab.door.createForgeCheckboxFieldHandler(setter, property, tab.door, tab);
 
   const onModelChange = useCallback(() => {
-    setLoadingModel(tab.modelLoading);
+    setLoadingModel(tab.door.modelLoading);
   }, [tab]);
 
   useEffect(() => {
@@ -320,7 +327,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   </InfoBubble>
                 </td>
                 <td>
-                  <input type="text" placeholder="Enter conversation resref" maxLength={16} style={{width: 'auto'}} value={conversationResRef} onChange={(e) => { setConversationResRef(e.target.value); if(tab.blueprint) { tab.conversation = e.target.value; tab.updateFile(); } }} />
+                  <input type="text" placeholder="Enter conversation resref" maxLength={16} style={{width: 'auto'}} value={conversationResRef} onChange={onUpdateResRefField(setConversationResRef, 'conversation')} />
                   <div className="ui-checkbox" style={{display: 'inline-block'}}>
                     <InfoBubble content="If checked, this conversation can be interrupted by combat or other events. If unchecked, the conversation must complete before other actions." position="right">
                       <ForgeCheckbox label="Interruptable" value={interruptable} onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')} />

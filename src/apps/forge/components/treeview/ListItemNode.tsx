@@ -143,9 +143,9 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     if (onClick) {
       onClick();
     }
-    if (onSelect) {
-      onSelect(id);
-    }
+    // if (onSelect) {
+    //   onSelect(id);
+    // }
   }, [id, onClick, onSelect]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent) => {

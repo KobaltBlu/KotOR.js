@@ -769,29 +769,30 @@ export class ModuleArea extends ModuleObject {
 
   lastRoom: ModuleRoom = undefined;
   updateRoomVisibility(delta: number = 0){
-    const roomList: ModuleRoom[] = [];
-    let pos = undefined;
-
     switch(GameState.Mode){
       case EngineMode.DIALOG:
-        pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
+        this.lastRoom = undefined;
+        const roomInView: boolean[] = [];
+        const pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
 
-        for(let i = 0, il = this.rooms.length; i < il; i++){
+
+        for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
           const room = this.rooms[i];
           const inCamera = GameState.viewportFrustum.intersectsBox(room.box);
-          if(!room.visObject || room.box.containsPoint(pos) || inCamera){
-            roomList.push(room);
+          roomInView[i] = (!room.visObject || room.box.containsPoint(pos) || inCamera);
+          if(!roomInView[i]){
+            room.hide();
+            continue;
           }
-        }
-  
-        for(let i = 0; i < roomList.length; i++){
-          roomList[i].show(true);
+          room.show(false);
         }
       break;
       case EngineMode.MINIGAME:
+        this.lastRoom = undefined;
         for(let i = 0, len = this.rooms.length; i < len; i++){
-          let room = this.rooms[i];
-          if(room) room.show(false);
+          const room = this.rooms[i];
+          if(!room) continue;
+          room.show(false);
         }
       break;
       case EngineMode.INGAME:
@@ -804,8 +805,9 @@ export class ModuleArea extends ModuleObject {
           return;
         }
         this.lastRoom = player.room;
-        if(this.lastRoom.envAudio >= 0){
-          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom.envAudio);
+
+        if(this.lastRoom?.envAudio >= 0){
+          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom?.envAudio || 0);
         }
 
         //Reset all room's visibility to hidden
@@ -815,18 +817,12 @@ export class ModuleArea extends ModuleObject {
           room.hide();
         }
 
-        if(player.room){
-          player.room.show(true);
+        if(!player.room){
+          return;
         }
 
-        //SKYBOX Fix
-        for(let i = 0, len = this.rooms.length; i < len; i++){
-          let room = this.rooms[i];
-          if(!room.visObject || room.box.containsPoint(player.position)){
-            //Show the room, but don't recursively show it's children
-            room.show(false);
-          }
-        }
+        //Show the current room and all of it's linked rooms
+        player.room.show(true);
       break;
     }
   }
@@ -2177,203 +2173,6 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  toolsetExportARE(){
-    let are = new GFFObject();
-    are.FileType = 'ARE ';
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'AlphaTest', this.alphaTest)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'CameraStyle', this.cameraStyle)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceLightning', this.weather.chanceLightning)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceRain', this.weather.chanceRain)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ChanceSnow', this.weather.chanceSnow)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.CEXOSTRING, 'Comments', this.comments)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'Creator_ID', this.creatorId)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'DayNightCycle', this.dayNightCycle)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'DefaultEnvMap', this.defaultEnvMap)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'DynAmbientColor', this.dynamicAmbientColor)
-    );
-
-    are.RootNode.addField(
-      new GFFField(GFFDataType.LIST, 'Expansion_List')
-    );
-
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Flags', this.flags)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Grass_Ambient', this.grass.ambient)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Density', this.grass.density)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Grass_Diffuse', this.grass.diffuse)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LL', this.grass.probability.lowerLeft)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_LR', this.grass.probability.lowerRight)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UL', this.grass.probability.upperLeft)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_Prob_UR', this.grass.probability.upperRight)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'Grass_QuadSize', this.grass.quadSize)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'Grass_TexName', this.grass.textureName)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ID', this.id)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'IsNight', this.isNight)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'LightingScheme', this.lightingScheme)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.WORD, 'LoadScreenID', this.loadScreenId)
-    );
-
-    let mapField = new GFFField(GFFDataType.STRUCT, 'Map');
-    mapField.addChildStruct(this.areaMap.export());
-    are.RootNode.addField(mapField);
-
-
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ModListenCheck', this.modListenCheck)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'ModSpotCheck', this.modSpotCheck)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonAmbientColor', this.moon.ambientColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonDiffuseColor', this.moon.diffuseColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'MoonFogColor', this.moon.fogColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'MoonFogFar', this.moon.fogFar)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'MoonFogNear', this.moon.fogNear)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'MoonFogOn', this.moon.fogOn)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'MoonShadows', this.moon.shadows)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.CEXOLOCSTRING, 'Name').setCExoLocString(this.areaName)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'NoHangBack', this.noHangBack ? 1 : 0)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'NoRest', this.noRest ? 1 : 0)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnEnter, this.scripts[ModuleObjectScript.AreaOnEnter]?.name || '')
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnExit, this.scripts[ModuleObjectScript.AreaOnExit]?.name || '')
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnHeartbeat, this.scripts[ModuleObjectScript.AreaOnHeartbeat]?.name || '')
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, ModuleObjectScript.AreaOnUserDefined, this.scripts[ModuleObjectScript.AreaOnUserDefined]?.name || '')
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'PlayerOnly', this.playerOnly ? 1 : 0)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'PlayerVsPlayer', this.playerVsPlayer ? 1 : 0)
-    );
-
-    let roomsField = new GFFField(GFFDataType.LIST, 'Rooms');
-    for(let i = 0, len = this.rooms.length; i < len; i++){
-      roomsField.addChildStruct(this.rooms[i].toToolsetInstance());
-    }
-    are.RootNode.addField(roomsField);
-
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'ShadowOpacity', this.shadowOpacity)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'StealthXPEnabled', this.stealthXPEnabled)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'StealthXPLoss', this.stealthXPLoss)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'StealthXPMax', this.stealthXPMax)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunAmbientColor', this.sun.ambientColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunDiffuseColor', this.sun.diffuseColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'SunFogColor', this.sun.fogColor)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'SunFogFar', this.sun.fogFar)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.FLOAT, 'SunFogNear', this.sun.fogNear)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'SunFogOn', this.sun.fogOn)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'SunShadows', this.sun.shadows)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.RESREF, 'Tag', this.tag)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.BYTE, 'Unescapable', this.unescapable)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.DWORD, 'Version', this.version)
-    );
-    are.RootNode.addField(
-      new GFFField(GFFDataType.INT, 'WindPower', this.windPower)
-    );
-
-    return are;
-
-  }
-
   getAreaPropertiesStruct(){
     let struct = new GFFStruct();
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
@@ -2490,87 +2289,6 @@ export class ModuleArea extends ModuleObject {
     this.are.FileType = 'ARE ';
 
     return {git: git, are: this.are};
-  }
-  
-  toolsetExportGIT(){
-    let git = new GFFObject();
-    git.FileType = 'GIT ';
-
-    let areaPropertiesStruct = new GFFStruct(14);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.ambient.nightVolume);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.environmentAudio);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.music.battle);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.music.day);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.music.delay);
-    areaPropertiesStruct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
-
-    let areaPropertiesField = new GFFField(GFFDataType.STRUCT, 'AreaProperties');
-    areaPropertiesField.addChildStruct(areaPropertiesStruct);
-    git.RootNode.addField(areaPropertiesField);
-
-    let camerasField = new GFFField(GFFDataType.LIST, 'CameraList');
-    for(let i = 0, len = this.cameras.length; i < len; i++){
-      camerasField.addChildStruct(this.cameras[i].toToolsetInstance());
-    }
-    git.RootNode.addField(camerasField);
-
-    let creaturesField = new GFFField(GFFDataType.LIST, 'Creature List');
-    for(let i = 0, len = this.creatures.length; i < len; i++){
-      creaturesField.addChildStruct(this.creatures[i].toToolsetInstance());
-    }
-    git.RootNode.addField(creaturesField);
-
-    let doorsField = new GFFField(GFFDataType.LIST, 'Door List');
-    for(let i = 0, len = this.doors.length; i < len; i++){
-      doorsField.addChildStruct(this.doors[i].toToolsetInstance());
-    }
-    git.RootNode.addField(doorsField);
-
-    let encountersField = new GFFField(GFFDataType.LIST, 'Encounter List');
-    for(let i = 0, len = this.encounters.length; i < len; i++){
-      encountersField.addChildStruct(this.encounters[i].toToolsetInstance());
-    }
-    git.RootNode.addField(encountersField);
-
-    let listField = new GFFField(GFFDataType.LIST, 'List');
-    git.RootNode.addField(listField);
-
-    let placeablesField = new GFFField(GFFDataType.LIST, 'Placeable List');
-    for(let i = 0, len = this.placeables.length; i < len; i++){
-      placeablesField.addChildStruct(this.placeables[i].toToolsetInstance());
-    }
-    git.RootNode.addField(placeablesField);
-
-    let soundsField = new GFFField(GFFDataType.LIST, 'SoundList');
-    for(let i = 0, len = this.sounds.length; i < len; i++){
-      soundsField.addChildStruct(this.sounds[i].toToolsetInstance());
-    }
-    git.RootNode.addField(soundsField);
-
-    let storesField = new GFFField(GFFDataType.LIST, 'StoreList');
-    for(let i = 0, len = this.stores.length; i < len; i++){
-      storesField.addChildStruct(this.stores[i].toToolsetInstance());
-    }
-    git.RootNode.addField(storesField);
-
-    let triggersField = new GFFField(GFFDataType.LIST, 'TriggerList');
-    for(let i = 0, len = this.triggers.length; i < len; i++){
-      triggersField.addChildStruct(this.triggers[i].toToolsetInstance());
-    }
-    git.RootNode.addField(triggersField);
-
-    git.RootNode.addField(new GFFField(GFFDataType.BYTE, 'UseTemplates')).setValue(1);
-
-    let waypointsField = new GFFField(GFFDataType.LIST, 'WaypointList');
-    for(let i = 0, len = this.waypoints.length; i < len; i++){
-      waypointsField.addChildStruct(this.waypoints[i].toToolsetInstance());
-    }
-    git.RootNode.addField(waypointsField);
-
-    return git;
   }
 
 }

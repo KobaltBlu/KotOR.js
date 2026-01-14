@@ -53,6 +53,7 @@ export class OdysseyWalkMesh {
   material: THREE.Material;
   aabbGroup: THREE.Object3D;
   aabbRoot: IOdysseyModelAABBNode;
+  uuid: string = crypto.randomUUID();
   
   constructor( wokReader?: BinaryReader ){
 
