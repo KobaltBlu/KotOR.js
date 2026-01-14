@@ -16,6 +16,7 @@ import { MenuTopState } from "./MenuTopState";
 
 import * as KotOR from '../KotOR';
 import { NWScriptLanguageService } from "./NWScriptLanguageService";
+import { LYTLanguageService } from "./LYTLanguageService";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -225,6 +226,7 @@ export class ForgeState {
           const textDecoder = new TextDecoder();
           this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
           NWScriptLanguageService.initNWScriptLanguage();
+          LYTLanguageService.initLYTLanguage();
           resolve();
         }
       ).catch( (e) => {console.error(e)});

@@ -6,6 +6,7 @@ export interface MenuItem {
   children?: MenuItem[];
   disabled?: boolean;
   separator?: boolean;
+  checked?: boolean;
 }
 
 interface MenuBarProps {
@@ -117,7 +118,12 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             }
           }}
         >
-          <span>{item.label}</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {item.checked && (
+              <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>
+            )}
+            <span>{item.label}</span>
+          </span>
           {hasChildren && (
             <span style={{ marginLeft: '20px', fontSize: '10px' }}>▶</span>
           )}

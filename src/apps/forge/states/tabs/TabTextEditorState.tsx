@@ -13,6 +13,7 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import * as KotOR from "../../KotOR";
 import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
 import { NWScriptLanguageService } from "../NWScriptLanguageService";
+import { LYTLanguageService } from "../LYTLanguageService";
 import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
 
 export class TabTextEditorState extends TabState {
@@ -39,6 +40,66 @@ export class TabTextEditorState extends TabState {
 
   resolvedIncludes: Map<string, string> = new Map();
   tabSize: number = 2;
+  manualLanguageId: string | null = null; // Override for manual language selection
+
+  getLanguageId(): string {
+    // Use manual override if set
+    if(this.manualLanguageId) {
+      return this.manualLanguageId;
+    }
+    
+    // Otherwise, detect from file extension
+    if(!this.file) return 'plaintext';
+    const ext = this.file.ext?.toLowerCase();
+    switch(ext){
+      case 'lyt':
+        return 'lyt';
+      case 'nss':
+      case 'ncs':
+        return 'nwscript';
+      default:
+        return 'plaintext';
+    }
+  }
+
+  setLanguageId(languageId: string | null): void {
+    this.manualLanguageId = languageId;
+    
+    const finalLanguageId = this.getLanguageId();
+    const finalTheme = this.getTheme();
+    
+    // Update editor model language if editor exists
+    if(this.editor && this.monaco) {
+      const model = this.editor.getModel();
+      if(model) {
+        this.monaco.editor.setModelLanguage(model, finalLanguageId);
+      }
+      // Update theme
+      this.monaco.editor.setTheme(finalTheme);
+    }
+    
+    // Update diff editor models if in diff mode
+    if(this.isDiffMode && this.originalModel && this.modifiedModel && this.monaco) {
+      this.monaco.editor.setModelLanguage(this.originalModel, finalLanguageId);
+      this.monaco.editor.setModelLanguage(this.modifiedModel, finalLanguageId);
+      this.monaco.editor.setTheme(finalTheme);
+    }
+    
+    // Trigger linter with new language
+    this.triggerLinterTimeout();
+  }
+
+  getTheme(): string {
+    const langId = this.getLanguageId();
+    switch(langId){
+      case 'lyt':
+        return 'lyt-dark';
+      case 'nwscript':
+        return 'nwscript-dark';
+      default:
+        return 'vs-dark';
+    }
+  }
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -187,8 +248,9 @@ export class TabTextEditorState extends TabState {
     this.originalText = this.code;
     
     // Create models for original and modified text
-    this.originalModel = this.monaco.editor.createModel(this.originalText, 'nwscript');
-    this.modifiedModel = this.monaco.editor.createModel(this.code, 'nwscript');
+    const langId = this.getLanguageId();
+    this.originalModel = this.monaco.editor.createModel(this.originalText, langId);
+    this.modifiedModel = this.monaco.editor.createModel(this.code, langId);
     
     // Apply tab size to models
     this.originalModel.updateOptions({ tabSize: this.tabSize });
@@ -243,63 +305,103 @@ export class TabTextEditorState extends TabState {
 
   triggerLinter(){
     if(!this.editor || !this.monaco) return;
-    this.resolveIncludes(this.code, this.resolvedIncludes).then( (resolvedIncludes) => {
-      this.resolvedIncludes = resolvedIncludes;
+    
+    const langId = this.getLanguageId();
+    
+    // Handle LYT files
+    if(langId === 'lyt'){
       try{
-        this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
-        
-        // Update local functions in the tokenizer for syntax highlighting
-        const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: SemanticFunctionNode) => f.name);
-        NWScriptLanguageService.updateLocalFunctions(localFunctions);
-        
-        console.log(this.nwScriptParser.errors);
-        const markers: any[] = [ ];
-        for(let i = 0; i < this.nwScriptParser.errors.length; i++){
-          const error = this.nwScriptParser.errors[i];
-          if(error && error.offender && error.offender.source){
-            markers.push({
-              severity: this.monaco.MarkerSeverity.Error,
-              startLineNumber: error.offender.source.first_line,
-              startColumn: error.offender.source.first_column + 1,
-              endLineNumber: error.offender.source.last_line,
-              endColumn: error.offender.source.last_column + 1,
-              message: error.message
-            });
-          }else{
-            markers.push({
-              severity: this.monaco.MarkerSeverity.Warning,
-              startLineNumber: 0,
-              startColumn: 0,
-              endLineNumber: 0,
-              endColumn: 0,
-              message: error.message
-            });
+        const markers = LYTLanguageService.validateLYT(this.code);
+        this.#tabErrorLogState.setErrors(markers);
+        if(this.editor) {
+          const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
+          if(model) {
+            this.monaco.editor.setModelMarkers(model, 'lyt', markers);
           }
         }
-        this.#tabErrorLogState.setErrors(markers);
-        if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
       }catch(e){
-        console.log(e);
-        if(e.hash){
-          console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
-          console.log(JSON.stringify(e));
-          const markers = [{
-            severity: this.monaco.MarkerSeverity.Error,
-            startLineNumber: e.hash.loc.first_line,
-            startColumn: e.hash.loc.first_column + 1,
-            endLineNumber: e.hash.loc.last_line,
-            endColumn: e.hash.loc.last_column + 1,
-            message: e.message
-          }];
-          this.#tabErrorLogState.setErrors(markers);
-  
-          if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
-        }else{
-          if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', []);
-          this.#tabErrorLogState.setErrors([]);
+        console.error('LYT linting error:', e);
+        if(this.editor) {
+          const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
+          if(model) {
+            this.monaco.editor.setModelMarkers(model, 'lyt', []);
+          }
         }
+        this.#tabErrorLogState.setErrors([]);
       }
-    });
+      return;
+    }
+    
+    // Handle NWScript files
+    if(langId === 'nwscript'){
+      this.resolveIncludes(this.code, this.resolvedIncludes).then( (resolvedIncludes) => {
+        this.resolvedIncludes = resolvedIncludes;
+        try{
+          this.nwScriptParser.parseScript( [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n") );
+          
+          // Update local functions in the tokenizer for syntax highlighting
+          const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: SemanticFunctionNode) => f.name);
+          NWScriptLanguageService.updateLocalFunctions(localFunctions);
+          
+          console.log(this.nwScriptParser.errors);
+          const markers: any[] = [ ];
+          for(let i = 0; i < this.nwScriptParser.errors.length; i++){
+            const error = this.nwScriptParser.errors[i];
+            if(error && error.offender && error.offender.source){
+              markers.push({
+                severity: this.monaco.MarkerSeverity.Error,
+                startLineNumber: error.offender.source.first_line,
+                startColumn: error.offender.source.first_column + 1,
+                endLineNumber: error.offender.source.last_line,
+                endColumn: error.offender.source.last_column + 1,
+                message: error.message
+              });
+            }else{
+              markers.push({
+                severity: this.monaco.MarkerSeverity.Warning,
+                startLineNumber: 0,
+                startColumn: 0,
+                endLineNumber: 0,
+                endColumn: 0,
+                message: error.message
+              });
+            }
+          }
+          this.#tabErrorLogState.setErrors(markers);
+          if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
+        }catch(e){
+          console.log(e);
+          if(e.hash){
+            console.log('err', e.lineNumber, e.columnNumber, e.name, e.message, e.hash);
+            console.log(JSON.stringify(e));
+            const markers = [{
+              severity: this.monaco.MarkerSeverity.Error,
+              startLineNumber: e.hash.loc.first_line,
+              startColumn: e.hash.loc.first_column + 1,
+              endLineNumber: e.hash.loc.last_line,
+              endColumn: e.hash.loc.last_column + 1,
+              message: e.message
+            }];
+            this.#tabErrorLogState.setErrors(markers);
+    
+            if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
+          }else{
+            if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', []);
+            this.#tabErrorLogState.setErrors([]);
+          }
+        }
+      });
+      return;
+    }
+    
+    // For other file types, clear markers
+    if(this.editor) {
+      const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
+      if(model) {
+        this.monaco.editor.setModelMarkers(model, 'plaintext', []);
+      }
+    }
+    this.#tabErrorLogState.setErrors([]);
   }
 
   resolveIncludes( code: string = ``, includeMap: Map<string, string> = new Map(), includeOrder: string[] = [] ){
