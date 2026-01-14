@@ -13,6 +13,8 @@
   padding: 4px 0;
   color: $text-primary;
   user-select: none;
+  margin-top: 5px;
+  margin-left: 5px;
 
   // Context menu items
   .context-menu-item {
@@ -42,6 +44,14 @@
       }
     }
 
+    &.has-submenu {
+      .submenu-arrow {
+        color: $text-secondary;
+        font-size: 10px;
+        margin-left: 8px;
+      }
+    }
+
     // Keyboard shortcut styling
     .shortcut {
       color: $text-secondary;
@@ -49,6 +59,33 @@
       margin-left: 16px;
       font-weight: 400;
     }
+
+    // Submenu styling
+    .context-menu-submenu {
+      position: absolute;
+      left: 100%;
+      top: 0;
+      margin-left: 2px;
+      background: $bg-secondary;
+      border: 1px solid $border-primary;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      min-width: 180px;
+      z-index: 1001;
+      padding: 4px 0;
+    }
+  }
+
+  // Dark theme submenu
+  &.dark-theme .context-menu-item .context-menu-submenu {
+    background: $bg-darker;
+    border-color: $border-secondary;
+  }
+
+  // Light theme submenu
+  &.light-theme .context-menu-item .context-menu-submenu {
+    background: $bg-secondary;
+    border-color: $border-primary;
   }
 
   // Separator styling

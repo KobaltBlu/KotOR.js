@@ -1,0 +1,237 @@
+import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "../KotOR";
+import * as THREE from "three";
+import { CreatureListEntry } from "../interfaces/CreatureListEntry";
+
+export class ForgeEncounter extends ForgeGameObject {
+  vertices: THREE.Vector3[] = [];
+  spawnPointList: KotOR.EncounterSpawnPointEntry[] = [];
+
+  //GIT Instance Properties
+  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.ute;
+
+  //Blueprint Properties
+  active: boolean = false;
+  comment: string = '';
+  creatureList: CreatureListEntry[] = [];
+  difficulty: number = 0;
+  difficultyIndex: number = 0;
+  faction: number = 0;
+  localizedName: KotOR.CExoLocString = new KotOR.CExoLocString();
+  maxCreatures: number = 0;
+  onEntered: string = '';
+  onExhausted: string = '';
+  onExit: string = '';
+  onHeartbeat: string = '';
+  onUserDefined: string = '';
+  paletteID: number = 0;
+  playerOnly: boolean = false;
+  recCreatures: number = 0;
+  reset: boolean = false;
+  resetTime: number = 0;
+  respawns: number = 0;
+  spawnOption: number = 0;
+  tag: string = '';
+
+  constructor(buffer?: Uint8Array){
+    super();
+    if(buffer){
+      this.loadFromBuffer(buffer);
+    }
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+  }
+
+  onPropertyChange(property: string, newValue: any, oldValue: any){
+    // Add any property change handlers here if needed
+  }
+
+  loadFromBuffer(buffer: Uint8Array){
+    this.blueprint = new KotOR.GFFObject(buffer);
+    this.loadFromBlueprint();
+  }
+
+  loadFromBlueprint(){
+    if(!this.blueprint) return;
+    const root = this.blueprint.RootNode;
+    if(!root) return;
+
+    if(root.hasField('Active')){
+      this.active = root.getFieldByLabel('Active').getValue() || false;
+    }
+    if(root.hasField('Comment')){
+      this.comment = root.getFieldByLabel('Comment').getValue() || '';
+    }
+    if(root.hasField('CreatureList')){
+      const creatureListField = root.getFieldByLabel('CreatureList');
+      this.creatureList = creatureListField.getChildStructs().map( (struct) => {
+        return {
+          appearance: struct.getFieldByLabel('Appearance').getValue() || 0,
+          resref: struct.getFieldByLabel('ResRef').getValue() || '',
+          cr: struct.getFieldByLabel('CR').getValue() || 0,
+          singleSpawn: !!struct.getFieldByLabel('SingleSpawn').getValue()
+        } as CreatureListEntry;
+      });
+    }
+    if(root.hasField('Difficulty')){
+      this.difficulty = root.getFieldByLabel('Difficulty').getValue() || 0;
+    }
+    if(root.hasField('DifficultyIndex')){
+      this.difficultyIndex = root.getFieldByLabel('DifficultyIndex').getValue() || 0;
+    }
+    if(root.hasField('Faction')){
+      this.faction = root.getFieldByLabel('Faction').getValue() || 0;
+    }
+    if(root.hasField('LocalizedName')){
+      this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
+    }
+    if(root.hasField('MaxCreatures')){
+      this.maxCreatures = root.getFieldByLabel('MaxCreatures').getValue() || 0;
+    }
+    if(root.hasField('OnEntered')){
+      this.onEntered = root.getFieldByLabel('OnEntered').getValue() || '';
+    }
+    if(root.hasField('OnExhausted')){
+      this.onExhausted = root.getFieldByLabel('OnExhausted').getValue() || '';
+    }
+    if(root.hasField('OnExit')){
+      this.onExit = root.getFieldByLabel('OnExit').getValue() || '';
+    }
+    if(root.hasField('OnHeartbeat')){
+      this.onHeartbeat = root.getFieldByLabel('OnHeartbeat').getValue() || '';
+    }
+    if(root.hasField('OnUserDefined')){
+      this.onUserDefined = root.getFieldByLabel('OnUserDefined').getValue() || '';
+    }
+    if(root.hasField('PaletteID')){
+      this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
+    }
+    if(root.hasField('PlayerOnly')){
+      this.playerOnly = root.getFieldByLabel('PlayerOnly').getValue() || false;
+    }
+    if(root.hasField('RecCreatures')){
+      this.recCreatures = root.getFieldByLabel('RecCreatures').getValue() || 0;
+    }
+    if(root.hasField('Reset')){
+      this.reset = root.getFieldByLabel('Reset').getValue() || false;
+    }
+    if(root.hasField('ResetTime')){
+      this.resetTime = root.getFieldByLabel('ResetTime').getValue() || 0;
+    }
+    if(root.hasField('Respawns')){
+      this.respawns = root.getFieldByLabel('Respawns').getValue() || 0;
+    }
+    if(root.hasField('SpawnOption')){
+      this.spawnOption = root.getFieldByLabel('SpawnOption').getValue() || 0;
+    }
+    if(root.hasField('Tag')){
+      this.tag = root.getFieldByLabel('Tag').getValue() || '';
+    }
+    if(root.hasField('TemplateResRef')){
+      this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
+    }
+  }
+
+  exportToBlueprint(): KotOR.GFFObject {
+    this.blueprint = new KotOR.GFFObject();
+    this.blueprint.FileType = 'UTE ';
+    this.blueprint.RootNode.type = -1;
+    const root = this.blueprint.RootNode;
+    if(!root) return this.blueprint;
+    
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Active', this.active ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
+
+    const creatureListField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'CreatureList') );
+    for(let i = 0; i < this.creatureList.length; i++){
+      if(!creatureListField) continue;
+      const creature = this.creatureList[i];
+      const creatureStruct = new KotOR.GFFStruct();
+      creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Appearance', creature.appearance) );
+      creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', creature.resref) );
+      creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'CR', creature.cr) );
+      creatureStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'SingleSpawn', creature.singleSpawn ? 1 : 0) );
+      creatureListField.addChildStruct( creatureStruct );
+    }
+    
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Difficulty', this.difficulty) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'DifficultyIndex', this.difficultyIndex) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Faction', this.faction) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocalizedName', this.localizedName) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'MaxCreatures', this.maxCreatures) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnEntered', this.onEntered) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnExhausted', this.onExhausted) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnExit', this.onExit) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnHeartbeat', this.onHeartbeat) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'OnUserDefined', this.onUserDefined) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PlayerOnly', this.playerOnly ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'RecCreatures', this.recCreatures) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Reset', this.reset ? 1 : 0) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'ResetTime', this.resetTime) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'Respawns', this.respawns) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'SpawnOption', this.spawnOption) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Tag', this.tag) );
+    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
+
+    return this.blueprint;
+  }
+
+  async load(){
+    
+  }
+
+  getGITInstance(): KotOR.GFFStruct {
+    const instance = new KotOR.GFFStruct(7);
+    const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
+    for(let i = 0, len = this.vertices.length; i < len; i++){
+      const geometryStruct = new KotOR.GFFStruct(3);
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', this.vertices[i].x));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', this.vertices[i].y));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', this.vertices[i].z));
+      geometryField?.addChildStruct(geometryStruct);
+    }
+    const spawnPointListField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpawnPointList'));
+    for(let i = 0, len = this.spawnPointList.length; i < len; i++){
+      const spawnPointStruct = new KotOR.GFFStruct(3);
+      spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.spawnPointList[i].position.x));
+      spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.spawnPointList[i].position.y));
+      spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.spawnPointList[i].position.z));
+      spawnPointStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Orientation', this.spawnPointList[i].orientation));
+      spawnPointListField?.addChildStruct(spawnPointStruct);
+    }
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
+    return instance;
+  }
+
+  setGITInstance(strt: KotOR.GFFStruct){
+    this.vertices = [];
+    const geometryField = strt.getFieldByLabel('Geometry');
+    if(geometryField){
+      for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
+        const geometryStruct = geometryField.getChildStructs()[i];
+        this.vertices.push(new THREE.Vector3(geometryStruct.getFieldByLabel('PointX').getValue() as number, geometryStruct.getFieldByLabel('PointY').getValue() as number, geometryStruct.getFieldByLabel('PointZ').getValue() as number));
+      }
+    }
+    this.spawnPointList = [];
+    const spawnPointListField = strt.getFieldByLabel('SpawnPointList');
+    if(spawnPointListField){
+      for(let i = 0, len = spawnPointListField.getChildStructs().length; i < len; i++){
+        const spawnPointStruct = spawnPointListField.getChildStructs()[i];
+        const entry: KotOR.EncounterSpawnPointEntry = KotOR.EncounterSpawnPointEntry.FromStruct(spawnPointStruct)!;
+        if(entry instanceof KotOR.EncounterSpawnPointEntry){
+          this.spawnPointList.push(entry);
+        }
+      }
+    }
+    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
+    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
+    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+  }
+
+}

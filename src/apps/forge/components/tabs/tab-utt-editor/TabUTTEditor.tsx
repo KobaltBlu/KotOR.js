@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react"
+import React, { useState, useEffect, useCallback } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTTEditorState } from "../../../states/tabs";
 import * as KotOR from "../../../KotOR";
 import { FormField } from "../../form-field/FormField";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { sanitizeResRef, clampByte, createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
 import { SubTab, SubTabHost } from "../../SubTabHost";
+import { ForgeTrigger } from "../../../module-editor/ForgeTrigger";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
@@ -40,35 +40,61 @@ export const TabUTTEditor = function(props: BaseTabProps){
   const [trapType, setTrapType] = useState<number>(0);
   const [type, setType] = useState<number>(0);
 
-  const onTriggerChange = () => {
-    setAutoRemoveKey(tab.autoRemoveKey);
-    setComment(tab.comment);
-    setCursor(tab.cursor);
-    setDisarmDC(tab.disarmDC);
-    setFaction(tab.faction);
-    setHighlightHeight(tab.highlightHeight);
-    setKeyName(tab.keyName);
-    setLoadScreenID(tab.loadScreenID);
-    setLocalizedName(tab.localizedName);
-    setOnClick(tab.onClick);
-    setOnDisarm(tab.onDisarm);
-    setOnTrapTriggered(tab.onTrapTriggered);
-    setPaletteID(tab.paletteID);
-    setPortraitId(tab.portraitId);
-    setOnHeartbeat(tab.onHeartbeat);
-    setOnEnter(tab.onEnter);
-    setOnExit(tab.onExit);
-    setOnUserDefined(tab.onUserDefined);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
-    setTrapDetectDC(tab.trapDetectDC);
-    setTrapDetectable(tab.trapDetectable);
-    setTrapDisarmable(tab.trapDisarmable);
-    setTrapFlag(tab.trapFlag);
-    setTrapOneShot(tab.trapOneShot);
-    setTrapType(tab.trapType);
-    setType(tab.t_type);
-  }
+  const onTriggerChange = useCallback(() => {
+    if (!tab.trigger || !tab.blueprint) return;
+    setAutoRemoveKey(tab.trigger.autoRemoveKey);
+    setComment(tab.trigger.comment);
+    setCursor(tab.trigger.cursor);
+    setDisarmDC(tab.trigger.disarmDC);
+    setFaction(tab.trigger.faction);
+    setHighlightHeight(tab.trigger.highlightHeight);
+    setKeyName(tab.trigger.keyName);
+    setLoadScreenID(tab.trigger.loadScreenID);
+    setLocalizedName(tab.trigger.localizedName);
+    setOnClick(tab.trigger.onClick);
+    setOnDisarm(tab.trigger.onDisarm);
+    setOnTrapTriggered(tab.trigger.onTrapTriggered);
+    setPaletteID(tab.trigger.paletteID);
+    setPortraitId(tab.trigger.portraitId);
+    setOnHeartbeat(tab.trigger.onHeartbeat);
+    setOnEnter(tab.trigger.onEnter);
+    setOnExit(tab.trigger.onExit);
+    setOnUserDefined(tab.trigger.onUserDefined);
+    setTag(tab.trigger.tag);
+    setTemplateResRef(tab.trigger.templateResRef);
+    setTrapDetectDC(tab.trigger.trapDetectDC);
+    setTrapDetectable(tab.trigger.trapDetectable);
+    setTrapDisarmable(tab.trigger.trapDisarmable);
+    setTrapFlag(tab.trigger.trapFlag);
+    setTrapOneShot(tab.trigger.trapOneShot);
+    setTrapType(tab.trigger.trapType);
+    setType(tab.trigger.t_type);
+  }, [tab]);
+
+  // Helper functions using ForgeTrigger methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) => 
+    tab.trigger.createNumberFieldHandler(setter, property, tab.trigger, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createByteFieldHandler(setter, property, tab.trigger, tab);
+  
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createWordFieldHandler(setter, property, tab.trigger, tab);
+  
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createBooleanFieldHandler(setter, property, tab.trigger, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createResRefFieldHandler(setter, property, tab.trigger, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createCExoStringFieldHandler(setter, property, tab.trigger, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createCExoLocStringFieldHandler(setter, property, tab.trigger, tab);
+
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+    tab.trigger.createForgeCheckboxFieldHandler(setter, property, tab.trigger, tab);
 
   useEffect(() => {
     if(!tab) return;
@@ -79,32 +105,7 @@ export const TabUTTEditor = function(props: BaseTabProps){
       tab.removeEventListener('onEditorFileLoad', onTriggerChange);
       tab.removeEventListener('onEditorFileChange', onTriggerChange);
     };
-  }, []);
-
-  // Helper functions using shared utilities
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTTEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTTEditorState) => 
-    createByteFieldHandler(setter, property, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTTEditorState) => 
-    createWordFieldHandler(setter, property, tab);
-  
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTTEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTTEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTTEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTTEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
-
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTTEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  }, [tab, onTriggerChange]);
 
   const tabs: SubTab[] = [
     {
@@ -129,7 +130,7 @@ export const TabUTTEditor = function(props: BaseTabProps){
                 <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={2} />
               </FormField>
               <FormField label="Type" info="0=Generic, 1=Area Transition, 2=Trap.">
-                <select value={type} onChange={onUpdateByteField(setType, 'type')}>
+                <select value={type} onChange={onUpdateByteField(setType, 't_type')}>
                   <option value={0}>Generic</option>
                   <option value={1}>Area Transition</option>
                   <option value={2}>Trap</option>

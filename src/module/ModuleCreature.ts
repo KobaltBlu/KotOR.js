@@ -2787,7 +2787,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     let strMod = Math.floor(( this.getSTR() - 10) / 2);
-    let dexMod = Math.floor(( this.getSTR() - 10) / 2);
+    let dexMod = Math.floor(( this.getDEX() - 10) / 2);
 
     if(strMod > dexMod){
       bab += strMod;
@@ -2941,7 +2941,7 @@ export class ModuleCreature extends ModuleObject {
 
   getRandomTalent(category = 0, category2 = 0){
 
-    let talents = this.getTalents().filter( (talent: any) => talent.category == category || talent.category == category2 );
+    let talents = this.getTalents().filter( (talent: TalentObject) => talent.category == category || talent.category == category2 );
     let talent = talents[Math.floor(Math.random()*talents.length)];
     //console.log('getRandomTalent', talent);
     return talent;
@@ -2949,8 +2949,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
-    let talents = this.getTalents().filter( (talent: any) => ( talent.category != '****' && ( (talent.category & nCategory) == nCategory ) && talent.maxcr <= nCRMax ) );
-    talents.sort((a: any, b: any) => (a.maxcr > b.maxcr) ? 1 : -1);
+    let talents = this.getTalents().filter( (talent: TalentObject) => ( talent.category > -1 && ( (talent.category & nCategory) == nCategory ) && talent.maxCR <= nCRMax ) );
+    talents.sort((a: TalentObject, b: TalentObject) => (a.maxCR > b.maxCR) ? 1 : -1);
     //console.log('getTalentBest', talents);
     if(talents.length){
       return talents[0];
@@ -3454,7 +3454,9 @@ export class ModuleCreature extends ModuleObject {
     try{
       this.classes = [];
       this.feats = [];
-      this.skills = [new TalentSkill(0), new TalentSkill(1), new TalentSkill(2), new TalentSkill(3), new TalentSkill(4), new TalentSkill(5), new TalentSkill(6), new TalentSkill(7)];
+      this.skills = GameState.SWRuleSet.skills.slice(0).map((skill: TalentSkill) => {
+        return skill.clone();
+      });
       
       if(!this.initialized){
         if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)){
@@ -3617,7 +3619,7 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('SkillList')){
         let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
         for(let i = 0; i < skills.length; i++){
-          this.skills[i] = new TalentSkill(i, skills[i].getFieldByLabel('Rank').getValue());
+          this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
         }
       }
 
@@ -4325,38 +4327,6 @@ export class ModuleCreature extends ModuleObject {
     }
 
     return gff;
-
-  }
-
-  toToolsetInstance(){
-
-    let instance = new GFFStruct(4);
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', Math.cos(this.rotation.z + (Math.PI/2)))
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', Math.sin(this.rotation.z + (Math.PI/2)))
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-
-    return instance;
 
   }
 

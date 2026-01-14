@@ -1,6 +1,5 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
-// const Jison = (window as any).Jison = require("jison").Jison;
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import 'bootstrap';

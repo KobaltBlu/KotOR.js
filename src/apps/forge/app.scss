@@ -439,10 +439,11 @@ div#editor-content {
 // =============================================================================
 
 .input-group {
+  margin-bottom: $spacing-sm;
   .input-group-text {
     background-color: $form-bg;
     color: $text-primary;
-    margin-bottom: $spacing-sm;
+    margin-bottom: 0 !important;
     border-color: $form-border;
     z-index: 1;
     border-width: $border-width;
@@ -451,6 +452,18 @@ div#editor-content {
   > input {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+  }
+
+  > select {
+    margin-bottom: 0 !important;
+  }
+
+  > input {
+    margin-bottom: 0 !important;
+  }
+
+  > button {
+    margin-bottom: 0 !important;
   }
 }
 
@@ -1309,48 +1322,6 @@ input[type="range"].volume:before {
   right: 0;
   padding: $spacing-md;
   z-index: $z-index-notification;
-}
-
-// =============================================================================
-// SCRIPT ERRORS
-// =============================================================================
-
-.script-error {
-  padding: $spacing-sm;
-  margin: $spacing-sm;
-  white-space: nowrap;
-  display: flex;
-
-  &:hover {
-    cursor: pointer;
-    background: $bg-overlay-light;
-  }
-
-  > .icon {
-    float: left;
-    margin-right: $spacing-sm;
-    color: $error;
-    font-size: 14pt;
-
-    > i {
-      vertical-align: top;
-    }
-  }
-
-  > .message {
-    color: $text-white;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-    display: inline-block;
-  }
-
-  > .line-column {
-    color: $text-quaternary;
-    font-weight: bold;
-    margin-left: $spacing-sm;
-  }
 }
 
 // =============================================================================

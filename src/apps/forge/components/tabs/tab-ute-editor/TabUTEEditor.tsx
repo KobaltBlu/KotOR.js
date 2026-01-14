@@ -9,7 +9,7 @@ import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEdit
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import "../../../styles/tabs/tab-ute-editor.scss";
 import { SubTab, SubTabHost } from "../../SubTabHost/SubTabHost";
-import { createBooleanFieldHandler, createNumberFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createByteFieldHandler, createWordFieldHandler, createForgeCheckboxFieldHandler } from "../../../helpers/UTxEditorHelpers";
+import { ForgeEncounter } from "../../../module-editor/ForgeEncounter";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;
@@ -38,27 +38,28 @@ export const TabUTEEditor = function(props: BaseTabProps){
   const [templateResRef, setTemplateResRef] = useState<string>('');
 
   const onEncounterChange = useCallback(() => {
-    setActive(tab.active);
-    setComment(tab.comment);
-    setCreatureList([...tab.creatureList]);
-    setDifficultyIndex(tab.difficultyIndex);
-    setFaction(tab.faction);
-    setLocalizedName(tab.localizedName);
-    setMaxCreatures(tab.maxCreatures);
-    setOnEntered(tab.onEntered);
-    setOnExhausted(tab.onExhausted);
-    setOnExit(tab.onExit);
-    setOnHeartbeat(tab.onHeartbeat);
-    setOnUserDefined(tab.onUserDefined);
-    setPaletteID(tab.paletteID);
-    setPlayerOnly(tab.playerOnly);
-    setRecCreatures(tab.recCreatures);
-    setReset(tab.reset);
-    setResetTime(tab.resetTime);
-    setRespawns(tab.respawns);
-    setSpawnOption(tab.spawnOption);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
+    if (!tab.encounter || !tab.blueprint) return;
+    setActive(tab.encounter.active);
+    setComment(tab.encounter.comment);
+    setCreatureList([...tab.encounter.creatureList]);
+    setDifficultyIndex(tab.encounter.difficultyIndex);
+    setFaction(tab.encounter.faction);
+    setLocalizedName(tab.encounter.localizedName);
+    setMaxCreatures(tab.encounter.maxCreatures);
+    setOnEntered(tab.encounter.onEntered);
+    setOnExhausted(tab.encounter.onExhausted);
+    setOnExit(tab.encounter.onExit);
+    setOnHeartbeat(tab.encounter.onHeartbeat);
+    setOnUserDefined(tab.encounter.onUserDefined);
+    setPaletteID(tab.encounter.paletteID);
+    setPlayerOnly(tab.encounter.playerOnly);
+    setRecCreatures(tab.encounter.recCreatures);
+    setReset(tab.encounter.reset);
+    setResetTime(tab.encounter.resetTime);
+    setRespawns(tab.encounter.respawns);
+    setSpawnOption(tab.encounter.spawnOption);
+    setTag(tab.encounter.tag);
+    setTemplateResRef(tab.encounter.templateResRef);
   }, [tab]);
 
   useEffect(() => {
@@ -70,36 +71,36 @@ export const TabUTEEditor = function(props: BaseTabProps){
       tab.removeEventListener('onEditorFileLoad', onEncounterChange);
       tab.removeEventListener('onEditorFileChange', onEncounterChange);
     };
-  }, []);
+  }, [tab, onEncounterChange]);
 
   useEffect(() => {
     setEncounterDifficulties(tab.encounterDifficulties);
   }, [tab.encounterDifficulties]);
 
-  // Helper functions using shared utilities
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTEEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
+  // Helper functions using ForgeEncounter methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeEncounter, parser: (value: number) => number = (v) => v) => 
+    tab.encounter.createNumberFieldHandler(setter, property, tab.encounter, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTEEditorState) => 
-    createByteFieldHandler(setter, property, tab);
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createByteFieldHandler(setter, property, tab.encounter, tab);
   
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTEEditorState) => 
-    createWordFieldHandler(setter, property, tab);
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createWordFieldHandler(setter, property, tab.encounter, tab);
   
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTEEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createBooleanFieldHandler(setter, property, tab.encounter, tab);
   
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTEEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createResRefFieldHandler(setter, property, tab.encounter, tab);
   
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTEEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createCExoStringFieldHandler(setter, property, tab.encounter, tab);
   
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTEEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createCExoLocStringFieldHandler(setter, property, tab.encounter, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTEEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeEncounter) => 
+    tab.encounter.createForgeCheckboxFieldHandler(setter, property, tab.encounter, tab);
 
   const onAddCreature = () => {
     const newCreature: CreatureListEntry = {
@@ -111,7 +112,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
     const updated = [...creatureList, newCreature];
     setCreatureList(updated);
     if(!tab) return;
-    tab.creatureList = updated;
+    tab.encounter.creatureList = updated;
     tab.updateFile();
   }
 
@@ -119,7 +120,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
     const updated = creatureList.filter((_, i) => i !== index);
     setCreatureList(updated);
     if(!tab) return;
-    tab.creatureList = updated;
+    tab.encounter.creatureList = updated;
     tab.updateFile();
   }
 
@@ -128,7 +129,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
     updated[index] = { ...updated[index], [field]: value };
     setCreatureList(updated);
     if(!tab) return;
-    tab.setProperty('creatureList', updated);
+    tab.encounter.creatureList = updated;
     tab.updateFile();
   }
 
@@ -173,7 +174,7 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Difficulty"
                 info="The difficulty level of this encounter."
               >
-                <select value={difficultyIndex} onChange={onUpdateNumberField(setDifficultyIndex, 'difficultyIndex')} className="tab-ute-editor__select">
+                <select value={difficultyIndex} onChange={(e) => { setDifficultyIndex(Number(e.target.value)); tab.encounter.difficultyIndex = Number(e.target.value); tab.encounter.difficulty = tab.encounterDifficulties[Number(e.target.value)].value; tab.updateFile(); }} className="tab-ute-editor__select">
                   {encounterDifficulties.map((diff, idx) => (
                     <option key={idx} value={idx}>{diff.label}</option>
                   ))}

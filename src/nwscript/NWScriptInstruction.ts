@@ -358,8 +358,10 @@ export class NWScriptInstruction {
           const targetHex = this.intToHex(targetAddr, 8);
           if (this.code === OP_JSR) {
             operandStr = `fn_${targetHex}`;
-          } else {
+          } else if(this.code === OP_JMP || this.code === OP_JNZ || this.code === OP_JZ) {
             operandStr = `off_${targetHex}`;
+          } else {
+            operandStr = `${this.intToHex(this.offset, 8)}`;
           }
         }
         break;
