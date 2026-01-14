@@ -50,6 +50,12 @@ settings.json
 projects/
 Saves/
 tests/
+# src/**/*.js
+dist/
+debug.log
+docs/
+coverage/
+scratch/
 backup/
 scratch/
 *.gypi
