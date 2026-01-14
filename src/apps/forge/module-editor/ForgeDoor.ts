@@ -8,6 +8,21 @@ export class ForgeDoor extends ForgeGameObject {
   tag: string = '';
   transitionDestin: string = '';
 
+  /**
+   * The walkmesh for the closed state
+   */
+  walkmeshClosed: KotOR.OdysseyWalkMesh;
+
+  /**
+   * The walkmesh for the open state (side 1)
+   */
+  walkmeshOpen1: KotOR.OdysseyWalkMesh;
+
+  /**
+   * The walkmesh for the open state (side 2)
+   */
+  walkmeshOpen2: KotOR.OdysseyWalkMesh;
+
   constructor(){
     super();
   }

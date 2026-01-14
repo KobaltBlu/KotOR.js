@@ -3,6 +3,8 @@ import * as KotOR from "../KotOR";
 
 export class ForgePlaceable extends ForgeGameObject {
 
+  walkmesh: KotOR.OdysseyWalkMesh;
+
   constructor(){
     super();
   }

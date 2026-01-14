@@ -53,6 +53,7 @@ export enum CameraFocusMode {
 }
 
 export enum GroupType {
+  CAMERA = 'camera',
   CREATURE = 'creature',
   DOOR = 'door',
   PLACEABLE = 'placeable',
@@ -69,6 +70,7 @@ export enum GroupType {
 }
 
 export enum ObjectType {
+  CAMERA = 'camera',
   CREATURE = 'creature',
   DOOR = 'door',
   PLACEABLE = 'placeable',
@@ -176,6 +178,7 @@ export class UI3DRenderer extends EventListenerModel {
   group: { 
     [key in GroupType]: THREE.Group;
   } = {
+    [GroupType.CAMERA]: new THREE.Group(),
     [GroupType.LIGHTS]: new THREE.Group(),
     [GroupType.LIGHT_HELPERS]: new THREE.Group(),
     [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
@@ -192,6 +195,7 @@ export class UI3DRenderer extends EventListenerModel {
   };
 
   visibilityState: { [key in ObjectType]: boolean } = {
+    [ObjectType.CAMERA]: true,
     [ObjectType.ROOM]: true,
     [ObjectType.WALKMESH]: false,
     [ObjectType.CREATURE]: true,
@@ -230,6 +234,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.selectionBox.visible = false;
 
     this.group = {
+      camera: new THREE.Group(),
       creature: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
@@ -833,6 +838,11 @@ export class UI3DRenderer extends EventListenerModel {
 
     if(object instanceof ForgeGameObject){
       console.warn('selectObject: object picking is not supported yet for ForgeGameObject');
+      return;
+    }
+
+    if(object instanceof KotOR.OdysseyWalkMesh){
+      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
       return;
     }
 

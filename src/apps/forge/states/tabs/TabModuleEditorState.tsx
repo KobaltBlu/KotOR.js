@@ -9,9 +9,15 @@ import { ForgeArea } from "../../module-editor/ForgeArea";
 import { ForgeModule } from "../../module-editor/ForgeModule";
 import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
 
+export enum TabModuleEditorControlMode {
+  SELECT = 0,
+  ADD_GAME_OBJECT = 1
+};
+
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
+  controlMode: TabModuleEditorControlMode = TabModuleEditorControlMode.SELECT;
 
   ui3DRenderer: UI3DRenderer;
   module: ForgeModule | undefined;
@@ -35,8 +41,6 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
 
     this.ui3DRenderer.scene.add(this.groundMesh);
-    console.log('this.module', this.module);
-    this.ui3DRenderer.setModule(this.module!);
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
   }
 
@@ -58,7 +62,6 @@ export class TabModuleEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-
     this.processEventListener('onAnimate', [delta]);
   }
 
