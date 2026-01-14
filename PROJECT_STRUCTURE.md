@@ -366,7 +366,6 @@ Resources are loaded from:
 ## File Naming Conventions
 
 - **Classes**: PascalCase (e.g., `GameState.ts`)
-- **Utilities**: camelCase (e.g., `binaryReader.ts`)
 - **Interfaces**: PascalCase, often prefixed with `I` (e.g., `IGameState.ts`)
 - **Enums**: PascalCase (e.g., `GameEngineType.ts`)
 - **Tests**: `*.spec.ts` or `*.test.ts`
