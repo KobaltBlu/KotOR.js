@@ -327,6 +327,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   reorientCamera(view: CameraView) {
+    console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
@@ -399,6 +400,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
+    console.log('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
   
@@ -406,6 +408,7 @@ export class UI3DRenderer extends EventListenerModel {
   #box3: THREE.Box3 = new THREE.Box3();
 
   private updateCameraFocus(): void {
+    console.log('updateCameraFocus');
     this.#box3 = new THREE.Box3();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
     for(let i = 0; i < objects.length; i++){
@@ -416,6 +419,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
+    console.log('fitCameraToScene', offset);
     this.updateCameraFocus();
     if(!this.#center) return;
     

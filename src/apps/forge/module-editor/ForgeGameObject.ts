@@ -57,6 +57,10 @@ export class ForgeGameObject extends EventListenerModel {
   loadFromBlueprint(){
     // stub method to be overridden by child classes
   }
+
+  async load(){
+    
+  }
   
   getEditorName(): string {
     return this.templateResRef;

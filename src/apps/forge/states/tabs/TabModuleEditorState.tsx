@@ -1,5 +1,5 @@
 import React from "react";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./";
 import * as THREE from 'three';
@@ -8,16 +8,44 @@ import { Project } from "../../Project";
 import { ForgeArea } from "../../module-editor/ForgeArea";
 import { ForgeModule } from "../../module-editor/ForgeModule";
 import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
+import { ForgeGameObject } from "../../module-editor/ForgeGameObject";
+import { ForgeCreature } from "../../module-editor/ForgeCreature";
+import { ForgeCamera } from "../../module-editor/ForgeCamera";
+import { ForgeDoor } from "../../module-editor/ForgeDoor";
+import { ForgeEncounter } from "../../module-editor/ForgeEncounter";
+import { ForgeItem } from "../../module-editor/ForgeItem";
+import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
+import { ForgeSound } from "../../module-editor/ForgeSound";
+import { ForgeStore } from "../../module-editor/ForgeStore";
+import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
+import { ForgeState } from "../../states/ForgeState";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
   ADD_GAME_OBJECT = 1
 };
 
+export enum GameObjectType {
+  CREATURE = 'creature',
+  CAMERA = 'camera',
+  DOOR = 'door',
+  ENCOUNTER = 'encounter',
+  ITEM = 'item',
+  PLACEABLE = 'placeable',
+  SOUND = 'sound',
+  STORE = 'store',
+  TRIGGER = 'trigger',
+  WAYPOINT = 'waypoint'
+};
+
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
   controlMode: TabModuleEditorControlMode = TabModuleEditorControlMode.SELECT;
+  selectedGameObjectType: GameObjectType | undefined;
+  selectedBlueprintResRef: string = '';
 
   ui3DRenderer: UI3DRenderer;
   module: ForgeModule | undefined;
@@ -25,11 +53,19 @@ export class TabModuleEditorState extends TabState {
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
   groundMesh: THREE.LineSegments<THREE.WireframeGeometry<THREE.PlaneGeometry>, THREE.LineBasicMaterial>;
+  
+  // Ghost preview for object placement
+  ghostPreviewMesh: THREE.Mesh;
+  previewPosition: THREE.Vector3 = new THREE.Vector3();
+  previewValid: boolean = false;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
     this.singleInstance = true;
     this.isClosable = true;
+    
+    // Create UI3DRenderer first
+    this.ui3DRenderer = new UI3DRenderer();
     
     // Geometry
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
@@ -37,10 +73,41 @@ export class TabModuleEditorState extends TabState {
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
 
-    this.ui3DRenderer = new UI3DRenderer();
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
+    // Create ghost preview mesh for object placement
+    const ghostGeometry = new THREE.BoxGeometry(1, 1, 1);
+    const ghostMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x00ff00,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.5
+    });
+    this.ghostPreviewMesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
+    this.ghostPreviewMesh.visible = false;
 
-    this.ui3DRenderer.scene.add(this.groundMesh);
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
+
+    // Add ground mesh and ghost preview to scene when scene is available
+    // The scene is initialized in UI3DRenderer, but buildScene() is called when canvas is attached
+    const addMeshesToScene = () => {
+      if(this.ui3DRenderer?.scene){
+        if(!this.ui3DRenderer.scene.children.includes(this.groundMesh)){
+          this.ui3DRenderer.scene.add(this.groundMesh);
+        }
+        if(!this.ui3DRenderer.scene.children.includes(this.ghostPreviewMesh)){
+          this.ui3DRenderer.scene.add(this.ghostPreviewMesh);
+        }
+      }
+    };
+    
+    // Try to add immediately if scene exists (scene is initialized in UI3DRenderer class definition)
+    if(this.ui3DRenderer.scene){
+      addMeshesToScene();
+    }
+    
+    // Also listen for when canvas is attached (which calls buildScene and ensures scene is ready)
+    this.ui3DRenderer.addEventListener('onCanvasAttached', addMeshesToScene);
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
   }
 
@@ -56,13 +123,331 @@ export class TabModuleEditorState extends TabState {
   }
 
   destroy(): void {
+    // Dispose ghost preview
+    if(this.ghostPreviewMesh){
+      this.ui3DRenderer.scene.remove(this.ghostPreviewMesh);
+      this.ghostPreviewMesh.geometry.dispose();
+      (this.ghostPreviewMesh.material as THREE.Material).dispose();
+    }
+    
     this.ui3DRenderer.destroy();
     // this.disposeLayout();
     super.destroy();
   }
 
   animate(delta: number = 0){
+    if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
+      this.updateGhostPreview();
+    }
     this.processEventListener('onAnimate', [delta]);
+  }
+
+  onMouseMove(event: MouseEvent){
+    // stub
+  }
+
+  updateGhostPreview(): void {
+    if(this.controlMode !== TabModuleEditorControlMode.ADD_GAME_OBJECT || !this.selectedGameObjectType){
+      if(this.ghostPreviewMesh){
+        this.ghostPreviewMesh.visible = false;
+      }
+      this.previewValid = false;
+      return;
+    }
+    
+    if(!this.ui3DRenderer || !this.ui3DRenderer.canvas || !this.module?.area){
+      if(this.ghostPreviewMesh){
+        this.ghostPreviewMesh.visible = false;
+      }
+      this.previewValid = false;
+      return;
+    }
+    
+    // Find intersection point using same logic as placement
+    const intersection = this.findPlacementIntersection();
+    if(intersection && intersection.point && this.ghostPreviewMesh){
+      this.previewPosition.copy(intersection.point);
+      this.ghostPreviewMesh.position.copy(this.previewPosition);
+      this.ghostPreviewMesh.visible = true;
+      this.previewValid = true;
+    } else {
+      if(this.ghostPreviewMesh){
+        this.ghostPreviewMesh.visible = false;
+      }
+      this.previewValid = false;
+    }
+  }
+
+  findPlacementIntersection(): THREE.Intersection | null {
+    if(!this.ui3DRenderer || !this.ui3DRenderer.canvas || !this.module?.area){
+      return null;
+    }
+
+    // Get mouse position in normalized device coordinates
+    const rect = this.ui3DRenderer.canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2();
+    mouse.x = ((KotOR.Mouse.MouseX) / this.ui3DRenderer.canvas.width) * 2 - 1;
+    mouse.y = -((KotOR.Mouse.MouseY) / this.ui3DRenderer.canvas.height) * 2 + 1;
+
+    // Perform raycast
+    this.ui3DRenderer.raycaster.setFromCamera(mouse, this.ui3DRenderer.camera);
+    
+    // Try to intersect with walkmesh first, then ground plane
+    let intersection: THREE.Intersection | null = null;
+    
+    // Check walkmesh if available (from rooms)
+    const walkmeshObjects: THREE.Object3D[] = [];
+    if(this.module.area.rooms && this.module.area.rooms.length > 0){
+      for(const room of this.module.area.rooms){
+        if(room.container && room.container.children.length > 0){
+          walkmeshObjects.push(...room.container.children);
+        }
+      }
+    }
+    
+    if(walkmeshObjects.length > 0){
+      const walkmeshIntersects = this.ui3DRenderer.raycaster.intersectObjects(walkmeshObjects, true);
+      if(walkmeshIntersects.length > 0){
+        intersection = walkmeshIntersects[0];
+      }
+    }
+    
+    // Fallback to ground plane if no walkmesh intersection
+    if(!intersection && this.groundMesh){
+      const planeIntersects = this.ui3DRenderer.raycaster.intersectObject(this.groundMesh);
+      if(planeIntersects.length > 0){
+        intersection = planeIntersects[0];
+      }
+    }
+
+    return intersection;
+  }
+
+  onMouseDown(event: MouseEvent){
+    // Only handle placement when in ADD_GAME_OBJECT mode and a type is selected
+    if(this.controlMode !== TabModuleEditorControlMode.ADD_GAME_OBJECT || !this.selectedGameObjectType || !this.module?.area){
+      return;
+    }
+
+    if(event.button !== 0 || !this.ui3DRenderer.canvas){ // Left mouse button only
+      return;
+    }
+
+    // Use the same intersection finding logic as the preview
+    const intersection = this.findPlacementIntersection();
+
+    if(intersection && intersection.point){
+      this.placeGameObject(intersection.point);
+    }
+  }
+
+  placeGameObject(position: THREE.Vector3){
+    if(!this.module?.area || !this.selectedGameObjectType || !this.selectedBlueprintResRef){
+      return;
+    }
+
+    const gameObject = this.createGameObject(this.selectedGameObjectType);
+    if(!gameObject){
+      console.error(`Failed to create game object of type: ${this.selectedGameObjectType}`);
+      return;
+    }
+
+    // Set template resref if one was selected
+    if(this.selectedBlueprintResRef){
+      const resType = this.getResourceTypeForGameObjectType(this.selectedGameObjectType);
+      gameObject.setTemplateResRef(this.selectedBlueprintResRef, resType);
+    }
+
+    // Set position
+    gameObject.position.copy(position);
+    gameObject.container.position.copy(position);
+
+    // Set context and area
+    gameObject.setContext(this.ui3DRenderer);
+    gameObject.setArea(this.module.area);
+
+    // Add to appropriate array in ForgeArea
+    this.addGameObjectToArea(gameObject, this.selectedGameObjectType);
+
+    // Add to scene group
+    this.addGameObjectToSceneGroup(gameObject, this.selectedGameObjectType);
+
+    // Load blueprint and then the object
+    if(this.selectedBlueprintResRef){
+      (async () => {
+        await gameObject.loadBlueprint();
+        await gameObject.load();
+      })();
+    } 
+
+    // Notify listeners
+    this.processEventListener('onGameObjectPlaced', [gameObject, this.selectedGameObjectType]);
+    this.selectedBlueprintResRef = '';
+    this.selectedGameObjectType = undefined;
+    this.controlMode = TabModuleEditorControlMode.SELECT;
+    this.ghostPreviewMesh.visible = false;
+  }
+
+  openBlueprintBrowser(){
+    this.openBlueprintBrowserForType('utc');
+  }
+
+  openBlueprintBrowserForType(blueprintType: BlueprintType){
+    const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint, type) => {
+      // Map blueprint type to GameObjectType
+      const gameObjectType = this.getGameObjectTypeFromBlueprintType(type);
+      if(gameObjectType){
+        this.selectedGameObjectType = gameObjectType;
+        this.selectedBlueprintResRef = blueprint.resref;
+        this.controlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;
+        this.processEventListener('onBlueprintSelected', [blueprint, type, gameObjectType]);
+      }
+    });
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
+  }
+
+  getGameObjectTypeFromBlueprintType(blueprintType: BlueprintType): GameObjectType | undefined {
+    const mapping: Record<BlueprintType, GameObjectType> = {
+      'utc': GameObjectType.CREATURE,
+      'utd': GameObjectType.DOOR,
+      'ute': GameObjectType.ENCOUNTER,
+      'uti': GameObjectType.ITEM,
+      'utp': GameObjectType.PLACEABLE,
+      'utm': GameObjectType.STORE,
+      'uts': GameObjectType.SOUND,
+      'utt': GameObjectType.TRIGGER,
+      'utw': GameObjectType.WAYPOINT,
+    };
+    return mapping[blueprintType];
+  }
+
+  getResourceTypeForGameObjectType(gameObjectType: GameObjectType): typeof KotOR.ResourceTypes {
+    const mapping: Record<GameObjectType, typeof KotOR.ResourceTypes> = {
+      [GameObjectType.CREATURE]: KotOR.ResourceTypes.utc,
+      [GameObjectType.DOOR]: KotOR.ResourceTypes.utd,
+      [GameObjectType.ENCOUNTER]: KotOR.ResourceTypes.ute,
+      [GameObjectType.ITEM]: KotOR.ResourceTypes.uti,
+      [GameObjectType.PLACEABLE]: KotOR.ResourceTypes.utp,
+      [GameObjectType.STORE]: KotOR.ResourceTypes.utm,
+      [GameObjectType.SOUND]: KotOR.ResourceTypes.uts,
+      [GameObjectType.TRIGGER]: KotOR.ResourceTypes.utt,
+      [GameObjectType.WAYPOINT]: KotOR.ResourceTypes.utw,
+      [GameObjectType.CAMERA]: KotOR.ResourceTypes.NA, // Camera doesn't use blueprints
+    };
+    return mapping[gameObjectType] || KotOR.ResourceTypes.NA;
+  }
+
+  createGameObject(type: GameObjectType): ForgeGameObject | null {
+    switch(type){
+      case GameObjectType.CREATURE:
+        return new ForgeCreature();
+      case GameObjectType.CAMERA:
+        return new ForgeCamera();
+      case GameObjectType.DOOR:
+        return new ForgeDoor();
+      case GameObjectType.ENCOUNTER:
+        return new ForgeEncounter();
+      case GameObjectType.ITEM:
+        return new ForgeItem();
+      case GameObjectType.PLACEABLE:
+        return new ForgePlaceable();
+      case GameObjectType.SOUND:
+        return new ForgeSound();
+      case GameObjectType.STORE:
+        return new ForgeStore();
+      case GameObjectType.TRIGGER:
+        return new ForgeTrigger();
+      case GameObjectType.WAYPOINT:
+        return new ForgeWaypoint();
+      default:
+        console.error(`Unknown game object type: ${type}`);
+        return null;
+    }
+  }
+
+  addGameObjectToArea(gameObject: ForgeGameObject, type: GameObjectType){
+    if(!this.module?.area){
+      return;
+    }
+
+    switch(type){
+      case GameObjectType.CREATURE:
+        this.module.area.creatures.push(gameObject as ForgeCreature);
+        break;
+      case GameObjectType.CAMERA:
+        this.module.area.cameras.push(gameObject as ForgeCamera);
+        break;
+      case GameObjectType.DOOR:
+        this.module.area.doors.push(gameObject as ForgeDoor);
+        break;
+      case GameObjectType.ENCOUNTER:
+        this.module.area.encounters.push(gameObject as ForgeEncounter);
+        break;
+      case GameObjectType.ITEM:
+        this.module.area.items.push(gameObject as ForgeItem);
+        break;
+      case GameObjectType.PLACEABLE:
+        this.module.area.placeables.push(gameObject as ForgePlaceable);
+        break;
+      case GameObjectType.SOUND:
+        this.module.area.sounds.push(gameObject as ForgeSound);
+        break;
+      case GameObjectType.STORE:
+        this.module.area.stores.push(gameObject as ForgeStore);
+        break;
+      case GameObjectType.TRIGGER:
+        this.module.area.triggers.push(gameObject as ForgeTrigger);
+        break;
+      case GameObjectType.WAYPOINT:
+        this.module.area.waypoints.push(gameObject as ForgeWaypoint);
+        break;
+    }
+  }
+
+  addGameObjectToSceneGroup(gameObject: ForgeGameObject, type: GameObjectType){
+    if(!this.ui3DRenderer){
+      return;
+    }
+
+    let groupType: GroupType;
+    switch(type){
+      case GameObjectType.CREATURE:
+        groupType = GroupType.CREATURE;
+        break;
+      case GameObjectType.CAMERA:
+        groupType = GroupType.CAMERA;
+        break;
+      case GameObjectType.DOOR:
+        groupType = GroupType.DOOR;
+        break;
+      case GameObjectType.ENCOUNTER:
+        groupType = GroupType.ENCOUNTER;
+        break;
+      case GameObjectType.ITEM:
+        groupType = GroupType.ITEM;
+        break;
+      case GameObjectType.PLACEABLE:
+        groupType = GroupType.PLACEABLE;
+        break;
+      case GameObjectType.SOUND:
+        groupType = GroupType.SOUND;
+        break;
+      case GameObjectType.STORE:
+        groupType = GroupType.STORE;
+        break;
+      case GameObjectType.TRIGGER:
+        groupType = GroupType.TRIGGER;
+        break;
+      case GameObjectType.WAYPOINT:
+        groupType = GroupType.WAYPOINT;
+        break;
+      default:
+        console.warn(`No group type mapping for: ${type}`);
+        return;
+    }
+
+    this.ui3DRenderer.addObjectToGroup(gameObject.container, groupType);
   }
 
   //This should only be used inside KotOR Forge
