@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import { ForgeModule } from "./module-editor/ForgeModule";
+import { ForgeGameObject } from "./module-editor/ForgeGameObject";
 
 export enum CameraView {
   Top = 'top',
@@ -51,15 +53,35 @@ export enum CameraFocusMode {
 }
 
 export enum GroupType {
+  CAMERA = 'camera',
+  CREATURE = 'creature',
+  DOOR = 'door',
+  PLACEABLE = 'placeable',
+  ITEM = 'item',
+  TRIGGER = 'trigger',
+  WAYPOINT = 'waypoint',
+  SOUND = 'sound',
   LIGHTS = 'lights',
   LIGHT_HELPERS = 'light_helpers',
   SHADOW_LIGHTS = 'shadow_lights',
   ROOMS = 'rooms',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
 }
 
 export enum ObjectType {
+  CAMERA = 'camera',
+  CREATURE = 'creature',
+  DOOR = 'door',
+  PLACEABLE = 'placeable',
+  ITEM = 'item',
+  TRIGGER = 'trigger',
+  WAYPOINT = 'waypoint',
+  SOUND = 'sound',
   ROOM = 'room',
   WALKMESH = 'walkmesh',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
 }
 
 /**
@@ -89,6 +111,8 @@ export class UI3DRenderer extends EventListenerModel {
   canvas?: HTMLCanvasElement;
   width: number = 640;
   height: number = 480;
+
+  module: ForgeModule;
 
   guiMode: boolean = false;
   clock: THREE.Clock;
@@ -154,15 +178,35 @@ export class UI3DRenderer extends EventListenerModel {
   group: { 
     [key in GroupType]: THREE.Group;
   } = {
+    [GroupType.CAMERA]: new THREE.Group(),
     [GroupType.LIGHTS]: new THREE.Group(),
     [GroupType.LIGHT_HELPERS]: new THREE.Group(),
     [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
     [GroupType.ROOMS]: new THREE.Group(),
+    [GroupType.CREATURE]: new THREE.Group(),
+    [GroupType.DOOR]: new THREE.Group(),
+    [GroupType.PLACEABLE]: new THREE.Group(),
+    [GroupType.ITEM]: new THREE.Group(),
+    [GroupType.TRIGGER]: new THREE.Group(),
+    [GroupType.WAYPOINT]: new THREE.Group(),
+    [GroupType.SOUND]: new THREE.Group(),
+    [GroupType.STORE]: new THREE.Group(),
+    [GroupType.ENCOUNTER]: new THREE.Group(),
   };
 
   visibilityState: { [key in ObjectType]: boolean } = {
+    [ObjectType.CAMERA]: true,
     [ObjectType.ROOM]: true,
     [ObjectType.WALKMESH]: false,
+    [ObjectType.CREATURE]: true,
+    [ObjectType.DOOR]: true,
+    [ObjectType.PLACEABLE]: true,
+    [ObjectType.ITEM]: true,
+    [ObjectType.TRIGGER]: true,
+    [ObjectType.WAYPOINT]: true,
+    [ObjectType.SOUND]: true,
+    [ObjectType.STORE]: true,
+    [ObjectType.ENCOUNTER]: true,
   };
 
   frustumMat4: THREE.Matrix4;
@@ -190,10 +234,20 @@ export class UI3DRenderer extends EventListenerModel {
     this.selectionBox.visible = false;
 
     this.group = {
+      camera: new THREE.Group(),
+      creature: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
       shadow_lights: new THREE.Group(),
       rooms: new THREE.Group(),
+      door: new THREE.Group(),
+      placeable: new THREE.Group(),
+      item: new THREE.Group(),
+      trigger: new THREE.Group(),
+      waypoint: new THREE.Group(),
+      sound: new THREE.Group(),
+      store: new THREE.Group(),
+      encounter: new THREE.Group(),
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
@@ -217,6 +271,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
+  }
+
+  setModule(module: ForgeModule) {
+    this.module = module;
+    if(module){
+      this.processEventListener('onModuleSet', [module]);
+    }
   }
 
   buildTransformControls() {
@@ -266,6 +327,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   reorientCamera(view: CameraView) {
+    console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
@@ -338,6 +400,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
+    console.log('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
   
@@ -345,6 +408,7 @@ export class UI3DRenderer extends EventListenerModel {
   #box3: THREE.Box3 = new THREE.Box3();
 
   private updateCameraFocus(): void {
+    console.log('updateCameraFocus');
     this.#box3 = new THREE.Box3();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
     for(let i = 0; i < objects.length; i++){
@@ -355,6 +419,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
+    console.log('fitCameraToScene', offset);
     this.updateCameraFocus();
     if(!this.#center) return;
     
@@ -600,6 +665,41 @@ export class UI3DRenderer extends EventListenerModel {
           ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
         });
         break;
+      case 'creature':
+        this.group.creature.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.CREATURE];
+        });
+        break;
+      case 'door':
+        this.group.door.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.DOOR];
+        });
+        break;
+      case 'placeable':
+        this.group.placeable.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.PLACEABLE];
+        });
+        break;
+      case 'item':
+        this.group.item.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.ITEM];
+        });
+        break;
+      case 'trigger':
+        this.group.trigger.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.TRIGGER];
+        });
+        break;
+      case 'waypoint':
+        this.group.waypoint.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.WAYPOINT];
+        });
+        break;
+      case 'sound':
+        this.group.sound.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.SOUND];
+        });
+        break;
     }
     this.visibilityState[type] = !this.visibilityState[type];
   }
@@ -622,6 +722,33 @@ export class UI3DRenderer extends EventListenerModel {
       case GroupType.LIGHTS:
         this.group[GroupType.LIGHTS].add(object);
         break;
+      case GroupType.CREATURE:
+        this.group[GroupType.CREATURE].add(object);
+        break;
+      case GroupType.DOOR:
+        this.group[GroupType.DOOR].add(object);
+        object.visible = this.visibilityState[ObjectType.DOOR];
+        break;
+      case GroupType.PLACEABLE:
+        this.group[GroupType.PLACEABLE].add(object);
+        object.visible = this.visibilityState[ObjectType.PLACEABLE];
+        break;
+      case GroupType.ITEM:
+        this.group[GroupType.ITEM].add(object);
+        object.visible = this.visibilityState[ObjectType.ITEM];
+        break;
+      case GroupType.TRIGGER:
+        this.group[GroupType.TRIGGER].add(object);
+        object.visible = this.visibilityState[ObjectType.TRIGGER];
+        break;
+      case GroupType.WAYPOINT:
+        this.group[GroupType.WAYPOINT].add(object);
+        object.visible = this.visibilityState[ObjectType.WAYPOINT];
+        break;
+      case GroupType.SOUND:
+        this.group[GroupType.SOUND].add(object);
+        object.visible = this.visibilityState[ObjectType.SOUND];
+        break;
       default:
         console.warn(`addObjectToGroup: unhandled group type, ${group}`);
         break;
@@ -641,6 +768,27 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.LIGHTS:
         this.group[GroupType.LIGHTS].remove(object);
+        break;
+      case GroupType.CREATURE:
+        this.group[GroupType.CREATURE].remove(object);
+        break;
+      case GroupType.DOOR:
+        this.group[GroupType.DOOR].remove(object);
+        break;
+      case GroupType.PLACEABLE:
+        this.group[GroupType.PLACEABLE].remove(object);
+        break;
+      case GroupType.ITEM:
+        this.group[GroupType.ITEM].remove(object);
+        break;
+      case GroupType.TRIGGER:
+        this.group[GroupType.TRIGGER].remove(object);
+        break;
+      case GroupType.WAYPOINT:
+        this.group[GroupType.WAYPOINT].remove(object);
+        break;
+      case GroupType.SOUND:
+        this.group[GroupType.SOUND].remove(object);
         break;
       default:
         console.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
@@ -689,6 +837,16 @@ export class UI3DRenderer extends EventListenerModel {
   selectObject(object: THREE.Object3D | undefined){
     if(!object || this.disableSelection){
       this.selectionBox.visible = false;
+      return;
+    }
+
+    if(object instanceof ForgeGameObject){
+      console.warn('selectObject: object picking is not supported yet for ForgeGameObject');
+      return;
+    }
+
+    if(object instanceof KotOR.OdysseyWalkMesh){
+      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
       return;
     }
 
@@ -785,6 +943,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.group.light_helpers);
     this.scene.add(this.group.shadow_lights);
     this.scene.add(this.group.rooms);
+    this.scene.add(this.group.creature);
+    this.scene.add(this.group.door);
+    this.scene.add(this.group.placeable);
+    this.scene.add(this.group.item);
+    this.scene.add(this.group.trigger);
+    this.scene.add(this.group.waypoint);
+    this.scene.add(this.group.sound);
     this.sceneGraphManager.rebuild();
   }
   

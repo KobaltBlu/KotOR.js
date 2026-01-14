@@ -19,6 +19,36 @@ export interface OpenFileOptions {
   ext?: string[];
 }
 
+interface ShowOpenDirectoryDialogOptions {
+  /**
+   * File System Access API
+   */
+  id?: string;
+  mode?: 'readwrite' | 'readonly';
+  types?: {
+    description: string;
+    accept: {
+      [key: string]: string[];
+    };
+  }[];
+  multiple?: boolean;
+  startIn?: string|FileSystemHandle;
+
+  /**
+   * Electron arguments
+   */
+  title?: string;
+  defaultPath?: string;
+  buttonLabel?: string;
+  filters?: {
+    name: string;
+    extensions: string[];
+  }[];
+  properties?: ('openDirectory' | 'createDirectory' | 'multiSelections' | 'showHiddenFiles' | 'promptToCreate' | 'noResolveAliases' | 'treatPackageAsDirectory' | 'dontAddToRecent')[];
+  message?: string;
+  securityScopedBookmarks?: boolean;
+}
+
 export class ForgeFileSystem {
   static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
     options = Object.assign({
@@ -156,6 +186,7 @@ export class ForgeFileSystem {
         window.showDirectoryPicker({
           types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           multiple: false,
+          mode: "readwrite"
         }).then( (handle: FileSystemDirectoryHandle) => {
           if(handle){
             resolve({
@@ -208,6 +239,64 @@ export class ForgeFileSystem {
         return supportedFilePickerTypes
       }
     }
+  }
+
+  static async showOpenDirectoryDialog( options: ShowOpenDirectoryDialogOptions = {} ){
+    const responseType = KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON ? ForgeFileSystemResponseType.FILE_PATH_STRING : ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE;
+    let cancelled = false;
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      try{
+        const result = await dialog.showOpenDialog({
+          title: options.title,
+          defaultPath: options.defaultPath,
+          buttonLabel: options.buttonLabel,
+          filters: options.filters,
+          properties: options.properties || ['createDirectory', 'openDirectory'],
+          message: options.message,
+          securityScopedBookmarks: options.securityScopedBookmarks,
+        });
+        console.log('result', result);
+        cancelled = !!result.canceled;
+        if(!cancelled){
+          if(result.filePaths.length){
+            return {
+              type: responseType,
+              path: result.filePaths[0],
+              handle: undefined,
+            };
+          }
+        }
+      }catch(e){
+        console.error(e);
+        cancelled = true;
+      }
+    }
+    
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+      try{
+        const result = await window.showDirectoryPicker({
+          mode: options.mode || "readwrite"
+        });
+        console.log('result', result);
+
+        if(result){
+          return {
+            type: responseType,
+            path: result.name,
+            handle: result,
+          };
+        }
+      }catch(e){
+        console.error(e);
+        cancelled = true;
+      }
+    }
+    return {
+      cancelled: cancelled,
+      type: responseType,
+      path: undefined,
+      handle: undefined,
+    };
   }
 
 }

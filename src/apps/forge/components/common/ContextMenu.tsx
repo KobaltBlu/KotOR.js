@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './ContextMenu.scss';
+import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {
   id: string;
@@ -8,6 +9,7 @@ export interface ContextMenuItem {
   onClick?: () => void;
   disabled?: boolean;
   separator?: boolean;
+  submenu?: ContextMenuItem[];
 }
 
 export interface ContextMenuProps {
@@ -27,6 +29,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState<string | null>(null);
   const [adjustedPosition, setAdjustedPosition] = useState<{ x: number; y: number } | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -103,12 +106,14 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         onClose?.();
+        setHoveredSubmenu(null);
       }
     };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         onClose?.();
+        setHoveredSubmenu(null);
       }
     };
 
@@ -129,6 +134,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (!item.disabled && item.onClick) {
       item.onClick();
       onClose?.();
+      setHoveredSubmenu(null);
     }
   };
 
@@ -162,10 +168,23 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         return (
           <div
             key={item.id}
-            className={`context-menu-item ${item.disabled ? 'disabled' : ''}`}
-            onMouseEnter={() => setHoveredItem(item.id)}
-            onMouseLeave={() => setHoveredItem(null)}
-            onClick={() => handleItemClick(item)}
+            className={`context-menu-item ${item.disabled ? 'disabled' : ''} ${item.submenu ? 'has-submenu' : ''}`}
+            onMouseEnter={() => {
+              setHoveredItem(item.id);
+              if (item.submenu && item.submenu.length > 0) {
+                setHoveredSubmenu(item.id);
+              }
+            }}
+            onMouseLeave={() => {
+              setHoveredItem(null);
+              // Don't clear submenu immediately to allow mouse movement
+            }}
+            onClick={() => {
+              // Only handle click if no submenu
+              if (!item.submenu || item.submenu.length === 0) {
+                handleItemClick(item);
+              }
+            }}
             tabIndex={item.disabled ? -1 : 0}
           >
             <span>{item.label || ''}</span>
@@ -173,6 +192,44 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
               <span className="shortcut">
                 {item.shortcut}
               </span>
+            )}
+            {item.submenu && item.submenu.length > 0 && (
+              <span className="submenu-arrow">▶</span>
+            )}
+            {hoveredSubmenu === item.id && item.submenu && item.submenu.length > 0 && (
+              <div 
+                className="context-menu-submenu"
+                onMouseEnter={() => setHoveredSubmenu(item.id)}
+                onMouseLeave={() => setHoveredSubmenu(null)}
+              >
+                {item.submenu.map((subItem, subIndex) => {
+                  if (subItem.separator) {
+                    return (
+                      <div 
+                        key={`sub-separator-${subIndex}`}
+                        className="context-menu-separator"
+                      />
+                    );
+                  }
+                  return (
+                    <div
+                      key={subItem.id}
+                      className={`context-menu-item ${subItem.disabled ? 'disabled' : ''}`}
+                      onMouseEnter={() => setHoveredItem(subItem.id)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      onClick={() => handleItemClick(subItem)}
+                      tabIndex={subItem.disabled ? -1 : 0}
+                    >
+                      <span>{subItem.label || ''}</span>
+                      {subItem.shortcut && (
+                        <span className="shortcut">
+                          {subItem.shortcut}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         );
@@ -193,7 +250,7 @@ export const useContextMenu = (theme: 'light' | 'dark' | 'auto' = 'auto') => {
     x: 0,
     y: 0,
     items: []
-  });
+  })
 
   const showContextMenu = (x: number, y: number, items: ContextMenuItem[]) => {
     setContextMenu({
@@ -207,21 +264,23 @@ export const useContextMenu = (theme: 'light' | 'dark' | 'auto' = 'auto') => {
   const hideContextMenu = () => {
     setContextMenu(prev => ({
       ...prev,
-      visible: false
+      visible: false,
     }));
   };
 
-  const ContextMenuComponent = contextMenu.visible ? (
-    <ContextMenu
-      items={contextMenu.items}
-      onClose={hideContextMenu}
-      theme={theme}
-      style={{
-        top: contextMenu.y,
-        left: contextMenu.x
-      }}
-    />
-  ) : null;
+  const ContextMenuComponent = (
+    contextMenu.visible ? (
+      <ContextMenu
+        items={contextMenu.items}
+        onClose={hideContextMenu}
+        theme={theme}
+        style={{
+          top: contextMenu.y,
+          left: contextMenu.x
+        }}
+      />
+    ) : null
+  );
 
   return {
     showContextMenu,
