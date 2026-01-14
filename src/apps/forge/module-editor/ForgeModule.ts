@@ -112,7 +112,7 @@ export class ForgeModule {
 
   isSaveGame: boolean = false;
 
-  constructor(ifo: KotOR.GFFObject){
+  constructor(ifo: KotOR.GFFObject = new KotOR.GFFObject()){
     this.setFromIFO(ifo);
   }
 

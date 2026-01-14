@@ -275,13 +275,13 @@ export class Project {
   }
 
   async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
-    const mod = new ForgeModule(new KotOR.GFFObject());
+    const mod = new ForgeModule();
     mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
     
     /**
      * Build the entry area
      */
-    const area = new ForgeArea(new KotOR.GFFObject(), new KotOR.GFFObject());
+    const area = new ForgeArea();
     area.name.addSubString(areaName, 0); // Male English (StringID 0 = language 0, gender 0)
     for(let i = 0, len = rooms.length; i < len; i++){
       const room = new ForgeRoom(rooms[i].roomName);

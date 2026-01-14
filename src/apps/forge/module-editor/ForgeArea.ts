@@ -179,7 +179,7 @@ export class ForgeArea extends ForgeGameObject{
   waypoints: ForgeWaypoint[] = [];
   useTemplate: boolean = true;
 
-  constructor(git: KotOR.GFFObject, are: KotOR.GFFObject){
+  constructor(git: KotOR.GFFObject = new KotOR.GFFObject(), are: KotOR.GFFObject = new KotOR.GFFObject()){
     super();
     this.git = git;
     this.are = are;
