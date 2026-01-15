@@ -64,25 +64,22 @@ export class LYTObject {
         tokens.push({ type: 'BEGIN_LAYOUT', value: line, line: lineNum });
       } else if(line === 'donelayout'){
         tokens.push({ type: 'DONE_LAYOUT', value: line, line: lineNum });
-      } else if(line.startsWith('   roomcount ')){
-        const count = line.substring('   roomcount '.length).trim();
+      } else if(line.startsWith('roomcount ')){
+        const count = line.substring('roomcount '.length).trim();
         tokens.push({ type: 'ROOM_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('   trackcount ')){
-        const count = line.substring('   trackcount '.length).trim();
+      } else if(line.startsWith('trackcount ')){
+        const count = line.substring('trackcount '.length).trim();
         tokens.push({ type: 'TRACK_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('   obstaclecount ')){
-        const count = line.substring('   obstaclecount '.length).trim();
+      } else if(line.startsWith('obstaclecount ')){
+        const count = line.substring('obstaclecount '.length).trim();
         tokens.push({ type: 'OBSTACLE_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('   doorhookcount ')){
-        const count = line.substring('   doorhookcount '.length).trim();
+      } else if(line.startsWith('doorhookcount ')){
+        const count = line.substring('doorhookcount '.length).trim();
         tokens.push({ type: 'DOORHOOK_COUNT', value: count, line: lineNum });
-      } else if(line.startsWith('      ')){
-        // Data line (6 spaces indent)
-        const parts = line.substring(6).split(/\s+/).filter((p: string) => p.length > 0);
-        tokens.push({ type: 'DATA', value: line, line: lineNum, tokens: parts });
       } else {
-        // Unknown token - could be error or comment
-        tokens.push({ type: 'UNKNOWN', value: line, line: lineNum });
+        // Data line (6 spaces indent)
+        const parts = line.split(/\s+/).filter((p: string) => p.length > 0);
+        tokens.push({ type: 'DATA', value: line, line: lineNum, tokens: parts });
       }
     }
 
