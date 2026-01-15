@@ -392,6 +392,10 @@ export class IngameControls {
       }
     });
 
+    GameState.canvas.addEventListener('contextmenu', (e: MouseEvent) => {
+      e.preventDefault();
+    });
+
   }
 
   initKeys(){
