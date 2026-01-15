@@ -87,7 +87,7 @@
     "axios": "^1.13.2",
     "bootstrap": "^5.3.8",
     "jest": "^30.2.0",
-    "monaco-editor": "^0.55.1",
+    "monaco-editor": "^0.52.0",
     "three": "^0.149.0",
     "ts-jest": "^29.4.6"
   }

@@ -16,6 +16,7 @@ export const TabTextEditor = function(props: any){
   // const [height, setHeight] = useState<any>(`100%`);
   const [code, setCode] = useState<string>(tab.code);
   const [isDiffMode, setIsDiffMode] = useState<boolean>(tab.isDiffMode);
+  const [, forceUpdate] = useState({});
   const diffEditorContainerRef = useRef<HTMLDivElement>(null);
 
   const options: monacoEditor.editor.IEditorOptions = {
@@ -109,7 +110,7 @@ export const TabTextEditor = function(props: any){
 
     const diffEditor = tab.monaco.editor.createDiffEditor(diffEditorContainerRef.current, {
       ...diffOptions,
-      theme: 'nwscript-dark'
+      theme: tab.getTheme()
     });
 
     if(tab.originalModel && tab.modifiedModel) {
@@ -204,6 +205,7 @@ export const TabTextEditor = function(props: any){
     };
   });
 
+
   const menuItems: MenuItem[] = [
     {
       label: 'File',
@@ -289,6 +291,57 @@ export const TabTextEditor = function(props: any){
               }
             }
           ]
+        },
+        {
+          separator: true
+        },
+        {
+          label: 'Language',
+          children: [
+            {
+              label: 'Auto-detect',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setLanguageId(null);
+                  forceUpdate({});
+                }, 0);
+              },
+              checked: tab.manualLanguageId === null
+            },
+            {
+              separator: true
+            },
+            {
+              label: 'Plain Text',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setLanguageId('plaintext');
+                  forceUpdate({});
+                }, 0);
+              },
+              checked: tab.manualLanguageId === 'plaintext'
+            },
+            {
+              label: 'NWScript',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setLanguageId('nwscript');
+                  forceUpdate({});
+                }, 0);
+              },
+              checked: tab.manualLanguageId === 'nwscript'
+            },
+            {
+              label: 'LYT (Layout)',
+              onClick: () => {
+                setTimeout(() => {
+                  tab.setLanguageId('lyt');
+                  forceUpdate({});
+                }, 0);
+              },
+              checked: tab.manualLanguageId === 'lyt'
+            }
+          ]
         }
       ]
     }
@@ -321,8 +374,8 @@ export const TabTextEditor = function(props: any){
                 <MonacoEditor
                   width="100%"
                   height="100%"
-                  language="nwscript"
-                  theme="nwscript-dark"
+                  language={tab.getLanguageId()}
+                  theme={tab.getTheme()}
                   value={code}
                   options={options}
                   onChange={onChange}
