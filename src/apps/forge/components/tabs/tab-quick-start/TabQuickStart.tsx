@@ -6,6 +6,7 @@ import { ForgeState } from "../../../states/ForgeState";
 import { EditorFile } from "../../../EditorFile";
 import { FileTypeManager } from "../../../FileTypeManager";
 import "./TabQuickStart.scss";
+import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
@@ -18,8 +19,9 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
   const onBtnNewProject = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
-    // TODO: NewProjectWizard
-    alert('TODO: New Project Wizard');
+    const newProjectModalState = new ModalNewProjectState();
+    ForgeState.modalManager.addModal(newProjectModalState);
+    newProjectModalState.open();
   }, []);
 
   const onBtnOpenProject = useCallback((e: React.MouseEvent<HTMLDivElement>) => {

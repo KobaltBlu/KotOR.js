@@ -713,48 +713,4 @@ export class ModuleTrigger extends ModuleObject {
     return gff;
   }
 
-  toToolsetInstance(){
-    let instance = new GFFStruct(1);
-
-    let geometryField = new GFFField(GFFDataType.LIST, 'Geometry');
-    for(let i = 0, len = this.vertices.length; i < len; i++){
-      let vertStruct = new GFFStruct(14);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointX') ).setValue(this.vertices[i].x);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointY') ).setValue(this.vertices[i].y);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointZ') ).setValue(this.vertices[i].z);
-      geometryField.addChildStruct(vertStruct);
-    }
-    instance.addField(geometryField);
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', this.xOrientation)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', this.yOrientation)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZOrientation', this.zOrientation)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-
-    return instance;
-  }
-
 }

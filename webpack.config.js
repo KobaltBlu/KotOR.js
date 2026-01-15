@@ -129,7 +129,8 @@ const libraryConfig = (name, color) => ({
         { from: "src/assets/runtime/index.html", to: "index.html" },
         { from: "src/assets/runtime/runtime-config.js", to: "runtime-config.js" },
         { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
-        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' }
+        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
+        { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]
     }),
   ],

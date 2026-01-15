@@ -11,6 +11,7 @@ import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
 
 import * as KotOR from "../KotOR";
 import { ModalNewProjectState } from "./modal/ModalNewProjectState";
+import { TabTextEditorState } from "./tabs/TabTextEditorState";
 
 
 export class MenuTopState {
@@ -255,7 +256,9 @@ export class MenuTopState {
     this.menuItemNewScript = new MenuTopItem({
       name: 'NW Script Source File', 
       onClick: function(menuItem: MenuTopItem){
-        // Forge.tabManager.AddTab(new ScriptEditorTab(new EditorFile({ resref: 'untitled', reskey: ResourceTypes.nss })));
+        ForgeState.tabManager.addTab(new TabTextEditorState({ 
+          editorFile: new EditorFile({ resref: 'untitled', reskey: KotOR.ResourceTypes.nss }) 
+        }));
       }
     });
 

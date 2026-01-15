@@ -91,7 +91,6 @@ export class ActionPhysicalAttacks extends Action {
       }else{
         owner.force = 0;
         owner.speed = 0;
-        // (owner as any).openSpot = undefined;
 
         if(!owner.combatRound){
           return ActionStatus.FAILED;
@@ -130,7 +129,7 @@ export class ActionPhysicalAttacks extends Action {
               combatRound.setAttackTarget(combatRound.newAttackTarget);
             }
 
-            combatRound.calculateAttackDamage(owner as any, combatRound.action);
+            combatRound.calculateAttackDamage(owner, combatRound.action);
 
             owner.setFacing(
               Math.atan2(
@@ -140,7 +139,7 @@ export class ActionPhysicalAttacks extends Action {
               false
             );
 
-            let attack_sound = THREE.MathUtils.randInt(0, 2);
+            const attack_sound = THREE.MathUtils.randInt(0, 2);
             switch(attack_sound){
               case 1:
                 owner.playSoundSet(SSFType.ATTACK_2);

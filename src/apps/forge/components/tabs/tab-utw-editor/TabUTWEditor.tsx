@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react"
+import React, { useRef, useState, useEffect, useCallback } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import { TabUTWEditorState } from "../../../states/tabs";
 import "../../../styles/tabs/tab-uts-editor.scss";
@@ -7,6 +7,7 @@ import { FormField } from "../../form-field/FormField";
 import * as KotOR from "../../../KotOR";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
 import { InfoBubble } from "../../info-bubble/info-bubble";
+import { ForgeWaypoint } from "../../../module-editor/ForgeWaypoint";
 
 export const TabUTWEditor = function(props: BaseTabProps){
 
@@ -23,54 +24,41 @@ export const TabUTWEditor = function(props: BaseTabProps){
   const [tag, setTag] = useState<string>('');
   const [templateResRef, setTemplateResRef] = useState<string>('');
 
-  const onWaypointChange = () => {
-    const tab: TabUTWEditorState = props.tab as TabUTWEditorState;
-    setAppearance(tab.appearance);
-    setDescription(tab.description);
-    setHasMapNote(tab.hasMapNote);
-    setLinkedTo(tab.linkedTo);
-    setLocalizedName(tab.localizedName);
-    setMapNote(tab.mapNote);
-    setMapNoteEnabled(tab.mapNoteEnabled);
-    setPaletteID(tab.paletteID);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
-  }
+  const onWaypointChange = useCallback(() => {
+    if (!tab.waypoint || !tab.blueprint) return;
+    setAppearance(tab.waypoint.appearance);
+    setDescription(tab.waypoint.description);
+    setHasMapNote(tab.waypoint.hasMapNote);
+    setLinkedTo(tab.waypoint.linkedTo);
+    setLocalizedName(tab.waypoint.localizedName);
+    setMapNote(tab.waypoint.mapNote);
+    setMapNoteEnabled(tab.waypoint.mapNoteEnabled);
+    setPaletteID(tab.waypoint.paletteID);
+    setTag(tab.waypoint.tag);
+    setTemplateResRef(tab.waypoint.templateResRef);
+  }, [tab]);
 
-  const onUpdateTag = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTag(e.target.value);
-    if(!tab) return;
-    tab.tag = e.target.value; 
-    tab.updateFile(); 
-  }
+  // Helper functions using ForgeWaypoint methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeWaypoint, parser: (value: number) => number = (v) => v) => 
+    tab.waypoint.createNumberFieldHandler(setter, property, tab.waypoint, tab, parser);
+  
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createByteFieldHandler(setter, property, tab.waypoint, tab);
+  
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createBooleanFieldHandler(setter, property, tab.waypoint, tab);
+  
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createResRefFieldHandler(setter, property, tab.waypoint, tab);
+  
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createCExoStringFieldHandler(setter, property, tab.waypoint, tab);
+  
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createCExoLocStringFieldHandler(setter, property, tab.waypoint, tab);
 
-  const onUpdateLinkedTo = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLinkedTo(e.target.value);
-    if(!tab) return;
-    tab.linkedTo = e.target.value; 
-    tab.updateFile(); 
-  }
-
-  const onMapNoteEnabledChange = (value: boolean) => {
-    setMapNoteEnabled(value);
-    if(!tab) return;
-    tab.mapNoteEnabled = value; 
-    tab.updateFile(); 
-  }
-
-  const onHasMapNoteChange = (value: boolean) => {
-    setHasMapNote(value);
-    if(!tab) return;
-    tab.hasMapNote = value; 
-    tab.updateFile(); 
-  }
-
-  const onUpdatePaletteID = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPaletteID(Number(e.target.value));
-    if(!tab) return;
-    tab.paletteID = Number(e.target.value); 
-    tab.updateFile(); 
-  }
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeWaypoint) => 
+    tab.waypoint.createForgeCheckboxFieldHandler(setter, property, tab.waypoint, tab);
 
   useEffect(() => {
     if(!tab) return;
@@ -80,8 +68,8 @@ export const TabUTWEditor = function(props: BaseTabProps){
     return () => {
       tab.removeEventListener('onEditorFileLoad', onWaypointChange);
       tab.removeEventListener('onEditorFileChange', onWaypointChange);
-    }
-  });
+    };
+  }, [tab, onWaypointChange]);
 
   return <>
 <div style={{height: '100%'}}>
@@ -104,20 +92,20 @@ export const TabUTWEditor = function(props: BaseTabProps){
               >
                 <CExoLocStringEditor 
                   value={localizedName}
-                  onChange={(newValue) => { setLocalizedName(newValue); if(tab.blueprint) { tab.localizedName = newValue; tab.updateFile(); } }}
+                  onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')}
                 />
               </FormField>
               <FormField
                 label="Tag" 
                 info="A unique identifier for this waypoint. Used by scripts to reference this specific object. Must be unique within the module."
               >
-                <input type="text" maxLength={32} value={tag} onChange={onUpdateTag} />
+                <input type="text" maxLength={32} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
               </FormField>
               <FormField
                 label="Linked To" 
                 info="The object that this waypoint is linked to. This is the object that will be used to display the waypoint on the map."
               >
-                <input type="text" maxLength={32} value={linkedTo} onChange={onUpdateLinkedTo} />
+                <input type="text" maxLength={32} value={linkedTo} onChange={onUpdateCExoStringField(setLinkedTo, 'linkedTo')} />
               </FormField>
               <tr>
                 <td></td>
@@ -127,12 +115,12 @@ export const TabUTWEditor = function(props: BaseTabProps){
                       <tr>
                         <td>
                           <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is selected." position="right">
-                            <ForgeCheckbox label="Map Note Enabled" value={mapNoteEnabled} onChange={(value) => { onMapNoteEnabledChange(value); }} />
+                            <ForgeCheckbox label="Map Note Enabled" value={mapNoteEnabled} onChange={onUpdateForgeCheckboxField(setMapNoteEnabled, 'mapNoteEnabled')} />
                           </InfoBubble>
                         </td>
                         <td>
                           <InfoBubble content="If checked, the map note will be displayed on the map when the waypoint is moused overed in-game." position="right">
-                            <ForgeCheckbox label="Has Map Note" value={hasMapNote} onChange={(value) => { onHasMapNoteChange(value); }} />
+                            <ForgeCheckbox label="Has Map Note" value={hasMapNote} onChange={onUpdateForgeCheckboxField(setHasMapNote, 'hasMapNote')} />
                           </InfoBubble>
                         </td>
                       </tr>
@@ -144,13 +132,13 @@ export const TabUTWEditor = function(props: BaseTabProps){
                 label="Map Note" 
                 info="The note that will be displayed on the map when the waypoint is moused overed in-game."
               >
-                <CExoLocStringEditor value={mapNote} onChange={(newValue) => { setMapNote(newValue); if(tab.blueprint) { tab.mapNote = newValue; tab.updateFile(); } }} />
+                <CExoLocStringEditor value={mapNote} onChange={onUpdateCExoLocStringField(setMapNote, 'mapNote')} />
               </FormField>
               <FormField
                 label="Palette ID" 
                 info="The palette ID that will be used to display the waypoint on the map."
               >
-                <input type="number" min="0" max="255" value={paletteID} onChange={onUpdatePaletteID} />
+                <input type="number" min="0" max="255" value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
               </FormField>
             </tbody>
           </table>

@@ -383,31 +383,6 @@ export class ModuleSound extends ModuleObject {
     this.template = gff;
     return gff;
   }
-  
-  toToolsetInstance(){
-    let instance = new GFFStruct(6);
-
-    instance.addField(
-      new GFFField(GFFDataType.DWORD, 'GeneratedType', AudioGeneratedType.MANUALLY_PLACED)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-    return instance;
-  }
 
   destroy(): void {
     super.destroy();

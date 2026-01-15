@@ -9,6 +9,12 @@ import { FileTypeManager } from "./FileTypeManager";
 import { ProjectFileSystem } from "./ProjectFileSystem";
 import { ForgeFileSystem } from "./ForgeFileSystem";
 import { ProjectSettings } from "./interfaces/ProjectSettings";
+import { ForgeArea } from "./module-editor/ForgeArea";
+import { ForgeModule } from "./module-editor/ForgeModule";
+import { ForgeRoom } from "./module-editor/ForgeRoom";
+
+const DIR_FORGE = '.forge';
+const DIR_RESOURCES = 'resources';
 
 export class Project {
 
@@ -19,12 +25,14 @@ export class Project {
   className: string;
   files: any[];
   settings: ProjectSettings = {} as ProjectSettings;
-  moduleEditor: any;
-  module: any;
+  moduleEditor: TabModuleEditorState | undefined;
+  module: ForgeModule | undefined;
 
-  module_ifo: EditorFile;
-  module_are: EditorFile;
-  module_git: EditorFile;
+  module_ifo: EditorFile | undefined;
+  module_are: EditorFile | undefined;
+  module_git: EditorFile | undefined;
+  module_lyt: EditorFile | undefined;
+  module_vis: EditorFile | undefined;
 
   static Types: any;
 
@@ -32,6 +40,7 @@ export class Project {
     console.log("Project Class");
     this.className = "Project";
     this.files = [];
+    this.settings = DeepObject.Merge(defaults, {});
   }
   
   static OpenByDirectory() {
@@ -48,6 +57,7 @@ export class Project {
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
           ProjectFileSystem.rootDirectoryHandle = response.handles[0] as FileSystemDirectoryHandle;
+          console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
           ForgeState.project = new Project();
           const loaded = await ForgeState.project.load();
           if(loaded){
@@ -80,136 +90,115 @@ export class Project {
   }
 
   async initModule(): Promise<boolean> {
-    if ( await ProjectFileSystem.exists('module.ifo') ) {
-      this.module_ifo = await ProjectFileSystem.openEditorFile('module.ifo');
-      if(this.module_ifo){
-        const ifo_response = await this.module_ifo.readFile();
-        if(ifo_response.buffer){
-          const ifo = new KotOR.GFFObject(ifo_response.buffer);
-          if(ifo.RootNode.hasField('Mod_Area_list')){
-            const area_struct = ifo.RootNode.getFieldByLabel('Mod_Area_list')?.getChildStructs()[0];
-            if(area_struct){
-              const area_name = area_struct.getFieldByLabel('Area_Name')?.getValue();
-              if(area_name){
-                this.module_are = await ProjectFileSystem.openEditorFile(`${area_name}.are`);
-                const are_response = await this.module_are.readFile();
-
-                this.module_git = await ProjectFileSystem.openEditorFile(`${area_name}.git`);
-                const git_response = await this.module_git.readFile();
-
-                return true;
-              }
-            }
-          }
-        }
-      }
+    this.module_ifo = undefined;
+    this.module_are = undefined;
+    this.module_git = undefined;
+    this.module_lyt = undefined;
+    this.module_vis = undefined;
+    //check if the module.ifo file exists
+    if ( !await ProjectFileSystem.exists('module.ifo') ) {
+      return false;
     }
-    return false;
+
+    //
+    this.module_ifo = await ProjectFileSystem.openEditorFile('module.ifo');
+    if(!this.module_ifo){ return false; }
+
+    //load the ifo file
+    if(this.module_ifo){
+      await this.module_ifo.readFile();
+    }
+
+    const ifo = new KotOR.GFFObject(this.module_ifo.buffer);
+    if(!ifo.RootNode.hasField('Mod_Area_list')){
+      return false;
+    }
+
+    const area_struct = ifo.RootNode.getFieldByLabel('Mod_Area_list')?.getChildStructs()[0];
+    if(!area_struct){ return false; }
+
+    const area_name = area_struct.getFieldByLabel('Area_Name')?.getValue();
+    if(!area_name){ return false; }
+
+    this.module_are = await ProjectFileSystem.openEditorFile(`${area_name}.are`);
+    const are_response = await this.module_are.readFile();
+
+    this.module_git = await ProjectFileSystem.openEditorFile(`${area_name}.git`);
+    const git_response = await this.module_git.readFile();
+
+    return true;
   }
 
   async loadSettings(): Promise<boolean> {
-    if ( await ProjectFileSystem.exists('.forge/settings.json') ) {
-      try{
-        const buffer = await ProjectFileSystem.readFile('.forge/settings.json');
-        let decoder = new TextDecoder('utf8');
-        this.settings = JSON.parse(
-          decoder.decode(buffer)
-        );
+    if(!await ProjectFileSystem.exists(`${DIR_FORGE}`)){
+      await ProjectFileSystem.mkdir(`${DIR_FORGE}`, { recursive: false });
+    }
 
-        if(typeof this.settings != 'object'){
-          console.warn('Project.Load', 'Malformed .forge/settings.json file data', this.settings);
-          this.settings = {} as ProjectSettings;
-        }
+    if ( !await ProjectFileSystem.exists(`${DIR_FORGE}/settings.json`) ) {
+      console.warn('Project.loadSettings', `creating default settings file: ${DIR_FORGE}/settings.json`);
+      this.settings = DeepObject.Merge(defaults, {});
+      ProjectFileSystem.writeFile(`${DIR_FORGE}/settings.json`, new TextEncoder().encode(JSON.stringify(this.settings, null, "\t")));
+      return true;
+    }
 
-        this.settings = DeepObject.Merge(defaults, this.settings);
-        return true;
-      }catch(e){
-        console.error('Project.Load', e);
-        alert('Project.Load: Failed');
-        this.settings = DeepObject.Merge(defaults, {});
-        return false;
+    try{
+      const buffer = await ProjectFileSystem.readFile(`${DIR_FORGE}/settings.json`);
+      let decoder = new TextDecoder('utf8');
+      this.settings = JSON.parse(
+        decoder.decode(buffer)
+      );
+
+      if(typeof this.settings != 'object'){
+        console.warn('Project.loadSettings', `Malformed ${DIR_FORGE}/settings.json file data: ${this.settings}`);
+        this.settings = {} as ProjectSettings;
       }
-    }else{
-      alert('Project.Load: .forge/settings.json not found!');
-      console.warn('Project.Load', '.forge/settings.json not found!');
+
+      this.settings = DeepObject.Merge(defaults, this.settings);
+      return true;
+    }catch(e){
+      console.error('Project.loadSettings: Failed to load settings file', e);
+      alert('Project.loadSettings: Failed to load settings file');
       this.settings = DeepObject.Merge(defaults, {});
       return false;
     }
   }
 
   //Opens a project from it's location
-  open(onSuccess?: Function, deferInit = false){
-    // ForgeState.loader.SetMessage("Loading Project..");
-    // ForgeState.loader.Show();
+  async open(deferInit = false){
     //load project.json
-    this.load().then( () => {
-      try{
-        console.log('project', this.settings);
+    await this.load();
+    try{
+      console.log('project', this.settings);
 
-        let quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
-        if(quickStart){
-          console.log(quickStart);
-          ForgeState.tabManager.removeTab(quickStart);
-        }
-
-        // let pjIndex = KotOR.ConfigClient.options.recent_projects.indexOf(this.directory);
-        // if (pjIndex > -1) {
-        //   KotOR.ConfigClient.options.recent_projects.splice(pjIndex, 1);
-        // }
-
-        // //Append this project to the beginning of the list
-        // KotOR.ConfigClient.options.recent_projects.unshift(this.directory);
-        // KotOR.ConfigClient.save(undefined, true); //Save the configuration silently
-
-        // this.getFiles(()=>{
-
-          let project = this;
-
-          KotOR.GameInitializer.Init(this.settings.game).then( () => {
-            //This is where we initialize ProjectType specific operations
-            if(!deferInit){
-              project.initializeProject( () => {
-                // ForgeState.loader.SetMessage("Loading Complete");
-                //When everything is done
-                if(typeof onSuccess == 'function')
-                  onSuccess();
-              });
-            }else{
-              if(typeof onSuccess == 'function')
-                onSuccess();
-            }
-          });
-
-        // });
-
-        ForgeState.project = this;
-
-      }catch(e){
-        console.log(e);
-        alert('Project Open Failed');
-        if(typeof onSuccess == 'function')
-          onSuccess();
+      const quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
+      if(quickStart){
+        console.log(quickStart);
+        ForgeState.tabManager.removeTab(quickStart);
       }
-    });
+
+      await KotOR.GameInitializer.Init(this.settings.game);
+      //This is where we initialize ProjectType specific operations
+      if(!deferInit){
+        await this.initializeProject();
+      }
+
+      ForgeState.project = this;
+    }catch(e){
+      console.error(e);
+      alert('Project Open Failed');
+    }
 
   }
 
-  initializeProject(onComplete?: Function){
+  async initializeProject(){
     switch(this.settings.type){
       case ProjectType.MODULE:
         //Initialize the Map Editor
         if(this.settings.module_editor.open)
-          this.initEditor();
-
-        //All done??? ok Complete
-        if(typeof onComplete == 'function')
-          onComplete();
+          await this.initEditor();
       break;
       case ProjectType.OTHER:
-
-        //All done??? ok Complete
-        if(typeof onComplete == 'function')
-          onComplete();
+        //TODO: Implement other project types
       break;
     }
     console.log('Project Init');
@@ -226,58 +215,15 @@ export class Project {
 
   }
 
-  // async getFiles(onSuccess?: Function){
-
-  //   // await this.parseProjectFolder();
-
-  //   // ForgeState.projectExplorerTab.initialize();
-      
-  //   if(typeof onSuccess == 'function')
-  //     onSuccess(this.files);
-
-  // }
-
-  // async parseProjectFolder( folder: string = '' ){
-  //   return new Promise<void>( async (resolve, reject) => {
-  //     if(typeof folder === 'undefined')
-  //       folder = this.directory;
-
-  //     console.log('parseProjectFolder', folder);
-
-  //     fs.readdir(folder, {withFileTypes: true}, async (err, directory_objects) => {
-  //       if (err){
-  //         resolve();
-  //       }
-
-  //       for(let i = 0, len = directory_objects.length; i < len; i++){
-  //         let directory_object = directory_objects[i];
-  //         let name = directory_object.name;
-  //         let args = name.split('.');
-
-  //         if(directory_object.isDirectory()){
-  //           //DIRECTORY
-  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: null, type: 'group'});
-  //           await this.parseProjectFolder( path.join(folder, name) );
-  //         }else{
-  //           //FILE
-  //           this.files.push({path: path.join(folder, name), filename: name, name: args[0], ext: args[1], type: 'resource'});
-  //         }
-  //       }
-
-  //       resolve();
-          
-  //     });
-  //   });
-  // }
-
-
   /**
    * Creates a new THREE.js Engine and initialize the scene
    */
-  initEditor() {
+  async initEditor() {
     this.moduleEditor = new TabModuleEditorState();
     ForgeState.tabManager.addTab(this.moduleEditor);
-    //this.moduleEditor.Init();
+    this.moduleEditor.module = await TabModuleEditorState.FromProject(this);
+    this.moduleEditor.module?.setContext(this.moduleEditor.ui3DRenderer);
+    await this.moduleEditor.module?.load();
   }
 
   openModuleEditor(){
@@ -328,14 +274,43 @@ export class Project {
     }
   }
 
+  async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
+    const mod = new ForgeModule();
+    mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
+    
+    /**
+     * Build the entry area
+     */
+    const area = new ForgeArea();
+    area.name.addSubString(areaName, 0); // Male English (StringID 0 = language 0, gender 0)
+    for(let i = 0, len = rooms.length; i < len; i++){
+      const room = new ForgeRoom(rooms[i].roomName);
+      room.setArea(area);
+      room.setEnvAudio(rooms[i].envAudio);
+      room.setAmbientScale(rooms[i].ambientScale);
+      area.rooms.push(room);
+    }
+    mod.areas = [area];
+    mod.entryArea = areaName;
+
+    const ifo = mod.exportToIFO();
+    const are = area.exportToARE();
+    const git = area.exportToGIT();
+    await ProjectFileSystem.writeFile(`module.ifo`, ifo.getExportBuffer());
+    await ProjectFileSystem.writeFile(`${areaName}.are`, are.getExportBuffer());
+    await ProjectFileSystem.writeFile(`${areaName}.git`, git.getExportBuffer());
+
+    return { ifo, are, git };
+  }
+
   async saveSettings(){
+    if(!await ProjectFileSystem.exists(`${DIR_FORGE}`)){
+      await ProjectFileSystem.mkdir(`${DIR_FORGE}`, { recursive: false });
+    }
     try{
       const encoder = new TextEncoder();
       const saved = await ProjectFileSystem.writeFile(
-        '.forge/settings.json', 
-        encoder.encode(
-          JSON.stringify(this.settings, null, "\t")
-        )
+        `${DIR_FORGE}/settings.json`, encoder.encode( JSON.stringify(this.settings, null, "\t") )
       );
       if(!saved){
         console.error('Project.saveSettings');
