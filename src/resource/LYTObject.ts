@@ -233,7 +233,7 @@ export class LYTObject {
   }
 
   export(){
-    let encoder = new TextEncoder();
+    const encoder = new TextEncoder();
     let text = '';
     
     // Header
