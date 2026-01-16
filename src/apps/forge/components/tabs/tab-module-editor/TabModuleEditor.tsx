@@ -7,66 +7,206 @@ import { UI3DRendererView } from "../../UI3DRendererView";
 import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
 import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import { UI3DToolPalette, Tool, SubTool } from "../../UI3DToolPalette";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowPointer, faArrowsRotate, faArrowsUpDownLeftRight, faSquarePlus } from "@fortawesome/free-solid-svg-icons";
+import { 
+  faArrowPointer, 
+  faArrowsRotate, 
+  faArrowsUpDownLeftRight, 
+  faSquarePlus,
+  faVideo,
+  faUser,
+  faDoorOpen,
+  faPaw,
+  faWandSparkles,
+  faToolbox,
+  faMusic,
+  faStore,
+  faTriangleExclamation,
+  faLocationPin
+} from "@fortawesome/free-solid-svg-icons";
 
 import * as KotOR from "../../../KotOR";
 
-const UI3DToolPalette = function(props: any){
-  const tab = props.tab as TabModuleEditorState;
+// Extended interface for game object items with icons (for context menu)
+interface GameObjectMenuItem extends ContextMenuItem {
+  icon?: any;
+  iconColor?: string;
+}
+
+// Shared game object type items for context menu
+// Icons match those used in SceneGraphTreeViewManager.ts
+const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[] => [
+  {
+    id: 'add-camera',
+    label: 'Camera',
+    icon: faVideo, // fa-solid fa-video
+    iconColor: '#ff6b6b',
+    onClick: () => {
+      tab.setGameObjectControlOptions(GameObjectType.CAMERA, '', KotOR.ResourceTypes.NA);
+    }
+  },
+  {
+    id: 'add-creature',
+    label: 'Creature',
+    icon: faUser, // fa-solid fa-person
+    iconColor: '#4ecdc4',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utc');
+    }
+  },
+  {
+    id: 'add-door',
+    label: 'Door',
+    icon: faDoorOpen, // fa-solid fa-door-open
+    iconColor: '#ffe66d',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utd');
+    }
+  },
+  {
+    id: 'add-encounter',
+    label: 'Encounter',
+    icon: faPaw, // fa-solid fa-paw
+    iconColor: '#ff6b9d',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('ute');
+    }
+  },
+  {
+    id: 'add-item',
+    label: 'Item',
+    icon: faWandSparkles, // fa-solid fa-wand-sparkles
+    iconColor: '#95e1d3',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('uti');
+    }
+  },
+  {
+    id: 'add-placeable',
+    label: 'Placeable',
+    icon: faToolbox, // fa-solid fa-toolbox
+    iconColor: '#a8e6cf',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utp');
+    }
+  },
+  {
+    id: 'add-store',
+    label: 'Store',
+    icon: faStore, // fa-solid fa-store
+    iconColor: '#ffd93d',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utm');
+    }
+  },
+  {
+    id: 'add-sound',
+    label: 'Sound',
+    icon: faMusic, // fa-solid fa-music
+    iconColor: '#6c5ce7',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('uts');
+    }
+  },
+  {
+    id: 'add-trigger',
+    label: 'Trigger',
+    icon: faTriangleExclamation, // fa-solid fa-triangle-exclamation
+    iconColor: '#feca57',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utt');
+    }
+  },
+  {
+    id: 'add-waypoint',
+    label: 'Waypoint',
+    icon: faLocationPin, // fa-solid fa-location-pin
+    iconColor: '#48dbfb',
+    onClick: () => {
+      tab.openBlueprintBrowserForType('utw');
+    }
+  }
+];
+
+// Convert game object items to SubTool format for tool palette
+const getGameObjectSubTools = (tab: TabModuleEditorState): SubTool[] => {
+  const items = getGameObjectTypeItems(tab);
+  return items.map(item => ({
+    id: item.id,
+    label: item.label || '',
+    icon: item.icon,
+    iconColor: item.iconColor,
+    onClick: item.onClick || (() => {})
+  }));
+};
+
+// Create tools configuration for the tool palette
+const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorControlMode): Tool[] => {
+  const gameObjectSubTools = getGameObjectSubTools(tab);
+  
+  return [
+    {
+      id: 'select',
+      label: 'Select',
+      icon: faArrowPointer,
+      iconColor: 'white',
+      title: 'Select',
+      active: controlMode === TabModuleEditorControlMode.SELECT,
+      onClick: () => {
+        tab.setControlMode(TabModuleEditorControlMode.SELECT);
+      }
+    },
+    {
+      id: 'translate',
+      label: 'Translate',
+      icon: faArrowsUpDownLeftRight,
+      iconColor: 'red',
+      title: 'Translate',
+      active: controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL,
+      onClick: () => {
+        tab.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
+      }
+    },
+    {
+      id: 'rotate',
+      label: 'Rotate',
+      icon: faArrowsRotate,
+      iconColor: 'green',
+      title: 'Rotate',
+      active: controlMode === TabModuleEditorControlMode.ROTATE_CONTROL,
+      onClick: () => {
+        tab.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL);
+      }
+    },
+    {
+      id: 'add-game-object',
+      label: 'Add Game Object',
+      icon: faSquarePlus,
+      iconColor: 'cyan',
+      title: 'Add Game Object',
+      active: controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT,
+      subTools: gameObjectSubTools
+    }
+  ];
+};
+
+export const TabModuleEditor = function(props: BaseTabProps){
+  const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
+  const { showContextMenu, ContextMenuComponent } = useContextMenu();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [controlMode, setControlMode] = useState<TabModuleEditorControlMode>(TabModuleEditorControlMode.SELECT);
 
   const onControlModeChange = () => {
     setControlMode(tab.controlMode);
   };
 
-  useEffect( () => {
+  useEffect(() => {
     tab.addEventListener('onControlModeChange', onControlModeChange);
     return () => {
       tab.removeEventListener('onControlModeChange', onControlModeChange);
     };
-  });
-
-  return (
-    <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
-      <ul>
-        <li className={`${controlMode == TabModuleEditorControlMode.SELECT ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.SELECT)}>
-          <a title="Select">
-            <span className="fa-layers fa-fw">
-              <FontAwesomeIcon icon={faArrowPointer} size='lg' color="white" />
-            </span>
-          </a>
-        </li>
-        <li className={`${controlMode == TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL)}>
-          <a title="Translate">
-            <span className="fa-layers fa-fw">
-              <FontAwesomeIcon icon={faArrowsUpDownLeftRight} size='lg' color="red" />
-            </span>
-          </a>
-        </li>
-        <li className={`${controlMode == TabModuleEditorControlMode.ROTATE_CONTROL ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL)}>
-          <a title="Rotate">
-            <span className="fa-layers fa-fw">
-              <FontAwesomeIcon icon={faArrowsRotate} size='lg' color="green" />
-            </span>
-          </a>
-        </li>
-        <li className={`${controlMode == TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.ADD_GAME_OBJECT)}>
-          <a title="Add Game Object">
-            <span className="fa-layers fa-fw">
-              <FontAwesomeIcon icon={faSquarePlus} size='lg' color="cyan" />
-            </span>
-          </a>
-        </li>
-      </ul>
-    </div>
-  );
-}
-
-export const TabModuleEditor = function(props: BaseTabProps){
-  const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
-  const { showContextMenu, ContextMenuComponent } = useContextMenu();
-  const containerRef = useRef<HTMLDivElement>(null);
+  }, [tab]);
 
   const onModuleLoaded = () => {
     console.log('module loaded');
@@ -122,78 +262,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
         return true;
       }
 
-      const gameObjectTypeItems: ContextMenuItem[] = [
-        {
-          id: 'add-camera',
-          label: 'Camera',
-          onClick: () => {
-            tab.setGameObjectControlOptions(GameObjectType.CAMERA, '', KotOR.ResourceTypes.NA);
-          }
-        },
-        {
-          id: 'add-creature',
-          label: 'Creature',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utc');
-          }
-        },
-        {
-          id: 'add-door',
-          label: 'Door',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utd');
-          }
-        },
-        {
-          id: 'add-encounter',
-          label: 'Encounter',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('ute');
-          }
-        },
-        {
-          id: 'add-item',
-          label: 'Item',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('uti');
-          }
-        },
-        {
-          id: 'add-placeable',
-          label: 'Placeable',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utp');
-          }
-        },
-        {
-          id: 'add-store',
-          label: 'Store',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utm');
-          }
-        },
-        {
-          id: 'add-sound',
-          label: 'Sound',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('uts');
-          }
-        },
-        {
-          id: 'add-trigger',
-          label: 'Trigger',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utt');
-          }
-        },
-        {
-          id: 'add-waypoint',
-          label: 'Waypoint',
-          onClick: () => {
-            tab.openBlueprintBrowserForType('utw');
-          }
-        }
-      ];
+      const gameObjectTypeItems = getGameObjectTypeItems(tab);
 
       const contextMenuItems: ContextMenuItem[] = [
         {
@@ -256,7 +325,19 @@ export const TabModuleEditor = function(props: BaseTabProps){
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
           <UI3DRendererView context={tab.ui3DRenderer}>
             <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
-            <UI3DToolPalette tab={tab} />
+            <UI3DToolPalette 
+              tools={createTools(tab, controlMode)}
+              activeToolId={
+                controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
+                controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
+                controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
+                controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
+                undefined
+              }
+              onToolChange={(toolId) => {
+                // Tool change is handled by onClick in the tool definition
+              }}
+            />
           </UI3DRendererView>
         </div>
         {ContextMenuComponent}

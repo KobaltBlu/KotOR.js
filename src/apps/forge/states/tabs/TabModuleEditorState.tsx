@@ -289,16 +289,18 @@ export class TabModuleEditorState extends TabState {
   setControlMode(mode: TabModuleEditorControlMode){
     this.controlMode = mode;
 
-    const isSelectModeTool = 
-      mode === TabModuleEditorControlMode.SELECT || 
+    const isTransformTool = 
       mode === TabModuleEditorControlMode.TRANSFORM_CONTROL || 
       mode === TabModuleEditorControlMode.ROTATE_CONTROL || 
       mode === TabModuleEditorControlMode.SCALE_CONTROL;
+
+    const isSelectModeTool = 
+      mode === TabModuleEditorControlMode.SELECT;
     
     // Detach transform controls when not in SELECT mode
-    if(!isSelectModeTool){
-      this.ui3DRenderer.transformControls.detach();
+    if(!isTransformTool && !isSelectModeTool){
       this.selectedGameObject = undefined;
+      this.ui3DRenderer.transformControls.detach();
     }
 
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
