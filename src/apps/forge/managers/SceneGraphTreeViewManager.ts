@@ -1,8 +1,10 @@
 import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "../KotOR";
 import { SceneGraphNode } from "../SceneGraphNode";
 import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+import { ForgeEncounter } from "../module-editor/ForgeEncounter";
 import { ForgeGameObject } from "../module-editor/ForgeGameObject";
 import { ForgeRoom } from "../module-editor/ForgeRoom";
+import { ForgeTrigger } from "../module-editor/ForgeTrigger";
 
 export interface IModuleGroupNode {
   key: GroupType;
@@ -179,6 +181,23 @@ export class SceneGraphTreeViewManager {
               },
             });
             nodeNode.addChildNode(walkmeshNode);
+          }
+        }
+
+        if(group.key == GroupType.TRIGGER || group.key == GroupType.ENCOUNTER){
+          const trigger = child as ForgeTrigger | ForgeEncounter;
+          for(let k = 0; k < trigger.vertices.length; k++){
+            const vertex = trigger.vertices[k];
+            const vertexNode =  new SceneGraphNode({
+              uuid: `vertex-${k}`,
+              name: 'Vertex',
+              icon: 'fa-solid fa-circle',
+              data: vertex,
+              onClick: (node) => {
+                // this.context.selectObject(node.data);
+              },
+            });
+            nodeNode.addChildNode(vertexNode);
           }
         }
 
