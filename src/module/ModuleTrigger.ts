@@ -132,15 +132,14 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   getGeometry(){
-    let trigGeom = new THREE.BufferGeometry();
-    let vertices = this.vertices.slice();
+    const trigGeom = new THREE.BufferGeometry();
 
     try{
-      let holes: THREE.Vec2[][] = [];
-      // let faces: OdysseyFace3[] = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
-      trigGeom.setIndex(triangles.flat()); //Works with indices
-      trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) ); //Works with indices
+      const vertices = this.vertices.slice();
+      const holes: THREE.Vector2[][] = [];
+      const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+      trigGeom.setIndex(triangles.flat());
+      trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
     }catch(e){
       console.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,

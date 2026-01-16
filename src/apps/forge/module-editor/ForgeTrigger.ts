@@ -2,8 +2,19 @@ import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
 import * as THREE from "three";
 
+const DEFAULT_OFFSET_Z = 0.01;
+const TRIGGER_MATERIAL = new THREE.MeshBasicMaterial({
+  color: 0xFF0000,
+  side: THREE.DoubleSide
+});
+
 export class ForgeTrigger extends ForgeGameObject {
-  vertices: THREE.Vector3[] = [];
+  vertices: THREE.Vector3[] = [
+    new THREE.Vector3(-0.5, -0.5, DEFAULT_OFFSET_Z),
+    new THREE.Vector3(0.5, -0.5, DEFAULT_OFFSET_Z),
+    new THREE.Vector3(0.5, 0.5, DEFAULT_OFFSET_Z),
+    new THREE.Vector3(-0.5, 0.5, DEFAULT_OFFSET_Z)
+  ];
 
   //GIT Instance Properties
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utt;
@@ -35,6 +46,9 @@ export class ForgeTrigger extends ForgeGameObject {
   trapOneShot: boolean = false;
   trapType: number = 0;
   t_type: number = 0;
+
+  bufferGeometry: THREE.BufferGeometry;
+  mesh: THREE.Mesh;
 
   constructor(buffer?: Uint8Array){
     super();
@@ -179,8 +193,26 @@ export class ForgeTrigger extends ForgeGameObject {
     return this.blueprint;
   }
 
+  buildGeometry(){
+    if(!this.bufferGeometry){
+      this.bufferGeometry = new THREE.BufferGeometry();
+    }
+    const vertices = this.vertices.slice();
+    const holes: THREE.Vector2[][] = [];
+    const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+    this.bufferGeometry.setIndex(triangles.flat());
+    this.bufferGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
+    this.bufferGeometry.computeVertexNormals();
+    this.bufferGeometry.computeBoundingSphere();
+  }
+
   async load(){
-    
+    this.buildGeometry();
+    if(!this.mesh){
+      this.mesh = new THREE.Mesh(this.bufferGeometry, TRIGGER_MATERIAL);
+      this.container.add(this.mesh);
+    }
+    this.mesh.geometry = this.bufferGeometry;
   }
 
   getGITInstance(): KotOR.GFFStruct {

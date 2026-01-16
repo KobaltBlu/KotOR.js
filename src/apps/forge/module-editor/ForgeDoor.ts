@@ -363,6 +363,9 @@ export class ForgeDoor extends ForgeGameObject {
 
     if(!this.blueprint){
       this.model = new KotOR.OdysseyModel3D();
+      this.modelLoading = false;
+      this.processEventListener('onModelChange', [this]);
+      this.container.add(this.model);
       return this.model;
     }
 
@@ -377,24 +380,20 @@ export class ForgeDoor extends ForgeGameObject {
         lighting: true
       });
       this.model = model;
-      if(this.context && this.context.scene){
-        this.context.scene.add(this.model);
-      }
-      this.modelLoading = false;
-      this.processEventListener('onModelChange', [this]);
-      return this.model;
     }catch(e){
       console.error(e);
       this.model = new KotOR.OdysseyModel3D();
-      this.modelLoading = false;
-      this.processEventListener('onModelChange', [this]);
-      return this.model;
     }
+    this.modelLoading = false;
+    this.processEventListener('onModelChange', [this]);
+    this.container.add(this.model);
+    return this.model;
   }
 
   async load(){
     this.loadAppearance();
     await this.loadModel();
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {

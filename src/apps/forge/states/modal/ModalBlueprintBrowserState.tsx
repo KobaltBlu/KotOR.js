@@ -50,6 +50,8 @@ export class ModalBlueprintBrowserState extends ModalState {
       const cached = ModalBlueprintBrowserState.blueprintCache.get(type) || [];
       this.items = cached.slice(0);
       this.filteredItems = this.items.slice(0);
+      // Delay event firing to ensure React component has mounted and set up listeners
+      await Promise.resolve();
       this.processEventListener('onBlueprintsLoaded', [this]);
       return;
     }

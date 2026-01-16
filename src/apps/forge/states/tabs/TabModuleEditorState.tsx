@@ -21,6 +21,7 @@ import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
 import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
 import { ForgeState } from "../../states/ForgeState";
+import { type ForgeRoom } from "../../module-editor/ForgeRoom";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
@@ -28,6 +29,7 @@ export enum TabModuleEditorControlMode {
 };
 
 export enum GameObjectType {
+  ROOM = 'room',
   CREATURE = 'creature',
   CAMERA = 'camera',
   DOOR = 'door',
@@ -58,6 +60,9 @@ export class TabModuleEditorState extends TabState {
   ghostPreviewMesh: THREE.Mesh;
   previewPosition: THREE.Vector3 = new THREE.Vector3();
   previewValid: boolean = false;
+  
+  // Selected game object
+  selectedGameObject: ForgeGameObject | undefined;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -87,6 +92,7 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     // Add ground mesh and ghost preview to scene when scene is available
     // The scene is initialized in UI3DRenderer, but buildScene() is called when canvas is attached
@@ -224,25 +230,67 @@ export class TabModuleEditorState extends TabState {
   }
 
   onMouseDown(event: MouseEvent){
-    // Only handle placement when in ADD_GAME_OBJECT mode and a type is selected
-    if(this.controlMode !== TabModuleEditorControlMode.ADD_GAME_OBJECT || !this.selectedGameObjectType || !this.module?.area){
-      return;
-    }
-
     if(event.button !== 0 || !this.ui3DRenderer.canvas){ // Left mouse button only
       return;
     }
 
-    // Use the same intersection finding logic as the preview
-    const intersection = this.findPlacementIntersection();
-
-    if(intersection && intersection.point){
-      this.placeGameObject(intersection.point);
+    // Handle placement when in ADD_GAME_OBJECT mode
+    if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT && this.selectedGameObjectType && this.module?.area){
+      const intersection = this.findPlacementIntersection();
+      if(intersection && intersection.point){
+        this.placeGameObject(intersection.point);
+      }
+      return;
     }
   }
 
+  onSelect(intersection: THREE.Intersection | undefined){
+    // Only handle selection when in SELECT mode
+    if(this.controlMode !== TabModuleEditorControlMode.SELECT){
+      return;
+    }
+
+    if(intersection && intersection.object){
+      // Find the ForgeGameObject from the intersected object
+      // Traverse up the parent chain to find the container with ForgeGameObject reference
+      let forgeGameObject: ForgeGameObject | undefined;
+      let current: THREE.Object3D | null = intersection.object;
+      
+      while(current){
+        // Check if this object has a ForgeGameObject reference in userData
+        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+          forgeGameObject = current.userData.forgeGameObject;
+          break;
+        }
+        current = current.parent;
+      }
+      
+      if(forgeGameObject){
+        this.selectGameObject(forgeGameObject);
+        this.processEventListener('onGameObjectSelected', [forgeGameObject]);
+      } else {
+        this.selectGameObject(undefined);
+      }
+    } else {
+      // Deselect if clicking on empty space
+      this.selectGameObject(undefined);
+    }
+  }
+
+  selectGameObject(gameObject: ForgeGameObject | undefined){
+    this.selectedGameObject = gameObject;
+    this.processEventListener('onSelectionChanged', [gameObject]);
+  }
+
   placeGameObject(position: THREE.Vector3){
-    if(!this.module?.area || !this.selectedGameObjectType || !this.selectedBlueprintResRef){
+    if(!this.module?.area || !this.selectedGameObjectType){
+      return;
+    }
+
+    const typesThatUseBlueprints = [GameObjectType.CREATURE, GameObjectType.DOOR, GameObjectType.ENCOUNTER, GameObjectType.ITEM, GameObjectType.PLACEABLE, GameObjectType.STORE, GameObjectType.TRIGGER, GameObjectType.WAYPOINT];
+    const useBlueprintLoader = typesThatUseBlueprints.includes(this.selectedGameObjectType);
+
+    if(useBlueprintLoader && !this.selectedBlueprintResRef){
       return;
     }
 
@@ -252,27 +300,33 @@ export class TabModuleEditorState extends TabState {
       return;
     }
 
+    // Create async loaders array
+    const asyncLoaders: (() => Promise<void>)[] = [];
+
     // Set template resref if one was selected
-    if(this.selectedBlueprintResRef){
+    if(this.selectedGameObjectType === GameObjectType.ROOM && this.selectedBlueprintResRef){
+      (gameObject as ForgeRoom).roomName = this.selectedBlueprintResRef;
+    }else if(this.selectedBlueprintResRef){
       const resType = this.getResourceTypeForGameObjectType(this.selectedGameObjectType);
       gameObject.setTemplateResRef(this.selectedBlueprintResRef, resType);
     }
 
+    // Add object loader to async loaders array
+    asyncLoaders.push(gameObject.load);
+
     // Set position
     gameObject.position.copy(position);
-    gameObject.container.position.copy(position);
 
-    // Set context and area
-    gameObject.setContext(this.ui3DRenderer);
+    // Set area
     this.module.area.attachObject(gameObject);
 
-    // Load blueprint and then the object
-    if(this.selectedBlueprintResRef){
-      (async () => {
+    // Load all async loaders
+    (async () => {
+      if(useBlueprintLoader){
         await gameObject.loadBlueprint();
-        await gameObject.load();
-      })();
-    } 
+      }
+      await gameObject.load();
+    })();
 
     // Notify listeners
     this.processEventListener('onGameObjectPlaced', [gameObject, this.selectedGameObjectType]);
@@ -291,14 +345,18 @@ export class TabModuleEditorState extends TabState {
       // Map blueprint type to GameObjectType
       const gameObjectType = this.getGameObjectTypeFromBlueprintType(type);
       if(gameObjectType){
-        this.selectedGameObjectType = gameObjectType;
-        this.selectedBlueprintResRef = blueprint.resref;
-        this.controlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;
+        this.setGameObjectControlOptions(gameObjectType, blueprint.resref, type);
         this.processEventListener('onBlueprintSelected', [blueprint, type, gameObjectType]);
       }
     });
     modal.attachToModalManager(ForgeState.modalManager);
     modal.open();
+  }
+
+  setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, resType: typeof KotOR.ResourceTypes){
+    this.selectedGameObjectType = gameObjectType;
+    this.selectedBlueprintResRef = resref;
+    this.controlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;
   }
 
   getGameObjectTypeFromBlueprintType(blueprintType: BlueprintType): GameObjectType | undefined {
@@ -318,6 +376,7 @@ export class TabModuleEditorState extends TabState {
 
   getResourceTypeForGameObjectType(gameObjectType: GameObjectType): typeof KotOR.ResourceTypes {
     const mapping: Record<GameObjectType, typeof KotOR.ResourceTypes> = {
+      [GameObjectType.ROOM]: KotOR.ResourceTypes.NA,
       [GameObjectType.CREATURE]: KotOR.ResourceTypes.utc,
       [GameObjectType.DOOR]: KotOR.ResourceTypes.utd,
       [GameObjectType.ENCOUNTER]: KotOR.ResourceTypes.ute,

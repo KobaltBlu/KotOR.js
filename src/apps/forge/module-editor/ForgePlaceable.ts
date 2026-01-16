@@ -407,6 +407,7 @@ export class ForgePlaceable extends ForgeGameObject {
   async load(){
     this.loadAppearance();
     await this.loadModel();
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {

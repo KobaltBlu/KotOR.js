@@ -26,6 +26,8 @@ export class ForgeArea extends ForgeGameObject{
 
   module: ForgeModule;
 
+  nextCameraId = 0;
+
   /**
    * ARE Fields
    */
@@ -351,10 +353,7 @@ export class ForgeArea extends ForgeGameObject{
     //Cameras
     if(cameras){
       for(let i = 0; i < cameras.childStructs.length; i++){
-        const strt = cameras.childStructs[i];
-        const camera = new ForgeCamera();
-        camera.setGITInstance(strt);
-        this.cameras.push(camera);
+        this.gitInstanceToForgeGameObject(cameras.childStructs[i], GroupType.CAMERA);
       }
     }
 
@@ -369,80 +368,49 @@ export class ForgeArea extends ForgeGameObject{
     //Creatures
     if(creatures){
       for(let i = 0; i < creatures.childStructs.length; i++){
-        const strt = creatures.childStructs[i];
-        const creature = new ForgeCreature();
-        creature.setGITInstance(strt);
-        this.creatures.push(creature);
+        this.gitInstanceToForgeGameObject(creatures.childStructs[i], GroupType.CREATURE);
       }
     }
 
     //Triggers
     if(triggers){
       for(let i = 0; i < triggers.childStructs.length; i++){
-        const strt = triggers.childStructs[i];
-        const trigger = new ForgeTrigger();
-        trigger.setGITInstance(strt);
-        this.triggers.push(trigger);
-      }
-    }
-
-    //Encounter
-    if(encounters){
-      for(let i = 0; i < encounters.childStructs.length; i++){
-        const strt = encounters.childStructs[i];
-        const encounter = new ForgeEncounter();
-        encounter.setGITInstance(strt);
-        this.encounters.push(encounter);
+        this.gitInstanceToForgeGameObject(triggers.childStructs[i], GroupType.TRIGGER);
       }
     }
 
     //Doors
     if(doors){
       for(let i = 0; i < doors.childStructs.length; i++ ){
-        const strt = doors.childStructs[i];
-        const door = new ForgeDoor();
-        door.setGITInstance(strt);
-        this.doors.push(door);
+        this.gitInstanceToForgeGameObject(doors.childStructs[i], GroupType.DOOR);
       }
     }
 
     //Placeables
     if(placeables){
       for(let i = 0; i < placeables.childStructs.length; i++ ){
-        const strt = placeables.childStructs[i];
-        const placeable = new ForgePlaceable();
-        placeable.setGITInstance(strt);
-        this.placeables.push(placeable);
+        this.gitInstanceToForgeGameObject(placeables.childStructs[i], GroupType.PLACEABLE);
       }
     }
 
     //Sounds
     if(sounds){
       for(let i = 0; i < sounds.childStructs.length; i++ ){
-        const strt = sounds.childStructs[i];
-        const sound = new ForgeSound();
-        sound.setGITInstance(strt);
-        this.sounds.push(sound);
+        this.gitInstanceToForgeGameObject(sounds.childStructs[i], GroupType.SOUND);
       }
     }
 
     //Stores
     if(stores){
       for(let i = 0; i < stores.childStructs.length; i++ ){
-        const strt = stores.childStructs[i];
-        const store = new ForgeStore();
-        store.setGITInstance(strt);
-        this.stores.push(store);
+        this.gitInstanceToForgeGameObject(stores.childStructs[i], GroupType.STORE);
       }
     }
 
     //Waypoints
     if(waypoints){
       for(let i = 0; i < waypoints.childStructs.length; i++ ){
-        const strt = waypoints.childStructs[i];
-        const waypoint = new ForgeWaypoint();
-        waypoint.setGITInstance(strt);
-        this.waypoints.push(waypoint);
+        this.gitInstanceToForgeGameObject(waypoints.childStructs[i], GroupType.WAYPOINT);
       }
     }
 
@@ -543,49 +511,61 @@ export class ForgeArea extends ForgeGameObject{
   attachObject(object: ForgeGameObject){
     if(!object){ return; }
     object.setArea(this);
+    
     if(object instanceof ForgeRoom){
       this.rooms.push(object);
       this.context.addObjectToGroup(object.container, GroupType.ROOMS);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeCreature){
       this.creatures.push(object);
       this.context.addObjectToGroup(object.container, GroupType.CREATURE);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeCamera){
       this.cameras.push(object);
       this.context.addObjectToGroup(object.container, GroupType.CAMERA);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeDoor){
       this.doors.push(object);
       this.context.addObjectToGroup(object.container, GroupType.DOOR);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeEncounter){
       this.encounters.push(object);
       this.context.addObjectToGroup(object.container, GroupType.ENCOUNTER);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeItem){
       this.items.push(object);
       this.context.addObjectToGroup(object.container, GroupType.ITEM);
+      object.setContext(this.context);
     }
     if(object instanceof ForgePlaceable){
       this.placeables.push(object);
       this.context.addObjectToGroup(object.container, GroupType.PLACEABLE);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeSound){
       this.sounds.push(object);
       this.context.addObjectToGroup(object.container, GroupType.SOUND);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeStore){
       this.stores.push(object);
       this.context.addObjectToGroup(object.container, GroupType.STORE);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeTrigger){
       this.triggers.push(object);
       this.context.addObjectToGroup(object.container, GroupType.TRIGGER);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeWaypoint){
       this.waypoints.push(object);
       this.context.addObjectToGroup(object.container, GroupType.WAYPOINT);
+      object.setContext(this.context);
     }
     if(object instanceof ForgeMiniGame){
       this.miniGame = object;
@@ -593,10 +573,50 @@ export class ForgeArea extends ForgeGameObject{
     this.context.sceneGraphManager.rebuild();
   }
 
+  getNextCameraId(): number {
+    return this.nextCameraId++;
+  }
+
+  gitInstanceToForgeGameObject(instance: KotOR.GFFStruct, groupType: GroupType): ForgeGameObject | undefined {
+    const object = ForgeArea.objectInstanceFromGroupType(groupType);
+    if(!object){
+      return undefined;
+    }
+    object.setGITInstance(instance);
+    this.attachObject(object);
+    return object;
+  }
+
+  static objectInstanceFromGroupType(groupType: GroupType): ForgeGameObject | undefined {
+    switch(groupType){
+      case GroupType.CREATURE:
+        return new ForgeCreature();
+      case GroupType.CAMERA:
+        return new ForgeCamera();
+      case GroupType.DOOR:
+        return new ForgeDoor();
+      case GroupType.ENCOUNTER:
+        return new ForgeEncounter();
+      case GroupType.ITEM:
+        return new ForgeItem();
+      case GroupType.PLACEABLE:
+        return new ForgePlaceable();
+      case GroupType.SOUND:
+        return new ForgeSound();
+      case GroupType.STORE:
+        return new ForgeStore();
+      case GroupType.TRIGGER:
+        return new ForgeTrigger();
+      case GroupType.WAYPOINT:
+        return new ForgeWaypoint();
+      default:
+        return undefined;
+    }
+  }
+
   async loadCreatures(): Promise<void> {
     for(let i = 0; i < this.creatures.length; i++){
       const creature = this.creatures[i];
-      creature.setContext(this.context);
       await creature.loadBlueprint();
       await creature.load();
       this.context.addObjectToGroup(creature.container, GroupType.CREATURE);

@@ -120,7 +120,7 @@ export class ForgeStore extends ForgeGameObject {
   }
 
   async load(){
-    
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct { 

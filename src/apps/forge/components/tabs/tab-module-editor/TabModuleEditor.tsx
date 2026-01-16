@@ -2,11 +2,12 @@ import React, { useEffect, useCallback, useRef } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { TabModuleEditorState, GameObjectType } from "../../../states/tabs";
+import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
 import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import * as KotOR from "../../../KotOR";
 
 export const TabModuleEditor = function(props: BaseTabProps){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
@@ -68,6 +69,13 @@ export const TabModuleEditor = function(props: BaseTabProps){
       }
 
       const gameObjectTypeItems: ContextMenuItem[] = [
+        {
+          id: 'add-camera',
+          label: 'Camera',
+          onClick: () => {
+            tab.setGameObjectControlOptions(GameObjectType.CAMERA, '', KotOR.ResourceTypes.NA);
+          }
+        },
         {
           id: 'add-creature',
           label: 'Creature',

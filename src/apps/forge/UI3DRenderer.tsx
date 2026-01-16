@@ -700,6 +700,24 @@ export class UI3DRenderer extends EventListenerModel {
           child.visible = !this.visibilityState[ObjectType.SOUND];
         });
         break;
+      case 'camera':
+        this.group.camera.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.CAMERA];
+        });
+        break;
+      case 'encounter':
+        this.group.encounter.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.ENCOUNTER];
+        });
+        break;
+      case 'store':
+        this.group.store.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.STORE];
+        });
+        break;
+      default:
+        console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
+        break;
     }
     this.visibilityState[type] = !this.visibilityState[type];
   }
@@ -749,6 +767,9 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.SOUND].add(object);
         object.visible = this.visibilityState[ObjectType.SOUND];
         break;
+      case GroupType.CAMERA:
+        this.group[GroupType.CAMERA].add(object);
+        break;
       default:
         console.warn(`addObjectToGroup: unhandled group type, ${group}`);
         break;
@@ -789,6 +810,9 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.SOUND:
         this.group[GroupType.SOUND].remove(object);
+        break;
+      case GroupType.CAMERA:
+        this.group[GroupType.CAMERA].remove(object);
         break;
       default:
         console.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
@@ -840,9 +864,22 @@ export class UI3DRenderer extends EventListenerModel {
       return;
     }
 
+    // Handle ForgeGameObject picking
+    let forgeGameObject: ForgeGameObject | undefined;
     if(object instanceof ForgeGameObject){
-      console.warn('selectObject: object picking is not supported yet for ForgeGameObject');
-      return;
+      forgeGameObject = object;
+      object = object.container;
+    } else {
+      // Try to find ForgeGameObject from userData or by traversing up the tree
+      let current: THREE.Object3D | null = object;
+      while(current){
+        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+          forgeGameObject = current.userData.forgeGameObject;
+          object = forgeGameObject.container;
+          break;
+        }
+        current = current.parent;
+      }
     }
 
     if(object instanceof KotOR.OdysseyWalkMesh){
@@ -868,6 +905,13 @@ export class UI3DRenderer extends EventListenerModel {
       // dummyMesh.scale.copy(object.scale);
       this.selectionBox.setFromObject(dummyMesh);
       this.selectionBox.visible = true;
+    }
+
+    // Store the ForgeGameObject reference in selectionBox userData for easy access
+    if(forgeGameObject){
+      this.selectionBox.userData.forgeGameObject = forgeGameObject;
+    } else {
+      delete this.selectionBox.userData.forgeGameObject;
     }
   }
 
@@ -950,6 +994,9 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.group.trigger);
     this.scene.add(this.group.waypoint);
     this.scene.add(this.group.sound);
+    this.scene.add(this.group.camera);
+    this.scene.add(this.group.encounter);
+    this.scene.add(this.group.store);
     this.sceneGraphManager.rebuild();
   }
   

@@ -29,6 +29,7 @@ export class ForgeGameObject extends EventListenerModel {
     this.rotation = this.container.rotation;
     this.scale = this.container.scale;
     this.quaternion = this.container.quaternion;
+    this.container.userData.forgeGameObject = this;
   }
 
   setArea(area: ForgeArea){
@@ -61,9 +62,18 @@ export class ForgeGameObject extends EventListenerModel {
   async load(){
     
   }
+
+  updateBoundingBox(){
+    this.box.setFromObject(this.container);
+  }
   
   getEditorName(): string {
     return this.templateResRef;
+  }
+
+  setGITInstance(instance: KotOR.GFFStruct){
+    // stub method to be overridden by child classes
+    console.error(`setGITInstance not implemented for ${this.constructor.name}`);
   }
 
   /**

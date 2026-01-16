@@ -1,19 +1,47 @@
 import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+import * as THREE from "three";
 
 export class ForgeCamera extends ForgeGameObject {
-  cameraID: number = 0;
-  fov: number = 0;
+  aspectRatio: number = 1;
+  cameraID: number = -1;
+  fov: number = 45;
   height: number = 0;
   micRange: number = 0;
-  pitch: number = 0;
+  pitch: number = 90
+
+  perspectiveCamera: THREE.PerspectiveCamera;
+  cameraHelper: THREE.CameraHelper;
 
   constructor(){
     super();
+    this.aspectRatio = 1920 / 1080;
+  }
+  
+  getEditorName(): string {
+    return `Camera ${this.cameraID}`;
   }
 
   async load(){
-    
+    if(this.cameraID === -1 && this.area){
+      this.cameraID = this.area.getNextCameraId();
+    }
+    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, this.aspectRatio, 0.1, 100);
+    this.rotation.reorder('YZX');
+    this.rotation.x = THREE.MathUtils.degToRad(this.pitch);
+    this.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
+    this.perspectiveCamera.updateMatrixWorld(true);
+    this.perspectiveCamera.updateMatrix();
+
+    //@ts-ignore
+    this.perspectiveCamera.position.copy(this.position);
+    //@ts-ignore
+    this.perspectiveCamera.quaternion.copy(this.quaternion);
+
+    this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
+    this.context.scene.add(this.perspectiveCamera);
+    this.context.scene.add(this.cameraHelper);
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {

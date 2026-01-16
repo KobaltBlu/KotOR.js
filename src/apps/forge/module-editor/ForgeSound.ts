@@ -213,7 +213,7 @@ export class ForgeSound extends ForgeGameObject {
   }
 
   async load(){
-    
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {

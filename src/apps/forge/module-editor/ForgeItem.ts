@@ -241,6 +241,7 @@ export class ForgeItem extends ForgeGameObject {
   async load(){
     this.loadBaseItem();
     await this.loadModel();
+    this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct {

@@ -56,6 +56,12 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     modal.addEventListener('onBlueprintsLoaded', onBlueprintsLoaded);
     modal.addEventListener('onSearchChanged', onSearchChanged);
     
+    // Check if items are already loaded (from cache) and update state
+    if (modal.items.length > 0) {
+      setItems([...modal.filteredItems]);
+      setLoading(false);
+    }
+    
     return () => {
       modal.removeEventListener('onHide', onHide);
       modal.removeEventListener('onShow', onShow);
@@ -66,12 +72,18 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
 
   // Watch for visibility changes and load blueprints when modal becomes visible
   useEffect(() => {
-    if (modal.visible && modal.items.length === 0) {
-      setLoading(true);
-      modal.loadBlueprints().catch((error) => {
-        console.error('Failed to load blueprints:', error);
+    if (modal.visible) {
+      if (modal.items.length === 0) {
+        setLoading(true);
+        modal.loadBlueprints().catch((error) => {
+          console.error('Failed to load blueprints:', error);
+          setLoading(false);
+        });
+      } else if (items.length === 0) {
+        // Items are already loaded (from cache) but component state hasn't updated
+        setItems([...modal.filteredItems]);
         setLoading(false);
-      });
+      }
     }
   }, [modal.visible, modal.items.length]);
 

@@ -145,6 +145,10 @@ export class SceneGraphTreeViewManager {
         this.sceneNode.addChildNode(groupNode);
         this.groupNodes.set(group.key, groupNode);
       }
+      else
+      {
+        groupNode.nodes = [];
+      }
 
       for(let j = 0; j < group.objects.length; j++){
         const child = group.objects[j];
@@ -158,7 +162,7 @@ export class SceneGraphTreeViewManager {
           icon: group.icon,
           data: child,
           onClick: (node) => {
-            this.context.selectObject(node.data);
+            this.context.selectObject(node.data.container);
           },
         });
         

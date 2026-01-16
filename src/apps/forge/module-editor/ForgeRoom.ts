@@ -51,6 +51,7 @@ export class ForgeRoom extends ForgeGameObject {
   async load(){
     await this.loadModel(this.roomName);
     await this.loadWalkmesh(this.roomName);
+    this.updateBoundingBox();
   }
 
   async loadModel(resRef = ''): Promise<KotOR.OdysseyModel3D | undefined> {

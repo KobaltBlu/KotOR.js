@@ -282,6 +282,7 @@ export class ForgeCreature extends ForgeGameObject {
     await this.loadEquipment(KotOR.ModuleCreatureArmorSlot.LEFTHAND);
     await this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND);
     await this.loadModel();
+    this.updateBoundingBox();
   }
 
   loadAppearance(){
