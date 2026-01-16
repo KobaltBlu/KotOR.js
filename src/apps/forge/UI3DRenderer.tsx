@@ -893,17 +893,19 @@ export class UI3DRenderer extends EventListenerModel {
     arr.fill(0);
     this.selectionBox.geometry.attributes.position.needsUpdate = true;
 
-    this.selectionBox.setFromObject(object);
+    //@ts-ignore
+    this.selectionBox.setFromObject(object, true);
     this.selectionBox.visible = true;
 
     const size = arr.reduce( (a, b) => a + b, 0 );
 
-    if(!size || !isGeometry){
+    if((!size || !isGeometry) && !forgeGameObject){
       dummyMesh.position.copy(object.position);
       // object.getWorldPosition(dummyMesh.position);
       object.getWorldQuaternion(dummyMesh.quaternion);
       // dummyMesh.scale.copy(object.scale);
-      this.selectionBox.setFromObject(dummyMesh);
+      //@ts-ignore
+      this.selectionBox.setFromObject(dummyMesh, true);
       this.selectionBox.visible = true;
     }
 
@@ -1083,7 +1085,7 @@ export class UI3DRenderer extends EventListenerModel {
     });
     if(this.renderer){
       this.renderer.clear();
-      this.selectionBox.update();
+      // this.selectionBox.update();
 
       const delta = this.clock.getDelta();
       this.time += delta;
