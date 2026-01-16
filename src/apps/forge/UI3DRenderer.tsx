@@ -759,6 +759,10 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.TRIGGER].add(object);
         object.visible = this.visibilityState[ObjectType.TRIGGER];
         break;
+      case GroupType.ENCOUNTER:
+        this.group[GroupType.ENCOUNTER].add(object);
+        object.visible = this.visibilityState[ObjectType.ENCOUNTER];
+        break;
       case GroupType.WAYPOINT:
         this.group[GroupType.WAYPOINT].add(object);
         object.visible = this.visibilityState[ObjectType.WAYPOINT];
@@ -804,6 +808,9 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.TRIGGER:
         this.group[GroupType.TRIGGER].remove(object);
+        break;
+      case GroupType.ENCOUNTER:
+        this.group[GroupType.ENCOUNTER].remove(object);
         break;
       case GroupType.WAYPOINT:
         this.group[GroupType.WAYPOINT].remove(object);
