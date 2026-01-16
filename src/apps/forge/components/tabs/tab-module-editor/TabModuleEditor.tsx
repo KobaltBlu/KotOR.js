@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
@@ -7,7 +7,61 @@ import { UI3DRendererView } from "../../UI3DRendererView";
 import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
 import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowPointer, faArrowsRotate, faArrowsUpDownLeftRight, faSquarePlus } from "@fortawesome/free-solid-svg-icons";
+
 import * as KotOR from "../../../KotOR";
+
+const UI3DToolPalette = function(props: any){
+  const tab = props.tab as TabModuleEditorState;
+  const [controlMode, setControlMode] = useState<TabModuleEditorControlMode>(TabModuleEditorControlMode.SELECT);
+
+  const onControlModeChange = () => {
+    setControlMode(tab.controlMode);
+  };
+
+  useEffect( () => {
+    tab.addEventListener('onControlModeChange', onControlModeChange);
+    return () => {
+      tab.removeEventListener('onControlModeChange', onControlModeChange);
+    };
+  });
+
+  return (
+    <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
+      <ul>
+        <li className={`${controlMode == TabModuleEditorControlMode.SELECT ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.SELECT)}>
+          <a title="Select">
+            <span className="fa-layers fa-fw">
+              <FontAwesomeIcon icon={faArrowPointer} size='lg' color="white" />
+            </span>
+          </a>
+        </li>
+        <li className={`${controlMode == TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL)}>
+          <a title="Translate">
+            <span className="fa-layers fa-fw">
+              <FontAwesomeIcon icon={faArrowsUpDownLeftRight} size='lg' color="red" />
+            </span>
+          </a>
+        </li>
+        <li className={`${controlMode == TabModuleEditorControlMode.ROTATE_CONTROL ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL)}>
+          <a title="Rotate">
+            <span className="fa-layers fa-fw">
+              <FontAwesomeIcon icon={faArrowsRotate} size='lg' color="green" />
+            </span>
+          </a>
+        </li>
+        <li className={`${controlMode == TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(TabModuleEditorControlMode.ADD_GAME_OBJECT)}>
+          <a title="Add Game Object">
+            <span className="fa-layers fa-fw">
+              <FontAwesomeIcon icon={faSquarePlus} size='lg' color="cyan" />
+            </span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 export const TabModuleEditor = function(props: BaseTabProps){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
@@ -202,6 +256,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
           <UI3DRendererView context={tab.ui3DRenderer}>
             <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
+            <UI3DToolPalette tab={tab} />
           </UI3DRendererView>
         </div>
         {ContextMenuComponent}

@@ -16,6 +16,7 @@ import { ForgeSound } from "./ForgeSound";
 import { ForgeStore } from "./ForgeStore";
 import { ForgeTrigger } from "./ForgeTrigger";
 import { ForgeWaypoint } from "./ForgeWaypoint";
+import * as THREE from 'three';
 
 export class ForgeArea extends ForgeGameObject{
 
@@ -180,6 +181,11 @@ export class ForgeArea extends ForgeGameObject{
   triggers: ForgeTrigger[] = [];
   waypoints: ForgeWaypoint[] = [];
   useTemplate: boolean = true;
+
+  // Cached walkmesh objects for performance
+  private cachedWalkmeshObjects: THREE.Object3D[] = [];
+  private walkmeshCacheValid: boolean = false;
+  private cachedRoomKey: string = '';
 
   constructor(git: KotOR.GFFObject = new KotOR.GFFObject(), are: KotOR.GFFObject = new KotOR.GFFObject()){
     super();
@@ -516,6 +522,7 @@ export class ForgeArea extends ForgeGameObject{
       this.rooms.push(object);
       this.context.addObjectToGroup(object.container, GroupType.ROOMS);
       object.setContext(this.context);
+      this.invalidateWalkmeshCache();
     }
     if(object instanceof ForgeCreature){
       this.creatures.push(object);
@@ -575,6 +582,122 @@ export class ForgeArea extends ForgeGameObject{
 
   getNextCameraId(): number {
     return this.nextCameraId++;
+  }
+
+  detachObject(object: ForgeGameObject){
+    if(!object){ return; }
+    
+    if(object instanceof ForgeRoom){
+      const idx = this.rooms.indexOf(object);
+      if(idx >= 0){
+        this.rooms.splice(idx, 1);
+        this.invalidateWalkmeshCache();
+      }
+    } else if(object instanceof ForgeCreature){
+      const idx = this.creatures.indexOf(object);
+      if(idx >= 0){
+        this.creatures.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeCamera){
+      const idx = this.cameras.indexOf(object);
+      if(idx >= 0){
+        this.cameras.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeDoor){
+      const idx = this.doors.indexOf(object);
+      if(idx >= 0){
+        this.doors.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeEncounter){
+      const idx = this.encounters.indexOf(object);
+      if(idx >= 0){
+        this.encounters.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeItem){
+      const idx = this.items.indexOf(object);
+      if(idx >= 0){
+        this.items.splice(idx, 1);
+      }
+    } else if(object instanceof ForgePlaceable){
+      const idx = this.placeables.indexOf(object);
+      if(idx >= 0){
+        this.placeables.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeSound){
+      const idx = this.sounds.indexOf(object);
+      if(idx >= 0){
+        this.sounds.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeStore){
+      const idx = this.stores.indexOf(object);
+      if(idx >= 0){
+        this.stores.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeTrigger){
+      const idx = this.triggers.indexOf(object);
+      if(idx >= 0){
+        this.triggers.splice(idx, 1);
+      }
+    } else if(object instanceof ForgeWaypoint){
+      const idx = this.waypoints.indexOf(object);
+      if(idx >= 0){
+        this.waypoints.splice(idx, 1);
+      }
+    }
+    
+    this.context.sceneGraphManager.rebuild();
+  }
+
+  /**
+   * Build a unique cache key from room names
+   */
+  private buildRoomCacheKey(): string {
+    if(!this.rooms || this.rooms.length === 0){
+      return '';
+    }
+    // Build a unique key from sorted room names
+    const roomNames = this.rooms
+      .map(room => room.roomName || '')
+      .filter(name => name.length > 0)
+      .sort()
+      .join(',');
+    return roomNames;
+  }
+
+  /**
+   * Get cached walkmesh objects, rebuilding cache if needed
+   */
+  getWalkmeshObjects(): THREE.Object3D[] {
+    // Build current room key
+    const currentRoomKey = this.buildRoomCacheKey();
+    
+    // Check if cache is still valid
+    if(this.walkmeshCacheValid && this.cachedRoomKey === currentRoomKey){
+      // Cache is valid, return cached objects
+      return this.cachedWalkmeshObjects;
+    }
+    
+    // Rebuild cache
+    this.cachedWalkmeshObjects = [];
+    if(this.rooms && this.rooms.length > 0){
+      for(const room of this.rooms){
+        if(room.container && room.container.children.length > 0){
+          this.cachedWalkmeshObjects.push(...room.container.children);
+        }
+      }
+    }
+    this.cachedRoomKey = currentRoomKey;
+    this.walkmeshCacheValid = true;
+    
+    return this.cachedWalkmeshObjects;
+  }
+
+  /**
+   * Invalidate the walkmesh cache
+   */
+  invalidateWalkmeshCache(): void {
+    this.walkmeshCacheValid = false;
+    this.cachedRoomKey = '';
   }
 
   gitInstanceToForgeGameObject(instance: KotOR.GFFStruct, groupType: GroupType): ForgeGameObject | undefined {
@@ -641,6 +764,9 @@ export class ForgeArea extends ForgeGameObject{
         this.context.addObjectToGroup(room.container, GroupType.ROOMS);
       }
     }
+    
+    // Invalidate cache after loading rooms (containers now have children)
+    this.invalidateWalkmeshCache();
 
     for(let j = 0; j < this.rooms.length; j++){
       this.rooms[j].linkRooms();

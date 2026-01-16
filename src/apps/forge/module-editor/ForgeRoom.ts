@@ -28,7 +28,12 @@ export class ForgeRoom extends ForgeGameObject {
   }
 
   setRoomName(name: string){
+    const oldName = this.roomName;
     this.roomName = name;
+    // Invalidate walkmesh cache when room name changes
+    if(oldName !== name && this.area){
+      this.area.invalidateWalkmeshCache();
+    }
   }
 
   getEditorName(): string {

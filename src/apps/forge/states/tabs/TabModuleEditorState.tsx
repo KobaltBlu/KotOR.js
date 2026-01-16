@@ -21,11 +21,14 @@ import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
 import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
 import { ForgeState } from "../../states/ForgeState";
-import { type ForgeRoom } from "../../module-editor/ForgeRoom";
+import { ForgeRoom } from "../../module-editor/ForgeRoom";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
-  ADD_GAME_OBJECT = 1
+  TRANSFORM_CONTROL = 2,
+  ROTATE_CONTROL = 3,
+  SCALE_CONTROL = 4,
+  ADD_GAME_OBJECT = 5
 };
 
 export enum GameObjectType {
@@ -63,6 +66,9 @@ export class TabModuleEditorState extends TabState {
   
   // Selected game object
   selectedGameObject: ForgeGameObject | undefined;
+  
+  // Mouse vector for raycasting (reused to avoid allocation)
+  private mouseVector: THREE.Vector2 = new THREE.Vector2();
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -115,6 +121,19 @@ export class TabModuleEditorState extends TabState {
     // Also listen for when canvas is attached (which calls buildScene and ensures scene is ready)
     this.ui3DRenderer.addEventListener('onCanvasAttached', addMeshesToScene);
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
+
+    // Listen to transform controls changes to update point positions
+    // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
+    if(this.ui3DRenderer.transformControls){
+      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+    } else {
+      // Wait for canvas to be attached so transform controls are built
+      this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
+        if(this.ui3DRenderer.transformControls){
+          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+        }
+      });
+    }
   }
 
   show(): void {
@@ -142,14 +161,43 @@ export class TabModuleEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
-      this.updateGhostPreview();
-    }
+    // Don't update ghost preview every frame - only on mouse move
     this.processEventListener('onAnimate', [delta]);
+  }
+  
+  private onTransformControlsChange(): void {
+    if(!this.selectedGameObject) return;
+
+    // const object3D = this.selectedGameObject.container;
+    // if(!object3D) return;
+
+    // // Update point vector from mesh position
+    // object3D.position.copy(mesh.position);
+    
+    // const mesh = this.pointMeshes[this.selectedPointIndex] as THREE.Mesh;
+    // if(!mesh) return;
+    
+    // const point = this.points[this.selectedPointIndex];
+    // if(!point) return;
+    
+    // // Update point vector from mesh position
+    // point.vector.copy(mesh.position);
+    
+    // // // Update connection lines
+    // // this.updateConnectionLines();
+    
+    // // Mark file as having unsaved changes
+    // if(this.file){
+    //   this.file.unsaved_changes = true;
+    //   this.editorFileUpdated();
+    // }
   }
 
   onMouseMove(event: MouseEvent){
-    // stub
+    // Update ghost preview only when mouse moves
+    if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
+      this.updateGhostPreview();
+    }
   }
 
   updateGhostPreview(): void {
@@ -190,27 +238,18 @@ export class TabModuleEditorState extends TabState {
     }
 
     // Get mouse position in normalized device coordinates
-    const rect = this.ui3DRenderer.canvas.getBoundingClientRect();
-    const mouse = new THREE.Vector2();
-    mouse.x = ((KotOR.Mouse.MouseX) / this.ui3DRenderer.canvas.width) * 2 - 1;
-    mouse.y = -((KotOR.Mouse.MouseY) / this.ui3DRenderer.canvas.height) * 2 + 1;
+    // Reuse Vector2 to avoid allocation
+    this.mouseVector.x = ((KotOR.Mouse.MouseX) / this.ui3DRenderer.canvas.width) * 2 - 1;
+    this.mouseVector.y = -((KotOR.Mouse.MouseY) / this.ui3DRenderer.canvas.height) * 2 + 1;
 
     // Perform raycast
-    this.ui3DRenderer.raycaster.setFromCamera(mouse, this.ui3DRenderer.camera);
+    this.ui3DRenderer.raycaster.setFromCamera(this.mouseVector, this.ui3DRenderer.camera);
     
     // Try to intersect with walkmesh first, then ground plane
     let intersection: THREE.Intersection | null = null;
     
-    // Check walkmesh if available (from rooms)
-    const walkmeshObjects: THREE.Object3D[] = [];
-    if(this.module.area.rooms && this.module.area.rooms.length > 0){
-      for(const room of this.module.area.rooms){
-        if(room.container && room.container.children.length > 0){
-          walkmeshObjects.push(...room.container.children);
-        }
-      }
-    }
-    
+    // Use cached walkmesh objects from ForgeArea
+    const walkmeshObjects = this.module.area.getWalkmeshObjects();
     if(walkmeshObjects.length > 0){
       const walkmeshIntersects = this.ui3DRenderer.raycaster.intersectObjects(walkmeshObjects, true);
       if(walkmeshIntersects.length > 0){
@@ -242,9 +281,39 @@ export class TabModuleEditorState extends TabState {
       }
       return;
     }
+    if(this.controlMode === TabModuleEditorControlMode.SELECT){
+      this.ui3DRenderer.selectObject(undefined);
+    }
+  }
+
+  setControlMode(mode: TabModuleEditorControlMode){
+    this.controlMode = mode;
+
+    const isSelectModeTool = 
+      mode === TabModuleEditorControlMode.SELECT || 
+      mode === TabModuleEditorControlMode.TRANSFORM_CONTROL || 
+      mode === TabModuleEditorControlMode.ROTATE_CONTROL || 
+      mode === TabModuleEditorControlMode.SCALE_CONTROL;
+    
+    // Detach transform controls when not in SELECT mode
+    if(!isSelectModeTool){
+      this.ui3DRenderer.transformControls.detach();
+      this.selectedGameObject = undefined;
+    }
+
+    if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
+      this.ui3DRenderer.transformControls.mode = 'translate';
+    } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
+      this.ui3DRenderer.transformControls.mode = 'rotate';
+    } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
+      this.ui3DRenderer.transformControls.mode = 'scale';
+    }
+
+    this.processEventListener('onControlModeChange', [mode]);
   }
 
   onSelect(intersection: THREE.Intersection | undefined){
+    console.log('onSelect', intersection);
     // Only handle selection when in SELECT mode
     if(this.controlMode !== TabModuleEditorControlMode.SELECT){
       return;
@@ -278,7 +347,26 @@ export class TabModuleEditorState extends TabState {
   }
 
   selectGameObject(gameObject: ForgeGameObject | undefined){
+    console.log('selectGameObject', gameObject);
     this.selectedGameObject = gameObject;
+    this.ui3DRenderer.transformControls.detach();
+    if(gameObject){
+      this.ui3DRenderer.transformControls.attach(gameObject.container);
+      this.ui3DRenderer.transformControls.size = 0.5;
+      if(gameObject instanceof ForgeCreature || gameObject instanceof ForgeDoor || gameObject instanceof ForgeEncounter || gameObject instanceof ForgeItem || gameObject instanceof ForgePlaceable || gameObject instanceof ForgeStore || gameObject instanceof ForgeTrigger || gameObject instanceof ForgeWaypoint){
+        this.ui3DRenderer.transformControls.showX = true;
+        this.ui3DRenderer.transformControls.showY = true;
+        this.ui3DRenderer.transformControls.showZ = true;
+      } else if(gameObject instanceof ForgeCamera){
+        this.ui3DRenderer.transformControls.showX = true;
+        this.ui3DRenderer.transformControls.showY = true;
+        this.ui3DRenderer.transformControls.showZ = true;
+      } else if(gameObject instanceof ForgeRoom){
+        this.ui3DRenderer.transformControls.showX = true;
+        this.ui3DRenderer.transformControls.showY = true;
+        this.ui3DRenderer.transformControls.showZ = true;
+      }
+    }
     this.processEventListener('onSelectionChanged', [gameObject]);
   }
 
@@ -332,7 +420,7 @@ export class TabModuleEditorState extends TabState {
     this.processEventListener('onGameObjectPlaced', [gameObject, this.selectedGameObjectType]);
     this.selectedBlueprintResRef = '';
     this.selectedGameObjectType = undefined;
-    this.controlMode = TabModuleEditorControlMode.SELECT;
+    this.setControlMode(TabModuleEditorControlMode.SELECT);
     this.ghostPreviewMesh.visible = false;
   }
 

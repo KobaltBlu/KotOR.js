@@ -988,17 +988,17 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.group.lights);
     this.scene.add(this.group.light_helpers);
     this.scene.add(this.group.shadow_lights);
-    this.scene.add(this.group.rooms);
-    this.scene.add(this.group.creature);
-    this.scene.add(this.group.door);
-    this.scene.add(this.group.placeable);
-    this.scene.add(this.group.item);
-    this.scene.add(this.group.trigger);
-    this.scene.add(this.group.waypoint);
-    this.scene.add(this.group.sound);
-    this.scene.add(this.group.camera);
-    this.scene.add(this.group.encounter);
-    this.scene.add(this.group.store);
+    this.selectable.add(this.group.rooms);
+    this.selectable.add(this.group.creature);
+    this.selectable.add(this.group.door);
+    this.selectable.add(this.group.placeable);
+    this.selectable.add(this.group.item);
+    this.selectable.add(this.group.trigger);
+    this.selectable.add(this.group.waypoint);
+    this.selectable.add(this.group.sound);
+    this.selectable.add(this.group.camera);
+    this.selectable.add(this.group.encounter);
+    this.selectable.add(this.group.store);
     this.sceneGraphManager.rebuild();
   }
   
