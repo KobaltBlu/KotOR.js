@@ -274,6 +274,13 @@ export class ForgeCreature extends ForgeGameObject {
         this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND2);
       }
     }
+    if(property === 'templateResRef'){
+      if(newValue !== oldValue){
+        this.loadBlueprint().then(() => {
+          this.load();
+        });
+      }
+    }
   }
 
   async load(){

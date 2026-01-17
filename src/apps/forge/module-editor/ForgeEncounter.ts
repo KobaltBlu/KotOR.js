@@ -56,7 +56,13 @@ export class ForgeEncounter extends ForgeGameObject {
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    // Add any property change handlers here if needed
+    if(property === 'templateResRef'){
+      if(newValue !== oldValue){
+        this.loadBlueprint().then(() => {
+          this.load();
+        });
+      }
+    }
   }
 
   loadFromBuffer(buffer: Uint8Array){

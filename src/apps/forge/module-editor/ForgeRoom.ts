@@ -17,6 +17,15 @@ export class ForgeRoom extends ForgeGameObject {
   constructor(roomName: string){
     super();
     this.roomName = roomName;
+    this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
+  }
+
+  onPropertyChange(property: string, newValue: any, oldValue: any){
+    if(property === 'roomName'){
+      if(newValue !== oldValue){
+        this.load();
+      }
+    }
   }
 
   setAmbientScale(scale: number){

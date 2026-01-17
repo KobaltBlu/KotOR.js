@@ -49,6 +49,13 @@ export class ForgeSound extends ForgeGameObject {
     if(property === 'looping' || property === 'positional'){
       this.calculatePriority();
     }
+    if(property === 'templateResRef'){
+      if(newValue !== oldValue){
+        this.loadBlueprint().then(() => {
+          this.load();
+        });
+      }
+    }
   }
 
   loadFromBuffer(buffer: Uint8Array){

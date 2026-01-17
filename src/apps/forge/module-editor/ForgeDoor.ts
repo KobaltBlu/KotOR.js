@@ -103,6 +103,13 @@ export class ForgeDoor extends ForgeGameObject {
     if(property === 'hp'){
       this.currentHP = newValue;
     }
+    if(property === 'templateResRef'){
+      if(newValue !== oldValue){
+        this.loadBlueprint().then(() => {
+          this.load();
+        });
+      }
+    }
   }
 
   loadFromBuffer(buffer: Uint8Array){

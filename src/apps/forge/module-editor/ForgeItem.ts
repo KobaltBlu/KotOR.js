@@ -48,6 +48,13 @@ export class ForgeItem extends ForgeGameObject {
     if(property === 'modelVariation'){
       this.loadModel();
     }
+    if(property === 'templateResRef'){
+      if(newValue !== oldValue){
+        this.loadBlueprint().then(() => {
+          this.load();
+        });
+      }
+    }
   }
 
   loadFromBuffer(buffer: Uint8Array){

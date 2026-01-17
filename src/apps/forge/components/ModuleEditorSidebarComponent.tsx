@@ -3,6 +3,17 @@ import { TabModuleEditorState } from "../states/tabs";
 import { SceneGraphTreeView } from "./SceneGraphTreeView";
 import { ForgeGameObject } from "../module-editor/ForgeGameObject";
 import * as THREE from 'three';
+import { ModalBlueprintBrowserState, BlueprintType } from "../states/modal/ModalBlueprintBrowserState";
+import { ForgeState } from "../states/ForgeState";
+import { ForgeCreature } from "../module-editor/ForgeCreature";
+import { ForgeDoor } from "../module-editor/ForgeDoor";
+import { ForgeEncounter } from "../module-editor/ForgeEncounter";
+import { ForgeItem } from "../module-editor/ForgeItem";
+import { ForgePlaceable } from "../module-editor/ForgePlaceable";
+import { ForgeSound } from "../module-editor/ForgeSound";
+import { ForgeStore } from "../module-editor/ForgeStore";
+import { ForgeTrigger } from "../module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "../module-editor/ForgeWaypoint";
 
 import * as KotOR from "../KotOR";
 import { UI3DRenderer } from "../UI3DRenderer";
@@ -67,6 +78,22 @@ interface GITPropertyDef {
   gitFieldLabel?: string;
   /** Optional nested property path (e.g., 'position.x') */
   nestedPath?: string;
+}
+
+/**
+ * Get the blueprint type for a game object based on its class type
+ */
+function getBlueprintTypeForGameObject(gameObject: ForgeGameObject): BlueprintType | null {
+  if(gameObject instanceof ForgeCreature) return 'utc';
+  if(gameObject instanceof ForgeDoor) return 'utd';
+  if(gameObject instanceof ForgeEncounter) return 'ute';
+  if(gameObject instanceof ForgeItem) return 'uti';
+  if(gameObject instanceof ForgePlaceable) return 'utp';
+  if(gameObject instanceof ForgeStore) return 'utm';
+  if(gameObject instanceof ForgeSound) return 'uts';
+  if(gameObject instanceof ForgeTrigger) return 'utt';
+  if(gameObject instanceof ForgeWaypoint) return 'utw';
+  return null;
 }
 
 /**
@@ -321,29 +348,65 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       );
 
     case 'string':
+      // Check if this is a ResRef field that should have a browse button
+      const isResRefField = propertyDef.gitFieldLabel === 'TemplateResRef' || propertyDef.gitFieldLabel === 'ResRef';
+      const blueprintType = isResRefField ? getBlueprintTypeForGameObject(gameObject) : null;
+      
+      const handleBrowseClick = () => {
+        if(!blueprintType) return;
+        
+        const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint) => {
+          // Update the property with the selected blueprint's resref
+          const sanitized = gameObject.sanitizeResRef(blueprint.resref);
+          updateValue(sanitized);
+        });
+        modal.attachToModalManager(ForgeState.modalManager);
+        modal.open();
+      };
+      
       return (
         <fieldset>
           <legend>{propertyDef.label}</legend>
           <div style={{ padding: '10px' }}>
             <label style={{ display: 'block', marginBottom: '5px' }}>Value:</label>
-            <input
-              type="text"
-              value={currentValue || ''}
-              onChange={(e) => {
-                const value = propertyDef.gitFieldLabel === 'TemplateResRef' || propertyDef.gitFieldLabel === 'ResRef' 
-                  ? gameObject.sanitizeResRef(e.target.value)
-                  : e.target.value;
-                updateValue(value);
-              }}
-              style={{
-                width: '100%',
-                padding: '5px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '3px'
-              }}
-            />
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              <input
+                type="text"
+                value={currentValue || ''}
+                onChange={(e) => {
+                  const value = isResRefField
+                    ? gameObject.sanitizeResRef(e.target.value)
+                    : e.target.value;
+                  updateValue(value);
+                }}
+                style={{
+                  flex: 1,
+                  padding: '5px',
+                  backgroundColor: '#2a2a2a',
+                  border: '1px solid #444',
+                  color: '#fff',
+                  borderRadius: '3px'
+                }}
+              />
+              {isResRefField && blueprintType && (
+                <button
+                  onClick={handleBrowseClick}
+                  className="btn btn-sm btn-secondary"
+                  title={`Browse ${blueprintType.toUpperCase()} blueprints`}
+                  style={{
+                    padding: '5px 10px',
+                    backgroundColor: '#444',
+                    border: '1px solid #666',
+                    color: '#fff',
+                    borderRadius: '3px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  <i className="fa-solid fa-folder-open"></i>
+                </button>
+              )}
+            </div>
           </div>
         </fieldset>
       );
