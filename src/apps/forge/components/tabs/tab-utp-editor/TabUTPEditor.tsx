@@ -270,8 +270,8 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 <td>
                   <ForgeCheckbox label="Can be relocked" value={lockable} onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')} />
                 </td>
-              <tr>
               </tr>
+              <tr>
                 <td>
                   <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
                 </td>

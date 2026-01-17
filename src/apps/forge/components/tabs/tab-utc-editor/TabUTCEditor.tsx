@@ -664,37 +664,39 @@ export const TabUTCEditor = function(props: BaseTabProps){
           </fieldset>
           
           <table>
-            <tr>
-              <td style={{width: '50%'}}>
-                <fieldset>
-                  <legend>Armor Class</legend>
-                  <label>Natural AC</label>
-                  <input type="number" min="0" value={naturalAC} onChange={onUpdateNumberField(setNaturalAC, 'naturalAC')} />
-                </fieldset>
-                <fieldset>
-                  <legend>Speed</legend>
-                  <label>Movement Rate</label>
-                  <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
-                    {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
-                      <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
-                    ))}
-                  </select>
-                </fieldset>
-              </td>
-              <td style={{width: '50%'}}>
-                <fieldset>
-                  <legend>Hit Points</legend>
-                  <label>Base Hit Points</label>
-                  <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
-      
-                  <label>Current Hit Points</label>
-                  <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
-      
-                  <label>Max Hit Points</label>
-                  <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
-                </fieldset>
-              </td>
-            </tr>
+            <tbody>
+              <tr>
+                <td style={{width: '50%'}}>
+                  <fieldset>
+                    <legend>Armor Class</legend>
+                    <label>Natural AC</label>
+                    <input type="number" min="0" value={naturalAC} onChange={onUpdateNumberField(setNaturalAC, 'naturalAC')} />
+                  </fieldset>
+                  <fieldset>
+                    <legend>Speed</legend>
+                    <label>Movement Rate</label>
+                    <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
+                      {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
+                        <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
+                      ))}
+                    </select>
+                  </fieldset>
+                </td>
+                <td style={{width: '50%'}}>
+                  <fieldset>
+                    <legend>Hit Points</legend>
+                    <label>Base Hit Points</label>
+                    <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
+        
+                    <label>Current Hit Points</label>
+                    <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
+        
+                    <label>Max Hit Points</label>
+                    <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
+                  </fieldset>
+                </td>
+              </tr>
+            </tbody>
           </table>
         </>
       )
