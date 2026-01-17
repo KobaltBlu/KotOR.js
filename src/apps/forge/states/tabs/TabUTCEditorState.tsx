@@ -51,6 +51,7 @@ export class TabUTCEditorState extends TabState {
           this.creature = new ForgeCreature(response.buffer);
           this.creature.setContext(this.ui3DRenderer);
           this.creature.load();
+          this.ui3DRenderer.attachObject(this.creature.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });

@@ -52,9 +52,7 @@ export class TabUTDEditorState extends TabState {
           this.door = new ForgeDoor(response.buffer);
           this.door.setContext(this.ui3DRenderer);
           await this.door.load();
-          if(this.ui3DRenderer.scene && this.door.model){
-            this.ui3DRenderer.scene.add(this.door.model);
-          }
+          this.ui3DRenderer.attachObject(this.door.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });

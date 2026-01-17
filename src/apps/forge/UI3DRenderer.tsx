@@ -82,6 +82,7 @@ export enum ObjectType {
   WALKMESH = 'walkmesh',
   STORE = 'store',
   ENCOUNTER = 'encounter',
+  LIGHT_HELPERS = 'light_helpers',
 }
 
 /**
@@ -212,6 +213,7 @@ export class UI3DRenderer extends EventListenerModel {
     [ObjectType.SOUND]: true,
     [ObjectType.STORE]: true,
     [ObjectType.ENCOUNTER]: true,
+    [ObjectType.LIGHT_HELPERS]: false,
   };
 
   frustumMat4: THREE.Matrix4;
@@ -720,6 +722,11 @@ export class UI3DRenderer extends EventListenerModel {
           child.visible = !this.visibilityState[ObjectType.STORE];
         });
         break;
+      case 'light_helpers':
+        this.group.light_helpers.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.LIGHT_HELPERS];
+        });
+        break;
       default:
         console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
         break;
@@ -994,6 +1001,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   private buildScene(){
     // this.scene = new THREE.Scene();
+    this.group.light_helpers.visible = false;
 
     this.scene.add(this.selectionBox);
     this.scene.add(this.lights);

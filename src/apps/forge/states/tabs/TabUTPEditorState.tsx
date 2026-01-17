@@ -52,7 +52,7 @@ export class TabUTPEditorState extends TabState {
           this.placeable = new ForgePlaceable(response.buffer);
           this.placeable.setContext(this.ui3DRenderer);
           await this.placeable.load();
-          this.ui3DRenderer.scene.add(this.placeable.container);
+          this.ui3DRenderer.attachObject(this.placeable.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });

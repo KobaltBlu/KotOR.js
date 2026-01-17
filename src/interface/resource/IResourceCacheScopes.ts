@@ -16,4 +16,5 @@ export interface IResourceCacheScopes {
   override: ResourceCacheScope;
   global:   ResourceCacheScope;
   module:   ResourceCacheScope;
+  project:  ResourceCacheScope;
 }

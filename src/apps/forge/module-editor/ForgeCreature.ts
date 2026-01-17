@@ -313,24 +313,28 @@ export class ForgeCreature extends ForgeGameObject {
 
       switch(slot){
         case KotOR.ModuleCreatureArmorSlot.HEAD:
+          if(!this.slotHead) return;
           itemTemplate = new KotOR.GFFObject(
             await KotOR.ResourceLoader.loadResource(utiResId, this.slotHead)
           );
           slotKey = 'headItem';
           break;
         case KotOR.ModuleCreatureArmorSlot.ARMOR:
+          if(!this.slotArmor) return;
           itemTemplate = new KotOR.GFFObject(
             await KotOR.ResourceLoader.loadResource(utiResId, this.slotArmor)
           );
           slotKey = 'armorItem';
           break;
         case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
+          if(!this.slotLeftHand) return;
           itemTemplate = new KotOR.GFFObject(
             await KotOR.ResourceLoader.loadResource(utiResId, this.slotLeftHand)
           );
           slotKey = 'leftHandItem';
           break;
         case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
+          if(!this.slotRightHand) return;
           itemTemplate = new KotOR.GFFObject(
             await KotOR.ResourceLoader.loadResource(utiResId, this.slotRightHand)
           );

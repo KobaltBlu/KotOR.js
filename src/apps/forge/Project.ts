@@ -14,7 +14,13 @@ import { ForgeModule } from "./module-editor/ForgeModule";
 import { ForgeRoom } from "./module-editor/ForgeRoom";
 
 const DIR_FORGE = '.forge';
-const DIR_RESOURCES = 'resources';
+const DIR_BLUEPRINTS = 'blueprints';
+const DIR_MODELS = 'models';
+const DIR_TEXTURES = 'textures';
+const DIR_DIALOGS = 'dialogs';
+const DIR_SOUNDS = 'sounds';
+const DIR_MUSIC = 'music';
+const DIR_SCRIPTS = 'scripts';
 
 export class Project {
 
@@ -85,6 +91,7 @@ export class Project {
   }
 
   async load(): Promise<boolean> {
+    await this.initDirectoryStructure();
     const loaded = await this.loadSettings();
     if(!loaded){
       return false;
@@ -318,6 +325,35 @@ export class Project {
     await ProjectFileSystem.writeFile(`${areaName}.git`, git.getExportBuffer());
 
     return { ifo, are, git };
+  }
+
+  async initDirectoryStructure(){
+    if(!await ProjectFileSystem.exists(`${DIR_BLUEPRINTS}`)){
+      console.log('Creating directory', `./${DIR_BLUEPRINTS}/`);
+      await ProjectFileSystem.mkdir(`${DIR_BLUEPRINTS}`, { recursive: false });
+    }
+    if(!await ProjectFileSystem.exists(`${DIR_MODELS}`)){
+      console.log('Creating directory', `./${DIR_MODELS}/`);
+      await ProjectFileSystem.mkdir(`${DIR_MODELS}`, { recursive: false });
+    }
+    if(!await ProjectFileSystem.exists(`${DIR_TEXTURES}`)){
+      console.log('Creating directory', `./${DIR_TEXTURES}/`);
+      await ProjectFileSystem.mkdir(`${DIR_TEXTURES}`, { recursive: false });
+    }
+    if(!await ProjectFileSystem.exists(`${DIR_DIALOGS}`)){
+      console.log('Creating directory', `./${DIR_DIALOGS}/`);
+      await ProjectFileSystem.mkdir(`${DIR_DIALOGS}`, { recursive: false });
+    }
+    // if(!await ProjectFileSystem.exists(`${DIR_SOUNDS}`)){
+    //   await ProjectFileSystem.mkdir(`${DIR_SOUNDS}`, { recursive: false });
+    // }
+    // if(!await ProjectFileSystem.exists(`${DIR_MUSIC}`)){
+    //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
+    // }
+    if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
+      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
+      await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
+    }
   }
 
   async saveSettings(){

@@ -74,9 +74,7 @@ export class TabUTIEditorState extends TabState {
           this.item = new ForgeItem(response.buffer);
           this.item.setContext(this.ui3DRenderer);
           await this.item.load();
-          if(this.ui3DRenderer.scene && this.item.model){
-            this.ui3DRenderer.scene.add(this.item.model);
-          }
+          this.ui3DRenderer.attachObject(this.item.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
