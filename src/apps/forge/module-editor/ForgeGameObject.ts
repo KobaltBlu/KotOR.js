@@ -47,7 +47,7 @@ export class ForgeGameObject extends EventListenerModel {
 
   async loadBlueprint(){
     if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA) return;
-    const buffer = await KotOR.ResourceLoader.loadCachedResource(this.templateResType, this.templateResRef);
+    const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
     if(buffer){
       const gff = new KotOR.GFFObject(buffer);
       this.blueprint = gff;
