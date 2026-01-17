@@ -17,6 +17,7 @@ import { MenuTopState } from "./MenuTopState";
 import * as KotOR from '../KotOR';
 import { NWScriptLanguageService } from "./NWScriptLanguageService";
 import { LYTLanguageService } from "./LYTLanguageService";
+import { RecentProject } from "../RecentProject";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -29,7 +30,7 @@ export class ForgeState {
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
 
   static recentFiles: EditorFile[] = [];
-  static recentProjects: string[] = [];
+  static recentProjects: RecentProject[] = [];
 
   static #eventListeners: any = {};
 
@@ -142,9 +143,27 @@ export class ForgeState {
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
 
         ForgeState.recentFiles = ForgeState.getRecentFiles();
-        this.processEventListener('onRecentProjectsUpdated', []);
-
         ForgeState.recentProjects = ForgeState.getRecentProjects();
+        
+        // Restore handles from IndexedDB for browser projects
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+          const { get } = await import('idb-keyval');
+          for(const proj of ForgeState.recentProjects){
+            if(!proj.handle && proj.name){
+              const handleKey = `project_handle_${proj.getIdentifier()}`;
+              try {
+                const handle = await get(handleKey);
+                if(handle instanceof FileSystemDirectoryHandle){
+                  proj.handle = handle;
+                }
+              } catch(e) {
+                console.warn('Failed to restore handle for project:', proj.getDisplayName(), e);
+              }
+            }
+          }
+        }
+        
+        this.processEventListener('onRecentProjectsUpdated', []);
         this.processEventListener('onRecentFilesUpdated', []);
         
         const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
@@ -233,15 +252,17 @@ export class ForgeState {
     });
   }
 
-  static getRecentProjects(): string[] {
+  static getRecentProjects(): RecentProject[] {
     if(Array.isArray(KotOR.ConfigClient.options.recent_projects)){
-      // ConfigClient.options.recent_projects = ConfigClient.options.recent_projects.map( (file: any) => {
-      //   return Object.assign(new EditorFile(), file);
-      // });
+      // Convert stored objects to RecentProject instances
+      KotOR.ConfigClient.options.recent_projects = KotOR.ConfigClient.options.recent_projects
+        .filter((proj: any) => proj && (proj.path || proj.handle || proj.name))
+        .map((proj: any) => RecentProject.From(proj))
+        .slice(0, 10);
     }else{
       KotOR.ConfigClient.options.recent_projects = [];
     }
-    return KotOR.ConfigClient.options.recent_projects;
+    return KotOR.ConfigClient.options.recent_projects as RecentProject[];
   }
 
   static getRecentFiles(): EditorFile[] {
@@ -291,6 +312,123 @@ export class ForgeState {
     }
     this.processEventListener('onRecentFilesUpdated', [file]);
     this.saveState();
+  }
+
+  static async addRecentProject(projectPathOrHandle: string | FileSystemDirectoryHandle, handle?: FileSystemDirectoryHandle){
+    try{
+      let project: RecentProject | null = null;
+
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        // For Electron, projectPathOrHandle is a string path
+        if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+          const normalizedPath = projectPathOrHandle.replace(/\\/g, '/');
+          project = new RecentProject({ path: normalizedPath });
+        }
+      } else {
+        // For Browser, projectPathOrHandle could be a handle or a string name
+        if(projectPathOrHandle instanceof FileSystemDirectoryHandle){
+          project = new RecentProject({ 
+            handle: projectPathOrHandle,
+            name: projectPathOrHandle.name 
+          });
+        } else if(handle instanceof FileSystemDirectoryHandle){
+          project = new RecentProject({ 
+            handle: handle,
+            name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name 
+          });
+        } else if(typeof projectPathOrHandle === 'string'){
+          // Fallback: just store the name if handle is not available
+          project = new RecentProject({ name: projectPathOrHandle });
+        }
+      }
+
+      if(!project) return;
+
+      // Remove if already exists (by identifier)
+      await this.removeRecentProject(project);
+
+      // Add to beginning of list
+      ForgeState.recentProjects.unshift(project);
+
+      // Limit to 10 most recent
+      if(ForgeState.recentProjects.length > 10){
+        ForgeState.recentProjects = ForgeState.recentProjects.slice(0, 10);
+      }
+
+      // Sync with ConfigClient (handles are stored in IndexedDB via idb-keyval)
+      // We serialize the project data, but handles are stored separately
+      const { set } = await import('idb-keyval');
+      KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
+        const serialized: any = {
+          path: proj.path,
+          name: proj.name
+        };
+        // Store handle separately in IndexedDB if available
+        if(proj.handle){
+          const handleKey = `project_handle_${proj.getIdentifier()}`;
+          // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
+          set(handleKey, proj.handle).catch((e) => {
+            console.warn('Failed to store handle in IndexedDB:', e);
+          });
+          serialized.handleKey = handleKey;
+        }
+        return serialized;
+      });
+
+      this.saveState();
+      this.processEventListener('onRecentProjectsUpdated', [project]);
+    }catch(e){
+      console.error('Error adding recent project:', e);
+    }
+  }
+
+  static async removeRecentProject(projectOrIdentifier: RecentProject | string){
+    if(!projectOrIdentifier) return;
+    
+    let index = -1;
+    if(projectOrIdentifier instanceof RecentProject){
+      const identifier = projectOrIdentifier.getIdentifier();
+      index = ForgeState.recentProjects.findIndex((proj: RecentProject) => {
+        return proj.getIdentifier() === identifier;
+      });
+    } else {
+      const normalized = typeof projectOrIdentifier === 'string' 
+        ? projectOrIdentifier.replace(/\\/g, '/') 
+        : '';
+      index = ForgeState.recentProjects.findIndex((proj: RecentProject) => {
+        return proj.getIdentifier()?.replace(/\\/g, '/') === normalized;
+      });
+    }
+    
+    if(index >= 0){
+      const removed = ForgeState.recentProjects[index];
+      // Clean up stored handle if it exists
+      if(removed.handle){
+        const handleKey = `project_handle_${removed.getIdentifier()}`;
+        const { del } = await import('idb-keyval');
+        del(handleKey).catch((e) => {
+          console.warn('Failed to delete handle from IndexedDB:', e);
+        });
+      }
+      ForgeState.recentProjects.splice(index, 1);
+      const { set } = await import('idb-keyval');
+      KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
+        const serialized: any = {
+          path: proj.path,
+          name: proj.name
+        };
+        if(proj.handle){
+          const handleKey = `project_handle_${proj.getIdentifier()}`;
+          set(handleKey, proj.handle).catch((e) => {
+            console.warn('Failed to store handle in IndexedDB:', e);
+          });
+          serialized.handleKey = handleKey;
+        }
+        return serialized;
+      });
+      this.saveState();
+      this.processEventListener('onRecentProjectsUpdated', []);
+    }
   }
 
   static saveState(){

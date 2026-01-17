@@ -1,16 +1,19 @@
 import React, { useState, useCallback, memo } from "react";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { Project } from "../../../Project";
+import { ProjectFileSystem } from "../../../ProjectFileSystem";
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { ForgeState } from "../../../states/ForgeState";
 import { EditorFile } from "../../../EditorFile";
+import { RecentProject } from "../../../RecentProject";
 import { FileTypeManager } from "../../../FileTypeManager";
+import * as KotOR from "../../../KotOR";
 import "./TabQuickStart.scss";
 import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
-  const [projects, setProjects] = useState<string[]>(ForgeState.recentProjects);
+  const [projects, setProjects] = useState<RecentProject[]>(ForgeState.recentProjects);
 
   const onBtnOpenFile = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -33,17 +36,94 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     setFiles([...ForgeState.recentFiles]);
   }, []);
 
+  const onRecentProjectsUpdated = useCallback(() => {
+    setProjects([...ForgeState.recentProjects]);
+  }, []);
+
   useEffectOnce(() => {
     ForgeState.addEventListener('onRecentFilesUpdated', onRecentFilesUpdated);
+    ForgeState.addEventListener('onRecentProjectsUpdated', onRecentProjectsUpdated);
     return () => {
       ForgeState.removeEventListener('onRecentFilesUpdated', onRecentFilesUpdated);
+      ForgeState.removeEventListener('onRecentProjectsUpdated', onRecentProjectsUpdated);
     };
   });
 
-  const onClickRecentProject = useCallback((e: React.MouseEvent, project: string) => {
+  const onClickRecentProject = useCallback(async (e: React.MouseEvent, recentProject: RecentProject) => {
     e.preventDefault();
-    // TODO: Implement recent project opening
-    alert('TODO: Open Recent Project');
+    
+    if(!recentProject) return;
+    
+    try{
+      // Show loading state
+      ForgeState.loaderShow();
+      
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        // For Electron, use the stored path
+        const projectPath = recentProject.path;
+        if(!projectPath){
+          throw new Error('Project path not available');
+        }
+        ProjectFileSystem.rootDirectoryPath = projectPath;
+        const project = new Project();
+        const loaded = await project.load();
+        if(loaded){
+          await project.open();
+          await ProjectFileSystem.initializeProjectExplorer();
+        } else {
+          // Project failed to load, remove from recent list
+          ForgeState.removeRecentProject(recentProject);
+          alert('Failed to open project. It may have been moved or deleted.');
+        }
+      } else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+        // For browser, try to restore the handle from storage
+        let handle = recentProject.handle;
+        
+        // If handle is not in memory, try to restore from IndexedDB
+        if(!handle && recentProject.name){
+          const handleKey = `project_handle_${recentProject.getIdentifier()}`;
+          try {
+            const { get } = await import('idb-keyval');
+            handle = await get(handleKey);
+          } catch(e) {
+            console.warn('Failed to restore handle from IndexedDB:', e);
+          }
+        }
+        
+        if(handle instanceof FileSystemDirectoryHandle){
+          // Verify handle is still valid
+          try{
+            await handle.queryPermission({ mode: 'read' });
+            ProjectFileSystem.rootDirectoryHandle = handle;
+            const project = new Project();
+            const loaded = await project.load();
+            if(loaded){
+              await project.open();
+              await ProjectFileSystem.initializeProjectExplorer();
+              // Update the stored handle in case it changed
+              await ForgeState.addRecentProject(handle);
+            } else {
+              throw new Error('Project failed to load');
+            }
+          } catch(permError){
+            // Handle permission denied or invalid - request new access
+            console.warn('Handle permission denied or invalid, requesting new access:', permError);
+            Project.OpenByDirectory();
+          }
+        } else {
+          // No handle available, request new directory access
+          Project.OpenByDirectory();
+        }
+      }
+      
+      ForgeState.loaderHide();
+    } catch(e){
+      console.error('Error opening recent project:', e);
+      ForgeState.loaderHide();
+      // Remove invalid project from recent list
+      await ForgeState.removeRecentProject(recentProject);
+      alert('Failed to open project. It may have been moved or deleted.');
+    }
   }, []);
 
   const onClickRecentFile = useCallback((e: React.MouseEvent, file: EditorFile) => {
@@ -97,15 +177,15 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
           </h2>
           {projects.length > 0 ? (
             <ul className="recent-items-list">
-              {projects.map((project) => (
+              {projects.map((project, index) => (
                 <li
-                  key={project}
+                  key={project.getIdentifier() || index}
                   className="recent-item"
                   onClick={(e) => onClickRecentProject(e, project)}
                 >
                   <i className="fa-solid fa-folder item-icon" />
                   <div className="item-content">
-                    <div className="item-name">{project}</div>
+                    <div className="item-name">{project.getDisplayName()}</div>
                   </div>
                 </li>
               ))}

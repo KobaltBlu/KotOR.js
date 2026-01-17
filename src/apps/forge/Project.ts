@@ -47,21 +47,27 @@ export class Project {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(response.paths && response.paths.length){
-          ProjectFileSystem.rootDirectoryPath = response.paths[0];
+          const projectPath = response.paths[0];
+          ProjectFileSystem.rootDirectoryPath = projectPath;
           ForgeState.project = new Project();
           const loaded = await ForgeState.project.load();
           if(loaded){
             await ProjectFileSystem.initializeProjectExplorer();
+            // Add to recent projects with path
+            ForgeState.addRecentProject(projectPath);
           }
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
-          ProjectFileSystem.rootDirectoryHandle = response.handles[0] as FileSystemDirectoryHandle;
+          const handle = response.handles[0] as FileSystemDirectoryHandle;
+          ProjectFileSystem.rootDirectoryHandle = handle;
           console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
           ForgeState.project = new Project();
           const loaded = await ForgeState.project.load();
           if(loaded){
             await ProjectFileSystem.initializeProjectExplorer();
+            // Add to recent projects with handle
+            await ForgeState.addRecentProject(handle);
           }
         }
       }
@@ -183,6 +189,17 @@ export class Project {
       }
 
       ForgeState.project = this;
+      
+      // Add to recent projects
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(ProjectFileSystem.rootDirectoryPath){
+          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryPath);
+        }
+      } else {
+        if(ProjectFileSystem.rootDirectoryHandle){
+          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
+        }
+      }
     }catch(e){
       console.error(e);
       alert('Project Open Failed');
