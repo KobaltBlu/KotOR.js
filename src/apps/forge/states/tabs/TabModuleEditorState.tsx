@@ -163,6 +163,16 @@ export class TabModuleEditorState extends TabState {
   animate(delta: number = 0){
     // Don't update ghost preview every frame - only on mouse move
     this.processEventListener('onAnimate', [delta]);
+
+    if(this.selectedGameObject){
+      if(this.selectedGameObject.constructor.name === 'ForgeCamera'){
+        const camera = this.selectedGameObject as ForgeCamera;
+        camera.perspectiveCamera.position.copy(camera.position);
+        camera.perspectiveCamera.quaternion.copy(camera.quaternion);
+        camera.perspectiveCamera.updateMatrixWorld(true);
+        camera.perspectiveCamera.updateMatrix();
+      }
+    }
   }
   
   private onTransformControlsChange(): void {
@@ -281,9 +291,9 @@ export class TabModuleEditorState extends TabState {
       }
       return;
     }
-    if(this.controlMode === TabModuleEditorControlMode.SELECT){
-      this.ui3DRenderer.selectObject(undefined);
-    }
+    // if(this.controlMode === TabModuleEditorControlMode.SELECT){
+    //   this.ui3DRenderer.selectObject(undefined);
+    // }
   }
 
   setControlMode(mode: TabModuleEditorControlMode){
@@ -305,46 +315,47 @@ export class TabModuleEditorState extends TabState {
 
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'translate';
+      this.updateTransformControlHelpers(this.selectedGameObject!);  
     } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'rotate';
+      this.updateTransformControlHelpers(this.selectedGameObject!);
     } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'scale';
+      this.updateTransformControlHelpers(this.selectedGameObject!);
     }
 
     this.processEventListener('onControlModeChange', [mode]);
   }
 
-  onSelect(intersection: THREE.Intersection | undefined){
-    console.log('onSelect', intersection);
-    // Only handle selection when in SELECT mode
-    if(this.controlMode !== TabModuleEditorControlMode.SELECT){
-      return;
-    }
+  onSelect(gameObject: ForgeGameObject | undefined){
+    console.log('onSelect', gameObject);
+    this.selectGameObject(gameObject);
+  }
 
-    if(intersection && intersection.object){
-      // Find the ForgeGameObject from the intersected object
-      // Traverse up the parent chain to find the container with ForgeGameObject reference
-      let forgeGameObject: ForgeGameObject | undefined;
-      let current: THREE.Object3D | null = intersection.object;
-      
-      while(current){
-        // Check if this object has a ForgeGameObject reference in userData
-        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
-          forgeGameObject = current.userData.forgeGameObject;
-          break;
-        }
-        current = current.parent;
+  updateTransformControlHelpers(gameObject: ForgeGameObject){
+    if(!gameObject) return;
+    if(this.controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
+      this.ui3DRenderer.transformControls.showX = true;
+      this.ui3DRenderer.transformControls.showY = true;
+      this.ui3DRenderer.transformControls.showZ = true;
+    } else if(this.controlMode === TabModuleEditorControlMode.ROTATE_CONTROL){
+      if(gameObject instanceof ForgeCreature || gameObject instanceof ForgeDoor || gameObject instanceof ForgeEncounter || gameObject instanceof ForgeItem || gameObject instanceof ForgePlaceable || gameObject instanceof ForgeStore || gameObject instanceof ForgeTrigger || gameObject instanceof ForgeWaypoint){
+        this.ui3DRenderer.transformControls.showX = false;
+        this.ui3DRenderer.transformControls.showY = false;
+        this.ui3DRenderer.transformControls.showZ = true;
+      } else if(gameObject instanceof ForgeCamera){
+        this.ui3DRenderer.transformControls.showX = false;
+        this.ui3DRenderer.transformControls.showY = true;
+        this.ui3DRenderer.transformControls.showZ = true;
+      } else if(gameObject instanceof ForgeRoom){
+        this.ui3DRenderer.transformControls.showX = false;
+        this.ui3DRenderer.transformControls.showY = false;
+        this.ui3DRenderer.transformControls.showZ = true;
       }
-      
-      if(forgeGameObject){
-        this.selectGameObject(forgeGameObject);
-        this.processEventListener('onGameObjectSelected', [forgeGameObject]);
-      } else {
-        this.selectGameObject(undefined);
-      }
-    } else {
-      // Deselect if clicking on empty space
-      this.selectGameObject(undefined);
+    }else if(this.controlMode === TabModuleEditorControlMode.SCALE_CONTROL){
+      this.ui3DRenderer.transformControls.showX = true;
+      this.ui3DRenderer.transformControls.showY = true;
+      this.ui3DRenderer.transformControls.showZ = true;
     }
   }
 
@@ -355,19 +366,7 @@ export class TabModuleEditorState extends TabState {
     if(gameObject){
       this.ui3DRenderer.transformControls.attach(gameObject.container);
       this.ui3DRenderer.transformControls.size = 0.5;
-      if(gameObject instanceof ForgeCreature || gameObject instanceof ForgeDoor || gameObject instanceof ForgeEncounter || gameObject instanceof ForgeItem || gameObject instanceof ForgePlaceable || gameObject instanceof ForgeStore || gameObject instanceof ForgeTrigger || gameObject instanceof ForgeWaypoint){
-        this.ui3DRenderer.transformControls.showX = true;
-        this.ui3DRenderer.transformControls.showY = true;
-        this.ui3DRenderer.transformControls.showZ = true;
-      } else if(gameObject instanceof ForgeCamera){
-        this.ui3DRenderer.transformControls.showX = true;
-        this.ui3DRenderer.transformControls.showY = true;
-        this.ui3DRenderer.transformControls.showZ = true;
-      } else if(gameObject instanceof ForgeRoom){
-        this.ui3DRenderer.transformControls.showX = true;
-        this.ui3DRenderer.transformControls.showY = true;
-        this.ui3DRenderer.transformControls.showZ = true;
-      }
+      this.updateTransformControlHelpers(gameObject);
     }
     this.processEventListener('onSelectionChanged', [gameObject]);
   }
@@ -422,7 +421,7 @@ export class TabModuleEditorState extends TabState {
     this.processEventListener('onGameObjectPlaced', [gameObject, this.selectedGameObjectType]);
     this.selectedBlueprintResRef = '';
     this.selectedGameObjectType = undefined;
-    this.setControlMode(TabModuleEditorControlMode.SELECT);
+    this.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
     this.ghostPreviewMesh.visible = false;
   }
 

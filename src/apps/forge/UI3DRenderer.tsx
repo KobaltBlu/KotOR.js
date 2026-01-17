@@ -621,10 +621,10 @@ export class UI3DRenderer extends EventListenerModel {
       if(intersects.length){
         const intersection = intersects.shift();
         this.selectObject(intersection?.object);
-        this.processEventListener('onSelect', [intersection]);
+        // this.processEventListener('onSelect', [intersection]);
       }else{
         this.selectObject(undefined);
-        this.processEventListener('onSelect', [undefined]);
+        // this.processEventListener('onSelect', [undefined]);
       }
     }
   }
@@ -868,6 +868,7 @@ export class UI3DRenderer extends EventListenerModel {
   selectObject(object: THREE.Object3D | undefined){
     if(!object || this.disableSelection){
       this.selectionBox.visible = false;
+      this.processEventListener('onSelect', [undefined]);
       return;
     }
 
@@ -919,8 +920,10 @@ export class UI3DRenderer extends EventListenerModel {
     // Store the ForgeGameObject reference in selectionBox userData for easy access
     if(forgeGameObject){
       this.selectionBox.userData.forgeGameObject = forgeGameObject;
+      this.processEventListener('onSelect', [forgeGameObject]);
     } else {
       delete this.selectionBox.userData.forgeGameObject;
+      this.processEventListener('onSelect', [object]);
     }
   }
 
