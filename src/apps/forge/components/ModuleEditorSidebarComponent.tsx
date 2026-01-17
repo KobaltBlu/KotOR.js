@@ -205,7 +205,6 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
  */
 const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObject | undefined; tab: TabModuleEditorState }){
   const { gameObject, tab } = props;
-  const [selectedProperty, setSelectedProperty] = useState<string | null>(null);
   const [selectedObject, setSelectedObject] = useState<ForgeGameObject | undefined>(gameObject);
 
   useEffect(() => {
@@ -220,58 +219,26 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
     );
   }
 
-  // if(typeof (selectedObject as any).getGITInstance !== 'function'){
-  //   return (
-  //     <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-  //       This object type does not support GIT instance editing.
-  //     </div>
-  //   );
-  // }
-
   const propertyDefs = getGITPropertyDefinitions(selectedObject);
 
   return (
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
-      <div style={{ flex: '0 0 300px', overflowY: 'auto', borderRight: '1px solid #333', padding: '10px' }}>
-        <div style={{ marginBottom: '10px', fontWeight: 'bold' }}>Properties</div>
+    <div style={{ display: 'block', height: '100%', width: '100%', overflow: 'auto' }}>
+      <div>
         <div style={{ fontSize: '12px', marginBottom: '5px', color: '#999' }}>
-          {selectedObject.getEditorName() || 'Untitled Object'}
+          {`[${selectedObject.constructor.name.replace('Forge', '')}] ${selectedObject.getEditorName() || 'Untitled Object'}`}
         </div>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {propertyDefs.map((prop, index) => (
             <li 
               key={index}
               style={{
-                padding: '5px 10px',
-                cursor: 'pointer',
-                backgroundColor: selectedProperty === prop.propertyName ? '#0d5171' : 'transparent',
                 marginBottom: '2px'
               }}
-              onClick={() => setSelectedProperty(prop.propertyName)}
             >
-              <span style={{ fontSize: '11px', color: '#999' }}>[{prop.type}]</span>{' '}
-              {prop.label}
+              <PropertyEditor propertyDef={prop} gameObject={selectedObject} tab={tab} />
             </li>
           ))}
         </ul>
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-        {selectedProperty ? (
-          (() => {
-            const propDef = propertyDefs.find(p => p.propertyName === selectedProperty);
-            return propDef ? (
-              <PropertyEditor propertyDef={propDef} gameObject={selectedObject} tab={tab} />
-            ) : (
-              <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-                Property not found
-              </div>
-            );
-          })()
-        ) : (
-          <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
-            Select a property to edit
-          </div>
-        )}
       </div>
     </div>
   );
@@ -326,25 +293,39 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
   switch(propertyDef.type){
     case 'number':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Value:</label>
-            <input
-              type="number"
-              value={currentValue || 0}
-              onChange={(e) => updateValue(parseFloat(e.target.value) || 0)}
-              style={{
-                width: '100%',
-                padding: '5px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '3px'
-              }}
-            />
-          </div>
-        </fieldset>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <input
+            type="number"
+            value={currentValue || 0}
+            onChange={(e) => updateValue(parseFloat(e.target.value) || 0)}
+            style={{
+              flex: 1,
+              padding: '2px 6px',
+              fontSize: '12px',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444',
+              color: '#fff',
+              borderRadius: '2px',
+              minWidth: 0
+            }}
+          />
+        </div>
       );
 
     case 'string':
@@ -365,444 +346,715 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       };
       
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Value:</label>
-            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              <input
-                type="text"
-                value={currentValue || ''}
-                onChange={(e) => {
-                  const value = isResRefField
-                    ? gameObject.sanitizeResRef(e.target.value)
-                    : e.target.value;
-                  updateValue(value);
-                }}
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flex: 1 }}>
+            <input
+              type="text"
+              value={currentValue || ''}
+              onChange={(e) => {
+                const value = isResRefField
+                  ? gameObject.sanitizeResRef(e.target.value)
+                  : e.target.value;
+                updateValue(value);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+            {isResRefField && blueprintType && (
+              <button
+                onClick={handleBrowseClick}
+                title={`Browse ${blueprintType.toUpperCase()} blueprints`}
                 style={{
-                  flex: 1,
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
+                  padding: '2px 6px',
+                  fontSize: '12px',
+                  backgroundColor: '#444',
+                  border: '1px solid #666',
                   color: '#fff',
-                  borderRadius: '3px'
+                  borderRadius: '2px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '24px',
+                  height: '22px'
                 }}
-              />
-              {isResRefField && blueprintType && (
-                <button
-                  onClick={handleBrowseClick}
-                  className="btn btn-sm btn-secondary"
-                  title={`Browse ${blueprintType.toUpperCase()} blueprints`}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#444',
-                    border: '1px solid #666',
-                    color: '#fff',
-                    borderRadius: '3px',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <i className="fa-solid fa-folder-open"></i>
-                </button>
-              )}
-            </div>
+              >
+                <i className="fa-solid fa-folder-open"></i>
+              </button>
+            )}
           </div>
-        </fieldset>
+        </div>
       );
 
     case 'boolean':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input
-                type="checkbox"
-                checked={currentValue || false}
-                onChange={(e) => updateValue(e.target.checked)}
-                style={{ width: '20px', height: '20px' }}
-              />
-              <span>Enabled</span>
-            </label>
-          </div>
-        </fieldset>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <input
+            type="checkbox"
+            checked={currentValue || false}
+            onChange={(e) => updateValue(e.target.checked)}
+            style={{ 
+              width: '16px', 
+              height: '16px',
+              cursor: 'pointer'
+            }}
+          />
+        </div>
       );
 
     case 'position':
       // Position is a reference to container.position, so we update it directly
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={currentValue?.x || 0}
-                onChange={(e) => {
-                  if(currentValue){
-                    currentValue.x = parseFloat(e.target.value) || 0;
-                    // Trigger property change for position
-                    gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
-                    tab.updateFile();
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={currentValue?.y || 0}
-                onChange={(e) => {
-                  if(currentValue){
-                    currentValue.y = parseFloat(e.target.value) || 0;
-                    gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
-                    tab.updateFile();
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={currentValue?.z || 0}
-                onChange={(e) => {
-                  if(currentValue){
-                    currentValue.z = parseFloat(e.target.value) || 0;
-                    gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
-                    tab.updateFile();
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
+        <>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} X:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.x || 0}
+              onChange={(e) => {
+                if(currentValue){
+                  currentValue.x = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
+                  tab.updateFile();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
           </div>
-        </fieldset>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Y:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.y || 0}
+              onChange={(e) => {
+                if(currentValue){
+                  currentValue.y = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
+                  tab.updateFile();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Z:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.z || 0}
+              onChange={(e) => {
+                if(currentValue){
+                  currentValue.z = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
+                  tab.updateFile();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+        </>
       );
 
     case 'rotation':
       if(nestedPath === 'rotation.z'){
         // Rotation is a reference to container.rotation, so we update it directly
         return (
-          <fieldset>
-            <legend>{propertyDef.label}</legend>
-            <div style={{ padding: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z (Bearing/Orientation):</label>
-              <input
-                type="number"
-                value={gameObject.rotation?.z || 0}
-                onChange={(e) => {
-                  if(gameObject.rotation){
-                    gameObject.rotation.z = parseFloat(e.target.value) || 0;
-                    // Trigger property change for rotation
-                    gameObject.setProperty('rotation' as keyof ForgeGameObject, gameObject.rotation);
-                    tab.updateFile();
-                  }
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-          </fieldset>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis'
+            }}>
+              {propertyDef.label}:
+            </label>
+            <input
+              type="number"
+              value={gameObject.rotation?.z || 0}
+              onChange={(e) => {
+                if(gameObject.rotation){
+                  gameObject.rotation.z = parseFloat(e.target.value) || 0;
+                  gameObject.setProperty('rotation' as keyof ForgeGameObject, gameObject.rotation);
+                  tab.updateFile();
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
         );
       }
       // Full rotation editor
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={currentValue?.x || 0}
-                onChange={(e) => {
-                  const rot = currentValue || new THREE.Euler();
-                  rot.x = parseFloat(e.target.value) || 0;
-                  updateValue(rot);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={currentValue?.y || 0}
-                onChange={(e) => {
-                  const rot = currentValue || new THREE.Euler();
-                  rot.y = parseFloat(e.target.value) || 0;
-                  updateValue(rot);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={currentValue?.z || 0}
-                onChange={(e) => {
-                  const rot = currentValue || new THREE.Euler();
-                  rot.z = parseFloat(e.target.value) || 0;
-                  updateValue(rot);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
+        <>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} X:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.x || 0}
+              onChange={(e) => {
+                const rot = currentValue || new THREE.Euler();
+                rot.x = parseFloat(e.target.value) || 0;
+                updateValue(rot);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
           </div>
-        </fieldset>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Y:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.y || 0}
+              onChange={(e) => {
+                const rot = currentValue || new THREE.Euler();
+                rot.y = parseFloat(e.target.value) || 0;
+                updateValue(rot);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Z:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.z || 0}
+              onChange={(e) => {
+                const rot = currentValue || new THREE.Euler();
+                rot.z = parseFloat(e.target.value) || 0;
+                updateValue(rot);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+        </>
       );
 
     case 'quaternion':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={currentValue?.x || 0}
-                onChange={(e) => {
-                  const quat = currentValue || new THREE.Quaternion();
-                  quat.x = parseFloat(e.target.value) || 0;
-                  updateValue(quat);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={currentValue?.y || 0}
-                onChange={(e) => {
-                  const quat = currentValue || new THREE.Quaternion();
-                  quat.y = parseFloat(e.target.value) || 0;
-                  updateValue(quat);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={currentValue?.z || 0}
-                onChange={(e) => {
-                  const quat = currentValue || new THREE.Quaternion();
-                  quat.z = parseFloat(e.target.value) || 0;
-                  updateValue(quat);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>W:</label>
-              <input
-                type="number"
-                value={currentValue?.w || 0}
-                onChange={(e) => {
-                  const quat = currentValue || new THREE.Quaternion();
-                  quat.w = parseFloat(e.target.value) || 0;
-                  updateValue(quat);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
+        <>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} X:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.x || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.x = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
           </div>
-        </fieldset>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Y:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.y || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.y = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Z:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.z || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.z = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} W:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.w || 0}
+              onChange={(e) => {
+                const quat = currentValue || new THREE.Quaternion();
+                quat.w = parseFloat(e.target.value) || 0;
+                updateValue(quat);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+        </>
       );
 
     case 'vector3':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={currentValue?.x || 0}
-                onChange={(e) => {
-                  const vec = currentValue || new THREE.Vector3();
-                  vec.x = parseFloat(e.target.value) || 0;
-                  updateValue(vec);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={currentValue?.y || 0}
-                onChange={(e) => {
-                  const vec = currentValue || new THREE.Vector3();
-                  vec.y = parseFloat(e.target.value) || 0;
-                  updateValue(vec);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={currentValue?.z || 0}
-                onChange={(e) => {
-                  const vec = currentValue || new THREE.Vector3();
-                  vec.z = parseFloat(e.target.value) || 0;
-                  updateValue(vec);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
+        <>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} X:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.x || 0}
+              onChange={(e) => {
+                const vec = currentValue || new THREE.Vector3();
+                vec.x = parseFloat(e.target.value) || 0;
+                updateValue(vec);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
           </div>
-        </fieldset>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Y:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.y || 0}
+              onChange={(e) => {
+                const vec = currentValue || new THREE.Vector3();
+                vec.y = parseFloat(e.target.value) || 0;
+                updateValue(vec);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '4px 8px',
+            borderBottom: '1px solid #333'
+          }}>
+            <label style={{ 
+              flex: '0 0 120px', 
+              fontSize: '12px', 
+              color: '#ccc',
+              marginRight: '8px',
+              whiteSpace: 'nowrap'
+            }}>
+              {propertyDef.label} Z:
+            </label>
+            <input
+              type="number"
+              value={currentValue?.z || 0}
+              onChange={(e) => {
+                const vec = currentValue || new THREE.Vector3();
+                vec.z = parseFloat(e.target.value) || 0;
+                updateValue(vec);
+              }}
+              style={{
+                flex: 1,
+                padding: '2px 6px',
+                fontSize: '12px',
+                backgroundColor: '#2a2a2a',
+                border: '1px solid #444',
+                color: '#fff',
+                borderRadius: '2px',
+                minWidth: 0
+              }}
+            />
+          </div>
+        </>
       );
 
     case 'CExoLocString':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px', color: '#999' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <div style={{ flex: 1, fontSize: '11px', color: '#999', fontStyle: 'italic' }}>
             CExoLocString editing not yet implemented. Use the blueprint editor for complex string types.
           </div>
-        </fieldset>
+        </div>
       );
 
     case 'array':
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px', color: '#999' }}>
-            Array editing not yet implemented. Use specialized editors for complex array types.
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <div style={{ flex: 1, fontSize: '11px', color: '#999' }}>
             {propertyDef.propertyName === 'vertices' && (
-              <div style={{ marginTop: '10px', fontSize: '12px' }}>
-                Vertices: {Array.isArray(currentValue) ? currentValue.length : 0} points
-              </div>
+              <span>Vertices: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
             )}
             {propertyDef.propertyName === 'spawnPointList' && (
-              <div style={{ marginTop: '10px', fontSize: '12px' }}>
-                Spawn Points: {Array.isArray(currentValue) ? currentValue.length : 0} points
-              </div>
+              <span>Spawn Points: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
+            )}
+            {!propertyDef.propertyName || (propertyDef.propertyName !== 'vertices' && propertyDef.propertyName !== 'spawnPointList') && (
+              <span style={{ fontStyle: 'italic' }}>Array editing not yet implemented. Use specialized editors for complex array types.</span>
             )}
           </div>
-        </fieldset>
+        </div>
       );
 
     default:
       return (
-        <fieldset>
-          <legend>{propertyDef.label}</legend>
-          <div style={{ padding: '10px', color: '#999' }}>
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          padding: '4px 8px',
+          borderBottom: '1px solid #333'
+        }}>
+          <label style={{ 
+            flex: '0 0 120px', 
+            fontSize: '12px', 
+            color: '#ccc',
+            marginRight: '8px',
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {propertyDef.label}:
+          </label>
+          <div style={{ flex: 1, fontSize: '11px', color: '#999', fontStyle: 'italic' }}>
             Editing for this property type is not yet implemented.
           </div>
-        </fieldset>
+        </div>
       );
   }
 }

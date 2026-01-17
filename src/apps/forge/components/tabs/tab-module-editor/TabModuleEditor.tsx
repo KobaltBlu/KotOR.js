@@ -321,7 +321,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
 
   return (
     <LayoutContainerProvider>
-      <LayoutContainer eastContent={eastPanel}>
+      <LayoutContainer eastContent={eastPanel} eastSize={350}>
         <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
           <UI3DRendererView context={tab.ui3DRenderer}>
             <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
