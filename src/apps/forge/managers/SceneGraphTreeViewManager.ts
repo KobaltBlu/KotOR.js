@@ -1,3 +1,4 @@
+import { EventListenerModel } from "../EventListenerModel";
 import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "../KotOR";
 import { SceneGraphNode } from "../SceneGraphNode";
 import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
@@ -13,7 +14,7 @@ export interface IModuleGroupNode {
   objects: ForgeGameObject[];
 }
 
-export class SceneGraphTreeViewManager {
+export class SceneGraphTreeViewManager extends EventListenerModel {
 
   context: UI3DRenderer;
 
@@ -26,6 +27,7 @@ export class SceneGraphTreeViewManager {
   groupNodes: Map<GroupType, SceneGraphNode> = new Map();
 
   constructor(){
+    super();
     this.sceneNode.addChildNode(this.camerasNode);
     this.sceneNode.addChildNode(this.lightingNode);
     this.sceneNode.addChildNode(this.objectsNode);
@@ -55,7 +57,6 @@ export class SceneGraphTreeViewManager {
     }
     
     this.buildGenericSceneGraph();
-
   }
 
   buildModuleSceneGraph(){
@@ -149,7 +150,8 @@ export class SceneGraphTreeViewManager {
       }
       else
       {
-        groupNode.nodes = [];
+        // Use setNodes() instead of direct assignment to fire onNodesChange event
+        groupNode.setNodes([]);
       }
 
       for(let j = 0; j < group.objects.length; j++){
@@ -204,6 +206,7 @@ export class SceneGraphTreeViewManager {
         groupNode.addChildNode(nodeNode);
       }
     }
+    this.processEventListener('onBuild', [this.parentNodes]);
   }
 
   buildGenericSceneGraph(){
@@ -332,6 +335,8 @@ export class SceneGraphTreeViewManager {
 
       this.objectsNode.addChildNode(modelNode);
     }
+
+    this.processEventListener('onBuild', [this.parentNodes]);
   }
 
 }

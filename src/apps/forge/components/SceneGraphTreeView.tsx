@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useMemo } from "react";
+import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
 import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "../SceneGraphNode";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { SceneGraphTreeViewManager } from "../managers/SceneGraphTreeViewManager";
@@ -7,10 +7,23 @@ import { ListItemNode } from "./treeview/ListItemNode";
 
 export const SceneGraphTreeView = function (props: any) {
   const manager: SceneGraphTreeViewManager = props.manager;
+  const [nodes, setNodes] = useState<SceneGraphNode[]>([]);
+
+  const onBuild = useCallback((nodes: SceneGraphNode[]) => {
+    setNodes([...nodes]);
+  }, [manager]);
+
+  useEffect( () => {
+    if(!manager){ return; }
+    manager.addEventListener('onBuild', onBuild);
+    return () => {
+      manager.removeEventListener('onBuild', onBuild);
+    }
+  }, [manager]);
   return (
     <ForgeTreeView style={{ height: '350px', overflow: 'auto'}}>
     {
-      manager.parentNodes.map( (node: SceneGraphNode) => {
+      nodes.map( (node: SceneGraphNode) => {
         return (
           <SceneGraphTreeViewNode manager={manager} key={node.id} node={node} />
         )
@@ -38,9 +51,13 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
 
   const onNodesChange = useCallback(() => {
     setNodes([...node.nodes]);
-  }, [node.nodes]);
+  }, [node]);
 
-  useEffectOnce( () => {
+  useEffect( () => {
+    // Initialize state from current node.nodes
+    setNodes([...node.nodes]);
+    setOpenState(node.open);
+    
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
@@ -49,7 +66,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
     }
-  });
+  }, [node, onNameChange, onExpandStateChange, onNodesChange]);
 
   const handleClick = useCallback(() => {
     if(typeof node.onClick === 'function'){

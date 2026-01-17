@@ -99,6 +99,9 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
+    
+    // Listen for keyboard events (Delete key to remove selected object)
+    this.addEventListener('onKeyDown', this.onKeyDown.bind(this));
 
     // Add ground mesh and ghost preview to scene when scene is available
     // The scene is initialized in UI3DRenderer, but buildScene() is called when canvas is attached
@@ -343,6 +346,21 @@ export class TabModuleEditorState extends TabState {
   onSelect(gameObject: ForgeGameObject | undefined){
     console.log('onSelect', gameObject);
     this.selectGameObject(gameObject);
+  }
+
+  onKeyDown(event: KeyboardEvent, tab: TabState){
+    // Handle Delete or Backspace key to remove selected object
+    if((event.key === 'Delete') && this.selectedGameObject && this.module?.area){
+      // Prevent default browser behavior (e.g., going back in history)
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Detach the selected object from the area
+      this.module.area.detachObject(this.selectedGameObject);
+      
+      // Clear selection and detach transform controls
+      this.selectGameObject(undefined);
+    }
   }
 
   updateTransformControlHelpers(gameObject: ForgeGameObject){

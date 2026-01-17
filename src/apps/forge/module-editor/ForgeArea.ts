@@ -514,134 +514,65 @@ export class ForgeArea extends ForgeGameObject{
     this.context.sceneGraphManager.rebuild();
   }
 
+  getNextCameraId(): number {
+    return this.nextCameraId++;
+  }
+
+  private static objectTypeRegistry = new Map<typeof ForgeGameObject, {
+    array: keyof ForgeArea,
+    groupType: GroupType,
+    onAttach?: (object: ForgeGameObject) => void,
+    onDetach?: (object: ForgeGameObject) => void
+  }>();
+
+  static registerObjectType(objectType: typeof ForgeGameObject, array: keyof ForgeArea, groupType: GroupType, onAttach?: (object: ForgeGameObject) => void, onDetach?: (object: ForgeGameObject) => void){
+    this.objectTypeRegistry.set(objectType, { array, groupType, onAttach, onDetach });
+  }
+
   attachObject(object: ForgeGameObject){
     if(!object){ return; }
     object.setArea(this);
-    
-    if(object instanceof ForgeRoom){
-      this.rooms.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.ROOMS);
+
+    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as typeof ForgeGameObject);
+    if(registry){
+      const array = registry.array;
+      const groupType = registry.groupType;
+      const onAttach = registry.onAttach;
+      this.context.addObjectToGroup(object.container, groupType);
+      if(array){
+        this[array].push(object);
+      }
       object.setContext(this.context);
-      this.invalidateWalkmeshCache();
-    }
-    if(object instanceof ForgeCreature){
-      this.creatures.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.CREATURE);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeCamera){
-      this.cameras.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.CAMERA);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeDoor){
-      this.doors.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.DOOR);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeEncounter){
-      this.encounters.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.ENCOUNTER);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeItem){
-      this.items.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.ITEM);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgePlaceable){
-      this.placeables.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.PLACEABLE);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeSound){
-      this.sounds.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.SOUND);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeStore){
-      this.stores.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.STORE);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeTrigger){
-      this.triggers.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.TRIGGER);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeWaypoint){
-      this.waypoints.push(object);
-      this.context.addObjectToGroup(object.container, GroupType.WAYPOINT);
-      object.setContext(this.context);
-    }
-    if(object instanceof ForgeMiniGame){
+      if(typeof onAttach === 'function'){
+        onAttach(object);
+      }
+    }else if(object instanceof ForgeMiniGame){
       this.miniGame = object;
     }
     this.context.sceneGraphManager.rebuild();
   }
 
-  getNextCameraId(): number {
-    return this.nextCameraId++;
-  }
 
   detachObject(object: ForgeGameObject){
     if(!object){ return; }
-    
-    if(object instanceof ForgeRoom){
-      const idx = this.rooms.indexOf(object);
-      if(idx >= 0){
-        this.rooms.splice(idx, 1);
-        this.invalidateWalkmeshCache();
+
+    const registry = ForgeArea.objectTypeRegistry.get(object.constructor as typeof ForgeGameObject);
+    if(registry){
+      const array = registry.array;
+      const groupType = registry.groupType;
+      const onDetach = registry.onDetach;
+      this.context.removeObjectFromGroup(object.container, groupType);
+      if(array){
+        const idx = this[array].indexOf(object);
+        if(idx >= 0){
+          this[array].splice(idx, 1);
+        }
       }
-    } else if(object instanceof ForgeCreature){
-      const idx = this.creatures.indexOf(object);
-      if(idx >= 0){
-        this.creatures.splice(idx, 1);
+      if(this.context.transformControls.object === object.container){
+        this.context.selectObject(undefined);
       }
-    } else if(object instanceof ForgeCamera){
-      const idx = this.cameras.indexOf(object);
-      if(idx >= 0){
-        this.cameras.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeDoor){
-      const idx = this.doors.indexOf(object);
-      if(idx >= 0){
-        this.doors.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeEncounter){
-      const idx = this.encounters.indexOf(object);
-      if(idx >= 0){
-        this.encounters.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeItem){
-      const idx = this.items.indexOf(object);
-      if(idx >= 0){
-        this.items.splice(idx, 1);
-      }
-    } else if(object instanceof ForgePlaceable){
-      const idx = this.placeables.indexOf(object);
-      if(idx >= 0){
-        this.placeables.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeSound){
-      const idx = this.sounds.indexOf(object);
-      if(idx >= 0){
-        this.sounds.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeStore){
-      const idx = this.stores.indexOf(object);
-      if(idx >= 0){
-        this.stores.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeTrigger){
-      const idx = this.triggers.indexOf(object);
-      if(idx >= 0){
-        this.triggers.splice(idx, 1);
-      }
-    } else if(object instanceof ForgeWaypoint){
-      const idx = this.waypoints.indexOf(object);
-      if(idx >= 0){
-        this.waypoints.splice(idx, 1);
+      if(typeof onDetach === 'function'){
+        onDetach(object);
       }
     }
     
@@ -1111,3 +1042,19 @@ export class ForgeArea extends ForgeGameObject{
   }
   
 }
+
+ForgeArea.registerObjectType(ForgeCamera, 'cameras', GroupType.CAMERA);
+ForgeArea.registerObjectType(ForgeCreature, 'creatures', GroupType.CREATURE);
+ForgeArea.registerObjectType(ForgeDoor, 'doors', GroupType.DOOR);
+ForgeArea.registerObjectType(ForgeEncounter, 'encounters', GroupType.ENCOUNTER);
+ForgeArea.registerObjectType(ForgeItem, 'items', GroupType.ITEM);
+ForgeArea.registerObjectType(ForgePlaceable, 'placeables', GroupType.PLACEABLE);
+ForgeArea.registerObjectType(ForgeSound, 'sounds', GroupType.SOUND);
+ForgeArea.registerObjectType(ForgeStore, 'stores', GroupType.STORE);
+ForgeArea.registerObjectType(ForgeTrigger, 'triggers', GroupType.TRIGGER);
+ForgeArea.registerObjectType(ForgeWaypoint, 'waypoints', GroupType.WAYPOINT);
+ForgeArea.registerObjectType(ForgeRoom as any, 'rooms', GroupType.ROOMS, (object: ForgeGameObject) => {
+  object.area?.invalidateWalkmeshCache();
+}, (object: ForgeGameObject) => {
+  object.area?.invalidateWalkmeshCache();
+});

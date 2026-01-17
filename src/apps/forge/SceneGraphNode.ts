@@ -58,10 +58,17 @@ export class SceneGraphNode extends EventListenerModel {
   }
 
   setNodes(nodes: SceneGraphNode[] = []){
+    // Clear existing nodes and remove parent references
+    for(let i = 0; i < this.nodes.length; i++){
+      this.nodes[i].parent = undefined;
+    }
     this.nodes = [];
+    // Add new nodes
     for(let i = 0; i < nodes.length; i++){
       this.addChildNode(nodes[i]);
     }
+    // Fire onNodesChange event to notify listeners that nodes have changed
+    this.processEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', [this]);
   }
 
   addChildNode(node: SceneGraphNode){
