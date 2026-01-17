@@ -17,6 +17,7 @@ import { ForgeWaypoint } from "../module-editor/ForgeWaypoint";
 
 import * as KotOR from "../KotOR";
 import { UI3DRenderer } from "../UI3DRenderer";
+import "./ModuleEditorSidebarComponent.scss";
 
 export const ModuleEditorSidebarComponent = function(props: any){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
@@ -41,14 +42,14 @@ export const ModuleEditorSidebarComponent = function(props: any){
   }, [tab]);
 
   return (
-    <>
-      <div className="nodes-container" style={{ flex: 0.25, overflowY: 'auto' }}>
+    <div className="module-editor-sidebar">
+      <div className="nodes-container">
         <div className="toolbar-header">
           <b>Scene</b>
         </div>
         <SceneGraphTreeView manager={tab.ui3DRenderer.sceneGraphManager}></SceneGraphTreeView>
       </div>
-      <div className="tab-host" style={{ flex: 0.75 }}>
+      <div className="tab-host">
         <div className="tabs">
           <ul className="tabs-menu tabs-flex-wrap">
             <li className={`btn btn-tab ${selectedTab == 'object-properties' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('object-properties') }>Properties</a></li>
@@ -60,7 +61,7 @@ export const ModuleEditorSidebarComponent = function(props: any){
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -213,7 +214,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
 
   if(!selectedObject){
     return (
-      <div style={{ padding: '20px', textAlign: 'center', color: '#999' }}>
+      <div className="git-instance-properties-editor__empty-state">
         No object selected. Select a game object to edit its GIT instance properties.
       </div>
     );
@@ -222,18 +223,16 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
   const propertyDefs = getGITPropertyDefinitions(selectedObject);
 
   return (
-    <div style={{ display: 'block', height: '100%', width: '100%', overflow: 'auto' }}>
+    <div className="git-instance-properties-editor">
       <div>
-        <div style={{ fontSize: '12px', marginBottom: '5px', color: '#999' }}>
+        <div className="git-instance-properties-editor__header">
           {`[${selectedObject.constructor.name.replace('Forge', '')}] ${selectedObject.getEditorName() || 'Untitled Object'}`}
         </div>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        <ul className="git-instance-properties-editor__list">
           {propertyDefs.map((prop, index) => (
             <li 
               key={index}
-              style={{
-                marginBottom: '2px'
-              }}
+              className="git-instance-properties-editor__list-item"
             >
               <PropertyEditor propertyDef={prop} gameObject={selectedObject} tab={tab} />
             </li>
@@ -293,37 +292,15 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
   switch(propertyDef.type){
     case 'number':
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
           <input
             type="number"
             value={currentValue || 0}
             onChange={(e) => updateValue(parseFloat(e.target.value) || 0)}
-            style={{
-              flex: 1,
-              padding: '2px 6px',
-              fontSize: '12px',
-              backgroundColor: '#2a2a2a',
-              border: '1px solid #444',
-              color: '#fff',
-              borderRadius: '2px',
-              minWidth: 0
-            }}
+            className="property-editor-input"
           />
         </div>
       );
@@ -346,24 +323,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       };
       
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center', flex: 1 }}>
+          <div className="property-editor-input-group">
             <input
               type="text"
               value={currentValue || ''}
@@ -373,36 +337,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                   : e.target.value;
                 updateValue(value);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
             {isResRefField && blueprintType && (
               <button
                 onClick={handleBrowseClick}
                 title={`Browse ${blueprintType.toUpperCase()} blueprints`}
-                style={{
-                  padding: '2px 6px',
-                  fontSize: '12px',
-                  backgroundColor: '#444',
-                  border: '1px solid #666',
-                  color: '#fff',
-                  borderRadius: '2px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: '24px',
-                  height: '22px'
-                }}
+                className="property-editor-browse-button"
               >
                 <i className="fa-solid fa-folder-open"></i>
               </button>
@@ -413,32 +354,15 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
 
     case 'boolean':
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
           <input
             type="checkbox"
             checked={currentValue || false}
             onChange={(e) => updateValue(e.target.checked)}
-            style={{ 
-              width: '16px', 
-              height: '16px',
-              cursor: 'pointer'
-            }}
+            className="property-editor-checkbox"
           />
         </div>
       );
@@ -447,19 +371,8 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       // Position is a reference to container.position, so we update it directly
       return (
         <>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} X:
             </label>
             <input
@@ -472,31 +385,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                   tab.updateFile();
                 }
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Y:
             </label>
             <input
@@ -509,31 +402,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                   tab.updateFile();
                 }
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Z:
             </label>
             <input
@@ -546,16 +419,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                   tab.updateFile();
                 }
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
         </>
@@ -565,21 +429,8 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       if(nestedPath === 'rotation.z'){
         // Rotation is a reference to container.rotation, so we update it directly
         return (
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label property-editor-label--ellipsis">
               {propertyDef.label}:
             </label>
             <input
@@ -592,16 +443,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                   tab.updateFile();
                 }
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
         );
@@ -609,19 +451,8 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       // Full rotation editor
       return (
         <>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} X:
             </label>
             <input
@@ -632,31 +463,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 rot.x = parseFloat(e.target.value) || 0;
                 updateValue(rot);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Y:
             </label>
             <input
@@ -667,31 +478,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 rot.y = parseFloat(e.target.value) || 0;
                 updateValue(rot);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Z:
             </label>
             <input
@@ -702,16 +493,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 rot.z = parseFloat(e.target.value) || 0;
                 updateValue(rot);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
         </>
@@ -720,19 +502,8 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     case 'quaternion':
       return (
         <>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} X:
             </label>
             <input
@@ -743,31 +514,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 quat.x = parseFloat(e.target.value) || 0;
                 updateValue(quat);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Y:
             </label>
             <input
@@ -778,31 +529,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 quat.y = parseFloat(e.target.value) || 0;
                 updateValue(quat);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Z:
             </label>
             <input
@@ -813,31 +544,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 quat.z = parseFloat(e.target.value) || 0;
                 updateValue(quat);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} W:
             </label>
             <input
@@ -848,16 +559,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 quat.w = parseFloat(e.target.value) || 0;
                 updateValue(quat);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
         </>
@@ -866,19 +568,8 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     case 'vector3':
       return (
         <>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} X:
             </label>
             <input
@@ -889,31 +580,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 vec.x = parseFloat(e.target.value) || 0;
                 updateValue(vec);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Y:
             </label>
             <input
@@ -924,31 +595,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 vec.y = parseFloat(e.target.value) || 0;
                 updateValue(vec);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '4px 8px',
-            borderBottom: '1px solid #333'
-          }}>
-            <label style={{ 
-              flex: '0 0 120px', 
-              fontSize: '12px', 
-              color: '#ccc',
-              marginRight: '8px',
-              whiteSpace: 'nowrap'
-            }}>
+          <div className="property-editor-row">
+            <label className="property-editor-label">
               {propertyDef.label} Z:
             </label>
             <input
@@ -959,16 +610,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
                 vec.z = parseFloat(e.target.value) || 0;
                 updateValue(vec);
               }}
-              style={{
-                flex: 1,
-                padding: '2px 6px',
-                fontSize: '12px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '2px',
-                minWidth: 0
-              }}
+              className="property-editor-input"
             />
           </div>
         </>
@@ -976,24 +618,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
 
     case 'CExoLocString':
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
-          <div style={{ flex: 1, fontSize: '11px', color: '#999', fontStyle: 'italic' }}>
+          <div className="property-editor-message property-editor-message--italic">
             CExoLocString editing not yet implemented. Use the blueprint editor for complex string types.
           </div>
         </div>
@@ -1001,24 +630,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
 
     case 'array':
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
-          <div style={{ flex: 1, fontSize: '11px', color: '#999' }}>
+          <div className="property-editor-message">
             {propertyDef.propertyName === 'vertices' && (
               <span>Vertices: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
             )}
@@ -1026,7 +642,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
               <span>Spawn Points: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
             )}
             {!propertyDef.propertyName || (propertyDef.propertyName !== 'vertices' && propertyDef.propertyName !== 'spawnPointList') && (
-              <span style={{ fontStyle: 'italic' }}>Array editing not yet implemented. Use specialized editors for complex array types.</span>
+              <span className="property-editor-message--italic">Array editing not yet implemented. Use specialized editors for complex array types.</span>
             )}
           </div>
         </div>
@@ -1034,372 +650,14 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
 
     default:
       return (
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          padding: '4px 8px',
-          borderBottom: '1px solid #333'
-        }}>
-          <label style={{ 
-            flex: '0 0 120px', 
-            fontSize: '12px', 
-            color: '#ccc',
-            marginRight: '8px',
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis'
-          }}>
+        <div className="property-editor-row">
+          <label className="property-editor-label property-editor-label--ellipsis">
             {propertyDef.label}:
           </label>
-          <div style={{ flex: 1, fontSize: '11px', color: '#999', fontStyle: 'italic' }}>
+          <div className="property-editor-message property-editor-message--italic">
             Editing for this property type is not yet implemented.
           </div>
         </div>
-      );
-  }
-}
-
-/**
- * Legacy component - kept for reference but not used
- * Component for editing a single GFF field from GIT instance
- * This updates the ForgeGameObject property that maps to this GIT field
- */
-const GFFFieldEditor = function(props: { field: KotOR.GFFField | KotOR.GFFStruct; gameObject: ForgeGameObject; tab: TabModuleEditorState }){
-  const { field, gameObject, tab } = props;
-
-  if(field instanceof KotOR.GFFStruct){
-    return (
-      <div>
-        <fieldset>
-          <legend>[STRUCT] - Unnamed Struct</legend>
-          <div style={{ padding: '10px', color: '#999' }}>
-            Struct editing not yet implemented. Use the GFF Editor for complex structures.
-          </div>
-        </fieldset>
-      </div>
-    );
-  }
-
-  const gffField = field as KotOR.GFFField;
-  const fieldType = gffField.getType();
-  const fieldLabel = gffField.getLabel();
-  const [value, setValue] = useState<any>('');
-  const [valueX, setValueX] = useState<number>(0);
-  const [valueY, setValueY] = useState<number>(0);
-  const [valueZ, setValueZ] = useState<number>(0);
-  const [valueW, setValueW] = useState<number>(0);
-
-  // Update the ForgeGameObject property that corresponds to this GIT field
-  const updateGameObjectProperty = (newValue: any) => {
-    // Map GIT field labels to ForgeGameObject properties
-    // Note: Some fields like XOrientation/YOrientation for creatures need special handling
-    const propertyMap: { [key: string]: string } = {
-      'TemplateResRef': 'templateResRef',
-      'XPosition': 'position.x',
-      'YPosition': 'position.y',
-      'ZPosition': 'position.z',
-      'X': 'position.x',
-      'Y': 'position.y',
-      'Z': 'position.z',
-      'Bearing': 'rotation.z',
-      'Tag': 'tag',
-      'LinkedTo': 'linkedTo',
-      'LinkedToFlags': 'linkedToFlags',
-      'LinkedToModule': 'linkedToModule',
-      'ResRef': 'resref',
-      'TransitionDestin': 'transitionDestin',
-    };
-
-    const propertyPath = propertyMap[fieldLabel];
-    if(propertyPath){
-      if(propertyPath.includes('.')){
-        // Handle nested properties like position.x
-        const [objProp, subProp] = propertyPath.split('.');
-        const obj = (gameObject as any)[objProp];
-        if(obj){
-          obj[subProp] = newValue;
-          gameObject.setProperty(objProp as keyof ForgeGameObject, obj);
-        }
-      } else {
-        // Direct property
-        gameObject.setProperty(propertyPath as keyof ForgeGameObject, newValue);
-      }
-      
-      tab.updateFile();
-    } else if(fieldLabel === 'XOrientation' || fieldLabel === 'YOrientation' || fieldLabel === 'ZOrientation'){
-      // Special handling for orientation fields - they map to rotation.z
-      // For creatures, XOrientation and YOrientation are calculated from rotation.z
-      // So we can't directly edit them - they're read-only derived values
-      // But we can update rotation.z if needed (though this is complex for creatures)
-      console.warn(`Orientation field ${fieldLabel} is a derived value and cannot be directly edited. Edit rotation instead.`);
-    } else {
-      console.warn(`No property mapping found for GIT field: ${fieldLabel}`);
-    }
-  };
-
-  // Refresh field values when the field or game object changes
-  useEffect(() => {
-    if(gffField && gameObject && typeof (gameObject as any).getGITInstance === 'function'){
-      // Get fresh GIT instance to ensure we have current values
-      const instance = (gameObject as any).getGITInstance();
-      const currentField = instance.getFieldByLabel(fieldLabel);
-      if(currentField){
-        setValue(currentField.getValue());
-        if(fieldType === KotOR.GFFDataType.VECTOR){
-          const vec = currentField.getVector();
-          setValueX(vec.x);
-          setValueY(vec.y);
-          setValueZ(vec.z);
-        }
-        if(fieldType === KotOR.GFFDataType.ORIENTATION){
-          const orient = currentField.getOrientation();
-          setValueX(orient.x);
-          setValueY(orient.y);
-          setValueZ(orient.z);
-          setValueW(orient.w);
-        }
-      }
-    }
-  }, [gffField, fieldType, fieldLabel, gameObject]);
-
-  const handleValueChange = (e: ChangeEvent<HTMLInputElement>) => {
-    let newValue: any = e.target.value;
-    
-    switch(fieldType){
-      case KotOR.GFFDataType.RESREF:
-        newValue = newValue.substring(0, 16).toLowerCase();
-        break;
-      case KotOR.GFFDataType.FLOAT:
-      case KotOR.GFFDataType.DOUBLE:
-        newValue = parseFloat(newValue) || 0;
-        break;
-      case KotOR.GFFDataType.BYTE:
-        newValue = parseInt(newValue) & 0xFF;
-        break;
-      case KotOR.GFFDataType.CHAR:
-        newValue = parseInt(newValue) << 24 >> 24;
-        break;
-      case KotOR.GFFDataType.WORD:
-        newValue = parseInt(newValue) & 0xFFFF;
-        break;
-      case KotOR.GFFDataType.SHORT:
-        newValue = parseInt(newValue) << 16 >> 16;
-        break;
-      case KotOR.GFFDataType.DWORD:
-        newValue = parseInt(newValue) & 0xFFFFFFFF;
-        break;
-      case KotOR.GFFDataType.INT:
-        newValue = parseInt(newValue) << 0 >> 0;
-        break;
-    }
-
-    setValue(newValue);
-    updateGameObjectProperty(newValue);
-  };
-
-  const handleVectorChange = (e: ChangeEvent<HTMLInputElement>, component: 'x' | 'y' | 'z') => {
-    const numValue = parseFloat(e.target.value) || 0;
-    
-    switch(component){
-      case 'x': setValueX(numValue); break;
-      case 'y': setValueY(numValue); break;
-      case 'z': setValueZ(numValue); break;
-    }
-    
-    // For vector fields, we need to update the entire vector
-    // This is a simplified approach - in practice, you'd need to handle this per field
-    const vec = gffField.getVector();
-    vec[component] = numValue;
-    updateGameObjectProperty(vec);
-  };
-
-  const handleOrientationChange = (e: ChangeEvent<HTMLInputElement>, component: 'x' | 'y' | 'z' | 'w') => {
-    const numValue = parseFloat(e.target.value) || 0;
-    
-    switch(component){
-      case 'x': setValueX(numValue); break;
-      case 'y': setValueY(numValue); break;
-      case 'z': setValueZ(numValue); break;
-      case 'w': setValueW(numValue); break;
-    }
-    
-    // For orientation fields, update the entire orientation
-    const orient = gffField.getOrientation();
-    orient[component] = numValue;
-    updateGameObjectProperty(orient);
-  };
-
-  switch(fieldType){
-    case KotOR.GFFDataType.BYTE:
-    case KotOR.GFFDataType.CHAR:
-    case KotOR.GFFDataType.WORD:
-    case KotOR.GFFDataType.SHORT:
-    case KotOR.GFFDataType.DWORD:
-    case KotOR.GFFDataType.INT:
-    case KotOR.GFFDataType.FLOAT:
-    case KotOR.GFFDataType.DOUBLE:
-    case KotOR.GFFDataType.RESREF:
-    case KotOR.GFFDataType.CEXOSTRING:
-      return (
-        <fieldset>
-          <legend>[{KotOR.GFFDataType[fieldType]}] - {gffField.getLabel()}</legend>
-          <div style={{ padding: '10px' }}>
-            <label style={{ display: 'block', marginBottom: '5px' }}>Value:</label>
-            <input
-              type="text"
-              value={value}
-              onChange={handleValueChange}
-              style={{
-                width: '100%',
-                padding: '5px',
-                backgroundColor: '#2a2a2a',
-                border: '1px solid #444',
-                color: '#fff',
-                borderRadius: '3px'
-              }}
-            />
-          </div>
-        </fieldset>
-      );
-    
-    case KotOR.GFFDataType.VECTOR:
-      return (
-        <fieldset>
-          <legend>[{KotOR.GFFDataType[fieldType]}] - {gffField.getLabel()}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={valueX}
-                onChange={(e) => handleVectorChange(e, 'x')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={valueY}
-                onChange={(e) => handleVectorChange(e, 'y')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={valueZ}
-                onChange={(e) => handleVectorChange(e, 'z')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-          </div>
-        </fieldset>
-      );
-    
-    case KotOR.GFFDataType.ORIENTATION:
-      return (
-        <fieldset>
-          <legend>[{KotOR.GFFDataType[fieldType]}] - {gffField.getLabel()}</legend>
-          <div style={{ padding: '10px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>X:</label>
-              <input
-                type="number"
-                value={valueX}
-                onChange={(e) => handleOrientationChange(e, 'x')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Y:</label>
-              <input
-                type="number"
-                value={valueY}
-                onChange={(e) => handleOrientationChange(e, 'y')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>Z:</label>
-              <input
-                type="number"
-                value={valueZ}
-                onChange={(e) => handleOrientationChange(e, 'z')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '10px' }}>
-              <label style={{ display: 'block', marginBottom: '5px' }}>W:</label>
-              <input
-                type="number"
-                value={valueW}
-                onChange={(e) => handleOrientationChange(e, 'w')}
-                style={{
-                  width: '100%',
-                  padding: '5px',
-                  backgroundColor: '#2a2a2a',
-                  border: '1px solid #444',
-                  color: '#fff',
-                  borderRadius: '3px'
-                }}
-              />
-            </div>
-          </div>
-        </fieldset>
-      );
-    
-    default:
-      return (
-        <fieldset>
-          <legend>[{KotOR.GFFDataType[fieldType]}] - {gffField.getLabel()}</legend>
-          <div style={{ padding: '10px', color: '#999' }}>
-            Editing for this field type is not yet implemented.
-          </div>
-        </fieldset>
       );
   }
 }
