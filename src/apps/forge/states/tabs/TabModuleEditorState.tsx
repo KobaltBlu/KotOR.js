@@ -164,13 +164,23 @@ export class TabModuleEditorState extends TabState {
     // Don't update ghost preview every frame - only on mouse move
     this.processEventListener('onAnimate', [delta]);
 
+    // this.ui3DRenderer.transformControls.space = 'local';
     if(this.selectedGameObject){
-      if(this.selectedGameObject.constructor.name === 'ForgeCamera'){
+      if(this.selectedGameObject instanceof ForgeCamera){
         const camera = this.selectedGameObject as ForgeCamera;
-        camera.perspectiveCamera.position.copy(camera.position);
-        camera.perspectiveCamera.quaternion.copy(camera.quaternion);
-        camera.perspectiveCamera.updateMatrixWorld(true);
-        camera.perspectiveCamera.updateMatrix();
+        // Ensure rotation order is maintained
+        // camera.rotation.reorder('YZX');
+        // // Sync quaternion from rotation
+        // camera.quaternion.setFromEuler(camera.rotation);
+        // // Update pitch from rotation.x
+        // camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
+        // Sync to perspective camera
+        if(camera.perspectiveCamera){
+          camera.perspectiveCamera.position.copy(camera.position);
+          camera.perspectiveCamera.rotation.copy(camera.rotation);
+          camera.perspectiveCamera.updateMatrixWorld(true);
+          camera.perspectiveCamera.updateMatrix();
+        }
       }
     }
   }
@@ -178,29 +188,32 @@ export class TabModuleEditorState extends TabState {
   private onTransformControlsChange(): void {
     if(!this.selectedGameObject) return;
 
-    // const object3D = this.selectedGameObject.container;
-    // if(!object3D) return;
+    const object3D = this.selectedGameObject.container;
+    if(!object3D) return;
 
-    // // Update point vector from mesh position
-    // object3D.position.copy(mesh.position);
+    // For cameras, ensure rotation order is maintained and sync quaternion/pitch
+    if(this.selectedGameObject instanceof ForgeCamera){
+      const camera = this.selectedGameObject as ForgeCamera;
+      
+      // Ensure rotation order is set correctly
+      camera.rotation.reorder('YZX');
+      
+      // Update quaternion from rotation
+      camera.quaternion.setFromEuler(camera.rotation);
+      
+      // Update pitch from rotation.x (pitch is stored separately)
+      camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
+      
+      // Sync to perspective camera
+      if(camera.perspectiveCamera){
+        camera.perspectiveCamera.quaternion.copy(camera.quaternion);
+        camera.perspectiveCamera.updateMatrixWorld(true);
+        camera.perspectiveCamera.updateMatrix();
+      }
+    }
     
-    // const mesh = this.pointMeshes[this.selectedPointIndex] as THREE.Mesh;
-    // if(!mesh) return;
-    
-    // const point = this.points[this.selectedPointIndex];
-    // if(!point) return;
-    
-    // // Update point vector from mesh position
-    // point.vector.copy(mesh.position);
-    
-    // // // Update connection lines
-    // // this.updateConnectionLines();
-    
-    // // Mark file as having unsaved changes
-    // if(this.file){
-    //   this.file.unsaved_changes = true;
-    //   this.editorFileUpdated();
-    // }
+    // Mark file as having unsaved changes
+    this.updateFile();
   }
 
   onMouseMove(event: MouseEvent){
@@ -345,7 +358,7 @@ export class TabModuleEditorState extends TabState {
         this.ui3DRenderer.transformControls.showZ = true;
       } else if(gameObject instanceof ForgeCamera){
         this.ui3DRenderer.transformControls.showX = false;
-        this.ui3DRenderer.transformControls.showY = true;
+        this.ui3DRenderer.transformControls.showY = false;
         this.ui3DRenderer.transformControls.showZ = true;
       } else if(gameObject instanceof ForgeRoom){
         this.ui3DRenderer.transformControls.showX = false;
@@ -363,6 +376,23 @@ export class TabModuleEditorState extends TabState {
     console.log('selectGameObject', gameObject);
     this.selectedGameObject = gameObject;
     this.ui3DRenderer.transformControls.detach();
+    
+    // Enable/disable camera preview
+    if(gameObject instanceof ForgeCamera){
+      const camera = gameObject as ForgeCamera;
+      // Ensure rotation order is set before attaching transform controls
+      camera.rotation.reorder('YZX');
+      // Sync quaternion from rotation to ensure consistency
+      camera.quaternion.setFromEuler(camera.rotation);
+      // Enable preview with the camera's perspective camera
+      if(camera.perspectiveCamera){
+        this.ui3DRenderer.setPreviewCamera(camera.perspectiveCamera);
+      }
+    } else {
+      // Disable preview when not selecting a camera
+      this.ui3DRenderer.disablePreview();
+    }
+    
     if(gameObject){
       this.ui3DRenderer.transformControls.attach(gameObject.container);
       this.ui3DRenderer.transformControls.size = 0.5;

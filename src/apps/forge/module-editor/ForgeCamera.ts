@@ -32,11 +32,14 @@ export class ForgeCamera extends ForgeGameObject {
     this.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
     this.perspectiveCamera.updateMatrixWorld(true);
     this.perspectiveCamera.updateMatrix();
+    this.perspectiveCamera.rotation.reorder('YZX');
+    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
+    this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
 
     //@ts-ignore
     this.perspectiveCamera.position.copy(this.position);
     //@ts-ignore
-    this.perspectiveCamera.quaternion.copy(this.quaternion);
+    // this.perspectiveCamera.quaternion.copy(this.quaternion);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
     this.context.scene.add(this.perspectiveCamera);

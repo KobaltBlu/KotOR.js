@@ -175,6 +175,11 @@ export class UI3DRenderer extends EventListenerModel {
   transformControls: TransformControls;
   viewHelper: ViewHelper;
 
+  // Camera preview
+  previewCamera: THREE.PerspectiveCamera | null = null;
+  previewEnabled: boolean = false;
+  previewSize: number = 400; // Size of preview in pixels
+
   group: { 
     [key in GroupType]: THREE.Group;
   } = {
@@ -1128,7 +1133,60 @@ export class UI3DRenderer extends EventListenerModel {
         this.lightManager.update(delta, this.currentCamera);
       }
 
+      // Render main scene
       this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
+
+      // Render camera preview if enabled
+      if(this.previewEnabled && this.previewCamera && this.canvas){
+        const previewSize = this.previewSize;
+        const x = this.width - previewSize - 10; // 10px margin from right
+        const y = 10; // 10px margin from top
+        
+        // Save current viewport and scissor state
+        const currentViewport = new THREE.Vector4();
+        const currentScissor = new THREE.Vector4();
+        this.renderer.getViewport(currentViewport);
+        this.renderer.getScissor(currentScissor);
+        const scissorTest = this.renderer.getScissorTest();
+        
+        // Hide camera helpers from preview
+        const hiddenHelpers: THREE.Object3D[] = [];
+        if(this.module){
+          for(const camera of this.module.area.cameras){
+            camera.cameraHelper.visible = false;
+            hiddenHelpers.push(camera.cameraHelper);
+          }
+        }
+        const wasTransformControlsVisible = this.transformControls.visible;
+        this.transformControls.visible = false;
+        // Update preview camera aspect ratio (square preview)
+        this.previewCamera.aspect = 1.0;
+        this.previewCamera.updateProjectionMatrix();
+        
+        // Set viewport for preview (top right corner)
+        // Note: WebGL viewport uses bottom-left origin
+        const viewportY = this.height - y - previewSize;
+        this.renderer.setViewport(x, viewportY, previewSize, previewSize);
+        this.renderer.setScissor(x, viewportY, previewSize, previewSize);
+        this.renderer.setScissorTest(true);
+        
+        // Clear only the preview area (color and depth, but not stencil)
+        // This ensures the preview area is clean before rendering
+        this.renderer.clear(true, true, false);
+        
+        // Render preview scene
+        this.renderer.render(this.scene, this.previewCamera);
+        
+        // Restore camera helpers visibility
+        for(const helper of hiddenHelpers){
+          helper.visible = true;
+        }
+        this.transformControls.visible = wasTransformControlsVisible;
+        // Restore viewport and scissor
+        this.renderer.setViewport(currentViewport);
+        this.renderer.setScissor(currentScissor);
+        this.renderer.setScissorTest(scissorTest);
+      }
 
       if(this.viewHelper){
         this.viewHelper.render(this.renderer);
@@ -1137,6 +1195,22 @@ export class UI3DRenderer extends EventListenerModel {
       //Custom render logic can run here
       this.processEventListener('onAfterRender', [delta]);
     }
+  }
+
+  /**
+   * Enable camera preview with the specified camera
+   */
+  setPreviewCamera(camera: THREE.PerspectiveCamera | null){
+    this.previewCamera = camera;
+    this.previewEnabled = camera !== null;
+  }
+
+  /**
+   * Disable camera preview
+   */
+  disablePreview(){
+    this.previewEnabled = false;
+    this.previewCamera = null;
   }
 
   destroy(){
