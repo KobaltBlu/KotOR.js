@@ -50,6 +50,13 @@ export class ForgeTrigger extends ForgeGameObject {
   bufferGeometry: THREE.BufferGeometry;
   mesh: THREE.Mesh;
 
+  // Vertex manipulation helpers
+  vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
+  vertexHelpersGroup: THREE.Group = new THREE.Group();
+  vertexHelpers: THREE.Mesh[] = [];
+  vertexHelperSize: number = 0.125;
+  selectedVertexIndex: number = -1;
+
   constructor(buffer?: Uint8Array){
     super();
     if(buffer){
@@ -219,6 +226,110 @@ export class ForgeTrigger extends ForgeGameObject {
       this.container.add(this.mesh);
     }
     this.mesh.geometry = this.bufferGeometry;
+    
+    // Initialize vertex helpers group
+    this.vertexHelpersGroup.visible = false;
+    if(!this.container.children.includes(this.vertexHelpersGroup)){
+      this.container.add(this.vertexHelpersGroup);
+    }
+  }
+
+  buildVertexHelpers(){
+    // Clear existing helpers
+    while(this.vertexHelpers.length > 0){
+      const helper = this.vertexHelpers.pop();
+      if(helper){
+        helper.removeFromParent();
+        helper.geometry.dispose();
+        (helper.material as THREE.Material).dispose();
+      }
+    }
+    
+    // Create helpers for each vertex
+    for(let i = 0; i < this.vertices.length; i++){
+      const vertex = this.vertices[i];
+      const helper = new THREE.Mesh(
+        this.vertexHelperGeometry, 
+        new THREE.MeshBasicMaterial({color: 0x000000})
+      );
+      
+      helper.position.copy(vertex);
+      helper.scale.setScalar(this.vertexHelperSize);
+      
+      helper.userData.vertexIndex = i;
+      helper.userData.forgeGameObject = this;
+      
+      this.vertexHelpersGroup.add(helper);
+      this.vertexHelpers.push(helper);
+    }
+  }
+
+  showVertexHelpers(show: boolean = true){
+    this.vertexHelpersGroup.visible = show;
+    if(show && this.vertexHelpers.length === 0){
+      this.buildVertexHelpers();
+    }
+  }
+
+  selectVertex(index: number = -1){
+    this.selectedVertexIndex = index;
+    // Update vertex helper colors
+    for(let i = 0; i < this.vertexHelpers.length; i++){
+      const helper = this.vertexHelpers[i];
+      const material = helper.material as THREE.MeshBasicMaterial;
+      if(i === index){
+        material.color.setHex(0xFFFFFF);
+      } else {
+        material.color.setHex(0x000000);
+      }
+    }
+  }
+
+  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh){
+    if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
+      const vertex = this.vertices[vertexIndex];
+      const localPos = helper.position.clone();
+      
+      // Update vertex position if it changed
+      if(!vertex.equals(localPos)){
+        vertex.copy(localPos);
+        // Rebuild geometry with new vertex positions
+        this.buildGeometry();
+        if(this.mesh){
+          this.mesh.geometry = this.bufferGeometry;
+        }
+      }
+    }
+  }
+
+  update(delta: number = 0){
+    // Update vertex positions from helpers
+    if(this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length){
+      let geometryNeedsUpdate = false;
+      
+      for(let i = 0; i < this.vertices.length; i++){
+        const vertex = this.vertices[i];
+        const helper = this.vertexHelpers[i];
+        
+        if(vertex && helper){
+          const localPos = helper.position.clone();
+          
+          // Update vertex position if it changed
+          if(!vertex.equals(localPos)){
+            vertex.copy(localPos);
+            geometryNeedsUpdate = true;
+          }
+        }
+      }
+      
+      // Rebuild geometry if any vertices changed
+      if(geometryNeedsUpdate){
+        this.buildGeometry();
+        if(this.mesh){
+          this.mesh.geometry = this.bufferGeometry;
+        }
+      }
+    }
   }
 
   getGITInstance(): KotOR.GFFStruct {

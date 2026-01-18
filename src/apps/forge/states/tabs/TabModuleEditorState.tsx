@@ -167,6 +167,11 @@ export class TabModuleEditorState extends TabState {
     // Don't update ghost preview every frame - only on mouse move
     this.processEventListener('onAnimate', [delta]);
 
+    // Update the module area (which updates all game objects)
+    if(this.module?.area){
+      this.module.area.update(delta);
+    }
+
     // this.ui3DRenderer.transformControls.space = 'local';
     if(this.selectedGameObject){
       if(this.selectedGameObject instanceof ForgeCamera){
@@ -343,9 +348,40 @@ export class TabModuleEditorState extends TabState {
     this.processEventListener('onControlModeChange', [mode]);
   }
 
-  onSelect(gameObject: ForgeGameObject | undefined){
+  onSelect(gameObject: ForgeGameObject | THREE.Object3D | undefined){
     console.log('onSelect', gameObject);
-    this.selectGameObject(gameObject);
+    
+    // Check if a vertex helper was selected
+    if(gameObject instanceof THREE.Mesh && gameObject.userData?.vertexIndex !== undefined){
+      const forgeGameObject = gameObject.userData.forgeGameObject as ForgeTrigger | ForgeEncounter;
+      if(forgeGameObject && (forgeGameObject instanceof ForgeTrigger || forgeGameObject instanceof ForgeEncounter)){
+        const vertexIndex = gameObject.userData.vertexIndex as number;
+        forgeGameObject.selectVertex(vertexIndex);
+        // Attach transform controls to the selected vertex helper
+        this.ui3DRenderer.transformControls.detach();
+        this.ui3DRenderer.transformControls.attach(gameObject);
+        this.ui3DRenderer.transformControls.size = 0.25;
+        return;
+      }
+    }
+    
+    // Otherwise, select the game object
+    if(gameObject instanceof ForgeGameObject){
+      this.selectGameObject(gameObject);
+    } else if(gameObject instanceof THREE.Object3D){
+      // Try to find ForgeGameObject from userData
+      let current: THREE.Object3D | null = gameObject;
+      while(current){
+        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+          this.selectGameObject(current.userData.forgeGameObject);
+          return;
+        }
+        current = current.parent;
+      }
+      this.selectGameObject(undefined);
+    } else {
+      this.selectGameObject(undefined);
+    }
   }
 
   onKeyDown(event: KeyboardEvent, tab: TabState){
@@ -395,6 +431,13 @@ export class TabModuleEditorState extends TabState {
     this.selectedGameObject = gameObject;
     this.ui3DRenderer.transformControls.detach();
     
+    // Hide vertex helpers for previously selected trigger/encounter
+    if(this.selectedGameObject instanceof ForgeTrigger || this.selectedGameObject instanceof ForgeEncounter){
+      const prevObject = this.selectedGameObject as ForgeTrigger | ForgeEncounter;
+      prevObject.showVertexHelpers(false);
+      prevObject.selectVertex(-1);
+    }
+    
     // Enable/disable camera preview
     if(gameObject instanceof ForgeCamera){
       const camera = gameObject as ForgeCamera;
@@ -409,6 +452,11 @@ export class TabModuleEditorState extends TabState {
     } else {
       // Disable preview when not selecting a camera
       this.ui3DRenderer.disablePreview();
+    }
+    
+    // Show vertex helpers for triggers and encounters
+    if(gameObject instanceof ForgeTrigger || gameObject instanceof ForgeEncounter){
+      gameObject.showVertexHelpers(true);
     }
     
     if(gameObject){

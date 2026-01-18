@@ -632,8 +632,11 @@ export class UI3DRenderer extends EventListenerModel {
       this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
       const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
       if(intersects.length){
-        const intersection = intersects.shift();
-        this.selectObject(intersection?.object);
+        const closestIntersection = intersects[0];
+        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh && 
+          closestIntersection.object.userData?.vertexIndex !== undefined;
+        
+        this.selectObject(closestIntersection.object);
         // this.processEventListener('onSelect', [intersection]);
       }else{
         this.selectObject(undefined);
@@ -887,6 +890,12 @@ export class UI3DRenderer extends EventListenerModel {
     if(!object || this.disableSelection){
       this.selectionBox.visible = false;
       this.processEventListener('onSelect', [undefined]);
+      return;
+    }
+
+    // Check if this is a vertex helper - if so, pass it through directly
+    if(object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined){
+      this.processEventListener('onSelect', [object]);
       return;
     }
 

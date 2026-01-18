@@ -946,6 +946,43 @@ export class ForgeArea extends ForgeGameObject{
     return are;
   }
 
+  update(delta: number = 0){
+    // Update all game objects
+    for(const room of this.rooms){
+      room.update(delta);
+    }
+    for(const creature of this.creatures){
+      creature.update(delta);
+    }
+    for(const camera of this.cameras){
+      camera.update(delta);
+    }
+    for(const door of this.doors){
+      door.update(delta);
+    }
+    for(const encounter of this.encounters){
+      encounter.update(delta);
+    }
+    for(const item of this.items){
+      item.update(delta);
+    }
+    for(const placeable of this.placeables){
+      placeable.update(delta);
+    }
+    for(const sound of this.sounds){
+      sound.update(delta);
+    }
+    for(const store of this.stores){
+      store.update(delta);
+    }
+    for(const trigger of this.triggers){
+      trigger.update(delta);
+    }
+    for(const waypoint of this.waypoints){
+      waypoint.update(delta);
+    }
+  }
+
   exportToGIT(){
     const git = new KotOR.GFFObject();
     git.FileType = 'GIT ';

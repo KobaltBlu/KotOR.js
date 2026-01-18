@@ -63,6 +63,10 @@ export class ForgeGameObject extends EventListenerModel {
     
   }
 
+  update(delta: number = 0){
+    // Stub method to be overridden by child classes
+  }
+
   updateBoundingBox(){
     this.box.setFromObject(this.container);
   }
