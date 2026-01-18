@@ -477,13 +477,25 @@ export class TabModuleEditorState extends TabState {
     this.openBlueprintBrowserForType('utc');
   }
 
+  cloneGameObject(gameObject: ForgeGameObject){
+    if(!gameObject || !this.module?.area){
+      return;
+    }
+    const gameObjectType = this.getGameObjectTypeFromGameObject(gameObject);
+    if(!gameObjectType){
+      return;
+    }
+    const resref = gameObject.templateResRef;
+    const resType = gameObject.templateResType;
+    this.setGameObjectControlOptions(gameObjectType, resref, resType);
+  }
+
   openBlueprintBrowserForType(blueprintType: BlueprintType){
     const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint, type) => {
       // Map blueprint type to GameObjectType
       const gameObjectType = this.getGameObjectTypeFromBlueprintType(type);
       if(gameObjectType){
         this.setGameObjectControlOptions(gameObjectType, blueprint.resref, type);
-        this.processEventListener('onBlueprintSelected', [blueprint, type, gameObjectType]);
       }
     });
     modal.attachToModalManager(ForgeState.modalManager);
@@ -509,6 +521,21 @@ export class TabModuleEditorState extends TabState {
       'utw': GameObjectType.WAYPOINT,
     };
     return mapping[blueprintType];
+  }
+
+  getGameObjectTypeFromGameObject(gameObject: ForgeGameObject): GameObjectType | undefined {
+    if(gameObject instanceof ForgeCreature) return GameObjectType.CREATURE;
+    if(gameObject instanceof ForgeDoor) return GameObjectType.DOOR;
+    if(gameObject instanceof ForgeEncounter) return GameObjectType.ENCOUNTER;
+    if(gameObject instanceof ForgeItem) return GameObjectType.ITEM;
+    if(gameObject instanceof ForgePlaceable) return GameObjectType.PLACEABLE;
+    if(gameObject instanceof ForgeStore) return GameObjectType.STORE;
+    if(gameObject instanceof ForgeTrigger) return GameObjectType.TRIGGER;
+    if(gameObject instanceof ForgeWaypoint) return GameObjectType.WAYPOINT;
+    if(gameObject instanceof ForgeCamera) return GameObjectType.CAMERA;
+    if(gameObject instanceof ForgeRoom) return GameObjectType.ROOM;
+    if(gameObject instanceof ForgeSound) return GameObjectType.SOUND;
+    return undefined;
   }
 
   getResourceTypeForGameObjectType(gameObjectType: GameObjectType): typeof KotOR.ResourceTypes {

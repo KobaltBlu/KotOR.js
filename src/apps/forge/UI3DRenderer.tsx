@@ -333,6 +333,12 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
+  lookAtObject(object?: THREE.Object3D) {
+    if(!object || !this.camera || !this.orbitControls) return;
+    this.orbitControls.target.copy(object.position);
+    this.orbitControls.update();
+  }
+
   reorientCamera(view: CameraView) {
     console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;

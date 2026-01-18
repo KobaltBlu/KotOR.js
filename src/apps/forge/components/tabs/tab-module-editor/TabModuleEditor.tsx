@@ -272,6 +272,37 @@ export const TabModuleEditor = function(props: BaseTabProps){
         }
       ];
 
+      if(tab.selectedGameObject){
+        contextMenuItems.push({
+          id: 'selected-game-object',
+          label: 'Selected Object',
+          submenu: [
+            {
+              id: 'delete-game-object',
+              label: 'Delete',
+              onClick: () => {
+                tab.module?.area?.detachObject(tab.selectedGameObject!);
+                tab.selectGameObject(undefined);
+              }
+            },
+            {
+              id: 'focus-game-object',
+              label: 'Focus',
+              onClick: () => {
+                tab.ui3DRenderer.lookAtObject(tab.selectedGameObject?.container!);
+              }
+            },
+            {
+              id: 'duplicate-game-object',
+              label: 'Duplicate',
+              onClick: () => {
+                tab.cloneGameObject(tab.selectedGameObject!);
+              }
+            }
+          ]
+        });
+      }
+
       showContextMenu(e.clientX, e.clientY, contextMenuItems);
       
       // Reset tracking after showing menu
