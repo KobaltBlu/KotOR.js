@@ -50,12 +50,14 @@ export default tseslint.config(
         },
       ],
       '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
       
       // General code quality
-      'no-console': 'warn',
+      'no-console': 'off',
       'no-debugger': 'error',
       'no-unused-vars': 'off', // Use TypeScript version instead
+      'no-unused-args': 'off',
       
       // Import rules
       'import/order': [
@@ -69,7 +71,7 @@ export default tseslint.config(
             'sibling',
             'index',
           ],
-          'newlines-between': 'always',
+          'newlines-between': 'never',
           alphabetize: {
             order: 'asc',
             caseInsensitive: true,

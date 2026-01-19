@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import type { OdysseyController } from "../../odyssey/controllers/OdysseyController";
+import type { OdysseyModelNode } from "../../odyssey/OdysseyModelNode";
 import type { OdysseyEmitter3D } from "./OdysseyEmitter3D";
 import type { OdysseyLight3D } from "./OdysseyLight3D";
 import type { OdysseyModel3D } from "./OdysseyModel3D";
@@ -65,11 +65,11 @@ export class OdysseyObject3D extends THREE.Object3D {
     throw new Error("Method not implemented.");
   }
 
-  update(delta: number) {
+  update(_delta: number) {
     throw new Error("Method not implemented.");
   }
 
-  playAnimation(arg0: any, aLooping: boolean, arg2?: Function) {
+  playAnimation(_arg0: any, _aLooping: boolean, _arg2?: Function) {
     throw new Error("Method not implemented.");
   }
 
@@ -81,9 +81,9 @@ export class OdysseyObject3D extends THREE.Object3D {
     if(typeof callback == 'function')
       callback( this );
   
-    var children = this.children;
+    const children = this.children;
   
-    for ( var i = 0, l = children.length; i < l; i ++ ) {
+    for ( let i = 0, l = children.length; i < l; i ++ ) {
       if(typeof (children[ i ] as any).traverseIgnore === 'function'){
         (children[ i ] as any).traverseIgnore( ignoreName, callback );
       }

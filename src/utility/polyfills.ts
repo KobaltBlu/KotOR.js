@@ -43,7 +43,7 @@ if(typeof window.crypto.randomUUID !== 'function'){
 // Polyfills
 
 if ( typeof Number.EPSILON === 'undefined' ) {
-  // @ts-expect-error
+  // @ts-expect-error this is expected so we are ignoring the error
 	Number.EPSILON = Math.pow( 2, - 52 );
 }
 

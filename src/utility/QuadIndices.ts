@@ -42,8 +42,8 @@ const isBuffer = function(obj: any){
 };
 
 //source: https://github.com/Jam3/quad-indices
-let CW = [0, 2, 3]
-let CCW = [2, 1, 3]
+const CW = [0, 2, 3]
+const CCW = [2, 1, 3]
 
 export function createQuadElements(array: any|any[], opt?: number|any) {
   //if user didn't specify an output array
@@ -57,20 +57,20 @@ export function createQuadElements(array: any|any[], opt?: number|any) {
   else
     opt = opt || {}
 
-  let type = typeof opt.type === 'string' ? opt.type : 'uint16'
-  let count = typeof opt.count === 'number' ? opt.count : 1
-  let start = (opt.start || 0) 
+  const type = typeof opt.type === 'string' ? opt.type : 'uint16'
+  const count = typeof opt.count === 'number' ? opt.count : 1
+  const start = (opt.start || 0) 
 
-  let dir = opt.clockwise !== false ? CW : CCW,
-    a = dir[0], 
-    b = dir[1],
-    c = dir[2]
+  const dir = opt.clockwise !== false ? CW : CCW
+  const a = dir[0]
+  const b = dir[1]
+  const c = dir[2]
 
-  let numIndices = count * 6
+  const numIndices = count * 6
 
-  let indices = array || new (dtype(type))(numIndices)
+  const indices = array || new (dtype(type))(numIndices)
   for (let i = 0, j = 0; i < numIndices; i += 6, j += 4) {
-    let x = i + start
+    const x = i + start
     indices[x + 0] = j + 0
     indices[x + 1] = j + 1
     indices[x + 2] = j + 2

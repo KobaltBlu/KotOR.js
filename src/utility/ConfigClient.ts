@@ -25,7 +25,7 @@ export class ConfigClient {
     if(Array.isArray(path))
       path = path.join('.');
 
-    let parts = path.split('.');
+    const parts = path.split('.');
     let property = ConfigClient.options;
     for(let i = 0, len = parts.length; i < len; i++){
       if(typeof property[parts[i]] != 'undefined'){
@@ -51,9 +51,10 @@ export class ConfigClient {
       path = path.join('.');
 
     if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
-      let parts = path.split('.');
+      const parts = path.split('.');
       let scope = ConfigClient.options;
-      let i = 0, len = Math.max(parts.length-1, 0);
+      let i = 0;
+      const len = Math.max(parts.length-1, 0);
       for(i = 0; i < len; i++){
         if(scope[parts[i]]){
           scope = scope[parts[i]];
@@ -74,7 +75,7 @@ export class ConfigClient {
       }
 
       if(typeof scope[parts[len]] != 'undefined'){
-        let _old = JSON.parse(JSON.stringify(scope[parts[len]]));
+        const _old = JSON.parse(JSON.stringify(scope[parts[len]]));
         scope[parts[len]] = value;
         if(_old != value){
           // ConfigClient.triggerEvent(path, value, _old);
@@ -86,7 +87,7 @@ export class ConfigClient {
     }
   }
 
-  static save(onSave?: Function, silent?: boolean){
+  static save(_onSave?: Function, _silent?: boolean){
     set('app_settings', ConfigClient.options);
     localStorage.setItem('client-config-updated', JSON.stringify({
       time: Date.now(),

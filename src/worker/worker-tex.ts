@@ -1,26 +1,27 @@
-import { PixelManager } from "../utility/PixelManager";
+import { ITPCHeader } from "../interface/resource/ITPCHeader";
 import { TPCObject } from "../resource/TPCObject";
+import { PixelManager } from "../utility/PixelManager";
 
-function concatenate (resultConstructor: any, ...arrays: any) {
+function concatenate (...arrays: Uint8Array[]) {
   let totalLength = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     totalLength += arr.length;
   }
-  let result = new resultConstructor(totalLength);
+  const result = new Uint8Array(totalLength);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
   return result;
 }
 
-onmessage = function (e: any = {}){
+self.onmessage = function (e: MessageEvent){
   if(!e.data || !e.data.buffer) return;
-  let tpc = new TPCObject({
-    file: new Uint8Array(e.data.buffer)
+  const tpc = new TPCObject({
+    file: new Uint8Array(e.data.buffer as ArrayBuffer)
   });
-  tpc.header = e.data.Header;
+  tpc.header = e.data.Header as ITPCHeader;
 
   const dds = tpc.getDDS(false);
   let imagePixels = new Uint8Array(0);
@@ -46,12 +47,12 @@ onmessage = function (e: any = {}){
             break;
           }
         }
-        imagePixels = concatenate(Uint8Array, imagePixels, mipmap.data);
+        imagePixels = concatenate(imagePixels, mipmap.data);
       }
     }
   }else{
-    imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
+    imagePixels = concatenate(imagePixels, dds.mipmaps[0].data);
   }
   
-  postMessage(imagePixels, [imagePixels.buffer]);
+  self.postMessage(imagePixels, { transfer: [imagePixels.buffer] });
 }

@@ -330,12 +330,13 @@ export const ResourceTypes: any = {
   "bif" : 9998,
   "key" : 9999,
 
-  getKeyByValue: function( value: any ) {
-    for( let prop in this ) {
-      if( this.hasOwnProperty( prop ) ) {
-        if( this[ prop ] == value )
-          return prop;
-      }
+  getKeyByValue: function (value: any) {
+    for (const prop in this) {
+      if (!Object.prototype.hasOwnProperty.call(this, prop)) { continue; }
+      
+      if (this[prop] !== value) { continue; }
+
+      return prop;
     }
   }
 }

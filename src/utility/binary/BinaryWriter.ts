@@ -179,7 +179,7 @@ export class BinaryWriter {
    * @param char - The character to write.
    * @param encoding - The encoding of the character.
    */
-  writeChar(char: string, encoding='ascii'){
+  writeChar(char: string){
     if(!char.length){ return; }
 
     this.tmp8[0] = char.charCodeAt(0) & 0xFF;
@@ -192,7 +192,7 @@ export class BinaryWriter {
    * @param chars - The string to write.
    * @param encoding - The encoding of the string.
    */
-  writeChars(chars: any|any[] = [], encoding='ascii'){
+  writeChars(chars: any|any[] = []){
     if(typeof chars === 'string')
       chars = chars.split('');
 
@@ -211,8 +211,8 @@ export class BinaryWriter {
    * @param string - The string to write.
    * @param encoding - The encoding of the string.
    */
-  writeString(string: string, encoding='ascii'){
-    this.writeChars(string, encoding);
+  writeString(string: string){
+    this.writeChars(string);
   }
 
   /**
@@ -221,8 +221,8 @@ export class BinaryWriter {
    * @param string - The string to write.
    * @param encoding - The encoding of the string.
    */
-  writeStringNullTerminated(string: string, encoding='ascii'){
-    this.writeChars(string, encoding);
+  writeStringNullTerminated(string: string){
+    this.writeChars(string);
     this.writeByte(0);
   }
 

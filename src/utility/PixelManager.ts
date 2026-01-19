@@ -18,11 +18,11 @@ export class PixelManager {
     if(!(buffer instanceof Uint8Array))
       throw 'Buffer is not of type Uint8Array';
 
-    let sizeBuffer = width * height * channels;
-    let tempBuffer = new Uint8Array(sizeBuffer);
+    const sizeBuffer = width * height * channels;
+    const tempBuffer = new Uint8Array(sizeBuffer);
 
     for (let y = 0, destinationColumn = height - 1; y < height; ++y, --destinationColumn) {
-        let offset = y * width;
+        const offset = y * width;
 
 
         for (let x = 0; x < width; x++){

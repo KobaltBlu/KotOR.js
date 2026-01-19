@@ -16,7 +16,7 @@ class OdysseyServer {
    * This is the message handler for the server worker.
    */
   static HandleMessageFromClient(msg: IPCMessage){
-    console.log('Odyssey Server: IPC Message Received');
+    console.log('Odyssey Server: IPC Message Received', msg);
   }
 
   /**
