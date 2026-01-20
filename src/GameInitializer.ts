@@ -58,8 +58,8 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -80,8 +80,8 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -102,7 +102,7 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -328,7 +328,7 @@ export class GameInitializer {
   }
 
   static async LoadModules(){
-    let data_dir = 'modules';
+    const data_dir = 'modules';
     PerformanceMonitor.start('GameInitializer.LoadModules');
     try{
       const filenames = await GameFileSystem.readdir(data_dir);
@@ -419,9 +419,9 @@ export class GameInitializer {
     try{
       const files = await GameFileSystem.readdir(folder, {recursive: true})
       for(let i = 0, len = files.length; i < len; i++){
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1,  _parsed.ext.length);
+        const f = files[i];
+        const _parsed = path.parse(f);
+        const ext = _parsed.ext.substr(1,  _parsed.ext.length);
 
         if(typeof ResourceTypes[ext] != 'undefined'){
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
@@ -447,9 +447,9 @@ export class GameInitializer {
     try{
       const files = await GameFileSystem.readdir('Override', {recursive: false});
       for(let i = 0, len = files.length; i < len; i++){
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
+        const f = files[i];
+        const _parsed = path.parse(f);
+        const ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
         const resId = ResourceTypes[ext];
 
         if(typeof resId === 'undefined'){

@@ -706,9 +706,6 @@ export class NWScriptIRBuilder {
       case "assign":
         this.lowerAssign(expr as SemanticAssignNode, acc);
         break;
-      case "array_literal":
-        this.lowerArrayLiteral(expr as SemanticArrayLiteralNode, acc);
-        break;
       case "add":
       case "sub":
       case "mul":

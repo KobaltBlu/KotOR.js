@@ -188,7 +188,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }

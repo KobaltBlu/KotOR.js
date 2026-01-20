@@ -16,7 +16,7 @@ export class ERFManager {
   static ERFs: Map<string, ERFObject> = new Map();
 
   static Load( keyPaths: any[], onComplete?: Function  ){
-    let data_dir = 'modules';
+    const data_dir = 'modules';
     new AsyncLoop({
       array: keyPaths,
       onLoop: (erf_obj: any, asyncLoop: AsyncLoop) => {

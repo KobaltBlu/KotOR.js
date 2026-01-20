@@ -398,14 +398,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   update(delta: number = 0){
-    let roomCount = this.rooms.length;
-    let aoeCount = this.areaOfEffects.length;
-    let trigCount = this.triggers.length;
-    let encounterCount = this.encounters.length;
-    let creatureCount = this.creatures.length;
-    let placeableCount = this.placeables.length;
-    let doorCount = this.doors.length;
-    let partyCount = GameState.PartyManager.party.length;
+    const roomCount = this.rooms.length;
+    const aoeCount = this.areaOfEffects.length;
+    const trigCount = this.triggers.length;
+    const encounterCount = this.encounters.length;
+    const creatureCount = this.creatures.length;
+    const placeableCount = this.placeables.length;
+    const doorCount = this.doors.length;
+    const partyCount = GameState.PartyManager.party.length;
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -509,14 +509,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   updatePaused(delta: number = 0){
-    let roomCount = this.rooms.length;
-    let trigCount = this.triggers.length;
-    let encounterCount = this.encounters.length;
-    let aoeCount = this.areaOfEffects.length;
-    let creatureCount = this.creatures.length;
-    let placeableCount = this.placeables.length;
-    let doorCount = this.doors.length;
-    let partyCount = GameState.PartyManager.party.length;
+    const roomCount = this.rooms.length;
+    const trigCount = this.triggers.length;
+    const encounterCount = this.encounters.length;
+    const aoeCount = this.areaOfEffects.length;
+    const creatureCount = this.creatures.length;
+    const placeableCount = this.placeables.length;
+    const doorCount = this.doors.length;
+    const partyCount = GameState.PartyManager.party.length;
 
     //update triggers
     for(let i = 0; i < trigCount; i++){
@@ -770,7 +770,7 @@ export class ModuleArea extends ModuleObject {
   lastRoom: ModuleRoom = undefined;
   updateRoomVisibility(delta: number = 0){
     switch(GameState.Mode){
-      case EngineMode.DIALOG:
+      case EngineMode.DIALOG: {
         this.lastRoom = undefined;
         const roomInView: boolean[] = [];
         const pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
@@ -786,18 +786,20 @@ export class ModuleArea extends ModuleObject {
           }
           room.show(false);
         }
+      }
       break;
-      case EngineMode.MINIGAME:
+      case EngineMode.MINIGAME: {
         this.lastRoom = undefined;
         for(let i = 0, len = this.rooms.length; i < len; i++){
           const room = this.rooms[i];
           if(!room) continue;
           room.show(false);
         }
+      }
       break;
       case EngineMode.INGAME:
       case EngineMode.FREELOOK:
-      default:
+      default: {
         const player = GameState.getCurrentPlayer();
         if(!player){ return; }
         //Check to see if the player has moved to a new room
@@ -823,6 +825,7 @@ export class ModuleArea extends ModuleObject {
 
         //Show the current room and all of it's linked rooms
         player.room.show(true);
+      }
       break;
     }
   }
@@ -889,7 +892,7 @@ export class ModuleArea extends ModuleObject {
     if(this.are.RootNode.hasField('ObjectId'))
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
 
-    let rooms = this.are.getFieldByLabel('Rooms');
+    const rooms = this.are.getFieldByLabel('Rooms');
 
     this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
     this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
@@ -923,7 +926,7 @@ export class ModuleArea extends ModuleObject {
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
-    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     if(map){
       this.areaMap = AreaMap.FromStruct(map);
     }
@@ -969,7 +972,7 @@ export class ModuleArea extends ModuleObject {
 
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
-      let strt = rooms.childStructs[i];
+      const strt = rooms.childStructs[i];
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
@@ -1151,10 +1154,10 @@ export class ModuleArea extends ModuleObject {
 
     if(this.git.RootNode.hasField('SWVarTable')){
       console.log("SWVarTable", this.git);
-      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -1218,11 +1221,11 @@ export class ModuleArea extends ModuleObject {
       this.layout = new LYTObject(buffer);
 
       //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-      let sortedRooms = [];
+      const sortedRooms = [];
       for(let i = 0; i < this.layout.rooms.length; i++){
-        let roomLYT = this.layout.rooms[i];
+        const roomLYT = this.layout.rooms[i];
         for(let r = 0; r != this.rooms.length; r++ ){
-          let room = this.rooms[r];
+          const room = this.rooms[r];
           if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
             room.position.copy(roomLYT.position);
             sortedRooms.push(room);
@@ -1233,7 +1236,7 @@ export class ModuleArea extends ModuleObject {
       this.rooms = sortedRooms;
 
       for(let i = 0; i < this.layout.doorhooks.length; i++){
-        let _doorHook = this.layout.doorhooks[i];
+        const _doorHook = this.layout.doorhooks[i];
         this.doorhooks.push(_doorHook);
       }
 
@@ -1577,7 +1580,7 @@ export class ModuleArea extends ModuleObject {
           GameState.PartyManager.Player.model = model;
           GameState.PartyManager.Player.model.hasCollision = true;
           //let spawnLoc = this.getSpawnLocation();
-          let spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
+          const spawnLoc = GameState.PartyManager.GetSpawnLocation(GameState.PartyManager.Player);
           GameState.PartyManager.Player.position.copy(spawnLoc.position);
           GameState.PartyManager.Player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
 
@@ -1587,7 +1590,7 @@ export class ModuleArea extends ModuleObject {
           console.error(e);
         }
       }else{
-        let player = new ModulePlayer( this.getPlayerTemplate() );
+        const player = new ModulePlayer( this.getPlayerTemplate() );
         player.npcId = -1;
         
         player.load();
@@ -1604,7 +1607,7 @@ export class ModuleArea extends ModuleObject {
           model.userData.moduleObject = player;
           model.hasCollision = true;
 
-          let spawnLoc = this.getSpawnLocation();
+          const spawnLoc = this.getSpawnLocation();
 
           player.position.copy(spawnLoc.position);
           player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
@@ -1683,11 +1686,11 @@ export class ModuleArea extends ModuleObject {
 
     //Room Linking Pass 2
     for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
-      let room1 = this.rooms[i];
+      const room1 = this.rooms[i];
       //console.log(room1.linked_rooms);
       //Look for all rooms that can see this room
       for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
-        let room2 = this.rooms[j];
+        const room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ModuleRoom){
           const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
@@ -1809,13 +1812,13 @@ export class ModuleArea extends ModuleObject {
 
       let _distance = 1000000000;
       let _currentRoom = null;
-      let roomCenter = new THREE.Vector3();
+      const roomCenter = new THREE.Vector3();
       for(let i = 0; i < GameState.group.rooms.children.length; i++){
-        let room = GameState.group.rooms.children[i];
+        const room = GameState.group.rooms.children[i];
         if(room instanceof OdysseyModel3D){
           if(room.box.containsPoint(wpObj.position)){
             room.box.getCenter(roomCenter);
-            let distance = wpObj.position.distanceTo(roomCenter);
+            const distance = wpObj.position.distanceTo(roomCenter);
             if(distance < _distance){
               _distance = distance;
               _currentRoom = room;
@@ -1839,13 +1842,13 @@ export class ModuleArea extends ModuleObject {
         encounter.load();
         let _distance = 1000000000;
         let _currentRoom = null;
-        let roomCenter = new THREE.Vector3();
+        const roomCenter = new THREE.Vector3();
         for(let i = 0; i < GameState.group.rooms.children.length; i++){
-          let room = GameState.group.rooms.children[i];
+          const room = GameState.group.rooms.children[i];
           if(room instanceof OdysseyModel3D){
             if(room.box.containsPoint(encounter.mesh.position)){
               room.box.getCenter(roomCenter);
-              let distance = encounter.mesh.position.distanceTo(roomCenter);
+              const distance = encounter.mesh.position.distanceTo(roomCenter);
               if(distance < _distance){
                 _distance = distance;
                 _currentRoom = room;
@@ -1887,13 +1890,13 @@ export class ModuleArea extends ModuleObject {
         trig.load();
         let _distance = 1000000000;
         let _currentRoom = null;
-        let roomCenter = new THREE.Vector3();
+        const roomCenter = new THREE.Vector3();
         for(let i = 0; i < GameState.group.rooms.children.length; i++){
-          let room = GameState.group.rooms.children[i];
+          const room = GameState.group.rooms.children[i];
           if(room instanceof OdysseyModel3D){
             if(room.box.containsPoint(trig.mesh.position)){
               room.box.getCenter(roomCenter);
-              let distance = trig.mesh.position.distanceTo(roomCenter);
+              const distance = trig.mesh.position.distanceTo(roomCenter);
               if(distance < _distance){
                 _distance = distance;
                 _currentRoom = room;
@@ -1985,7 +1988,7 @@ export class ModuleArea extends ModuleObject {
    */
   async loadScripts(){
     console.log('ModuleArea.loadScripts');
-    for(let [key, resRef] of this.scriptResRefs){
+    for(const [key, resRef] of this.scriptResRefs){
       const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
       script.caller = this;
@@ -2085,7 +2088,7 @@ export class ModuleArea extends ModuleObject {
 
   getNearestWalkablePoint(point: THREE.Vector3, safeDistance = 1.5){
     let nearest = Infinity;
-    let nearest_point = point.clone();
+    const nearest_point = point.clone();
     let distance = 0;
     const tmpPoint = new THREE.Vector3();
 
@@ -2174,7 +2177,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   getAreaPropertiesStruct(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
@@ -2200,7 +2203,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   saveAreaListStruct(){
-    let areaStruct = new GFFStruct();
+    const areaStruct = new GFFStruct();
     areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).setValue(this.name);
     areaStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     //unescapable

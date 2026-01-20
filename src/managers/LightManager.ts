@@ -81,11 +81,11 @@ export class LightManager {
     //Point Lights
     for(let i = 0; i < LightManager.MAXLIGHTS; i++){
       
-      let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
+      const light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
       light.userData.animated = 0;
       light.userData.reclaimed = true;
       this.context.group.lights.add(light);
-      let helper = new THREE.PointLightHelper( light, 1 );
+      const helper = new THREE.PointLightHelper( light, 1 );
       light.visible = light.userData.helper = true;
       helper.color = light.color;
       light.userData.helper = helper;
@@ -98,12 +98,12 @@ export class LightManager {
     //Shadow Lights
     for(let i = 0; i < LightManager.MAXSHADOWLIGHTS; i++){
       
-      let light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
+      const light = new THREE.PointLight( 0xFFFFFF, 0, 0, 1 );
       light.castShadow = true;
       light.userData.animated = 0;
       light.userData.reclaimed = true;
       this.context.group.shadow_lights.add(light);
-      let helper = new THREE.PointLightHelper( light, 1 );
+      const helper = new THREE.PointLightHelper( light, 1 );
       light.visible = light.userData.helper = true;
       helper.color = light.color;
       light.userData.helper = helper;
@@ -143,7 +143,7 @@ export class LightManager {
   //Remove a OdysseyLight3D from the LightManager
   removeLight(light: OdysseyLight3D){
     if(light){
-      let idx = this.lights.indexOf(light);
+      const idx = this.lights.indexOf(light);
       if(idx >= 0){
         this.lights.splice(idx, 1);
         //If the light is currently attached to an active light, remove the reference so it will be reassigned
@@ -170,7 +170,7 @@ export class LightManager {
     if(!target) return;
     
     for(let i = 0, il = this.lights.length; i < il; i++){
-      let light = this.lights[i];
+      const light = this.lights[i];
       light.getWorldPosition(light.worldPosition);
       light.cameraDistance = target.position.distanceTo(light.worldPosition);
     }
@@ -194,7 +194,7 @@ export class LightManager {
     this.tmpLights = [];//this.lights.slice();
     //let ambientLights = this.lights.filter(light => light.odysseyModel.visible && (light.isAmbient || (light.odysseyModelNode.radius*light.odysseyModelNode.multiplier) > 50));
     //let shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
-    let fadingLights = this.lights.filter(light => light.odysseyModel.visible);
+    const fadingLights = this.lights.filter(light => light.odysseyModel.visible);
     
     //ambientLights.sort(this.sortLights).reverse();
     //shadowLights.sort(this.sortLights);
@@ -214,7 +214,7 @@ export class LightManager {
     //Get the lights that are trying to spawn this frame
     for( let i = 0, il = fadingLights.length; i < il; i++ ){
 
-      let light = fadingLights[i];
+      const light = fadingLights[i];
 
       if(!this.canShowLight(light))
         continue;
@@ -233,7 +233,7 @@ export class LightManager {
 
     //Last ditch effort to make sure lights don't get duplicated
     for(let i = 0, il = LightManager.MAXLIGHTS; i < il; i++){
-      let lightNode = this.light_pool[i];
+      const lightNode = this.light_pool[i];
       if(!lightNode.userData.reclaimed && lightNode.userData.odysseyLight && !this.lightsShown.has(lightNode.userData.odysseyLight.uuid)){
         this.lightsShown.add(lightNode.userData.odysseyLight.uuid);
       }
@@ -248,7 +248,7 @@ export class LightManager {
       if(this.spawned >= LightManager.MAXLIGHTS)
         break;
 
-      let odysseyLight = this.new_lights[i];
+      const odysseyLight = this.new_lights[i];
       let lightNode = undefined;//this.light_pool[this.spawned];
       for(let i2 = 0, il2 = LightManager.MAXLIGHTS; i2 < il2; i2++){
         if(this.light_pool[i2].userData.reclaimed == true){
@@ -341,8 +341,8 @@ export class LightManager {
     let animatedLightsNeedUpdate = false;
     let animatedLightIndex = 0;
     for( let i = 0, il = this.light_pool.length; i < il; i++ ){
-      let lightNode = this.light_pool[i];
-      let light = this.light_pool[i].userData.odysseyLight;
+      const lightNode = this.light_pool[i];
+      const light = this.light_pool[i].userData.odysseyLight;
       if(!light || !light.isAnimated){ continue; }
 
       lightNode.decay = LightManager.DECAY;
@@ -380,13 +380,13 @@ export class LightManager {
 
     this.spawned = 0;
 
-    let lightsUsed: Set<string> = new Set<string>();
+    const lightsUsed: Set<string> = new Set<string>();
 
     const maxLights = LightManager.MAXLIGHTS;
     for(let i = 0; i < maxLights; i++){
       
       //Get the THREE Light Object from the light_pool
-      let lightNode = this.light_pool[i];
+      const lightNode = this.light_pool[i];
       if(!lightNode){ continue; }
       
       //Get the assigned OdysseyLight3D
@@ -511,7 +511,7 @@ export class LightManager {
 
   updateShadowLights(delta = 0){
     this.tmpLights = [];//this.lights.slice();
-    let shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
+    const shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
     shadowLights.sort(this.sortLights);
 
     this.new_lights = [];
@@ -521,7 +521,7 @@ export class LightManager {
     //Get the lights that are trying to spawn this frame
     for( let i = 0, il = shadowLights.length; i < il; i++ ){
 
-      let odysseyLight = shadowLights[i];
+      const odysseyLight = shadowLights[i];
 
       if(!this.canShowLight(odysseyLight))
         continue;
@@ -548,8 +548,8 @@ export class LightManager {
       if(this.spawned_shadow >= LightManager.MAXSHADOWLIGHTS)
         break;
 
-      let odysseyLight = this.new_lights[i];
-      let lightNode = this.shadow_pool[this.spawned_shadow];
+      const odysseyLight = this.new_lights[i];
+      const lightNode = this.shadow_pool[this.spawned_shadow];
 
       //The only way this wouldn't be true is if we have a different number of lights in our shadow_pool than the
       //engine maximum light number which should be 8 most of the time.
@@ -606,8 +606,8 @@ export class LightManager {
     }
 
     for( let i = 0, il = this.shadow_pool.length; i < il; i++ ){
-      let lightNode = this.shadow_pool[i];
-      let light = this.shadow_pool[i].userData.odysseyLight as OdysseyLight3D;
+      const lightNode = this.shadow_pool[i];
+      const light = this.shadow_pool[i].userData.odysseyLight as OdysseyLight3D;
       if(light && light.isAnimated){
         lightNode.decay = LightManager.DECAY;
         lightNode.distance = Math.abs(light.getRadius() );
@@ -625,7 +625,7 @@ export class LightManager {
     for(let i = 0, il = LightManager.MAXSHADOWLIGHTS; i < il; i++){
       
       //Get the THREE Light Object from the shadow_pool
-      let lightNode = this.shadow_pool[i];
+      const lightNode = this.shadow_pool[i];
       const odysseyLight = lightNode.userData.odysseyLight as OdysseyLight3D;
 
       if(odysseyLight && odysseyLight.isFading){

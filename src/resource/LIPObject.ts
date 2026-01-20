@@ -1,4 +1,4 @@
-import { ILIPHeader } from "../interface/resource/ILIPHeader";
+// import { ILIPHeader } from "../interface/resource/ILIPHeader";
 import { ILIPKeyFrame } from "../interface/resource/ILIPKeyFrame";
 import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../utility/binary/BinaryWriter";
@@ -99,10 +99,13 @@ export class LIPObject {
   readBinary(buffer: Uint8Array, onComplete?: Function){
     if(buffer instanceof Uint8Array){
 
-      let reader = new BinaryReader(buffer);
+      const reader = new BinaryReader(buffer);
 
       const fileType = reader.readChars(4);
       const fileVersion = reader.readChars(4);
+      if(fileType != LIPObject.FILE_TYPE && fileVersion != LIPObject.FILE_VER){
+        console.error('LIPObject', 'Invalid LIP file type or version', fileType, fileVersion);
+      }
       this.duration = reader.readSingle();
       const entryCount = reader.readUInt32();
 
@@ -125,7 +128,7 @@ export class LIPObject {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0){
-    let keyframe: ILIPKeyFrame = {
+    const keyframe: ILIPKeyFrame = {
       uuid: crypto.randomUUID(),
       time: time,
       shape: shape,
@@ -139,7 +142,7 @@ export class LIPObject {
     if(model){
 
       let lastFrame = 0;
-      let framesLen = this.keyframes.length;
+      const framesLen = this.keyframes.length;
       for(let f = 0; f < framesLen; f++){
         if(this.keyframes[f].time <= this.elapsed){
           lastFrame = f;
@@ -180,8 +183,8 @@ export class LIPObject {
 
         for(let i = 0; i < this.anim.nodes.length; i++){
 
-          let node = this.anim.nodes[i];
-          let modelNode = model.nodes.get(node.name);
+          const node = this.anim.nodes[i];
+          const modelNode = model.nodes.get(node.name);
       
           if(typeof modelNode != 'undefined'){
             
@@ -234,7 +237,7 @@ export class LIPObject {
         if(this.anim){
           for(let i = 0; i < this.anim.nodes.length; i++){
   
-            let modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
+            const modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
             if(typeof modelNode != 'undefined'){
               modelNode.lipping = false;
             }
@@ -254,7 +257,7 @@ export class LIPObject {
   }
 
   toExportBuffer(): Uint8Array {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     //Write the header to the buffer
     writer.writeChars(LIPObject.FILE_TYPE);
@@ -264,7 +267,7 @@ export class LIPObject {
 
     //Write the keyframe data to the buffer
     for (let i = 0; i < this.keyframes.length; i++) {
-      let keyframe = this.keyframes[i];
+      const keyframe = this.keyframes[i];
       writer.writeSingle(keyframe.time);
       writer.writeByte(keyframe.shape);
     }
@@ -290,7 +293,7 @@ export class LIPObject {
     }
   }
 
-  async exportAs( onComplete?: Function ){
+  async exportAs( _onComplete?: Function ){
 
     // let payload = await dialog.showSaveDialog({
     //   title: 'Export LIP',
@@ -313,14 +316,13 @@ export class LIPObject {
   }
 
   static async Load(resref: string = ''): Promise<LIPObject>{
-    return new Promise<LIPObject|any>( (resolve, reject) => {
-      ResourceLoader.loadResource(ResourceTypes['lip'], resref).then((buffer: Uint8Array) => {
-        resolve(new LIPObject(buffer));
-      }).catch( (e) => {
-        console.error(e);
-        resolve(undefined);
-      });
-    });
+    try{
+      const buffer = await ResourceLoader.loadResource(ResourceTypes['lip'], resref);
+      return new LIPObject(buffer);
+    }catch(e){
+      console.error('LIPObject', 'Error loading LIP', e);
+      return undefined;
+    }
   }
 
   static GetLIPShapeLabels(): string[] {

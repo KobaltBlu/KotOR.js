@@ -395,7 +395,7 @@ export class Action {
    * @returns The parameter value, converted to appropriate type
    */
   getParameter<T>(index = 0): T {
-    let param = this.parameters[index];
+    const param = this.parameters[index];
     if (!param) { return; }
     switch (param.type) {
       case ActionParameterType.DWORD:

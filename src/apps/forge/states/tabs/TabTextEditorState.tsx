@@ -103,7 +103,7 @@ export class TabTextEditorState extends TabState {
           });
         }else{
           file.readFile().then( (response) => {
-            let decoder = new TextDecoder('utf8');
+            const decoder = new TextDecoder('utf8');
             this.code = decoder.decode(response.buffer);
             this.triggerLinterTimeout();
             
@@ -376,7 +376,7 @@ export class TabTextEditorState extends TabState {
       console.log('AST', ForgeState.nwScriptParser.toJSON());
       const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program as any);
       console.log('compile', 'compiling...');
-      let buffer = nwScriptCompiler.compile();
+      const buffer = nwScriptCompiler.compile();
       if(buffer){
         this.ncs = buffer;
         console.log('compile', 'success');

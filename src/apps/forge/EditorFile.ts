@@ -324,7 +324,7 @@ export class EditorFile extends EventListenerModel {
                         }
                         
                         if(granted){
-                          let file = await this.handle.getFile();
+                          const file = await this.handle.getFile();
                           this.buffer = new Uint8Array( await file.arrayBuffer() );
                           resolve({
                             buffer: this.buffer,
@@ -490,7 +490,7 @@ export class EditorFile extends EventListenerModel {
                     return;
                   }
 
-                  let file = await this.handle.getFile();
+                  const file = await this.handle.getFile();
                   if(file){
                     this.buffer = new Uint8Array( await file.arrayBuffer() );
                   }
@@ -513,7 +513,7 @@ export class EditorFile extends EventListenerModel {
                     return;
                   }
                   
-                  let file2 = await this.handle2.getFile();
+                  const file2 = await this.handle2.getFile();
                   if(file2){
                     this.buffer2 = new Uint8Array( await file2.arrayBuffer() );
                   }

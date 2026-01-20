@@ -159,7 +159,7 @@ export class CollisionData {
           continue;
         }
 
-        let position = this.object.position.clone().add(this.object.forceVector);
+        const position = this.object.position.clone().add(this.object.forceVector);
         
         if(creature == this.object || creature.isDead())
           continue;
@@ -167,12 +167,12 @@ export class CollisionData {
         if(!creature.getAppearance())
           continue;
 
-        let distance = position.distanceTo(creature.position);
+        const distance = position.distanceTo(creature.position);
         if( distance >= hitdist ){
           continue;
         }
 
-        let pDistance = hitdist - distance;
+        const pDistance = hitdist - distance;
         this.scratchVec3.set( pDistance * pd_cos, pDistance * pd_sin, 0 );
         position.sub(this.scratchVec3);
         
@@ -180,8 +180,8 @@ export class CollisionData {
           continue;
         }
 
-        let ahead = position.clone().add(this.object.forceVector.clone().normalize());
-        let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
+        const ahead = position.clone().add(this.object.forceVector.clone().normalize());
+        const avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
         avoidance_force.z = 0;
         this.object.forceVector.copy(avoidance_force);
         
@@ -200,18 +200,18 @@ export class CollisionData {
           continue;
         }
 
-        let position = this.object.position.clone().add(this.object.forceVector);
+        const position = this.object.position.clone().add(this.object.forceVector);
 
         if(creature == this.object || creature.isDead()){
           continue;
         }
 
-        let distance = position.distanceTo(creature.position);
+        const distance = position.distanceTo(creature.position);
         if(distance >= hitdist){
           continue;
         }
 
-        let pDistance = hitdist - distance;
+        const pDistance = hitdist - distance;
         this.scratchVec3.set(
           pDistance * Math.cos(this.object.rotation.z + Math.PI/2), 
           pDistance * Math.sin(this.object.rotation.z + Math.PI/2), 
@@ -222,8 +222,8 @@ export class CollisionData {
           continue;
         }
 
-        let ahead = position.clone().add(this.object.forceVector.clone().normalize());
-        let avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
+        const ahead = position.clone().add(this.object.forceVector.clone().normalize());
+        const avoidance_force = ahead.clone().sub(creature.position).normalize().multiplyScalar(0.5*delta);
         avoidance_force.z = 0;
         this.object.forceVector.copy(avoidance_force);
         break;
@@ -442,7 +442,7 @@ export class CollisionData {
     this.lastGroundFace = this.groundFace;
     this.groundFace = undefined;
     if(this.object.room){
-      let face = this.object.room.findWalkableFace(this.object);
+      const face = this.object.room.findWalkableFace(this.object);
       if(!face){
         this.findWalkableFace();
       }
@@ -462,7 +462,7 @@ export class CollisionData {
   }
 
   findWalkableFace(object?: ModuleObject){
-    let objectPos = this.object.position;
+    const objectPos = this.object.position;
     let face;
     let room;
     if(!this.object.area){

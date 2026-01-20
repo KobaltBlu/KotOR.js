@@ -93,7 +93,7 @@ export class KEYObject {
 
   getFileKey(ResRef: string, ResType: number){
     for(let i = 0; i < this.keys.length; i++){
-      let key = this.keys[i];
+      const key = this.keys[i];
       if ( key.resRef == ResRef && key.resType == ResType){
         return key;
       }
@@ -103,7 +103,7 @@ export class KEYObject {
 
   getFileKeyByRes(Res: IBIFResource): IKEYEntry {
     for(let i = 0; i < this.keys.length; i++){
-      let key = this.keys[i];
+      const key = this.keys[i];
       if ( key.resId == Res.Id && key.resType == Res.resType){
         return key;
       }

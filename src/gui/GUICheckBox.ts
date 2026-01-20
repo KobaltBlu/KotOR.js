@@ -198,10 +198,10 @@ export class GUICheckBox extends GUIControl{
       //Selected
       this.hasSelected = control.hasField('SELECTED');
       if(this.hasSelected){
-        let selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
+        const selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
 
         if(selected.hasField('COLOR')){
-          let color = selected.getFieldByLabel('COLOR').getVector();
+          const color = selected.getFieldByLabel('COLOR').getVector();
           this.borderSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -225,10 +225,10 @@ export class GUICheckBox extends GUIControl{
       //Highlight Selected
       this.hashighlightSelected = control.hasField('HILIGHTSELECTED');
       if(this.hashighlightSelected){
-        let highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
+        const highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
 
         if(highlightSelected.hasField('COLOR')){
-          let color = highlightSelected.getFieldByLabel('COLOR').getVector();
+          const color = highlightSelected.getFieldByLabel('COLOR').getVector();
           this.highlightSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -266,7 +266,7 @@ export class GUICheckBox extends GUIControl{
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -329,7 +329,7 @@ export class GUICheckBox extends GUIControl{
         if(texture == null){
           this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
         }
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -358,7 +358,7 @@ export class GUICheckBox extends GUIControl{
 
     this.addEventListener( 'mouseUp', () => { });
 
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
@@ -380,7 +380,7 @@ export class GUICheckBox extends GUIControl{
 
   buildFill(){
     super.buildFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
@@ -388,7 +388,7 @@ export class GUICheckBox extends GUIControl{
 
   buildHighlightFill(){
     super.buildHighlightFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
@@ -405,7 +405,7 @@ export class GUICheckBox extends GUIControl{
     this.highlight.fill.mesh.visible = false;
     this.highlightSelected.fill.mesh.visible = false;
 
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);

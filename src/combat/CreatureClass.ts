@@ -120,7 +120,7 @@ export class CreatureClass {
 
   isFeatAvailable( feat: any ){
     if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      const status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
         return false;
       }
@@ -134,7 +134,7 @@ export class CreatureClass {
 
   getFeatStatus( feat: any ){
     if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
+      const status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
       if(isNaN(status)){
         return false;
       }
@@ -146,7 +146,7 @@ export class CreatureClass {
 
   getFeatGrantedLevel( feat: any ){
     if(typeof feat != 'undefined'){
-      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
+      const granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
       if(isNaN(granted)){
         return -1;
       }
@@ -158,14 +158,14 @@ export class CreatureClass {
 
   static FromCreatureClassStruct(cls_struct: GFFStruct){
     if(typeof cls_struct != 'undefined'){
-      let cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
+      const cls = new CreatureClass(cls_struct.getFieldByLabel('Class').getValue());
       cls.setLevel(cls_struct.getFieldByLabel('ClassLevel').getValue());
-      let known_struct = cls_struct.getFieldByLabel('KnownList0');
+      const known_struct = cls_struct.getFieldByLabel('KnownList0');
       if(known_struct){
-        let known_spell_structs = known_struct.getChildStructs();
+        const known_spell_structs = known_struct.getChildStructs();
         for(let i = 0; i < known_spell_structs.length; i++){
 
-          let known_spell_struct = known_spell_structs[i];
+          const known_spell_struct = known_spell_structs[i];
           let spell = undefined;
 
           if(known_spell_struct.hasField('Spell')){
@@ -289,12 +289,12 @@ export class CreatureClass {
       }
     }
 
-    let featGain = GameState.SWRuleSet.featGains;
+    const featGain = GameState.SWRuleSet.featGains;
     if(featGain){
       this.featGainPoints = featGain.getRegular(this.featgain);
     }
 
-    let spellGain = GameState.SWRuleSet.spellGains;
+    const spellGain = GameState.SWRuleSet.spellGains;
     if(spellGain){
       this.spellGainPoints = spellGain.getSpellGain(this.spellgaintable);
     }
@@ -316,20 +316,20 @@ export class CreatureClass {
   }
 
   save(){
-    let _class = new GFFStruct(2);
+    const _class = new GFFStruct(2);
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
     //Spell Caster specific data
     if(this.spellcaster){
       //Not sure what this is or if it is used in KOTOR
-      let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
-      let spellsPerDayStruct = new GFFStruct(17767);
+      const spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
+      const spellsPerDayStruct = new GFFStruct(17767);
       spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").setValue(0));
       spellsPerDay.addChildStruct(spellsPerDayStruct);
 
       //List of known spells
-      let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      const knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){
         knownList0.addChildStruct(this.spells[i].save());
       }

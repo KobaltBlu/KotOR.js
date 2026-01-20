@@ -89,7 +89,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToLocalizedString);
 
     for (let i = 0; i < this.header.languageCount; i++) {
-      let language: IERFLanguage = {} as IERFLanguage;
+      const language: IERFLanguage = {} as IERFLanguage;
       language.languageId = this.reader.readUInt32();
       language.stringSize = this.reader.readUInt32();
       language.value = this.reader.readChars(language.stringSize);
@@ -99,7 +99,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToKeyList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let key: IERFKeyEntry = {} as IERFKeyEntry;
+      const key: IERFKeyEntry = {} as IERFKeyEntry;
       key.resRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
       key.resId = this.reader.readUInt32();
       key.resType = this.reader.readUInt16();
@@ -110,7 +110,7 @@ export class ERFObject {
     this.reader.seek(this.header.offsetToResourceList);
 
     for (let i = 0; i < this.header.entryCount; i++) {
-      let resource: IERFResource = {} as IERFResource;
+      const resource: IERFResource = {} as IERFResource;
       resource.offset = this.reader.readUInt32();
       resource.size = this.reader.readUInt32();
       this.resources.push(resource);
@@ -154,7 +154,7 @@ export class ERFObject {
   getResource(resRef: string, resType: number): IERFResource{
     resRef = resRef.toLowerCase();
     for(let i = 0; i < this.keyList.length; i++){
-      let key = this.keyList[i];
+      const key = this.keyList[i];
       if (key.resRef == resRef && key.resType == resType) {
         return this.resources[key.resId];
       }
@@ -221,7 +221,7 @@ export class ERFObject {
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
-      let buffer = new Uint8Array(resource.size);
+      const buffer = new Uint8Array(resource.size);
       const fd = await GameFileSystem.open(this.resource_path, 'r');
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
       // console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
@@ -257,7 +257,7 @@ export class ERFObject {
         return;
       }
 
-      let buffer = this.getExportBuffer();
+      const buffer = this.getExportBuffer();
       GameFileSystem.writeFile( file, buffer ).then( () => {
         if(typeof onExport === 'function')
           onExport();
@@ -275,10 +275,10 @@ export class ERFObject {
 
   getExportBuffer(){
 
-    let output = new BinaryWriter();
+    const output = new BinaryWriter();
 
-    let keyEleLen = 24;
-    let resEleLen = 8;
+    const keyEleLen = 24;
+    const resEleLen = 8;
     let locStringsLen = 0;
 
     for(let i = 0; i < this.localizedStrings.length; i++){

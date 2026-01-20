@@ -165,9 +165,9 @@ export class BIKObject {
   }
 
   initVideoTexture(){
-    let yBuffer = new Uint8Array(this.width * this.height);
-    let uBuffer = new Uint8Array(this.width/2 * this.height/2);
-    let vBuffer = new Uint8Array(this.width/2 * this.height/2);
+    const yBuffer = new Uint8Array(this.width * this.height);
+    const uBuffer = new Uint8Array(this.width/2 * this.height/2);
+    const vBuffer = new Uint8Array(this.width/2 * this.height/2);
 
     uBuffer.fill(128);
     vBuffer.fill(128);
@@ -196,7 +196,7 @@ export class BIKObject {
     this.material.uniformsNeedsUpdate = true;
   }
 
-  async play(file: string = '', onComplete?: Function) {
+  async play(_file: string = '', _onComplete?: Function) {
     return;
     // Beamcoder has been removed from the project.
     // I plan on writing a bink decoder at some point,
@@ -282,9 +282,9 @@ export class BIKObject {
 
   updateFrame(frame: any){
     if(frame){
-      let ySize = frame.linesize[0] * this.height;
-      let uSize = frame.linesize[1] * this.height/2;
-      let vSize = frame.linesize[2] * this.height/2;
+      const _ySize = frame.linesize[0] * this.height;
+      const _uSize = frame.linesize[1] * this.height/2;
+      const _vSize = frame.linesize[2] * this.height/2;
 
       this.yTex.image.data = new Uint8Array(frame.data[0]);
       this.uTex.image.data = new Uint8Array(frame.data[1]);
@@ -316,7 +316,7 @@ export class BIKObject {
     this.nextPacket = await this.demuxer.read(); // Read next frame. Note: returns null for EOF
     if (this.nextPacket && this.nextPacket.stream_index == 0) {
       //VIDEO_FRAME
-      let frames = await this.video_decoder.decode(this.nextPacket);
+      const frames = await this.video_decoder.decode(this.nextPacket);
       if(frames.frames.length){
         for(let i = 0, len = frames.frames.length; i < len; i++){
           this.frame_array.push(frames.frames[i]);
@@ -324,10 +324,10 @@ export class BIKObject {
       }
     }else if (this.nextPacket && this.nextPacket.stream_index == 1) {
       //AUDIO
-      let frames = await this.audio_decoder.decode(this.nextPacket);
+      const frames = await this.audio_decoder.decode(this.nextPacket);
       if(frames.frames.length){
-        let frameLength = frames.frames[0].data[0].length/4;
-        let buffer = this.audioCtx.createBuffer(this.audio.channels, frames.frames.length * frameLength, this.audio.playback_rate);
+        const frameLength = frames.frames[0].data[0].length/4;
+        const buffer = this.audioCtx.createBuffer(this.audio.channels, frames.frames.length * frameLength, this.audio.playback_rate);
 
         for(let i = 0, len = frames.frames.length; i < len; i++){
           for(let channel = 0; channel < this.audio.channels; channel++){
@@ -360,7 +360,7 @@ export class BIKObject {
 
   async fetchNextPackets(){
     if(this.frame_array.length < this.min_buffer){
-      let count = this.max_buffer - this.frame_array.length;
+      const count = this.max_buffer - this.frame_array.length;
       for(let i = 0; i < count; i++){
         await this.decodeNextPacket();
         if(this.demuxer.streams.length == 2)
@@ -371,7 +371,7 @@ export class BIKObject {
 
   async update(delta = 0){
     this.playbackPosition += delta;
-    let frameTimer = (this.fps/1000);
+    const frameTimer = (this.fps/1000);
     
     //Process audio buffer queue
     this.processAudioQueue();
@@ -392,7 +392,7 @@ export class BIKObject {
       let buffered = this.audio_array.shift();;
 
       while(this.audio_array.length){
-        let nextBuffer = this.audio_array.shift();
+        const nextBuffer = this.audio_array.shift();
         buffered = this.appendBuffer(buffered, nextBuffer);
 
         //let current_time = this.audioCtx.currentTime;
@@ -405,7 +405,7 @@ export class BIKObject {
         // this.nextAudioTime = this.nextAudioTime + sampleNode.buffer.duration;
       }
 
-      let bufferedNode = this.audioCtx.createBufferSource();
+      const bufferedNode = this.audioCtx.createBufferSource();
       bufferedNode.buffer = buffered;
       bufferedNode.loop = false;
       bufferedNode.connect( AudioEngine.movieChannel.getGainNode() );
@@ -414,7 +414,7 @@ export class BIKObject {
         bufferedNode.disconnect();
       };
 
-      let current_time = this.audioCtx.currentTime;
+      const current_time = this.audioCtx.currentTime;
       if(!this.nextAudioTime)
         this.nextAudioTime = current_time;
 
@@ -425,10 +425,10 @@ export class BIKObject {
 
   //https://stackoverflow.com/questions/14143652/web-audio-api-append-concatenate-different-audiobuffers-and-play-them-as-one-son
   appendBuffer(buffer1: any, buffer2: any) {
-    let numberOfChannels = Math.min( buffer1.numberOfChannels, buffer2.numberOfChannels );
-    let tmp = this.audioCtx.createBuffer( numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate );
+    const numberOfChannels = Math.min( buffer1.numberOfChannels, buffer2.numberOfChannels );
+    const tmp = this.audioCtx.createBuffer( numberOfChannels, (buffer1.length + buffer2.length), buffer1.sampleRate );
     for (let i=0; i<numberOfChannels; i++) {
-      let channel = tmp.getChannelData(i);
+      const channel = tmp.getChannelData(i);
       channel.set( buffer1.getChannelData(i), 0);
       channel.set( buffer2.getChannelData(i), buffer1.length);
     }
@@ -449,9 +449,10 @@ export class BIKObject {
 
   toFloat32Array(channel: Uint8Array){
     if(channel instanceof Uint8Array){
-      let i, l = channel.length/4;
-      let buffer = new Buffer(channel);
-      let float32 = new Float32Array(l);
+      let i;
+      const l = channel.length/4;
+      const buffer = new Buffer(channel);
+      const float32 = new Float32Array(l);
 
       for(i = 0; i < l; i++){
         float32[i] = buffer.readFloatLE(i*4);

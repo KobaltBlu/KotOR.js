@@ -95,7 +95,7 @@ export class InGameComputer extends GameMenu {
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
     this.LB_MESSAGE.clearItems();
-    if (!!entry.getCompiledString()) {
+    if (entry.getCompiledString()) {
       this.LB_MESSAGE.addItem(entry.getCompiledString());
     }
     this.LB_MESSAGE.updateList();

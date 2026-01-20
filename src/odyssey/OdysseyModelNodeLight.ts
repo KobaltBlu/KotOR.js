@@ -72,7 +72,7 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
         //Seek to the location of the textures offset value
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flareTexturesArrayDefinition.offset + (4*i));
         //Read out the offset value
-        let stringOffset = this.odysseyModel.mdlReader.readUInt32();
+        const stringOffset = this.odysseyModel.mdlReader.readUInt32();
         //Seek the reader to where the beginning of the flare texture name should be located
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + stringOffset);
         //Read the string and push it to the textures array

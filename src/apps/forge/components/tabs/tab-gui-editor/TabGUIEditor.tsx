@@ -39,7 +39,7 @@ export const TabGUIEditor = function(props: BaseTabProps){
   };
 
   const onMouseWheel = function(e: WheelEvent){
-    if(!!e.ctrlKey){
+    if(e.ctrlKey){
       let tmpCanvasScale = menu?.tGuiPanel.widget.scale.x || 0;
       const maxScale = 5;
       const minScale = 0.1;

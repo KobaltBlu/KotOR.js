@@ -36,12 +36,12 @@ export class ActionLockObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

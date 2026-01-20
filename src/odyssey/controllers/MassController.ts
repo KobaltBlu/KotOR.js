@@ -28,7 +28,7 @@ export class MassController extends OdysseyController {
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.mass = next.value;//Math.ceil(last.value + fl * (next.value - last.value));
       manager.modelNode.emitter.attributeChanged('mass');

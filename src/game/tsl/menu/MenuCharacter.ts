@@ -162,7 +162,7 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.BTN_CHANGE1?.hide();
       this.BTN_CHANGE2?.hide();
       for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-        let partyMember = GameState.PartyManager.party[i];
+        const partyMember = GameState.PartyManager.party[i];
         const portraitResRef = partyMember.getPortraitResRef();
         if (!i) {
           

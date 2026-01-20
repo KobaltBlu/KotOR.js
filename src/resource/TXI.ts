@@ -96,10 +96,10 @@ export class TXI {
   }
 
   ParseInfo(){
-    let lines = this.info.split('\n');
+    const lines = this.info.split('\n');
     for(let i = 0; i < lines.length; i++){
-      let line = lines[i];
-      let args = line.split(' ');
+      const line = lines[i];
+      const args = line.split(' ');
 
       if(typeof args[1] != 'undefined')
         args[1] = args[1].trim();
@@ -217,32 +217,33 @@ export class TXI {
         case 'caretindent':
           this.caretindent = parseFloat(args[1]);
         break;
-        case 'upperleftcoords':
-          let _num = parseInt(args[1]);
+        case 'upperleftcoords': {
+          const _num = parseInt(args[1]);
 
-          let _max = i + 1 + _num;
+          const _max = i + 1 + _num;
           
           for(let _i = i + 1; _i < _max; _i++){
-            let line = lines[_i];
-            let args = line.split(' ');
+            const line = lines[_i];
+            const args = line.split(' ');
             this.upperleftcoords.push({x: parseFloat(args[0]), y: parseFloat(args[1]), z: parseFloat(args[2])});
           }
 
           i += _num-1;
-
+        }
         break;
-        case 'lowerrightcoords':
-          let _num2 = parseInt(args[1]);
+        case 'lowerrightcoords': {
+          const _num2 = parseInt(args[1]);
 
-          let _max2 = i + 1 + _num2;
+          const _max2 = i + 1 + _num2;
           
           for(let _i = i + 1; _i < _max2; _i++){
-            let line = lines[_i];
-            let args = line.split(' ');
+            const line = lines[_i];
+            const args = line.split(' ');
             this.lowerrightcoords.push({x: parseFloat(args[0]), y:parseFloat(args[1]), z:parseFloat(args[2])});
           }
 
           i += _num2-1;
+        }
 
         break;
 

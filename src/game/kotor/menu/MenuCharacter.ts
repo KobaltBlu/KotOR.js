@@ -242,7 +242,7 @@ export class MenuCharacter extends GameMenu {
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
       if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
+        const partyMember = GameState.PartyManager.party[i];
         const portraitResRef = partyMember.getPortraitResRef();
         if (i) {
           btn_change.show();
@@ -264,8 +264,8 @@ export class MenuCharacter extends GameMenu {
     }
     if(creature){
       this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
+      const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+      const clone = creature;
       objectCreature.appearance = clone.appearance;
       objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
       if (clone.equipment.ARMOR) {

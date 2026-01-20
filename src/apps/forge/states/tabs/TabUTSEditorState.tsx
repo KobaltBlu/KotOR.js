@@ -61,7 +61,7 @@ export class TabUTSEditorState extends TabState {
   }
 
   async initializeAudioEmitter(){
-    const type = !!this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
+    const type = this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }

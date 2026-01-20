@@ -106,19 +106,19 @@ export class ActionParameter {
         value = struct.getFieldByLabel('Value').getValue();
       break;
       case ActionParameterType.SCRIPT_SITUATION:
-        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-        let script = new GameState.NWScript();
+        const scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+        const script = new GameState.NWScript();
         script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
         script.init(
           scriptParamStructs.getFieldByLabel('Code').getVoid(),
           scriptParamStructs.getFieldByLabel('CodeSize').getValue()
         );
     
-        let scriptInstance = script.newInstance();
+        const scriptInstance = script.newInstance();
         scriptInstance.isStoreState = true;
         scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
     
-        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
+        const stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
         scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
 
         value = scriptInstance;

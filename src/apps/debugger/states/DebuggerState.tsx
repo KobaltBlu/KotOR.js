@@ -45,7 +45,7 @@ export class DebuggerState {
            * If the script is not already in the map, we need to create a new one
            */
           if(!this.scriptMap.has(name)){
-            let nwscript = new KotOR.NWScript();
+            const nwscript = new KotOR.NWScript();
             nwscript.name = name;
             const code = message.getParam(4).getVoid();
             const progSize = message.getParam(3).getInt32();
@@ -92,7 +92,7 @@ export class DebuggerState {
         }else if(message.type == IPCMessageType.UpdateScriptState){
           const uuid = message.getParam(0).getString();
           const parentUUID = message.getParam(1).getString();
-          let name = message.getParam(2).getString();
+          const name = message.getParam(2).getString();
           console.log("Update Scripte State Received", uuid);
           const instance = KotOR.NWScript.NWScriptInstanceMap.get(uuid);
           if(instance){

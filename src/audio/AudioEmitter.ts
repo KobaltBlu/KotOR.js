@@ -164,7 +164,7 @@ export class AudioEmitter {
       (sound as any).name = resRef;
       let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
       if(!buffer){
-        let data = await AudioLoader.LoadSound(resRef);
+        const data = await AudioLoader.LoadSound(resRef);
         buffer = await this.addSound(resRef, data);
       }
 

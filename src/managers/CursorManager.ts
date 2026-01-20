@@ -297,7 +297,7 @@ export class CursorManager {
 	public static setReticleHoveredObject( object: ModuleObject ){
 		if(!object){ return; }
 
-		let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
+		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
 		CursorManager.hovered = object.getReticleNode();
 		if(CursorManager.hovered){
@@ -381,10 +381,10 @@ export class CursorManager {
 
 		CursorManager.MenuManager.hoveredGUIElement = undefined;
 
-		let uiControls = GameState.controls.MenuGetActiveUIElements();
-		let controlCount = uiControls.length;
+		const uiControls = GameState.controls.MenuGetActiveUIElements();
+		const controlCount = uiControls.length;
 		for(let i = 0; i < controlCount; i++){
-			let control = uiControls[i];
+			const control = uiControls[i];
 
 			if(!control.isVisible()){
 				continue;
@@ -399,7 +399,7 @@ export class CursorManager {
 			}
 
 			if(!guiHoverCaptured){
-				let cMenu = control.menu;
+				const cMenu = control.menu;
 				cMenu.setWidgetHoverActive(control, true);
 				guiHoverCaptured = false;
 			}
@@ -449,7 +449,7 @@ export class CursorManager {
 					}
 				}else{
 					if(!CursorManager.selectedObject){
-						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
+						const closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
 						CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
@@ -516,7 +516,7 @@ export class CursorManager {
 		const points: number[] = [];
 		const sizes: number[] = [];
 		let obj;
-		let targetPosition = new THREE.Vector3();
+		const targetPosition = new THREE.Vector3();
 		const losZ = 1;
 		
 		for(let i = 0; i < objCount; i++){

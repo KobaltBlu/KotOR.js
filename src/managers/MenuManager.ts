@@ -198,12 +198,12 @@ export class MenuManager {
       MenuManager.InGamePause.update(delta);
     }
 
-    let activeMenus = MenuManager.activeMenus;
+    const activeMenus = MenuManager.activeMenus;
     for(let i = 0, len = activeMenus.length; i < len; i++){
       activeMenus[i].update(delta);
     }
 
-    let activeModals = MenuManager.activeModals;
+    const activeModals = MenuManager.activeModals;
     for(let i = 0, len = activeModals.length; i < len; i++){
       activeModals[i].update(delta);
     }

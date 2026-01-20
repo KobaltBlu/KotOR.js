@@ -182,7 +182,7 @@ export class CharGenPortCust extends GameMenu {
   }
 
   Init3D() {
-    let control = this.LBL_HEAD;
+    const control = this.LBL_HEAD;
     const creature = GameState.CharGenManager.selectedCreature;
     if(creature.model){
       creature.model.removeFromParent();
@@ -216,7 +216,7 @@ export class CharGenPortCust extends GameMenu {
       return;
     try {
       const creature = GameState.CharGenManager.selectedCreature;
-      let modelControl = this.LBL_HEAD;
+      const modelControl = this.LBL_HEAD;
       creature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
@@ -262,7 +262,7 @@ export class CharGenPortCust extends GameMenu {
       this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
       this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
     }
-    let v3 = new THREE.Vector3();
+    const v3 = new THREE.Vector3();
     creature.model.camerahook.getWorldPosition(v3)
     this._3dView.camera.position.z = v3.z;
   }

@@ -51,10 +51,10 @@ export class PositionController extends OdysseyController {
 
     //Cache the position controller
     if(manager.modelNode.controllerHelpers.hasPosition === undefined){
-      let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Position);
-      if(typeof _controller != 'undefined'){
+      const controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Position);
+      if(typeof controller != 'undefined'){
         manager.modelNode.controllerHelpers.hasPosition = true;
-        manager.modelNode.controllerHelpers.position = _controller;
+        manager.modelNode.controllerHelpers.position = controller;
       }else{
         manager.modelNode.controllerHelpers.hasPosition = false;
         manager.modelNode.controllerHelpers.position = undefined;

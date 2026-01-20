@@ -169,8 +169,8 @@ export class TalentFeat extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
-    let rangeTolerance = 0.25;
+    const distance = oCaster.position.distanceTo(oTarget.position);
+    const rangeTolerance = 0.25;
 
     //MELEE
     if(this.category == 0x1104){
@@ -267,7 +267,7 @@ export class TalentFeat extends TalentObject {
     }
   }
 
-  impactTarget(object: ModuleObject){
+  impactTarget(_object: ModuleObject){
     // if(!(object instanceof ModuleCreature)) return;
 
   }
@@ -669,7 +669,7 @@ export class TalentFeat extends TalentObject {
   }
 
   save(){
-    let featStruct = new GFFStruct(1);
+    const featStruct = new GFFStruct(1);
     featStruct.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(this.getId());
     return featStruct;
   }

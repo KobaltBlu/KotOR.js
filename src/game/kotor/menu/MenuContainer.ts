@@ -145,9 +145,9 @@ export class MenuContainer extends GameMenu {
     this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
     this.LB_ITEMS.clearItems();
     if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
-      let inventory = this.container.getInventory();
+      const inventory = this.container.getInventory();
       for (let i = 0; i < inventory.length; i++) {
-        let item = inventory[i];
+        const item = inventory[i];
         this.LB_ITEMS.addItem(item);
       }
       TextureLoader.LoadQueue();

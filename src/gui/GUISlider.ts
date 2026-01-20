@@ -67,7 +67,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = this.thumb.width;
       this.thumb.mesh.scale.y = this.thumb.height;
 
-      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      const parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(

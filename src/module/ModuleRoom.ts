@@ -289,7 +289,11 @@ export class ModuleRoom extends ModuleObject {
     //Remove the old model
     if(this.model instanceof OdysseyModel3D){
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try{ 
+        this.model.dispose(); 
+      }catch{
+        // ignore error
+      }
     }
 
     this.model = room;
@@ -593,7 +597,7 @@ export class ModuleRoom extends ModuleObject {
 
       const triangle = new THREE.Triangle(FA, FB, FC);
       const tArea = triangle.getArea();
-      let grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
+      const grassCount = Math.max(1, Math.floor((tArea * density) * 0.50));
 
       totalGrassCount += grassCount;
       faceGrassCounts.push(grassCount);
@@ -749,7 +753,7 @@ export class ModuleRoom extends ModuleObject {
       this.collisionData.walkmesh.dispose();
 
     try{
-      let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){
       console.error(e);

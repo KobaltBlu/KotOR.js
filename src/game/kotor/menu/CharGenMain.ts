@@ -109,7 +109,7 @@ export class CharGenMain extends GameMenu {
     if (!this.bVisible)
       return;
     try {
-      let modelControl = this.MODEL_LBL;
+      const modelControl = this.MODEL_LBL;
       GameState.CharGenManager.selectedCreature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;

@@ -70,9 +70,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   };
 
   const btnLaunch = () => {
-    let clean_profile = Object.assign({}, profile);
+    const clean_profile = Object.assign({}, profile);
     if(isForge){
-      let clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
+      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
         return p.key == forgeSelectValue;
       }));
       console.log('s', forgeSelectValue, clean_game_profile);

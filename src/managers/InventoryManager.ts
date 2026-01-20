@@ -25,9 +25,9 @@ export class InventoryManager {
     if(!slot){
       return InventoryManager.inventory;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if( InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -38,18 +38,18 @@ export class InventoryManager {
 
   static getNonQuestInventory( slot = 0, creature?: ModuleCreature ){
     if(!slot){
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(!item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -60,18 +60,18 @@ export class InventoryManager {
 
   static getQuestInventory(slot = 0, creature?: ModuleCreature){
     if(!slot){
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(item.plot){
           equippable.push(item);
         }
       }
       return equippable;
     }else{
-      let equippable = [];
+      const equippable = [];
       for(let i = 0; i < InventoryManager.inventory.length; i++){
-        let item = InventoryManager.inventory[i];
+        const item = InventoryManager.inventory[i];
         if(InventoryManager.isItemUsableInSlot(item, slot) && InventoryManager.isItemUsableBy(item, creature)){
           equippable.push(item);
         }
@@ -88,7 +88,7 @@ export class InventoryManager {
     // if(!(item instanceof ModuleItem) || !(creature instanceof ModuleCreature))
       // return false;
 
-    let droidorhuman = item.baseItem.droidOrHuman;
+    const droidorhuman = item.baseItem.droidOrHuman;
     
     return !droidorhuman || (
       (droidorhuman == 1 && creature.getRace() == 6) ||
@@ -98,7 +98,7 @@ export class InventoryManager {
   }
 
   static isItemUsableInSlot( item: ModuleItem, slot: any ): boolean {
-    let baseItem = item.baseItem;
+    const baseItem = item.baseItem;
     return (baseItem.equipableSlots & slot || baseItem.equipableSlots === slot) ? true : false;
   }
 
@@ -125,7 +125,7 @@ export class InventoryManager {
     }else{
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
-      let hasItem = InventoryManager.getItemByTag(item.getTag());
+      const hasItem = InventoryManager.getItemByTag(item.getTag());
       if(hasItem){
 
         if(!limitOne){
@@ -148,10 +148,10 @@ export class InventoryManager {
   }
 
   static removeItemByResRef(resRef = '', nCount = 1){
-    let item = InventoryManager.getItemByTag(resRef);
+    const item = InventoryManager.getItemByTag(resRef);
     if(item){
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
-      let idx = InventoryManager.inventory.indexOf(item);
+      const idx = InventoryManager.inventory.indexOf(item);
       if(nCount < item.getStackSize()){
         item.setStackSize( (item.getStackSize() - nCount) || 1 );
       }else{
@@ -164,7 +164,7 @@ export class InventoryManager {
     if(typeof item === 'string'){
       InventoryManager.removeItemByResRef(item, nCount);
     }else if(item instanceof GameState.Module.ModuleArea.ModuleItem){
-      let idx = InventoryManager.inventory.indexOf(item);
+      const idx = InventoryManager.inventory.indexOf(item);
       if(idx >= 0){
         GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_LOST);
         if(nCount >= item.getStackSize()){
@@ -182,7 +182,7 @@ export class InventoryManager {
 
   static getItemByTag(sTag = ''){
     for(let i = 0; i < InventoryManager.inventory.length; i++){
-      let item = InventoryManager.inventory[i];
+      const item = InventoryManager.inventory[i];
       if(item.getTag().toLowerCase() == sTag.toLowerCase())
         return item;
     }
@@ -190,10 +190,10 @@ export class InventoryManager {
   }
 
   static itemFromJSON(json: any = {}){
-    let item: any = {};
-    let props = json.fields;
-    for(let fieldName in props){
-      let field = props[fieldName];
+    const item: any = {};
+    const props = json.fields;
+    for(const fieldName in props){
+      const field = props[fieldName];
       if(field.type == 15){
         item[fieldName] = [];
         for(let i = 0; i < field.structs.length; i++){
@@ -209,10 +209,10 @@ export class InventoryManager {
   static Save(){
     return new Promise( async (resolve, reject) => {
       //console.log('InventoryManager.Save()', 'Exporting...');
-      let gff = new GFFObject();
+      const gff = new GFFObject();
       gff.FileType = 'INV ';
 
-      let itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
+      const itemList = gff.RootNode.addField( new GFFField( GFFDataType.LIST, 'ItemList' ));
       for(let i = 0; i < InventoryManager.inventory.length; i++){
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }

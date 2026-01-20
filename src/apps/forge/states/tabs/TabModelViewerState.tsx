@@ -313,11 +313,11 @@ export class TabModelViewerState extends TabState {
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-          let room = this.layout.rooms[i];
+          const room = this.layout.rooms[i];
           // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-          let mdl = await KotOR.MDLLoader.loader.load(room.name);
+          const mdl = await KotOR.MDLLoader.loader.load(room.name);
           if(mdl){
-            let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+            const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,
               context: this.ui3DRenderer, 
               mergeStatic: false,
@@ -365,7 +365,7 @@ export class TabModelViewerState extends TabState {
       if(this.layout_group.children.length){
         let modelIndex = this.layout_group.children.length - 1;
         while(modelIndex >= 0){
-          let model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
+          const model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
           if(model){
             model.dispose();
             this.layout_group.remove(model);

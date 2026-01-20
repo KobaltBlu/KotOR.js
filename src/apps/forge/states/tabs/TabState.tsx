@@ -222,7 +222,7 @@ export class TabState extends EventListenerModel {
   }
 
   async save() {
-    let currentFile = this.getFile();
+    const currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
@@ -234,7 +234,7 @@ export class TabState extends EventListenerModel {
             //trigger a Save
             try{
               const pathInfo = pathParse(currentFile.path);
-              let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+              const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
               fs.writeFile(currentFile.path, saveBuffer, () => {
                 currentFile.buffer = saveBuffer;
                 currentFile.unsaved_changes = false;
@@ -259,8 +259,8 @@ export class TabState extends EventListenerModel {
               if(granted){
                 try{
                   const pathInfo = pathParse(currentFile.handle.name);
-                  let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
+                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+                  const ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
                   await ws.write(saveBuffer as any);
                   currentFile.buffer = saveBuffer;
                   currentFile.unsaved_changes = false;
@@ -275,14 +275,14 @@ export class TabState extends EventListenerModel {
                 resolve(false);
               }
             }else{
-              let newHandle = await window.showSaveFilePicker({
+              const newHandle = await window.showSaveFilePicker({
                 suggestedName: currentFile.getFilename(),
                 types: this.saveTypes.length ? this.saveTypes : undefined
               });
               if(newHandle){
                 currentFile.handle = newHandle;
                 try{
-                  let ws: FileSystemWritableFileStream = await newHandle.createWritable();
+                  const ws: FileSystemWritableFileStream = await newHandle.createWritable();
                   const pathInfo = pathParse(newHandle.name);
                   const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
                   await ws.write(saveBuffer as any || new Uint8Array(0) as any);

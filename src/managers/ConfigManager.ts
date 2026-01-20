@@ -94,8 +94,8 @@ export class ConfigManager{
   _compare(item1: any, item2: any, key: any, diffs: any[]){
 
     // Get the object type
-    let type1 = Object.prototype.toString.call(item1);
-    let type2 = Object.prototype.toString.call(item2);
+    const type1 = Object.prototype.toString.call(item1);
+    const type2 = Object.prototype.toString.call(item2);
 
     // If type2 is undefined it has been removed
     if (type2 === '[object Undefined]') {
@@ -139,7 +139,7 @@ export class ConfigManager{
     if (arr1.length !== arr2.length) return false;
   
     // Check if all items exist and are in the same order
-    for (var i = 0; i < arr1.length; i++) {
+    for (let i = 0; i < arr1.length; i++) {
       if (arr1[i] !== arr2[i]) return false;
     }
   
@@ -152,7 +152,7 @@ export class ConfigManager{
     if(Array.isArray(path))
       path = path.join('.');
 
-    let parts = path.split('.');
+    const parts = path.split('.');
     let property = this.options;
     for(let i = 0, len = parts.length; i < len; i++){
       if(typeof property[parts[i]] != 'undefined'){
@@ -178,9 +178,10 @@ export class ConfigManager{
       path = path.join('.');
 
     if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
-      let parts = path.split('.');
+      const parts = path.split('.');
       let scope = this.options;
-      let i = 0, len = Math.max(parts.length-1, 0);
+      let i = 0;
+      const len = Math.max(parts.length-1, 0);
       for(i = 0; i < len; i++){
         if(scope[parts[i]]){
           scope = scope[parts[i]];
@@ -201,7 +202,7 @@ export class ConfigManager{
       }
 
       if(typeof scope[parts[len]] != 'undefined'){
-        let _old = JSON.parse(JSON.stringify(scope[parts[len]]));
+        const _old = JSON.parse(JSON.stringify(scope[parts[len]]));
         scope[parts[len]] = value;
         if(_old != value){
           this.triggerEvent(path, value, _old);
@@ -214,10 +215,10 @@ export class ConfigManager{
   }
 
   triggerEvent(path: string, value: any, old: any){
-    let listener = this.listeners[path];
+    const listener = this.listeners[path];
     if(Array.isArray(listener)){
       for(let i = 0, len = listener.length; i < len; i++){
-        let callback = listener[i];
+        const callback = listener[i];
         if(typeof callback == 'function'){
           callback(path, value, old);
         }
@@ -232,7 +233,7 @@ export class ConfigManager{
     if(path){
       let listenerObject = this.listeners[path];
       if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
+        const index = listenerObject.indexOf(callback);
         if(index == -1){ //Don't let the same callback be applied twice
           listenerObject.push( callback );
         }
@@ -248,9 +249,9 @@ export class ConfigManager{
   //EventListeners can have multiple callbacks per property
   off(path = '', callback?: Function){
     if(path){
-      let listenerObject = this.listeners[path];
+      const listenerObject = this.listeners[path];
       if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
+        const index = listenerObject.indexOf(callback);
         if(index >= 0){
           listenerObject.splice(index, 1);
         }

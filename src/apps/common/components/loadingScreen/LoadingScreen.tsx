@@ -47,7 +47,7 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   useEffect(() => {
     console.log('active', active);
     setActive(!!props.active);
-    if(!!props.active){
+    if(props.active){
       onShow();
     }else{
       onHide();
@@ -63,8 +63,8 @@ export const LoadingScreen = (props: ILoadingScreenProps) => {
   //se-pre-con class
   return (
     <div className={`app-loader ${visible ? 'active' : ''} ${fadeIn ? 'fade-in' : ''} ${fadeOut ? 'fade-out' : ''}`}>
-      <div className="background" style={{backgroundImage: (!!backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
-      <div className="logo-wrapper"><img src={logoURL} style={{display: (!!logoURL) ? 'block' : 'none'}} /></div>
+      <div className="background" style={{backgroundImage: (backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
+      <div className="logo-wrapper"><img src={logoURL} style={{display: (logoURL) ? 'block' : 'none'}} /></div>
       <div className="loading-container">
         <div className="spinner-wrapper">
           <div className="ball"></div>

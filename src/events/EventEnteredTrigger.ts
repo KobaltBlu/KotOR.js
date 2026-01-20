@@ -36,7 +36,7 @@ export class EventEnteredTrigger extends GameEvent {
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.script.caller, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);

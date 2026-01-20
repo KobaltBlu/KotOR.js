@@ -494,7 +494,7 @@ export class GameState implements EngineContext {
     GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
     GameState.renderer.setClearColor(0x000000);
 
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
+    const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
 		GameState.depthTarget = new THREE.WebGLRenderTarget( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight(), pars );
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
@@ -806,8 +806,8 @@ export class GameState implements EngineContext {
 
   static EventOnResize(){
     GameState.ResolutionManager.recalculate();
-    let width = GameState.ResolutionManager.getViewportWidth();
-    let height = GameState.ResolutionManager.getViewportHeight();
+    const width = GameState.ResolutionManager.getViewportWidth();
+    const height = GameState.ResolutionManager.getViewportHeight();
 
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
@@ -861,7 +861,7 @@ export class GameState implements EngineContext {
     if(GameState.Mode == EngineMode.MINIGAME){
       return GameState.module.area.miniGame.player as any;
     }
-    let p = GameState.PartyManager.party[0];
+    const p = GameState.PartyManager.party[0];
     return p ? p : GameState.PartyManager.Player;
   }
 
@@ -885,7 +885,7 @@ export class GameState implements EngineContext {
 
     const objCount = objects.length;
     let obj: ModuleObject;
-    let dir = new THREE.Vector3();
+    const dir = new THREE.Vector3();
     const losZ = 1;
     const playerPosition = player.position.clone();
     playerPosition.z += losZ;
@@ -1170,7 +1170,7 @@ export class GameState implements EngineContext {
 
     GameState.forwardVector.set(0, 0, -1);
 
-    let delta = GameState.clock.getDelta();
+    const delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;

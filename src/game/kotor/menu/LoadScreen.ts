@@ -70,7 +70,7 @@ export class LoadScreen extends GameMenu {
 
   showRandomHint() {
     this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
+    const id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
     let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
     if (!hint) {
       console.log('showRandomHint', id);

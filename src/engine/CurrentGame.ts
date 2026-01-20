@@ -22,10 +22,10 @@ export class CurrentGame {
     return new Promise( (resolve, reject) => {
         GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
           for(let i = 0, len = files.length; i < len; i++){
-            let file = files[i];
-            let file_path = path.join( CurrentGame.gameinprogress_dir, file );
-            let file_info = path.parse(file);
-            let ext = file_info.ext.split('.').pop();
+            const file = files[i];
+            const file_path = path.join( CurrentGame.gameinprogress_dir, file );
+            const file_info = path.parse(file);
+            const ext = file_info.ext.split('.').pop();
             if(file_info.name.toLowerCase() == name.toLowerCase()){
               resolve(true);
               return;
@@ -43,7 +43,7 @@ export class CurrentGame {
     return new Promise( async (resolve, reject) => {
 
       try{
-        let buffer = await GameFileSystem.readFile( 
+        const buffer = await GameFileSystem.readFile( 
           path.join( CurrentGame.gameinprogress_dir, name.toLowerCase()+'.sav') 
         );
         const erf = new ERFObject(buffer);
@@ -74,7 +74,7 @@ export class CurrentGame {
         }
         
         if(create){
-          let mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+          const mkdir_response = await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
           console.log(
             `CurrentGame.CleanGameInProgressFolder`, 
             `mkdir ${CurrentGame.gameinprogress_dir} - [${mkdir_response ? 'success' : 'fail'}]`
@@ -88,7 +88,7 @@ export class CurrentGame {
         try{
           const directory_handle = await GameFileSystem.opendir_web(CurrentGame.gameinprogress_dir);
           if(directory_handle instanceof FileSystemDirectoryHandle){
-            for await(let handle of directory_handle.values()){
+            for await(const handle of directory_handle.values()){
               if(handle.kind == 'file'){
                 await directory_handle.removeEntry(handle.name);
               }
@@ -138,7 +138,7 @@ export class CurrentGame {
   }
 
   static async ExportToSaveFolder( folder: string ){
-    let sav = new ERFObject();
+    const sav = new ERFObject();
     try{
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){

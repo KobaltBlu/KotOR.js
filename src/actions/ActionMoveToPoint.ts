@@ -88,7 +88,7 @@ export class ActionMoveToPoint extends Action {
   
       const point = this.computedPath.points[0];
       if(point){
-        let pointDistance = Utility.Distance2D(this.owner.position, point.vector);
+        const pointDistance = Utility.Distance2D(this.owner.position, point.vector);
         if(pointDistance > (this.computedPath.points.length > 1 ? 0.5 : range)){
           const tangent = point.vector.clone().sub(this.owner.position.clone());
           const atan = Math.atan2(-tangent.y, -tangent.x);

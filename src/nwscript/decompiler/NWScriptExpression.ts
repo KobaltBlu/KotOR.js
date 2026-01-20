@@ -125,7 +125,7 @@ export class NWScriptExpression {
    */
   toNSS(): string {
     switch (this.type) {
-      case NWScriptExpressionType.CONSTANT:
+      case NWScriptExpressionType.CONSTANT: {
         if (this.dataType === NWScriptDataType.STRING) {
           return `"${this.value}"`;
         } else if (this.dataType === NWScriptDataType.FLOAT) {
@@ -136,33 +136,33 @@ export class NWScriptExpression {
           return 'OBJECT_INVALID';
         }
         return String(this.value);
-
-      case NWScriptExpressionType.VARIABLE:
+      }
+      case NWScriptExpressionType.VARIABLE: {
         return this.variableName;
-
-      case NWScriptExpressionType.BINARY_OP:
+      }
+      case NWScriptExpressionType.BINARY_OP: {
         const leftStr = this.left?.toNSS() || '?';
         const rightStr = this.right?.toNSS() || '?';
         return `(${leftStr} ${this.operator} ${rightStr})`;
-
-      case NWScriptExpressionType.UNARY_OP:
+      }
+      case NWScriptExpressionType.UNARY_OP: {
         const operandStr = this.left?.toNSS() || '?';
         return `${this.operator}${operandStr}`;
-
-      case NWScriptExpressionType.FUNCTION_CALL:
+      }
+      case NWScriptExpressionType.FUNCTION_CALL: {
         const argsStr = this.arguments.map(arg => arg.toNSS()).join(', ');
         return `${this.functionName}(${argsStr})`;
-
-      case NWScriptExpressionType.COMPARISON:
+      }
+      case NWScriptExpressionType.COMPARISON: {
         const compLeft = this.left?.toNSS() || '?';
         const compRight = this.right?.toNSS() || '?';
         return `(${compLeft} ${this.operator} ${compRight})`;
-
-      case NWScriptExpressionType.LOGICAL:
+      }
+      case NWScriptExpressionType.LOGICAL: {
         const logLeft = this.left?.toNSS() || '?';
         const logRight = this.right?.toNSS() || '?';
         return `(${logLeft} ${this.operator} ${logRight})`;
-
+      }
       default:
         return '?';
     }

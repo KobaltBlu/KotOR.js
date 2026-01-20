@@ -387,7 +387,7 @@ export class NWScript {
    */
   disposeInstance( instance: NWScriptInstance ){
     if(instance instanceof NWScriptInstance){
-      let idx = this.instances.indexOf(instance);
+      const idx = this.instances.indexOf(instance);
       if(idx >= 0){
         this.instances.splice(idx, 1);
         instance.dispose();
@@ -401,7 +401,7 @@ export class NWScript {
   disposeInstances(){
     let i = this.instances.length;
     while(i--){
-      let instance = this.instances.splice(i, 1)[0];
+      const instance = this.instances.splice(i, 1)[0];
       if(instance instanceof NWScriptInstance){
         instance.dispose();
       }

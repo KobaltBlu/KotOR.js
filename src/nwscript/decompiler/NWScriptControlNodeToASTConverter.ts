@@ -1,10 +1,10 @@
-import type { ControlNode, BasicBlockNode, IfNode, IfElseNode, WhileNode, DoWhileNode, ForNode, SwitchNode, SequenceNode } from "./NWScriptControlStructureBuilder";
+import type { ControlNode, BasicBlockNode, IfNode, IfElseNode, WhileNode, DoWhileNode, ForNode, SwitchNode, SequenceNode , NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
 import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
 import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
 import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
 import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
-import type { NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
+
 import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptProgramNode, type NWScriptFunctionNode, type NWScriptBlockNode, type NWScriptIfNode, type NWScriptIfElseNode, type NWScriptWhileNode, type NWScriptDoWhileNode, type NWScriptForNode, type NWScriptSwitchNode, type NWScriptSwitchCaseNode, type NWScriptSwitchDefaultNode, type NWScriptExpressionStatementNode, type NWScriptAssignmentNode, type NWScriptReturnNode, type NWScriptBreakNode, type NWScriptContinueNode, NWScriptGlobalVariableDeclarationNode, NWScriptVariableDeclarationNode } from "./NWScriptAST";
 import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
 import { NWScriptStackSimulator } from "./NWScriptStackSimulator";
@@ -480,7 +480,7 @@ export class NWScriptControlNodeToASTConverter {
     
     // Track if we're processing a return value assignment
     let returnValueExpr: NWScriptExpression | undefined = undefined;
-    let retnBlock: NWScriptBasicBlock | null = null;
+    const retnBlock: NWScriptBasicBlock | null = null;
     
     console.log(`[Block] Block ${block.id} instructions:`, block.instructions.map(instr => `0x${instr.address.toString(16).padStart(8, '0')} ${instr.code === OP_RSADD ? 'RSADD' : instr.code === OP_CPDOWNSP ? 'CPDOWNSP' : 'other'}`).join(', '));
     
@@ -841,7 +841,7 @@ export class NWScriptControlNodeToASTConverter {
     
     // Check if the body contains a LOGANDII that combines with the outer condition
     // This handles cross-block AND chains where the LOGANDII is in the body block
-    let actualBodyNode: ControlNode = node.body;
+    const actualBodyNode: ControlNode = node.body;
     if (node.body.type === 'basic_block') {
       const bodyBlock = node.body.block;
       // Check if body block contains LOGANDII

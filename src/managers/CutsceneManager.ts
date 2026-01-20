@@ -693,7 +693,7 @@ export class CutsceneManager {
    * @param nCamera - The camera to set
    */
   static setPlaceableCamera(nCamera: number) {
-    let cam = GameState.getCameraById(nCamera);
+    const cam = GameState.getCameraById(nCamera);
     if (!cam) {
       console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
@@ -985,7 +985,7 @@ export class CutsceneManager {
     const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
     
     // Calculate initial camera position
-    let cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
     
     // Adjust camera distance based on collision detection (similar to FollowerCamera)
     const adjustedDistance = this.adjustCameraDistanceForCollision(cameraPosition, listenerCameraPosition, behindDistance);
@@ -1288,7 +1288,7 @@ export class CutsceneManager {
   }
 
   static removeEventListener(type: string, listener: Function){
-    let listeners = this.#eventListeners.get(type);
+    const listeners = this.#eventListeners.get(type);
     if(!listeners || listeners.indexOf(listener) !== -1){
       return;
     }
@@ -1298,7 +1298,7 @@ export class CutsceneManager {
   }
 
   static dispatchEvent(type: string, ...args: any[]){
-    let listeners = this.#eventListeners.get(type);
+    const listeners = this.#eventListeners.get(type);
     if(listeners){
       listeners.forEach(listener => listener(...args));
     }

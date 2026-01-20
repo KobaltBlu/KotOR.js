@@ -151,16 +151,16 @@ export class OdysseyFace3 {
   }
 
 	pointInFace2d(pt: THREE.Vector3){
-    let v1 = this.walkmesh.vertices[this.a];
-    let v2 = this.walkmesh.vertices[this.b];
-    let v3 = this.walkmesh.vertices[this.c];
+    const v1 = this.walkmesh.vertices[this.a];
+    const v2 = this.walkmesh.vertices[this.b];
+    const v3 = this.walkmesh.vertices[this.c];
 
-    let d1 = this.sign(pt, v1, v2);
-    let d2 = this.sign(pt, v2, v3);
-    let d3 = this.sign(pt, v3, v1);
+    const d1 = this.sign(pt, v1, v2);
+    const d2 = this.sign(pt, v2, v3);
+    const d3 = this.sign(pt, v3, v1);
 
-    let has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-    let has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+    const has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+    const has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
 
     return !(has_neg && has_pos);
   }
@@ -195,7 +195,7 @@ export class OdysseyFace3 {
     return this;
   };
 
-	copy( source: OdysseyFace3 ): this {
+	copy( _source: OdysseyFace3 ): this {
     return this;
   };
 

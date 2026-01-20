@@ -94,8 +94,8 @@ export class ModuleMGEnemy extends ModuleObject {
 
     try{
       this.track.getObjectByName('modelhook').add(this.container);
-    }catch(e){
-
+    }catch{
+      // ignore error
     }
 
   }
@@ -118,7 +118,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
 
     for(let i = 0; i < this.models.length; i++){
-      let child_model = this.models[i];
+      const child_model = this.models[i];
       if(child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible){
 
         if(this.hit_points > 0){
@@ -225,10 +225,10 @@ export class ModuleMGEnemy extends ModuleObject {
     for(let i = 0; i < this.models.length; i++){
       model = this.models[i];
       if(model instanceof OdysseyModel3D){
-        let anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
+        const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
 
         if(anim){
-          let animLoopIdx = model.animLoops.indexOf(anim);
+          const animLoopIdx = model.animLoops.indexOf(anim);
           if(animLoopIdx >= 0){
             model.animLoops.splice(animLoopIdx, 1);
           }
@@ -417,9 +417,9 @@ export class ModuleMGEnemy extends ModuleObject {
 
 
     if(this.template.RootNode.hasField('Models')){
-      let models = this.template.getFieldByLabel('Models').getChildStructs();
+      const models = this.template.getFieldByLabel('Models').getChildStructs();
       for(let i = 0; i < models.length; i++){
-        let modelStruct = models[i];
+        const modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.getFieldByLabel('Model').getValue(),
           rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false

@@ -26,14 +26,14 @@ export class WindowManager {
   }
 
   static addWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if(index < 0){
       WindowManager.windows.push(window);
     }
   }
 
   static removeWindow(window: ApplicationWindow){
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if(index >= 0){
       WindowManager.windows.splice(index, 1);
     }
@@ -64,7 +64,7 @@ export class WindowManager {
     });
     
     ipcMain.handle('win-minimize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if(win){
         win.minimize();
         return true;
@@ -73,7 +73,7 @@ export class WindowManager {
     });
     
     ipcMain.handle('win-maximize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if(win){
         console.log(win.isMaximized());
         if(win.isMaximized()){
@@ -128,7 +128,7 @@ export class WindowManager {
     
     ipcMain.on('launch_executable', (event, exe_path) => {
       WindowManager.hideLauncher();
-      let cwd = path.parse(exe_path);
+      const cwd = path.parse(exe_path);
       if(process.platform == 'linux'){
         //Attempt to find wine so we can run the exe
         exec(`which wine`, (error) => {

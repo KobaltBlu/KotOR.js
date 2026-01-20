@@ -42,14 +42,14 @@ export class EditorTabManager extends EventListenerModel {
       }
     }
 
-    let alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
+    const alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
     if(alreadyAdded){
       console.warn('Tab already added to the TabManager', tab);
       return;
     }
 
     //Check to see if a tab is already editing this resource
-    let alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
+    const alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
     if(alreadyOpen != null){
       //Show the tab that is already open
       alreadyOpen.show();
@@ -122,7 +122,7 @@ export class EditorTabManager extends EventListenerModel {
   }
 
   tabTypeExists(tab: TabState){
-    let tabClass = tab.constructor.name;
+    const tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return true;

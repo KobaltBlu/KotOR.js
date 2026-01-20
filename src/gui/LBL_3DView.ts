@@ -132,12 +132,12 @@ export class LBL_3DView {
     if(!this.visible)
       return;
 
-    for(let emitter in this.emitters){
+    for(const emitter in this.emitters){
       this.emitters[emitter].tick(delta);
     }
 
     for(let i = 0; i < this.scene.children.length; i++){
-      let element = this.scene.children[i];
+      const element = this.scene.children[i];
       if(element instanceof OdysseyModel3D){
         element.update(delta);
       }
@@ -149,7 +149,7 @@ export class LBL_3DView {
       this.lightManager.update(delta, this.currentCamera);
     }
 
-    let oldClearColor = new THREE.Color()
+    const oldClearColor = new THREE.Color()
     GameState.renderer.getClearColor(oldClearColor);
     //GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
@@ -160,7 +160,7 @@ export class LBL_3DView {
     //GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      let material = this.control.getFill().material;
+      const material = this.control.getFill().material;
       if(material instanceof THREE.ShaderMaterial){
         material.uniforms.map.value = this.texture.texture;
         material.transparent = true;

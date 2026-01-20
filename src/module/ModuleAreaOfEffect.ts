@@ -148,9 +148,9 @@ export class ModuleAreaOfEffect extends ModuleObject {
     //ActionList
     try{
       if(this.template.RootNode.hasField('ActionList')){
-        let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
+        const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
         for(let i = 0, len = actionStructs.length; i < len; i++){
-          let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
+          const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
           if(action){
             this.actionQueue.add(action);
           }
@@ -162,24 +162,24 @@ export class ModuleAreaOfEffect extends ModuleObject {
 
     //SWVarTable
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0, len = localBools.length; i < len; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
       }
-      let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
+      const localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
       for(let i = 0, len = localNumbers.length; i < len; i++){
-        let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+        const data = localNumbers[i].getFieldByLabel('Variable').getValue();
         this.setLocalNumber(i, data);
       }
     }
     
     if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0, len = effects.length; i < len; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
@@ -190,7 +190,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   save(): GFFObject {
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'AOE ';
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -255,11 +255,11 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( this.actionQueueToActionList() );
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
     
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -268,7 +268,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
 
-    let theta = this.rotation.z * Math.PI;
+    const theta = this.rotation.z * Math.PI;
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );

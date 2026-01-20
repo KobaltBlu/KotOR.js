@@ -134,7 +134,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   filterInventory(){
     this.LB_ITEMS.clearItems();
-    let inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
+    const inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
       switch(this.filter){
         case InventoryFilter.DATAPADS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'i_datapad';

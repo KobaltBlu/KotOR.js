@@ -200,7 +200,7 @@ export class MenuTop extends K1_MenuTop {
       const portTextureRef = partyMember.getPortraitResRef();
       
       this.TogglePartyMember(i, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portTextureRef) {
         pmBG.setFillTextureName(portTextureRef);
         TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
@@ -273,7 +273,7 @@ export class MenuTop extends K1_MenuTop {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = this.manager.GetCurrentMenu();
+    const currentMenu = this.manager.GetCurrentMenu();
     if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
       currentMenu.close();
     }

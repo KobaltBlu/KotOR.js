@@ -99,7 +99,7 @@ import { OdysseyModelUtility } from "./OdysseyModelUtility";
       if (this.boneQuaternionDefinition.count > 0) {
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneQuaternionDefinition.offset);
         for(let i = 0; i < this.boneQuaternionDefinition.count; i++){
-          let w = this.odysseyModel.mdlReader.readSingle();
+          const w = this.odysseyModel.mdlReader.readSingle();
           this.bone_quaternions[i] = new THREE.Quaternion(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), w);
         }
       }

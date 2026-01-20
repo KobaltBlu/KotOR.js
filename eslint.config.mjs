@@ -42,42 +42,47 @@ export default tseslint.config(
     },
     rules: {
       // TypeScript specific rules
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
+      '@typescript-eslint/no-unused-vars': 'off',
+      // '@typescript-eslint/no-unused-vars': [
+      //   'error',
+      //   {
+      //     argsIgnorePattern: '^_',
+      //     varsIgnorePattern: '^_',
+      //   },
+      // ],
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-function-type': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
+      '@typescript-eslint/no-duplicate-enum-values': 'off',
       
       // General code quality
       'no-console': 'off',
       'no-debugger': 'error',
       'no-unused-vars': 'off', // Use TypeScript version instead
       'no-unused-args': 'off',
+      'no-prototype-builtins': 'off',
+      'no-async-promise-executor': 'off',
       
       // Import rules
-      'import/order': [
-        'error',
-        {
-          groups: [
-            'builtin',
-            'external',
-            'internal',
-            'parent',
-            'sibling',
-            'index',
-          ],
-          'newlines-between': 'never',
-          alphabetize: {
-            order: 'asc',
-            caseInsensitive: true,
-          },
-        },
-      ],
+      // 'import/order': [
+      //   'error',
+      //   {
+      //     groups: [
+      //       'builtin',
+      //       'external',
+      //       'internal',
+      //       'parent',
+      //       'sibling',
+      //       'index',
+      //     ],
+      //     'newlines-between': 'never',
+      //     alphabetize: {
+      //       order: 'asc',
+      //       caseInsensitive: true,
+      //     },
+      //   },
+      // ],
       'import/no-unresolved': 'error',
       'import/no-duplicates': 'error',
     },

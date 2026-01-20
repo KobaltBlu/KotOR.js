@@ -45,7 +45,7 @@ export class AudioFile {
     //String file path
     if(typeof this.data == 'string'){
 
-      let info = Utility.filePathInfo(this.data);
+      const info = Utility.filePathInfo(this.data);
 
       if(info.location == 'local'){
 
@@ -110,8 +110,8 @@ export class AudioFile {
 
   processFile(){
     this.isProcessed = true;
-    let flag = this.reader.readBytes(4);
-    let riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
+    const flag = this.reader.readBytes(4);
+    const riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
     this.reader.seek(0);
 
     if(Utility.ArrayMatch(flag, fakeHeaderTest)) {
@@ -209,7 +209,7 @@ export class AudioFile {
   }
 
   waveSubChunkParser (header: any, reader: BinaryReader) {
-    let chunkID = reader.readChars(4);
+    const chunkID = reader.readChars(4);
     switch(chunkID){
       case 'fmt ':
         header.fmt = chunkID;
@@ -264,13 +264,13 @@ export class AudioFile {
 
   buildWave(header: any, data: Uint8Array){
 
-    let riffHeaderLen = 8;
-    let waveHeaderLen = 56;
+    const riffHeaderLen = 8;
+    const waveHeaderLen = 56;
 
-    let buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
-    let bWriter = new BinaryWriter(buffer);
+    const buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
+    const bWriter = new BinaryWriter(buffer);
 
-    let riffSize = data.length + waveHeaderLen;
+    const riffSize = data.length + waveHeaderLen;
 
     //console.log(header)
     //console.log((header.channels == 2 ? 4 : 2))

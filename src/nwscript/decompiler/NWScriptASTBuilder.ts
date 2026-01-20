@@ -2,14 +2,12 @@ import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
 import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
 import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
-import type { NWScriptStatement } from "./NWScriptStatementBuilder";
-import type { NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
+import type { NWScriptStatement , NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
 import { NWScriptExpression } from "./NWScriptExpression";
 import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
 import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
 import { ControlStructureType } from "./NWScriptControlStructureBuilder";
-import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion } from "./NWScriptAST";
-import type {
+import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion ,
   NWScriptProgramNode,
   NWScriptFunctionNode,
   NWScriptBlockNode,

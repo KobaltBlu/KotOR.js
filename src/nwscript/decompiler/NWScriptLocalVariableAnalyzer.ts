@@ -193,8 +193,8 @@ export class NWScriptLocalVariableAnalyzer {
       if (hasWrite && cpdownspInstr) {
         // Work backwards from CPDOWNSP to find what expression was on the stack
         // Look for ACTION (function call) or other expressions before CPDOWNSP
-        let exprStart = rsadd.nextInstr;
-        let exprEnd = cpdownspInstr.prevInstr;
+        const exprStart = rsadd.nextInstr;
+        const exprEnd = cpdownspInstr.prevInstr;
         
         // Check if there's an ACTION call before CPDOWNSP
         let actionInstr: NWScriptInstruction | null = null;

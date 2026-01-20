@@ -322,7 +322,7 @@ export class CombatRound {
    * @returns True if the action was cleared, false otherwise
    */
   clearAction(action: CombatRoundAction){
-    let index = this.scheduledActionList.indexOf(action);
+    const index = this.scheduledActionList.indexOf(action);
     if(index >= 0){
       this.scheduledActionList.splice( index, 1 );
       return true;
@@ -426,8 +426,8 @@ export class CombatRound {
 
     this.calculateRoundAnimations(creature, combatAction);
 
-    let attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
-    let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
+    const attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
+    const attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
 
     if(combatAction.isCutsceneAttack){
       const attack = this.attackList[0];
@@ -601,7 +601,7 @@ export class CombatRound {
     if(!combatAction) return;
 
     let attackKey = creature.getCombatAnimationAttackType();
-    let weaponWield = creature.getCombatAnimationWeaponType();
+    const weaponWield = creature.getCombatAnimationWeaponType();
     let attackType = 1;
 
     //Get random basic melee attack in combat with another melee creature that is targeting you

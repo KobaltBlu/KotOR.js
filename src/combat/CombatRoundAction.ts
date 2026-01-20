@@ -89,7 +89,7 @@ export class CombatRoundAction {
 
     const owner: ModuleCreature = this.owner as any;
     let attackKey = owner.getCombatAnimationAttackType();
-    let weaponWield = owner.getCombatAnimationWeaponType();
+    const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
     let isMelee = true;
     let isRanged = false;

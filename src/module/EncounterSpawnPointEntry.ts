@@ -18,7 +18,7 @@ export class EncounterSpawnPointEntry{
   orientation = 0.0;
 
   save(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
     struct.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);
@@ -30,7 +30,7 @@ export class EncounterSpawnPointEntry{
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let entry = new EncounterSpawnPointEntry();
+      const entry = new EncounterSpawnPointEntry();
       if(struct.hasField('X'))
         entry.position.x = struct.getFieldByLabel('X').getValue();
 

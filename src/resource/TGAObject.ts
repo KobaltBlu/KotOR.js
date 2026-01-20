@@ -62,7 +62,7 @@ export class TGAObject {
     } as ITGAHeader;
 
     if(this.file instanceof Uint8Array && !!this.file.length){
-      let reader = new BinaryReader(this.file);
+      const reader = new BinaryReader(this.file);
 
       Header.ID = reader.readByte();
       Header.ColorMapType = reader.readByte();
@@ -72,9 +72,9 @@ export class TGAObject {
       Header.hasColorMap = Header.ColorMapType === 0 ? false : true;
       Header.ColorMapIndex = reader.readByte();
 
-      if(Header.hasColorMap){
+      // if(Header.hasColorMap){
 
-      }
+      // }
 
       Header.offsetX = reader.readUInt32();
       Header.offsetY = reader.readUInt32();
@@ -94,7 +94,7 @@ export class TGAObject {
 
   getPixelData( onLoad?: Function ){
 
-    let reader = new BinaryReader(this.file);
+    const reader = new BinaryReader(this.file);
     console.log('TGAObject', this.header)
   	reader.seek(this.header.pixelDataOffset);
 
@@ -119,7 +119,7 @@ export class TGAObject {
   }
 
   async toExportBuffer(): Promise<Uint8Array> {
-    let writer = new BinaryWriter();
+    const writer = new BinaryWriter();
 
     writer.writeByte(this.header.ID);
     writer.writeByte(this.header.ColorMapType);
@@ -143,13 +143,13 @@ export class TGAObject {
     return true;
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, _height = 1){
     let offset = 0;
-    let stride = width * 4;
+    const stride = width * 4;
 
     //if(!pixelData) pixelData = this.pixelData;
 
-    let unFlipped = Uint8Array.from(pixelData);
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -161,19 +161,19 @@ export class TGAObject {
     const tga = new TGAObject();
     if(canvas instanceof HTMLCanvasElement || canvas instanceof OffscreenCanvas){
 
-      let ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
+      const ctx: CanvasRenderingContext2D|OffscreenCanvasRenderingContext2D = canvas.getContext('2d') as any;
       if(ctx){
         tga.header.width = canvas.width;
         tga.header.height = canvas.height;
         tga.header.bitsPerPixel = 32;
         tga.header.FileType = 2;
-        let data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
         tga.pixelData = new Uint8Array(data.length);
 
-        let rowByteLength = data.length / tga.header.height;
+        const rowByteLength = data.length / tga.header.height;
         for(let i = 0; i < tga.header.height; i++){
-          let offset = rowByteLength * i;
+          const offset = rowByteLength * i;
           for(let j = 0, k = rowByteLength; j < rowByteLength; j += 4, k -= 4){
             tga.pixelData[offset + j]     = data[offset + j + 2];//(k - 2)]; // red
             tga.pixelData[offset + j + 1] = data[offset + j + 1];//(k - 3)]; // green

@@ -30,7 +30,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { GameEffectFactory } from "../effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";.3
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "../enums";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
@@ -230,7 +230,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   getObjectSounds(){
-    let result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
+    const result = {"__rowlabel":-1,"label":"","armortype":"","opened":"****","closed":"****","destroyed":"****","used":"****","locked":"****"};
     const appearance = this.getDoorAppearance();
     if(!appearance) return result;
 
@@ -440,8 +440,8 @@ export class ModuleDoor extends ModuleObject {
     
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const d20 = 20;//d20 rolls are auto 20's outside of combat
+      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -500,8 +500,8 @@ export class ModuleDoor extends ModuleObject {
     //Notice all creatures within range that someone opened this door
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
       for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        let creature = GameState.module.area.creatures[i];
-        let distance = creature.position.distanceTo(this.position);
+        const creature = GameState.module.area.creatures[i];
+        const distance = creature.position.distanceTo(this.position);
         if(distance <= creature.getPerceptionRangePrimary()){
           creature.notifyPerceptionHeardObject(object, true);
         }
@@ -567,9 +567,9 @@ export class ModuleDoor extends ModuleObject {
     //Check to see if this trigger is linked to another module
     if(this.linkedToModule && this.type == 1){
       //Check Party Members
-      let partyLen = GameState.PartyManager.party.length;
+      const partyLen = GameState.PartyManager.party.length;
       for(let i = 0; i < partyLen; i++){
-        let partymember = GameState.PartyManager.party[i];
+        const partymember = GameState.PartyManager.party[i];
         if(this.box.containsPoint(partymember.position)){
           if(this.objectsInside.indexOf(partymember) == -1){
             this.objectsInside.push(partymember);
@@ -581,9 +581,9 @@ export class ModuleDoor extends ModuleObject {
       }
     }else{
       //Check Creatures
-      let creatureLen = GameState.module.area.creatures.length;
+      const creatureLen = GameState.module.area.creatures.length;
       for(let i = 0; i < creatureLen; i++){
-        let creature = GameState.module.area.creatures[i];
+        const creature = GameState.module.area.creatures[i];
         if(this.box.containsPoint(creature.position)){
           if(this.objectsInside.indexOf(creature) == -1){
             this.objectsInside.push(creature);
@@ -702,10 +702,10 @@ export class ModuleDoor extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModuleDoorAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
@@ -769,7 +769,7 @@ export class ModuleDoor extends ModuleObject {
 
   detachFromRoom(room: ModuleRoom): void {
     if(!room) return;
-    let index = room.doors.indexOf(this);
+    const index = room.doors.indexOf(this);
     if(index >= 0){
       room.doors.splice(index, 1);
     }
@@ -777,13 +777,13 @@ export class ModuleDoor extends ModuleObject {
 
   getCurrentRoom(): void {
     this.room = undefined;
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
-    let box = this.box.clone();
+    const box = this.box.clone();
 
     this.rooms = [];
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
+      const room = GameState.module.area.rooms[i];
       if(room.box.containsPoint(this.position)){
         this.roomIds.push(i);
       }
@@ -791,7 +791,7 @@ export class ModuleDoor extends ModuleObject {
 
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
-        let room = GameState.module.area.rooms[this.roomIds[j]];
+        const room = GameState.module.area.rooms[this.roomIds[j]];
         if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
@@ -801,13 +801,13 @@ export class ModuleDoor extends ModuleObject {
       }
     }
     
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add(scratchVec3);
+    const scratchVec3 = new THREE.Vector3(0, 0, 2);
+    const playerFeetRay = this.position.clone().add(scratchVec3);
     GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     GameState.raycaster.ray.direction.set(0, 0,-1);
     
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-      let castableFaces = aabbFaces[j];
+      const castableFaces = aabbFaces[j];
       intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
       
       if(intersects.length){
@@ -906,7 +906,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   loadModel(): Promise<OdysseyModel3D> {
-    let modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    const modelName = this.getDoorAppearance().modelname.replace(/\0[\s\S]*$/g,'').toLowerCase();
     return new Promise<OdysseyModel3D>( (resolve, reject) => {
       MDLLoader.loader.load(modelName).then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
@@ -920,7 +920,11 @@ export class ModuleDoor extends ModuleObject {
         }).then((door: OdysseyModel3D) => {
           if(this.model instanceof OdysseyModel3D){
             this.model.removeFromParent();
-            try{ this.model.dispose(); }catch(e){}
+            try{ 
+              this.model.dispose(); 
+            }catch{
+              // ignore error
+            }
           }
 
           this.model = door;
@@ -1157,10 +1161,10 @@ export class ModuleDoor extends ModuleObject {
       this.bearing = this.rotation.z = this.template.RootNode.getFieldByLabel('Bearing').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -1168,9 +1172,9 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           effect.loadModel();
@@ -1213,14 +1217,16 @@ export class ModuleDoor extends ModuleObject {
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
-    }catch(e){}
+    }catch{
+      // ignore error
+    }
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTD ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
@@ -1233,7 +1239,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
@@ -1278,7 +1284,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SecretDoorDC') ).setValue(0);
@@ -1333,7 +1339,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   static GenerateTemplate(){
-    let template = new GFFObject();
+    const template = new GFFObject();
     template.FileType = 'UTD ';
 
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AnimationState') );

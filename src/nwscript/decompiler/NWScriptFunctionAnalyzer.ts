@@ -571,7 +571,7 @@ export class NWScriptFunctionAnalyzer {
    */
   private isInitializationBlock(block: NWScriptBasicBlock): boolean {
     // Check if all instructions in the block are initialization instructions
-    let allInit = true;
+    const allInit = true;
     let hasNonInit = false;
 
     for (const instruction of block.instructions) {

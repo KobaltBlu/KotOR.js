@@ -201,7 +201,7 @@ export class MenuEquipment extends K1_MenuEquipment {
         e.stopPropagation();
         if(this.selectedItem){
           //console.log('selectedItem', this.selectedItem, this.slot, );
-          let currentPC = GameState.PartyManager.party[0];
+          const currentPC = GameState.PartyManager.party[0];
           currentPC.equipItem(this.slot, this.selectedItem).then( () => {
             this.updateSlotIcons();
           });
@@ -219,7 +219,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       }
 
       this.BTN_SWAPWEAPONS.addEventListener('click', (e) => {
-        let currentPC = GameState.PartyManager.party[0];
+        const currentPC = GameState.PartyManager.party[0];
         if(currentPC){
           const right_1 = currentPC.equipment.RIGHTHAND;
           const right_2 = currentPC.equipment.RIGHTHAND2;
@@ -303,18 +303,18 @@ export class MenuEquipment extends K1_MenuEquipment {
     if(!currentPC) return;
 
     if (currentPC.getRace() == 6) {
-      let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
+      const l_weap2 = currentPC.getItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
       if (l_weap2) {
-        let icon = 'i' + l_weap2.baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
+        const icon = 'i' + l_weap2.baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_L2.setFillTextureName(icon);
         }
       } else if (force || this.LBL_INV_WEAP_L2.getFillTextureName() != 'iweap_l') {
         this.LBL_INV_WEAP_L2.setFillTextureName('iweap_l');
       }
-      let r_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+      const r_weap2 = currentPC.getItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
       if (r_weap2) {
-        let icon = 'i' + r_weap2.baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
+        const icon = 'i' + r_weap2.baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_WEAP_R2.getFillTextureName() != icon) {
           this.LBL_INV_WEAP_R2.setFillTextureName(icon);
         }

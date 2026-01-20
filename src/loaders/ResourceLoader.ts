@@ -69,7 +69,7 @@ export class ResourceLoader {
     ResourceLoader.ClearCache(CacheScope.MODULE);
     this.ModuleArchives = archives;
 
-    let start = Date.now();
+    const start = Date.now();
     console.log(`InitModuleCache: Start`);
 
     const scope = ResourceLoader.CacheScopes[CacheScope.MODULE];
@@ -99,13 +99,13 @@ export class ResourceLoader {
       }
     }));
 
-    let end = Date.now();
+    const end = Date.now();
     console.log(`InitModuleCache: End - ${((end-start)/1000)}s`);
 
   }
 
   static ClearCache(scope: CacheScope){
-    if(!!ResourceLoader.CacheScopes[scope])
+    if(ResourceLoader.CacheScopes[scope])
       ResourceLoader.CacheScopes[scope].forEach( cacheType => {
         cacheType.clear();
       });
@@ -213,7 +213,7 @@ export class ResourceLoader {
   }
 
   static async searchLocal(resId: number, resRef = ''): Promise<Uint8Array> {
-    let data = await this.searchOverride(resId, resRef);
+    const data = await this.searchOverride(resId, resRef);
     if(data){
       return data;
     }

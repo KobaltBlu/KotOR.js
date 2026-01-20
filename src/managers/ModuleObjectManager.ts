@@ -104,7 +104,7 @@ export class ModuleObjectManager {
     OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
     let obj: any = undefined;
     if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
       for(let i = 0, len = this.module.area.placeables.length; i < len; i++){
@@ -190,7 +190,7 @@ export class ModuleObjectManager {
 
   public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
     let len = this.module.area.placeables.length;
     for(let i = 0; i < len; i++){
       if(this.module.area.placeables[i].getTag().toLowerCase() == sTag)
@@ -250,8 +250,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
+          const distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -278,8 +278,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -288,7 +288,7 @@ export class ModuleObjectManager {
     );
 
     let result: any;
-    let count = results.length;
+    const count = results.length;
 
     for(let i = 0; i < count; i++){
       result = results[i];
@@ -341,8 +341,8 @@ export class ModuleObjectManager {
     results.sort(
       function(a,b) {
         try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
+          const distanceA = a.position.distanceTo(oObject.position);
+          const distanceB = b.position.distanceTo(oObject.position);
           return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
         }catch(e){
           return 0;
@@ -464,7 +464,7 @@ export class ModuleObjectManager {
       list = list.concat(PartyManager.party);
     }
 
-    let results: ModuleCreature[] = [];
+    const results: ModuleCreature[] = [];
     
     switch(nFirstCriteriaType){
       case CreatureType.RACIAL_TYPE:
@@ -590,7 +590,7 @@ export class ModuleObjectManager {
   public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];
-    let results: ModuleObject[] = [];
+    const results: ModuleObject[] = [];
 
     /*
     int    ModuleObjectType.CREATURE         = 1;
@@ -665,7 +665,7 @@ export class ModuleObjectManager {
   }
 
   public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {
-    let object_pool: ModuleObject[] = [];
+    const object_pool: ModuleObject[] = [];
     
     object_pool.concat(
       this.module.area.creatures.filter( 

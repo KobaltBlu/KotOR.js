@@ -143,7 +143,7 @@ export class Project {
 
     try{
       const buffer = await ProjectFileSystem.readFile(`${DIR_FORGE}/settings.json`);
-      let decoder = new TextDecoder('utf8');
+      const decoder = new TextDecoder('utf8');
       this.settings = JSON.parse(
         decoder.decode(buffer)
       );
@@ -236,7 +236,7 @@ export class Project {
   }
 
   getTemplatesByType ( restype = '' ) {
-    let files: any[] = [];
+    const files: any[] = [];
 
     for(let i = 0; i < this.files.length; i++){
       if(this.files[i].ext == restype)
@@ -249,7 +249,7 @@ export class Project {
   addToOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index == -1){
           this.settings.open_files.push(editor_file.getPath());
           this.saveSettings();
@@ -263,7 +263,7 @@ export class Project {
   removeFromOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index >= 0){
           this.settings.open_files.splice(index, 1);
           this.saveSettings();

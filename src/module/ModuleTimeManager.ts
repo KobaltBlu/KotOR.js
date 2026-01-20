@@ -102,7 +102,7 @@ export class ModuleTimeManager {
 
   getFutureTimeFromSeconds(seconds: number = 0){
     // console.log('getFutureTimeFromSeconds', seconds);
-    let future = this.calendar.clone();
+    const future = this.calendar.clone();
     future.advanceDeltaTime(seconds);
     // console.log('getFutureTimeFromSeconds.future', (future.pauseTime - this.pauseTime), (future.pauseTime - this.pauseTime) / 1000 );
     return future;

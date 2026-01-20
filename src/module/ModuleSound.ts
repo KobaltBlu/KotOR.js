@@ -182,7 +182,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   async loadSound(){
-    const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    const type = this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }
@@ -313,9 +313,9 @@ export class ModuleSound extends ModuleObject {
       this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -324,9 +324,7 @@ export class ModuleSound extends ModuleObject {
 
     this.soundType = AudioEmitterType.GLOBAL;
     if(this.positional){
-      this.soundType = AudioEmitterType.POSITIONAL;
-    }else if(this.positional &&this.randomPosition){
-      this.soundType = AudioEmitterType.RANDOM;
+      this.soundType = this.randomPosition ? AudioEmitterType.RANDOM : AudioEmitterType.POSITIONAL;
     }
     
     this.initialized = true;
@@ -334,7 +332,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
@@ -359,13 +357,13 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Sounds
-    let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
+    const sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
     for(let i = 0; i < this.soundResRefs.length; i++){
-      let soundStruct = new GFFStruct();
+      const soundStruct = new GFFStruct();
       soundStruct.addField( new GFFField(GFFDataType.RESREF, 'Sound', this.soundResRefs[i]) );
       sounds.addChildStruct(soundStruct);
     }

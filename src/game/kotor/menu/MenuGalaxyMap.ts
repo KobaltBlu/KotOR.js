@@ -184,10 +184,10 @@ export class MenuGalaxyMap extends GameMenu {
   }
 
   UpdateScale() {
-    let controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
+    const controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
     for (let i = 0; i < controls.length; i++) {
-      let control = controls[i];
-      let plnt = Planetary.GetPlanetByGUITag(control.name);
+      const control = controls[i];
+      const plnt = Planetary.GetPlanetByGUITag(control.name);
       if (plnt) {
         if (plnt.enabled) {
           control.show();

@@ -685,7 +685,7 @@ export class NWScriptLanguageService {
                 const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
                 
                 // Look backwards for comment blocks (similar to engine actions)
-                let commentLines: string[] = [];
+                const commentLines: string[] = [];
                 let inBlockComment = false;
                 
                 for (let i = funcLine - 1; i >= 0; i--) {
@@ -1079,7 +1079,7 @@ export class NWScriptLanguageService {
             const column = nw_constant.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             
@@ -1158,7 +1158,7 @@ export class NWScriptLanguageService {
             const column = nw_action.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
               tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
             ) as any;
             

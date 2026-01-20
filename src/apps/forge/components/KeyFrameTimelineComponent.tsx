@@ -116,7 +116,7 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onSelectAnimationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let index = parseInt(e.target.value);
+    const index = parseInt(e.target.value);
     tab.setAnimationByIndex(index);
   }
 
@@ -129,8 +129,8 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
 
       //Update the lips elapsed time based on the seekbar position
-      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-      let time = getTimelinePixelPositionAsTime(position);
+      const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      const time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
       
       const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
@@ -139,8 +139,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
-    let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-    let time = getTimelinePixelPositionAsTime(position);
+    const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+    const time = getTimelinePixelPositionAsTime(position);
     if(tab.scrubbing){
       tab.seek(time);
       
@@ -186,9 +186,9 @@ export const KeyFrameTimelineComponent = function(props: any){
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
-      let maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
+      const maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
       
-      let position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
+      const position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
       if(position < 0) return 0;
       if(position > maxPixels) return maxPixels;
       return position;
@@ -197,8 +197,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const getTimelinePixelPositionAsTime = (position: number = 0) => {
-    let percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
-    let time = tab.getCurrentAnimationLength() * percentage;
+    const percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
+    const time = tab.getCurrentAnimationLength() * percentage;
     if(time < 0) return 0;
     if(time > tab.getCurrentAnimationLength()) return tab.getCurrentAnimationLength();
     return time;
@@ -216,8 +216,8 @@ export const KeyFrameTimelineComponent = function(props: any){
       factor = 60;
     }
 
-    let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
+    const nthTime = factor/60;
+    const count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
 
     for(let i = 0; i <= count; i++){
       let s = factor * i;

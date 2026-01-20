@@ -21,12 +21,12 @@ export class NWScriptEventFactory {
     if(struct instanceof GFFStruct){
       let event: NWScriptEvent = undefined as any;
 
-      let eType = struct.getFieldByLabel('EventType').getValue();
+      const eType = struct.getFieldByLabel('EventType').getValue();
 
-      let intList: number[] = [];
-      let floatList: number[] = [];
-      let stringList: string[] = [];
-      let objectList: number[] = [];
+      const intList: number[] = [];
+      const floatList: number[] = [];
+      const stringList: string[] = [];
+      const objectList: number[] = [];
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){

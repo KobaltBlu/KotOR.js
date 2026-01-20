@@ -12,7 +12,7 @@ if(!uuid) throw new Error('UUID is required');
 
 const appState = new DebuggerState(uuid);
 DebugApp.appState = appState;
-//@ts-ignore
+//@ts-expect-error because I am too lazy to fix it
 window.appState = DebugApp.appState;
 
 const loadReactApplication = () => {

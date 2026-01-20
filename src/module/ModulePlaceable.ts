@@ -221,10 +221,10 @@ export class ModulePlaceable extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
     if(!this.animStateInfo.currentAnimState) this.setAnimationState(ModulePlaceableAnimState.DEFAULT);
     if(this.animStateInfo.currentAnimState){
-      let animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
+      const animation = this.animationConstantToAnimation(this.animStateInfo.currentAnimState);
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
@@ -335,7 +335,7 @@ export class ModulePlaceable extends ModuleObject {
 
   getItemByTag(sTag = ''): ModuleItem {
     for(let i = 0; i < this.inventory.length; i++){
-      let item = this.inventory[i];
+      const item = this.inventory[i];
       if(item.getTag().toLowerCase() == sTag.toLowerCase()){
         return item;
       }
@@ -517,8 +517,8 @@ export class ModulePlaceable extends ModuleObject {
 
     const nSecuritySkill = object.getSkillLevel(SkillType.SECURITY);
     if(this.isLocked() && !this.keyRequired && nSecuritySkill >= 1){
-      let d20 = 20;//d20 rolls are auto 20's outside of combat
-      let skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
+      const d20 = 20;//d20 rolls are auto 20's outside of combat
+      const skillCheck = (((object.getWIS()/2) + nSecuritySkill) + d20) - this.openLockDC;
       if(skillCheck >= 1 && nSecuritySkill >= 1){
         this.unlock(object);
         if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
@@ -587,7 +587,11 @@ export class ModulePlaceable extends ModuleObject {
 
       if(this.model instanceof OdysseyModel3D){
         this.model.removeFromParent();
-        try{ this.model.dispose(); }catch(e){}
+        try{ 
+          this.model.dispose(); 
+        }catch{
+          // ignore error
+        }
       }
 
       this.model = plc;
@@ -642,17 +646,17 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   loadInventory(){
-    let inventory = this.getItemList();
+    const inventory = this.getItemList();
     for(let i = 0; i < inventory.length; i++){
       this.loadItem( GFFObject.FromStruct( inventory[i] ) );
     }
   }
 
   loadItem( template: GFFObject){
-    let item = new GameState.Module.ModuleArea.ModuleItem(template);
+    const item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     item.load();
-    let hasItem = this.getItemByTag(item.getTag());
+    const hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;
@@ -871,10 +875,10 @@ export class ModulePlaceable extends ModuleObject {
       this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -882,9 +886,9 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('EffectList')){
-      let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+      const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
       for(let i = 0; i < effects.length; i++){
-        let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+        const effect = GameEffectFactory.EffectFromStruct(effects[i]);
         if(effect){
           effect.setAttachedObject(this);
           this.effects.push(effect);
@@ -912,11 +916,13 @@ export class ModulePlaceable extends ModuleObject {
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
-    }catch(e){}
+    }catch{
+      // ignore error
+    }
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTP ';
 
     const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
@@ -992,7 +998,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
@@ -1063,7 +1069,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   static GenerateTemplate(){
-    let template = new GFFObject();
+    const template = new GFFObject();
     template.FileType = 'UTP ';
 
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AnimationState') );

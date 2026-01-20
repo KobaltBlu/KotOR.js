@@ -194,7 +194,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_LOGANDII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_LOGANDII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
 
@@ -212,7 +212,7 @@ export const CALL_LOGANDII = function( this: NWScriptInstance, instruction: NWSc
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_LOGORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_LOGORII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
 
@@ -230,7 +230,7 @@ export const CALL_LOGORII = function( this: NWScriptInstance, instruction: NWScr
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_INCORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_INCORII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
 
@@ -245,7 +245,7 @@ export const CALL_INCORII = function( this: NWScriptInstance, instruction: NWScr
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_EXCORII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_EXCORII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 ^ this.var2, NWScriptDataType.INTEGER );
@@ -259,7 +259,7 @@ export const CALL_EXCORII = function( this: NWScriptInstance, instruction: NWScr
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_BOOLANDII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_BOOLANDII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
 
@@ -573,7 +573,7 @@ export const CALL_LEQ = function( this: NWScriptInstance, instruction: NWScriptI
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_SHLEFTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_SHLEFTII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 << this.var2, NWScriptDataType.INTEGER );
@@ -587,7 +587,7 @@ export const CALL_SHLEFTII = function( this: NWScriptInstance, instruction: NWSc
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_SHRIGHTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_SHRIGHTII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 >> this.var2, NWScriptDataType.INTEGER );
@@ -601,7 +601,7 @@ export const CALL_SHRIGHTII = function( this: NWScriptInstance, instruction: NWS
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_USHRIGHTII = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_USHRIGHTII = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.var2 = this.stack.pop()?.value;
   this.var1 = this.stack.pop()?.value;
   this.stack.push( this.var1 >>> this.var2, NWScriptDataType.INTEGER );
@@ -818,7 +818,7 @@ export const CALL_NEG = function( this: NWScriptInstance, instruction: NWScriptI
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_COMPI = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_COMPI = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.stack.push( ~this.stack.pop()?.value, NWScriptDataType.INTEGER );
 }
 
@@ -846,7 +846,7 @@ export const CALL_MOVSP = function( this: NWScriptInstance, instruction: NWScrip
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @deprecated
  */
-export const CALL_STORE_STATEALL = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_STORE_STATEALL = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   //OBSOLETE NOT SURE IF USED IN KOTOR
 }
 
@@ -902,7 +902,7 @@ export const CALL_JZ = function( this: NWScriptInstance, instruction: NWScriptIn
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_RETN = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_RETN = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   if(!this.subRoutines.length){
     this.subRoutine = undefined;
     this.running = false;
@@ -964,7 +964,7 @@ export const CALL_DESTRUCT = function( this: NWScriptInstance, instruction: NWSc
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_NOTI = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_NOTI = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   if(!this.stack.pop()?.value)
     this.stack.push(NW_TRUE, NWScriptDataType.INTEGER);//TRUE
   else
@@ -1081,7 +1081,7 @@ export const CALL_INCIBP = function( this: NWScriptInstance, instruction: NWScri
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_SAVEBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_SAVEBP = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.stack.saveBP();
 }
 
@@ -1093,7 +1093,7 @@ export const CALL_SAVEBP = function( this: NWScriptInstance, instruction: NWScri
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_RESTOREBP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_RESTOREBP = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   this.stack.restoreBP();
 }
 
@@ -1147,6 +1147,6 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const CALL_NOP = function( this: NWScriptInstance, instruction: NWScriptInstruction ){
+export const CALL_NOP = function( this: NWScriptInstance, _instruction: NWScriptInstruction ){
   //NO Operation
 }

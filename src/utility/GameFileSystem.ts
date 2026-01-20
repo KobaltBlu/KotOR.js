@@ -6,7 +6,7 @@ import { IGameFileSystemReadDirOptions } from "../interface/filesystem/IGameFile
 declare const dialog: any;
 
 const spleep = (time: number = 0) => {
-  return new Promise( (resolve, reject) => {
+  return new Promise( (resolve, _reject) => {
     setTimeout(resolve, time);
   });
 }
@@ -94,8 +94,8 @@ export class GameFileSystem {
       const file = await handle.getFile();
       if(!file) throw new Error('Failed to read file from handle!');
 
-      let blob = await file.slice(position, position + length);
-      let arrayBuffer = await blob.arrayBuffer();
+      const blob = await file.slice(position, position + length);
+      const arrayBuffer = await blob.arrayBuffer();
       output.set(new Uint8Array(arrayBuffer), offset);
       // output.copy(new Uint8Array(arrayBuffer));
     }
@@ -103,7 +103,7 @@ export class GameFileSystem {
 
   static async close(handle: FileSystemFileHandle|number){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      return new Promise<void>( (resolve, reject) => {
+      return new Promise<void>( (resolve, _reject) => {
         fs.close(handle as number, () => {
           resolve();
         })
@@ -128,14 +128,14 @@ export class GameFileSystem {
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
       
-      let handle = await file.getFile();
+      const handle = await file.getFile();
       return new Uint8Array( await handle.arrayBuffer() );
     }
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, _reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.writeFile(path.join(ApplicationProfile.directory, filepath), data, (err) => {
           resolve(!err);
@@ -155,7 +155,7 @@ export class GameFileSystem {
         if(!newFile) throw new Error('Failed to create file');
 
         try{
-          let stream = await newFile.createWritable();
+          const stream = await newFile.createWritable();
           await stream.write(data as any);
           await stream.close();
           resolve(true);
@@ -274,7 +274,7 @@ export class GameFileSystem {
     }
     return new Promise<string[]>( async (resolve, reject) => {
       try{
-        let dir_path = path.join(ApplicationProfile.directory, resource_path);
+        const dir_path = path.join(ApplicationProfile.directory, resource_path);
         
         if(!(await this.isFSDirectory(resource_path))){
           if(!opts.list_dirs){
@@ -302,8 +302,8 @@ export class GameFileSystem {
                 file_path = path.join(resource_path, file.name);
                 is_dir = (await this.isFSDirectory(file_path));
                 try{
-                  if(!!is_dir){
-                    if(!!opts.recursive){
+                  if(is_dir){
+                    if(opts.recursive){
                       await this.readdir_fs(file_path, opts, files, depthState);
                     }else{
                       files.push(path.join(file_path));
@@ -333,7 +333,7 @@ export class GameFileSystem {
   }
 
   static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, _reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, async (err) => {
@@ -383,7 +383,7 @@ export class GameFileSystem {
   }
 
   static async rmdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, _reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         console.log(`fs.rmdir`, path.join(ApplicationProfile.directory, dirPath));
@@ -402,7 +402,7 @@ export class GameFileSystem {
         try{
           const details = path.parse(dirPath);
           // let handle = await this.resolvePathDirectoryHandle(dirPath);
-          let parentHandle = await this.resolvePathDirectoryHandle(details.dir);
+          const parentHandle = await this.resolvePathDirectoryHandle(details.dir);
           if(parentHandle == ApplicationProfile.directoryHandle) resolve(false);
           if(parentHandle){
             for await (const entry of parentHandle.values()) {
@@ -431,7 +431,7 @@ export class GameFileSystem {
   }
 
   static exists(dirOrFilePath: string): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>( async (resolve, _reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
           if(err){
@@ -447,9 +447,9 @@ export class GameFileSystem {
         const details = path.parse(dirOrFilePath);
         try{
           if(details.ext){
-            let handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
+            const handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
             if(handle){
-              let fileHandle = await handle.getFileHandle(details.base);
+              const fileHandle = await handle.getFileHandle(details.base);
               if(fileHandle){
                 resolve(true);
                 return;
@@ -462,7 +462,7 @@ export class GameFileSystem {
               return;
             }
           }else{
-            let handle = await this.resolvePathDirectoryHandle(dirOrFilePath);
+            const handle = await this.resolvePathDirectoryHandle(dirOrFilePath);
             if(handle){
               resolve(true);
               return;
@@ -497,8 +497,8 @@ export class GameFileSystem {
       })
     }else{
       if(handleOrPath instanceof FileSystemFileHandle){
-        let file = await handleOrPath.getFile();
-        //@ts-expect-error
+        const file = await handleOrPath.getFile();
+        //@ts-expect-error because I am too lazy to fix it
         file.remove();
       }
     }
@@ -506,7 +506,7 @@ export class GameFileSystem {
 
   static async showOpenFileDialog(){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-
+      // todo: implement
     }else{
       // const pickerOpts = {
       //   types: [
@@ -520,14 +520,14 @@ export class GameFileSystem {
       //   excludeAcceptAllOption: true,
       //   multiple: false
       // };
-      let [fileHandle] = await window.showOpenFilePicker({multiple: false});
+      const [fileHandle] = await window.showOpenFilePicker({multiple: false});
       return fileHandle;
     }
   }
 
   static async showSaveFileDialog(){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-
+      // todo: implement
     }else{
       // const opts = {
       //   types: [{
@@ -535,7 +535,7 @@ export class GameFileSystem {
       //     accept: {'text/plain': ['.txt']},
       //   }],
       // };
-      let fileHandle = await window.showSaveFilePicker({
+      const fileHandle = await window.showSaveFilePicker({
         // d
       });
     }
@@ -606,7 +606,7 @@ export class GameFileSystem {
 
   static async initializeGameDirectory(){
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-      ApplicationProfile.directory = ApplicationProfile.directory;
+      // ApplicationProfile.directory = ApplicationProfile.directory;
     }else{
       ApplicationProfile.directoryHandle = await window.showDirectoryPicker({
         mode: "readwrite"
@@ -627,7 +627,7 @@ export class GameFileSystem {
   }
 
   static async showRequestDirectoryDialog(){
-    let handle = await window.showDirectoryPicker({
+    const handle = await window.showDirectoryPicker({
       id: ApplicationProfile.profile?.key,
       mode: "readwrite"
     });

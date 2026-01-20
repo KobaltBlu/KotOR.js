@@ -34,8 +34,8 @@ export class INIConfig {
     try{
       const buffer = await GameFileSystem.readFile(this.ini_path);
       const decoder = new TextDecoder('utf-8');
-      let ini_text = decoder.decode(buffer);
-      let lines = ini_text.split(/\r?\n/);
+      const ini_text = decoder.decode(buffer);
+      const lines = ini_text.split(/\r?\n/);
 
       this.current_section = null;
 
@@ -122,7 +122,7 @@ export class INIConfig {
   toStringNodeWalker(key: string, value: any): string {
     if(typeof value == 'object'){
       let string = '['+key+']\r\n';
-      let keys = Object.keys(value);
+      const keys = Object.keys(value);
       for(let i = 0, len = keys.length; i < len; i++){
         string += this.toStringNodeWalker(keys[i], value[keys[i]]);
       }

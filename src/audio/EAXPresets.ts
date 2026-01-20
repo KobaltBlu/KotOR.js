@@ -39,7 +39,7 @@ export class EAXPresets {
 
   static PresetFromIndex(index = 0): IEAXPreset {
 
-    let data = EAXPresets.PresetArray[index];
+    const data = EAXPresets.PresetArray[index];
     if(!data){
       console.error('EAX preset not found', index);
       return;

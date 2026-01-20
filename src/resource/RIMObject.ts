@@ -161,7 +161,7 @@ export class RIMObject {
   }
 
   getResource(resRef: string, resType: number): IRIMResource {
-    let typeMap = this.resourceMap.get(resType);
+    const typeMap = this.resourceMap.get(resType);
     if(!typeMap){
       return undefined;
     }
@@ -225,7 +225,7 @@ export class RIMObject {
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
-      let buffer = new Uint8Array(resource.size);
+      const buffer = new Uint8Array(resource.size);
       const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
       // console.log('RIM Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));

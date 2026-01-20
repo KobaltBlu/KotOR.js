@@ -35,7 +35,7 @@ export class TLKString {
 
   GetValue(binary: BinaryReader, onReturn?: Function) {
     if(this.Value == null) {
-      let pos = binary.tell();
+      const pos = binary.tell();
       binary.seek(this.StringOffset);
       this.Value = binary.readChars(this.StringLength).replace(/\0[\s\S]*$/g,'');
       if(onReturn != null)

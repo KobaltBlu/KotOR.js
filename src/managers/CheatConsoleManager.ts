@@ -42,7 +42,10 @@ export class CheatConsoleManager {
     points = Math.abs(points);
     const player = GameState.getCurrentPlayer();
     if(player){
-      
+      const cls = player.getMainClass();
+      if(cls){
+        cls.level += points;
+      }
     }
   }
 
@@ -96,7 +99,7 @@ export class CheatConsoleManager {
   static heal (){
     const player = GameState.getCurrentPlayer();
     if(player){
-      
+      player.setHP(player.getMaxHP());
     }
   }
 

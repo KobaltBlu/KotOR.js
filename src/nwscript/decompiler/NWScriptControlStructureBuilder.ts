@@ -1643,7 +1643,7 @@ export class NWScriptControlStructureBuilder {
           body,
           condition: conditionNode
         };
-      case ControlStructureType.FOR:
+      case ControlStructureType.FOR: {
         const initNode = structure.initBlock 
           ? { type: 'basic_block' as const, block: structure.initBlock }
           : null;
@@ -1657,6 +1657,7 @@ export class NWScriptControlStructureBuilder {
           increment: incrementNode,
           body
         };
+      }
       default:
         // Fallback to while
         return {

@@ -35,8 +35,8 @@ export const ModuleEditorSidebarComponent = function(props: any){
 
   useEffectOnce( () => { //constructor
 
-    let keys: KotOR.IKEYEntry[] = [];
-    let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
+    const keys: KotOR.IKEYEntry[] = [];
+    const res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
       keys.push(
         KotOR.KEYManager.Key.getFileKeyByRes(res)

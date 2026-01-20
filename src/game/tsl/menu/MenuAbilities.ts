@@ -213,7 +213,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_DESC.clearItems();
     this.LB_DESC_FEATS.clearItems();
     this.LB_ABILITY.clearItems();
-    let items = this.getFilteredItems();
+    const items = this.getFilteredItems();
 
     switch(this.filter){
       case AbilityFilter.SKILLS:

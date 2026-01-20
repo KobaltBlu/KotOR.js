@@ -179,7 +179,7 @@ export class NWScriptParser {
           const funcLine = statement.source.first_line - 1; // Convert to 0-based index
           
           // Look backwards for comment blocks
-          let commentLines: string[] = [];
+          const commentLines: string[] = [];
           let inBlockComment = false;
           
           for (let i = funcLine - 1; i >= 0; i--) {
@@ -1439,8 +1439,8 @@ export class NWScriptParser {
       semanticNode.value = this.parseASTStatement(semanticNode.value);
     }
 
-    let value_type = this.getValueDataType(semanticNode.value);
-    let value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
+    const value_type = this.getValueDataType(semanticNode.value);
+    const value_type_unary = this.getValueDataTypeUnary(semanticNode.value);
     semanticNode.datatype = { type: 'datatype', unary: value_type_unary, value: value_type };
     if(semanticNode.type == 'neg'){
       if(    !(value_type == 'int')

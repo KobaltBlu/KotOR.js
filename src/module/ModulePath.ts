@@ -97,7 +97,7 @@ export class ModulePath {
         const point = this.points[i];
         if(!point.num_connections) continue;
         
-        let connIdx = point.first_connection;
+        const connIdx = point.first_connection;
         for(let j = 0; j < point.num_connections; j++){
           const pointIdx = pathConnections[connIdx + j].getFieldByLabel('Destination').getValue();
           point.addConnection(this.points[pointIdx]);
@@ -127,7 +127,7 @@ export class ModulePath {
     const connDataSize = 6;
     const bufferSize = (this.pointCount * pointDataSize) + (this.connectionCount * connDataSize);
 
-    const pointDataStart = 0;
+    const _pointDataStart = 0;
     let connectionIndexStart = (numPoints * 2);
 
     if(!this.helperColors){

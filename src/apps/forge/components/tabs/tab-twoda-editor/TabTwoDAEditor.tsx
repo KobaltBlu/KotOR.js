@@ -35,7 +35,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
   }
 
   return (
-    (!!twoDAObject) ? (
+    (twoDAObject) ? (
       <div style={{position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'auto'}}>
         <table className="twoda">
           <thead>

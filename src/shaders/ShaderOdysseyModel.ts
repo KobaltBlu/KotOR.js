@@ -1,46 +1,46 @@
 import * as THREE from "three";
 import { Shader } from "./Shader";
 
-const odyssey_envmap_fragment = `
-#ifdef USE_ENVMAP
-  #ifdef ENV_WORLDPOS
-    vec3 cameraToFrag;
-    if ( isOrthographic ) {
-      cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
-    } else {
-      cameraToFrag = normalize( vWorldPosition - cameraPosition );
-    }
-    vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-    #ifdef ENVMAP_MODE_REFLECTION
-      vec3 reflectVec = reflect( cameraToFrag, worldNormal );
-    #else
-      vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );
-    #endif
-  #else
-    vec3 reflectVec = vReflect;
-  #endif
-  #ifdef ENVMAP_TYPE_CUBE
-    vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
-  #elif defined( ENVMAP_TYPE_CUBE_UV )
-    vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
-  #else
-    vec4 envColor = vec4( 0.0 );
-  #endif
-  // #ifdef ENVMAP_BLENDING_MULTIPLY
-  //   outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );
-  // #elif defined( ENVMAP_BLENDING_MIX )
-  //   outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );
-  // #elif defined( ENVMAP_BLENDING_ADD )
-  //   outgoingLight += envColor.xyz * specularStrength * reflectivity;
-  // #endif
-  #ifdef ENVMAP_BLENDING_MULTIPLY
-    outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
-  #elif defined( ENVMAP_BLENDING_MIX )
-    outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
-  #elif defined( ENVMAP_BLENDING_ADD )
-    outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a); //odyssey uses the alpha of the texture to blend the envmap
-  #endif
-#endif`
+// const odyssey_envmap_fragment = `
+// #ifdef USE_ENVMAP
+//   #ifdef ENV_WORLDPOS
+//     vec3 cameraToFrag;
+//     if ( isOrthographic ) {
+//       cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
+//     } else {
+//       cameraToFrag = normalize( vWorldPosition - cameraPosition );
+//     }
+//     vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
+//     #ifdef ENVMAP_MODE_REFLECTION
+//       vec3 reflectVec = reflect( cameraToFrag, worldNormal );
+//     #else
+//       vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );
+//     #endif
+//   #else
+//     vec3 reflectVec = vReflect;
+//   #endif
+//   #ifdef ENVMAP_TYPE_CUBE
+//     vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
+//   #elif defined( ENVMAP_TYPE_CUBE_UV )
+//     vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
+//   #else
+//     vec4 envColor = vec4( 0.0 );
+//   #endif
+//   // #ifdef ENVMAP_BLENDING_MULTIPLY
+//   //   outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );
+//   // #elif defined( ENVMAP_BLENDING_MIX )
+//   //   outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );
+//   // #elif defined( ENVMAP_BLENDING_ADD )
+//   //   outgoingLight += envColor.xyz * specularStrength * reflectivity;
+//   // #endif
+//   #ifdef ENVMAP_BLENDING_MULTIPLY
+//     outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
+//   #elif defined( ENVMAP_BLENDING_MIX )
+//     outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
+//   #elif defined( ENVMAP_BLENDING_ADD )
+//     outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a); //odyssey uses the alpha of the texture to blend the envmap
+//   #endif
+// #endif`
 
 THREE.ShaderChunk.meshodyssey_vert = `
 #define PHONG

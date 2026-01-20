@@ -121,7 +121,7 @@ export class Keyboard {
   }
 
   init(){
-    for (let key in this.action) {
+    for (const key in this.action) {
       (this.action as any)[key] = new KeyInput(key);
     }
   }
@@ -154,7 +154,7 @@ export class Keyboard {
 
   onFrameEnd(delta: number = 0){
     //Set all pressed keys to false so they can only be triggered on this frame 
-    for (let key in this.action) {
+    for (const key in this.action) {
       (this.action as any)[key].pressed = false;
     }
   }

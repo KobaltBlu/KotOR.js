@@ -134,8 +134,8 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.ACTION],
     action: function(this: NWScriptInstance, args: [number, any]){
       
-      let futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(args[0])
-      let timedEvent = new GameState.GameEventFactory.EventTimedEvent();
+      const futureTime = GameState.module.timeManager.getFutureTimeFromSeconds(args[0])
+      const timedEvent = new GameState.GameEventFactory.EventTimedEvent();
       timedEvent.setCaller(this.caller);
       timedEvent.setObject(this.caller);
       timedEvent.setDay(futureTime.pauseDay);
@@ -431,34 +431,49 @@ NWScriptDefK1.Actions = {
       switch(args[1]){
         case 0:
           slot = ModuleCreatureArmorSlot.HEAD;
+          break;
         case 1:
           slot = ModuleCreatureArmorSlot.ARMOR;
+          break;
         case 2:
           slot = ModuleCreatureArmorSlot.ARMS;
+          break;
         case 3:
           slot = ModuleCreatureArmorSlot.RIGHTHAND;
+          break;
         case 4:
           slot = ModuleCreatureArmorSlot.LEFTHAND;
+          break;
         case 5:
           slot = ModuleCreatureArmorSlot.LEFTARMBAND;
+          break;
         case 6:
           slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
+          break;
         case 7:
           slot = ModuleCreatureArmorSlot.IMPLANT;
+          break;
         case 8:
           slot = ModuleCreatureArmorSlot.BELT;
+          break;
         case 9:
           slot = ModuleCreatureArmorSlot.CLAW1;
+          break;
         case 10:
           slot = ModuleCreatureArmorSlot.CLAW2;
+          break;
         case 14:
           slot = ModuleCreatureArmorSlot.CLAW3;
+          break;
         case 15:
-          slot = ModuleCreatureArmorSlot.HIDE;
+          slot = ModuleCreatureArmorSlot.HIDE;  
+          break;
         case 16:
-          slot = ModuleCreatureArmorSlot.HEAD;
+          slot = ModuleCreatureArmorSlot.HEAD;  
+          break;
         case 17:
           slot = ModuleCreatureArmorSlot.ARMOR; //Creature Armor
+          break;
       }
       const action = new GameState.ActionFactory.ActionEquipItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
@@ -750,7 +765,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectAssuredHit();
+      const effect = new GameState.GameEffectFactory.EffectAssuredHit();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -1062,7 +1077,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectHeal();
+      const effect = new GameState.GameEffectFactory.EffectHeal();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1075,11 +1090,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamage();
+      const effect = new GameState.GameEffectFactory.EffectDamage();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
 
-      let damageTypeIndex = Math.log2(args[1]);
+      const damageTypeIndex = Math.log2(args[1]);
       effect.setInt( damageTypeIndex , args[0]);
 
       effect.setInt(14, args[0]);
@@ -1096,7 +1111,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectAbilityIncrease();
+      const effect = new GameState.GameEffectFactory.EffectAbilityIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1110,7 +1125,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageResistance();
+      const effect = new GameState.GameEffectFactory.EffectDamageResistance();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1125,7 +1140,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectResurrection();
+      const effect = new GameState.GameEffectFactory.EffectResurrection();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -1138,7 +1153,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(GameState.module.area, ModuleObjectType.ModuleArea)){
-        GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
+        return GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
       }
       return 0;
     }
@@ -1445,7 +1460,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectACIncrease();
+      const effect = new GameState.GameEffectFactory.EffectACIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
@@ -1476,7 +1491,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectSavingThrowIncrease();
+      const effect = new GameState.GameEffectFactory.EffectSavingThrowIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
@@ -1492,7 +1507,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectAttackIncrease();
+      const effect = new GameState.GameEffectFactory.EffectAttackIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]); //nBonus
@@ -1506,7 +1521,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageReduction();
+      const effect = new GameState.GameEffectFactory.EffectDamageReduction();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]); //nAmount
@@ -1521,7 +1536,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageIncrease();
+      const effect = new GameState.GameEffectFactory.EffectDamageIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1663,7 +1678,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EVENT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let event = new EventUserDefined();
+      const event = new EventUserDefined();
       event.setInt(0, args[0]);
       return event;
     }
@@ -1674,7 +1689,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDeath();
+      const effect = new GameState.GameEffectFactory.EffectDeath();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1688,7 +1703,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectKnockdown();
+      const effect = new GameState.GameEffectFactory.EffectKnockdown();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -1832,7 +1847,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 5); // Sleep State
@@ -1845,7 +1860,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectSpellImmunity();
+      const effect = new GameState.GameEffectFactory.EffectSpellImmunity();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1892,7 +1907,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      let effect = new GameState.GameEffectFactory.EffectForceJump();
+      const effect = new GameState.GameEffectFactory.EffectForceJump();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
@@ -1906,7 +1921,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 6); // Sleep State
@@ -1962,7 +1977,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       if(args[0] < 0) return undefined;
-      let effect = new GameState.GameEffectFactory.EffectTemporaryForce();
+      const effect = new GameState.GameEffectFactory.EffectTemporaryForce();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -1975,7 +1990,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 1); // Confused State
@@ -1988,7 +2003,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 2); // Frightened State
@@ -2001,7 +2016,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 7); // Choke State
@@ -2023,7 +2038,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 4); // Stunned State
@@ -2062,7 +2077,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectRegenerate();
+      const effect = new GameState.GameEffectFactory.EffectRegenerate();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2076,7 +2091,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectMovementSpeedIncrease();
+      const effect = new GameState.GameEffectFactory.EffectMovementSpeedIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2154,7 +2169,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [number, string, string, string]){
-      let effect = new GameState.GameEffectFactory.EffectAreaOfEffect();
+      const effect = new GameState.GameEffectFactory.EffectAreaOfEffect();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2247,7 +2262,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectVisualEffect();
+      const effect = new GameState.GameEffectFactory.EffectVisualEffect();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2262,7 +2277,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getWeakestMember(!!args[1]);
         }
@@ -2277,7 +2292,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getStrongestMember(!!args[1]);
         }
@@ -2292,7 +2307,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getMostDamagedMember(!!args[1]);
         }
@@ -2307,7 +2322,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getLeastDamagedMember(!!args[1]);
         }
@@ -2322,7 +2337,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getMemberGold();
         }
@@ -2338,7 +2353,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getAverageReputation(args[1]);
         }
@@ -2354,7 +2369,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getAverageGoodEvilAlignment();
         }
@@ -2376,7 +2391,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getAverageLevel();
         }
@@ -2392,7 +2407,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getAverageExperience();
         }
@@ -2408,7 +2423,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getMostFrequestClass();
         }
@@ -2424,7 +2439,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getWorstACMember(!!args[1]);
         }
@@ -2440,7 +2455,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           return faction.getBestACMember(!!args[1]);
         }
@@ -2504,7 +2519,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.EFFECT, NWScriptDataType.EFFECT],
     action: function(this: NWScriptInstance, args: [GameEffect, GameEffect]){
-      let effect = new GameState.GameEffectFactory.EffectLink(args[0], args[1]);
+      const effect = new GameState.GameEffectFactory.EffectLink(args[0], args[1]);
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -2596,7 +2611,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, ModuleObject, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectBeam();
+      const effect = new GameState.GameEffectFactory.EffectBeam();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2648,7 +2663,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectForceResistanceIncrease();
+      const effect = new GameState.GameEffectFactory.EffectForceResistanceIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -2698,7 +2713,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.LOCATION,
     args: [NWScriptDataType.VECTOR, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [THREE.Vector3, number]){
-      let location = new EngineLocation(
+      const location = new EngineLocation(
         args[0].x, args[0].y, args[0].z
       );
       location.setBearing(args[1]);
@@ -3067,7 +3082,8 @@ NWScriptDefK1.Actions = {
                   model.userData.walkmesh = pwk;
                   GameState.walkmeshList.push(pwk.mesh);
                 }catch(e){
-                  console.error('Failed to add pwk', model.name, pwk);
+                  console.log('Failed to add pwk', model.name, pwk);
+                  console.error(e);
                 }
 
                 plc.getCurrentRoom();
@@ -3092,7 +3108,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EVENT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      let event = new EventSpellCastAt();
+      const event = new EventSpellCastAt();
       event.setObject(0, args[0]);
       event.setInt(0, args[1]);
       event.setInt(1, args[2]);
@@ -3148,7 +3164,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectPoison();
+      const effect = new GameState.GameEffectFactory.EffectPoison();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -3170,7 +3186,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectAssuredDeflection();
+      const effect = new GameState.GameEffectFactory.EffectAssuredDeflection();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -3368,7 +3384,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [EngineLocation, number]){
-      let effect = new GameState.GameEffectFactory.EffectForcePushed();
+      const effect = new GameState.GameEffectFactory.EffectForcePushed();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 1);
@@ -3385,7 +3401,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectHaste();
+      const effect = new GameState.GameEffectFactory.EffectHaste();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -3416,7 +3432,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectImmunity();
+      const effect = new GameState.GameEffectFactory.EffectImmunity();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -3435,7 +3451,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageImmunityIncrease();
+      const effect = new GameState.GameEffectFactory.EffectDamageImmunityIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -3629,7 +3645,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EVENT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let event = new EventConversation();
+      const event = new EventConversation();
       return event;
     }
   },
@@ -3684,7 +3700,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        let action = new GameState.ActionFactory.ActionPlayAnimation();
+        const action = new GameState.ActionFactory.ActionPlayAnimation();
         action.setParameter(0, ActionParameterType.INT, this.caller.getAnimationNameById(args[0]))
         action.setParameter(1, ActionParameterType.FLOAT, args[1])
         action.setParameter(2, ActionParameterType.FLOAT, args[2])
@@ -3837,7 +3853,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
       if(args[0] < 0) return undefined;
-      let effect = new GameState.GameEffectFactory.EffectTemporaryHitPoints();
+      const effect = new GameState.GameEffectFactory.EffectTemporaryHitPoints();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -4280,7 +4296,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectSkillIncrease();
+      const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -4474,7 +4490,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageForcePoints();
+      const effect = new GameState.GameEffectFactory.EffectDamageForcePoints();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -4487,7 +4503,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectHealForcePoints();
+      const effect = new GameState.GameEffectFactory.EffectHealForcePoints();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -4562,7 +4578,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           this.factionMemberIndex.set(faction.id, 0);
           return faction.getFactionMemberByIndex(0, !!args[1]);
@@ -4578,7 +4594,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        let faction = GameState.FactionManager.GetCreatureFaction(args[0]);
+        const faction = GameState.FactionManager.GetCreatureFaction(args[0]);
         if(faction){
           const nextId = this.factionMemberIndex.get(faction.id) + 1;
           this.factionMemberIndex.set(faction.id, nextId);
@@ -4672,7 +4688,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 3); // Droid Stun State
@@ -4685,7 +4701,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectForcePushed();
+      const effect = new GameState.GameEffectFactory.EffectForcePushed();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -4767,7 +4783,7 @@ NWScriptDefK1.Actions = {
         return;
       }
 
-      let inventory = (args[0] as ModuleCreature).getInventory();
+      const inventory = (args[0] as ModuleCreature).getInventory();
       const equipped = args[1] ? (args[0] as ModuleCreature).equipment.LEFTHAND : (args[0] as ModuleCreature).equipment.RIGHTHAND;
       let weapon: ModuleItem = equipped;
       if(args[0].isSimpleCreature()){
@@ -4775,8 +4791,8 @@ NWScriptDefK1.Actions = {
       }
 
       for(let i = 0, len = inventory.length; i < len; i++){
-        let item = inventory[i];
-        let baseItem = item.baseItem;
+        const item = inventory[i];
+        const baseItem = item.baseItem;
         if(
           baseItem.weaponWield == WeaponWield.STUN_BATON || 
           baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -4793,8 +4809,8 @@ NWScriptDefK1.Actions = {
       //If no melee found, equip ranged
       if(!weapon){
         for(let i = 0, len = inventory.length; i < len; i++){
-          let item = inventory[i];
-          let baseItem = item.baseItem;
+          const item = inventory[i];
+          const baseItem = item.baseItem;
           if(
             baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
             baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -4836,7 +4852,7 @@ NWScriptDefK1.Actions = {
         return;
       }
       
-      let inventory = (args[0] as ModuleCreature).getInventory();
+      const inventory = (args[0] as ModuleCreature).getInventory();
       const equipped = (args[0] as ModuleCreature).equipment.RIGHTHAND;
       let weapon: ModuleItem = equipped;
 
@@ -5045,7 +5061,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectForceFizzle();
+      const effect = new GameState.GameEffectFactory.EffectForceFizzle();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       return effect.initialize();
@@ -5083,7 +5099,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EVENT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.LOCATION, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, EngineLocation, ModuleObject]){
-      let event = new EventSpellCastAt();
+      const event = new EventSpellCastAt();
       //oItem
       event.setObject(0, args[0]);
       //oCaller
@@ -5323,7 +5339,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectAbilityDecrease();
+      const effect = new GameState.GameEffectFactory.EffectAbilityDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5337,7 +5353,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectAttackDecrease();
+      const effect = new GameState.GameEffectFactory.EffectAttackDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5351,7 +5367,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageDecrease();
+      const effect = new GameState.GameEffectFactory.EffectDamageDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5366,7 +5382,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectDamageImmunityDecrease();
+      const effect = new GameState.GameEffectFactory.EffectDamageImmunityDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5380,7 +5396,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectACDecrease();
+      const effect = new GameState.GameEffectFactory.EffectACDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
@@ -5396,7 +5412,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectMovementSpeedDecrease();
+      const effect = new GameState.GameEffectFactory.EffectMovementSpeedDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5409,7 +5425,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number, number]){
-      let effect = new GameState.GameEffectFactory.EffectSavingThrowDecrease();
+      const effect = new GameState.GameEffectFactory.EffectSavingThrowDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[1]);
@@ -5425,7 +5441,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      let effect = new GameState.GameEffectFactory.EffectSkillDecrease();
+      const effect = new GameState.GameEffectFactory.EffectSkillDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5440,7 +5456,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectForceResistanceDecrease();
+      const effect = new GameState.GameEffectFactory.EffectForceResistanceDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5475,7 +5491,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectInvisibility();
+      const effect = new GameState.GameEffectFactory.EffectInvisibility();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5488,7 +5504,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectConcealment();
+      const effect = new GameState.GameEffectFactory.EffectConcealment();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5501,9 +5517,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let forceshield = GameState.TwoDAManager.datatables.get('forceshields').rows[args[0]];
+      const forceshield = GameState.TwoDAManager.datatables.get('forceshields').rows[args[0]];
       if(forceshield){
-        let effect = new GameState.GameEffectFactory.EffectForceShield();
+        const effect = new GameState.GameEffectFactory.EffectForceShield();
         effect.setCreator(this.caller);
         effect.setSpellId(this.getSpellId());
         effect.setInt(0, args[0]);
@@ -5543,7 +5559,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectDisguise();
+      const effect = new GameState.GameEffectFactory.EffectDisguise();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5592,7 +5608,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectBlasterDeflectionIncrease();
+      const effect = new GameState.GameEffectFactory.EffectBlasterDeflectionIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5605,7 +5621,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectBlasterDeflectionDecrease();
+      const effect = new GameState.GameEffectFactory.EffectBlasterDeflectionDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5619,7 +5635,7 @@ NWScriptDefK1.Actions = {
     args: [],
     action: function(this: NWScriptInstance, args: []){
       console.log('EffectHorrified', this.caller);
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 8);
@@ -5672,7 +5688,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectMissChance();
+      const effect = new GameState.GameEffectFactory.EffectMissChance();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -6075,7 +6091,7 @@ NWScriptDefK1.Actions = {
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
 
-        let action = args[0].actionQueue[0];
+        const action = args[0].actionQueue[0];
         if(action){
           switch(action.type){
             case ActionType.ActionMoveToPoint: return 0;
@@ -6083,7 +6099,6 @@ NWScriptDefK1.Actions = {
             case ActionType.ActionDropItem: return 2;
             case ActionType.ActionPhysicalAttacks: return 3;
             case ActionType.ActionCastSpell: return 4;
-            case ActionType.ActionItemCastSpell: return 4;
             case ActionType.ActionOpenDoor: return 5;
             case ActionType.ActionCloseDoor: return 6;
             case ActionType.ActionDialogObject: return 7;
@@ -6395,13 +6410,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.EFFECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [GameEffect, number]){
-      let eIcon = new GameState.GameEffectFactory.EffectIcon();
+      const eIcon = new GameState.GameEffectFactory.EffectIcon();
       eIcon.setCreator(this.caller);
       eIcon.setSpellId(this.getSpellId());
       eIcon.setInt(0, args[1]);
       eIcon.initialize();
 
-      let eLink = new GameState.GameEffectFactory.EffectLink(args[0], eIcon);
+      const eLink = new GameState.GameEffectFactory.EffectLink(args[0], eIcon);
       eLink.setCreator(this.caller);
       eLink.setSpellId(this.getSpellId());
       return eLink.initialize();
@@ -7440,7 +7455,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectTemporaryForce();
+      const effect = new GameState.GameEffectFactory.EffectTemporaryForce();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -7675,7 +7690,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 10); // Whirlwind State
@@ -7794,7 +7809,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
-      let count = GameState.TwoDAManager.datatables.get('plot').RowCount;
+      const count = GameState.TwoDAManager.datatables.get('plot').RowCount;
       for(let i = 0; i < count; i++){
         if(GameState.TwoDAManager.datatables.get('plot').rows[i].label.localeCompare(args[0], undefined, { sensitivity: 'base' }) === 0){
           GameState.PartyManager.GiveXP( parseInt(GameState.TwoDAManager.datatables.get('plot').rows[i]) * (args[1] * 0.01) );
@@ -8067,7 +8082,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number]){
       for(let i = 0, len = GameState.module.area.rooms.length; i < len; i++){
-        let room = GameState.module.area.rooms[i];
+        const room = GameState.module.area.rooms[i];
         if(room.roomName.toLowerCase() == args[0].toLowerCase()){
           if(room.model){
             room.model.playAnimation( 'scriptloop'+Utility.PadInt(args[1], 2) );
@@ -8236,7 +8251,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 8); // Horrified State
@@ -8250,7 +8265,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 5); // Paralyze State
@@ -8264,7 +8279,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      let effect = new GameState.GameEffectFactory.EffectSetState();
+      const effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, 4); // Stun State
@@ -8351,7 +8366,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [string, EngineLocation, number]){
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes.uti, args[0]);
       if(buffer){
-        let item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
+        const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
         item.placedInWorld = true;
         item.position.copy(args[1].position);
         item.rotation.order = 'ZYX';

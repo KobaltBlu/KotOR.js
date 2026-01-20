@@ -811,7 +811,7 @@ export class PazaakManager {
   static BuildAction(tableIndex: number, actionType: PazaakActionType, properties: any[] = []){
     const props: IPazaakActionProperty[] = [];
     for(let i = 0; i < properties.length; i++){
-      let type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
+      const type = typeof properties[i] === 'string' ? PazaakActionPropertyType.STRING : PazaakActionPropertyType.NUMBER;
       props.push({
         type: type,
         value: properties[i]

@@ -322,10 +322,12 @@ export class NWScriptInstruction {
             operandStr = this.float.toString();
             break;
           case 5: // STRING
-            const strLen = this.string ? this.string.length : 0;
-            bytes.push(this.intToHexBytes(strLen, 2));
-            bytes.push('str');
-            operandStr = `"${this.string || ''}"`;
+            {
+              const strLen = this.string ? this.string.length : 0;
+              bytes.push(this.intToHexBytes(strLen, 2));
+              bytes.push('str');
+              operandStr = `"${this.string || ''}"`;
+            }
             break;
           case 6: // OBJECT
             bytes.push(this.intToHexBytes(this.object, 4));
@@ -335,12 +337,13 @@ export class NWScriptInstruction {
         break;
       
       case OP_ACTION:
-        bytes.push(this.intToHexBytes(this.action, 2));
-        bytes.push(this.intToHex(this.argCount, 2));
-        const actionName = this.actionDefinition?.name || `Action_${this.intToHex(this.action, 4)}`;
-        operandStr = `${actionName}(${this.intToHex(this.action, 4)}), ${this.intToHex(this.argCount, 2)}`;
+        {
+          bytes.push(this.intToHexBytes(this.action, 2));
+          bytes.push(this.intToHex(this.argCount, 2));
+          const actionName = this.actionDefinition?.name || `Action_${this.intToHex(this.action, 4)}`;
+          operandStr = `${actionName}(${this.intToHex(this.action, 4)}), ${this.intToHex(this.argCount, 2)}`;
+        }
         break;
-      
       case OP_JSR:
       case OP_JMP:
       case OP_JZ:

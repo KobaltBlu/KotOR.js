@@ -224,7 +224,7 @@ export class SaveGame {
       }
 
       if(this.savenfo.RootNode.hasField('TIMESTAMP')){
-        let timestamp: bigint = this.savenfo.getFieldByLabel('TIMESTAMP').getValue();
+        const timestamp: bigint = this.savenfo.getFieldByLabel('TIMESTAMP').getValue();
         this.TIMESTAMP = new Date(parseInt((timestamp/10000n) as any) + winEpoch);
       }
 
@@ -439,12 +439,12 @@ export class SaveGame {
     const data = await GameFileSystem.readFile(path.join(this.directory, 'GLOBALVARS.res'));
     this.globalVars = new GFFObject(data);
 
-    let numBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
-    let catNumbers = this.globalVars.getFieldByLabel('CatNumber').getChildStructs();
+    const numBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValNumber').getVoid());
+    const catNumbers = this.globalVars.getFieldByLabel('CatNumber').getChildStructs();
     for(let i = 0; i < catNumbers.length; i++){
-      let numCat = catNumbers[i];
-      let numLabel = numCat.getFieldByLabel('Name').getValue();
-      let value = numBytes.readByte();
+      const numCat = catNumbers[i];
+      const numLabel = numCat.getFieldByLabel('Name').getValue();
+      const value = numBytes.readByte();
       if(GameState.GlobalVariableManager.Globals.Number.has(numLabel.toLowerCase())){
         GameState.GlobalVariableManager.Globals.Number.get(numLabel.toLowerCase()).value = value;
       }else{
@@ -453,11 +453,11 @@ export class SaveGame {
       }
     }
 
-    let locBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
-    let catLocations = this.globalVars.getFieldByLabel('CatLocation').getChildStructs();
+    const locBytes = new BinaryReader(this.globalVars.RootNode.getFieldByLabel('ValLocation').getVoid());
+    const catLocations = this.globalVars.getFieldByLabel('CatLocation').getChildStructs();
     for(let i = 0; i < catLocations.length; i++){
-      let locCat = catLocations[i];
-      let locLabel = locCat.getFieldByLabel('Name').getValue();
+      const locCat = catLocations[i];
+      const locLabel = locCat.getFieldByLabel('Name').getValue();
 
       GameState.GlobalVariableManager.Globals.Location.set(
         locLabel.toLowerCase(), { 
@@ -474,18 +474,18 @@ export class SaveGame {
       );
     }
 
-    let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
-    let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
-    let maxBits = boolBytes.length * 8;
+    const boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
+    const catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
+    const maxBits = boolBytes.length * 8;
     for(let i = 0; i < maxBits; i++){
       for(let j = 0; j < 8; j++){
-        let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+        const index = (i * 8) + j;
+        const bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
 
-        let boolCat = catBooleans[index];
+        const boolCat = catBooleans[index];
         if(boolCat){
-          let boolLabel = boolCat.getFieldByLabel('Name').getValue();
-          let value = !!bit;
+          const boolLabel = boolCat.getFieldByLabel('Name').getValue();
+          const value = !!bit;
           if(GameState.GlobalVariableManager.Globals.Boolean.has(boolLabel.toLowerCase())){
             GameState.GlobalVariableManager.Globals.Boolean.get(boolLabel.toLowerCase()).value = value;
           }else{
@@ -496,13 +496,13 @@ export class SaveGame {
       }
     }
 
-    let stringValues = this.globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
-    let catStrings = this.globalVars.getFieldByLabel('CatString').getChildStructs();
+    const stringValues = this.globalVars.RootNode.getFieldByLabel('ValString').getChildStructs();
+    const catStrings = this.globalVars.getFieldByLabel('CatString').getChildStructs();
     for(let i = 0; i < catStrings.length; i++){
-      let strCat = catStrings[i];
+      const strCat = catStrings[i];
       if(strCat){
-        let strLabel = strCat.getFieldByLabel('Name').getValue();
-        let strValue = stringValues[i].getFieldByLabel('String').getValue();
+        const strLabel = strCat.getFieldByLabel('Name').getValue();
+        const strValue = stringValues[i].getFieldByLabel('String').getValue();
         if(GameState.GlobalVariableManager.Globals.String.has(strLabel.toLowerCase())){
           GameState.GlobalVariableManager.Globals.String.get(strLabel.toLowerCase()).value = strValue;
         }else{
@@ -568,7 +568,7 @@ export class SaveGame {
     try{
       const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'inventory.res'));
       this.inventory = new GFFObject(buffer);
-      let invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
+      const invArr = this.inventory.RootNode.getFieldByLabel('ItemList').getChildStructs();
       for(let i = 0; i < invArr.length; i++){
         GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
@@ -854,15 +854,15 @@ export class SaveGame {
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.showSavingMessage();
 
-    let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
+    const save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
 
     //Prepare SaveGame directory
     if(!(await GameFileSystem.exists(SaveGame.base_directory))){
       await GameFileSystem.mkdir(SaveGame.base_directory);
     }
 
-    let save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
-    let save_dir = path.join( SaveGame.base_directory, save_dir_name );
+    const save_dir_name = Utility.PadInt(save_id, 6)+' - Game'+(save_id-1);
+    const save_dir = path.join( SaveGame.base_directory, save_dir_name );
 
     if(!(await GameFileSystem.exists(save_dir))){
       await GameFileSystem.mkdir(save_dir);
@@ -962,7 +962,7 @@ export class SaveGame {
    */
   static async ExportGlobalVars( directory: string ){
     console.log('ExportGlobalVars')
-    let gvt = new GFFObject();
+    const gvt = new GFFObject();
     gvt.FileType = 'GVT ';
 
     //Global Booleans
@@ -970,15 +970,15 @@ export class SaveGame {
     const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
-      let boolean = globBool;
-      let byte_offset = Math.floor( i / 8 );
-      let bit_index = (i % 8);
+      const boolean = globBool;
+      const byte_offset = Math.floor( i / 8 );
+      const bit_index = (i % 8);
 
       if(boolean.value){
         boolBuffer[byte_offset] |= 1 << bit_index;
       }
 
-      let boolStruct = new GFFStruct();
+      const boolStruct = new GFFStruct();
       boolStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(boolean.name);
       catBooleanList.addChildStruct(boolStruct);
       i++;
@@ -998,7 +998,7 @@ export class SaveGame {
       locationDataView.setFloat32( (24 * i) + 16, location.value.rotation.y, true );
       locationDataView.setFloat32( (24 * i) + 20, location.value.rotation.z, true );
 
-      let locStruct = new GFFStruct();
+      const locStruct = new GFFStruct();
       locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location.name);
       catLocationList.addChildStruct(locStruct);
       i++;

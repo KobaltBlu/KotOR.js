@@ -17,7 +17,7 @@ export class EncounterSpawnEntry {
   spawnCR = 0;
 
   save(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.RESREF, 'SpawnResRef') ).setValue(this.spawnResref);
     struct.addField( new GFFField(GFFDataType.FLOAT, 'SpawnCR') ).setValue(this.spawnCR);
@@ -27,7 +27,7 @@ export class EncounterSpawnEntry {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let entry = new EncounterSpawnEntry();
+      const entry = new EncounterSpawnEntry();
 
       if(struct.hasField('SpawnResRef'))
         entry.spawnResref = struct.getFieldByLabel('SpawnResRef').getValue();

@@ -3,7 +3,7 @@ import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { TalentObject } from "./TalentObject";
 import type { ModuleObject } from "../module";
-import { OdysseyModel3D } from "../three/odyssey";
+// import { OdysseyModel3D } from "../three/odyssey";
 import { TwoDAManager } from "../managers/TwoDAManager";
 import { ActionType } from "../enums/actions/ActionType";
 import { ActionCombat } from "../actions/ActionCombat";
@@ -213,7 +213,7 @@ export class TalentSpell extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
+    const distance = oCaster.position.distanceTo(oTarget.position);
     //Spell ranges are defined in the ranges.2da file
     switch(this.range){
       case 'L': //Large
@@ -457,7 +457,7 @@ export class TalentSpell extends TalentObject {
   }
 
   save(){
-    let spellStruct = new GFFStruct(3);
+    const spellStruct = new GFFStruct(3);
     spellStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(this.getId());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellFlags') ).setValue(this.getFlags());
     //spellStruct.addField( new GFFField(GFFDataType.SHORT, 'SpellMetaMagic') ).setValue(this.getMetaMagic());

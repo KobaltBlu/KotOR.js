@@ -53,7 +53,7 @@ export class ActionCastSpell extends Action {
       if(!this.spell.inRange(this.target, this.owner)){
 
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

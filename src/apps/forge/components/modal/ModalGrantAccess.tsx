@@ -32,7 +32,7 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   });
 
   const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    let handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
+    const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
     if(handle){
       KotOR.ApplicationProfile.directoryHandle = handle;
       KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);

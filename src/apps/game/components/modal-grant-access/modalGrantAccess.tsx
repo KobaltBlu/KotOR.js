@@ -14,7 +14,7 @@ export const ModalGrantAccess = () => {
   }
   
   const showBrowserDirectoryPicker = async () => {
-    let handle = await window.showDirectoryPicker({
+    const handle = await window.showDirectoryPicker({
       mode: "readwrite"
     });
     if(!handle) return;

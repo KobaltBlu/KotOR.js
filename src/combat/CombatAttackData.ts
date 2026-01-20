@@ -210,7 +210,7 @@ export class CombatAttackData {
         this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
       }
 
-      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      const specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
       if(specBonus > 0){
         this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
       }

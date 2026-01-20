@@ -68,14 +68,14 @@ export class GUIFont {
   }
 
   buildGeometry(geometry: THREE.BufferGeometry, text: string, alignment: GUIControlAlignment, maxWidth: number = 0): void {
-    let lines: string[] = text.split('\n');
-    let lineCount: number = lines.length;
-    let spaceChar = this.chars[32];
-    let lines2: Line[] = [];
+    const lines: string[] = text.split('\n');
+    const lineCount: number = lines.length;
+    const spaceChar = this.chars[32];
+    const lines2: Line[] = [];
 
     let lineY = 0
     for(let l = 0; l < lineCount; l++){
-      let words: string[] = lines[l].split(' ');
+      const words: string[] = lines[l].split(' ');
       let newLine: Line = {chars: [], width: 0, y: lineY};
 
       for(let w = 0; w < words.length; w++){

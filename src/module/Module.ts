@@ -203,17 +203,8 @@ export class Module {
   }
 
   initProperties(){
-    this.expansionPack;
     this.areaList = [];
-    this.dawnHour;
     this.description = new CExoLocString();
-    this.duskHour;
-    this.entryArea;
-    this.entryDirectionX;
-    this.entryDirectionY;
-    this.entryX;
-    this.entryY;
-    this.entryZ;
     
     this.isSaveGame = false;
     this.name = new CExoLocString();
@@ -223,10 +214,7 @@ export class Module {
     this.nextObjId0  = 0; // DWORD Keeps track of which id to give the next object created
     this.nextObjId1  = 0; // DWORD -
 
-    this.tag;
     this.voId = '';
-    this.version;
-    this.xpScale;
   }
 
   setFromIFO( ifo: GFFObject, isLoadingSave = false ){
@@ -238,14 +226,14 @@ export class Module {
     
     const areaList = ifo.getFieldByLabel('Mod_Area_list');
     const areaCount = areaList.getChildStructs().length;
-    let Mod_Area = areaList.childStructs[0];
+    const Mod_Area = areaList.childStructs[0];
 
     this.areaName = ifo.getFieldByLabel('Area_Name', Mod_Area.getFields()).getValue();
 
     this.areaList = [];
     //KOTOR modules should only ever have one area. But just incase lets loop through the list
     for(let i = 0; i < areaCount; i++){
-      let Mod_Area = areaList.childStructs[0];
+      const Mod_Area = areaList.childStructs[0];
       const area: IAreaListItem = {} as any;
 
       if(Mod_Area.hasField('Area_Name'))
@@ -358,7 +346,7 @@ export class Module {
         this.removeEffect(this);
       },
       removeEffect: function(effect: GameEffect){
-        let index = this.effects.indexOf(effect);
+        const index = this.effects.indexOf(effect);
         if(index >= 0){
           this.effects.splice(index, 1);
         }
@@ -391,9 +379,9 @@ export class Module {
     if(this.readyToProcessEvents){
 
       //Process EventQueue
-      let eqLen = this.eventQueue.length - 1;
+      const eqLen = this.eventQueue.length - 1;
       for(let i = eqLen; i >= 0; i--){
-        let event = this.eventQueue[i];
+        const event = this.eventQueue[i];
         
         if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
           event.execute();
@@ -402,7 +390,7 @@ export class Module {
       }
 
       //Process EffectList
-      let elLen = this.effects.length - 1;
+      const elLen = this.effects.length - 1;
       for(let i = elLen; i >= 0; i--){
         this.effects[i].update(delta);
       }
@@ -475,7 +463,7 @@ export class Module {
   }
 
   async initScripts(){
-    for(let [key, resRef] of this.scriptResRefs){
+    for(const [key, resRef] of this.scriptResRefs){
       const script = GameState.NWScript.Load(resRef);
       if(!script){ continue; }
       this.scripts[key] = script;
@@ -505,10 +493,10 @@ export class Module {
   initEventQueue(){
     //Load module EventQueue after the area is intialized so that ModuleObject ID's are set
     if(this.ifo.RootNode.hasField('EventQueue')){
-      let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
+      const eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
       for(let i = 0; i < eventQueue.length; i++){
-        let event_struct = eventQueue[i];
-        let event = GameEventFactory.EventFromStruct(event_struct);
+        const event_struct = eventQueue[i];
+        const event = GameEventFactory.EventFromStruct(event_struct);
         console.log(event_struct, event);
         if(event){
           this.eventQueue.push(event);
@@ -536,7 +524,7 @@ export class Module {
 
     //Clear walkmesh list
     while (GameState.walkmeshList.length){
-      let wlkmesh = GameState.walkmeshList.shift();
+      const wlkmesh = GameState.walkmeshList.shift();
       //wlkmesh.dispose();
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
@@ -565,7 +553,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
     const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
     for(let i = 0; i < this.eventQueue.length; i++){
-      let event = this.eventQueue[i];
+      const event = this.eventQueue[i];
       if(event){
         eventQueue.addChildStruct( event.export() );
       }
@@ -738,7 +726,7 @@ export class Module {
   }
 
   static async GetModuleDLG(resRef = ''): Promise<ERFObject> {
-    let resourcePath = path.join('modules', `${resRef}_dlg.erf`);
+    const resourcePath = path.join('modules', `${resRef}_dlg.erf`);
     try{
       const erf = new ERFObject(resourcePath);
       await erf.load();
@@ -821,7 +809,7 @@ export class Module {
 
   static async GetModuleProjectArchives(modName = ''): Promise<(RIMObject|ERFObject)[]> {
     return new Promise<(RIMObject|ERFObject)[]> ( async (resolve, reject) => {
-      let archives: any[] = [];
+      const archives: any[] = [];
       let archive = undefined;
 
       try{
@@ -896,23 +884,23 @@ export class Module {
   }
 
   toEulerianAngle(q: any){
-  	let ysqr = q.y * q.y;
+  	const ysqr = q.y * q.y;
 
   	// roll (x-axis rotation)
-  	let t0 = +2.0 * (q.w * q.x + q.y * q.z);
-  	let t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
-  	let roll = Math.atan2(t0, t1);
+  	const t0 = +2.0 * (q.w * q.x + q.y * q.z);
+  	const t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
+  	const roll = Math.atan2(t0, t1);
 
   	// pitch (y-axis rotation)
   	let t2 = +2.0 * (q.w * q.y - q.z * q.x);
   	t2 = t2 > 1.0 ? 1.0 : t2;
   	t2 = t2 < -1.0 ? -1.0 : t2;
-  	let pitch = Math.asin(t2);
+  	const pitch = Math.asin(t2);
 
   	// yaw (z-axis rotation)
-  	let t3 = +2.0 * (q.w * q.z + q.x *q.y);
-  	let t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
-  	let yaw = Math.atan2(t3, t4);
+  	const t3 = +2.0 * (q.w * q.z + q.x *q.y);
+  	const t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
+  	const yaw = Math.atan2(t3, t4);
 
     return {yaw: yaw, pitch: pitch, roll: roll};
   }

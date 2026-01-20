@@ -24,13 +24,13 @@ export class SWHead {
     const evilIndex = Math.floor(nGoodEvil/10);
     switch(evilIndex){
       case 0:
-        return !!this.headtexvvve?.length ? this.headtexvvve : this.head;
+        return this.headtexvvve?.length ? this.headtexvvve : this.head;
       case 1:
-        return !!this.headtexvve?.length ? this.headtexvve : this.head;
+        return this.headtexvve?.length ? this.headtexvve : this.head;
       case 2:
-        return !!this.headtexve?.length ? this.headtexve : this.head;
+        return this.headtexve?.length ? this.headtexve : this.head;
       case 3:
-        return !!this.headtexe?.length ? this.headtexe : this.head;
+        return this.headtexe?.length ? this.headtexe : this.head;
       case 4:
         return this.head;
       default:

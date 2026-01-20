@@ -71,7 +71,7 @@ export class TPCLoader {
         pack: result.pack,
       });
 
-      let texture = tpc.toCompressedTexture();
+      const texture = tpc.toCompressedTexture();
       //console.log("loaded texture", resRef);
 
       return texture;
@@ -99,7 +99,8 @@ export class TPCLoader {
 
       return texture;
     }catch(e){
-
+      console.error(e);
+      return undefined;
     }
   };
   

@@ -171,13 +171,13 @@ export class EventSignalEvent extends GameEvent {
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     if(this.event){
-      let eStruct = this.event.save();
+      const eStruct = this.event.save();
       eStruct.setType(0x4444);
       eventData.addChildStruct( eStruct );
     }

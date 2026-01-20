@@ -1,6 +1,5 @@
 import { GameState } from "../GameState";
 import type { ModuleCreature, ModuleObject } from "../module";
-import { OdysseyModel } from "../odyssey";
 import { OdysseyModel3D } from "../three/odyssey";
 import { DLGNode } from "./DLGNode";
 import { GFFObject } from "./GFFObject";
@@ -76,7 +75,7 @@ export class DLGObject {
 
   init(){
 
-    let conversationType = this.gff.RootNode.getFieldByLabel('ConversationType');
+    const conversationType = this.gff.RootNode.getFieldByLabel('ConversationType');
     if(conversationType){
       this.conversationType = conversationType.getValue();
     }
@@ -140,7 +139,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('EntryList')){
       const entries = this.gff.RootNode.getFieldByLabel('EntryList').getChildStructs();
       for(let i = 0; i < entries.length; i++){
-        let node = DLGNode.FromDialogStruct(entries[i], this);
+        const node = DLGNode.FromDialogStruct(entries[i], this);
         node.nodeType = DLGNodeType.ENTRY;
         this.entryList.push( node );
       }
@@ -149,7 +148,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('ReplyList')){
       const replies = this.gff.RootNode.getFieldByLabel('ReplyList').getChildStructs();
       for(let i = 0; i < replies.length; i++){
-        let node = DLGNode.FromDialogStruct(replies[i], this);
+        const node = DLGNode.FromDialogStruct(replies[i], this);
         node.nodeType = DLGNodeType.REPLY;
         this.replyList.push( node );
       }
@@ -181,8 +180,8 @@ export class DLGObject {
       const startingList = this.gff.RootNode.getFieldByLabel('StartingList').getChildStructs();
 
       for(let i = 0; i < startingList.length; i++){
-        let struct = startingList[i];
-        let linkNode = new DLGNode(this);
+        const struct = startingList[i];
+        const linkNode = new DLGNode(this);
         linkNode.nodeType = DLGNodeType.STARTING;
         
         linkNode.entries = [];
@@ -299,10 +298,10 @@ export class DLGObject {
       return undefined;
     }
 
-    let e_count = entryLinkList.length;
+    const e_count = entryLinkList.length;
     for(let i = 0; i < e_count; i++){
-      let entryLink = entryLinkList[i];
-      let isActive = entryLink.runActiveScripts();
+      const entryLink = entryLinkList[i];
+      const isActive = entryLink.runActiveScripts();
       if(isActive){
         return entryLink.index;
       }
@@ -312,10 +311,10 @@ export class DLGObject {
   }
 
   getAvailableReplies( entry: DLGNode ){
-    let replies: DLGNode[] = [];
-    let replyLinks = entry.getActiveReplies();
+    const replies: DLGNode[] = [];
+    const replyLinks = entry.getActiveReplies();
     for (let i = 0; i < replyLinks.length; i++) {
-      let reply = this.getReplyByIndex(replyLinks[i]);
+      const reply = this.getReplyByIndex(replyLinks[i]);
       if (reply) {
         replies.push(reply);
       } else {
@@ -344,35 +343,28 @@ export class DLGObject {
   }
 
   async loadStuntActor( actor: IDLGStuntActor ){
-    return new Promise<void>( (resolve, reject) => {
-      let model: any;
+    try {
       if(actor.participant == 'PLAYER'){
-        model = GameState.PartyManager.party[0].model;
         //Load the actor's supermodel
-        MDLLoader.loader.load(actor.resref)
-        .then((actorModel: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(actorModel)
-          .then((actorSuperModel: OdysseyModel3D) => {
-            actor.animations = actorSuperModel.odysseyAnimations;
+        const actorModel = await MDLLoader.loader.load(actor.resref);
+        const actorSuperModel = await OdysseyModel3D.FromMDL(actorModel);
+        
+        actor.animations = actorSuperModel.odysseyAnimations;
 
-            if(this.isAnimatedCutscene)
-              GameState.PartyManager.party[0].setFacing(0, true);
+        if(this.isAnimatedCutscene)
+          GameState.PartyManager.party[0].setFacing(0, true);
 
-            if(this.unequipItems)
-              GameState.PartyManager.party[0].UnequipItems();
+        if(this.unequipItems)
+          GameState.PartyManager.party[0].unEquipItems();
 
-            if(this.unequipHeadItem)
-              GameState.PartyManager.party[0].UnequipHeadItem();
+        if(this.unequipHeadItem)
+          GameState.PartyManager.party[0].unEquipHeadItem();
 
-            actor.moduleObject = GameState.PartyManager.party[0];
-            if(actor.moduleObject){
-              actor.moduleObject.setCutsceneMode(true);
-            }
-            resolve();
-          }).catch(resolve);
-        }).catch(resolve);
+        actor.moduleObject = GameState.PartyManager.party[0];
+        if(actor.moduleObject){
+          actor.moduleObject.setCutsceneMode(true);
+        }
       }else if(actor.participant == 'OWNER'){
-
         actor.moduleObject = this.owner;
         if(this.isAnimatedCutscene)
           this.owner.setFacing(0, true);
@@ -380,49 +372,43 @@ export class DLGObject {
         if(actor.moduleObject){
           actor.moduleObject.setCutsceneMode(true);
         }
-        
-        resolve();
-
       }else{
-        let creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
+        const creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
         if(creature){
-          model = creature.model;
+          const model = creature.model;
           //Load the actor's supermodel
-          MDLLoader.loader.load(actor.resref)
-          .then((actorModel: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(actorModel)
-            .then((actorSuperModel: OdysseyModel3D) => {
-              actor.animations = actorSuperModel.odysseyAnimations;
+          const actorModel = await MDLLoader.loader.load(actor.resref);
+          const actorSuperModel = await OdysseyModel3D.FromMDL(actorModel);
+          
+          actor.animations = actorSuperModel.odysseyAnimations;
 
-              if(this.isAnimatedCutscene)
-                creature.setFacing(0, true);
+          if(this.isAnimatedCutscene)
+            creature.setFacing(0, true);
 
-              model.box = new THREE.Box3().setFromObject(model);
+          model.box = new THREE.Box3().setFromObject(model);
 
-              if(this.unequipItems && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
-                (creature as ModuleCreature).UnequipItems();
+          if(this.unequipItems && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
+            (creature as ModuleCreature).unEquipItems();
 
-              if(this.unequipHeadItem && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
-                (creature as ModuleCreature).UnequipHeadItem();
+          if(this.unequipHeadItem && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
+            (creature as ModuleCreature).unEquipHeadItem();
 
-              actor.moduleObject = creature;
-              if(actor.moduleObject){
-                actor.moduleObject.setCutsceneMode(true);
-              }
-              resolve();
-            }).catch(resolve);
-          }).catch(resolve);
-        }else{
-          resolve();
+          actor.moduleObject = creature;
+          if(actor.moduleObject){
+            actor.moduleObject.setCutsceneMode(true);
+          }
         }
       }
-    });
+    }catch(e){
+      // Silently handle errors (original behavior was to resolve on error)
+      console.error('Error loading stunt actor:', e);
+    }
   }
 
   async loadStuntActors(){
-    for (var [key, actor] of this.stuntActors.entries()) {
+    for (const [_key, actor] of this.stuntActors.entries()) {
       await this.loadStuntActor(actor);
-    };
+    }
   }
 
   releaseStuntActors(){
@@ -451,20 +437,17 @@ export class DLGObject {
   }
 
   async load(){
-    return new Promise<void>( (resolve, reject) => {
-      if(this.resref){
-        const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], this.resref);
-        if(buffer){
-          this.gff = new GFFObject(buffer);
-          this.init();
-          resolve();
-        }else{
-          reject();
-        }
-      }else{
-        reject();
-      }
-    });
+    if(!this.resref){
+      throw new Error('DLGObject: No resref provided');
+    }
+
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['dlg'], this.resref);
+    if(!buffer){
+      throw new Error('DLGObject: Failed to load buffer');
+    }
+
+    this.gff = new GFFObject(buffer);
+    this.init();
   }
 
   static FromGFFObject(gff: GFFObject): DLGObject {

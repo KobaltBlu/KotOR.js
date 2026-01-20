@@ -152,7 +152,7 @@ export class OdysseyModelNode {
       controller.columnCount = this.odysseyModel.mdlReader.readByte();//Number of columns excluding the time key column
       this.odysseyModel.mdlReader.skip(3); //Skip unused padding
       
-      let tmpQuat = new THREE.Quaternion();
+      const tmpQuat = new THREE.Quaternion();
 
       if(this.odysseyModel.nodes.has(this.name)){
         controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
@@ -186,7 +186,7 @@ export class OdysseyModelNode {
                   //pointA: x1,y1,z1 | pointB: x2,y2,z2 | pointC: x3,y3,z3
                   //pointB and pointC are relative to pointA
                   //console.log('bezier', this.name, controller);
-                  let rowOffset = controller.dataValueIndex + (r * 9);
+                  const rowOffset = controller.dataValueIndex + (r * 9);
 
                   frame.a = new THREE.Vector3(
                     data[rowOffset + 0] || 0.0,

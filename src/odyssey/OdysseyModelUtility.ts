@@ -16,10 +16,10 @@ export class OdysseyModelUtility {
   static SURFACEMATERIALS: SurfaceMaterial[] = [];
 
   static ReadArray(stream: BinaryReader, offset: number, count: number){
-    let posCache = stream.position;
+    const posCache = stream.position;
     stream.position = offset;
 
-    let values: number[] = new Array(count);
+    const values: number[] = new Array(count);
     for (let i = 0; i < count; i++) {
       values[i] = stream.readUInt32();
     }
@@ -29,10 +29,10 @@ export class OdysseyModelUtility {
   }
 
   static ReadArrayFloats(stream: BinaryReader, offset: number, count: number){
-    let posCache = stream.position;
+    const posCache = stream.position;
     stream.position = offset;
 
-    let values: number[] = new Array(count);
+    const values: number[] = new Array(count);
     for (let i = 0; i < count; i++) {
       values[i] = stream.readSingle();
     }
@@ -51,8 +51,8 @@ export class OdysseyModelUtility {
   }
 
   static ReadStrings(stream: BinaryReader, offsets: number[], offset: number) {
-    let posCache = stream.position;
-    let strings: string[] = [];
+    const posCache = stream.position;
+    const strings: string[] = [];
 
     for (let i = 0; i < offsets.length; i++){
       stream.position = offset + offsets[i];

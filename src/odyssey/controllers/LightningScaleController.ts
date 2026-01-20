@@ -21,11 +21,11 @@ export class LightningScaleController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
     
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _last: IOdysseyControllerFrameGeneric, _next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     
   }
 

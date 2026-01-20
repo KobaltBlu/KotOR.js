@@ -36,17 +36,17 @@ export class EventBroadcastAOO extends GameEvent {
   }
 
   saveEventData(){
-    let struct = new GFFStruct(0x3333);
+    const struct = new GFFStruct(0x3333);
     struct.addField( new GFFField(GFFDataType.DWORD, 'Value' ) ).setValue(this.value);
     return struct;
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.script.caller, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
         eventData.addChildStruct( this.saveEventData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
     struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );

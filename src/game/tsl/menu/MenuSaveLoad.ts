@@ -128,7 +128,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       saves.unshift(new NewSaveItem());
     }else{
       saves = SaveGame.saves.slice();
-      let special = saves.filter(save => {
+      const special = saves.filter(save => {
         return save.getIsQuickSave() || save.getIsAutoSave();
       });
       

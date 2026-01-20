@@ -121,7 +121,7 @@ export class ProjectFileSystem {
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
       
-      let handle = await file.getFile();
+      const handle = await file.getFile();
       return new Uint8Array( await handle.arrayBuffer() );
     }
   }
@@ -160,7 +160,7 @@ export class ProjectFileSystem {
         if(!newFile) throw new Error('Failed to create file');
 
         try{
-          let stream = await newFile.createWritable();
+          const stream = await newFile.createWritable();
           await stream.write(data as any);
           await stream.close();
           resolve(true);
@@ -206,9 +206,9 @@ export class ProjectFileSystem {
         const details = path.parse(dirOrFilePath);
         try{
           if(details.ext){
-            let handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
+            const handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
-              let fileHandle = await handle.getFileHandle(details.base);
+              const fileHandle = await handle.getFileHandle(details.base);
               if(fileHandle){
                 resolve(true);
                 return;
@@ -221,7 +221,7 @@ export class ProjectFileSystem {
               return;
             }
           }else{
-            let handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
+            const handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
               resolve(true);
               return;
@@ -367,7 +367,7 @@ export class ProjectFileSystem {
           resolve(files);
           return;
         }
-        let dir_path = path.join(this.rootDirectoryPath, resource_path);
+        const dir_path = path.join(this.rootDirectoryPath, resource_path);
         
         if(!(await this.isFSDirectoryProject(resource_path))){
           if(!opts.list_dirs){
@@ -394,8 +394,8 @@ export class ProjectFileSystem {
                 file_path = path.join(resource_path, file.name);
                 is_dir = (await this.isFSDirectoryProject(file_path));
                 try{
-                  if(!!is_dir){
-                    if(!!opts.recursive){
+                  if(is_dir){
+                    if(opts.recursive){
                       await this.readdir_fs_project(file_path, opts, files, depthState);
                     }else{
                       files.push(path.join(file_path));

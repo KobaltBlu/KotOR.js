@@ -71,7 +71,7 @@ export class TLKObject {
             null
           );
 
-          let pos = this.reader.tell();
+          const pos = this.reader.tell();
           this.reader.seek(this.TLKStrings[i].StringOffset);
           //console.log(this.TLKStrings[i].StringOffset);
           this.TLKStrings[i].Value = this.reader.readChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
@@ -97,6 +97,7 @@ export class TLKObject {
           reject();
         });
       }).catch((err) => {
+        console.error('TLKObject', 'Error loading TLK from disk', err);
         reject();
       })
     });
@@ -115,6 +116,7 @@ export class TLKObject {
     try{
       return this.TLKStrings[id].Value;
     }catch(e){
+      console.error('TLKObject', 'Error getting string by ID', e);
       return '';
     }
   }

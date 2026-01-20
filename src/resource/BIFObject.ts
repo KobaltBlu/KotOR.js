@@ -122,7 +122,7 @@ export class BIFObject {
   }
 
   getResourcesByType(ResType: number){
-    let arr: IBIFResource[] = []
+    const arr: IBIFResource[] = []
     if(ResType != null){
       for(let i = 0; i < this.variableResourceCount; i++){
         if(this.resources[i].resType == ResType){
@@ -140,10 +140,10 @@ export class BIFObject {
 
     const len = KEYManager.Key.keys.length;
     for(let i = 0; i < len; i++){
-      let key = KEYManager.Key.keys[i];
+      const key = KEYManager.Key.keys[i];
       if(key.resRef == resRef && key.resType == ResType){
         for(let j = 0; j != this.resources.length; j++){
-          let res = this.resources[j];
+          const res = this.resources[j];
           if(res.Id == key.resId && res.resType == ResType){
             return res;
           }
@@ -163,7 +163,7 @@ export class BIFObject {
       await GameFileSystem.close(fd);
 
       return buffer;
-    }catch(e){
+    }catch{
       return new Uint8Array(0);
     }
   }

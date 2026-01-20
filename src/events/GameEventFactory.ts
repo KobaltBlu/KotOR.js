@@ -71,13 +71,13 @@ export class GameEventFactory {
     if(!struct){ return undefined as any; }
     let event: GameEvent = undefined as any;
 
-    let eType: GameEventType = struct.getFieldByLabel('EventId').getValue();
-    let eObjectId = struct.getFieldByLabel('ObjectId').getValue();
-    let eCallerId = struct.getFieldByLabel('CallerId').getValue();
-    let eDay = struct.getFieldByLabel('Day').getValue();
-    let eTime = struct.getFieldByLabel('Time').getValue();
+    const eType: GameEventType = struct.getFieldByLabel('EventId').getValue();
+    const eObjectId = struct.getFieldByLabel('ObjectId').getValue();
+    const eCallerId = struct.getFieldByLabel('CallerId').getValue();
+    const eDay = struct.getFieldByLabel('Day').getValue();
+    const eTime = struct.getFieldByLabel('Time').getValue();
 
-    let eventDataField = struct.getFieldByLabel('EventData');
+    const eventDataField = struct.getFieldByLabel('EventData');
     let eventData: GFFStruct = undefined as any;
     if(eventDataField){
       eventData = eventDataField.getChildStructs()[0];

@@ -48,7 +48,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const searchId = ++currentSearchId;
     
     try {
-      if(!!value.length){
+      if(value.length){
         // Process each root node asynchronously
         const searchPromises = TabResourceExplorerState.Resources.map( n => n.searchFor(value) );
         const searchResults = await Promise.all(searchPromises);
@@ -124,7 +124,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
       </Form>
       
       <div style={{
-        display: `${!!loading ? 'block' : 'none'}`, 
+        display: `${loading ? 'block' : 'none'}`, 
         padding: '5px',
         width: '100%', 
         height: '100px',

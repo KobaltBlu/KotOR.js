@@ -295,7 +295,7 @@ export class AudioEngine {
     }
 
     if(index >= 0){
-      let data = EAXPresets.PresetFromIndex(index);
+      const data = EAXPresets.PresetFromIndex(index);
       console.log('setReverbProfile:', data);
       
       this.setReverbState(!software_mode);

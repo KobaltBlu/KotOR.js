@@ -34,14 +34,14 @@ export class GUISpellItem extends GUIProtoItem {
       super.createControl();
       //Create the actual control elements below
 
-      let iconHeight = this.extent.height;
-      let arrowHeight = iconHeight; //32
+      const iconHeight = this.extent.height;
+      const arrowHeight = iconHeight; //32
 
-      let spellList = this.node;
+      const spellList = this.node;
       for(let i = 0; i < spellList.length; i++){
-        let spell = spellList[i];
+        const spell = spellList[i];
 
-        let hasPrereq = true;
+        const hasPrereq = true;
         /*if(spell.prerequisites != '****'){
           const requiredSpellIds = spell.prerequisites.split('_').map((id:string) => parseInt(id));
           for(let j = 0; j < requiredSpellIds.length; j++){
@@ -52,17 +52,17 @@ export class GUISpellItem extends GUIProtoItem {
           }
         }*/
 
-        let hasSpell = GameState.PartyManager.party[0].getHasSpell(spell.__index);
+        const hasSpell = GameState.PartyManager.party[0].getHasSpell(spell.__index);
 
         console.log(spell.constant, hasPrereq);
 
         const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
         const isUnknown = unknownSpells.indexOf(spell.__index) >= 0;
 
-        let locked = !hasSpell;//!hasSpell || !hasPrereq;
+        const locked = !hasSpell;//!hasSpell || !hasPrereq;
         // if(locked){ continue; }
 
-        let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+        const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
         buttonIcon.name = 'BUTTON';
         buttonIcon.setText('');
         buttonIcon.disableTextAlignment();
@@ -76,7 +76,7 @@ export class GUISpellItem extends GUIProtoItem {
         buttonIcon.autoCalculatePosition = false;
         this.children.push(buttonIcon);
 
-        let _buttonIconWidget = buttonIcon.createControl();
+        const _buttonIconWidget = buttonIcon.createControl();
         switch(i){
           case 2:
             _buttonIconWidget.position.x = (this.extent.width/2 - buttonIcon.extent.width/2);
@@ -132,9 +132,9 @@ export class GUISpellItem extends GUIProtoItem {
         /**
          * BLUE ARROW
          */
-        let arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
+        const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
-          let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
+          const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
           arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
@@ -150,7 +150,7 @@ export class GUISpellItem extends GUIProtoItem {
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);
 
-          let _arrowIconWidget = arrowIcon.createControl();
+          const _arrowIconWidget = arrowIcon.createControl();
           switch(i){
             case 2:
               _arrowIconWidget.position.x = arrowOffset;

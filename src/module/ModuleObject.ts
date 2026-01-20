@@ -545,7 +545,7 @@ export class ModuleObject {
     if(skipUnclearable){
       let i = this.actionQueue.length;
       while(i--){
-        let action = this.actionQueue[i];
+        const action = this.actionQueue[i];
         if(action.type == ActionType.ActionDialogObject){ continue; }
         if(typeof action.clearable !== 'undefined'){
           if(action.clearable){
@@ -1466,7 +1466,7 @@ export class ModuleObject {
    * @param instant 
    */
   setFacing(facing = 0, instant = false){
-    let diff = this.rotation.z - facing;
+    const diff = this.rotation.z - facing;
     this.wasFacing = Utility.NormalizeRadian(this.rotation.z);
     this.facing = Utility.NormalizeRadian(facing);//Utility.NormalizeRadian(this.rotation.z - diff);
     this.facingTweenTime = 0;
@@ -1757,7 +1757,7 @@ export class ModuleObject {
     }
 
     for(let i = 0; i < this.inventory.length; i++){
-      let item = this.inventory[i];
+      const item = this.inventory[i];
       if(item.getTag() == sTag)
         return item;
     }
@@ -1811,7 +1811,7 @@ export class ModuleObject {
    */
   doCommand(script: NWScriptInstance){
     //console.log('doCommand', this.getTag(), script, action, instruction);
-    let action = new GameState.ActionFactory.ActionDoCommand();
+    const action = new GameState.ActionFactory.ActionDoCommand();
     action.setParameter(0, ActionParameterType.SCRIPT_SITUATION, script);
     this.actionQueue.add(action);
   }
@@ -1841,7 +1841,7 @@ export class ModuleObject {
     this.trapType = nTrapId;
 
     this.ownerDemolitions = owner.getSkillLevel(SkillType.DEMOLITIONS);
-    let d20 = 20;
+    const d20 = 20;
 
     const nDetectDC = !isNaN(parseInt(trap.detectdcmod)) ? parseInt(trap.detectdcmod) : 0;
     this.trapDetectDC = nDetectDC + d20 + this.ownerDemolitions;
@@ -2033,7 +2033,7 @@ export class ModuleObject {
     //https://nwnlexicon.com/index.php?title=SpeakString
     let notifyCreatures = false;
     let notifyPCs = false;
-    let talkVolume = volume;
+    const talkVolume = volume;
 
     let range = 5;
     switch(talkVolume){
@@ -2143,7 +2143,7 @@ export class ModuleObject {
    * @param computedPath 
    */
   setComputedPath(computedPath: ComputedPath){
-    if(!!this.#computedPath){
+    if(this.#computedPath){
       this.#computedPath.dispose();
     }
     this.#computedPath = computedPath;
@@ -2254,7 +2254,7 @@ export class ModuleObject {
               effectMDL.disableEmitters();
               setTimeout( () => {
                 if(this.model instanceof OdysseyModel3D){
-                  let index = this.model.effects.indexOf(effectMDL);
+                  const index = this.model.effects.indexOf(effectMDL);
                   effectMDL.dispose();
                   this.model.effects.splice(index, 1);
                 }
@@ -2419,8 +2419,8 @@ export class ModuleObject {
    * @returns 
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getCON());
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getCON());
     
     if((roll + this.getFortitudeSave() + bonus) > nDC){
       return 1
@@ -2445,8 +2445,8 @@ export class ModuleObject {
    * @returns 
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getDEX());
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getDEX());
     
     if((roll + this.getReflexSave() + bonus) > nDC){
       return 1
@@ -2479,8 +2479,8 @@ export class ModuleObject {
    * @returns 
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
-    let roll = Dice.roll(1, DiceType.d20);
-    let bonus = CombatRound.GetMod(this.getWIS());
+    const roll = Dice.roll(1, DiceType.d20);
+    const bonus = CombatRound.GetMod(this.getWIS());
 
     if((roll + this.getWillSave() + bonus) > nDC){
       return 1
@@ -2515,7 +2515,7 @@ export class ModuleObject {
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
       //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
       //1d20 + their level vs. a DC of your level plus 10
-      let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
+      const roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel());
       return (roll > 10 + (oCaster as any).getTotalClassLevel());
     }
     return 0;
@@ -2608,7 +2608,7 @@ export class ModuleObject {
     let effect = this.effects[eIndex];
     while(effect){
       if(effect.getCreator() == oCreator){
-        let index = this.effects.indexOf(effect);
+        const index = this.effects.indexOf(effect);
         if(index >= 0){
           this.effects.splice(index, 1)[0].onRemove();
         }
@@ -2624,7 +2624,7 @@ export class ModuleObject {
   removeEffectsByType(type: number = -1){
     let effect = this.getEffect(type);
     while(effect){
-      let index = this.effects.indexOf(effect);
+      const index = this.effects.indexOf(effect);
       if(index >= 0){
         this.effects.splice(index, 1)[0].onRemove();
       }
@@ -2663,8 +2663,8 @@ export class ModuleObject {
    * @param vPoint 
    */
   FacePoint(vPoint=new THREE.Vector3){
-    let tangent = vPoint.clone().sub(this.position.clone());
-    let atan = Math.atan2(-tangent.y, -tangent.x);
+    const tangent = vPoint.clone().sub(this.position.clone());
+    const atan = Math.atan2(-tangent.y, -tangent.x);
     this.setFacing(atan + Math.PI/2, true);
   }
 
@@ -3083,7 +3083,7 @@ export class ModuleObject {
   initPerceptionList(){
     let length = this.perceptionList.length;
     while(length--){
-      let perceptionObject = this.perceptionList[length];
+      const perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
           perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
@@ -3106,15 +3106,15 @@ export class ModuleObject {
 
     let triggerOnNotice = false;
     let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
+    const exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
-      let existingObject = exists[0];
+      const existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x02) != heard);
       existingObject.data |= 0x02;
       perceptionObject = existingObject;
     }else{
       if(heard){
-        let newObject = {
+        const newObject = {
           object: object,
           objectId: object.id,
           data: 0x02
@@ -3156,14 +3156,14 @@ export class ModuleObject {
 
     let triggerOnNotice = false;
     let perceptionObject;
-    let exists = this.perceptionList.filter( (o) => o.object == object );
+    const exists = this.perceptionList.filter( (o) => o.object == object );
     if(exists.length){
-      let existingObject = exists[0];
+      const existingObject = exists[0];
       triggerOnNotice = (!!(existingObject.data & 0x01) != seen);
       perceptionObject = existingObject;
     }else{
       if(seen){
-        let newObject = {
+        const newObject = {
           object: object,
           objectId: object.id,
           data: 0x01
@@ -3208,12 +3208,12 @@ export class ModuleObject {
       return false;
     }
 
-    let position_a = this.position.clone();
-    let position_b = oTarget.position.clone();
+    const position_a = this.position.clone();
+    const position_b = oTarget.position.clone();
     position_a.z += 1;
     position_b.z += 1;
-    let direction = position_b.clone().sub(position_a).normalize();
-    let distance = position_a.distanceTo(position_b);
+    const direction = position_b.clone().sub(position_a).normalize();
+    const distance = position_a.distanceTo(position_b);
 
     if(this.perceptionRange){
       if(distance > this.getPerceptionRangePrimary()){
@@ -3229,11 +3229,11 @@ export class ModuleObject {
     GameState.raycaster.ray.direction.copy(direction);
     GameState.raycaster.far = max_distance;
 
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
 
     for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
-      let room = this.area.rooms[j];
+      const room = this.area.rooms[j];
       if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
         aabbFaces.push({
           object: room, 
@@ -3243,9 +3243,9 @@ export class ModuleObject {
     }
 
     for(let j = 0, jl = this.area.doors.length; j < jl; j++){
-      let door = this.area.doors[j];
+      const door = this.area.doors[j];
       if(door && door != (this as any) && !door.isOpen()){
-        let box3 = door.box;
+        const box3 = door.box;
         if(box3){
           if(GameState.raycaster.ray.intersectsBox(box3) || box3.containsPoint(position_a)){
             return false;
@@ -3256,7 +3256,7 @@ export class ModuleObject {
 
 
     for(let i = 0, il = aabbFaces.length; i < il; i++){
-      let castableFaces = aabbFaces[i];
+      const castableFaces = aabbFaces[i];
       intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
       if (intersects && intersects.length > 0 ) {
         for(let j = 0; j < intersects.length; j++){
@@ -3400,7 +3400,7 @@ export class ModuleObject {
 
       //Push verticies
       for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
+        const tgv = this.geometry[i];
         this.vertices[i] = new THREE.Vector3( 
           tgv.getFieldByLabel('PointX').getValue(),
           tgv.getFieldByLabel('PointY').getValue(),
@@ -3502,12 +3502,12 @@ export class ModuleObject {
       this.willSaveThrow = this.template.RootNode.getFieldByLabel('WillSaveThrow').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
         if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -3515,9 +3515,9 @@ export class ModuleObject {
         }
 
         if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
@@ -3534,7 +3534,7 @@ export class ModuleObject {
   Save(){
     //TODO
 
-    let gff = new GFFObject();
+    const gff = new GFFObject();
 
     return gff;
 
@@ -3545,14 +3545,14 @@ export class ModuleObject {
    * @returns 
    */
   getSWVarTableSaveStruct(){
-    let swVarTableStruct = new GFFStruct();
+    const swVarTableStruct = new GFFStruct();
 
-    let swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
+    const swVarTableBitArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
 
     for(let i = 0; i < 3; i++){
-      let varStruct = new GFFStruct();
+      const varStruct = new GFFStruct();
       let value = 0;
-      let offset = 32 * i;
+      const offset = 32 * i;
       for(let j = 0; j < 32; j++){
         if(this.getLocalBoolean(offset + j) == true){
           value |= 1 << j;
@@ -3563,10 +3563,10 @@ export class ModuleObject {
       swVarTableBitArray.addChildStruct(varStruct);
     }
 
-    let swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
+    const swVarTableByteArray = swVarTableStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
 
     for(let i = 0; i < 8; i++){
-      let varStruct = new GFFStruct();
+      const varStruct = new GFFStruct();
       varStruct.addField( new GFFField(GFFDataType.BYTE, 'Variable') ).setValue( Number(this.getLocalNumber(i)) );
       swVarTableByteArray.addChildStruct(varStruct);
     }
@@ -3603,7 +3603,11 @@ export class ModuleObject {
    * Destroy the object
    */
   destroy(){
-    try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
+    try{ 
+      console.log('destroy', this.getTag(), this);
+    }catch{
+      // ignore error
+    }
     try{
       this.container.removeFromParent();
 

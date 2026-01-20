@@ -58,7 +58,7 @@ export class MenuGraphics extends K1_MenuGraphics {
 
       this.SLI_GAMMA.onValueChanged = (value: any) => {
         //let gamma = (1.5 * value) + .25;
-        let contrast = (50 * ((value*2) - 1) )*-1;
+        const contrast = (50 * ((value*2) - 1) )*-1;
 
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };

@@ -406,8 +406,8 @@ export class GUIControl {
     this.text.geometry = new THREE.BufferGeometry();
     this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
 
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    const posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    const uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
     this.text.geometry.setAttribute( 'position', posAttribute );
     this.text.geometry.setAttribute( 'uv', uvAttribute );
 
@@ -535,7 +535,7 @@ export class GUIControl {
 
   initProperties(){
     if(this.control instanceof GFFStruct){
-      let control = this.control;
+      const control = this.control;
 
       this.type = ( control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
       this.widget.name = this.name = ( control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1 );
@@ -549,7 +549,7 @@ export class GUIControl {
       //Extent
       this.hasExtent = control.hasField('EXTENT');
       if(this.hasExtent){
-        let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+        const extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
         if(extent){
           this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
           this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
@@ -561,10 +561,10 @@ export class GUIControl {
       //Border
       this.hasBorder = control.hasField('BORDER');
       if(this.hasBorder){
-        let border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
+        const border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
         if(border){
           if(border.hasField('COLOR')){
-            let color = border.getFieldByLabel('COLOR')?.getVector();
+            const color = border.getFieldByLabel('COLOR')?.getVector();
             if(color && (color.x * color.y * color.z) < 1 ){
               if(this.border.color && this.border.fill.material){
                 this.border.color.setRGB(color.x, color.y, color.z);
@@ -595,7 +595,7 @@ export class GUIControl {
       //Text
       this.hasText = control.hasField('TEXT');
       if(this.hasText){
-        let text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
+        const text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
         if(text){
           this.text.font = text.getFieldByLabel('FONT')?.getValue();
           this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
@@ -611,7 +611,7 @@ export class GUIControl {
           }
 
           if(text.hasField('COLOR')){
-            let color = text.getFieldByLabel('COLOR')?.getVector();
+            const color = text.getFieldByLabel('COLOR')?.getVector();
             if(color) this.text.color.setRGB(color.x, color.y, color.z)
           }
 
@@ -624,10 +624,10 @@ export class GUIControl {
       //Highlight
       this.hasHighlight = control.hasField('HILIGHT');
       if(this.hasHighlight){
-        let highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
+        const highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
         if(highlight){
           if(highlight.hasField('COLOR')){
-            let color = highlight.getFieldByLabel('COLOR')?.getVector();
+            const color = highlight.getFieldByLabel('COLOR')?.getVector();
             if(color && (color.x * color.y * color.z) < 1 ){
               if(this.highlight.color && this.highlight.fill.material){
                 this.highlight.color.setRGB(color.x, color.y, color.z);
@@ -657,7 +657,7 @@ export class GUIControl {
       //Moveto
       this.hasMoveTo = control.hasField('MOVETO');
       if(this.hasMoveTo){
-        let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
+        const moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
         if(moveTo){
           this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
           this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
@@ -999,10 +999,10 @@ export class GUIControl {
       return false;
 
     if(this.menu.tGuiPanel.control.hasField('CONTROLS')){
-      let children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
+      const children = this.menu.tGuiPanel.control.getFieldByLabel('CONTROLS')?.getChildStructs() || [];
       
       for(let i = 0; i < children.length; i++){
-        let childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
+        const childParent = ( children[i].hasField('Obj_Parent') ? children[i].getFieldByLabel('Obj_Parent')?.getValue() : '' );
         if(childParent == this.name){
 
           const control: GUIControl = this.menu.factory.FromStruct(children[i], this.menu, this, this.scale);
@@ -1011,7 +1011,7 @@ export class GUIControl {
 
           this.children.push(control);
 
-          let _cWidget = control.createControl();
+          const _cWidget = control.createControl();
           _cWidget.position.z = control.zIndex;
           
           //this.widget.add(_cWidget);
@@ -1108,7 +1108,7 @@ export class GUIControl {
       this.highlight.fill.material.visible = this.highlightFillEnabled;
     }
 
-    let len = this.children.length;
+    const len = this.children.length;
     for(let i = 0; i < len; i++){
       this.children[i].update(delta);
     }
@@ -1378,8 +1378,8 @@ export class GUIControl {
       parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
       parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
 
-      let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-      let posY = ((this.extent.top - ( (parentExtent.height - this.extent.height) / 2 ) ));
+      const posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
+      const posY = ((this.extent.top - ( (parentExtent.height - this.extent.height) / 2 ) ));
 
       this.widget.position.x = this.offset.x + (posX);
       this.widget.position.y = (-posY);
@@ -1395,15 +1395,15 @@ export class GUIControl {
     // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
     // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
-    let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-    let posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
+    const posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
+    const posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
 
     this.anchorOffset = new THREE.Vector2(posX, posY);
 
-    let halfX = parentExtent.width/2;
-    let quatX = 25; //parentExtent.width/4;
-    let halfY = parentExtent.height/2;
-    let quatY = 25; //parentExtent.height/4;
+    const halfX = parentExtent.width/2;
+    const quatX = 25; //parentExtent.width/4;
+    const halfY = parentExtent.height/2;
+    const quatY = 25; //parentExtent.height/4;
 
     if(this.scale && this.anchor == 'none'){
       if(this.extent.left == 0 && this.extent.top == 0){
@@ -1477,7 +1477,7 @@ export class GUIControl {
 
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
+      const control = this.children[i];
       if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
         controls.push(control);
       }else{
@@ -1492,7 +1492,7 @@ export class GUIControl {
   }
 
   updateBounds(){
-    let worldPosition: THREE.Vector3 = new THREE.Vector3;
+    const worldPosition: THREE.Vector3 = new THREE.Vector3;
     if(this.list){
       worldPosition.copy(this.parent.widget.position.clone());
       //console.log('worldPos', worldPosition);
@@ -1527,20 +1527,20 @@ export class GUIControl {
   }
 
   getControlExtent(){
-    let renderSize = this.getRendererSize();
+    const renderSize = this.getRendererSize();
 
-    let wRatio = GameState.ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    let hRatio = GameState.ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
+    const wRatio = GameState.ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
+    const hRatio = GameState.ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
-    let parentExtent = { width: this.menu.width, height: this.menu.height };
+    const parentExtent = { width: this.menu.width, height: this.menu.height };
     //if(!(this.parent instanceof THREE.Scene)){
       //parentExtent = this.parent.control.extent;
     //}
 
     let left = this.extent.left - ( (parentExtent.width - this.extent.width) / 2 );
-    let top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
+    const top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
 
-    let shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = this.getShrinkWidth();
     left += shrinkWidth;
 
     return {
@@ -1566,7 +1566,7 @@ export class GUIControl {
   }
 
   getOuterSize(){
-    let extent = this.getControlExtent();
+    const extent = this.getControlExtent();
     return {
       top: extent.top,
       left: extent.left,
@@ -1583,11 +1583,11 @@ export class GUIControl {
   }
 
   getFillExtent(){
-    let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const extent = this.getControlExtent();
+    const inner = this.getInnerSize();
     //console.log('size', extent, inner);
 
-    let shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = this.getShrinkWidth();
 
     let width = inner.width - this.border.dimension - shrinkWidth;
     let height = inner.height - this.border.dimension;
@@ -1634,7 +1634,7 @@ export class GUIControl {
 
   getBorderExtent(side: string){
     // let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const inner = this.getInnerSize();
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
       inner.width += this.parent.border.inneroffset * 2;
@@ -1643,7 +1643,7 @@ export class GUIControl {
 
     let top = 0, left = 0, width = 0, height = 0;
 
-    let shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = this.getShrinkWidth();
 
     switch(side){
       case 'top':
@@ -1714,8 +1714,8 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string){
-    let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const extent = this.getControlExtent();
+    const inner = this.getInnerSize();
 
     let top = 0, left = 0, width = 0, height = 0;
 
@@ -1724,7 +1724,7 @@ export class GUIControl {
       inner.width = Math.min(this.extent.width, inner.width);
     }
 
-    let shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = this.getShrinkWidth();
 
     switch(side){
       case 'top':
@@ -1894,11 +1894,11 @@ export class GUIControl {
 
   buildHighlight(){
 
-    let edgeGeometries = 4;
-    let cornerGeometries = 4;
-    let geomCount = edgeGeometries + cornerGeometries;
+    const edgeGeometries = 4;
+    const cornerGeometries = 4;
+    const geomCount = edgeGeometries + cornerGeometries;
 
-    let planes: THREE.BufferGeometry[] = [];
+    const planes: THREE.BufferGeometry[] = [];
     let extent;
 
     for(let i = 0; i < geomCount; i++){
@@ -1978,7 +1978,7 @@ export class GUIControl {
   }
 
   buildHighlightFill(){
-    let extent = this.getFillExtent();
+    const extent = this.getFillExtent();
     if(this.highlight.fill.mesh){
       this.highlight.fill.mesh.name = this.widget.name+' center fill';
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
@@ -1988,7 +1988,7 @@ export class GUIControl {
   }
 
   buildText(){
-    let self = this;
+    const self = this;
 
     if(!this.text.texture)
       return;
@@ -1998,7 +1998,7 @@ export class GUIControl {
 
     this.widget.userData.text.add(this.text.mesh);
     
-    let texture = this.text.texture;
+    const texture = this.text.texture;
     texture.flipY = false;
     texture.anisotropy = 1;
     texture.minFilter = THREE.LinearFilter;
@@ -2013,8 +2013,8 @@ export class GUIControl {
         this.boundingSphere = new THREE.Sphere()
       }
     
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
+      const positions = this.attributes.position.array
+      const itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -2033,9 +2033,9 @@ export class GUIControl {
         this.boundingBox = new THREE.Box3()
       }
     
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
+      const bbox = this.boundingBox
+      const positions = this.attributes.position.array
+      const itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         bbox.makeEmpty()
         return
@@ -2180,7 +2180,7 @@ export class GUIControl {
 
     str = str.trim();
 
-    let oldText = this.text.text;
+    const oldText = this.text.text;
     this.text.text = this.menu.gameStringParse(str);
 
     if(typeof this.text.geometry !== 'object')
@@ -2225,7 +2225,7 @@ export class GUIControl {
 
   resizeFill(){
     if(this.border.fill.mesh){
-      let extent = this.getFillExtent();
+      const extent = this.getFillExtent();
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
     }
@@ -2233,7 +2233,7 @@ export class GUIControl {
 
   resizeHighlightFill(){
     if(this.highlight.fill.mesh){
-      let extent = this.getFillExtent();
+      const extent = this.getFillExtent();
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
       this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
     }
@@ -2241,7 +2241,7 @@ export class GUIControl {
 
   resizeBorder(side: string){
 
-    let extent = this.getBorderExtent(side);
+    const extent = this.getBorderExtent(side);
 
     switch(side){
       case 'top':
@@ -2270,7 +2270,7 @@ export class GUIControl {
 
   resizeCorner(side: string){
     
-    let extent = this.getBorderExtent(side);
+    const extent = this.getBorderExtent(side);
 
     switch(side){
       case 'topLeft':
@@ -2408,7 +2408,7 @@ export class GUIControl {
     if(this.eventListeners.hasOwnProperty(name)){
       if(typeof callback === 'function'){
         //Remove this specific callback from the event listener
-        let cbIndex = (this.eventListeners as any)[name].indexOf(callback);
+        const cbIndex = (this.eventListeners as any)[name].indexOf(callback);
         if(cbIndex > -1){
           (this.eventListeners as any)[name].splice(cbIndex, 1);
         }
@@ -2435,7 +2435,7 @@ export class GUIControl {
     }
 
     if(this.eventListeners.hasOwnProperty(name)){
-      let len = (this.eventListeners as any)[name].length;
+      const len = (this.eventListeners as any)[name].length;
       for(let i = 0; i < len; i++){
         if(typeof (this.eventListeners as any)[name][i] === 'function'){
           processed = true;
@@ -2499,7 +2499,7 @@ export class GUIControl {
   }
 
   attachINIProperty(key = ''){
-    let property = key;
+    const property = key;
     if(property){
       this.iniProperty = property;
       this.onINIPropertyAttached();
@@ -2508,7 +2508,7 @@ export class GUIControl {
 
   updateWorldPosition(){
 
-    let pos = this.widget.position.clone();
+    const pos = this.widget.position.clone();
     let parent = this.parent;
     while(parent instanceof GUIControl){
       pos.add(parent.widget.position);
@@ -2520,15 +2520,15 @@ export class GUIControl {
   }
 
   bounds(positions: number[] = []) {
-    let count = positions.length / itemSize
+    const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      let x = positions[i * itemSize + 0]
-      let y = positions[i * itemSize + 1]
+      const x = positions[i * itemSize + 0]
+      const y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])
@@ -2544,13 +2544,13 @@ export class GUIControl {
 
   computeSphere (positions: number[] = [], output: THREE.Sphere) {
     this.bounds(positions)
-    let minX = box.min[0]
-    let minY = box.min[1]
-    let maxX = box.max[0]
-    let maxY = box.max[1]
-    let width = maxX - minX
-    let height = maxY - minY
-    let length = Math.sqrt(width * width + height * height)
+    const minX = box.min[0]
+    const minY = box.min[1]
+    const maxX = box.max[0]
+    const maxY = box.max[1]
+    const width = maxX - minX
+    const height = maxY - minY
+    const length = Math.sqrt(width * width + height * height)
     output.center.set(minX + width / 2, minY + height / 2, 0)
     output.radius = length / 2
   }

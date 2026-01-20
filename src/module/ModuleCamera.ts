@@ -201,7 +201,7 @@ export class ModuleCamera {
    * ```
    */
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);

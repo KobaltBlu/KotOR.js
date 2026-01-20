@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { BinaryReader } from "../utility/binary/BinaryReader";
 import { TXI } from './TXI';
-// @ts-ignore
+// @ts-expect-error because I am too lazy to fix it
 import * as dxtJs from "dxt-js";
 import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
 import { ENCODING } from '../enums/graphics/tpc/Encoding';
@@ -50,11 +50,11 @@ export class TPCObject {
   getTXIData(): string {
 
     try{
-      let _txiOffset = this.getDataLength() + TPCHeaderLength;
-      let _txiDataLength = this.file.length - _txiOffset;
+      const _txiOffset = this.getDataLength() + TPCHeaderLength;
+      const _txiDataLength = this.file.length - _txiOffset;
 
       if (_txiDataLength > 0){
-        let txiReader = new BinaryReader(this.file.slice(_txiOffset, _txiOffset + _txiDataLength ));
+        const txiReader = new BinaryReader(this.file.slice(_txiOffset, _txiOffset + _txiDataLength ));
         let txiData = '';
         let ch;
         
@@ -78,7 +78,7 @@ export class TPCObject {
 
   getDDS( compressMipMaps: boolean = true ) {
 
-  	let dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false } as any;
+  	const dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false } as any;
 
     // Parse header
     if(this.header === null)
@@ -143,7 +143,7 @@ export class TPCObject {
           const rawBuffer = this.file.slice(dataOffset, dataOffset + dataLength);
           if(this.header.encoding == ENCODING.RGB){
             byteArray = new Uint8Array( (rawBuffer.length/3) * 4 );
-            let n = 4 * width * height;
+            const n = 4 * width * height;
             let s = 0, d = 0;
             while (d < n) {
               byteArray[d++] = rawBuffer[s++];
@@ -191,8 +191,8 @@ export class TPCObject {
     if(this.txi.procedureType == 1){
       try{
         //console.log('TPCObject: Rebuilding Frames', this.filename);
-        let encoding = (this.header.encoding == ENCODING.RGB) ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
-        let mipmaps = [];
+        const encoding = (this.header.encoding == ENCODING.RGB) ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+        const mipmaps = [];
 
         dds.width = this.header.width;
         dds.height = this.header.height;
@@ -201,20 +201,20 @@ export class TPCObject {
         let imageHeight = this.header.height;
         let frameWidth = (imageWidth / this.txi.numx);
         let frameHeight = (imageHeight / this.txi.numy);
-        let frameCount = (this.txi.numx * this.txi.numy);
+        const frameCount = (this.txi.numx * this.txi.numy);
 
         for(let m = 0; m < dds.mipmapCount; m++){
-          let frames = [];
+          const frames = [];
 
           //Create an OffsreenCanvas so we can stitch the frames back together
           this.canvas[m] = new OffscreenCanvas(imageWidth, imageHeight);
-          let ctx = this.canvas[m].getContext('2d');
+          const ctx = this.canvas[m].getContext('2d');
 
           //Get the proper frames from the old mipmaps list
           for(let i = 0; i < frameCount; i++){
-            let mipmap = dds.mipmaps[m + (i * dds.mipmapCount)];
+            const mipmap = dds.mipmaps[m + (i * dds.mipmapCount)];
             //console.log(m + (i * dds.mipmapCount), mipmap);
-            let uint8 = Uint8ClampedArray.from( 
+            const uint8 = Uint8ClampedArray.from( 
               compressMipMaps ? dxtJs.decompress(mipmap.data, frameWidth, frameHeight, encoding) : mipmap.data
               // (window as any).dxt.decompress(mipmap.data, frameWidth, frameHeight, encoding) 
             );
@@ -226,7 +226,7 @@ export class TPCObject {
 
           //Merge the frames onto the canvas
           for(let y = 0; y < this.txi.numy; y++){
-            let frameY = (y * this.txi.numx);
+            const frameY = (y * this.txi.numx);
             for(let x = 0; x < this.txi.numx; x++){
               //console.log(frameY + x, x * frameWidth2, y * frameHeight2);
               ctx.putImageData(frames[frameY + x], x * frameWidth, y * frameHeight);
@@ -234,10 +234,10 @@ export class TPCObject {
           }
           //console.log(imageWidth, imageHeight, frameWidth, frameHeight);
           //Extract the merged image
-          let mergedImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
+          const mergedImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
 
           //Compress it with the proper DXT encoding
-          let mipmap_data = compressMipMaps ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding) : mergedImageData.data;
+          const mipmap_data = compressMipMaps ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding) : mergedImageData.data;
 
           //Add it the the new mipmaps list
           mipmaps.push({
@@ -271,10 +271,10 @@ export class TPCObject {
     let running = true;
     let mips = 0;
 
-    let multiplier = (this.header.encoding == ENCODING.RGB) ? 0.5 : 1;
+    const multiplier = (this.header.encoding == ENCODING.RGB) ? 0.5 : 1;
 
     while(running){
-      let mipMapSize = Math.max((nWidth * nHeight) * multiplier, this.header.minDataSize);
+      const mipMapSize = Math.max((nWidth * nHeight) * multiplier, this.header.minDataSize);
       //console.log(nWidth, nHeight, mipMapSize);
       dataSize += mipMapSize;//Math.max( dataSize >> 2, this.header.minDataSize );
       if(nWidth == 1 && nHeight == 1){
@@ -290,8 +290,8 @@ export class TPCObject {
   readHeader(): ITPCHeader {
 
     // Parse header
-    let Header: ITPCHeader = {} as ITPCHeader;
-    let Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
+    const Header: ITPCHeader = {} as ITPCHeader;
+    const Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
     Reader.seek(0);
     Header.dataSize = Reader.readUInt32();
     Header.alphaTest = Reader.readSingle();
@@ -409,12 +409,12 @@ export class TPCObject {
 
   FlipY(pixelData: any){
     let offset = 0;
-    let stride = this.header.width * 4;
+    const stride = this.header.width * 4;
 
     if(pixelData == null)
       throw 'Missing pixelData'
 
-    let unFlipped = Uint8Array.from(pixelData);
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -427,15 +427,15 @@ export class TPCObject {
 
   //Convert the TPC into a THREE.CompressedTexture for use in the engine
   toCompressedTexture(){
-    let images = [];
-    let texDatas = this.getDDS( true );
-    let _texture: OdysseyCompressedTexture|THREE.CanvasTexture = new OdysseyCompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
+    const images = [];
+    const texDatas = this.getDDS( true );
+    const _texture: OdysseyCompressedTexture|THREE.CanvasTexture = new OdysseyCompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
 
     // if(this.canvas.length){
     //   _texture = new THREE.CanvasTexture(this.canvas[0] as any);
     // }else{
       if ( texDatas.isCubemap ) {
-        let faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+        const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
         for ( let f = 0; f < faces; f ++ ) {
           images[ f ] = { mipmaps : [] } as any;
           for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
@@ -474,7 +474,7 @@ export class TPCObject {
     (_texture as any).txi = this.txi;
 
     (_texture as any).clone = function () {
-      let cloned = new this.constructor().copy( this );
+      const cloned = new this.constructor().copy( this );
       cloned.format = this.format;
       cloned.needsUpdate = true;
       cloned.bumpMapType = this.bumpMapType;

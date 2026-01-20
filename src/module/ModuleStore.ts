@@ -125,12 +125,12 @@ export class ModuleStore extends ModuleObject {
       this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
         if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -138,9 +138,9 @@ export class ModuleStore extends ModuleObject {
         }
 
         if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
@@ -148,7 +148,7 @@ export class ModuleStore extends ModuleObject {
     }
             
     if(this.template.RootNode.hasField('ItemList')){
-      let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
+      const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
@@ -174,7 +174,7 @@ export class ModuleStore extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTM ';
     gff.RootNode.type = 6;
 
@@ -186,7 +186,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
 
-    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
       itemList.addChildStruct( this.inventory[i].save() );
     }
@@ -199,7 +199,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.rotation.z);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( this.actionQueueToActionList() );

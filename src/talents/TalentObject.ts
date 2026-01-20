@@ -40,15 +40,15 @@ export class TalentObject {
     //console.log('useTalentOnObject', oCaster, this, oTarget);
   }
 
-  talentCombatRoundEnd(oTarget: ModuleObject, oCaster: ModuleObject){
+  talentCombatRoundEnd(_oTarget: ModuleObject, _oCaster: ModuleObject){
     //console.log('talentCombatRoundEnd', oCaster, this, oTarget);
   }
 
-  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: any, delta: number = 0){
+  update(_oTarget: ModuleObject, _oCaster: ModuleObject, _combatAction: any, _delta: number = 0){
 
   }
 
-  inRange(oTarget: ModuleObject, oCaster: ModuleObject){
+  inRange(_oTarget: ModuleObject, _oCaster: ModuleObject){
     return true;
   }
 

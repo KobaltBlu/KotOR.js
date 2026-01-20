@@ -32,11 +32,11 @@ export class LYTObject {
     this.tracks = [];
     this.obstacles = [];
 
-    let decoder = new TextDecoder('utf8');
+    const decoder = new TextDecoder('utf8');
     this.text = decoder.decode(data);
-    let lines = this.text.split('\n');
+    const lines = this.text.split('\n');
 
-    let MODES = {
+    const MODES = {
       NONE: 0,
       ROOMS: 1,
       DOORS: 2,
@@ -47,7 +47,7 @@ export class LYTObject {
     let mode = MODES.NONE;
 
     for(let i = 0; i < lines.length; i++){
-      let line = lines[i];
+      const line = lines[i];
 
       if(line.includes('roomcount')){
         mode = MODES.ROOMS;
@@ -62,7 +62,7 @@ export class LYTObject {
       }else if (i == 0 || i == 1){
         //SKIP
       }else{
-        let params = line.trim().split(' ');
+        const params = line.trim().split(' ');
         switch(mode){
           case MODES.ROOMS:
             this.rooms.push({

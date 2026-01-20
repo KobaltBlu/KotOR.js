@@ -121,9 +121,9 @@ export class MenuSaveLoad extends GameMenu {
 
   reloadSaves(){
     this.LB_GAMES.clearItems();
-    let saves = this.getSaveGames();
+    const saves = this.getSaveGames();
     for (let i = 0; i < saves.length; i++) {
-      let save = saves[i];
+      const save = saves[i];
       this.LB_GAMES.addItem(save);
     }
     this.selected = saves[0];
@@ -159,7 +159,7 @@ export class MenuSaveLoad extends GameMenu {
           this.LBL_PM3.setFillTexture(texture);
           (this.LBL_PM3.getFill().material as THREE.ShaderMaterial).transparent = false;
         });
-        let areaNames = this.selected.getAreaName().split(' - ');
+        const areaNames = this.selected.getAreaName().split(' - ');
         if (areaNames.length == 2) {
           this.LBL_PLANETNAME.setText(areaNames[0]);
           this.LBL_AREANAME.setText(areaNames[1]);

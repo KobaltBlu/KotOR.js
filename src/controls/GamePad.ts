@@ -136,7 +136,7 @@ export class GamePad {
     GamePad.GamePads = {};
 
     function gamepadHandler(e: any, connecting: boolean = false) {
-      let gamepad = e.gamepad;
+      const gamepad = e.gamepad;
       // Note:
       // gamepad === navigator.getGamepads()[gamepad.index]
       console.log('gamepadHandler', e, connecting);

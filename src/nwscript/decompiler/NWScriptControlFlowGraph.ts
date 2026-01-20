@@ -1480,7 +1480,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with dominators of first block
-    let common = new Set(blocks[0].dominators);
+    const common = new Set(blocks[0].dominators);
 
     // Intersect with dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -1516,7 +1516,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with post-dominators of first block
-    let common = new Set(blocks[0].postDominators);
+    const common = new Set(blocks[0].postDominators);
 
     // Intersect with post-dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -2180,8 +2180,8 @@ export class NWScriptControlFlowGraph {
    * This is the union of dominance frontiers, iterated until fixed point
    */
   getIteratedDominanceFrontier(blocks: Set<NWScriptBasicBlock>): Set<NWScriptBasicBlock> {
-    let df = new Set<NWScriptBasicBlock>();
-    let worklist = new Set(blocks);
+    const df = new Set<NWScriptBasicBlock>();
+    const worklist = new Set(blocks);
 
     while (worklist.size > 0) {
       const current = Array.from(worklist)[0];

@@ -316,7 +316,7 @@ export class GFFField {
   getFieldByLabel(Label: string): GFFField | null {
     if(this.childStructs.length){
       for(let i = 0; i < this.childStructs[0].fields.length; i++){
-        let field = this.childStructs[0].fields[i];
+        const field = this.childStructs[0].fields[i];
         if (field.label == Label){
           return field;
         }
@@ -670,7 +670,7 @@ export class GFFField {
    * ```
    */
   removeChildStruct(strt: GFFStruct): this {
-    let index = this.childStructs.indexOf(strt);
+    const index = this.childStructs.indexOf(strt);
     if(index >= 0){
       this.childStructs.splice(index, 1);
     }

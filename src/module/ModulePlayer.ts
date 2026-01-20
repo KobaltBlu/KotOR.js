@@ -30,7 +30,7 @@ export class ModulePlayer extends ModuleCreature {
   }
 
   save(){
-    let gff = super.save();
+    const gff = super.save();
     GameState.PartyManager.PlayerTemplate = gff;
     this.template = gff;
     return gff;

@@ -64,8 +64,8 @@ export class MenuTopState {
       this.#eventListeners[event] = [];
     }
     if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
-      let index = ev.indexOf(callback);
+      const ev = this.#eventListeners[event];
+      const index = ev.indexOf(callback);
       if(index == -1){
         ev.push(callback);
       }else{
@@ -82,8 +82,8 @@ export class MenuTopState {
       this.#eventListeners[event] = [];
     }
     if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
-      let index = ev.indexOf(callback);
+      const ev = this.#eventListeners[event];
+      const index = ev.indexOf(callback);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -99,7 +99,7 @@ export class MenuTopState {
       this.#eventListeners[event] = [];
     }
     if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
+      const ev = this.#eventListeners[event];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){

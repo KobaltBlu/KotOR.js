@@ -1,7 +1,6 @@
 import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import * as THREE from "three";
-import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
@@ -32,11 +31,11 @@ export class OdysseyController {
     this.quaternion = new THREE.Quaternion(0, 0, 0, 1);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
     
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _last: IOdysseyControllerFrameGeneric, _next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     
   }
 

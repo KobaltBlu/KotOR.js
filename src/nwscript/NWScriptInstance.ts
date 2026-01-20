@@ -307,11 +307,11 @@ export class NWScriptInstance {
     //For some reason this is needed for some conditional scripts because the stack pointer is getting set back too far could be a problem with MOVSP?
     try{
       if(this.stack.stack[-1] ? true : false){
-        let _ret = (this.stack.stack[-1]);
+        const _ret = (this.stack.stack[-1]);
         delete this.stack.stack[-1];
         return _ret.value ? 1 : 0;
       }else if(this.stack.stack.length){
-        let _ret = (this.stack.pop());
+        const _ret = (this.stack.pop());
         return _ret.value ? 1 : 0;
       }else{
         return false;
@@ -496,7 +496,7 @@ export class NWScriptInstance {
 
   saveEventSituation(){
     //STORE_STATE
-    let scriptSituation = new GFFStruct(0x7777);
+    const scriptSituation = new GFFStruct(0x7777);
 
     scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
     scriptSituation.addField( new GFFField(GFFDataType.VOID, 'Code' ) ).setData( this.nwscript.code );
@@ -505,7 +505,7 @@ export class NWScriptInstance {
     scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
 
-    let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
+    const stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
     stack.addChildStruct( this.stack.saveForEventSituation() );
 
     return scriptSituation;

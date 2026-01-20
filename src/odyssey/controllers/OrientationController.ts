@@ -25,10 +25,10 @@ export class OrientationController extends OdysseyController {
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     //Cache the orientation controller
     if(manager.modelNode.controllerHelpers.hasOrientation === undefined){
-      let _controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
-      if(typeof _controller != 'undefined'){
+      const controller = manager.modelNode.controllers.get(OdysseyModelControllerType.Orientation);
+      if(typeof controller != 'undefined'){
         manager.modelNode.controllerHelpers.hasOrientation = true;
-        manager.modelNode.controllerHelpers.orientation = _controller;
+        manager.modelNode.controllerHelpers.orientation = controller;
       }else{
         manager.modelNode.controllerHelpers.hasOrientation = false;
         manager.modelNode.controllerHelpers.orientation = undefined;

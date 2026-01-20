@@ -353,9 +353,9 @@ export class ModuleCreature extends ModuleObject {
     this.heardStrings = [];
 
     this.targetPositions = [];
-    let numNodes = 8;
+    const numNodes = 8;
     for (let i = 0; i < numNodes; i++) {
-      let angle = (i / (numNodes/2)) * Math.PI; // Calculate the angle at which the element will be placed.
+      const angle = (i / (numNodes/2)) * Math.PI; // Calculate the angle at which the element will be placed.
                                             // For a semicircle, we would use (i / numNodes) * Math.PI.
       this.targetPositions.push({
         angle:        angle,
@@ -407,8 +407,6 @@ export class ModuleCreature extends ModuleObject {
       if(!this.isReady){
         //this.getModel().visible = true;
         return;
-      }else{
-
       }
 
       //Get the first action in the queue
@@ -440,13 +438,13 @@ export class ModuleCreature extends ModuleObject {
       if(!this.isDead()){
 
         //Process DamageList
-        let elLen = this.damageList.length - 1;
+        const elLen = this.damageList.length - 1;
         for(let i = elLen; i >= 0; i--){
           this.damageList[i].delay -= delta;
           if(this.damageList[i].delay <= 0){
             this.subtractHP(this.damageList[i].amount);
 
-            let painsound = THREE.MathUtils.randInt(0, 1);
+            const painsound = THREE.MathUtils.randInt(0, 1);
             switch(painsound){
               case 1:
                 this.playSoundSet(SSFType.PAIN_2);
@@ -471,11 +469,11 @@ export class ModuleCreature extends ModuleObject {
 
             if(!this.speed){
                 
-              let _animIsValid = (this.dialogAnimation.animation instanceof OdysseyModelAnimation);
+              const _animIsValid = (this.dialogAnimation.animation instanceof OdysseyModelAnimation);
               if(_animIsValid){
-                let _animIsPlaying = (this.model.animationManager.currentAnimation == this.dialogAnimation.animation);
+                const _animIsPlaying = (this.model.animationManager.currentAnimation == this.dialogAnimation.animation);
                 if(!_animIsPlaying && !this.dialogAnimation.started){
-                  let _newAnim = this.dialogAnimation.animation;
+                  const _newAnim = this.dialogAnimation.animation;
                   if(_newAnim instanceof OdysseyModelAnimation){
                     this.model.playAnimation( _newAnim, !!parseInt(this.dialogAnimation.data.looping) );
                     this.dialogAnimation.started = true;
@@ -556,8 +554,8 @@ export class ModuleCreature extends ModuleObject {
         this.speed = this.getMovementSpeed();
       }
       
-      let forceDelta = Math.max(this.force * delta, this.speed * delta);
-      let gravityDelta = -1 * delta;
+      const forceDelta = Math.max(this.force * delta, this.speed * delta);
+      const gravityDelta = -1 * delta;
       
       if(this.speed){
         this.animSpeed = this.speed / this.getRunSpeed();
@@ -674,9 +672,9 @@ export class ModuleCreature extends ModuleObject {
           this.rotation.z = this.facing;
           this.facingAnim = false;
         }else{
-          let oldFacing = Utility.NormalizeRadian(this.rotation.z);
+          const oldFacing = Utility.NormalizeRadian(this.rotation.z);
           this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
-          let diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
+          const diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
           this.turning = Math.sign(Utility.NormalizeRadian(oldFacing - Utility.NormalizeRadian(this.rotation.z)));
           if(diff < 0.0000001 || diff > -0.0000001){
               this.facingAnim = false;
@@ -849,9 +847,9 @@ export class ModuleCreature extends ModuleObject {
     //  return;
 
     //Check modules creatures
-    let creatureLen = GameState.module.area.creatures.length;
+    const creatureLen = GameState.module.area.creatures.length;
     for(let i = 0; i < creatureLen; i++ ){
-      let creature = GameState.module.area.creatures[i];
+      const creature = GameState.module.area.creatures[i];
       //creature cannot perceive itself
       if(this == creature){
         continue;
@@ -862,7 +860,7 @@ export class ModuleCreature extends ModuleObject {
         continue;
       }
 
-      let distance = this.position.distanceTo(creature.position);
+      const distance = this.position.distanceTo(creature.position);
       if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
@@ -880,9 +878,9 @@ export class ModuleCreature extends ModuleObject {
     }
 
     //Check party creatures
-    let partyLen = GameState.PartyManager.party.length;
+    const partyLen = GameState.PartyManager.party.length;
     for(let i = 0; i < partyLen; i++ ){
-      let creature = GameState.PartyManager.party[i];
+      const creature = GameState.PartyManager.party[i];
       //creature cannot perceive itself
       if(this == creature){
         continue;
@@ -893,7 +891,7 @@ export class ModuleCreature extends ModuleObject {
         continue;
       }
 
-      let distance = this.position.distanceTo(creature.position);
+      const distance = this.position.distanceTo(creature.position);
       if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
@@ -1037,7 +1035,7 @@ export class ModuleCreature extends ModuleObject {
     if(!(this.model instanceof OdysseyModel3D))
       return;
 
-    let currentAnimation = this.model.getAnimationName();
+    const currentAnimation = this.model.getAnimationName();
 
     if(this.overlayAnimationState.animationName && !this.isDead()){
       //(this.animationState.index != ModuleCreatureAnimState.WALKING && this.animationState.index != ModuleCreatureAnimState.RUNNING)
@@ -1065,7 +1063,7 @@ export class ModuleCreature extends ModuleObject {
       if(currentAnimation != this.animationState.animation.name?.toLowerCase()){
         if(!this.animationState.started){
           this.animationState.started = true;
-          let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
+          const aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -1122,7 +1120,7 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof ModuleObject){
         
       // this.openSpot = undefined;
-      let action = new GameState.ActionFactory.ActionMoveToPoint();
+      const action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1148,15 +1146,15 @@ export class ModuleCreature extends ModuleObject {
   randomWalk(){
 
     if(this.room && this.room.collisionData.walkmesh){
-      let run = false;
-      let maxDistance = 1.5
-      let position = new THREE.Vector3();
+      const run = false;
+      const maxDistance = 1.5
+      const position = new THREE.Vector3();
 
       const faces = this.room.collisionData.walkmesh.walkableFaces;
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
-        let action = new GameState.ActionFactory.ActionMoveToPoint();
+        const action = new GameState.ActionFactory.ActionMoveToPoint();
         action.setParameter(0, ActionParameterType.FLOAT, position.x);
         action.setParameter(1, ActionParameterType.FLOAT, position.y);
         action.setParameter(2, ActionParameterType.FLOAT, position.z);
@@ -1178,15 +1176,15 @@ export class ModuleCreature extends ModuleObject {
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
       let distance = 0.1;
-      let creatures = GameState.module.area.creatures;
+      const creatures = GameState.module.area.creatures;
 
       //Check if creatures are too close to location
       for(let i = 0; i < creatures.length; i++){
-        let creature = creatures[i];
+        const creature = creatures[i];
         if(this == creature)
           continue;
 
-        let d = target.position.distanceTo(creature.position);
+        const d = target.position.distanceTo(creature.position);
         if(d < 1.0){
           distance = 2.0;
         }
@@ -1194,11 +1192,11 @@ export class ModuleCreature extends ModuleObject {
 
       //Check if party are too close to location
       for(let i = 0; i < GameState.PartyManager.party.length; i++){
-        let creature = GameState.PartyManager.party[i];
+        const creature = GameState.PartyManager.party[i];
         if(this == creature)
           continue;
 
-        let d = target.position.distanceTo(creature.position);
+        const d = target.position.distanceTo(creature.position);
         if(d < 1.0){
           distance = 2.0;
         }
@@ -1206,7 +1204,7 @@ export class ModuleCreature extends ModuleObject {
 
         
       // this.openSpot = undefined;
-      let action = new GameState.ActionFactory.ActionMoveToPoint();
+      const action = new GameState.ActionFactory.ActionMoveToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1226,7 +1224,7 @@ export class ModuleCreature extends ModuleObject {
     console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
 
-      let action = new GameState.ActionFactory.ActionJumpToObject();
+      const action = new GameState.ActionFactory.ActionJumpToObject();
       action.setParameter(0, ActionParameterType.DWORD, target.id );
       action.setParameter(1, ActionParameterType.INT, 0);
       this.actionQueue.add(action);
@@ -1238,7 +1236,7 @@ export class ModuleCreature extends ModuleObject {
   jumpToLocation(target: EngineLocation){
     console.log('jumpToLocation', target, this);
     if(target instanceof EngineLocation){
-      let action = new GameState.ActionFactory.ActionJumpToPoint();
+      const action = new GameState.ActionFactory.ActionJumpToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
@@ -1313,7 +1311,7 @@ export class ModuleCreature extends ModuleObject {
     if(target.isDead())
       return;
 
-    let combatAction = new CombatRoundAction();
+    const combatAction = new CombatRoundAction();
     combatAction.actionType = CombatActionType.ATTACK;
     combatAction.target = target;
     combatAction.animation = ModuleCreatureAnimState.ATTACK;
@@ -1472,11 +1470,11 @@ export class ModuleCreature extends ModuleObject {
     
     let attackAnimIndex = -1;
 
-    let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
+    const modeltype = this.creatureAppearance.modeltype;
+    const attackKey = this.getCombatAnimationAttackType();
+    const weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
+    const anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1484,11 +1482,11 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    const combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     //console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
     if(combatAnimation){
-      let damageAnimIndex = combatAnimation['damage'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
+      const damageAnimIndex = combatAnimation['damage'+weaponWield];
+      const damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
         //console.log('damage anim', this.getName(), damageAnim.name)
         return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
@@ -1523,11 +1521,11 @@ export class ModuleCreature extends ModuleObject {
 
     let attackAnimIndex = -1;
 
-    let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
+    const modeltype = this.creatureAppearance.modeltype;
+    const attackKey = this.getCombatAnimationAttackType();
+    const weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
+    const anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1537,19 +1535,19 @@ export class ModuleCreature extends ModuleObject {
 
     //console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
 
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    const combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     if(combatAnimation){
       if(combatAnimation.hits == 1 && [4, 2, 3].indexOf(weaponWield) >= 0){
-        let damageAnimIndex = combatAnimation['parry'+weaponWield];
-        let damageAnim = anims.getByID(damageAnimIndex);
+        const damageAnimIndex = combatAnimation['parry'+weaponWield];
+        const damageAnim = anims.getByID(damageAnimIndex);
         if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
           //console.log('dodge/parry anim', this.getName(), damageAnim.name)
           return damageAnim.name;
         }
       }
       
-      let damageAnimIndex = combatAnimation['dodge'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
+      const damageAnimIndex = combatAnimation['dodge'+weaponWield];
+      const damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
         //console.log('dodge anim', this.getName(), damageAnim.name)
         return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
@@ -1584,11 +1582,11 @@ export class ModuleCreature extends ModuleObject {
 
     let attackAnimIndex = -1;
 
-    let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
+    const modeltype = this.creatureAppearance.modeltype;
+    const attackKey = this.getCombatAnimationAttackType();
+    const weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
+    const anims = GameState.TwoDAManager.datatables.get('animations');
     for(let i = 0; i < anims.RowCount; i++){
       if(anims.rows[i].name == attackAnim){
         attackAnimIndex = i;
@@ -1597,10 +1595,10 @@ export class ModuleCreature extends ModuleObject {
     }
 
     //console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    const combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
     if(combatAnimation){
-      let damageAnimIndex = combatAnimation['parry'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
+      const damageAnimIndex = combatAnimation['parry'+weaponWield];
+      const damageAnim = anims.getByID(damageAnimIndex);
       if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
         //console.log('parry anim', this.getName(), damageAnim.name)
         return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
@@ -1631,7 +1629,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getCombatAnimationAttackType(): string {
-    let weapon = this.equipment.RIGHTHAND;
+    const weapon = this.equipment.RIGHTHAND;
     let weaponType = 0;
     //let weaponWield = this.getCombatAnimationWeaponType();
 
@@ -1690,18 +1688,18 @@ export class ModuleCreature extends ModuleObject {
   // g*r1 in this case * is the value we are trying to determine
 
   getCombatAnimationWeaponType(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let cWeapon1 = this.equipment.CLAW1;
-    let cWeapon2 = this.equipment.CLAW2;
-    let cWeapon3 = this.equipment.CLAW3;
-    let bothHands = (lWeapon) && (rWeapon);
+    const lWeapon = this.equipment.LEFTHAND;
+    const rWeapon = this.equipment.RIGHTHAND;
+    const cWeapon1 = this.equipment.CLAW1;
+    const cWeapon2 = this.equipment.CLAW2;
+    const cWeapon3 = this.equipment.CLAW3;
+    const bothHands = (lWeapon) && (rWeapon);
 
     if(cWeapon1 || cWeapon2 || cWeapon3 || this.isSimpleCreature()){
       return 0;
     }
 
-    let weapon = rWeapon || lWeapon;
+    const weapon = rWeapon || lWeapon;
 
     if(weapon){
 
@@ -1737,11 +1735,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getEquippedWeaponType(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let claw1 = this.equipment.CLAW1;
-    let claw2 = this.equipment.CLAW2;
-    let claw3 = this.equipment.CLAW3;
+    const lWeapon = this.equipment.LEFTHAND;
+    const rWeapon = this.equipment.RIGHTHAND;
+    const claw1 = this.equipment.CLAW1;
+    const claw2 = this.equipment.CLAW2;
+    const claw3 = this.equipment.CLAW3;
 
     if(rWeapon){
       return (rWeapon.getWeaponType());
@@ -1816,7 +1814,7 @@ export class ModuleCreature extends ModuleObject {
     const footstepSounds = GameState.SWRuleSet.footSteps[appearance.footsteptype];
 
     let rhWeaponSoundResRef = '';
-    let lhWeaponSoundResRef = '';
+    const lhWeaponSoundResRef = '';
     let footstepSoundResRef = '';
     let footstepIsLooping = false;
 
@@ -1865,18 +1863,18 @@ export class ModuleCreature extends ModuleObject {
   }
 
   hasWeapons(){
-    let lWeapon = this.equipment.LEFTHAND;
-    let rWeapon = this.equipment.RIGHTHAND;
-    let cWeapon1 = this.equipment.CLAW1;
-    let cWeapon2 = this.equipment.CLAW2;
-    let cWeapon3 = this.equipment.CLAW3;
+    const lWeapon = this.equipment.LEFTHAND;
+    const rWeapon = this.equipment.RIGHTHAND;
+    const cWeapon1 = this.equipment.CLAW1;
+    const cWeapon2 = this.equipment.CLAW2;
+    const cWeapon3 = this.equipment.CLAW3;
     return (lWeapon) || (rWeapon) || (cWeapon1) || (cWeapon2) || (cWeapon3);
   }
 
   flourish(){
     this.resetExcitedDuration();
-    let isSimple = this.isSimpleCreature();
-    let weaponType = this.getCombatAnimationWeaponType();
+    const isSimple = this.isSimpleCreature();
+    const weaponType = this.getCombatAnimationWeaponType();
     
     if(!isSimple){
       if(weaponType){
@@ -1907,16 +1905,16 @@ export class ModuleCreature extends ModuleObject {
 
   getClosesetOpenSpot(oObject: ModuleObject){
     let maxDistance = Infinity;
-    let radius = this.creatureAppearance.hitdist;
+    const radius = this.creatureAppearance.hitdist;
     let closest = undefined;
     let distance = 0;
-    let origin = this.position;
+    const origin = this.position;
 
     let alreadyClaimedSpot = false;
 
     //Check to see if oObject already has claimed a targetPosition around this creature
     for(let i = 0, len = this.targetPositions.length; i < len; i++){
-      let targetPosition = this.targetPositions[i];
+      const targetPosition = this.targetPositions[i];
       if(targetPosition.object == oObject){
         closest = targetPosition;
         alreadyClaimedSpot = true;
@@ -1926,7 +1924,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(!alreadyClaimedSpot){
       for(let i = 0, len = this.targetPositions.length; i < len; i++){
-        let targetPosition = this.targetPositions[i];
+        const targetPosition = this.targetPositions[i];
         if(targetPosition.object == undefined){
           //Generate the target vector for the 
           targetPosition.targetVector.x = origin.x + (targetPosition.cos * radius);
@@ -1979,7 +1977,7 @@ export class ModuleCreature extends ModuleObject {
 
   getFacingVector(){
     if((this.model instanceof OdysseyModel3D)){
-      let facing = new THREE.Vector3(0, 1, 0);
+      const facing = new THREE.Vector3(0, 1, 0);
       facing.applyQuaternion(this.model.quaternion);
       return facing;
     }
@@ -2191,50 +2189,6 @@ export class ModuleCreature extends ModuleObject {
     return this.isCommandable;
   }
 
-  getItemInSlot(slot = 0){
-    switch(slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        return this.equipment.IMPLANT;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        return this.equipment.HEAD;
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        return this.equipment.ARMS;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        return this.equipment.LEFTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        return this.equipment.ARMOR;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        return this.equipment.RIGHTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        return this.equipment.LEFTHAND;
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        return this.equipment.BELT;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        return this.equipment.RIGHTHAND;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        return this.equipment.CLAW1;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        return this.equipment.CLAW2;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        return this.equipment.CLAW3;
-      break;
-      default:
-        return null;
-      break;
-    }
-  }
-
   getInventory(): ModuleItem[] {
     if(this.isPartyMember()){
       return GameState.InventoryManager.getInventory();
@@ -2376,7 +2330,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setHP(nAmount = 0){
-    let bonus = this.maxHitPoints - this.hitPoints;
+    const bonus = this.maxHitPoints - this.hitPoints;
     this.currentHitPoints = nAmount - bonus;
   }
 
@@ -2384,7 +2338,7 @@ export class ModuleCreature extends ModuleObject {
     if(ignoreMaxHitPoints){
       this.currentHitPoints += nAmount;
     }else{
-      let currentHP = this.getHP();
+      const currentHP = this.getHP();
       if(currentHP < this.getMaxHP()){
         if(currentHP + nAmount > this.getMaxHP()){
           this.currentHitPoints += nAmount + (this.getMaxHP() - (currentHP + nAmount));
@@ -2437,7 +2391,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setFP(nAmount = 0){
-    let bonus = this.maxForcePoints - this.forcePoints;
+    const bonus = this.maxForcePoints - this.forcePoints;
     this.currentForce = nAmount - bonus;
   }
 
@@ -2445,7 +2399,7 @@ export class ModuleCreature extends ModuleObject {
     if(ignoreMaxForcePoints){
       this.currentForce += nAmount;
     }else{
-      let currentFP = this.getFP();
+      const currentFP = this.getFP();
       if(currentFP < this.getMaxFP()){
         if(currentFP + nAmount > this.getMaxFP()){
           this.currentForce += nAmount + (this.getMaxFP() - (currentFP + nAmount));
@@ -2474,16 +2428,16 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getAC(){
-    let baseac = 10;
+    const baseac = 10;
     let classBonus = 0;
 
     for(let i = 0; i < this.classes.length; i++){
       classBonus += this.classes[i].getACBonus();
     }
 
-    let armorAC = (this.equipment.ARMOR?.getACBonus() || 0);
+    const armorAC = (this.equipment.ARMOR?.getACBonus() || 0);
 
-    let dexBonus = Math.floor((this.getDEX() - 10) / 2);
+    const dexBonus = Math.floor((this.getDEX() - 10) / 2);
 
     return baseac + classBonus + armorAC + dexBonus;
   }
@@ -2713,10 +2667,10 @@ export class ModuleCreature extends ModuleObject {
 
   //Does the creature have enough EXP to level up
   canLevelUp(){
-    let level = this.getTotalClassLevel();
+    const level = this.getTotalClassLevel();
     const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
     if(exptable2DA){
-      let nextLevelEXP = exptable2DA.rows[level];
+      const nextLevelEXP = exptable2DA.rows[level];
       if(this.getXP() >= parseInt(nextLevelEXP.xp)){
         return true;
       }
@@ -2731,8 +2685,8 @@ export class ModuleCreature extends ModuleObject {
 
     const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
     if(exptable2DA){
-      let totalLevels = exptable2DA.RowCount;
-      let expLevels = exptable2DA.rows;
+      const totalLevels = exptable2DA.RowCount;
+      const expLevels = exptable2DA.rows;
 
       for(let i = 0; i < totalLevels; i++){
         if(this.getXP() > parseInt(expLevels[i].level)){
@@ -2746,7 +2700,7 @@ export class ModuleCreature extends ModuleObject {
 
   autoLevelUp(){
     if(this.canLevelUp()){
-      let mainClass = this.getMainClass();
+      const mainClass = this.getMainClass();
       if(!mainClass){ return; }
 
       mainClass.level += 1;
@@ -2786,8 +2740,8 @@ export class ModuleCreature extends ModuleObject {
       bab += this.classes[i].getBaseAttackBonus();
     }
 
-    let strMod = Math.floor(( this.getSTR() - 10) / 2);
-    let dexMod = Math.floor(( this.getDEX() - 10) / 2);
+    const strMod = Math.floor(( this.getSTR() - 10) / 2);
+    const dexMod = Math.floor(( this.getDEX() - 10) / 2);
 
     if(strMod > dexMod){
       bab += strMod;
@@ -2803,7 +2757,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getFeat(id = 0){
-    let feats = this.getFeats();
+    const feats = this.getFeats();
     for(let i = 0, len = feats.length; i < len; i++){
       if(feats[i].id == id){
         return feats[i];
@@ -2825,7 +2779,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHasFeat(id: number = 0){
-    let feats = this.getFeats();
+    const feats = this.getFeats();
     for(let i = 0, len = feats.length; i < len; i++){
       if(feats[i].id == id){
         return true;
@@ -2848,17 +2802,17 @@ export class ModuleCreature extends ModuleObject {
 
   getSpell(id = 0){
     for(let i = 0; i < this.classes.length; i++){
-      let cls = this.classes[i];
-      let spells = cls.getSpells();
+      const cls = this.classes[i];
+      const spells = cls.getSpells();
       for(let j = 0, len = spells.length; j < len; j++){
-        let spell = spells[j];
+        const spell = spells[j];
         if(spell.id == id)
           return spell;
       }
     }
 
     if(typeof this.equipment.RIGHTARMBAND != 'undefined'){
-      let spells = this.equipment.RIGHTARMBAND.getSpells();
+      const spells = this.equipment.RIGHTARMBAND.getSpells();
       for(let i = 0, len = spells.length; i < len; i++){
         if(spells[i].id == id){
           return spells[i];
@@ -2867,7 +2821,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     if(typeof this.equipment.LEFTARMBAND != 'undefined'){
-      let spells = this.equipment.LEFTARMBAND.getSpells();
+      const spells = this.equipment.LEFTARMBAND.getSpells();
       for(let i = 0, len = spells.length; i < len; i++){
         if(spells[i].id == id){
           return spells[i];
@@ -2941,15 +2895,15 @@ export class ModuleCreature extends ModuleObject {
 
   getRandomTalent(category = 0, category2 = 0){
 
-    let talents = this.getTalents().filter( (talent: TalentObject) => talent.category == category || talent.category == category2 );
-    let talent = talents[Math.floor(Math.random()*talents.length)];
+    const talents = this.getTalents().filter( (talent: TalentObject) => talent.category == category || talent.category == category2 );
+    const talent = talents[Math.floor(Math.random()*talents.length)];
     //console.log('getRandomTalent', talent);
     return talent;
 
   }
 
   getTalentBest(nCategory = 0, nCRMax = 0, nInclusion = 0, nExcludeType = -1, nExcludeId = -1){
-    let talents = this.getTalents().filter( (talent: TalentObject) => ( talent.category > -1 && ( (talent.category & nCategory) == nCategory ) && talent.maxCR <= nCRMax ) );
+    const talents = this.getTalents().filter( (talent: TalentObject) => ( talent.category > -1 && ( (talent.category & nCategory) == nCategory ) && talent.maxCR <= nCRMax ) );
     talents.sort((a: TalentObject, b: TalentObject) => (a.maxCR > b.maxCR) ? 1 : -1);
     //console.log('getTalentBest', talents);
     if(talents.length){
@@ -3070,9 +3024,9 @@ export class ModuleCreature extends ModuleObject {
   }
 
   async loadBody() {
-    let appearance = this.creatureAppearance;
-    let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
-    let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
+    const appearance = this.creatureAppearance;
+    const bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
+    const textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation, textureVariation);
     this.bodyModel = bodyModel;
     this.bodyTexture = bodyTexture;
@@ -3094,7 +3048,11 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.model){
         this.model.removeFromParent();
-        try{ this.model.dispose(); }catch(e){}
+        try{ 
+          this.model.dispose(); 
+        }catch(e){
+          console.error('ModuleCreature.loadBody', e);
+        }
       }
       
       model.addEventListener('playEvent', this.playEvent.bind(this));
@@ -3134,8 +3092,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   async loadHead(): Promise<OdysseyModel3D> {
-    let appearance = this.creatureAppearance;
-    let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    const appearance = this.creatureAppearance;
+    const headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
     this.headModel = undefined;
     if(!( headId >= 0 && appearance.modeltype == 'B' )){
       return;
@@ -3188,266 +3146,149 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  /*getEquip_ItemList(){
-    if(this.template.RootNode.hasField('Equip_ItemList')){
-      return this.template.getFieldByLabel('Equip_ItemList').getChildStructs()
+  getItemInSlot(slot = 0x1){
+    switch(slot){
+      case ModuleCreatureArmorSlot.IMPLANT:
+        return this.equipment.IMPLANT;
+      case ModuleCreatureArmorSlot.HEAD:
+        return this.equipment.HEAD;
+      case ModuleCreatureArmorSlot.ARMS:
+        return this.equipment.ARMS;
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
+        return this.equipment.LEFTARMBAND;
+      case ModuleCreatureArmorSlot.ARMOR:
+        return this.equipment.ARMOR;
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
+        return this.equipment.RIGHTARMBAND;
+      case ModuleCreatureArmorSlot.LEFTHAND:
+        return this.equipment.LEFTHAND;
+      case ModuleCreatureArmorSlot.BELT:
+        return this.equipment.BELT;
+      case ModuleCreatureArmorSlot.RIGHTHAND:
+        return this.equipment.RIGHTHAND;
+      case ModuleCreatureArmorSlot.RIGHTHAND2:
+        return this.equipment.RIGHTHAND2;
+      case ModuleCreatureArmorSlot.LEFTHAND2:
+        return this.equipment.LEFTHAND2;
+      case ModuleCreatureArmorSlot.CLAW1:
+        return this.equipment.CLAW1;
+      case ModuleCreatureArmorSlot.CLAW2:
+        return this.equipment.CLAW2;
+      case ModuleCreatureArmorSlot.CLAW3:
+        return this.equipment.CLAW3;
+      case ModuleCreatureArmorSlot.HIDE:
+        return this.equipment.HIDE;
+      default:
+        return null;
     }
-    return [];
-  }*/
+  }
+
+  setItemInSlot(slot = 0x1, item?: ModuleItem){
+    switch(slot){
+      case ModuleCreatureArmorSlot.IMPLANT:
+        this.equipment.IMPLANT = item;
+        break;
+      case ModuleCreatureArmorSlot.HEAD:
+        this.equipment.HEAD = item;
+        break;
+      case ModuleCreatureArmorSlot.ARMS:
+        this.equipment.ARMS = item;
+        break;
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
+        this.equipment.LEFTARMBAND = item;
+        break;
+      case ModuleCreatureArmorSlot.ARMOR:
+        this.equipment.ARMOR = item;
+        break;
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
+        this.equipment.RIGHTARMBAND = item;
+        break;
+      case ModuleCreatureArmorSlot.LEFTHAND:
+        this.equipment.LEFTHAND = item;
+        break;
+      case ModuleCreatureArmorSlot.BELT:
+        this.equipment.BELT = item;
+        break;
+      case ModuleCreatureArmorSlot.RIGHTHAND:
+        this.equipment.RIGHTHAND = item;
+        break;
+      case ModuleCreatureArmorSlot.RIGHTHAND2:
+        this.equipment.RIGHTHAND2 = item;
+        break;
+      case ModuleCreatureArmorSlot.LEFTHAND2:
+        this.equipment.LEFTHAND2 = item;
+        break;
+      case ModuleCreatureArmorSlot.CLAW1:
+        this.equipment.CLAW1 = item;
+        break;
+      case ModuleCreatureArmorSlot.CLAW2:
+        this.equipment.CLAW2 = item;
+        break;
+      case ModuleCreatureArmorSlot.CLAW3:
+        this.equipment.CLAW3 = item;
+        break;
+      case ModuleCreatureArmorSlot.HIDE:
+        this.equipment.HIDE = item;
+        break;
+    }
+  }
 
   async equipItem(slot = 0x1, item: ModuleItem){
     if(!item){
       return;
     }
 
-    this.unequipSlot(slot);
+    this.unEquipSlot(slot);
+    this.setItemInSlot(slot, item);
     item.onEquip(this);
     await item.loadModel();
-    switch(slot){
-      case ModuleCreatureArmorSlot.ARMOR:
-        this.equipment.ARMOR = item;
-        await this.loadModel();
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        this.equipment.RIGHTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model.rhand.add(item.model);
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        this.equipment.LEFTHAND = item;
-        await item.loadModel();
-        if(item.model instanceof OdysseyModel3D)
-          this.model.lhand.add(item.model);
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND2:
-        this.equipment.RIGHTHAND2 = item;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND2:
-        this.equipment.LEFTHAND2 = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        this.equipment.CLAW1 = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        this.equipment.CLAW2 = item;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        this.equipment.CLAW3 = item;
-      break;
+
+    //Load the body model
+    if(slot == ModuleCreatureArmorSlot.ARMOR){
+      await this.loadModel();
+    }
+
+    //Load the right hand model
+    if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
+      await item.loadModel();
+      if(item.model instanceof OdysseyModel3D)
+        this.model.rhand.add(item.model);
+    }
+
+    //Load the left hand model
+    if(slot == ModuleCreatureArmorSlot.LEFTHAND){
+      await item.loadModel();
+      if(item.model instanceof OdysseyModel3D)
+        this.model.lhand.add(item.model);
     }
   }
 
-  unequipSlot(slot = 0x1){
-    try{
-      switch(slot){
-        case ModuleCreatureArmorSlot.IMPLANT:
-          try{
-            if(this.equipment.IMPLANT){
-              this.equipment.IMPLANT.onUnEquip(this);
-              this.equipment.IMPLANT.destroy();
-              this.equipment.IMPLANT = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.HEAD:
-
-          if(this.equipment.HEAD){
-            this.equipment.HEAD.onUnEquip(this);
-          }
-
-          try{
-            this.equipment.HEAD.model.parent.remove(this.equipment.HEAD.model);
-          }catch(e){}
-
-          this.equipment.HEAD = undefined;
-          this.loadModel();
-        break;
-        case ModuleCreatureArmorSlot.ARMS:
-          try{
-            if(this.equipment.ARMS){
-              this.equipment.ARMS.onUnEquip(this);
-              this.equipment.ARMS.destroy();
-              this.equipment.ARMS = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTARMBAND:
-          try{
-            if(this.equipment.RIGHTARMBAND){
-              this.equipment.RIGHTARMBAND.onUnEquip(this);
-              this.equipment.RIGHTARMBAND.destroy();
-              this.equipment.RIGHTARMBAND = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTARMBAND:
-          try{
-            if(this.equipment.LEFTARMBAND){
-              this.equipment.LEFTARMBAND.onUnEquip(this);
-              this.equipment.LEFTARMBAND.destroy();
-              this.equipment.LEFTARMBAND = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.ARMOR:
-
-          if(this.equipment.ARMOR){
-            this.equipment.ARMOR.onUnEquip(this);
-          }
-
-          this.equipment.ARMOR = undefined;
-          this.loadModel();
-        break;
-        case ModuleCreatureArmorSlot.RIGHTARMBAND:
-          try{
-            if(this.equipment.RIGHTARMBAND){
-              this.equipment.RIGHTARMBAND.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.RIGHTARMBAND.model);
-              this.equipment.RIGHTARMBAND.destroy();
-              this.equipment.RIGHTARMBAND = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND:
-          try{
-            if(this.equipment.RIGHTHAND){
-              this.equipment.RIGHTHAND.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.RIGHTHAND.model);
-              this.equipment.RIGHTHAND.destroy();
-              this.equipment.RIGHTHAND = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.RIGHTHAND2:
-          try{
-            if(this.equipment.RIGHTHAND2){
-              this.equipment.RIGHTHAND2.onUnEquip(this);
-              // this.model.rhand.remove(this.equipment.RIGHTHAND2.model);
-              this.equipment.RIGHTHAND2.destroy();
-              this.equipment.RIGHTHAND2 = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.BELT:
-          try{
-            if(this.equipment.BELT){
-              this.equipment.BELT.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.BELT.model);
-              this.equipment.BELT.destroy();
-              this.equipment.BELT = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND:
-          try{
-            if(this.equipment.LEFTHAND){
-              this.equipment.LEFTHAND.onUnEquip(this);
-              this.model.lhand.remove(this.equipment.LEFTHAND.model);
-              this.equipment.LEFTHAND.destroy();
-              this.equipment.LEFTHAND = null;
-            }
-          }catch(e){
-            
-          }
-        break;
-        case ModuleCreatureArmorSlot.LEFTHAND2:
-          try{
-            if(this.equipment.LEFTHAND2){
-              this.equipment.LEFTHAND2.onUnEquip(this);
-              // this.model.lhand.remove(this.equipment.LEFTHAND2.model);
-              this.equipment.LEFTHAND2.destroy();
-              this.equipment.LEFTHAND2 = null;
-            }
-          }catch(e){
-            
-          }
-        break;
+  unEquipSlot(slot = 0x1){
+    const equipment = this.getItemInSlot(slot);
+    if(!equipment){
+      return;
+    }
+    try {
+      equipment.onUnEquip(this);
+      equipment.destroy();
+      this.setItemInSlot(slot, undefined);
+      if(slot == ModuleCreatureArmorSlot.ARMOR){
+        this.loadModel();
       }
     }catch(e){
-      console.error('unequipItem', e);
+      console.log('ModuleCreature.unequipSlot', equipment);
+      console.error(e);
     }
   }
 
-  UnequipItems(){
+  unEquipItems(){
     //this.unequipSlot(ModuleCreatureArmorSlot.ARMOR);
-    this.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
-    this.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    this.unEquipSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    this.unEquipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
   }
 
-  UnequipHeadItem(){
-    this.unequipSlot(ModuleCreatureArmorSlot.HEAD);
-  }
-
-  GetItemInSlot(slot = 0){
-
-    switch(slot){
-      case ModuleCreatureArmorSlot.IMPLANT:
-        return this.equipment.IMPLANT;
-      break;
-      case ModuleCreatureArmorSlot.HEAD:
-        return this.equipment.HEAD;
-      break;
-      case ModuleCreatureArmorSlot.ARMS:
-        return this.equipment.ARMS;
-      break;
-      case ModuleCreatureArmorSlot.LEFTARMBAND:
-        return this.equipment.LEFTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.ARMOR:
-        return this.equipment.ARMOR;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTARMBAND:
-        return this.equipment.RIGHTARMBAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND:
-        return this.equipment.LEFTHAND;
-      break;
-      case ModuleCreatureArmorSlot.LEFTHAND2:
-        return this.equipment.LEFTHAND2;
-      break;
-      case ModuleCreatureArmorSlot.BELT:
-        return this.equipment.BELT;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND:
-        return this.equipment.RIGHTHAND;
-      break;
-      case ModuleCreatureArmorSlot.RIGHTHAND2:
-        return this.equipment.RIGHTHAND2;
-      break;
-      case ModuleCreatureArmorSlot.HIDE:
-        return this.equipment.HIDE;
-      break;
-      case ModuleCreatureArmorSlot.CLAW1:
-        return this.equipment.CLAW1;
-      break;
-      case ModuleCreatureArmorSlot.CLAW2:
-        return this.equipment.CLAW2;
-      break;
-      case ModuleCreatureArmorSlot.CLAW3:
-        return this.equipment.CLAW3;
-      break;
-      default:
-        return null;
-      break;
-    }
-
+  unEquipHeadItem(){
+    this.unEquipSlot(ModuleCreatureArmorSlot.HEAD);
   }
 
   initProperties(){
@@ -3485,7 +3326,7 @@ export class ModuleCreature extends ModuleObject {
         this.challengeRating = this.template.getFieldByLabel('ChallengeRating').getValue();
 
       if(this.template.RootNode.hasField('ClassList')){
-        let classes = this.template.RootNode.getFieldByLabel('ClassList').getChildStructs();
+        const classes = this.template.RootNode.getFieldByLabel('ClassList').getChildStructs();
         for(let i = 0; i < classes.length; i++){
           this.classes.push(
             CreatureClass.FromCreatureClassStruct(classes[i])
@@ -3520,7 +3361,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('ExpressionList')){
-        let expressions = this.template.RootNode.getFieldByLabel('ExpressionList').getChildStructs();
+        const expressions = this.template.RootNode.getFieldByLabel('ExpressionList').getChildStructs();
         for(let i = 0; i < expressions.length; i++){
           this.setListeningPattern(
             expressions[i].getFieldByLabel('ExpressionString').getValue(),
@@ -3538,7 +3379,7 @@ export class ModuleCreature extends ModuleObject {
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
       if(this.template.RootNode.hasField('FeatList')){
-        let feats = this.template.RootNode.getFieldByLabel('FeatList').getChildStructs();
+        const feats = this.template.RootNode.getFieldByLabel('FeatList').getChildStructs();
         for(let i = 0; i < feats.length; i++){
           this.feats.push(
             new TalentFeat( feats[i].getFieldByLabel('Feat').getValue() )
@@ -3617,7 +3458,7 @@ export class ModuleCreature extends ModuleObject {
         this.race = this.template.RootNode.getFieldByLabel('Race').getValue();
 
       if(this.template.RootNode.hasField('SkillList')){
-        let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
+        const skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
         for(let i = 0; i < skills.length; i++){
           this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
         }
@@ -3691,18 +3532,18 @@ export class ModuleCreature extends ModuleObject {
 
 
       if(this.template.RootNode.hasField('SWVarTable')){
-        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+        const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
         //console.log(localBools);
         for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].getFieldByLabel('Variable').getValue();
+          const data = localBools[i].getFieldByLabel('Variable').getValue();
           for(let bit = 0; bit < 32; bit++){
             this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
           }
         }
-        let localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
+        const localNumbers = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('ByteArray').getChildStructs();
         //console.log(localNumbers);
         for(let i = 0; i < localNumbers.length; i++){
-          let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+          const data = localNumbers[i].getFieldByLabel('Variable').getValue();
           this.setLocalNumber(i, data);
         }
       }
@@ -3715,9 +3556,9 @@ export class ModuleCreature extends ModuleObject {
 
       try{
         if(this.template.RootNode.hasField('EffectList')){
-          let effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
+          const effects = this.template.RootNode.getFieldByLabel('EffectList').getChildStructs() || [];
           for(let i = 0; i < effects.length; i++){
-            let effect = GameEffectFactory.EffectFromStruct(effects[i]);
+            const effect = GameEffectFactory.EffectFromStruct(effects[i]);
             if(effect){
               effect.setAttachedObject(this);
               effect.loadModel();
@@ -3733,11 +3574,11 @@ export class ModuleCreature extends ModuleObject {
 
       try{
         if(this.template.RootNode.hasField('Equip_ItemList')){
-          let equipment = this.template.RootNode.getFieldByLabel('Equip_ItemList').getChildStructs() || [];
+          const equipment = this.template.RootNode.getFieldByLabel('Equip_ItemList').getChildStructs() || [];
           for(let i = 0; i < equipment.length; i++){
-            let strt = equipment[i];
+            const strt = equipment[i];
             let equipped_item = undefined;
-            let slot_type = strt.type;
+            const slot_type = strt.type;
             if(strt.hasField('EquippedRes')){
               equipped_item = new GameState.Module.ModuleArea.ModuleItem(strt.getFieldByLabel('EquippedRes').getValue());
             }else{
@@ -3830,7 +3671,7 @@ export class ModuleCreature extends ModuleObject {
       //PerceptionList
       try{
         if(this.template.RootNode.hasField('PerceptionList')){
-          let perceptionList = this.template.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
+          const perceptionList = this.template.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
           if(perceptionList.length){
             this.perceptionList = [];
           }
@@ -3869,7 +3710,7 @@ export class ModuleCreature extends ModuleObject {
     const array =  Object.keys(this.equipment);
     for(let i = 0; i < array.length; i++){
       const slot_key = array[i];
-      let slot: ModuleItem = (this.equipment as any)[slot_key];
+      const slot: ModuleItem = (this.equipment as any)[slot_key];
       if(!slot){
         continue;
       }
@@ -3881,10 +3722,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   parseEquipmentSlots(){
-    let slots = Object.keys(this.equipment);
+    const slots = Object.keys(this.equipment);
     for(let i = 0; i < slots.length; i++){
       const slotKey = slots[i];
-      let item: ModuleItem = (this.equipment as any)[slotKey];
+      const item: ModuleItem = (this.equipment as any)[slotKey];
       if(item){
         item.setPossessor(this);
         if(!item.load()){
@@ -3898,7 +3739,7 @@ export class ModuleCreature extends ModuleObject {
   loadSoundSet(){
     const soundset2DA = GameState.TwoDAManager.datatables.get('soundset');
     if(soundset2DA){
-      let ss_row = soundset2DA.rows[this.soundSetFile];
+      const ss_row = soundset2DA.rows[this.soundSetFile];
       if(ss_row){
         const buffer = ResourceLoader.loadCachedResource(ResourceTypes.ssf, ss_row.resref.toLowerCase());
         this.ssf = new SSFObject(buffer);
@@ -3907,12 +3748,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   loadItem( template: GFFObject ){
-    let item = new GameState.Module.ModuleArea.ModuleItem(template);
+    const item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
     if(!item.load()){
       return;
     }
-    let hasItem = this.getItemByTag(item.getTag());
+    const hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
       return hasItem;
@@ -4035,7 +3876,7 @@ export class ModuleCreature extends ModuleObject {
 
   save(){
 
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTC ';
     
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
@@ -4063,7 +3904,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(this.challengeRating);
 
     //Classes
-    let classList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
+    const classList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
     for(let i = 0; i < this.classes.length; i++){
       classList.addChildStruct( this.classes[i].save() );
     }
@@ -4073,11 +3914,11 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
 
-    let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
+    const combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
 
     //TODO: CombatInfo
 
-    let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
+    const combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
 
     //TODO: CombatRoundData
 
@@ -4097,101 +3938,101 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(255);
     
     //Effects
-    let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
+    const effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
     for(let i = 0; i < this.effects.length; i++){
       effectList.addChildStruct( this.effects[i].save() );
     }
 
     //Equipment
-    let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
+    const equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
 
     if(this.equipment.ARMOR){
-      let equipItem = this.equipment.ARMOR.save();
+      const equipItem = this.equipment.ARMOR.save();
       equipItem.setType(ModuleCreatureArmorSlot.ARMOR);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.ARMS){
-      let equipItem = this.equipment.ARMS.save();
+      const equipItem = this.equipment.ARMS.save();
       equipItem.setType(ModuleCreatureArmorSlot.ARMS);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.BELT){
-      let equipItem = this.equipment.BELT.save();
+      const equipItem = this.equipment.BELT.save();
       equipItem.setType(ModuleCreatureArmorSlot.BELT);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW1){
-      let equipItem = this.equipment.CLAW1.save();
+      const equipItem = this.equipment.CLAW1.save();
       equipItem.setType(ModuleCreatureArmorSlot.CLAW1);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW2){
-      let equipItem = this.equipment.CLAW2.save();
+      const equipItem = this.equipment.CLAW2.save();
       equipItem.setType(ModuleCreatureArmorSlot.CLAW2);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.CLAW3){
-      let equipItem = this.equipment.CLAW3.save();
+      const equipItem = this.equipment.CLAW3.save();
       equipItem.setType(ModuleCreatureArmorSlot.CLAW3);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.HEAD){
-      let equipItem = this.equipment.HEAD.save();
+      const equipItem = this.equipment.HEAD.save();
       equipItem.setType(ModuleCreatureArmorSlot.HEAD);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.HIDE){
-      let equipItem = this.equipment.HIDE.save();
+      const equipItem = this.equipment.HIDE.save();
       equipItem.setType(ModuleCreatureArmorSlot.HIDE);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.IMPLANT){
-      let equipItem = this.equipment.IMPLANT.save();
+      const equipItem = this.equipment.IMPLANT.save();
       equipItem.setType(ModuleCreatureArmorSlot.IMPLANT);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTARMBAND){
-      let equipItem = this.equipment.LEFTARMBAND.save();
+      const equipItem = this.equipment.LEFTARMBAND.save();
       equipItem.setType(ModuleCreatureArmorSlot.LEFTARMBAND);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.LEFTHAND){
-      let equipItem = this.equipment.LEFTHAND.save();
+      const equipItem = this.equipment.LEFTHAND.save();
       equipItem.setType(ModuleCreatureArmorSlot.LEFTHAND);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTARMBAND){
-      let equipItem = this.equipment.RIGHTARMBAND.save();
+      const equipItem = this.equipment.RIGHTARMBAND.save();
       equipItem.setType(ModuleCreatureArmorSlot.RIGHTARMBAND);
       equipItemList.addChildStruct(equipItem)
     }
 
     if(this.equipment.RIGHTHAND){
-      let equipItem = this.equipment.RIGHTHAND.save();
+      const equipItem = this.equipment.RIGHTHAND.save();
       equipItem.setType(ModuleCreatureArmorSlot.RIGHTHAND);
       equipItemList.addChildStruct(equipItem)
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
     
-    let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
-    let expressions = Object.keys(this.listeningPatterns);
+    const expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
+    const expressions = Object.keys(this.listeningPatterns);
     for(let i = 0; i < expressions.length; i++){
-      let expressionString = expressions[i];
-      let expressionId = this.listeningPatterns[expressionString];
+      const expressionString = expressions[i];
+      const expressionId = this.listeningPatterns[expressionString];
 
-      let expressionStruct = new GFFStruct();
+      const expressionStruct = new GFFStruct();
       expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( expressionId );
       expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( expressionString );
       expressionList.addChildStruct(expressionStruct);
@@ -4200,7 +4041,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(this.faction ? this.faction.id : this.factionId);
 
     //Feats
-    let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
+    const featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
     for(let i = 0; i < this.feats.length; i++){
       featList.addChildStruct( this.feats[i].save() );
     }
@@ -4222,9 +4063,9 @@ export class ModuleCreature extends ModuleObject {
     }
 
     //Creature Inventory
-    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      let itemStruct = this.inventory[i].save();
+      const itemStruct = this.inventory[i].save();
       itemList.addChildStruct(itemStruct);
     }
 
@@ -4247,11 +4088,11 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
 
     //Save PerceptionLists
-    let perceptionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
+    const perceptionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'PerceptionList') );
     for(let i = 0; i < this.perceptionList.length; i++){
-      let percept = this.perceptionList[i];
+      const percept = this.perceptionList[i];
 
-      let perceptionStruct = new GFFStruct();
+      const perceptionStruct = new GFFStruct();
       perceptionStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( percept.objectId );
       perceptionStruct.addField( new GFFField(GFFDataType.BYTE, 'PerceptionData') ).setValue( (percept.data & 0xFF) );
       perceptionList.addChildStruct(perceptionStruct);
@@ -4266,7 +4107,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).setValue(this.reflexSaveThrow);
 
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts
@@ -4286,7 +4127,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') ).setValue(this.scripts[ModuleObjectScript.CreatureOnUserDefined]?.name || '');
 
     //Skills
-    let skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    const skillList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
     for(let i = 0; i < 8; i++){
       skillList.addChildStruct( this.skills[i].save() );
     }
@@ -4301,7 +4142,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(0);
-    let varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    const varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wings') ).setValue(0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') ).setValue(this.wis);
@@ -4310,7 +4151,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue( this.position.y );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue( this.position.z );
 
-    let theta = this.rotation.z * Math.PI;
+    const theta = this.rotation.z * Math.PI;
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );
@@ -4331,7 +4172,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   static GenerateTemplate(){
-    let template = new GFFObject();
+    const template = new GFFObject();
     template.FileType = 'UTC ';
 
     template.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') );
@@ -4388,7 +4229,7 @@ export class ModuleCreature extends ModuleObject {
     template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpawn') );
     template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptSpellAt') );
     template.RootNode.addField( new GFFField(GFFDataType.RESREF, 'ScriptUserDefine') );
-    let skillList = template.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    const skillList = template.RootNode.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
     template.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') )
     template.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') );
@@ -4405,7 +4246,7 @@ export class ModuleCreature extends ModuleObject {
     template.RootNode.addField( new GFFField(GFFDataType.SHORT, 'willbonus') );
 
     for(let i = 0; i < 8; i++){
-      let _skill = new GFFStruct();
+      const _skill = new GFFStruct();
       _skill.addField( new GFFField(GFFDataType.RESREF, 'Rank') ).setValue(0);
       skillList.addChildStruct(_skill);
     }

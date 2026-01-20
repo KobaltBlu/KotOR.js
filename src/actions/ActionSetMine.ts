@@ -77,7 +77,7 @@ export class ActionSetMine extends Action {
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          let property = this.oItem.properties[i];
+          const property = this.oItem.properties[i];
           // if(!property.isUseable()){ continue; }
     
           if(property.is(ModuleItemProperty.Trap)){

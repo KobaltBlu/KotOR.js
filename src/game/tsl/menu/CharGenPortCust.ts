@@ -56,7 +56,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       const creature = GameState.CharGenManager.selectedCreature;
     
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx <= 0){
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[arrayLength - 1];
       }else{
@@ -65,7 +65,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
+        const port = GameState.SWRuleSet.portraits[i];
         if(port.appearancenumber == creature.appearance){
           creature.portraitId = i;
           creature.portrait = GameState.SWRuleSet.portraits[i];
@@ -101,7 +101,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       const creature = GameState.CharGenManager.selectedCreature;
 
       let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
+      const arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
       if(idx >= arrayLength - 1){
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[0];
       }else{
@@ -110,7 +110,7 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
+        const port = GameState.SWRuleSet.portraits[i];
         if(port.appearancenumber == creature.appearance){
           creature.portraitId = i;
           creature.portrait = GameState.SWRuleSet.portraits[i];

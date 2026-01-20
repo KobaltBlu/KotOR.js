@@ -168,20 +168,20 @@ export class GameEffectFactory {
 
     let effect: GameEffect = undefined as any;
 
-    let eType = struct.getFieldByLabel('Type').getValue();
-    let eSubType = struct.getFieldByLabel('SubType').getValue();
-    let eCreator = struct.getFieldByLabel('CreatorId').getValue();
-    let eSpellId = struct.getFieldByLabel('SpellId').getValue();
+    const eType = struct.getFieldByLabel('Type').getValue();
+    const eSubType = struct.getFieldByLabel('SubType').getValue();
+    const eCreator = struct.getFieldByLabel('CreatorId').getValue();
+    const eSpellId = struct.getFieldByLabel('SpellId').getValue();
     
-    let eDuration = struct.getFieldByLabel('Duration').getValue();
-    let eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
-    let eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
-    let eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
+    const eDuration = struct.getFieldByLabel('Duration').getValue();
+    const eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
+    const eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
+    const eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
 
-    let intList: number[] = [];
-    let floatList: number[] = [];
-    let stringList: string[] = [];
-    let objectList: number[] = [];
+    const intList: number[] = [];
+    const floatList: number[] = [];
+    const stringList: string[] = [];
+    const objectList: number[] = [];
 
     let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
@@ -378,7 +378,7 @@ export class GameEffectFactory {
       break;
     }
 
-    let eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
+    const eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
     if(!eSkipOnLoad){
 
       if(typeof effect !== 'undefined'){

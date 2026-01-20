@@ -22,7 +22,7 @@ if(window.location.origin === 'file://'){
   ApplicationProfile.isMac = window.electron.isMac();
 }else{
   ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
-  let menuTopRight = document.getElementById('launcher-menu-top-right');
+  const menuTopRight = document.getElementById('launcher-menu-top-right');
   if(menuTopRight) menuTopRight.style.display = 'none';
 }
 

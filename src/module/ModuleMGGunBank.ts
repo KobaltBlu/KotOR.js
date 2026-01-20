@@ -60,7 +60,7 @@ export class ModuleMGGunBank extends ModuleObject {
 
     if(this.model) this.model.update(delta);
 
-    let old_bullet_indexes = [];
+    const old_bullet_indexes = [];
 
     for(let i = 0, len = this.bullets.length; i < len; i++){
       if(!this.bullets[i].update(delta)){

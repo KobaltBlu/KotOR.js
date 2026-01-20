@@ -40,8 +40,8 @@ export class ForgeState {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -54,8 +54,8 @@ export class ForgeState {
 
   static removeEventListener<T>(type: T, cb: Function): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -68,7 +68,7 @@ export class ForgeState {
 
   static processEventListener<T>(type: T, args: any[] = []): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -184,7 +184,7 @@ export class ForgeState {
         onVerified();
       }else{
         try{
-          let dir = await (window as any).dialog.locateDirectoryDialog();
+          const dir = await (window as any).dialog.locateDirectoryDialog();
           if(dir){
             KotOR.ApplicationProfile.profile.directory = dir;
             onVerified();
@@ -198,7 +198,7 @@ export class ForgeState {
       }
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
-        let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
+        const validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
         if(validated){
           onVerified();
         }else{
@@ -256,7 +256,7 @@ export class ForgeState {
   static addRecentFile(file: EditorFile){
     try{
       //Update the opened files list
-      let file_path = file.getPath();
+      const file_path = file.getPath();
       if(file_path){
         this.removeRecentFile(file);
 
@@ -278,7 +278,7 @@ export class ForgeState {
 
   static removeRecentFile(file: EditorFile){
     if(!file) return;
-    let file_path = file.getPath();
+    const file_path = file.getPath();
     if(file_path){
       const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
         return file.getPath() == file_path;
@@ -328,7 +328,7 @@ export class ForgeState {
               ],
               properties: ['createDirectory'],
             }).then( (result: any) => {
-              let file_path2 = result.filePaths[0];
+              const file_path2 = result.filePaths[0];
               FileTypeManager.onOpenFile({
                 path: file_path, 
                 path2: file_path2, 

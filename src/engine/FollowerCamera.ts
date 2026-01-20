@@ -78,7 +78,7 @@ export class FollowerCamera {
 
     FollowerCamera.turning = false;
 
-    let followee = GameState.getCurrentPlayer();
+    const followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
     let offsetHeight = 0;
@@ -91,14 +91,14 @@ export class FollowerCamera {
       }
     }
     
-    let camHeight = (1.35 + FollowerCamera.height)-offsetHeight;
+    const camHeight = (1.35 + FollowerCamera.height)-offsetHeight;
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
 
     FollowerCamera.raycaster.far = 10;
     FollowerCamera.raycaster.ray.direction.set(Math.cos(FollowerCamera.facing), Math.sin(FollowerCamera.facing), 0).normalize();
     FollowerCamera.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
 
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;
 
     FollowerCamera.box.min.copy(FollowerCamera.raycaster.ray.origin);
@@ -113,7 +113,7 @@ export class FollowerCamera {
     }
 
     for(let j = 0, jl = area.doors.length; j < jl; j++){
-      let door = area.doors[j];
+      const door = area.doors[j];
       if(door && door.collisionData.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
           aabbFaces.push({
@@ -125,7 +125,7 @@ export class FollowerCamera {
     }
     
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      let castableFaces = aabbFaces[k];
+      const castableFaces = aabbFaces[k];
       intersects = castableFaces.object.collisionData.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){

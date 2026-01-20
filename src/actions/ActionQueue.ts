@@ -113,7 +113,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
+  //@ts-expect-error because I am too lazy to fix it
   push( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = this;
@@ -128,7 +128,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
+  //@ts-expect-error because I am too lazy to fix it
   unshift( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = undefined;
@@ -144,10 +144,10 @@ export class ActionQueue extends Array {
    *
    */
   process( delta: number = 0 ){
-    let action = this[0];
+    const action = this[0];
     if(!action){ return; }
     action.owner = this.owner;
-    let status = action.update( delta );
+    const status = action.update( delta );
     if(status != ActionStatus.IN_PROGRESS){
       this.shift();
     }

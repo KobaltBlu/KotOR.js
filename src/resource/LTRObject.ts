@@ -44,7 +44,7 @@ export class LTRObject {
 
   }
 
-  openFile(file: string){
+  openFile(_file: string){
 
   }
 
@@ -134,10 +134,10 @@ export class LTRObject {
     let prob: number = 0;
     let i = 0;
     let wordIndex = 0;
-    let chars = [];
+    const chars = [];
     
     let attempts = 0;
-    let bGetFirstThree = true;
+    const bGetFirstThree = true;
     let bGenerating = false;
     let bDone = false;
 

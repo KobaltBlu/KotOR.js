@@ -406,7 +406,7 @@ export class LBL_MapView {
       }
     }
 
-    let oldClearColor = new THREE.Color();
+    const oldClearColor = new THREE.Color();
     GameState.renderer.getClearColor(oldClearColor);
     GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
@@ -417,7 +417,7 @@ export class LBL_MapView {
     GameState.renderer.setClearColor(oldClearColor, 1);
 
     if(this.control){
-      let material = this.control.getFill().material;
+      const material = this.control.getFill().material;
       if(material instanceof THREE.Material){
         if(material instanceof THREE.ShaderMaterial){
           material.uniforms.map.value = this.texture.texture;

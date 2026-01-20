@@ -134,7 +134,7 @@ export class ForgeFileSystem {
       }else{
         if(Array.isArray(response.handles)){
           const [handle] = response.handles as FileSystemFileHandle[];
-          let file = await handle.getFile();
+          const file = await handle.getFile();
           return new Uint8Array( await file.arrayBuffer() );
         }
       }

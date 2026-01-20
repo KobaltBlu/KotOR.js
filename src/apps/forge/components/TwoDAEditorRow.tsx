@@ -4,7 +4,7 @@ import * as KotOR from "../KotOR";
 
 
 export const TwoDAEditorRow = function(props: any){
-  let selected = props.selected as boolean;
+  const selected = props.selected as boolean;
   const onCellSelectedCallback = props.onCellSelected as Function;
   const [render, rerender] = useState<boolean>(false);
 

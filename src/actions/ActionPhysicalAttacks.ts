@@ -56,17 +56,17 @@ export class ActionPhysicalAttacks extends Action {
     const target: ModuleCreature = this.target as any;
 
     owner.resetExcitedDuration();
-    let range = ( owner.isRangedEquipped() ? 15.0 : 2.0 );
+    const range = ( owner.isRangedEquipped() ? 15.0 : 2.0 );
 
     if(target.isDead()){
       //todo: we may need to end combatround early here if it has already started
       return ActionStatus.FAILED;
     }else{
-      let distance = Utility.Distance2D(owner.position, target.position);
+      const distance = Utility.Distance2D(owner.position, target.position);
       if( distance > range ){
 
         // owner.openSpot = undefined;
-        let target_position = target.position.clone();
+        const target_position = target.position.clone();
         
         /*if(!owner.isRangedEquipped()){ //MELEE
           owner.openSpot = target.getClosesetOpenSpot(owner);
@@ -75,7 +75,7 @@ export class ActionPhysicalAttacks extends Action {
           }
         }*/
 
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, target_position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, target_position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, target_position.z);

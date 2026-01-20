@@ -51,13 +51,13 @@ export const TabLIPEditorOptions = function(props: any){
   }, [duration]);
 
   const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+    const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
   }
 
   const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let head = (e.target.value);
+    const head = (e.target.value);
     parentTab.loadHead(head);
   }
 
@@ -100,7 +100,7 @@ export const TabLIPEditorOptions = function(props: any){
       </SectionContainer> */}
       <SectionContainer name="Preview Head" slim={true}>
         {
-          !!selectedFrame ? (
+          selectedFrame ? (
             <div className="selected-keyframe-head-options">
               <b>Heads</b>
               <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>

@@ -65,7 +65,7 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
-  eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
+  eventListenters: Map<string, Function[]> = new Map<string, Function[]>();
   context: any = GameState;
 
   constructor(){
@@ -263,7 +263,7 @@ export class GameMenu {
     }
 
     if(this.activeControls.length){
-      for(var i = this.activeControls.length; i--;){
+      for(let i = this.activeControls.length; i--;){
         const control = this.activeControls[i];
         if(!control.box.containsPoint(Mouse.positionUI)){
           control.onHoverOut();
@@ -273,7 +273,7 @@ export class GameMenu {
     }
 
     if(this.tGuiPanel && this.tGuiPanel.children){
-      let len = this.tGuiPanel.children.length;
+      const len = this.tGuiPanel.children.length;
       for(let i = 0; i < len; i++){
         this.tGuiPanel.children[i].update(delta);
       }
@@ -298,7 +298,7 @@ export class GameMenu {
       return false;
     }
 
-    let idx = this.activeControls.indexOf(control);
+    const idx = this.activeControls.indexOf(control);
 
     if(bActive){
       if(idx == -1){
@@ -440,16 +440,16 @@ export class GameMenu {
     if(typeof callback !== 'function'){ return; }
 
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
+    const listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
-      let idx = listeners.indexOf(callback);
+      const idx = listeners.indexOf(callback);
       if(idx >= 0){ listeners.splice(idx, 1); }
     }
   }
 
   triggerEventListener(name: string, ...args: any){
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
+    const listeners = this.eventListenters.get(name);
     if(Array.isArray(listeners)){
       for(let i = 0; i < listeners.length; i++){
         listeners[i](...args);

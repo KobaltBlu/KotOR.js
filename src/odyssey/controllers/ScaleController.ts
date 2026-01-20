@@ -24,10 +24,7 @@ export class ScaleController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode && manager.model){
-      let offsetScale = 0;
-      if(typeof manager.modelNode.controllers.get(OdysseyModelControllerType.Scale) != 'undefined'){
-        offsetScale = manager.modelNode.controllers.get(OdysseyModelControllerType.Scale).data[0].value || 0.000000000001; //0 scale causes warnings
-      }
+      // const offsetScale = manager.modelNode.controllers.get(OdysseyModelControllerType.Scale)?.data[0].value || 0.000000000001; //0 scale causes warnings
       //manager.modelNode.scale.setScalar( ( (data.value + offsetScale) * manager.model.Scale ) || 0.00000001 );
       manager.modelNode.scale.setScalar( ( (data.value) * manager.model.Scale ) || 0.00000001 );
       manager.modelNode.updateMatrix();

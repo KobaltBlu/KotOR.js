@@ -94,7 +94,7 @@ export class GUIProtoItem extends GUIControl{
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
-      let tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
+      const tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > height){
         height = tSize.y/2;
       }
@@ -104,7 +104,7 @@ export class GUIProtoItem extends GUIControl{
   }
 
   calculateBox(){
-    let worldPosition = this.parent.widget.position.clone();
+    const worldPosition = this.parent.widget.position.clone();
     //console.log('worldPos', worldPosition);
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;

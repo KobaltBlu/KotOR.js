@@ -1048,7 +1048,7 @@ export class UI3DRenderer extends EventListenerModel {
       }
 
       if(this.orbitControls){
-        //@ts-ignore
+        //@ts-expect-error because I am too lazy to fix it
         this.orbitControls.update(delta);
       }
 

@@ -47,7 +47,7 @@ export class EffectPoison extends GameEffect {
       return;
 
     //Poison Visual Effect
-    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
+    const eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());

@@ -130,18 +130,18 @@ export class ItemProperty {
   }
 
   costTableRandomCheck(){
-    let costTable = this.getCostTable();
+    const costTable = this.getCostTable();
     //Random Cost Check
     if(this.costValue == 0){
-      let rowCount = costTable.rows.length - 1;
-      let randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
+      const rowCount = costTable.rows.length - 1;
+      const randomCostValue = (Math.floor(Math.random() * rowCount) + 1); 
       return costTable.rows[randomCostValue];
     }
     return this.getCostTableRow();
   }
 
   getValue(){
-    let costTable = this.getCostTable();
+    const costTable = this.getCostTable();
     let costTableRow = this.getCostTableRow();
     if(costTableRow){
       switch(this.costTable){
@@ -247,7 +247,7 @@ export class ItemProperty {
   }
 
   save(){
-    let propStruct = new GFFStruct(0);
+    const propStruct = new GFFStruct(0);
 
     propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
     propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') )?.setValue( this.subType == -1 ? 255 : this.subType);

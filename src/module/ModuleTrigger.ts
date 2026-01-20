@@ -115,13 +115,13 @@ export class ModuleTrigger extends ModuleObject {
   getCurrentRoom(){
     let _distance = 1000000000;
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
-      let model = room.model;
+      const room = GameState.module.area.rooms[i];
+      const model = room.model;
       if(model instanceof OdysseyModel3D){
-        let pos = this.position.clone();
+        const pos = this.position.clone();
         if(model.box.containsPoint(pos)){
-          let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-          let distance = pos.distanceTo(roomCenter);
+          const roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
+          const distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
             _distance = distance;
             this.attachToRoom(room);
@@ -132,13 +132,13 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   getGeometry(){
-    let trigGeom = new THREE.BufferGeometry();
-    let vertices = this.vertices.slice();
+    const trigGeom = new THREE.BufferGeometry();
+    const vertices = this.vertices.slice();
 
     try{
-      let holes: THREE.Vec2[][] = [];
+      const holes: THREE.Vec2[][] = [];
       // let faces: OdysseyFace3[] = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+      const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
       trigGeom.setIndex(triangles.flat()); //Works with indices
       trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) ); //Works with indices
     }catch(e){
@@ -210,9 +210,9 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   buildGeometry(){
-    let trigGeom = this.getGeometry();
+    const trigGeom = this.getGeometry();
 
-    let material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color( 0xFFFFFF ),
       side: THREE.DoubleSide
     });
@@ -331,7 +331,9 @@ export class ModuleTrigger extends ModuleObject {
     try{
       if(!this.room.model.visible)
         return;
-    }catch(e){}
+    }catch{
+      // ignore error
+    }
 
     this.action = this.actionQueue[0];
     this.actionQueue.process( delta );
@@ -519,7 +521,7 @@ export class ModuleTrigger extends ModuleObject {
 
       //Push verticies
       for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
+        const tgv = this.geometry[i];
         this.vertices[i] = new THREE.Vector3( 
           tgv.getFieldByLabel('PointX').getValue(),
           tgv.getFieldByLabel('PointY').getValue(),
@@ -610,10 +612,10 @@ export class ModuleTrigger extends ModuleObject {
       this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       //console.log(localBools);
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -646,19 +648,19 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTT ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue( this.commandable );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue(2130706432);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cursor') ).setValue(this.cursor);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
 
-    let geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
+    const geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){
-      let vertStruct = new GFFStruct();
+      const vertStruct = new GFFStruct();
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointX') ).setValue(this.vertices[i].x);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointY') ).setValue(this.vertices[i].y);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointZ') ).setValue(this.vertices[i].z);
@@ -682,7 +684,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts

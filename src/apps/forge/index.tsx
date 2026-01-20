@@ -63,7 +63,7 @@ const plChangeCallback = (e: any) => {
 
 const plMouseMove = (event: any) => {
   if(KotOR.Mouse.Dragging && (event.movementX || event.movementY)){
-    let range = 1000;
+    const range = 1000;
     //console.log(event.movementX, event.movementY);
     if(event.movementX > -range && event.movementX < range){
       KotOR.Mouse.OffsetX = event.movementX || 0;

@@ -895,7 +895,7 @@ export class NWScriptCompiler {
       const __arguments = statement.function_reference.arguments.slice(0).reverse();
       let argumentsDataSize = 0;
       for(let i = 0; i < __arguments.length; i++){
-        let arg = _arguments[i];
+        const arg = _arguments[i];
         const arg_ref = __arguments[i];
 
         if(!arg){

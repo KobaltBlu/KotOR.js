@@ -205,7 +205,7 @@ export class ModuleMGPlayer extends ModuleObject {
     this.forceVector.set(0, 0, 0);
 
     switch(GameState.module.area.miniGame.type){
-      case 1:
+      case 1: {
 
         if(this.speed_min || this.speed){
 
@@ -254,10 +254,11 @@ export class ModuleMGPlayer extends ModuleObject {
         }else{
           this.boostVelocity = 0;
         }
-
+      }
       break;
-      case 2:
-
+      case 2: {
+        //TODO: Implement
+      }
       break;
     }
         
@@ -274,7 +275,7 @@ export class ModuleMGPlayer extends ModuleObject {
       this.camera.update(delta);
     }
     else if(!this.camera){
-      let camerahook = this.container.getObjectByName('camerahook');
+      const camerahook = this.container.getObjectByName('camerahook');
       if(camerahook)
         this.camera = camerahook.parent.parent as OdysseyModel3D;
     }
@@ -423,8 +424,8 @@ export class ModuleMGPlayer extends ModuleObject {
     if(!GameState.module || !GameState.module.area)
       return;
 
-    let _axisFront = this.forceVector.clone();
-    let _oPosition = this.position.clone();
+    const _axisFront = this.forceVector.clone();
+    const _oPosition = this.position.clone();
 
     //this.getCurrentRoom();
     const hitdist = this.sphere_radius;
@@ -438,8 +439,8 @@ export class ModuleMGPlayer extends ModuleObject {
 
     //START Gravity
     GameState.raycaster.far = 10;
-    let scratchVec3 = new THREE.Vector3(0, 0, 2);
-    let playerFeetRay = this.position.clone().add( ( scratchVec3 ) );
+    const scratchVec3 = new THREE.Vector3(0, 0, 2);
+    const playerFeetRay = this.position.clone().add( ( scratchVec3 ) );
     GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
     GameState.raycaster.ray.direction.set(0, 0,-1);
 
@@ -451,13 +452,13 @@ export class ModuleMGPlayer extends ModuleObject {
 
       //START: PLACEABLE COLLISION
       this.tmpPos = this.position.clone().add(this.forceVector);
-      let plcEdgeLines = [];
+      const plcEdgeLines = [];
       let face;
       let edge;
       let line;
-      let closestPoint = new THREE.Vector3(0, 0, 0);
+      const closestPoint = new THREE.Vector3(0, 0, 0);
       let distance;
-      let plcCollision = false;
+      const plcCollision = false;
       /*for(let j = 0, jl = this.room.placeables.length; j < jl; j++){
         obj = this.room.placeables[j];
         if(obj && obj.walkmesh && obj.model && obj.model.visible){
@@ -515,7 +516,7 @@ export class ModuleMGPlayer extends ModuleObject {
       if(!(plcCollision && roomCollision)){
         if(plcEdgeLines.length){
           plcEdgeLines.sort((a, b) => (a.distance > b.distance) ? -1 : 1)
-          let average = new THREE.Vector3();
+          const average = new THREE.Vector3();
           let edgeLine = undefined;
           let distanceOffset = 0;
           let force: THREE.Vector3;
@@ -580,7 +581,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.collisionData.lastGroundFace = this.collisionData.groundFace;
         //this.groundFace = undefined;
         if(this.room){
-          let face = this.room.findWalkableFace(this);
+          const face = this.room.findWalkableFace(this);
           if(!face){
             this.findWalkableFace();
           }
@@ -609,14 +610,14 @@ export class ModuleMGPlayer extends ModuleObject {
   getCurrentRoom(){
     if(this instanceof ModuleObject){
       this.room = undefined;
-      let aabbFaces = [];
+      const aabbFaces = [];
       let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
       const box = this.box.clone();
 
       this.rooms = [];
       for(let i = 0; i < GameState.module.area.rooms.length; i++){
-        let room = GameState.module.area.rooms[i];
-        let model = room.model;
+        const room = GameState.module.area.rooms[i];
+        const model = room.model;
         if(model instanceof OdysseyModel3D){
           if(model.box.containsPoint(this.position)){
             this.roomIds.push(i);
@@ -626,7 +627,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
       if(box){
         for(let j = 0, jl = this.rooms.length; j < jl; j++){
-          let room = GameState.module.area.rooms[this.roomIds[j]];
+          const room = GameState.module.area.rooms[this.roomIds[j]];
           if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
             aabbFaces.push({
               object: room, 
@@ -636,13 +637,13 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       }
       
-      let scratchVec3 = new THREE.Vector3(0, 0, 2);
-      let playerFeetRay = this.position.clone().add(scratchVec3);
+      const scratchVec3 = new THREE.Vector3(0, 0, 2);
+      const playerFeetRay = this.position.clone().add(scratchVec3);
       GameState.raycaster.ray.origin.set(playerFeetRay.x,playerFeetRay.y,playerFeetRay.z);
       GameState.raycaster.ray.direction.set(0, 0,-1);
       
       for(let j = 0, jl = aabbFaces.length; j < jl; j++){
-        let castableFaces = aabbFaces[j];
+        const castableFaces = aabbFaces[j];
         intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
         
         if(intersects.length){
@@ -910,9 +911,9 @@ export class ModuleMGPlayer extends ModuleObject {
       this.tunnel.pos.z = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelZPos').getValue());
 
     if(this.template.RootNode.hasField('Models')){
-      let models = this.template.getFieldByLabel('Models').getChildStructs();
+      const models = this.template.getFieldByLabel('Models').getChildStructs();
       for(let i = 0; i < models.length; i++){
-        let modelStruct = models[i];
+        const modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.getFieldByLabel('Model').getValue(),
           rotating: !!modelStruct.getFieldByLabel('RotatingModel').getValue()

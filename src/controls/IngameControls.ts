@@ -183,17 +183,17 @@ export class IngameControls {
       
       let clickCaptured = false;
 
-      let customEvent = GUIControlEventFactory.generateEventObject();
+      const customEvent = GUIControlEventFactory.generateEventObject();
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
 
-      let uiControls = this.MenuGetActiveUIElements();
+      const uiControls = this.MenuGetActiveUIElements();
       for(let i = 0; i < uiControls.length; i++){
         if(!customEvent.propagate)
           break;
         
-        let control = uiControls[i];
+        const control = uiControls[i];
         if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
           clickCaptured = true;
           if(GameState.debug.CONTROLS)
@@ -279,7 +279,7 @@ export class IngameControls {
         
         let clickCaptured = false;
 
-        let customEvent = GUIControlEventFactory.generateEventObject();
+        const customEvent = GUIControlEventFactory.generateEventObject();
   
         //GameState.selected = undefined;
 
@@ -302,12 +302,12 @@ export class IngameControls {
           //}
         }
 
-        let uiControls = this.MenuGetActiveUIElements();
+        const uiControls = this.MenuGetActiveUIElements();
         for(let i = 0; i < uiControls.length; i++){
           if(!customEvent.propagate)
             break;
 
-          let control = uiControls[i];
+          const control = uiControls[i];
           if(control === Mouse.clickItem){
             if(typeof control.widget.parent !== 'undefined'){
               if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
@@ -339,15 +339,15 @@ export class IngameControls {
 
                 selectedObject = true;
 
-                let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                let distanceThreshold = 20;
+                const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                const distanceThreshold = 20;
 
                 if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                   if(typeof moduleObject.onClick === 'function'){
                     GameState.getCurrentPlayer().clearAllActions();
                     moduleObject.onClick(GameState.getCurrentPlayer());
                   }else{
-                    let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                    const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                     //console.log(distance);
                     if(distance > 1.5){
                       GameState.getCurrentPlayer().clearAllActions();
@@ -802,7 +802,7 @@ export class IngameControls {
 
     let xoffset = 0;
     let yoffset = 0;
-    let currentMenu = GameState.MenuManager.GetCurrentMenu();
+    const currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
 

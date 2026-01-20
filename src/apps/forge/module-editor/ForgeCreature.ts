@@ -384,8 +384,8 @@ export class ForgeCreature extends ForgeGameObject {
     }
 
     const appearance = this.creatureAppearance;
-    let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
-    let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
+    const bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
+    const textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
 
     try{

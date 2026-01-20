@@ -92,7 +92,7 @@ export class MenuInventory extends GameMenu {
 
   filterInventory(){
     this.LB_ITEMS.clearItems();
-    let inv = GameState.InventoryManager.getNonQuestInventory();
+    const inv = GameState.InventoryManager.getNonQuestInventory();
     for (let i = 0; i < inv.length; i++) {
       this.LB_ITEMS.addItem(inv[i]);
     }

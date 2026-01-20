@@ -227,9 +227,9 @@ export class TabLIPEditorState extends TabState {
       this.head.update(delta);
 
       if(this.ui3DRenderer){
-        let center: THREE.Vector3 = new THREE.Vector3;
+        const center: THREE.Vector3 = new THREE.Vector3;
         this.box3.getCenter(center);
-        let size: THREE.Vector3 = new THREE.Vector3;
+        const size: THREE.Vector3 = new THREE.Vector3;
         this.box3.getSize(size);
         //Center the object to 0
         this.head.position.set(-center.x, -center.y, -center.z);
@@ -329,7 +329,7 @@ export class TabLIPEditorState extends TabState {
 
   seek(time: number = 0){
 
-    let was_playing = this.playing;
+    const was_playing = this.playing;
     this.pause();
 
     if(this.lip instanceof KotOR.LIPObject){
@@ -443,45 +443,45 @@ export class TabLIPEditorState extends TabState {
       const textDecoder = new TextDecoder();
       let data = textDecoder.decode(buffer);
       console.log('phn', data);
-      let eoh = data.indexOf('END OF HEADER');
+      const eoh = data.indexOf('END OF HEADER');
       if(eoh > -1){
         data = data.substr(eoh+14);
-        let keyframes = data.trim().split('\r\n');
+        const keyframes = data.trim().split('\r\n');
 
         console.log(keyframes);
 
         this.lip.keyframes = [];
 
-        let PHN_INVALID = -1;
-        let PHN_EE = 0;
-        let PHN_EH = 1;
-        let PHN_SCHWA = 2;
-        let PHN_AH = 3;
-        let PHN_OH = 4;
-        let PHN_OOH = 5;
-        let PHN_Y = 6;
-        let PHN_S = 7;
-        let PHN_FV = 8;
-        let PHN_NNG = 9;
-        let PHN_TH = 0xA;
-        let PHN_MPB = 0xB;
-        let PHN_TD = 0xC;
-        let PHN_JSH = 0xD;
-        let PHN_L = 0xE;
-        let PHN_KG = 0xF;
-        let PHN_USE_NEXT = 0x10;
+        const PHN_INVALID = -1;
+        const PHN_EE = 0;
+        const PHN_EH = 1;
+        const PHN_SCHWA = 2;
+        const PHN_AH = 3;
+        const PHN_OH = 4;
+        const PHN_OOH = 5;
+        const PHN_Y = 6;
+        const PHN_S = 7;
+        const PHN_FV = 8;
+        const PHN_NNG = 9;
+        const PHN_TH = 0xA;
+        const PHN_MPB = 0xB;
+        const PHN_TD = 0xC;
+        const PHN_JSH = 0xD;
+        const PHN_L = 0xE;
+        const PHN_KG = 0xF;
+        const PHN_USE_NEXT = 0x10;
 
         let last_shape = PHN_INVALID;
 
         for(let i = 0; i < keyframes.length; i++){
 
-          let keyframe_data = keyframes[i].trim().split(' ');
+          const keyframe_data = keyframes[i].trim().split(' ');
 
           if(!keyframe_data.length){
             continue;
           }
 
-          let keyframe:  {shape: number, time: number} = {
+          const keyframe:  {shape: number, time: number} = {
             shape: PHN_INVALID,
             time: parseFloat(keyframe_data[0]) * .001
           };

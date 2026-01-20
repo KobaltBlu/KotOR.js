@@ -24,7 +24,7 @@ export const ProfileProvider = (props: any) => {
 
   useEffect( () => {
     if(lightboxImageValue){
-      let img = new Image();
+      const img = new Image();
       img.onload = () => {
         console.log('img', img.width, img.height);
         setLightboxImageWidth(img.width);

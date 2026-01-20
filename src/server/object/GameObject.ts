@@ -5,7 +5,7 @@ export class GameObject {
   type: ModuleObjectType;
   tag: string;
 
-  static FromObjectListEntry(entry: any) {
+  static FromObjectListEntry(_entry: any) {
 
   }
 

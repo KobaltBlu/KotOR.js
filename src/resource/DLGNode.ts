@@ -236,10 +236,10 @@ export class DLGNode {
   }
 
   getActiveReplies(): number[] {
-    let totalReplies = this.replies.length;
-    let replyIds: number[] = [];
+    const totalReplies = this.replies.length;
+    const replyIds: number[] = [];
     for(let i = 0; i < totalReplies; i++){
-      let replyLink = this.replies[i];
+      const replyLink = this.replies[i];
       if(replyLink.runActiveScripts()){
         replyIds.push(replyLink.index);
       }
@@ -262,7 +262,7 @@ export class DLGNode {
         )
       }else{
         if(this.text.length){
-
+          // Text is already set, no action needed
         }
       }
     }catch(e){
@@ -273,7 +273,7 @@ export class DLGNode {
   update(delta: number = 0): boolean {
     this.elapsed += delta * 1000;
     this.processFadeOverlay();
-    if(!!this.checkList.voiceOverError){
+    if(this.checkList.voiceOverError){
       if(this.elapsed >= this.delay){
         this.checkList.voiceOverComplete = true;
       }
@@ -313,12 +313,6 @@ export class DLGNode {
     }
   }
 
-  loadResources(): Promise<void> {
-    return new Promise( (resolve, reject) => {
-
-    });
-  }
-
   async loadLIP(): Promise<boolean> {
     const resref = this.getVoiceResRef();
     if(resref){
@@ -351,7 +345,7 @@ export class DLGNode {
           return true;
         }
         return false;
-      }catch(e){
+      }catch{
         this.checkList.voiceOverError = true;
         return false;
       }
@@ -404,7 +398,7 @@ export class DLGNode {
   }
 
   static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
-    let node = new DLGNode(dialog);
+    const node = new DLGNode(dialog);
     node.setDialog(dialog);
 
     if(struct.hasField('Quest')){
@@ -537,8 +531,8 @@ export class DLGNode {
       const structs = struct.getFieldByLabel('RepliesList').getChildStructs();
       node.entries = [];
       for(let i = 0; i < structs.length; i++){
-        let replyStruct = structs[i];
-        let linkNode = new DLGNode(dialog);
+        const replyStruct = structs[i];
+        const linkNode = new DLGNode(dialog);
 
         if(replyStruct.hasField('Not')){
           linkNode.isActiveParams.Not = replyStruct.getFieldByLabel('Not').getValue();
@@ -633,8 +627,8 @@ export class DLGNode {
       const structs = struct.getFieldByLabel('EntriesList').getChildStructs();
       node.replies = [];
       for(let i = 0; i < structs.length; i++){
-        let entryStruct = structs[i];
-        let linkNode = new DLGNode(dialog);
+        const entryStruct = structs[i];
+        const linkNode = new DLGNode(dialog);
         
         if(entryStruct.hasField('Not')){
           linkNode.isActiveParams.Not = entryStruct.getFieldByLabel('Not').getValue();
@@ -728,8 +722,8 @@ export class DLGNode {
     if(struct.hasField('AnimList')){
       const structs = struct.getFieldByLabel('AnimList').getChildStructs();
       for(let i = 0; i < structs.length; i++){
-        let childStruct = structs[i];
-        let animation = {
+        const childStruct = structs[i];
+        const animation = {
           animation: '',
           participant: '',
         };
@@ -810,7 +804,7 @@ export class DLGNode {
       text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
-      text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
+      text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, _offset, _string){
         return GameState.module.getCustomToken(parseInt(p1));
       });
     //}

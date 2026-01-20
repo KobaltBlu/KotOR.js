@@ -36,7 +36,7 @@ export class Faction {
 
   removeMember( creature: ModuleCreature ){
     if(creature instanceof ModuleCreature){
-      let index = this.creatures.indexOf(creature);
+      const index = this.creatures.indexOf(creature);
       if(index >= 0){
         this.creatures.splice(index, 1);
       }
@@ -51,14 +51,14 @@ export class Faction {
   }
 
   setReputation(id = -1, value = 100){
-    let reputation = this.reputations[id];
+    const reputation = this.reputations[id];
     if(reputation instanceof Reputation){
       reputation.reputation = value;
     }
   }
 
   adjustReputation(id = -1, value = 100){
-    let reputation = this.reputations[id];
+    const reputation = this.reputations[id];
     if(reputation instanceof Reputation){
       reputation.reputation = reputation.reputation + value;
       reputation.reputation = Math.max(0, Math.min(reputation.reputation, 100));
@@ -66,7 +66,7 @@ export class Faction {
   }
 
   getReputation(id = -1){
-    let reputation = this.reputations[id];
+    const reputation = this.reputations[id];
     if(reputation instanceof Reputation){
       return reputation.reputation;
     }
@@ -75,7 +75,7 @@ export class Faction {
 
   getCreatureReputation(oTarget: ModuleObject){
     if(oTarget instanceof ModuleCreature){
-      let reputation = this.reputations[oTarget.faction.id];
+      const reputation = this.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;
       }
@@ -89,7 +89,7 @@ export class Faction {
       let cLowestCR = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cLowestCR = creature.challengeRating;
           if(cLowestCR < lowerCR){
@@ -109,7 +109,7 @@ export class Faction {
       let cHighestCR = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cHighestCR = creature.challengeRating;
           if(cHighestCR > highestCR){
@@ -129,7 +129,7 @@ export class Faction {
       let cLowestHP = 0;
       let currentCreature: ModuleObject = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cLowestHP = creature.maxHitPoints - creature.currentHitPoints;
           if(cLowestHP < lowestHP){
@@ -149,7 +149,7 @@ export class Faction {
       let cHighestHP = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cHighestHP = creature.maxHitPoints + creature.currentHitPoints;
           if(cHighestHP > highestHP){
@@ -169,7 +169,7 @@ export class Faction {
       let cAC = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cAC = creature.getAC();
           if(cAC < ac){
@@ -189,7 +189,7 @@ export class Faction {
       let cAC = 0;
       let currentCreature = undefined;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           cAC = creature.getAC();
           if(cAC > ac){
@@ -220,7 +220,7 @@ export class Faction {
       let totalRep = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           totalRep += this.getCreatureReputation(oTarget);
           totalCreatures++;
@@ -236,7 +236,7 @@ export class Faction {
       let totalGoodEvil = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           totalGoodEvil += creature.getGoodEvil();
           totalCreatures++;
@@ -252,7 +252,7 @@ export class Faction {
       let totalLevel = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           totalLevel += creature.getTotalClassLevel();
           totalCreatures++;
@@ -268,7 +268,7 @@ export class Faction {
       let totalExp = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
           totalExp += creature.getXP();
           totalCreatures++;
@@ -281,11 +281,11 @@ export class Faction {
 
   getMostFrequestClass(){
     // if(oTarget instanceof ModuleCreature){
-      let classCount = new Map();
+      const classCount = new Map();
       for(let i = 0, len = this.creatures.length; i < len; i++){
-        let creature = this.creatures[i];
+        const creature = this.creatures[i];
         if(creature.faction == this){
-          let creatureClass = creature.getMainClass();
+          const creatureClass = creature.getMainClass();
           if(creatureClass){
             classCount.set(creatureClass, (typeof classCount.get(creatureClass) == 'number') ? classCount.get(creatureClass) + 1 : 1);
           }
@@ -294,7 +294,7 @@ export class Faction {
       if(classCount.size){
         let bestClass = undefined;
         let count = -Infinity;
-        for(let c of classCount.entries()){
+        for(const c of classCount.entries()){
           if(c[1] > count){
             bestClass = c[0];
             count = c[1];
@@ -311,7 +311,7 @@ export class Faction {
   getFactionMemberByIndex(index = 0, isPCOnly = false){
     let cIdx = 0;
     for(let i = 0, len = this.creatures.length; i < len; i++){
-      let creature = this.creatures[i];
+      const creature = this.creatures[i];
       if(creature.faction == this){
         if(cIdx == index){
           if(!isPCOnly || creature instanceof ModulePlayer)
@@ -323,7 +323,7 @@ export class Faction {
   }
 
   toStruct(structIdx: number){
-    let struct = new GFFStruct(structIdx);
+    const struct = new GFFStruct(structIdx);
 
     struct.addField( new GFFField(GFFDataType.WORD, 'FactionGlobal') ).setValue(this.global);
     struct.addField( new GFFField(GFFDataType.CEXOSTRING, 'FactionName') ).setValue(this.label);
@@ -334,7 +334,7 @@ export class Faction {
 
   static From2DARow( row: any = undefined ){
     if(typeof row === 'object'){
-      let faction = new Faction();
+      const faction = new Faction();
       faction.id = row.__index;
       faction.label = row.label;
       faction.global = 1;
@@ -348,7 +348,7 @@ export class Faction {
 
   static FromStruct( struct: GFFStruct ){
     if( struct instanceof GFFStruct ){
-      let faction = new Faction();
+      const faction = new Faction();
 
       faction.id = struct.getType();
 

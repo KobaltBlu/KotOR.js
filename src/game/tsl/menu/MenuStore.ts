@@ -67,9 +67,9 @@ export class MenuStore extends K1_MenuStore {
         e.stopPropagation();
         if(!this.sellMode){
           if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
-            let item = this.LB_SHOPITEMS.selectedItem.node;
+            const item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
-            let price = this.getItemBuyPrice(item);
+            const price = this.getItemBuyPrice(item);
             if(GameState.PartyManager.Gold >= price){
               GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
@@ -79,7 +79,7 @@ export class MenuStore extends K1_MenuStore {
 
                 if(item.getStackSize() <= 0){
                   //Remove this item from the store if there are no more of them in stock
-                  let idx = this.storeObject.getInventory().indexOf(item);
+                  const idx = this.storeObject.getInventory().indexOf(item);
                   if(idx >= 0){
                     this.storeObject.getInventory().splice(idx, 1);
                     this.LB_SHOPITEMS.removeItemByIndex(idx);
@@ -130,7 +130,7 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        let inv = GameState.InventoryManager.getSellableInventory();
+        const inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], { 
             onClick: (e, item: any) => {
@@ -150,7 +150,7 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
-        let inv = this.storeObject.getInventory();
+        const inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_SHOPITEMS.addItem(inv[i], { 
             onClick: (e, item: any) => {

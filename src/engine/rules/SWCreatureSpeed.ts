@@ -15,7 +15,7 @@ export class SWCreatureSpeed {
   }
 
   getTwoDAName(){
-    return !!this.twoDAName ? this.twoDAName : this.label;
+    return this.twoDAName ? this.twoDAName : this.label;
   }
 
   static From2DA(row: any = {}){

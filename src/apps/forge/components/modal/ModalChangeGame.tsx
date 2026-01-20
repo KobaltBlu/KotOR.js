@@ -19,13 +19,13 @@ export const ModalChangeGame = function(props: any){
   }
 
   useEffectOnce( () => {
-    let compatible_profiles: any[] = [];
-    let all_profiles = (KotOR.ConfigClient.get(['Profiles']) || {});
-    let all_profile_keys = Object.keys(all_profiles);
+    const compatible_profiles: any[] = [];
+    const all_profiles = (KotOR.ConfigClient.get(['Profiles']) || {});
+    const all_profile_keys = Object.keys(all_profiles);
     
     for(let i = 0, len = all_profile_keys.length; i < len; i++){
       console.log(all_profile_keys[i])
-      let profile = all_profiles[all_profile_keys[i]];
+      const profile = all_profiles[all_profile_keys[i]];
       if(profile.isForgeCompatible){
         compatible_profiles.push(profile);
       }
@@ -85,8 +85,8 @@ export class ModalChangeGameState {
 
   static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = ModalChangeGameState.eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
@@ -99,8 +99,8 @@ export class ModalChangeGameState {
 
   static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = ModalChangeGameState.eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
@@ -113,7 +113,7 @@ export class ModalChangeGameState {
 
   static ProcessEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []){
     if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
+      const ev = ModalChangeGameState.eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){

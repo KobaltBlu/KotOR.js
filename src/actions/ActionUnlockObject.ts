@@ -59,11 +59,11 @@ export class ActionUnlockObject extends Action {
       this.owner.playSoundSet(SSFType.UNLOCK);
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 1.5){
         
       // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -80,7 +80,7 @@ export class ActionUnlockObject extends Action {
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
-          let property = this.oItem.properties[i];
+          const property = this.oItem.properties[i];
           if(!property.isUseable()){ continue; }
     
           if(property.is(ModuleItemProperty.ThievesTools)){

@@ -35,9 +35,9 @@ export class Launcher {
       ConfigClient.set('Profiles', {});
     }
   
-    let _profiles = Object.keys(Launcher.AppProfiles);
+    const _profiles = Object.keys(Launcher.AppProfiles);
     for(let i = 0; i < _profiles.length; i++){
-      let profile_key = _profiles[i];
+      const profile_key = _profiles[i];
       let cached_profile = ConfigClient.get(['Profiles', profile_key]);
       if(typeof cached_profile == 'undefined'){
         cached_profile = Launcher.AppProfiles[profile_key];
