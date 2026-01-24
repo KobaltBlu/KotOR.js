@@ -120,7 +120,7 @@ export class ModuleSound extends ModuleObject {
     this.active = true;
     this.commandable = 1;
     this.continuous = false;
-    this.fixedVariance = 0;
+    this.fixedVariance = 1;
     this.generatedType = 0;
     this.hours = 0;
     this.interval = 0;
@@ -210,6 +210,53 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.randomZ = 0;
     this.audioEmitter.elevation = this.elevation || 0;
     await this.audioEmitter.load();
+  }
+
+  setVolume(volume: number): ModuleSound {
+    this.volume = Math.max(0, Math.min(127, volume));
+    if(this.audioEmitter){
+      this.audioEmitter.setVolume(this.volume);
+    }
+    return this;
+  }
+
+  setPosition(x: number = 0, y: number = 0, z: number = 0): ModuleSound {
+    this.position.x = x;
+    this.position.y = y;
+    this.position.z = z;
+    if(this.audioEmitter){
+      this.audioEmitter.setPosition(x, y, z);
+    }
+    return this;
+  }
+
+  setPitchVariation(pitchVariation: number = 1.0): ModuleSound {
+    this.pitchVariation = Math.max(0, Math.min(2.0, pitchVariation));
+    if(this.audioEmitter){
+      this.audioEmitter.playbackRateVariation = this.pitchVariation;
+    }
+    return this;
+  }
+
+  setFixedVariance(fixedVariance: number = 1.0): ModuleSound {
+    this.fixedVariance = Math.max(0, Math.min(2.0, fixedVariance));
+    return this;
+  }
+
+  start(): ModuleSound {
+    if(this.audioEmitter){
+      this.audioEmitter.start();
+    }
+    return this;
+  }
+
+  stop(fadeTime: number = 0): ModuleSound {
+    fadeTime = Math.max(0, fadeTime);
+
+    if(this.audioEmitter){
+      this.audioEmitter.stop(fadeTime);
+    }
+    return this;
   }
 
   initProperties(){

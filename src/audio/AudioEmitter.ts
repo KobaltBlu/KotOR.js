@@ -6,6 +6,13 @@ import { AudioLoader } from "./AudioLoader";
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
 
+enum AudioEmitterState {
+  STOPPED = 0,
+  PLAYING = 1,
+  FADING_OUT = 2,
+  FADING_IN = 3,
+}
+
 /**
  * AudioEmitter class.
  * 
@@ -24,6 +31,7 @@ export class AudioEmitter {
   gainNode: GainNode;
   pannerNode: PannerNode;
   mainNode: AudioNode;
+  state: AudioEmitterState = AudioEmitterState.STOPPED;
 
   name: string = '';
   sounds: string[] = [];
@@ -48,7 +56,6 @@ export class AudioEmitter {
   priority: number = PRIORITY_GROUP_DEFAULT;
 
   currentSound: AudioBufferSourceNode = undefined;
-  currentTimeout: NodeJS.Timeout = undefined;
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
   channel: AudioEngineChannel = AudioEngineChannel.SFX;
   type: AudioEmitterType = AudioEmitterType.GLOBAL;
@@ -63,9 +70,49 @@ export class AudioEmitter {
     this.channel = channel;
 
     this.position = {x: 0, y: 0, z: 0};
-    this.currentTimeout = undefined;
     this.gainNode = this.engine.audioCtx.createGain();
     this.pannerNode = this.engine.audioCtx.createPanner();
+  }
+
+  setVolume(volume: number = 127): AudioEmitter {
+    this.volume = Math.max(0, Math.min(127, volume));
+    if(this.gainNode){
+      this.gainNode.gain.value = this.volume;
+    }
+    return this;
+  }
+
+  setPosition(x = 0, y = 0, z = 0): void {
+    x = isNaN(x) ? this.position.x : x;
+    y = isNaN(y) ? this.position.y : y;
+    z = isNaN(z) ? this.position.z : z;
+
+    // We need to cache the values below because setPosition stores the floats in a higher precision than THREE.Vector3
+    // which could keep them from matching when compared
+    if(this.position.x != x || this.position.y != y || this.position.z != z){
+      this.position.x = x;
+      this.position.y = y;
+      this.position.z = z + this.elevation;
+    }
+
+    if(this.mainNode instanceof PannerNode && (
+      this.mainNode.positionX.value != this.position.x ||
+      this.mainNode.positionY.value != this.position.y ||
+      this.mainNode.positionZ.value != this.position.z + this.elevation
+    )){
+      this.mainNode.positionX.value = this.position.x;
+      this.mainNode.positionY.value = this.position.y;
+      this.mainNode.positionZ.value = this.position.z + this.elevation;
+    }
+  }
+
+  setDisabled(disabled: boolean): void {
+    if(disabled == this.disabled){
+      return;
+    }
+    return;
+    this.disabled = disabled;
+    this.gainNode.gain.linearRampToValueAtTime(disabled ? 0 : 1, this.engine.audioCtx.currentTime + GAIN_RAMP_TIME);
   }
 
   async load(): Promise<void> {
@@ -98,33 +145,6 @@ export class AudioEmitter {
     }
   }
 
-  setDisabled(disabled: boolean): void {
-    if(disabled == this.disabled){
-      return;
-    }
-    return;
-    this.disabled = disabled;
-    this.gainNode.gain.linearRampToValueAtTime(disabled ? 0 : 1, this.engine.audioCtx.currentTime + GAIN_RAMP_TIME);
-  }
-
-  async loadSounds(soundIndex = 0): Promise<void> {
-    if(soundIndex >= this.sounds.length){
-      return;
-    }
-
-    const resRef = this.sounds[soundIndex];
-    try{
-      const data = await AudioLoader.LoadSound(resRef);
-      try{
-        await this.addSound(resRef, data);
-      }catch(e){
-        console.error('AudioEmitter', 'Sound not added to emitter', resRef);
-      }
-    }catch(e){
-      console.error('AudioEmitter', 'Sound not found', resRef);
-    }
-  }
-
   setChannel(channel: AudioEngineChannel): void {
     this.channel = channel;
 
@@ -152,6 +172,24 @@ export class AudioEmitter {
       default:
         this.gainNode.connect(AudioEngine.sfxChannel.getGainNode());
       break;
+    }
+  }
+
+  async loadSounds(soundIndex = 0): Promise<void> {
+    if(soundIndex >= this.sounds.length){
+      return;
+    }
+
+    const resRef = this.sounds[soundIndex];
+    try{
+      const data = await AudioLoader.LoadSound(resRef);
+      try{
+        await this.addSound(resRef, data);
+      }catch(e){
+        console.error('AudioEmitter', 'Sound not added to emitter', resRef);
+      }
+    }catch(e){
+      console.error('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
@@ -267,34 +305,11 @@ export class AudioEmitter {
     }
   }
 
-  setPosition(x = 0, y = 0, z = 0): void {
-    x = isNaN(x) ? this.position.x : x;
-    y = isNaN(y) ? this.position.y : y;
-    z = isNaN(z) ? this.position.z : z;
-
-    // We need to cache the values below because setPosition stores the floats in a higher precision than THREE.Vector3
-    // which could keep them from matching when compared
-    if(this.position.x != x || this.position.y != y || this.position.z != z){
-      this.position.x = x;
-      this.position.y = y;
-      this.position.z = z + this.elevation;
-    }
-
-    if(this.mainNode instanceof PannerNode && (
-      this.mainNode.positionX.value != this.position.x ||
-      this.mainNode.positionY.value != this.position.y ||
-      this.mainNode.positionZ.value != this.position.z + this.elevation
-    )){
-      this.mainNode.positionX.value = this.position.x;
-      this.mainNode.positionY.value = this.position.y;
-      this.mainNode.positionZ.value = this.position.z + this.elevation;
-    }
-  }
-
   start(): void {
     if(!this.sounds.length){
       return;
     }
+    this.state = AudioEmitterState.PLAYING;
     this.disposeCurrentSound();
     this.interationCount = 0;
     this.playNextSound();
@@ -411,7 +426,10 @@ export class AudioEmitter {
     this.currentSound = null;
   }
 
-  stop(): void {
+  stop(fadeTime: number = 0): void {
+    fadeTime = Math.max(0, fadeTime);
+    const isInstant = fadeTime <= 0;
+
     if(this.isDestroyed)
       return;
     
@@ -419,8 +437,19 @@ export class AudioEmitter {
       return;
     }
 
-    this.interationCount = 0;
-    this.disposeCurrentSound();
+    if(isInstant){
+      this.state = AudioEmitterState.STOPPED;
+      this.interationCount = 0;
+      this.disposeCurrentSound();
+      return;
+    }
+    this.state = AudioEmitterState.FADING_OUT;
+    this.gainNode.gain.linearRampToValueAtTime(0, this.engine.audioCtx.currentTime + fadeTime);
+    setTimeout(() => {
+      this.state = AudioEmitterState.STOPPED;
+      this.interationCount = 0;
+      this.disposeCurrentSound();
+    }, fadeTime * 1000);
   }
 
   destroy(): void {
