@@ -371,9 +371,7 @@ export class ModuleSound extends ModuleObject {
 
     this.soundType = AudioEmitterType.GLOBAL;
     if(this.positional){
-      this.soundType = AudioEmitterType.POSITIONAL;
-    }else if(this.positional &&this.randomPosition){
-      this.soundType = AudioEmitterType.RANDOM;
+      this.soundType = this.randomPosition ? AudioEmitterType.RANDOM : AudioEmitterType.POSITIONAL;
     }
     
     this.initialized = true;

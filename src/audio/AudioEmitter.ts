@@ -116,8 +116,7 @@ export class AudioEmitter {
   }
 
   async load(): Promise<void> {
-
-    this.gainNode.gain.value = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+    this.gainNode.gain.value = this.getVolume();
 
     switch(this.type){
       case AudioEmitterType.POSITIONAL:
@@ -312,6 +311,7 @@ export class AudioEmitter {
     this.state = AudioEmitterState.PLAYING;
     this.disposeCurrentSound();
     this.interationCount = 0;
+    this.gainNode.gain.setValueAtTime(this.getVolume(), this.getCurrentTime());
     this.playNextSound();
   }
 
@@ -351,7 +351,7 @@ export class AudioEmitter {
   }
 
   playNextSound(): void {
-    if(this.isDestroyed)
+    if(this.isDestroyed || this.state == AudioEmitterState.FADING_OUT)
       return;
     
     this.disposeCurrentSound();
@@ -426,6 +426,10 @@ export class AudioEmitter {
     this.currentSound = null;
   }
 
+  getCurrentTime(): number {
+    return this.engine.audioCtx.currentTime;
+  }
+
   stop(fadeTime: number = 0): void {
     fadeTime = Math.max(0, fadeTime);
     const isInstant = fadeTime <= 0;
@@ -444,12 +448,19 @@ export class AudioEmitter {
       return;
     }
     this.state = AudioEmitterState.FADING_OUT;
-    this.gainNode.gain.linearRampToValueAtTime(0, this.engine.audioCtx.currentTime + fadeTime);
-    setTimeout(() => {
-      this.state = AudioEmitterState.STOPPED;
-      this.interationCount = 0;
-      this.disposeCurrentSound();
-    }, fadeTime * 1000);
+    const now = this.getCurrentTime();
+    const fadeEndTime = now + fadeTime;
+    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+    this.gainNode.gain.linearRampToValueAtTime(0, fadeEndTime);
+      
+    if(this.currentSound){
+      this.currentSound.onended = () => {
+        this.state = AudioEmitterState.STOPPED;
+        this.interationCount = 0;
+        this.disposeCurrentSound();
+      };
+      this.currentSound.stop(fadeEndTime);
+    }
   }
 
   destroy(): void {
