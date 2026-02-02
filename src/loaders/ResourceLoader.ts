@@ -25,6 +25,7 @@ export class ResourceLoader {
     override: new Map(),
     global:   new Map(),
     module:   new Map(),
+    project:  new Map(),
   };
   static ModuleArchives: (RIMObject | ERFObject)[] = [];
 
@@ -35,6 +36,7 @@ export class ResourceLoader {
       ResourceLoader.CacheScopes[CacheScope.OVERRIDE].set(restype, new Map());
       ResourceLoader.CacheScopes[CacheScope.GLOBAL].set(restype, new Map());
       ResourceLoader.CacheScopes[CacheScope.MODULE].set(restype, new Map());
+      ResourceLoader.CacheScopes[CacheScope.PROJECT].set(restype, new Map());
     }
   }
 

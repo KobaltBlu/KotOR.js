@@ -43,6 +43,7 @@ export class TabProjectExplorerState extends TabState {
     return new Promise<void>( (resolve, reject) => {
       const nodeList = TabProjectExplorerState.Resources;
       ProjectFileSystem.readdir('').then( (files: string[]) => {
+        console.log('TabProjectExplorerState.LoadFiles', files);
         let subTypes: {[key: string]: FileBrowserNode} = {};
         for(let i = 0; i < files.length; i++){
           const file = files[i];

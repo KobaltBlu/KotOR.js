@@ -431,34 +431,49 @@ NWScriptDefK1.Actions = {
       switch(args[1]){
         case 0:
           slot = ModuleCreatureArmorSlot.HEAD;
+          break;
         case 1:
           slot = ModuleCreatureArmorSlot.ARMOR;
+          break;
         case 2:
           slot = ModuleCreatureArmorSlot.ARMS;
+          break;
         case 3:
           slot = ModuleCreatureArmorSlot.RIGHTHAND;
+          break;
         case 4:
           slot = ModuleCreatureArmorSlot.LEFTHAND;
+          break;
         case 5:
           slot = ModuleCreatureArmorSlot.LEFTARMBAND;
+          break;
         case 6:
           slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
+          break;
         case 7:
           slot = ModuleCreatureArmorSlot.IMPLANT;
+          break;
         case 8:
           slot = ModuleCreatureArmorSlot.BELT;
+          break;
         case 9:
           slot = ModuleCreatureArmorSlot.CLAW1;
+          break;
         case 10:
           slot = ModuleCreatureArmorSlot.CLAW2;
+          break;
         case 14:
           slot = ModuleCreatureArmorSlot.CLAW3;
+          break;
         case 15:
           slot = ModuleCreatureArmorSlot.HIDE;
+          break;
         case 16:
           slot = ModuleCreatureArmorSlot.HEAD;
+          break;
         case 17:
           slot = ModuleCreatureArmorSlot.ARMOR; //Creature Armor
+          break;
       }
       const action = new GameState.ActionFactory.ActionEquipItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
@@ -1563,7 +1578,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      //TODO
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        (args[0] as ModuleSound).setFixedVariance(args[1]);
+      }
     }
   },
   125:{
@@ -2367,7 +2384,13 @@ NWScriptDefK1.Actions = {
     comment: "188. SoundObjectGetFixedVariance\nGets the constant variance at which to play the sound object\n",
     name: "SoundObjectGetFixedVariance",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        return (args[0] as ModuleSound).fixedVariance;
+      }
+      return 0;
+    }
   },
   189:{
     comment: "189: Get the average level of the members of the faction.\n* Return value on error: -1\n",
@@ -4992,14 +5015,19 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound))
-      (args[0] as ModuleSound).audioEmitter.playNextSound();
+      (args[0] as ModuleSound).start();
     }
   },
   414:{
     comment: "414: Stop playing oSound.\n",
     name: "SoundObjectStop",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        (args[0] as ModuleSound).stop();
+      }
+    }
   },
   415:{
     comment: "415: Set the volume of oSound.\n- oSound\n- nVolume: 0-127\n",
@@ -5008,7 +5036,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
-        //console.log('SoundObjectSetVolume', args[1]);
+        (args[0] as ModuleSound).setVolume(args[1]);
       }
     }
   },
@@ -5016,7 +5044,12 @@ NWScriptDefK1.Actions = {
     comment: "416: Set the position of oSound.\n",
     name: "SoundObjectSetPosition",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR],
+    action: function(this: NWScriptInstance, args: [ModuleObject, EngineLocation]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        (args[0] as ModuleSound).setPosition(args[1].position.x, args[1].position.y, args[1].position.z);
+      }
+    }
   },
   417:{
     comment: "417: Immediately speak a conversation one-liner.\n- sDialogResRef\n- oTokenTarget: This must be specified if there are creature-specific tokens\nin the string.\n",
@@ -7546,19 +7579,36 @@ NWScriptDefK1.Actions = {
     comment: "689. SoundObjectGetPitchVariance\nGets the pitch variance of a placeable sound object\n",
     name: "SoundObjectGetPitchVariance",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        return (args[0] as ModuleSound).pitchVariation;
+      }
+      return 0;
+    }
   },
   690:{
     comment: "690. SoundObjectSetPitchVariance\nSets the pitch variance of a placeable sound object\n",
     name: "SoundObjectSetPitchVariance",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        (args[0] as ModuleSound).setPitchVariation(args[1]);
+      }
+    }
   },
   691:{
     comment: "691. SoundObjectGetVolume\nGets the volume of a placeable sound object\n",
     name: "SoundObjectGetVolume",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
+        return (args[0] as ModuleSound).volume;
+      }
+      return 0;
+    }
   },
   692:{
     comment: "692: GetGlobalLocation\nThis function returns the a global location scripting variable.\n",
@@ -8136,10 +8186,10 @@ NWScriptDefK1.Actions = {
     comment: "745: SoundObjectFadeAndStop\nFades a sound object for 'fSeconds' and then stops it.\n",
     name: "SoundObjectFadeAndStop",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
-        //TODO
+        (args[0] as ModuleSound).stop(args[1] || 0);
       }
     }
   },

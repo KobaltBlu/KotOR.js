@@ -4,6 +4,7 @@ import { TabUTIEditorState, TabUTPEditorState } from "../../../states/tabs";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
+import { ForgePlaceable } from "../../../module-editor/ForgePlaceable";
 import {
   sanitizeResRef,
   clampByte,
@@ -88,91 +89,92 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [kPlaceableAppearances, setKPlaceableAppearances] = useState<any[]>([]);
   const [kFactions, setKFactions] = useState<any[]>([]);
 
-  // Helper functions using shared utilities
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTPEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
+  // Helper functions using ForgePlaceable methods
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) => 
+    tab.placeable.createNumberFieldHandler(setter, property, tab.placeable, tab, parser);
   
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => 
-    createByteFieldHandler(setter, property, tab);
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createByteFieldHandler(setter, property, tab.placeable, tab);
   
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof TabUTPEditorState) => 
-    createWordFieldHandler(setter, property, tab);
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createWordFieldHandler(setter, property, tab.placeable, tab);
   
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTPEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createBooleanFieldHandler(setter, property, tab.placeable, tab);
   
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createResRefFieldHandler(setter, property, tab.placeable, tab);
   
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTPEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createCExoStringFieldHandler(setter, property, tab.placeable, tab);
   
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTPEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createCExoLocStringFieldHandler(setter, property, tab.placeable, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTPEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+    tab.placeable.createForgeCheckboxFieldHandler(setter, property, tab.placeable, tab);
 
   const onPlaceableChange = useCallback(() => {
-    setAnimationState(tab.animationState);
-    setAppearance(tab.appearance);
-    setAutoRemoveKey(tab.autoRemoveKey);
-    setBodyBag(tab.bodyBag);
-    setCloseLockDC(tab.closeLockDC);
-    setComment(tab.comment);
-    setConversation(tab.conversation);
-    setCurrentHP(tab.currentHP);
-    setDescription(tab.description);
-    setDisarmDC(tab.disarmDC);
-    setFaction(tab.faction);
-    setFort(tab.fort);
-    setHP(tab.hp);
-    setHardness(tab.hardness);
-    setHasInventory(tab.hasInventory);
-    setInterruptable(tab.interruptable);
-    setKeyName(tab.keyName);
-    setKeyRequired(tab.keyRequired);
-    setLocName(tab.locName);
-    setLockable(tab.lockable);
-    setLocked(tab.locked);
-    setMin1HP(tab.min1HP);
-    setOnClick(tab.onClick);
-    setOnClosed(tab.onClosed);
-    setOnDamaged(tab.onDamaged);
-    setOnDeath(tab.onDeath);
-    setOnDisarm(tab.onDisarm);
-    setOnEndDialogue(tab.onEndDialogue);
-    setOnFailToOpen(tab.onFailToOpen);
-    setOnHeartbeat(tab.onHeartbeat);
-    setOnInvDisturbed(tab.onInvDisturbed);
-    setOnLock(tab.onLock);
-    setOnMeleeAttacked(tab.onMeleeAttacked);
-    setOnOpen(tab.onOpen);
-    setOnSpellCastAt(tab.onSpellCastAt);
-    setOnTrapTriggered(tab.onTrapTriggered);
-    setOnUnlock(tab.onUnlock);
-    setOnUsed(tab.onUsed);
-    setOnUserDefined(tab.onUserDefined);
-    setOpenLockDC(tab.openLockDC);
-    setPaletteID(tab.paletteID);
-    setPartyInteract(tab.partyInteract);
-    setPlot(tab.plot);
-    setPortraitId(tab.portraitId);
-    setRef(tab.ref);
-    setStatic(tab.static);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
-    setTrapDetectDC(tab.trapDetectDC);
-    setTrapDetectable(tab.trapDetectable);
-    setTrapDisarmable(tab.trapDisarmable);
-    setTrapFlag(tab.trapFlag);
-    setTrapOneShot(tab.trapOneShot);
-    setTrapType(tab.trapType);
-    setType(tab.t_type);
-    setUseable(tab.useable);
-    setWill(tab.will);
-    setKPlaceableAppearances(tab.kPlaceableAppearances);
-    setKFactions(tab.kFactions);
+    if(!tab.placeable) return;
+    setAnimationState(tab.placeable.animationState);
+    setAppearance(tab.placeable.appearance);
+    setAutoRemoveKey(tab.placeable.autoRemoveKey);
+    setBodyBag(tab.placeable.bodyBag);
+    setCloseLockDC(tab.placeable.closeLockDC);
+    setComment(tab.placeable.comment);
+    setConversation(tab.placeable.conversation);
+    setCurrentHP(tab.placeable.currentHP);
+    setDescription(tab.placeable.description);
+    setDisarmDC(tab.placeable.disarmDC);
+    setFaction(tab.placeable.faction);
+    setFort(tab.placeable.fort);
+    setHP(tab.placeable.hp);
+    setHardness(tab.placeable.hardness);
+    setHasInventory(tab.placeable.hasInventory);
+    setInterruptable(tab.placeable.interruptable);
+    setKeyName(tab.placeable.keyName);
+    setKeyRequired(tab.placeable.keyRequired);
+    setLocName(tab.placeable.locName);
+    setLockable(tab.placeable.lockable);
+    setLocked(tab.placeable.locked);
+    setMin1HP(tab.placeable.min1HP);
+    setOnClick(tab.placeable.onClick);
+    setOnClosed(tab.placeable.onClosed);
+    setOnDamaged(tab.placeable.onDamaged);
+    setOnDeath(tab.placeable.onDeath);
+    setOnDisarm(tab.placeable.onDisarm);
+    setOnEndDialogue(tab.placeable.onEndDialogue);
+    setOnFailToOpen(tab.placeable.onFailToOpen);
+    setOnHeartbeat(tab.placeable.onHeartbeat);
+    setOnInvDisturbed(tab.placeable.onInvDisturbed);
+    setOnLock(tab.placeable.onLock);
+    setOnMeleeAttacked(tab.placeable.onMeleeAttacked);
+    setOnOpen(tab.placeable.onOpen);
+    setOnSpellCastAt(tab.placeable.onSpellCastAt);
+    setOnTrapTriggered(tab.placeable.onTrapTriggered);
+    setOnUnlock(tab.placeable.onUnlock);
+    setOnUsed(tab.placeable.onUsed);
+    setOnUserDefined(tab.placeable.onUserDefined);
+    setOpenLockDC(tab.placeable.openLockDC);
+    setPaletteID(tab.placeable.paletteID);
+    setPartyInteract(tab.placeable.partyInteract);
+    setPlot(tab.placeable.plot);
+    setPortraitId(tab.placeable.portraitId);
+    setRef(tab.placeable.ref);
+    setStatic(tab.placeable.static);
+    setTag(tab.placeable.tag);
+    setTemplateResRef(tab.placeable.templateResRef);
+    setTrapDetectDC(tab.placeable.trapDetectDC);
+    setTrapDetectable(tab.placeable.trapDetectable);
+    setTrapDisarmable(tab.placeable.trapDisarmable);
+    setTrapFlag(tab.placeable.trapFlag);
+    setTrapOneShot(tab.placeable.trapOneShot);
+    setTrapType(tab.placeable.trapType);
+    setType(tab.placeable.t_type);
+    setUseable(tab.placeable.useable);
+    setWill(tab.placeable.will);
+    setKPlaceableAppearances(tab.placeable.kPlaceableAppearances || []);
+    setKFactions(tab.placeable.kFactions || []);
   }, [tab]);
 
   useEffect(() => {
@@ -268,8 +270,8 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 <td>
                   <ForgeCheckbox label="Can be relocked" value={lockable} onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')} />
                 </td>
-              <tr>
               </tr>
+              <tr>
                 <td>
                   <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
                 </td>
@@ -335,7 +337,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Type</label></td>
-                <td><input type="number" value={type} onChange={onUpdateByteField(setType, 'type')} /></td>
+                <td><input type="number" value={type} onChange={onUpdateByteField(setType, 't_type')} /></td>
               </tr>
             </tbody>
           </table>

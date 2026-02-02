@@ -84,7 +84,7 @@ export class ActionMenuManager {
             action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
-              icon: securityTalent.icon
+              icon: securityTalent.getIcon()
             }));
           }
 
@@ -147,7 +147,7 @@ export class ActionMenuManager {
 
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
-              icon: securityTalent.icon
+              icon: securityTalent.getIcon()
             }));
           }
 

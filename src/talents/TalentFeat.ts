@@ -1,3 +1,4 @@
+import { CombatRound } from "../combat/CombatRound";
 import { type CreatureClass } from "../combat/CreatureClass";
 import { EffectACDecrease, EffectAttackDecrease } from "../effects";
 import { ModuleObjectType, TalentObjectType } from "../enums";
@@ -10,6 +11,8 @@ import { GFFStruct } from "../resource/GFFStruct";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { BitWise } from "../utility/BitWise";
 import { TalentObject } from "./TalentObject";
+
+const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
 
 /**
  * TalentFeat class.
@@ -38,8 +41,6 @@ export class TalentFeat extends TalentObject {
   gainMultiple: number;
   effectsStack: number;
   allClassesCanUse: number;
-  declare category: number;
-  maxCR: number;
   spellId: number;
   successor: number;
   crValue: number;
@@ -197,72 +198,73 @@ export class TalentFeat extends TalentObject {
 
     return 1;
   }
+
+  getArmorClassPenalty(){
+    switch(this.id){
+      case 11: //FLURRY
+      case 30: //RAPID SHOT
+        return 4;
+      case 91: //IMPROVED FLURRY
+      case 92: //IMPROVED RAPID SHOT
+        return 2;
+      case 51: //MASTER FLURRY
+      case 21: //MASTER RAPID SHOT
+        return 1;
+      case 28: //CRITICAL STRIKE
+      case 19: //IMPROVED CRITICAL STRIKE
+      case 81: //MASTER CRITICAL STRIKE
+        return 5;
+    }
+    return 0;
+  }
+
+  getAttackPenalty(){
+    switch(this.id){
+      case 11: //FLURRY
+      case 30: //RAPID SHOT
+        return 4;
+      case 91: //IMPROVED FLURRY
+      case 92: //IMPROVED RAPID SHOT
+        return 2;
+      case 51: //MASTER FLURRY
+      case 21: //MASTER RAPID SHOT
+        return 1;
+      case 8: //POWER ATTACK
+        return 3;
+      case 17: //IMPROVED POWER ATTACK
+        return 3;
+      case 83: //MASTER POWER ATTACK
+        return 3;
+      case 29: //POWER BLAST
+        return 3;
+      case 18: //IMPROVED POWER BLAST
+        return 3;
+      case 82: //MASTER POWER BLAST
+        return 3;
+    }
+    return 0;
+  }
   
   impactCaster(object: ModuleObject){
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
-    let armorClassPenalty = 0;
-    let armorClassPenaltyDuration = 3000;
-    let attackPenalty = 0;
-    let attackPenatlyDuration = 3000;
-
-    switch(this.id){
-      case 11: //FLURRY
-      case 30: //RAPID SHOT
-        armorClassPenalty = 4;
-        attackPenalty = 4;
-      break;
-      case 91: //IMPROVED FLURRY
-      case 92: //IMPROVED RAPID SHOT
-        armorClassPenalty = 2;
-        attackPenalty = 2;
-      break;
-      case 51: //MASTER FLURRY
-      case 21: //MASTER RAPID SHOT
-        armorClassPenalty = 1;
-        attackPenalty = 1;
-      break;
-      case 28: //CRITICAL STRIKE
-      case 19: //IMPROVED CRITICAL STRIKE
-      case 81: //MASTER CRITICAL STRIKE
-        armorClassPenalty = 5;
-      break;
-      case 8: //POWER ATTACK
-        attackPenalty = 3;
-      break;
-      case 17: //IMPROVED POWER ATTACK
-        attackPenalty = 3;
-      break;
-      case 83: //MASTER POWER ATTACK
-        attackPenalty = 3;
-      break;
-      case 29: //POWER BLAST
-        attackPenalty = 3;
-      break;
-      case 18: //IMPROVED POWER BLAST
-        attackPenalty = 3;
-      break;
-      case 82: //MASTER POWER BLAST
-        attackPenalty = 3;
-      break;
-    }
-
+    const armorClassPenalty = this.getArmorClassPenalty();
     if(armorClassPenalty > 0){
       const acDecreaseEffect = new EffectACDecrease();
       acDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
-      acDecreaseEffect.setDuration(armorClassPenaltyDuration);
+      acDecreaseEffect.setDuration(FEAT_PENALTY_DURATION);
       acDecreaseEffect.setInt(1, armorClassPenalty);
       object.addEffect(acDecreaseEffect);
     }
 
+    const attackPenalty = this.getAttackPenalty();
     if(attackPenalty > 0){
       const attackDecreaseEffect = new EffectAttackDecrease();
       attackDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
-      attackDecreaseEffect.setDuration(attackPenatlyDuration);
+      attackDecreaseEffect.setDuration(FEAT_PENALTY_DURATION);
       attackDecreaseEffect.setInt(0, attackPenalty);
       object.addEffect(attackDecreaseEffect);
     }
-
   }
 
   impactTarget(object: ModuleObject){

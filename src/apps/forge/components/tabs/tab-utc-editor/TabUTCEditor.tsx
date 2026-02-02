@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react"
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { CreatureClassEntry, KnownSpellEntry, SpecialAbilityEntry, TabUTCEditorState } from "../../../states/tabs";
+import { TabUTCEditorState } from "../../../states/tabs";
+import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "../../../module-editor/ForgeCreature";
 import { UI3DRendererView } from "../../UI3DRendererView";
 import { SubTabHost, SubTab } from "../../SubTabHost";
-import { createNumberFieldHandler, createBooleanFieldHandler, createResRefFieldHandler, createCExoStringFieldHandler, createCExoLocStringFieldHandler, createForgeCheckboxFieldHandler, createNumberArrayFieldHandler } from "../../../helpers/UTxEditorHelpers";
 import * as KotOR from "../../../KotOR";
 import { CExoLocStringEditor } from "../../CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
@@ -23,46 +23,46 @@ export const TabUTCEditor = function(props: BaseTabProps){
     const modal = new ModalItemBrowserState((item) => {
       switch(slotType){
         case KotOR.ModuleCreatureArmorSlot.HEAD:
-          tab.setProperty('slotHead', item.resref);
+          tab.creature.setProperty('slotHead', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.ARMOR:
-          tab.setProperty('slotArmor', item.resref);
+          tab.creature.setProperty('slotArmor', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.LEFTHAND:
-          tab.setProperty('slotLeftHand', item.resref);
+          tab.creature.setProperty('slotLeftHand', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.RIGHTHAND:
-          tab.setProperty('slotRightHand', item.resref);
+          tab.creature.setProperty('slotRightHand', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.BELT:
-          tab.setProperty('slotBelt', item.resref);
+          tab.creature.setProperty('slotBelt', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.IMPLANT:
-          tab.setProperty('slotImplant', item.resref);
+          tab.creature.setProperty('slotImplant', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.LEFTARMBAND:
-          tab.setProperty('slotLeftArmband', item.resref);
+          tab.creature.setProperty('slotLeftArmband', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.RIGHTARMBAND:
-          tab.setProperty('slotRightArmband', item.resref);
+          tab.creature.setProperty('slotRightArmband', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.HIDE:
-          tab.setProperty('slotHide', item.resref);
+          tab.creature.setProperty('slotHide', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.CLAW1:
-          tab.setProperty('slotClaw1', item.resref);
+          tab.creature.setProperty('slotClaw1', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.CLAW2:
-          tab.setProperty('slotClaw2', item.resref);
+          tab.creature.setProperty('slotClaw2', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.CLAW3:
-          tab.setProperty('slotClaw3', item.resref);
+          tab.creature.setProperty('slotClaw3', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.RIGHTHAND2:
-          tab.setProperty('slotRightHand2', item.resref);
+          tab.creature.setProperty('slotRightHand2', item.resref);
           break;
         case KotOR.ModuleCreatureArmorSlot.LEFTHAND2:
-          tab.setProperty('slotLeftHand2', item.resref);
+          tab.creature.setProperty('slotLeftHand2', item.resref);
           break;
       }
       tab.updateFile();
@@ -174,98 +174,98 @@ export const TabUTCEditor = function(props: BaseTabProps){
   }, [portraitId]);
 
   const onCreatureChange = useCallback(() => {
-    setAppearanceType(tab.appearanceType);
-    setBodyBag(tab.bodyBag);
-    setBodyVariation(tab.bodyVariation);
-    setCha(tab.cha);
-    setChallengeRating(tab.challengeRating);
-    setClassList([...tab.classList]);
-    setComment(tab.comment);
-    setCon(tab.con);
-    setConversation(tab.conversation);
-    setCurrentForce(tab.currentForce);
-    setCurrentHitPoints(tab.currentHitPoints);
-    setDeity(tab.deity);
-    setDescription(tab.description);
-    setDex(tab.dex);
-    setDisarmable(tab.disarmable);
-    setFactionID(tab.factionID);
-    setFeatList([...tab.featList]);
-    setFirstName(tab.firstName);
-    setForcePoints(tab.forcePoints);
-    setGender(tab.gender);
-    setGoodEvil(tab.goodEvil);
-    setHitPoints(tab.hitPoints);
-    setInt(tab.int);
-    setInterruptable(tab.interruptable);
-    setIsPC(tab.isPC);
-    setItemList([...tab.itemList]);
-    setLastName(tab.lastName);
-    setLawfulChaotic(tab.lawfulChaotic);
-    setMaxHitPoints(tab.maxHitPoints);
-    setMin1HP(tab.min1HP);
-    setNaturalAC(tab.naturalAC);
-    setNoPermDeath(tab.noPermDeath);
-    setNotReorienting(tab.notReorienting);
-    setPartyInteract(tab.partyInteract);
-    setPerceptionRange(tab.perceptionRange);
-    setPhenotype(tab.phenotype);
-    setPlot(tab.plot);
-    setPalletID(tab.palletID);
-    setPortraitId(tab.portraitId);
-    setRace(tab.race);
-    setScriptAttacked(tab.scriptAttacked);
-    setScriptDamaged(tab.scriptDamaged);
-    setScriptDeath(tab.scriptDeath);
-    setScriptDialogu(tab.scriptDialogu);
-    setScriptDisturbed(tab.scriptDisturbed);
-    setScriptEndDialogue(tab.scriptEndDialogue);
-    setScriptEndRound(tab.scriptEndRound);
-    setScriptHeartbeat(tab.scriptHeartbeat);
-    setScriptOnBlocked(tab.scriptOnBlocked);
-    setScriptOnNotice(tab.scriptOnNotice);
-    setScriptRested(tab.scriptRested);
-    setScriptSpawn(tab.scriptSpawn);
-    setScriptSpellAt(tab.scriptSpellAt);
-    setScriptUserDefined(tab.scriptUserDefined);
-    setSkillList([...tab.skillList]);
-    setSoundSetFile(tab.soundSetFile);
-    setStr(tab.str);
-    setSubrace(tab.subrace);
-    setSubraceIndex(tab.subraceIndex);
-    setTag(tab.tag);
-    setTemplateResRef(tab.templateResRef);
-    setTextureVar(tab.textureVar);
-    setWalkRate(tab.walkRate);
-    setWis(tab.wis);
-    setFortbonus(tab.fortbonus);
-    setRefbonus(tab.refbonus);
-    setWillbonus(tab.willbonus);
-    setSpecialAbilities(tab.specAbilityList);
+    setAppearanceType(tab.creature.appearanceType);
+    setBodyBag(tab.creature.bodyBag);
+    setBodyVariation(tab.creature.bodyVariation);
+    setCha(tab.creature.cha);
+    setChallengeRating(tab.creature.challengeRating);
+    setClassList([...tab.creature.classList]);
+    setComment(tab.creature.comment);
+    setCon(tab.creature.con);
+    setConversation(tab.creature.conversation);
+    setCurrentForce(tab.creature.currentForce);
+    setCurrentHitPoints(tab.creature.currentHitPoints);
+    setDeity(tab.creature.deity);
+    setDescription(tab.creature.description);
+    setDex(tab.creature.dex);
+    setDisarmable(tab.creature.disarmable);
+    setFactionID(tab.creature.factionID);
+    setFeatList([...tab.creature.featList]);
+    setFirstName(tab.creature.firstName);
+    setForcePoints(tab.creature.forcePoints);
+    setGender(tab.creature.gender);
+    setGoodEvil(tab.creature.goodEvil);
+    setHitPoints(tab.creature.hitPoints);
+    setInt(tab.creature.int);
+    setInterruptable(tab.creature.interruptable);
+    setIsPC(tab.creature.isPC);
+    setItemList([...tab.creature.itemList]);
+    setLastName(tab.creature.lastName);
+    setLawfulChaotic(tab.creature.lawfulChaotic);
+    setMaxHitPoints(tab.creature.maxHitPoints);
+    setMin1HP(tab.creature.min1HP);
+    setNaturalAC(tab.creature.naturalAC);
+    setNoPermDeath(tab.creature.noPermDeath);
+    setNotReorienting(tab.creature.notReorienting);
+    setPartyInteract(tab.creature.partyInteract);
+    setPerceptionRange(tab.creature.perceptionRange);
+    setPhenotype(tab.creature.phenotype);
+    setPlot(tab.creature.plot);
+    setPalletID(tab.creature.palletID);
+    setPortraitId(tab.creature.portraitId);
+    setRace(tab.creature.race);
+    setScriptAttacked(tab.creature.scriptAttacked);
+    setScriptDamaged(tab.creature.scriptDamaged);
+    setScriptDeath(tab.creature.scriptDeath);
+    setScriptDialogu(tab.creature.scriptDialogu);
+    setScriptDisturbed(tab.creature.scriptDisturbed);
+    setScriptEndDialogue(tab.creature.scriptEndDialogue);
+    setScriptEndRound(tab.creature.scriptEndRound);
+    setScriptHeartbeat(tab.creature.scriptHeartbeat);
+    setScriptOnBlocked(tab.creature.scriptOnBlocked);
+    setScriptOnNotice(tab.creature.scriptOnNotice);
+    setScriptRested(tab.creature.scriptRested);
+    setScriptSpawn(tab.creature.scriptSpawn);
+    setScriptSpellAt(tab.creature.scriptSpellAt);
+    setScriptUserDefined(tab.creature.scriptUserDefined);
+    setSkillList([...tab.creature.skillList]);
+    setSoundSetFile(tab.creature.soundSetFile);
+    setStr(tab.creature.str);
+    setSubrace(tab.creature.subrace);
+    setSubraceIndex(tab.creature.subraceIndex);
+    setTag(tab.creature.tag);
+    setTemplateResRef(tab.creature.templateResRef);
+    setTextureVar(tab.creature.textureVar);
+    setWalkRate(tab.creature.walkRate);
+    setWis(tab.creature.wis);
+    setFortbonus(tab.creature.fortbonus);
+    setRefbonus(tab.creature.refbonus);
+    setWillbonus(tab.creature.willbonus);
+    setSpecialAbilities(tab.creature.specAbilityList);
 
     // Equipment Slots
-    setSlotArmor(tab.slotArmor);
-    setSlotBelt(tab.slotBelt);
-    setSlotClaw1(tab.slotClaw1);
-    setSlotClaw2(tab.slotClaw2);
-    setSlotClaw3(tab.slotClaw3);
-    setSlotHide(tab.slotHide);
-    setSlotLeftArmband(tab.slotLeftArmband);
-    setSlotLeftHand(tab.slotLeftHand);
-    setSlotRightArmband(tab.slotRightArmband);
-    setSlotRightHand(tab.slotRightHand);
-    setSlotRightHand2(tab.slotRightHand2);
-    setSlotLeftHand2(tab.slotLeftHand2);
-    setSlotImplant(tab.slotImplant);
-    setSlotHead(tab.slotHead);
-    setSlotArms(tab.slotArms);
+    setSlotArmor(tab.creature.slotArmor);
+    setSlotBelt(tab.creature.slotBelt);
+    setSlotClaw1(tab.creature.slotClaw1);
+    setSlotClaw2(tab.creature.slotClaw2);
+    setSlotClaw3(tab.creature.slotClaw3);
+    setSlotHide(tab.creature.slotHide);
+    setSlotLeftArmband(tab.creature.slotLeftArmband);
+    setSlotLeftHand(tab.creature.slotLeftHand);
+    setSlotRightArmband(tab.creature.slotRightArmband);
+    setSlotRightHand(tab.creature.slotRightHand);
+    setSlotRightHand2(tab.creature.slotRightHand2);
+    setSlotLeftHand2(tab.creature.slotLeftHand2);
+    setSlotImplant(tab.creature.slotImplant);
+    setSlotHead(tab.creature.slotHead);
+    setSlotArms(tab.creature.slotArms);
     setPortrait(KotOR.SWRuleSet.portraits[portraitId]);
 
     // Update classList state
-    if(tab.classList[0]){
-      setCreatureClass(tab.classList[0].class);
-      setCreatureLevel(tab.classList[0].level);
-      setKnownList0(tab.classList[0].knownList0);
+    if(tab.creature.classList[0]){
+      setCreatureClass(tab.creature.classList[0].class);
+      setCreatureLevel(tab.creature.classList[0].level);
+      setKnownList0(tab.creature.classList[0].knownList0);
     }
   }, [tab]);
 
@@ -285,35 +285,35 @@ export const TabUTCEditor = function(props: BaseTabProps){
     };
   }, []);
 
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof TabUTCEditorState, parser: (value: number) => number = (v) => v) => 
-    createNumberFieldHandler(setter, property, tab, parser);
+  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeCreature, parser: (value: number) => number = (v) => v) => 
+    tab.creature.createNumberFieldHandler(setter, property, tab.creature, tab, parser);
 
-  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof TabUTCEditorState) => 
-    createNumberArrayFieldHandler(setter, index, property, tab);
+  const onUpdateNumberArrayField = (setter: (value: number[]) => void, index: number, property: keyof ForgeCreature) => 
+    tab.creature.createNumberArrayFieldHandler(setter, index, property, tab.creature, tab);
 
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
-    createBooleanFieldHandler(setter, property, tab);
+  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+    tab.creature.createBooleanFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof TabUTCEditorState) => 
-    createResRefFieldHandler(setter, property, tab);
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+    tab.creature.createResRefFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof TabUTCEditorState) => 
-    createCExoStringFieldHandler(setter, property, tab);
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeCreature) => 
+    tab.creature.createCExoStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof TabUTCEditorState) => 
-    createCExoLocStringFieldHandler(setter, property, tab);
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeCreature) => 
+    tab.creature.createCExoLocStringFieldHandler(setter, property, tab.creature, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof TabUTCEditorState) => 
-    createForgeCheckboxFieldHandler(setter, property, tab);
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeCreature) => 
+    tab.creature.createForgeCheckboxFieldHandler(setter, property, tab.creature, tab);
 
   const onUpdateClassListField = (setter: (value: number) => void, property: 'class' | 'level') => {
     return (e: React.ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLSelectElement>) => {
       const raw = parseInt(e.target.value) || 0;
       setter(raw);
-      if(tab.classList[0]){
-        const updated = [...tab.classList];
+      if(tab.creature.classList[0]){
+        const updated = [...tab.creature.classList];
         updated[0] = { ...updated[0], [property]: raw };
-        tab.setProperty('classList', updated);
+        tab.creature.setProperty('classList', updated);
         tab.updateFile();
       }
     };
@@ -362,7 +362,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     }
 
     setFeatList(updated);
-    tab.setProperty('featList', updated.sort((a, b) => a - b));
+    tab.creature.setProperty('featList', updated.sort((a, b) => a - b));
     tab.updateFile();
   };
 
@@ -372,7 +372,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     const spell = KotOR.SWRuleSet.spells[index];
     if(!spell) return;
 
-    const spellList = classList[0].knownList0;
+    const spellList = tab.creature.classList[0].knownList0;
 
     const wasEnabled = spellList.find(spell => spell.spell == index);
     const idx = spellList.findIndex(spell => spell.spell == index);
@@ -411,7 +411,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     }
 
     setKnownList0(updated);
-    tab.classList[0].knownList0 = updated;
+    tab.creature.classList[0].knownList0 = updated;
     tab.updateFile();
   };
 
@@ -458,7 +458,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     }
 
     setSpecialAbilities(updated);
-    tab.setProperty('specAbilityList', updated);
+    tab.creature.setProperty('specAbilityList', updated);
     tab.updateFile();
   };
 
@@ -664,37 +664,39 @@ export const TabUTCEditor = function(props: BaseTabProps){
           </fieldset>
           
           <table>
-            <tr>
-              <td style={{width: '50%'}}>
-                <fieldset>
-                  <legend>Armor Class</legend>
-                  <label>Natural AC</label>
-                  <input type="number" min="0" value={naturalAC} onChange={onUpdateNumberField(setNaturalAC, 'naturalAC')} />
-                </fieldset>
-                <fieldset>
-                  <legend>Speed</legend>
-                  <label>Movement Rate</label>
-                  <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
-                    {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
-                      <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
-                    ))}
-                  </select>
-                </fieldset>
-              </td>
-              <td style={{width: '50%'}}>
-                <fieldset>
-                  <legend>Hit Points</legend>
-                  <label>Base Hit Points</label>
-                  <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
-      
-                  <label>Current Hit Points</label>
-                  <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
-      
-                  <label>Max Hit Points</label>
-                  <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
-                </fieldset>
-              </td>
-            </tr>
+            <tbody>
+              <tr>
+                <td style={{width: '50%'}}>
+                  <fieldset>
+                    <legend>Armor Class</legend>
+                    <label>Natural AC</label>
+                    <input type="number" min="0" value={naturalAC} onChange={onUpdateNumberField(setNaturalAC, 'naturalAC')} />
+                  </fieldset>
+                  <fieldset>
+                    <legend>Speed</legend>
+                    <label>Movement Rate</label>
+                    <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
+                      {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
+                        <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
+                      ))}
+                    </select>
+                  </fieldset>
+                </td>
+                <td style={{width: '50%'}}>
+                  <fieldset>
+                    <legend>Hit Points</legend>
+                    <label>Base Hit Points</label>
+                    <input type="number" min="0" value={hitPoints} onChange={onUpdateNumberField(setHitPoints, 'hitPoints')} />
+        
+                    <label>Current Hit Points</label>
+                    <input type="number" min="0" value={currentHitPoints} onChange={onUpdateNumberField(setCurrentHitPoints, 'currentHitPoints')} />
+        
+                    <label>Max Hit Points</label>
+                    <input type="number" min="0" value={maxHitPoints} onChange={onUpdateNumberField(setMaxHitPoints, 'maxHitPoints')} />
+                  </fieldset>
+                </td>
+              </tr>
+            </tbody>
           </table>
         </>
       )

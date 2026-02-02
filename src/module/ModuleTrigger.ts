@@ -132,15 +132,14 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   getGeometry(){
-    let trigGeom = new THREE.BufferGeometry();
-    let vertices = this.vertices.slice();
+    const trigGeom = new THREE.BufferGeometry();
 
     try{
-      let holes: THREE.Vec2[][] = [];
-      // let faces: OdysseyFace3[] = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
-      trigGeom.setIndex(triangles.flat()); //Works with indices
-      trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) ); //Works with indices
+      const vertices = this.vertices.slice();
+      const holes: THREE.Vector2[][] = [];
+      const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+      trigGeom.setIndex(triangles.flat());
+      trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
     }catch(e){
       console.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
@@ -711,50 +710,6 @@ export class ModuleTrigger extends ModuleObject {
 
     this.template = gff;
     return gff;
-  }
-
-  toToolsetInstance(){
-    let instance = new GFFStruct(1);
-
-    let geometryField = new GFFField(GFFDataType.LIST, 'Geometry');
-    for(let i = 0, len = this.vertices.length; i < len; i++){
-      let vertStruct = new GFFStruct(14);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointX') ).setValue(this.vertices[i].x);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointY') ).setValue(this.vertices[i].y);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointZ') ).setValue(this.vertices[i].z);
-      geometryField.addChildStruct(vertStruct);
-    }
-    instance.addField(geometryField);
-    
-    instance.addField(
-      new GFFField(GFFDataType.RESREF, 'TemplateResRef', this.getTemplateResRef())
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XOrientation', this.xOrientation)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'XPosition', this.position.x)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YOrientation', this.yOrientation)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'YPosition', this.position.y)
-    );
-
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZOrientation', this.zOrientation)
-    );
-    
-    instance.addField(
-      new GFFField(GFFDataType.FLOAT, 'ZPosition', this.position.z)
-    );
-
-    return instance;
   }
 
 }

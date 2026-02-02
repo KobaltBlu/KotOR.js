@@ -7,6 +7,8 @@ import { EditorFile } from "../../../EditorFile";
 import { FileLocationType } from "../../../enum/FileLocationType";
 import { FileBrowserNode } from "../../../FileBrowserNode";
 import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+import { ForgeState } from "../../../states/ForgeState";
+import { Project } from "../../../Project";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
@@ -76,6 +78,56 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
       }
     }
   });
+
+  const handleOpenProject = () => {
+    Project.OpenByDirectory();
+  };
+
+  // Show "Open Project" button when no project is open
+  const hasProject = !!ForgeState.project;
+  if (!hasProject || resourceList.length === 0) {
+    return (
+      <div className="scroll-container" style={{ 
+        width: '100%', 
+        height: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '16px'
+      }}>
+        <div style={{ 
+          color: '#ccc',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          No project is currently open.
+        </div>
+        <button
+          onClick={handleOpenProject}
+          style={{
+            padding: '8px 16px',
+            backgroundColor: '#007acc',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            transition: 'background-color 0.2s',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#005a9e';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#007acc';
+          }}
+        >
+          Open Project
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="scroll-container" style={{ width:'100%', overflow: 'auto' }}>

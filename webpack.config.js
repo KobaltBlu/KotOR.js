@@ -122,12 +122,31 @@ const libraryConfig = (name, color) => ({
       'process.env.VERSION': JSON.stringify(version),
       'VERSION': JSON.stringify(version),
     }),
+    new HtmlWebpackPlugin({
+      filename: 'index.html',
+      inject: false,
+      templateContent: ({ htmlWebpackPlugin }) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="0; url=/launcher/">
+  <title>KotOR.js - Redirecting...</title>
+  <script>
+    window.location.href = '/launcher/';
+  </script>
+</head>
+<body>
+  <p>If you are not redirected automatically, <a href="/launcher/">click here</a>.</p>
+</body>
+</html>`
+    }),
     new CopyPlugin({
       patterns: [
         { from: "src/assets/icons", to: "assets/icons" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
         { from: 'node_modules/three/build/three.min.js', to: 'three.min.js' },
-        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' }
+        { from: 'node_modules/three/build/three.module.js', to: 'three.module.js' },
+        { from: 'node_modules/@fortawesome/fontawesome-free/webfonts', to: 'webfonts' },
       ]
     }),
   ],

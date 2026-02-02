@@ -6,6 +6,8 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import { ForgeModule } from "./module-editor/ForgeModule";
+import { ForgeGameObject } from "./module-editor/ForgeGameObject";
 
 export enum CameraView {
   Top = 'top',
@@ -51,15 +53,36 @@ export enum CameraFocusMode {
 }
 
 export enum GroupType {
+  CAMERA = 'camera',
+  CREATURE = 'creature',
+  DOOR = 'door',
+  PLACEABLE = 'placeable',
+  ITEM = 'item',
+  TRIGGER = 'trigger',
+  WAYPOINT = 'waypoint',
+  SOUND = 'sound',
   LIGHTS = 'lights',
   LIGHT_HELPERS = 'light_helpers',
   SHADOW_LIGHTS = 'shadow_lights',
   ROOMS = 'rooms',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
 }
 
 export enum ObjectType {
+  CAMERA = 'camera',
+  CREATURE = 'creature',
+  DOOR = 'door',
+  PLACEABLE = 'placeable',
+  ITEM = 'item',
+  TRIGGER = 'trigger',
+  WAYPOINT = 'waypoint',
+  SOUND = 'sound',
   ROOM = 'room',
   WALKMESH = 'walkmesh',
+  STORE = 'store',
+  ENCOUNTER = 'encounter',
+  LIGHT_HELPERS = 'light_helpers',
 }
 
 /**
@@ -89,6 +112,8 @@ export class UI3DRenderer extends EventListenerModel {
   canvas?: HTMLCanvasElement;
   width: number = 640;
   height: number = 480;
+
+  module: ForgeModule;
 
   guiMode: boolean = false;
   clock: THREE.Clock;
@@ -151,18 +176,44 @@ export class UI3DRenderer extends EventListenerModel {
   transformControls: TransformControls;
   viewHelper: ViewHelper;
 
+  // Camera preview
+  previewCamera: THREE.PerspectiveCamera | null = null;
+  previewEnabled: boolean = false;
+  previewSize: number = 400; // Size of preview in pixels
+
   group: { 
     [key in GroupType]: THREE.Group;
   } = {
+    [GroupType.CAMERA]: new THREE.Group(),
     [GroupType.LIGHTS]: new THREE.Group(),
     [GroupType.LIGHT_HELPERS]: new THREE.Group(),
     [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
     [GroupType.ROOMS]: new THREE.Group(),
+    [GroupType.CREATURE]: new THREE.Group(),
+    [GroupType.DOOR]: new THREE.Group(),
+    [GroupType.PLACEABLE]: new THREE.Group(),
+    [GroupType.ITEM]: new THREE.Group(),
+    [GroupType.TRIGGER]: new THREE.Group(),
+    [GroupType.WAYPOINT]: new THREE.Group(),
+    [GroupType.SOUND]: new THREE.Group(),
+    [GroupType.STORE]: new THREE.Group(),
+    [GroupType.ENCOUNTER]: new THREE.Group(),
   };
 
   visibilityState: { [key in ObjectType]: boolean } = {
+    [ObjectType.CAMERA]: true,
     [ObjectType.ROOM]: true,
     [ObjectType.WALKMESH]: false,
+    [ObjectType.CREATURE]: true,
+    [ObjectType.DOOR]: true,
+    [ObjectType.PLACEABLE]: true,
+    [ObjectType.ITEM]: true,
+    [ObjectType.TRIGGER]: true,
+    [ObjectType.WAYPOINT]: true,
+    [ObjectType.SOUND]: true,
+    [ObjectType.STORE]: true,
+    [ObjectType.ENCOUNTER]: true,
+    [ObjectType.LIGHT_HELPERS]: false,
   };
 
   frustumMat4: THREE.Matrix4;
@@ -190,10 +241,20 @@ export class UI3DRenderer extends EventListenerModel {
     this.selectionBox.visible = false;
 
     this.group = {
+      camera: new THREE.Group(),
+      creature: new THREE.Group(),
       lights: new THREE.Group(),
       light_helpers: new THREE.Group(),
       shadow_lights: new THREE.Group(),
       rooms: new THREE.Group(),
+      door: new THREE.Group(),
+      placeable: new THREE.Group(),
+      item: new THREE.Group(),
+      trigger: new THREE.Group(),
+      waypoint: new THREE.Group(),
+      sound: new THREE.Group(),
+      store: new THREE.Group(),
+      encounter: new THREE.Group(),
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
@@ -217,6 +278,13 @@ export class UI3DRenderer extends EventListenerModel {
     this.buildDOMEventHandlers();
 
     this.lightManager.init(this);
+  }
+
+  setModule(module: ForgeModule) {
+    this.module = module;
+    if(module){
+      this.processEventListener('onModuleSet', [module]);
+    }
   }
 
   buildTransformControls() {
@@ -265,7 +333,14 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
+  lookAtObject(object?: THREE.Object3D) {
+    if(!object || !this.camera || !this.orbitControls) return;
+    this.orbitControls.target.copy(object.position);
+    this.orbitControls.update();
+  }
+
   reorientCamera(view: CameraView) {
+    console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
@@ -338,6 +413,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
+    console.log('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
   
@@ -345,6 +421,7 @@ export class UI3DRenderer extends EventListenerModel {
   #box3: THREE.Box3 = new THREE.Box3();
 
   private updateCameraFocus(): void {
+    console.log('updateCameraFocus');
     this.#box3 = new THREE.Box3();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
     for(let i = 0; i < objects.length; i++){
@@ -355,6 +432,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
+    console.log('fitCameraToScene', offset);
     this.updateCameraFocus();
     if(!this.#center) return;
     
@@ -554,12 +632,15 @@ export class UI3DRenderer extends EventListenerModel {
       this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
       const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
       if(intersects.length){
-        const intersection = intersects.shift();
-        this.selectObject(intersection?.object);
-        this.processEventListener('onSelect', [intersection]);
+        const closestIntersection = intersects[0];
+        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh && 
+          closestIntersection.object.userData?.vertexIndex !== undefined;
+        
+        this.selectObject(closestIntersection.object);
+        // this.processEventListener('onSelect', [intersection]);
       }else{
         this.selectObject(undefined);
-        this.processEventListener('onSelect', [undefined]);
+        // this.processEventListener('onSelect', [undefined]);
       }
     }
   }
@@ -600,6 +681,64 @@ export class UI3DRenderer extends EventListenerModel {
           ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
         });
         break;
+      case 'creature':
+        this.group.creature.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.CREATURE];
+        });
+        break;
+      case 'door':
+        this.group.door.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.DOOR];
+        });
+        break;
+      case 'placeable':
+        this.group.placeable.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.PLACEABLE];
+        });
+        break;
+      case 'item':
+        this.group.item.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.ITEM];
+        });
+        break;
+      case 'trigger':
+        this.group.trigger.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.TRIGGER];
+        });
+        break;
+      case 'waypoint':
+        this.group.waypoint.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.WAYPOINT];
+        });
+        break;
+      case 'sound':
+        this.group.sound.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.SOUND];
+        });
+        break;
+      case 'camera':
+        this.group.camera.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.CAMERA];
+        });
+        break;
+      case 'encounter':
+        this.group.encounter.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.ENCOUNTER];
+        });
+        break;
+      case 'store':
+        this.group.store.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.STORE];
+        });
+        break;
+      case 'light_helpers':
+        this.group.light_helpers.children.forEach( (child) => {
+          child.visible = !this.visibilityState[ObjectType.LIGHT_HELPERS];
+        });
+        break;
+      default:
+        console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
+        break;
     }
     this.visibilityState[type] = !this.visibilityState[type];
   }
@@ -622,6 +761,40 @@ export class UI3DRenderer extends EventListenerModel {
       case GroupType.LIGHTS:
         this.group[GroupType.LIGHTS].add(object);
         break;
+      case GroupType.CREATURE:
+        this.group[GroupType.CREATURE].add(object);
+        break;
+      case GroupType.DOOR:
+        this.group[GroupType.DOOR].add(object);
+        object.visible = this.visibilityState[ObjectType.DOOR];
+        break;
+      case GroupType.PLACEABLE:
+        this.group[GroupType.PLACEABLE].add(object);
+        object.visible = this.visibilityState[ObjectType.PLACEABLE];
+        break;
+      case GroupType.ITEM:
+        this.group[GroupType.ITEM].add(object);
+        object.visible = this.visibilityState[ObjectType.ITEM];
+        break;
+      case GroupType.TRIGGER:
+        this.group[GroupType.TRIGGER].add(object);
+        object.visible = this.visibilityState[ObjectType.TRIGGER];
+        break;
+      case GroupType.ENCOUNTER:
+        this.group[GroupType.ENCOUNTER].add(object);
+        object.visible = this.visibilityState[ObjectType.ENCOUNTER];
+        break;
+      case GroupType.WAYPOINT:
+        this.group[GroupType.WAYPOINT].add(object);
+        object.visible = this.visibilityState[ObjectType.WAYPOINT];
+        break;
+      case GroupType.SOUND:
+        this.group[GroupType.SOUND].add(object);
+        object.visible = this.visibilityState[ObjectType.SOUND];
+        break;
+      case GroupType.CAMERA:
+        this.group[GroupType.CAMERA].add(object);
+        break;
       default:
         console.warn(`addObjectToGroup: unhandled group type, ${group}`);
         break;
@@ -641,6 +814,33 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.LIGHTS:
         this.group[GroupType.LIGHTS].remove(object);
+        break;
+      case GroupType.CREATURE:
+        this.group[GroupType.CREATURE].remove(object);
+        break;
+      case GroupType.DOOR:
+        this.group[GroupType.DOOR].remove(object);
+        break;
+      case GroupType.PLACEABLE:
+        this.group[GroupType.PLACEABLE].remove(object);
+        break;
+      case GroupType.ITEM:
+        this.group[GroupType.ITEM].remove(object);
+        break;
+      case GroupType.TRIGGER:
+        this.group[GroupType.TRIGGER].remove(object);
+        break;
+      case GroupType.ENCOUNTER:
+        this.group[GroupType.ENCOUNTER].remove(object);
+        break;
+      case GroupType.WAYPOINT:
+        this.group[GroupType.WAYPOINT].remove(object);
+        break;
+      case GroupType.SOUND:
+        this.group[GroupType.SOUND].remove(object);
+        break;
+      case GroupType.CAMERA:
+        this.group[GroupType.CAMERA].remove(object);
         break;
       default:
         console.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
@@ -689,6 +889,36 @@ export class UI3DRenderer extends EventListenerModel {
   selectObject(object: THREE.Object3D | undefined){
     if(!object || this.disableSelection){
       this.selectionBox.visible = false;
+      this.processEventListener('onSelect', [undefined]);
+      return;
+    }
+
+    // Check if this is a vertex helper - if so, pass it through directly
+    if(object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined){
+      this.processEventListener('onSelect', [object]);
+      return;
+    }
+
+    // Handle ForgeGameObject picking
+    let forgeGameObject: ForgeGameObject | undefined;
+    if(object instanceof ForgeGameObject){
+      forgeGameObject = object;
+      object = object.container;
+    } else {
+      // Try to find ForgeGameObject from userData or by traversing up the tree
+      let current: THREE.Object3D | null = object;
+      while(current){
+        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+          forgeGameObject = current.userData.forgeGameObject;
+          object = forgeGameObject.container;
+          break;
+        }
+        current = current.parent;
+      }
+    }
+
+    if(object instanceof KotOR.OdysseyWalkMesh){
+      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
       return;
     }
 
@@ -698,18 +928,29 @@ export class UI3DRenderer extends EventListenerModel {
     arr.fill(0);
     this.selectionBox.geometry.attributes.position.needsUpdate = true;
 
-    this.selectionBox.setFromObject(object);
+    //@ts-ignore
+    this.selectionBox.setFromObject(object, true);
     this.selectionBox.visible = true;
 
     const size = arr.reduce( (a, b) => a + b, 0 );
 
-    if(!size || !isGeometry){
+    if((!size || !isGeometry) && !forgeGameObject){
       dummyMesh.position.copy(object.position);
       // object.getWorldPosition(dummyMesh.position);
       object.getWorldQuaternion(dummyMesh.quaternion);
       // dummyMesh.scale.copy(object.scale);
-      this.selectionBox.setFromObject(dummyMesh);
+      //@ts-ignore
+      this.selectionBox.setFromObject(dummyMesh, true);
       this.selectionBox.visible = true;
+    }
+
+    // Store the ForgeGameObject reference in selectionBox userData for easy access
+    if(forgeGameObject){
+      this.selectionBox.userData.forgeGameObject = forgeGameObject;
+      this.processEventListener('onSelect', [forgeGameObject]);
+    } else {
+      delete this.selectionBox.userData.forgeGameObject;
+      this.processEventListener('onSelect', [object]);
     }
   }
 
@@ -775,6 +1016,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   private buildScene(){
     // this.scene = new THREE.Scene();
+    this.group.light_helpers.visible = false;
 
     this.scene.add(this.selectionBox);
     this.scene.add(this.lights);
@@ -784,7 +1026,17 @@ export class UI3DRenderer extends EventListenerModel {
     this.scene.add(this.group.lights);
     this.scene.add(this.group.light_helpers);
     this.scene.add(this.group.shadow_lights);
-    this.scene.add(this.group.rooms);
+    this.selectable.add(this.group.rooms);
+    this.selectable.add(this.group.creature);
+    this.selectable.add(this.group.door);
+    this.selectable.add(this.group.placeable);
+    this.selectable.add(this.group.item);
+    this.selectable.add(this.group.trigger);
+    this.selectable.add(this.group.waypoint);
+    this.selectable.add(this.group.sound);
+    this.selectable.add(this.group.camera);
+    this.selectable.add(this.group.encounter);
+    this.selectable.add(this.group.store);
     this.sceneGraphManager.rebuild();
   }
   
@@ -871,7 +1123,7 @@ export class UI3DRenderer extends EventListenerModel {
     });
     if(this.renderer){
       this.renderer.clear();
-      this.selectionBox.update();
+      // this.selectionBox.update();
 
       const delta = this.clock.getDelta();
       this.time += delta;
@@ -904,7 +1156,60 @@ export class UI3DRenderer extends EventListenerModel {
         this.lightManager.update(delta, this.currentCamera);
       }
 
+      // Render main scene
       this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
+
+      // Render camera preview if enabled
+      if(this.previewEnabled && this.previewCamera && this.canvas){
+        const previewSize = this.previewSize;
+        const x = this.width - previewSize - 10; // 10px margin from right
+        const y = 10; // 10px margin from top
+        
+        // Save current viewport and scissor state
+        const currentViewport = new THREE.Vector4();
+        const currentScissor = new THREE.Vector4();
+        this.renderer.getViewport(currentViewport);
+        this.renderer.getScissor(currentScissor);
+        const scissorTest = this.renderer.getScissorTest();
+        
+        // Hide camera helpers from preview
+        const hiddenHelpers: THREE.Object3D[] = [];
+        if(this.module){
+          for(const camera of this.module.area.cameras){
+            camera.cameraHelper.visible = false;
+            hiddenHelpers.push(camera.cameraHelper);
+          }
+        }
+        const wasTransformControlsVisible = this.transformControls.visible;
+        this.transformControls.visible = false;
+        // Update preview camera aspect ratio (square preview)
+        this.previewCamera.aspect = 1.0;
+        this.previewCamera.updateProjectionMatrix();
+        
+        // Set viewport for preview (top right corner)
+        // Note: WebGL viewport uses bottom-left origin
+        const viewportY = this.height - y - previewSize;
+        this.renderer.setViewport(x, viewportY, previewSize, previewSize);
+        this.renderer.setScissor(x, viewportY, previewSize, previewSize);
+        this.renderer.setScissorTest(true);
+        
+        // Clear only the preview area (color and depth, but not stencil)
+        // This ensures the preview area is clean before rendering
+        this.renderer.clear(true, true, false);
+        
+        // Render preview scene
+        this.renderer.render(this.scene, this.previewCamera);
+        
+        // Restore camera helpers visibility
+        for(const helper of hiddenHelpers){
+          helper.visible = true;
+        }
+        this.transformControls.visible = wasTransformControlsVisible;
+        // Restore viewport and scissor
+        this.renderer.setViewport(currentViewport);
+        this.renderer.setScissor(currentScissor);
+        this.renderer.setScissorTest(scissorTest);
+      }
 
       if(this.viewHelper){
         this.viewHelper.render(this.renderer);
@@ -913,6 +1218,22 @@ export class UI3DRenderer extends EventListenerModel {
       //Custom render logic can run here
       this.processEventListener('onAfterRender', [delta]);
     }
+  }
+
+  /**
+   * Enable camera preview with the specified camera
+   */
+  setPreviewCamera(camera: THREE.PerspectiveCamera | null){
+    this.previewCamera = camera;
+    this.previewEnabled = camera !== null;
+  }
+
+  /**
+   * Disable camera preview
+   */
+  disablePreview(){
+    this.previewEnabled = false;
+    this.previewCamera = null;
   }
 
   destroy(){
