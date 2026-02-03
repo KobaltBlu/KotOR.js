@@ -64,4 +64,3 @@ scratch/
 *.temp
 .cache/
 .history/
-vendor/
