@@ -105,20 +105,20 @@ export class FollowerCamera {
     FollowerCamera.box.max.copy(FollowerCamera.raycaster.ray.origin);
     FollowerCamera.box.expandByScalar(distance * 1.5);
     
-    if(followee.room && followee.room.collisionData.walkmesh && followee.room.collisionData.walkmesh.aabbNodes.length){
+    if(followee.room && followee.room.collisionManager.walkmesh && followee.room.collisionManager.walkmesh.aabbNodes.length){
       aabbFaces.push({
         object: followee.room, 
-        faces: followee.room.collisionData.walkmesh.getAABBCollisionFaces(FollowerCamera.box)
+        faces: followee.room.collisionManager.walkmesh.getAABBCollisionFaces(FollowerCamera.box)
       });
     }
 
     for(let j = 0, jl = area.doors.length; j < jl; j++){
       let door = area.doors[j];
-      if(door && door.collisionData.walkmesh && !door.isOpen()){
+      if(door && door.collisionManager.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
           aabbFaces.push({
             object: door,
-            faces: door.collisionData.walkmesh.faces
+            faces: door.collisionManager.walkmesh.faces
           });
         }
       }
@@ -126,7 +126,7 @@ export class FollowerCamera {
     
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
       let castableFaces = aabbFaces[k];
-      intersects = castableFaces.object.collisionData.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
+      intersects = castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){
           if(intersects[i].distance < distance){

@@ -334,7 +334,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
-    this.collisionData.blockingTimer = 0;
+    this.collisionManager.blockingTimer = 0;
 
     this.fp_push_played = false;
     this.fp_land_played = false;
@@ -648,14 +648,14 @@ export class ModuleCreature extends ModuleObject {
         }
       }
 
-      if(this.collisionData.blockingObject != this.collisionData.lastBlockingObject){
-        this.collisionData.lastBlockingObject = this.collisionData.blockingObject;
+      if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
+        this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
         //console.log('blocking script', this.blocking);
         this.onBlocked();
       }
 
       if(this.forceVector.length())
-        this.collisionData.updateCollision(delta);
+        this.collisionManager.updateCollision(delta);
 
       this.updatePerceptionList(delta);
       this.updateListeningPatterns();
@@ -1147,12 +1147,12 @@ export class ModuleCreature extends ModuleObject {
 
   randomWalk(){
 
-    if(this.room && this.room.collisionData.walkmesh){
+    if(this.room && this.room.collisionManager.walkmesh){
       let run = false;
       let maxDistance = 1.5
       let position = new THREE.Vector3();
 
-      const faces = this.room.collisionData.walkmesh.walkableFaces;
+      const faces = this.room.collisionManager.walkmesh.walkableFaces;
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
@@ -1824,7 +1824,7 @@ export class ModuleCreature extends ModuleObject {
       case 'snd_footstep':
         if(footstepSounds){
           const isRolling = footstepSounds.isRolling();
-          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionData.surfaceId);
+          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionManager.surfaceId);
           footstepIsLooping = isRolling;
         }
       break;

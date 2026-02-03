@@ -929,7 +929,7 @@ export class GameState implements EngineContext {
         //If the object a door ignore it's walkmesh
         if(isDoor && los.length){
           los = los.filter( (intersect) => {
-            intersect.object.uuid != obj.collisionData.walkmesh.mesh.uuid
+            intersect.object.uuid != obj.collisionManager.walkmesh.mesh.uuid
           });
         }
 

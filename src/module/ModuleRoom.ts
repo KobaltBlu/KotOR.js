@@ -219,11 +219,15 @@ export class ModuleRoom extends ModuleObject {
     }
 
     //Add the walkmesh back to the scene
-    if(this.collisionData.walkmesh && !this.collisionData.walkmesh.mesh.parent){
-      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
-    }else if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
-      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
-      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
+    if(this.collisionManager.walkmesh && !this.collisionManager.walkmesh.mesh.parent){
+      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
+    }else if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
+      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
+      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
+    }
+
+    if(this.collisionManager.walkmesh){
+      this.collisionManager.walkmesh.buildEdgeNormalHelpers();
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -251,8 +255,8 @@ export class ModuleRoom extends ModuleObject {
     }
     
     //Remove the walkmesh back to the scene
-    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
-      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
+    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
+      this.collisionManager.walkmesh.mesh.parent.remove(this.collisionManager.walkmesh.mesh);
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -310,11 +314,11 @@ export class ModuleRoom extends ModuleObject {
 
     //Load the walkmesh
     try{
-      if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
+      if(!(this.collisionManager.walkmesh instanceof OdysseyWalkMesh)){
         const wok = await this.loadWalkmesh(this.roomName);
         if(wok){
-          this.collisionData.walkmesh = wok;
-          this.collisionData.walkmesh.mesh.position.z += 0.001;
+          this.collisionManager.setWalkmesh(wok);
+          wok.mesh.position.z += 0.001;
         }
       }
     }catch(e){
@@ -724,17 +728,17 @@ export class ModuleRoom extends ModuleObject {
 
   findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
     let face;
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionData.walkmesh){
-      for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
-        face = this.collisionData.walkmesh.walkableFaces[j];
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionManager.walkmesh){
+      for(let j = 0, jl = this.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){
+        face = this.collisionManager.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){
-          object.collisionData.groundFace = face;
-          object.collisionData.lastGroundFace = object.collisionData.groundFace;
-          object.collisionData.surfaceId = object.collisionData.groundFace.walkIndex;
+          object.collisionManager.groundFace = face;
+          object.collisionManager.lastGroundFace = object.collisionManager.groundFace;
+          object.collisionManager.surfaceId = object.collisionManager.groundFace.walkIndex;
           object.room = this;
 
-          face.triangle.closestPointToPoint(object.position, object.collisionData.wm_c_point);
-          object.position.z = object.collisionData.wm_c_point.z + .005;
+          face.triangle.closestPointToPoint(object.position, object.collisionManager.wm_c_point);
+          object.position.z = object.collisionManager.wm_c_point.z + .005;
           return face;
         }
       }
@@ -745,11 +749,11 @@ export class ModuleRoom extends ModuleObject {
   destroy(): void {
     super.destroy();
       
-    if(this.collisionData.walkmesh)
-      this.collisionData.walkmesh.dispose();
+    if(this.collisionManager.walkmesh)
+      this.collisionManager.walkmesh.dispose();
 
     try{
-      let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      let wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){
       console.error(e);

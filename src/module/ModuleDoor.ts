@@ -301,21 +301,21 @@ export class ModuleDoor extends ModuleObject {
   }
 
   updateCollisionState(): void {
-    // if(!this.collisionData?.walkmesh?.mesh){ return; }
+    // if(!this.collisionManager?.walkmesh?.mesh){ return; }
 
     let idx = -1;
     switch(this.openState){
       case ModuleDoorOpenState.DESTROYED:
       case ModuleDoorOpenState.OPEN1:
       case ModuleDoorOpenState.OPEN2:
-        GameState.group.room_walkmeshes.remove( this.collisionData.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
+        GameState.group.room_walkmeshes.remove( this.collisionManager.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
         if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
       break;
       default:
-        GameState.group.room_walkmeshes.add( this.collisionData.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionData.walkmesh);
-        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionData.walkmesh); }
+        GameState.group.room_walkmeshes.add( this.collisionManager.walkmesh.mesh );
+        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
+        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionManager.walkmesh); }
       break;
     }
   }
@@ -493,8 +493,8 @@ export class ModuleDoor extends ModuleObject {
       break;
     }
 
-    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
-      this.collisionData.walkmesh.mesh.removeFromParent();
+    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
+      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
     //Notice all creatures within range that someone opened this door
@@ -537,8 +537,8 @@ export class ModuleDoor extends ModuleObject {
       break;
     }
 
-    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
-      this.collisionData.walkmesh.mesh.removeFromParent();
+    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
+      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
   }
@@ -551,8 +551,8 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
 
-    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh){
-      this.collisionData.walkmesh.mesh.removeFromParent();
+    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
+      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
     this.setOpenState(ModuleDoorOpenState.CLOSED);
@@ -609,8 +609,8 @@ export class ModuleDoor extends ModuleObject {
       GameState.group.light_helpers.add( this.boxHelper );
     }
 
-    if(this.collisionData.walkmesh && this.model){
-      this.collisionData.walkmesh.matrixWorld.copy(this.model.matrix);
+    if(this.collisionManager.walkmesh && this.model){
+      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
     }
   }
 
@@ -792,10 +792,10 @@ export class ModuleDoor extends ModuleObject {
     if(box){
       for(let j = 0, jl = this.roomIds.length; j < jl; j++){
         let room = GameState.module.area.rooms[this.roomIds[j]];
-        if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
+        if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
           aabbFaces.push({
             object: room, 
-            faces: room.collisionData.walkmesh.getAABBCollisionFaces(box)
+            faces: room.collisionManager.walkmesh.getAABBCollisionFaces(box)
           });
         }
       }
@@ -808,7 +808,7 @@ export class ModuleDoor extends ModuleObject {
     
     for(let j = 0, jl = aabbFaces.length; j < jl; j++){
       let castableFaces = aabbFaces[j];
-      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
+      intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces) || [];
       
       if(intersects.length){
         if(intersects[0].object.userData.moduleObject){
@@ -1001,13 +1001,14 @@ export class ModuleDoor extends ModuleObject {
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes['dwk'], resRef+'0');
-      this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-      this.collisionData.walkmesh.mesh.name = this.collisionData.walkmesh.name = resRef;
-      this.collisionData.walkmesh.mesh.userData.moduleObject = this.collisionData.walkmesh.moduleObject = this;
+      const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+      walkmesh.mesh.name = walkmesh.name = resRef;
+      walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
+      this.collisionManager.setWalkmesh(walkmesh);
   
       this.updateCollisionState();
   
-      return this.collisionData.walkmesh;
+      return this.collisionManager.walkmesh;
     }catch(e){
       console.error(e);
     }
@@ -1211,7 +1212,7 @@ export class ModuleDoor extends ModuleObject {
     super.destroy();
     GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
     try{
-      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){}
   }
