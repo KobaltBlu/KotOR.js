@@ -169,7 +169,10 @@ export class GameState implements EngineContext {
 
     ROOM_WALKMESH: false,
     DOOR_WALKMESH: false,
-    PLACEABLE_WALKMESH: false
+    PLACEABLE_WALKMESH: false,
+
+    LIGHT_HELPERS: false,
+    SHADOW_LIGHTS: false,
   };
   
   static IsPaused = false;
@@ -260,6 +263,7 @@ export class GameState implements EngineContext {
     weather_effects: new THREE.Group,
     room_walkmeshes: new THREE.Group,
     spell_instances: new THREE.Group,
+    debug: new THREE.Group,
   };
   
   static interactableObjects: any[];
@@ -304,6 +308,7 @@ export class GameState implements EngineContext {
 
   static SetDebugState(type: EngineDebugType, enabled: boolean){
     this.debug[type] = enabled;
+    console.log('SetDebugState', type, enabled);
     switch(type){
       case EngineDebugType.PATH_FINDING:
         if(!GameState?.module?.area?.path)
@@ -370,6 +375,38 @@ export class GameState implements EngineContext {
         //   }
         //   creature.debugLabel.container.visible = enabled;
         // }
+      break;
+      case EngineDebugType.ROOM_WALKMESH:
+      case EngineDebugType.DOOR_WALKMESH:
+      case EngineDebugType.PLACEABLE_WALKMESH:
+        {
+          const areWalkmeshesVisible = GameState.debug[EngineDebugType.ROOM_WALKMESH] || GameState.debug[EngineDebugType.DOOR_WALKMESH] || GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
+          GameState.group.room_walkmeshes.visible = areWalkmeshesVisible;
+          for(let i = 0; i < GameState.module.area.rooms.length; i++){
+            const room = GameState.module.area.rooms[i];
+            if(room.collisionManager.walkmesh){
+              room.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.ROOM_WALKMESH];
+            }
+          }
+          for(let i = 0; i < GameState.module.area.doors.length; i++){
+            const door = GameState.module.area.doors[i];
+            if(door.collisionManager.walkmesh){
+              door.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.DOOR_WALKMESH];
+            }
+          }
+          for(let i = 0; i < GameState.module.area.placeables.length; i++){
+            const placeable = GameState.module.area.placeables[i];
+            if(placeable.collisionManager.walkmesh){
+              placeable.collisionManager.walkmesh.mesh.visible = GameState.debug[EngineDebugType.PLACEABLE_WALKMESH];
+            }
+          }
+        }
+      break;
+      case EngineDebugType.LIGHT_HELPERS:
+        GameState.group.light_helpers.visible = enabled;
+      break;
+      case EngineDebugType.SHADOW_LIGHTS:
+        GameState.group.shadow_lights.visible = enabled;
       break;
     }
   }
@@ -599,6 +636,7 @@ export class GameState implements EngineContext {
       weather_effects: namedGroup('weather_effects'),
       room_walkmeshes: namedGroup('room_walkmeshes'),
       spell_instances: namedGroup('spell_instances'),
+      debug: namedGroup('debug'),
     };
 
     GameState.scene.add(GameState.group.rooms);
@@ -606,24 +644,27 @@ export class GameState implements EngineContext {
     GameState.scene.add(GameState.group.placeables);
     GameState.scene.add(GameState.group.doors);
     GameState.scene.add(GameState.group.creatures);
-    // //GameState.scene.add(GameState.group.waypoints);
-    // //GameState.scene.add(GameState.group.sounds);
+    // GameState.scene.add(GameState.group.waypoints);
+    // GameState.scene.add(GameState.group.sounds);
     GameState.scene.add(GameState.group.triggers);
     // GameState.scene.add(GameState.group.stunt);
     // GameState.scene.add(GameState.group.weather_effects);
 
     GameState.scene.add(GameState.group.lights);
-    // GameState.scene.add(GameState.group.light_helpers);
-    // GameState.scene.add(GameState.group.shadow_lights);
-    // GameState.scene.add(GameState.group.path_helpers);
     // GameState.scene.add(GameState.group.emitters);
     GameState.scene.add(GameState.group.effects);
 
     GameState.scene.add(GameState.group.party);
-    // GameState.scene.add(GameState.group.room_walkmeshes);
     GameState.scene.add(GameState.group.spell_instances);
-
-    GameState.group.light_helpers.visible = false;
+    GameState.scene.add(GameState.group.debug);
+    GameState.group.debug.add(GameState.group.room_walkmeshes);
+    GameState.group.debug.add(GameState.group.light_helpers);
+    GameState.group.debug.add(GameState.group.shadow_lights);
+    GameState.group.debug.add(GameState.group.path_helpers);
+    GameState.group.room_walkmeshes.visible = this.debug[EngineDebugType.ROOM_WALKMESH] || this.debug[EngineDebugType.DOOR_WALKMESH] || this.debug[EngineDebugType.PLACEABLE_WALKMESH];
+    GameState.group.light_helpers.visible = this.debug[EngineDebugType.LIGHT_HELPERS];
+    GameState.group.shadow_lights.visible = this.debug[EngineDebugType.SHADOW_LIGHTS];
+    GameState.group.path_helpers.visible = this.debug[EngineDebugType.PATH_FINDING];
 
     GameState.interactableObjects = [
       GameState.group.placeables, 
