@@ -5,7 +5,8 @@ import * as THREE from "three";
 import { Utility } from "../utility/Utility";
 import { OdysseyFace3 } from "../three/odyssey";
 import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { EngineDebugType } from "../enums/engine/EngineDebugType";
 
 // =============================================
 // TYPE DEFINITIONS
@@ -780,14 +781,7 @@ export class CollisionManager {
    * Update the visual helper that draws collision edges being processed
    */
   private updateCollisionEdgeVisualHelper(allCollisions: ProcessedCollision[] = []): void {
-    if (GameState.getCurrentPlayer() != this.object) {
-      if (this.edgeHelperMesh) {
-        this.edgeHelperMesh.visible = false;
-      }
-      return;
-    }
-
-    if (allCollisions.length === 0) {
+    if (allCollisions.length === 0 || !GameState.debug[EngineDebugType.COLLISION_HELPERS]) {
       if (this.edgeHelperMesh) {
         this.edgeHelperMesh.visible = false;
       }
@@ -835,10 +829,10 @@ export class CollisionManager {
     if (!this.edgeHelperMesh) {
       this.edgeHelperMesh = new THREE.LineSegments(this.edgeHelperGeometry, this.edgeHelperMaterial);
       this.edgeHelperMesh.renderOrder = 1000; // Render after other geometry
-      GameState.scene.add(this.edgeHelperMesh);
+      GameState.group.collision_helpers.add(this.edgeHelperMesh);
     }
 
-    this.edgeHelperMesh.visible = true;
+    this.edgeHelperMesh.visible = GameState.debug[EngineDebugType.COLLISION_HELPERS];
   }
 
   /**

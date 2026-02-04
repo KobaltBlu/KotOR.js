@@ -36,9 +36,14 @@
     padding: 10px;
     text-align: right;
   }
+
+  .console-menu-anchor {
+    position: relative;
+    display: inline-block;
+  }
   
   .console-btn {
-    background: transparent;
+    background: #0e0e0ebd;
     border: 2px solid #d4a03d;
     color: #e6b35c;
     padding: 0.5rem 1.5rem;
@@ -47,6 +52,12 @@
     cursor: pointer;
     border-radius: 4px;
     box-shadow: 0 0 4px #000;
+    margin-left: 10px;
+    white-space: nowrap;
+
+    &.flex-1 {
+      flex: 1;
+    }
   
     &:hover {
       background: #1c2c38;
@@ -55,6 +66,51 @@
     &:active {
       background: #2c3e50;
     }
+  }
+
+  .console-btn-small {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    margin: 4px 6px 0 0;
+  }
+
+  .console-submenu {
+    position: absolute;
+    right: 0;
+    bottom: 100%;
+    margin-bottom: 8px;
+    padding: 10px;
+    text-align: right;
+    background: #0e0e0ebd;
+    border: 2px solid #d4a03d;
+    border-radius: 4px;
+    box-shadow: 0 0 4px #000;
+    z-index: 10;
+  }
+
+  .console-submenu-group {
+    margin-top: 8px;
+  }
+
+  .console-submenu-title {
+    color: #e6b35c;
+    font-weight: bold;
+    margin-bottom: 4px;
+  }
+
+  .console-submenu-buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+
+  .console-btn.on {
+    background: #1c2c38;
+  }
+
+  .console-btn.off {
+    opacity: 0.7;
   }
 
   &.TSL {

@@ -29,7 +29,8 @@ export const CheatConsole = () => {
       types: [
         EngineDebugType.ROOM_WALKMESH,
         EngineDebugType.DOOR_WALKMESH,
-        EngineDebugType.PLACEABLE_WALKMESH
+        EngineDebugType.PLACEABLE_WALKMESH,
+        EngineDebugType.COLLISION_HELPERS
       ]
     },
     {

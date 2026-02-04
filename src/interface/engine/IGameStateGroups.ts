@@ -31,4 +31,5 @@ export interface IGameStateGroups {
   room_walkmeshes: THREE.Group;
   spell_instances: THREE.Group;
   debug: THREE.Group;
+  collision_helpers: THREE.Group;
 };

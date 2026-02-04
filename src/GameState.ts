@@ -170,6 +170,7 @@ export class GameState implements EngineContext {
     ROOM_WALKMESH: false,
     DOOR_WALKMESH: false,
     PLACEABLE_WALKMESH: false,
+    COLLISION_HELPERS: false,
 
     LIGHT_HELPERS: false,
     SHADOW_LIGHTS: false,
@@ -264,6 +265,7 @@ export class GameState implements EngineContext {
     room_walkmeshes: new THREE.Group,
     spell_instances: new THREE.Group,
     debug: new THREE.Group,
+    collision_helpers: new THREE.Group,
   };
   
   static interactableObjects: any[];
@@ -401,6 +403,9 @@ export class GameState implements EngineContext {
             }
           }
         }
+      break;
+      case EngineDebugType.COLLISION_HELPERS:
+        GameState.group.collision_helpers.visible = enabled;
       break;
       case EngineDebugType.LIGHT_HELPERS:
         GameState.group.light_helpers.visible = enabled;
@@ -637,6 +642,7 @@ export class GameState implements EngineContext {
       room_walkmeshes: namedGroup('room_walkmeshes'),
       spell_instances: namedGroup('spell_instances'),
       debug: namedGroup('debug'),
+      collision_helpers: namedGroup('collision_helpers'),
     };
 
     GameState.scene.add(GameState.group.rooms);
@@ -661,10 +667,12 @@ export class GameState implements EngineContext {
     GameState.group.debug.add(GameState.group.light_helpers);
     GameState.group.debug.add(GameState.group.shadow_lights);
     GameState.group.debug.add(GameState.group.path_helpers);
+    GameState.group.debug.add(GameState.group.collision_helpers);
     GameState.group.room_walkmeshes.visible = this.debug[EngineDebugType.ROOM_WALKMESH] || this.debug[EngineDebugType.DOOR_WALKMESH] || this.debug[EngineDebugType.PLACEABLE_WALKMESH];
     GameState.group.light_helpers.visible = this.debug[EngineDebugType.LIGHT_HELPERS];
     GameState.group.shadow_lights.visible = this.debug[EngineDebugType.SHADOW_LIGHTS];
     GameState.group.path_helpers.visible = this.debug[EngineDebugType.PATH_FINDING];
+    GameState.group.collision_helpers.visible = this.debug[EngineDebugType.COLLISION_HELPERS];
 
     GameState.interactableObjects = [
       GameState.group.placeables, 
