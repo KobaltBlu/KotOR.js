@@ -46,6 +46,7 @@ export class OdysseyWalkMesh {
   edges: Map<number, WalkmeshEdge>;
   perimeters: IPerimeter[] = [];
   edgeLines: any[] = [];
+  edgeNormalHelpers: THREE.Group;
   wokReader: BinaryReader;
   walkableFacesEdgesAdjacencyMatrixDiff: number[][];
   matrixWorld: THREE.Matrix4;
@@ -258,6 +259,43 @@ export class OdysseyWalkMesh {
       this.normals[i].copy(this._normals[i]);
       this.normals[i].applyMatrix4(normalMatrix);
     }
+    for (let i = 0, len = this.faces.length; i < len; i++){
+      const face = this.faces[i];
+      //Get centroid of the face
+      face.centroid.set(0, 0, 0);
+      if ( face instanceof OdysseyFace3 ) {
+        face.centroid.add( this.vertices[ face.a ] );
+        face.centroid.add( this.vertices[ face.b ] );
+        face.centroid.add( this.vertices[ face.c ] );
+        face.centroid.divideScalar( 3 );
+      }
+    }
+
+    //updateMatrix
+    this.edges.forEach( (edge) => {
+      edge.update();
+    });
+  }
+
+  buildEdgeNormalHelpers(color: number = 0xff0000, maxLength: number = 0.5){
+    if(this.edgeNormalHelpers){
+      this.edgeNormalHelpers.removeFromParent();
+      this.edgeNormalHelpers.traverse((obj: any) => {
+        if(obj.geometry) obj.geometry.dispose();
+        if(obj.material) obj.material.dispose();
+      });
+    }
+
+    const helpers = new THREE.Group();
+    for(const edge of this.edges.values()){
+      if(!edge?.line || !edge?.normal) continue;
+      const length = Math.min(maxLength, edge.line.distance() * 0.5);
+      const arrow = new THREE.ArrowHelper(edge.normal, edge.center_point, length, color);
+      helpers.add(arrow);
+    }
+
+    this.edgeNormalHelpers = helpers;
+    this.mesh.add(this.edgeNormalHelpers);
   }
 
   readBinary(){
@@ -742,8 +780,8 @@ export class OdysseyWalkMesh {
         let edge: WalkmeshEdge = edges.shift();
         return {
           closed: false,
-          start: edge.vertex_1,
-          next: edge.vertex_2,
+          start: edge.vertIdx1,
+          next: edge.vertIdx2,
           edges: [edge]
         }
       }
@@ -765,11 +803,11 @@ export class OdysseyWalkMesh {
         }
 
         //Find next perimeter edge
-        let next_idx = edges.findIndex( (n_edge) => n_edge.vertex_1 == current_perimeter.next );
+        let next_idx = edges.findIndex( (n_edge) => n_edge.vertIdx1 == current_perimeter.next );
         if(next_idx >= 0){
           let n_edge = edges.splice(next_idx, 1)[0];
           current_perimeter.edges.push(n_edge);
-          current_perimeter.next = n_edge.vertex_2;
+          current_perimeter.next = n_edge.vertIdx2;
           continue;
         }else{
           console.warn('Walkmesh edge perimeter open');

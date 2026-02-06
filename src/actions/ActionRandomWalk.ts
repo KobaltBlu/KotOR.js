@@ -34,7 +34,7 @@ export class ActionRandomWalk extends Action {
 
     const owner: ModuleCreature = this.owner as ModuleCreature;
 
-    if(!owner.room || !owner.room.collisionData.walkmesh){
+    if(!owner.room || !owner.room.collisionManager.walkmesh){
       return ActionStatus.FAILED;
     }
 
@@ -42,7 +42,7 @@ export class ActionRandomWalk extends Action {
     let maxDistance = 1.5;
     let position = new THREE.Vector3();
 
-    const faces = owner.room.collisionData.walkmesh.walkableFaces;
+    const faces = owner.room.collisionManager.walkmesh.walkableFaces;
     const face = faces[Math.floor(Math.random()*faces.length)];
 
     if(!face){

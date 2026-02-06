@@ -183,8 +183,8 @@ export class ModulePlaceable extends ModuleObject {
     
     super.update(delta);
 
-    if(this.collisionData.walkmesh && this.model){
-      this.collisionData.walkmesh.matrixWorld.copy(this.model.matrix);
+    if(this.collisionManager.walkmesh && this.model){
+      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
     }
 
     if(this.model instanceof OdysseyModel3D){
@@ -665,19 +665,21 @@ export class ModulePlaceable extends ModuleObject {
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
     try{
       const buffer = await ResourceLoader.loadResource(ResourceTypes['pwk'], resRef);
-      this.collisionData.walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-      this.collisionData.walkmesh.name = resRef;
-      this.collisionData.walkmesh.moduleObject = this;
-      this.model.add(this.collisionData.walkmesh.mesh);
+      const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+      walkmesh.name = resRef;
+      walkmesh.moduleObject = this;
+      this.collisionManager.setWalkmesh(walkmesh);
+      this.model.add(walkmesh.mesh);
 
-      return this.collisionData.walkmesh;
+      return walkmesh;
     }catch(e){
       console.error(e);
-      this.collisionData.walkmesh = new OdysseyWalkMesh();
-      this.collisionData.walkmesh.name = resRef;
-      this.collisionData.walkmesh.moduleObject = this;
+      const walkmesh = new OdysseyWalkMesh();
+      walkmesh.name = resRef;
+      walkmesh.moduleObject = this;
+      this.collisionManager.setWalkmesh(walkmesh);
 
-      return this.collisionData.walkmesh;
+      return this.collisionManager.walkmesh;
     }
   }
 
@@ -910,7 +912,7 @@ export class ModulePlaceable extends ModuleObject {
     }
     
     try{
-      const wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){}
   }
