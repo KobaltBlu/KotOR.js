@@ -18,8 +18,8 @@ export const CheatConsole = () => {
     {
       label: 'General',
       types: [
-        EngineDebugType.CONTROLS,
-        EngineDebugType.SELECTED_OBJECT,
+        // EngineDebugType.CONTROLS,
+        // EngineDebugType.SELECTED_OBJECT,
         EngineDebugType.OBJECT_LABELS,
         EngineDebugType.PATH_FINDING
       ]
