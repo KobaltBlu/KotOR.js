@@ -1,7 +1,7 @@
 import React from "react";
 import { TabState } from "./TabState";
 import { EditorFile } from "../../EditorFile";
-import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPthEditor";
+import { TabPTHEditor } from "../../components/tabs/tab-pth-editor/TabPTHEditor";
 import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import * as KotOR from "../../KotOR";
