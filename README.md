@@ -35,6 +35,8 @@ You will need a valid copy of either KotOR I or KotOR II installed on your syste
 
 ## Web Compatibility (NEW)
 
+[Browser Compatibility Table](https://github.com/KobaltBlu/KotOR.js/wiki/Browser-Support)
+
 The recent transition to TypeScript has brought many improvements to the codebase, including Chrome support. When the project is compiled, the contents of the `dist` folder can be uploaded to a web server. The only requirement is that the site must be accessed from behind a valid SSL certificate. Using the latest version of Chrome is recommended.
 
 
