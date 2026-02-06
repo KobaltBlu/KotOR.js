@@ -30,4 +30,6 @@ export interface IGameStateGroups {
   weather_effects: THREE.Group;
   room_walkmeshes: THREE.Group;
   spell_instances: THREE.Group;
+  debug: THREE.Group;
+  collision_helpers: THREE.Group;
 };

@@ -36,10 +36,10 @@ export class ActionJumpToObject extends Action {
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       this.owner.setPosition(this.target.position);
       this.owner.setFacing(this.target.rotation.z, false);
-      this.owner.collisionData.groundFace = undefined;
-      this.owner.collisionData.lastGroundFace = undefined;
+      this.owner.collisionManager.groundFace = undefined;
+      this.owner.collisionManager.lastGroundFace = undefined;
       //this.getCurrentRoom();
-      this.owner.collisionData.findWalkableFace();
+      this.owner.collisionManager.findWalkableFace();
       return ActionStatus.COMPLETE;
     }
 
