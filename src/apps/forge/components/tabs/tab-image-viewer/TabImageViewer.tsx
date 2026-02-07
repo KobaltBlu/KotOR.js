@@ -138,15 +138,32 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
   }, [containerRef]);
 
+  const formatTxiValue = (value: unknown): string => {
+    if (value == null) return String(value);
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (Array.isArray(value)) {
+      return value.map((item) => {
+        if (item != null && typeof item === 'object' && 'x' in item && 'y' in item && 'z' in item) {
+          return `(${item.x}, ${item.y}, ${item.z})`;
+        }
+        return typeof item === 'object' ? JSON.stringify(item) : String(item);
+      }).join(', ');
+    }
+    if (typeof value === 'object' && value !== null && 'x' in value && 'y' in value && 'z' in value) {
+      return `(${(value as {x: number; y: number; z: number}).x}, ${(value as {x: number; y: number; z: number}).y}, ${(value as {x: number; y: number; z: number}).z})`;
+    }
+    return JSON.stringify(value);
+  };
+
   const eastContent = (
     (tab.image instanceof KotOR.TPCObject) ? (
       <div className="txi-pane">
         {
-          Object.entries(tab.image.txi).map( (element: [string, any]) => {
+          Object.entries(tab.image.txi).map( (element: [string, unknown]) => {
             return (
               <div className="txi-element" key={element[0]}>
                 <span className="txi-property">{element[0]}</span>
-                <span className="txi-value">{element[1]}</span>
+                <span className="txi-value">{formatTxiValue(element[1])}</span>
               </div>
             )
           })
