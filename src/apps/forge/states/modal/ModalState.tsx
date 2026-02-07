@@ -12,7 +12,7 @@ export class ModalState extends EventListenerModel {
   title: string = '';
 
   #manager: ModalManagerState;
-  #modalView: JSX.Element = (<></>);
+  #modalView: React.ReactElement = (<></>);
 
   constructor(){
     super();
@@ -20,7 +20,7 @@ export class ModalState extends EventListenerModel {
 
   }
 
-  setView(view: JSX.Element){
+  setView(view: React.ReactElement){
     this.#modalView = view;
   }
 
@@ -54,12 +54,16 @@ export class ModalState extends EventListenerModel {
   close(){
     this.hide();
     this.processEventListener('onClose', [this]);
-    this.#manager.removeModal(this);
+    if(this.#manager){
+      this.#manager.removeModal(this);
+    }
   }
 
   destroy(){
     this.close();
-    this.#manager.removeModal(this);
+    if(this.#manager){
+      this.#manager.removeModal(this);
+    }
     this.processEventListener('onDestory', [this]);
   }
 

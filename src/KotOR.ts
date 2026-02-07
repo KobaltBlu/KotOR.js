@@ -40,6 +40,8 @@ export * from "./resource/CExoLocSubString";
 export * from "./resource/BIFObject";
 export * from "./resource/BIKObject";
 export * from "./resource/ERFObject";
+export * from "./resource/DLGObject";
+export * from "./resource/DLGNode";
 export * from "./resource/GFFObject";
 export * from "./resource/GFFStruct";
 export * from "./resource/GFFField";

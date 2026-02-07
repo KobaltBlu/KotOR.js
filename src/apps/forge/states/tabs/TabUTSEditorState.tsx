@@ -10,7 +10,7 @@ import { ForgeSound } from "../../module-editor/ForgeSound";
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;
   sound: ForgeSound = new ForgeSound();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.sound.blueprint;
   }
@@ -45,12 +45,12 @@ export class TabUTSEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( (response) => {
           this.sound = new ForgeSound(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -109,7 +109,7 @@ export class TabUTSEditorState extends TabState {
       this.processEventListener('onSoundChange', [this]);
     }
   }
-  
+
   moveSoundDown(index: number){
     if(index < this.sound.soundResRefs.length - 1){
       const sound = this.sound.soundResRefs[index];
@@ -132,7 +132,7 @@ export class TabUTSEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    //todo
+    // Sound editor has no continuous animation; override for future audio preview if needed.
   }
 
   startEmitter(){
@@ -156,7 +156,7 @@ export class TabUTSEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
+
   updateFile(){
     this.sound.exportToBlueprint();
   }

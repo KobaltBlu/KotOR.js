@@ -58,8 +58,7 @@ export class ApplicationWindow {
     this.browserWindow.setMenuBarVisibility(false);
 
     // Emitted when the window is closed.
-    this.browserWindow.on('closed', (event) => {
-      event.preventDefault();
+    this.browserWindow.on('closed', () => {
       WindowManager.createLauncherWindow();
       WindowManager.removeWindow(this);
     });

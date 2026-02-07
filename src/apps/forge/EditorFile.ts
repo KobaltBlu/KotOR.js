@@ -38,7 +38,7 @@ export class EditorFile extends EventListenerModel {
   buffer2?: Uint8Array; //for dual file types like mdl/mdx
   gffObject?: KotOR.GFFObject;
   isBlueprint: boolean = false;
-  
+
   path: any;
   path2: any; //for dual file types like mdl/mdx
   archive_path: any;
@@ -203,7 +203,7 @@ export class EditorFile extends EventListenerModel {
           if(!this.reskey){
             this.reskey = KotOR.ResourceTypes[path_obj.ext];
           }
-    
+
           this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
         break;
         default:
@@ -289,7 +289,7 @@ export class EditorFile extends EventListenerModel {
                   if(this.useGameFileSystem){
                       KotOR.GameFileSystem.readFile(this.path).then( (buffer: Uint8Array) => {
                       this.buffer = buffer;
-        
+
                       resolve({
                         buffer: this.buffer,
                       });
@@ -299,7 +299,7 @@ export class EditorFile extends EventListenerModel {
                   }else if(this.useProjectFileSystem){
                     ProjectFileSystem.readFile(this.path).then( (buffer: Uint8Array) => {
                       this.buffer = buffer;
-        
+
                       resolve({
                         buffer: this.buffer,
                       });
@@ -310,7 +310,7 @@ export class EditorFile extends EventListenerModel {
                     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
                       fs.readFile(this.path, (err, buffer) => {
                         if(err) throw err;
-      
+
                         this.buffer = new Uint8Array(buffer);
                         resolve({
                           buffer: this.buffer,
@@ -322,7 +322,7 @@ export class EditorFile extends EventListenerModel {
                         if(!granted){
                           granted = (await this.handle.requestPermission({mode: 'read'})) === 'granted';
                         }
-                        
+
                         if(granted){
                           let file = await this.handle.getFile();
                           this.buffer = new Uint8Array( await file.arrayBuffer() );
@@ -353,7 +353,7 @@ export class EditorFile extends EventListenerModel {
               });
             }
           }
-  
+
         }
       }
     });
@@ -374,7 +374,7 @@ export class EditorFile extends EventListenerModel {
             if((!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) && key_mdx){
               this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
             }
-            
+
             resolve({
               buffer: this.buffer,
               buffer2: this.buffer2
@@ -436,7 +436,7 @@ export class EditorFile extends EventListenerModel {
               }catch(e){
                 console.error(e);
               }
-  
+
               resolve({
                 buffer: this.buffer,
                 buffer2: this.buffer2
@@ -445,13 +445,13 @@ export class EditorFile extends EventListenerModel {
               try{
                 //MDL
                 if(!(this.buffer instanceof Uint8Array) || !this.buffer?.length) this.buffer = await ProjectFileSystem.readFile(this.path);
-                
+
                 //MDX
                 if(!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) this.buffer2 = await ProjectFileSystem.readFile(this.path2);
               }catch(e){
                 console.error(e);
               }
-  
+
               resolve({
                 buffer: this.buffer,
                 buffer2: this.buffer2,
@@ -512,7 +512,7 @@ export class EditorFile extends EventListenerModel {
                     });
                     return;
                   }
-                  
+
                   let file2 = await this.handle2.getFile();
                   if(file2){
                     this.buffer2 = new Uint8Array( await file2.arrayBuffer() );
@@ -555,29 +555,31 @@ export class EditorFile extends EventListenerModel {
       if(this.archive_path){
         return `${this.protocol}//~/${this.archive_path}`;
       }
-      
+
       return parsed.dir;
     }else if (this.useProjectFileSystem){
       if(this.archive_path){
         return `${this.protocol}//~/${this.archive_path}`;
       }
-      
+
       return parsed.dir;
     }
 
     if(this.archive_path){
       return `${this.archive_path}`;
     }
-      
+
     return parsed.dir;
   }
 
+  /** Save to current path. Call TabState.save() on the owning tab to perform the actual save. */
   save(){
-    //stub
+    // Stub: tab handles save via TabState.save() when user uses File → Save.
   }
 
+  /** Save to a new path. Call TabState.saveAs() on the owning tab to perform the actual save. */
   saveAs(){
-    //stub
+    // Stub: tab handles save-as via TabState.saveAs() when user uses File → Save As.
   }
 
   static From(editorFile: EditorFile){

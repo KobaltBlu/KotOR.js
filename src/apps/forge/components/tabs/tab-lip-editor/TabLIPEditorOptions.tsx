@@ -7,6 +7,8 @@ import { Button, Form } from "react-bootstrap";
 import { SectionContainer } from "../../SectionContainer";
 
 import * as KotOR from "../../../KotOR";
+import { ForgeState } from "../../../states/ForgeState";
+import { ModalLIPBatchProcessorState } from "../../../states/modal/ModalLIPBatchProcessorState";
 
 export const TabLIPEditorOptions = function(props: any){
   const tab: TabLIPEditorOptionsState = props.tab;
@@ -118,7 +120,12 @@ export const TabLIPEditorOptions = function(props: any){
         }
       </SectionContainer>
       <SectionContainer name="Utilities">
-        <Button onClick={onImportPHNClick}>Import PHN</Button>
+        <Button onClick={onImportPHNClick} className="me-2">Import PHN</Button>
+        <Button variant="outline-secondary" onClick={() => {
+          const lipBatchModal = new ModalLIPBatchProcessorState();
+          ForgeState.modalManager.addModal(lipBatchModal);
+          lipBatchModal.open();
+        }}>LIP Batch Processor…</Button>
       </SectionContainer>
     </>
   );

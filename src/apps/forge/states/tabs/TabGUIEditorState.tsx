@@ -8,7 +8,7 @@ import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer
 
 
 export type TabGUIEditorStateEventListenerTypes =
-TabStateEventListenerTypes & 
+TabStateEventListenerTypes &
   ''|'onEditorFileLoad'|'onNodeSelected'|'onNodeAdded'|'onNodeRemoved'|'onAnimate';
 
 export interface TabGUIEditorStateEventListeners extends TabStateEventListeners {
@@ -64,7 +64,6 @@ export class TabGUIEditorState extends TabState {
   }
 
   animate(delta: number = 0){
-    //todo
     this.menu?.update(delta);
     this.processEventListener('onAnimate', [delta]);
   }
@@ -74,11 +73,11 @@ export class TabGUIEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( async (response) => {
           this.gff = new KotOR.GFFObject(response.buffer);
           this.menu = new KotOR.GameMenu();

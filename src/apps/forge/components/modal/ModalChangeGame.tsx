@@ -3,6 +3,7 @@ import { Button, Modal } from "react-bootstrap";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
 
 import * as KotOR from "../../KotOR";
+import { ForgeState } from "../../states/ForgeState";
 
 export const ModalChangeGame = function(props: any){
   const [show, setShow] = useState(false);
@@ -13,8 +14,8 @@ export const ModalChangeGame = function(props: any){
 
   const chooseProfile = (e: React.MouseEvent<HTMLButtonElement>, profile: any) => {
     setShow(false);
-    if(profile){
-      window.location.search = `?key=${profile.key}`;
+    if (profile) {
+      ForgeState.switchGame(profile);
     }
   }
 
@@ -22,7 +23,7 @@ export const ModalChangeGame = function(props: any){
     let compatible_profiles: any[] = [];
     let all_profiles = (KotOR.ConfigClient.get(['Profiles']) || {});
     let all_profile_keys = Object.keys(all_profiles);
-    
+
     for(let i = 0, len = all_profile_keys.length; i < len; i++){
       console.log(all_profile_keys[i])
       let profile = all_profiles[all_profile_keys[i]];
@@ -41,10 +42,10 @@ export const ModalChangeGame = function(props: any){
   });
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleClose} 
-      backdrop="static" 
+    <Modal
+      show={show}
+      onHide={handleClose}
+      backdrop="static"
       keyboard={false}
     >
       <Modal.Header closeButton>
@@ -59,7 +60,7 @@ export const ModalChangeGame = function(props: any){
         {
           profiles.map( (profile: any) => {
             return (
-              <Button key={profile.key} variant="primary" onClick={(e: any) => chooseProfile(e, profile)}>{profile.name}</Button>
+              <Button key={profile.key} variant="primary" onClick={(e: React.MouseEvent<HTMLButtonElement>) => chooseProfile(e, profile)}>{profile.name}</Button>
             )
           })
         }

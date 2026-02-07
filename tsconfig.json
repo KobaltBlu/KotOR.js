@@ -1,35 +1,44 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "ESNext",
-    "module": "commonjs",
-    "declaration": false,
-    "noImplicitAny": true,
-    "removeComments": true,
-    "experimentalDecorators": true,
-    "rootDir": ".",
-    "sourceMap": false,
-    "listFiles": true,
-    "newLine": "LF",
-    "noEmitOnError": true,
-    "strictNullChecks": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "allowJs": true,
+    "declaration": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "jsx": "react",
-    "types": [
-      "@types/wicg-file-system-access",
-      "user-agent-data-types",
-      "node",
-      "offscreencanvas",
-    ],
     "lib": [
       "ESNext",
       "dom",
       "WebWorker"
     ],
+    "listFiles": true,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
     "outDir": "dist",
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": true,
+    "strictNullChecks": false,
+    "target": "ESNext",
+    "types": [
+      "@types/wicg-file-system-access",
+      "user-agent-data-types",
+      "node",
+      "offscreencanvas",
+    ]
   },
-  "include": ["src/KotOR.ts", "src/types", "src/index.d.ts"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"]
+  "exclude": [
+    "node_modules",
+    "src/**/*.spec.ts"
+  ],
+  "include": [
+    "src/KotOR.ts",
+    "src/types",
+    "src/index.d.ts"
+  ]
 }
