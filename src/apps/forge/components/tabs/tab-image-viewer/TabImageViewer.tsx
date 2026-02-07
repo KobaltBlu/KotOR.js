@@ -14,7 +14,7 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
   const [txiObject, setTXIObject] = useState<object>();
-  const [txiPane, setTXIPane] = useState<JSX.Element>();
+  const [txiPane, setTXIPane] = useState<React.ReactElement | undefined>();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 

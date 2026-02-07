@@ -65,9 +65,10 @@ export const ResourceListNode = memo(function ResourceListNode(props: ResourceLi
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}
+        onContextMenu={onContextMenu}
       />
     ));
-  }, [openState, hasChildren, node.nodes, depth, onSelect]);
+  }, [openState, hasChildren, node.nodes, depth, onSelect, onContextMenu]);
 
   // Prepare data attributes for the core component
   const dataAttributes = {

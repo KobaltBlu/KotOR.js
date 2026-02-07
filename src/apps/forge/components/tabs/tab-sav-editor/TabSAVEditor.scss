@@ -1,0 +1,129 @@
+.forge-sav-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 1rem;
+  }
+}
+
+.sav-info {
+  margin-bottom: 1rem;
+
+  h3 {
+    margin: 0 0 0.5rem 0;
+    color: #8aa4ff;
+  }
+
+  p {
+    color: #b8c2d8;
+    margin-bottom: 0.75rem;
+  }
+
+  .sav-stats {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+
+      label {
+        font-weight: 600;
+        color: #8aa4ff;
+      }
+
+      span {
+        color: #d8e0ef;
+      }
+    }
+  }
+}
+
+.resource-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  h4 {
+    margin: 0 0 0.75rem 0;
+    color: #8aa4ff;
+  }
+
+  .resource-table {
+    flex: 1;
+    overflow-y: auto;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: #20283a;
+        z-index: 10;
+
+        th {
+          padding: 0.75rem;
+          text-align: left;
+          font-weight: 600;
+          color: #8aa4ff;
+          border-bottom: 2px solid #2a3142;
+          font-size: 0.9rem;
+        }
+      }
+
+      tbody {
+        .resource-row {
+          cursor: pointer;
+          transition: background 0.2s;
+          border-bottom: 1px solid #2a3142;
+
+          &:hover {
+            background: #20283a;
+          }
+
+          td {
+            padding: 0.6rem 0.75rem;
+            font-size: 0.85rem;
+          }
+
+          .resref-cell {
+            font-family: 'Courier New', monospace;
+            color: #d8e0ef;
+          }
+
+          .type-cell {
+            font-family: 'Courier New', monospace;
+            color: #8aa4ff;
+            font-weight: 600;
+            width: 80px;
+          }
+        }
+      }
+    }
+  }
+}

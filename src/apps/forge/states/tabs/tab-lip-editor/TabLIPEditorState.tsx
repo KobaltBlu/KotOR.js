@@ -17,7 +17,7 @@ import * as THREE from 'three';
 const DEFAULT_HEAD = 'p_bastilah';
 
 export type TabLIPEditorStateEventListenerTypes =
-TabStateEventListenerTypes & 
+TabStateEventListenerTypes &
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
   'onAnimate'|'onKeyFramesChange'|'onDurationChange';
@@ -51,7 +51,7 @@ export class TabLIPEditorState extends TabState {
   preview_gain: number = 0.5;
   audio_buffer: AudioBuffer;
   playbackRate: number = 1;
-  
+
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
   lipOptionsTab: TabLIPEditorOptionsState;
 
@@ -74,7 +74,7 @@ export class TabLIPEditorState extends TabState {
   scrubDuration: number|undefined;
 
   head: KotOR.OdysseyModel3D;
-  head_hook: THREE.Object3D<THREE.Event> = new THREE.Object3D();
+  head_hook: THREE.Object3D = new THREE.Object3D();
   pointLight: THREE.PointLight;
 
   ui3DRenderer: UI3DRenderer;
@@ -92,14 +92,14 @@ export class TabLIPEditorState extends TabState {
     if(this.file){
       this.tabName = this.file.getFilename();
     }
-    
+
     //Audio
     this.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
     this.current_head = localStorage.getItem('lip_head') !== null ? localStorage.getItem('lip_head') as string : DEFAULT_HEAD;
-    
+
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
@@ -147,7 +147,7 @@ export class TabLIPEditorState extends TabState {
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         file.readFile().then( (response) => {
-          new KotOR.LIPObject(response.buffer, (lip: any) => {
+          new KotOR.LIPObject(response.buffer, (lip: KotOR.LIPObject) => {
             this.lip = lip;
 
             if(typeof this.lip.file != 'string')
@@ -192,7 +192,7 @@ export class TabLIPEditorState extends TabState {
           this.head_hook.add(this.head);
           this.box3.setFromObject(this.head);
 
-          this.head.animations.sort((a: any, b: any) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
+          this.head.odysseyAnimations.sort((a: KotOR.OdysseyModelAnimation, b: KotOR.OdysseyModelAnimation) => (a.name.toLowerCase() > b.name.toLowerCase()) ? 1 : ((b.name.toLowerCase() > a.name.toLowerCase()) ? -1 : 0))
           this.head.playAnimation('tlknorm', true);
 
           this.head.userData.moduleObject = {
@@ -208,14 +208,15 @@ export class TabLIPEditorState extends TabState {
 
   loadSound(sound = 'nm35aabast06217_'){
     return new Promise<void>( (resolve, reject) => {
-      KotOR.AudioLoader.LoadStreamWave(sound).then((data: any) => {
+      KotOR.AudioLoader.LoadStreamWave(sound).then((data: Uint8Array | ArrayBuffer) => {
         this.audio_name = sound;
-        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data, (buffer: AudioBuffer) => {
+        const arrayBuffer = data instanceof ArrayBuffer ? data : (data as Uint8Array).buffer.slice(0) as ArrayBuffer;
+        KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(arrayBuffer, (buffer: AudioBuffer) => {
           this.audio_buffer = buffer;
           this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAudioLoad', [this, buffer]);
           resolve();
         });
-      }, (e: any) => {
+      }, (_e: unknown) => {
         resolve();
       });
     });
@@ -286,7 +287,7 @@ export class TabLIPEditorState extends TabState {
 
     this.resetAudio();
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    
+
     try{
       this.source.buffer = this.audio_buffer;
       this.source.connect(this.gainNode);
@@ -300,7 +301,7 @@ export class TabLIPEditorState extends TabState {
         this.source.start(0, 0, duration);
       }
     }catch(e){}
-    
+
     this.poseFrame = true;
     this.playing = true;
     this.scrubDuration = duration;
@@ -485,7 +486,7 @@ export class TabLIPEditorState extends TabState {
             shape: PHN_INVALID,
             time: parseFloat(keyframe_data[0]) * .001
           };
-          
+
           switch(keyframe_data[2]){
             case "i:":
               keyframe.shape = PHN_EE;
@@ -562,7 +563,7 @@ export class TabLIPEditorState extends TabState {
             case "e&":
               keyframe.shape = PHN_EH;
               break;
-            
+
             case "ph":
               keyframe.shape = PHN_MPB;
               break;

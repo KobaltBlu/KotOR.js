@@ -43,10 +43,14 @@ export const TabLIPEditor = function(props: BaseTabProps){
   )
 }
 
-export const UILIPKeyFramePanel = function(props: any){
-  const tab: TabLIPEditorState = props.tab as TabLIPEditorState;
-  const waveformCanvasRef = useRef<HTMLCanvasElement>();
-  const seekerRef = useRef<HTMLDivElement>();
+export interface UILIPKeyFramePanelProps {
+  tab: TabLIPEditorState;
+}
+
+export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
+  const tab = props.tab;
+  const waveformCanvasRef = useRef<HTMLCanvasElement>(null);
+  const seekerRef = useRef<HTMLDivElement>(null);
   const [playing, setPlaying] = useState<boolean>(tab.playing);
   const [seekPositionLeft, setSeekPositionLeft] = useState<number>(0);
   const [zoom, setZoom] = useState<number>(tab.timeline_zoom);
@@ -80,7 +84,7 @@ export const UILIPKeyFramePanel = function(props: any){
 
           canvas.height = height;
           canvas.width = tab.audio_buffer.duration * tab.timeline_zoom;
-          
+
           let width = canvas.width;
           ctx.strokeStyle = '#5bc0de';
           ctx.fillStyle = 'rgba(0, 0, 0, 0)';
@@ -183,11 +187,11 @@ export const UILIPKeyFramePanel = function(props: any){
 
   useEffect( () => {
     let _timelineScaleFactor = timelineScaleFactor;
-  
+
     if(zoom < 250){
       _timelineScaleFactor = 30;
     }
-  
+
     if(zoom <= 150){
       _timelineScaleFactor = 60;
     }
@@ -251,7 +255,7 @@ export const UILIPKeyFramePanel = function(props: any){
         if(seekPosition > keyframeWindowElement.clientWidth + keyframeWindowElement.scrollLeft){
           keyframeWindowElement.scrollLeft = (seekPosition - 50);
         }
-    
+
         if(seekPosition < keyframeWindowElement.scrollLeft){
           keyframeWindowElement.scrollLeft = (seekPosition - 50);
         }
@@ -280,7 +284,7 @@ export const UILIPKeyFramePanel = function(props: any){
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
       let maxPixels = (tab.lip.duration * tab.timeline_zoom);
-      
+
       let position = (e.pageX - bRect.left + keyframeWindowElement.scrollLeft);
       if(position < 0) return 0;
       if(position > maxPixels) return maxPixels;
@@ -304,7 +308,7 @@ export const UILIPKeyFramePanel = function(props: any){
       let position = getTimelinePixelPositionRelativeToMouseEvent(e);
       let time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
-      
+
       const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
       setSeekPositionLeft(seekPosition);
     }
@@ -326,7 +330,7 @@ export const UILIPKeyFramePanel = function(props: any){
     updateScrollBoundsFocus(true);
   }
 
-  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.ILIPKeyFrame) => {
+  const onKeyFrameMouseDown = (e: React.MouseEvent<HTMLElement>, keyframe: KotOR.ILIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.selectKeyFrame(keyframe);
@@ -334,7 +338,7 @@ export const UILIPKeyFramePanel = function(props: any){
     tab.dragging_frame = keyframe;
   }
 
-  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLDivElement>, keyframe: KotOR.ILIPKeyFrame) => {
+  const onKeyFrameMouseUp = (e: React.MouseEvent<HTMLElement>, keyframe: KotOR.ILIPKeyFrame) => {
     e.stopPropagation();
     e.preventDefault();
     tab.seek(keyframe.time);
@@ -355,17 +359,17 @@ export const UILIPKeyFramePanel = function(props: any){
     let time = getTimelinePixelPositionAsTime(position);
     if(tab.scrubbing){
       tab.seek(time);
-      
+
       const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
       setSeekPositionLeft(seekPosition);
-    
+
       tab.play(0.05);
       clearTimeout(tab.scrubbingTimeout);
       tab.scrubbingTimeout = setTimeout( () => {
         // tab.pause();
       }, 25);
     }
-    
+
     if(tab.dragging_frame){
       tab.dragging_frame.time = time;
       setKeyFrames([...tab.lip.keyframes]);
@@ -459,24 +463,24 @@ export const UILIPKeyFramePanel = function(props: any){
         <div className="keyframe-track" style={{width: (duration * zoom)}}>
           {
             (
-              keyframes.length ? keyframes.map( 
+              keyframes.length ? keyframes.map(
                 (keyframe: KotOR.ILIPKeyFrame, index: number) => {
                   //onStart={(e) => handleStart(e, 'north') } onStop={(e) => handleStop(e, 'north') }
                   return (
-                    <div key={`${keyframe.uuid}`} className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}} 
-                      onClick={(e: any) => onKeyFrameMouseUp(e, keyframe)} 
-                      onMouseDown={(e: any) => onKeyFrameMouseDown(e, keyframe)} 
-                      onMouseUp={(e: any) => onKeyFrameMouseUp(e, keyframe)}
+                    <div key={`${keyframe.uuid}`} className={`keyframe ${selectedFrame == keyframe ? 'selected' : ''}`} style={{left: (keyframe.time * zoom)}}
+                      onClick={(e: React.MouseEvent<HTMLElement>) => onKeyFrameMouseUp(e, keyframe)}
+                      onMouseDown={(e: React.MouseEvent<HTMLElement>) => onKeyFrameMouseDown(e, keyframe)}
+                      onMouseUp={(e: React.MouseEvent<HTMLElement>) => onKeyFrameMouseUp(e, keyframe)}
                     >
                       <i className="fa-solid fa-diamond"></i>
                     </div>
                   )
-                }) 
+                })
               : <></>
             )
           }
         </div>
-        <div ref={seekerRef as any} className="keyframe-track-seeker" style={{left: seekPositionLeft}}>
+        <div ref={seekerRef} className="keyframe-track-seeker" style={{left: seekPositionLeft}}>
           <div className="seeker-thumb">
 
           </div>
@@ -486,8 +490,8 @@ export const UILIPKeyFramePanel = function(props: any){
   );
 }
 
-export const UILIPUtilitiesControl = function(props: any){
-  const tab: TabLIPEditorState = props.tab as TabLIPEditorState;
+export const UILIPUtilitiesControl = function(props: { tab: TabLIPEditorState }){
+  const tab = props.tab;
   return (
     <TabManagerProvider manager={tab.utilitiesTabManager}>
       <TabManager></TabManager>

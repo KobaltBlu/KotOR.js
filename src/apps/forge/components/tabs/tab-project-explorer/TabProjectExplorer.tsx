@@ -9,11 +9,15 @@ import { FileBrowserNode } from "../../../FileBrowserNode";
 import { ForgeTreeView } from "../../treeview/ForgeTreeView";
 import { ForgeState } from "../../../states/ForgeState";
 import { Project } from "../../../Project";
+import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
+import "./TabProjectExplorer.scss";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
   depth?: number;
   children?: any;
+  onContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
 }
 
 export const ResourceListNode = function(props: ResourceListNodeProps){
@@ -44,14 +48,21 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
 
   if(node.nodes.length){
     return (
-      <li onClick={(e) => onClickNode(e, props.node)}>
-        <input type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
+      <li
+        onClick={(e) => onClickNode(e, props.node)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          props.onContextMenu?.(e, props.node);
+        }}
+      >
+        <input title="Open State" type="checkbox" checked={!openState} onChange={(e) => onChangeCheckbox(e, props.node)} />
         <label onClick={(e) => onLabelClick(e, props.node)}>{node.name}</label>
         <ul>
           {
             (openState) ? (
               node.nodes.map( (child: FileBrowserNode) => (
-                <ResourceListNode key={child.id} node={child} />
+                <ResourceListNode key={child.id} node={child} onContextMenu={props.onContextMenu} />
               ))
             ) : (<></>)
           }
@@ -60,7 +71,16 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
     );
   }else{
     return (
-      <li className="link" data-path={node.data.path} onDoubleClick={(e) => onClickNode(e, props.node)}>
+      <li
+        className="link"
+        data-path={node.data.path}
+        onDoubleClick={(e) => onClickNode(e, props.node)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          props.onContextMenu?.(e, props.node);
+        }}
+      >
         {node.name}
       </li>
     );
@@ -69,6 +89,8 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
 
 export const TabProjectExplorer = function(props: BaseTabProps) {
   const [resourceList, setResourceList] = useState<FileBrowserNode[]>([]);
+
+  const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
   useEffectOnce(() => {
     const tab = props.tab as TabProjectExplorerState;
@@ -87,41 +109,14 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
   const hasProject = !!ForgeState.project;
   if (!hasProject || resourceList.length === 0) {
     return (
-      <div className="scroll-container" style={{ 
-        width: '100%', 
-        height: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexDirection: 'column',
-        gap: '16px'
-      }}>
-        <div style={{ 
-          color: '#ccc',
-          fontSize: '14px',
-          textAlign: 'center'
-        }}>
+      <div className="scroll-container tab-project-explorer__empty">
+        <div className="tab-project-explorer__empty-message">
           No project is currently open.
         </div>
         <button
+          type="button"
+          className="tab-project-explorer__open-project-btn"
           onClick={handleOpenProject}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#007acc',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            transition: 'background-color 0.2s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#005a9e';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#007acc';
-          }}
         >
           Open Project
         </button>
@@ -130,16 +125,66 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
   }
 
   return (
-    <div className="scroll-container" style={{ width:'100%', overflow: 'auto' }}>
+    <div className="scroll-container tab-project-explorer__scroll">
       <ForgeTreeView>
         {
           resourceList.map( (node: FileBrowserNode) => {
             return (
-              <ResourceListNode key={node.id} node={node} depth={0} />
+              <ResourceListNode
+                key={node.id}
+                node={node}
+                depth={0}
+                onContextMenu={(e, n) => {
+                  const items: ContextMenuItem[] = [];
+
+                  if(n.type === 'resource'){
+                    const resref = (n.name || '').split('.')[0] ?? '';
+                    items.push({
+                      id: 'open-file',
+                      label: 'Open File',
+                      onClick: () => {
+                        FileTypeManager.onOpenResource(
+                          new EditorFile({
+                            path: n.data.path,
+                            useProjectFileSystem: true,
+                          })
+                        );
+                      }
+                    });
+                    items.push({
+                      id: 'copy-resref',
+                      label: 'Copy ResRef',
+                      disabled: !resref.length,
+                      onClick: async () => {
+                        if (resref && navigator.clipboard?.writeText) {
+                          await navigator.clipboard.writeText(resref);
+                        }
+                      }
+                    });
+                    items.push({ id: 'sep-1', separator: true });
+                    items.push({
+                      id: 'find-references',
+                      label: 'Find References…',
+                      disabled: !resref.length,
+                      onClick: () => {
+                        ForgeState.tabManager.addTab(
+                          new TabReferenceFinderState({ query: resref, scope: 'project' })
+                        );
+                      }
+                    });
+                  }
+
+                  if(items.length){
+                    showContextMenu((e as any).clientX, (e as any).clientY, items);
+                  }
+                }}
+              />
             )
           })
         }
       </ForgeTreeView>
+
+      {ContextMenuComponent}
     </div>
   );
 
