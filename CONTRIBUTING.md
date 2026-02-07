@@ -5,21 +5,39 @@ Thank you for your interest in contributing to KotOR.js! This document provides 
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [Quick Start](#quick-start)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
 - [Development Workflow](#development-workflow)
+- [Documentation and Configuration Overview](#documentation-and-configuration-overview)
+- [Debugging](#debugging)
 - [Coding Standards](#coding-standards)
 - [Testing](#testing)
 - [Documentation](#documentation)
 - [Submitting Changes](#submitting-changes)
 - [Pull Request Process](#pull-request-process)
 - [Issue Reporting](#issue-reporting)
+- [Common Issues](#common-issues)
 - [Getting Help](#getting-help)
 
 ## Code of Conduct
 
 This project adheres to a Code of Conduct that all contributors are expected to follow. Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before participating.
+
+## Quick Start
+
+```bash
+npm install
+
+# Terminal 1: build in watch mode
+npm run webpack:dev-watch
+
+# Terminal 2: run the app
+npm start
+```
+
+For auto-restart when main-process code changes, use `npm run start-watch` in the second terminal. See [Development Workflow](#development-workflow) and [DEVELOPMENT.md](DEVELOPMENT.md) for all scripts and debugging.
 
 ## Getting Started
 
@@ -146,40 +164,42 @@ For more detailed information, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 ## Development Workflow
 
-### Available Scripts
+### npm Scripts
 
-The project includes several npm scripts for common development tasks:
+All scripts are defined in `package.json`. Webpack builds every target (KotOR library, launcher, game, Forge, debugger) in one run; there is no script to build a single target.
 
-#### Build Scripts
+| Script | Description |
+|--------|-------------|
+| `npm start` | Compile main-process TypeScript once and launch Electron. |
+| `npm run start-watch` | Watch main-process sources; on success, launch Electron (restarts on change). |
+| `npm run start:debug` | Same as `npm start` with `ELECTRON_ENABLE_LOGGING=1` and `NODE_OPTIONS=--trace-warnings`. |
+| `npm run start-watch:debug` | Same as `npm run start-watch` with the same debug/trace environment. |
+| `npm run start:inspect` | Run Electron with `--inspect=5858`; attach via Chrome at `chrome://inspect`. |
+| `npm run webpack:dev` | Single development build. Output under `dist/`. |
+| `npm run webpack:dev-watch` | Development build in watch mode. |
+| `npm run webpack:prod` | Single production build. |
+| `npm run webpack:dev:verbose` | Development build with `--progress` and `--stats verbose`. |
+| `npm run electron:compile` | Compile `tsconfig.electron.json` once; output in `dist/electron/`. |
+| `npm run electron:watch` | Watch main-process TypeScript; does not start Electron. |
+| `npm run electron:build` | Production Webpack + main-process compile + electron-builder (distributable). |
+| `npm test` | Jest: verbose, coverage, no cache (`./src/tests`). |
+| `npm run test:watch` | Jest in watch mode. |
+| `npm run test:verbose` | Jest verbose, no coverage. |
+| `npm run typedoc` | Generate API docs from `./src/KotOR.ts` into `./wiki`. |
 
-- `npm run webpack:dev` - Build once in development mode
-- `npm run webpack:dev-watch` - Build in watch mode (auto-rebuild on changes)
-- `npm run webpack:prod` - Build for production
-- `npm run electron:compile` - Compile Electron TypeScript files
-- `npm run electron:build` - Build complete Electron application
+Type checking (not in `package.json`): `npx tsc --noEmit` for full project; `npx tsc --noEmit -p tsconfig.forge.json` (or `tsconfig.game.json`, etc.) for a single app.
 
-#### Development Scripts
+### File Locations
 
-- `npm start` - Compile and start Electron application
-- `npm run start-watch` - Start with auto-reload on changes
-- `npm run electron:watch` - Watch Electron files for changes
-
-#### Testing Scripts
-
-- `npm test` - Run all tests with coverage
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Generate coverage report
-
-#### Documentation Scripts
-
-- `npm run typedoc` - Generate API documentation
-
-#### Code Quality Scripts
-
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint issues automatically
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
+| Purpose | Location |
+|---------|----------|
+| Source code | `src/` |
+| Main entry | `src/KotOR.ts` |
+| Game init | `src/GameInitializer.ts` |
+| Module system | `src/module/Module.ts` |
+| Build output | `dist/` |
+| Tests | `src/tests/` (match: `**/*.test.ts`) |
+| Config | Root (`package.json`, `tsconfig.*.json`, `webpack.config.js`, `jest.config.js`) |
 
 ### Typical Development Session
 
@@ -213,12 +233,69 @@ npm run start-watch
 npm test
 ```
 
-1. **Check code quality**:
+1. **Check code quality**: If ESLint/Prettier are configured in the repo, run `npm run lint` and `npm run format:check` (or equivalent) before committing.
 
-```bash
-npm run lint
-npm run format:check
-```
+## Documentation and Configuration Overview
+
+### Core documentation
+
+| File | Purpose |
+|------|---------|
+| [README.md](README.md) | Project overview, features, quick start. |
+| [SETUP.md](SETUP.md) | Setup instructions, troubleshooting. |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines (this file). |
+| [DEVELOPMENT.md](DEVELOPMENT.md) | Build, run, test, and debug in detail. |
+| [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) | Project structure and organization. |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community guidelines. |
+
+### Configuration files
+
+| File | Purpose |
+|------|---------|
+| `.editorconfig` | Editor formatting. |
+| `.gitignore` | Git ignore patterns. |
+| `package.json` | Dependencies and npm scripts. |
+| `tsconfig.json`, `tsconfig.*.json` | TypeScript configuration. |
+| `webpack.config.js` | Webpack build configuration. |
+| `jest.config.js` | Jest test configuration. |
+
+### GitHub
+
+| Path | Purpose |
+|------|---------|
+| `.github/PULL_REQUEST_TEMPLATE.md` | Pull request template. |
+| `.github/ISSUE_TEMPLATE/*.md` | Issue templates. |
+| `.github/workflows/*.yml` | CI (e.g. webpack-dev, webpack-prod). |
+
+### API documentation
+
+Run `npm run typedoc` to generate API docs from `./src/KotOR.ts` into `./wiki/`.
+
+### External resources
+
+- **Discord**: [OpenKotOR Discord Server](https://discord.gg/QxjqVAuN8T)
+- **Forum**: [DeadlyStream – KotOR.js thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)
+- **GitHub Issues**: [Issue tracker](https://github.com/KobaltBlu/KotOR.js/issues)
+- **TypeScript**: [typescriptlang.org/docs](https://www.typescriptlang.org/docs/)
+- **React**: [react.dev](https://react.dev/)
+- **THREE.js**: [threejs.org/docs](https://threejs.org/docs/)
+- **Electron**: [electronjs.org/docs](https://www.electronjs.org/docs/)
+- **Webpack**: [webpack.js.org](https://webpack.js.org/)
+- **Jest**: [jestjs.io/docs](https://jestjs.io/docs/getting-started)
+
+## Debugging
+
+### Main process (Electron)
+
+- **Logging and trace**: Use `npm run start:debug` or `npm run start-watch:debug` to run with `ELECTRON_ENABLE_LOGGING=1` and `NODE_OPTIONS=--trace-warnings` (output in the terminal).
+- **Inspector**: Use `npm run start:inspect`, then in Chrome open `chrome://inspect` and connect to the Node target.
+- **Manual env (PowerShell)**: `$env:ELECTRON_ENABLE_LOGGING=1; $env:NODE_OPTIONS="--trace-warnings"; npm run start-watch`
+- **Manual env (Bash/zsh)**: `ELECTRON_ENABLE_LOGGING=1 NODE_OPTIONS=--trace-warnings npm run start-watch`
+
+### Renderer (Launcher, Game, Forge)
+
+- Open DevTools from inside the app (e.g. enable `openDevTools()` in `src/electron/LauncherWindow.ts` or `src/electron/ApplicationWindow.ts`).
+- Or run `npx electron --remote-debugging-port=9222 ./main` and in Chrome open `http://localhost:9222` to attach to the renderer.
 
 ## Coding Standards
 
@@ -323,15 +400,17 @@ import type { GameEngineType } from '../enums/engine';
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (verbose, with coverage)
 npm test
 
 # Run tests in watch mode
 npm run test:watch
 
-# Run tests with coverage
-npm run test:coverage
+# Run tests verbose, no coverage
+npm run test:verbose
 ```
+
+Single file: `npx jest --runInBand path/to/file.test.ts`
 
 ### Test Structure
 
@@ -412,19 +491,9 @@ git checkout -b fix/bug-description
 npm test
 ```
 
-1. **Check code quality**:
+1. **Check code quality**: If the repo defines `lint` or `format` scripts, run them (e.g. `npm run lint`, `npm run format:check`).
 
-```bash
-npm run lint
-npm run format:check
-```
-
-1. **Fix any issues**:
-
-```bash
-npm run lint:fix
-npm run format
-```
+1. **Fix any issues**: Address test failures and, if applicable, run `npm run lint:fix` or `npm run format`.
 
 1. **Commit your changes**:
 
@@ -555,6 +624,14 @@ Include:
 - `help wanted` - Extra attention needed
 - `good first issue` - Good for newcomers
 
+## Common Issues
+
+| Issue | What to try |
+|-------|--------------|
+| Build fails | `rm -rf node_modules && npm install` (or equivalent on Windows). |
+| Type errors | `npx tsc --noEmit`. |
+| Lint/format | Use repo lint/format scripts if defined; otherwise fix reported issues manually. |
+
 ## Getting Help
 
 ### Resources
@@ -612,6 +689,13 @@ Contributors will be:
 
 Thank you for contributing to KotOR.js! Your efforts help make this project better for everyone.
 
+### VS Code (optional)
+
+- `Ctrl+Shift+P` — Command palette  
+- `` Ctrl+` `` — Toggle terminal  
+- `F5` — Start debugging  
+- `Ctrl+Shift+B` — Run build task  
+
 ---
 
-**Questions?** Feel free to open an issue or reach out on Discord!
+**Questions?** Open an issue or ask on [Discord](https://discord.gg/QxjqVAuN8T).

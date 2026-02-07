@@ -152,9 +152,9 @@ For detailed information, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 We welcome contributions! Please read:
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Comprehensive contribution guidelines
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Contribution guidelines, quick start, scripts, and documentation overview
 - **[SETUP.md](SETUP.md)** - Detailed setup instructions and troubleshooting
-- **[DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)** - Quick command reference
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Build, run, test, and debug in detail
 
 Key topics covered:
 
@@ -207,6 +207,7 @@ And many many more!
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines and development workflow
 - [SETUP.md](SETUP.md) - Detailed setup instructions
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Build, run, test, and debug
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure overview
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Code of conduct
 

@@ -23,7 +23,7 @@
     "skipLibCheck": true,
     "sourceMap": false,
     "strict": true,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "target": "ESNext",
     "types": [
       "@types/wicg-file-system-access",
