@@ -335,13 +335,14 @@ export class GameInitializer {
       const modules = filenames.map(function(file) {
         const filename = file.split(path.sep).pop() as string;
         const args = filename.split('.');
+        const ext = args.length >= 2 ? args[1].toLowerCase() : '';
         return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
+          ext,
+          name: args[0],
           filename: filename
         };
       }).filter(function(file_obj){
-        return file_obj.ext == 'rim' || file_obj.ext == 'mod';
+        return file_obj.ext === 'rim' || file_obj.ext === 'mod';
       });
 
       for(let i = 0, len = modules.length; i < len; i++){
