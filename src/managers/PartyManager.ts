@@ -528,37 +528,75 @@ export class PartyManager {
    * @returns void
    */
   static RemoveNPCById(npcId = 0, leaveInWorld = false){
+    console.log('RemoveNPCById', npcId, leaveInWorld);
+    const partyMember = PartyManager.GetPartyMemberByNPCId(npcId);
+    if(!partyMember){
+      return;
+    }
+
+    const pmIndex = PartyManager.party.indexOf(partyMember);
+    if(pmIndex == -1){
+      return;
+    }
+
+    //Remove the partymember from the module
+    partyMember.isPM = false;
+    PartyManager.party.splice(pmIndex, 1);
+    PartyManager.RebuildPortraitOrder();
+
+    if(!leaveInWorld){
+      console.log('RemoveNPCById !leaveInWorld', partyMember);
+      partyMember.destroy();
+    }else{
+      console.log('RemoveNPCById leaveInWorld', partyMember);
+      if(partyMember.container){
+        partyMember.container.removeFromParent();
+      }
+      GameState.group.creatures.add(partyMember.container);
+      GameState.module.area.attachObject(partyMember);
+    }
+    
+    PartyManager.RemoveCurrentMemberByNPCId(npcId);
+  }
+
+  static GetPartyMemberByNPCId(npcId = 0){
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const pm = PartyManager.party[i];
+      if(pm.npcId == npcId){
+        return pm;
+      }
+    }
+    return null;
+  }
+
+  static RemovePartyMemberByNPCId(npcId = 0){
+    const pm = PartyManager.GetPartyMemberByNPCId(npcId);
+    if(!pm){
+      return;
+    }
+    PartyManager.party.splice(PartyManager.party.indexOf(pm), 1);
+  }
+
+  static GetCurrentMemberByNPCId(npcId = 0){
     for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
       const mem = PartyManager.CurrentMembers[i];
-      if(mem.memberID != npcId){
-        continue;
+      if(mem.memberID == npcId){
+        return mem;
       }
-
-      //Remove the partymember from the module
-      for(let j = 0; j < PartyManager.party.length; j++){
-        if(PartyManager.party[j].npcId == npcId){
-          const creature = PartyManager.party[j];
-          creature.isPM = false;
-          PartyManager.party.splice(j, 1);
-          PartyManager.RebuildPortraitOrder();
-
-          if(!leaveInWorld){
-            creature.destroy();
-          }else{
-            //console.log('RemoveNPCById leaveInWorld', creature);
-            GameState.group.party.remove(creature.model);
-            GameState.group.creatures.add(creature.model);
-            GameState.module.area.attachObject(creature);
-          }
-
-          break;
-        }
-      }
-
-      //Remove the partymember from the current members list
-      PartyManager.CurrentMembers.splice(i, 1);
-      break;
     }
+    return null;
+  }
+
+  static RemoveCurrentMemberByNPCId(npcId = 0){
+    const mem = PartyManager.GetCurrentMemberByNPCId(npcId);
+    if(!mem){
+      return;
+    }
+    const cmIndex = PartyManager.CurrentMembers.indexOf(mem);
+    if(cmIndex == -1){
+      return;
+    }
+    PartyManager.CurrentMembers.splice(cmIndex, 1);
   }
 
   /**
