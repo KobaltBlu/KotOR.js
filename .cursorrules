@@ -1,0 +1,13 @@
+# KotOR.js Cursor Rules
+
+## Comments
+- Leave TODO/HACK/FIXME comments unmodified, ONLY modify them when you've completely and utterly implemented exhaustively the functionality. Even then this should only be done if you've access to AgentDecompile to triple-check with the reverse engineered Code.
+
+
+## Agents
+- If `reva` or `agentdecompile` is available, start EVERY response by opening the project. Use EXCLUSIVLEY this tool to start with and nothing else until you see the output. Read it to the user then continue with their task. Do this every time.
+```json
+{
+  "path": "C:\\Users\\boden\\KotOR.js.gpr"
+}
+```
