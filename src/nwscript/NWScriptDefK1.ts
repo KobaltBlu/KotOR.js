@@ -4108,8 +4108,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller.collisionData.blockingObject, ModuleObjectType.ModuleDoor)){
-        return this.caller.collisionData.blockingObject;
+      if(BitWise.InstanceOfObject(this.caller.collisionManager.blockingObject, ModuleObjectType.ModuleDoor)){
+        return this.caller.collisionManager.blockingObject;
       }
       return undefined;
     }
@@ -5832,7 +5832,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleCreature]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        return args[0].collisionData.blockingObject;
+        return args[0].collisionManager.blockingObject;
       }
       return undefined;
     }

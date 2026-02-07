@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Action } from "../actions/Action";
 import { ActionQueue } from "../actions/ActionQueue";
 import { AudioEmitter } from "../audio/AudioEmitter";
-import { CollisionData } from "../engine/CollisionData";
+import { CollisionManager } from "../engine/CollisionManager";
 import { CombatData } from "../combat/CombatData";
 import type { EffectLink } from "../effects";
 import type { GameEffect } from "../effects/GameEffect";
@@ -97,7 +97,7 @@ export class ModuleObject {
   audioEmitter: AudioEmitter;
   footstepEmitter: AudioEmitter;
 
-  collisionData: CollisionData = new CollisionData(this);
+  collisionManager: CollisionManager = new CollisionManager(this);
   invalidateCollision: boolean = false;
   combatData: CombatData = new CombatData(this);
   combatRound = new CombatRound(this);
@@ -376,6 +376,12 @@ export class ModuleObject {
 
   }
 
+  getScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
+    const script = this.scripts[scriptKey];
+    if(!script || !script.nwscript){ return undefined; }
+    return this.scripts[scriptKey].newInstance();
+  }
+
   /**
    * Attach to room
    * @param room 
@@ -484,7 +490,7 @@ export class ModuleObject {
     }
 
     if(this.spawned){
-      this.collisionData.roomCheck(delta);
+      this.collisionManager.roomCheck(delta);
     }
 
 
@@ -2127,7 +2133,7 @@ export class ModuleObject {
    * @returns 
    */
   getCurrentRoom(){
-    this.collisionData.findWalkableFace();
+    this.collisionManager.findWalkableFace();
   }
 
   /**
@@ -2181,8 +2187,8 @@ export class ModuleObject {
   //           this.lastGroundFace = this.groundFace;
   //           this.surfaceId = this.groundFace.walkIndex;
   //           this.attachToRoom(room);
-  //           face.triangle.closestPointToPoint(this.position, this.collisionData.wm_c_point);
-  //           this.position.z = this.collisionData.wm_c_point.z + .005;
+  //           face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
+  //           this.position.z = this.collisionManager.wm_c_point.z + .005;
   //         }
   //       }
   //     }
@@ -2653,8 +2659,8 @@ export class ModuleObject {
       this.computeBoundingBox();
 
       this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
-      this.collisionData.groundFace = undefined;
-      this.collisionData.lastGroundFace = undefined;
+      this.collisionManager.groundFace = undefined;
+      this.collisionManager.lastGroundFace = undefined;
     }
   }
 
@@ -3234,10 +3240,10 @@ export class ModuleObject {
 
     for(let j = 0, jl = this.area.rooms.length; j < jl; j++){
       let room = this.area.rooms[j];
-      if(room && room.collisionData.walkmesh && room.collisionData.walkmesh.aabbNodes.length){
+      if(room && room.collisionManager.walkmesh && room.collisionManager.walkmesh.aabbNodes.length){
         aabbFaces.push({
           object: room, 
-          faces: room.collisionData.walkmesh.faces
+          faces: room.collisionManager.walkmesh.faces
         });
       }
     }
@@ -3257,7 +3263,7 @@ export class ModuleObject {
 
     for(let i = 0, il = aabbFaces.length; i < il; i++){
       let castableFaces = aabbFaces[i];
-      intersects = castableFaces.object.collisionData.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
+      intersects = castableFaces.object.collisionManager.walkmesh.raycast(GameState.raycaster, castableFaces.faces);
       if (intersects && intersects.length > 0 ) {
         for(let j = 0; j < intersects.length; j++){
           if(intersects[j].distance < distance){

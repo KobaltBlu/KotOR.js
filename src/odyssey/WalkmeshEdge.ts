@@ -14,29 +14,19 @@ import { OdysseyWalkMeshType } from "../enums/odyssey/OdysseyWalkMeshType";
  */
 export class WalkmeshEdge {
   transition: number;
-  line: THREE.Line3;
-  normal: THREE.Vector3;
-  _normal_a: THREE.Vector3;
-  _normal_b: THREE.Vector3;
-  center_point: THREE.Vector3;
-  face: OdysseyFace3;
-  walkmesh: OdysseyWalkMesh;
-  side: number;
-  vertex_1: number = -1;
-  vertex_2: number = -1;
+  line: THREE.Line3 = new THREE.Line3(new THREE.Vector3(), new THREE.Vector3());
+  normal: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  center_point: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  face: OdysseyFace3 = undefined;
+  walkmesh: OdysseyWalkMesh = undefined;
+  side: number = -1;
+  vertIdx1: number = -1;
+  vertIdx2: number = -1;
   index: number = -1;
   exportable: boolean = true;
 
   constructor(transition = -1){
     this.transition = transition;
-    this.line = undefined;
-    this.normal = new THREE.Vector3(0, 0, 0);
-    this._normal_a = new THREE.Vector3(0, 0, 0);
-    this._normal_b = new THREE.Vector3(0, 0, 0);
-    this.center_point = new THREE.Vector3(0, 0, 0);
-    this.face = undefined;
-    this.walkmesh = undefined;
-    this.side = -1;
   }
 
   //index into the walkable face adjacency array
@@ -63,48 +53,56 @@ export class WalkmeshEdge {
       return;
     }
 
-    this.line = undefined;
-    if(this.side == 0){
-      this.vertex_1 = this.face.a;
-      this.vertex_2 = this.face.b;
-      this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
-    }else if(this.side == 1){
-      this.vertex_1 = this.face.b;
-      this.vertex_2 = this.face.c;
-      this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
-    }else if(this.side == 2){
-      this.vertex_1 = this.face.c;
-      this.vertex_2 = this.face.a;
-      this.line = new THREE.Line3( this.walkmesh.vertices[this.vertex_1], this.walkmesh.vertices[this.vertex_2] );
-    }
+    this.vertIdx1 = this.side == 0 ? this.face.a : this.side == 1 ? this.face.b : this.face.c;
+    this.vertIdx2 = this.side == 0 ? this.face.b : this.side == 1 ? this.face.c : this.face.a;
+    const verts = Array.isArray(this.walkmesh.vertices) ? this.walkmesh.vertices : [];
+    const vert1 = verts[this.vertIdx1];
+    const vert2 = verts[this.vertIdx2];
+    this.line.start.set( vert1.x, vert1.y, vert1.z );
+    this.line.end.set( vert2.x, vert2.y, vert2.z );
 
-    const isAABB = this.walkmesh.header.walkMeshType == OdysseyWalkMeshType.AABB;
-
-    if(this.line instanceof THREE.Line3){
-      // Calculate edge midpoint
-      this.line.at(0.5, this.center_point);
-
-      if(this.face && this.face.centroid){
-        // Calculate edge direction vector
-        const edgeDirection = this.line.end.clone().sub(this.line.start);
-        
-        // Calculate perpendicular vector (rotate 90 degrees in XY plane)
-        this.normal.set(-edgeDirection.y, edgeDirection.x, 0).normalize();
-        
-        // Get vector from centroid to edge midpoint
-        const centroidToEdge = this.center_point.clone().sub(this.face.centroid);
-        
-        // If normal points towards centroid, flip it
-        if (this.normal.dot(centroidToEdge) < 0) {
-          this.normal.multiplyScalar(isAABB ? 1 : -1);
-        }
-      }else{
-        // Fallback to simple perpendicular if no centroid
-        const dx = this.line.end.x - this.line.start.x;
-        const dy = this.line.end.y - this.line.start.y;
-        this.normal.set(-dy, dx, 0).normalize();
-      }
-    }
+    this.updateNormal();
   }
 
+  isAABB(): boolean {
+    if(!this.walkmesh){
+      return false;
+    }
+    return this.walkmesh.header.walkMeshType == OdysseyWalkMeshType.AABB;
+  }
+
+  #tmpVector1: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+
+  /**
+   * Update the normal of the edge.
+   * The normal is calculated by taking the cross product of the edge direction vector and the face normal.
+   * If the face is not an AABB, the normal is flipped.
+   * @returns void
+   */
+  updateNormal(): void {
+    if(!(this.line instanceof THREE.Line3)){
+      return;
+    }
+    // Calculate edge midpoint
+    this.line.at(0.5, this.center_point);
+
+    // Calculate edge direction vector
+    const dx = this.line.end.x - this.line.start.x;
+    const dy = this.line.end.y - this.line.start.y;
+    
+    // Calculate perpendicular vector (rotate 90 degrees in XY plane)
+    this.normal.set(-dy, dx, 0).normalize();
+
+    if(!this.face || !this.face.centroid){
+      return;
+    }
+
+    // Get vector from centroid to edge midpoint
+    this.#tmpVector1.copy(this.center_point).sub(this.face.centroid);
+    
+    // If normal points towards centroid, flip it
+    if (this.normal.dot(this.#tmpVector1) < 0) {
+      this.normal.multiplyScalar(this.isAABB() ? 1 : -1);
+    }
+  }
 }

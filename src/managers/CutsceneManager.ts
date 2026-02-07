@@ -408,7 +408,7 @@ export class CutsceneManager {
       this.ended = true;
     }
     this.audioEmitter.stop();
-    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+    if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.close();
       // GameState.MenuManager.InGameComputerCam.close();
       GameState.MenuManager.InGameComputerCam.hide();
@@ -1149,18 +1149,18 @@ export class CutsceneManager {
     const aabbFaces: any[] = [];
     
     // Add room walkmesh faces
-    if (speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+    if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
       aabbFaces.push({
         object: speaker.room,
-        faces: speaker.room.collisionData.walkmesh.faces
+        faces: speaker.room.collisionManager.walkmesh.faces
       });
     }
 
     if (listener.room !== speaker.room) {
-      if (listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      if (listener.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
         aabbFaces.push({
           object: listener.room,
-          faces: listener.room.collisionData.walkmesh.faces
+          faces: listener.room.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1168,10 +1168,10 @@ export class CutsceneManager {
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
-      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+      if (door?.collisionManager?.walkmesh && !door.isOpen()) {
         aabbFaces.push({
           object: door,
-          faces: door.collisionData.walkmesh.faces
+          faces: door.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1179,7 +1179,7 @@ export class CutsceneManager {
     // Test for collisions
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
-      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
       
       if (intersects.length > 0) {
         // Check if any intersection is close to the camera position
@@ -1226,18 +1226,18 @@ export class CutsceneManager {
     const aabbFaces: any[] = [];
     
     // Add room walkmesh faces
-    if (speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+    if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
       aabbFaces.push({
         object: speaker.room,
-        faces: speaker.room.collisionData.walkmesh.faces
+        faces: speaker.room.collisionManager.walkmesh.faces
       });
     }
 
     if (listener.room !== speaker.room) {
-      if (listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      if (listener.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
         aabbFaces.push({
           object: listener.room,
-          faces: listener.room.collisionData.walkmesh.faces
+          faces: listener.room.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1245,10 +1245,10 @@ export class CutsceneManager {
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
-      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+      if (door?.collisionManager?.walkmesh && !door.isOpen()) {
         aabbFaces.push({
           object: door,
-          faces: door.collisionData.walkmesh.faces
+          faces: door.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1258,7 +1258,7 @@ export class CutsceneManager {
     
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
-      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
       
       if (intersects.length > 0) {
         for (let i = 0; i < intersects.length; i++) {

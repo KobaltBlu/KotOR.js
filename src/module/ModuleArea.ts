@@ -1360,7 +1360,7 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadDoors(); } catch(e){ console.error(e); }
 
-      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionData?.walkmesh}).map( (d) => { return d.collisionData.walkmesh; });
+      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionManager?.walkmesh}).map( (d) => { return d.collisionManager.walkmesh; });
 
       try { await this.loadStores(); } catch(e){ console.error(e); }
 
@@ -1569,8 +1569,8 @@ export class ModuleArea extends ModuleObject {
         //Reset the players actions between modules
         GameState.PartyManager.Player.clearAllActions();
         GameState.PartyManager.Player.force = 0;
-        GameState.PartyManager.Player.collisionData.groundFace = undefined;
-        GameState.PartyManager.Player.collisionData.lastGroundFace = undefined;
+        GameState.PartyManager.Player.collisionManager.groundFace = undefined;
+        GameState.PartyManager.Player.collisionManager.lastGroundFace = undefined;
         GameState.PartyManager.Player.load();
         try{
           const model = await GameState.PartyManager.Player.loadModel();
@@ -1655,9 +1655,9 @@ export class ModuleArea extends ModuleObject {
       const room = this.rooms[i];
       const model = await room.loadModel();
       if(model instanceof OdysseyModel3D){
-        if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
-          GameState.walkmeshList.push( room.collisionData.walkmesh.mesh );
-          GameState.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
+        if(room.collisionManager.walkmesh instanceof OdysseyWalkMesh){
+          GameState.walkmeshList.push( room.collisionManager.walkmesh.mesh );
+          GameState.group.room_walkmeshes.add( room.collisionManager.walkmesh.mesh );
         }
 
         if(typeof model.walkmesh != 'undefined'){
@@ -1729,7 +1729,7 @@ export class ModuleArea extends ModuleObject {
 
         try{
           model.userData.walkmesh = dwk;
-          door.collisionData.walkmesh = dwk;
+          door.collisionManager.setWalkmesh(dwk);
           GameState.walkmeshList.push( dwk.mesh );
 
           if(dwk.mesh instanceof THREE.Object3D){
@@ -1782,6 +1782,7 @@ export class ModuleArea extends ModuleObject {
         pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
         pwk.mesh.geometry.applyMatrix4(pwk.mat4);
         pwk.updateMatrix();
+        pwk.buildEdgeNormalHelpers();
         //pwk.mesh.position.copy(plc.position);
         GameState.group.room_walkmeshes.add( pwk.mesh );
       }
