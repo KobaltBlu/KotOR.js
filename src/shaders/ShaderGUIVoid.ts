@@ -27,17 +27,23 @@ export class ShaderGUIVoid extends Shader {
 
     void main(){
       //color radial gradient
-      vec2 uv = gl_FragCoord.xy / (u_resolution.y/2.0);
-      // uv = uv*2.0-1.0 - vec2(0.7,0.0);
-      
-      uv = 2.0 * gl_FragCoord.xy / u_resolution.xy - 1.0;
+      vec2 centered = v_uv - 0.5;
+      float aspect = u_resolution.x / max(u_resolution.y, 0.0001);
+
+      //subtle warp to feel like underlying distortion
+      vec2 p = centered * vec2(aspect, 1.0) + 0.5;
+      float warpNoise = simplex3d_fractal(vec3(p * 2.0, u_time * 0.05));
+      vec2 warpOffset = vec2(warpNoise - 0.5) * 0.08;
+      vec2 warped = p + warpOffset;
+      vec2 warpedCentered = warped - 0.5;
+
+      vec2 uv = vec2(warpedCentered.x * aspect, warpedCentered.y) * 2.0;
       float Length = length(uv);
       Length = 1.0-smoothstep(Length,0.0,0.5);
       gl_FragColor = vec4(u_color*Length,1.0) * u_colorIntensity;
       
       //perlin noise
-      vec2 p = gl_FragCoord.xy/u_resolution.x;
-      vec3 p3 = vec3(p, u_time*0.025);
+      vec3 p3 = vec3(warped, u_time*0.025);
       
       float value = simplex3d_fractal(p3*8.0+8.0);
       
