@@ -36,13 +36,15 @@ export class MenuPazaakWager extends GameMenu {
     return new Promise<void>((resolve, reject) => {
 
       this.BTN_QUIT.addEventListener('click', () => {
-        //TODO: Cancel Pazaak game
         this.close();
+        GameState.MenuManager.MenuPazaakSetup.close();
       });
 
       this.BTN_WAGER.addEventListener('click', () => {
-        //TODO: Start Pazaak game
         this.close();
+        GameState.MenuManager.MenuPazaakSetup.close();
+        GameState.MenuManager.MenuPazaakGame.open();
+        GameState.PazaakManager.BeginGame();
       });
 
       this.BTN_LESS.addEventListener('click', () => {
