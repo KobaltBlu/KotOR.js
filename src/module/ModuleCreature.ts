@@ -98,6 +98,8 @@ export class ModuleCreature extends ModuleObject {
   currentHitPoints: number;
   deity: string;
   disarmable: number;
+  /** Set while examine-mine delay (4s) is queued; cleared when examine check completes (binary field359_0x97c). */
+  examineMineInProgress: boolean = false;
   isHologram: boolean;
   experience: number;
   feats: TalentFeat[];
@@ -998,8 +1000,8 @@ export class ModuleCreature extends ModuleObject {
           return true;
         }
       }else if(action.type == ActionType.ActionItemCastSpell){
-        const spell = new TalentSpell( action.getParameter(0) );
-        const target: ModuleObject = action.getParameter(5);
+        const spell = new TalentSpell( action.getParameter(5) );
+        const target: ModuleObject = action.getParameter(0);
         if(target instanceof ModuleObject){
           return spell.inRange(target, this);
         }else{
