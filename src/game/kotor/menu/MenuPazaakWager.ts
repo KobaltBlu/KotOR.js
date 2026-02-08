@@ -13,7 +13,7 @@ const TLK_QUIT_PAZAAK_CONFIRM = 0xa5b8;
  * MenuPazaakWager class.
  *
  * Implements CSWGuiWagerPopup from KotOR I - wager selection popup for Pazaak.
- * Reva parity: HandleButtonWager, OnBButtonPressed (quit), UpdateWagerText, LBL_MAXIMUM format.
+ * Original game behavior parity: HandleButtonWager, OnBButtonPressed (quit), UpdateWagerText, LBL_MAXIMUM format.
  *
  * @file MenuPazaakWager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
