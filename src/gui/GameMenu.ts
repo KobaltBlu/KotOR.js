@@ -54,24 +54,6 @@ export class GameMenu {
   userCanClose: boolean = true;
   width: number = 640;
   height: number = 480;
-
-  /**
-   * Panel bit_flags matching the original game's CSWGuiPanel::bit_flags.
-   * 
-   * Original default from CSWGuiPanel::CSWGuiPanel: 0x84 (bits 2,7)
-   *   - bit 7 (0x80): visible (Draw checks *(char*)&bit_flags < '\0')
-   *   - bit 2 (0x04): initial flag
-   * After StartLoadFromLayout: |= 0x02 (loaded)
-   * After per-menu LoadFromLayout: |= 0x01 (uses GetExtentAccountingForPanelOffset for hit testing)
-   * 
-   * Centering flags (used by GetExtentAccountingForPanelOffset):
-   *   - 0x08: Center panel on screen (left += (vw-w)/2, top += (vh-h)/2) — MUTUALLY EXCLUSIVE with 0x20/0x40
-   *   - 0x20: Horizontal offset by (viewportWidth - 640) / 2
-   *   - 0x40: Vertical offset by (viewportHeight - 480) / 2
-   * 
-   * KotOR.js default: 0x8F = original 0x87 + 0x08 for centering at arbitrary resolutions.
-   * Set to 0x87 for original behavior (no centering, panel at raw extent position).
-   */
   panelBitFlags: number = 0x8F;
 
   background: string;
