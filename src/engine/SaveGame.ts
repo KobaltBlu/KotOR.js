@@ -884,6 +884,16 @@ export class SaveGame {
     const tga = await GameState.GetScreenShot();
     await tga.export( path.join( save_dir, 'Screen.tga'));
 
+    const newEntry = new SaveGame(save_dir_name);
+    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+
+    if (existingIndex >= 0) {
+      SaveGame.saves[existingIndex] = newEntry;  // overwrite case
+  } else {
+      SaveGame.AddSaveGame(newEntry);            // new save case
+            }
+    await newEntry.loadNFO();
+    
     //Save Complete
     GameState.MenuManager.LoadScreen.setProgress(100);
     GameState.MenuManager.LoadScreen.close();
@@ -1080,6 +1090,28 @@ export class SaveGame {
     }
   }
 
+  /**
+   * Deletes a save game from disk and removes it from the in-memory save list.
+   *
+   * Used by the Save/Load UI (and any other systems) to implement KotOR-style delete.
+   */
+  static async DeleteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    if (!save.directory) return;
+    await GameFileSystem.rmdir(save.directory, { recursive: true });
+    SaveGame.saves = SaveGame.saves.filter(s => s !== save);
+  }
+
+  /**
+   * Overwrites an existing save slot without prompting for a new name (vanilla KotOR behavior).
+   */
+  static async OverwriteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    const replaceId = save.getSaveNumber();
+    const existingName = save.getSaveName();
+    await SaveGame.SaveCurrentGame(existingName, replaceId);
+  }
+  
   /** The directory path for the current save game (used internally) */
   static directory: string;
 

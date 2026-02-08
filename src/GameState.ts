@@ -116,6 +116,10 @@ export class GameState implements EngineContext {
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
   static CutsceneManager: typeof CutsceneManager;
+  static lastGameplayThumb?: OffscreenCanvas;
+  static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
+  static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
+
 
   static SWRuleSet: typeof SWRuleSet;
 
@@ -1407,31 +1411,71 @@ export class GameState implements EngineContext {
     GameState.bokehPass.camera = GameState.currentCamera;
 
     GameState.composer.render(delta);
+ // Cache last "clean gameplay" thumbnail (WORLD ONLY, no GUI)
+if (
+  GameState.Mode === EngineMode.INGAME &&
+  GameState.State !== EngineState.PAUSED &&
+  GameState.MenuManager.activeModals.length === 0
+) {
+  const size = 256;
 
-    //Handle screenshot callback
-    if(typeof GameState.onScreenShot === 'function'){
-      console.log('Screenshot', GameState.onScreenShot);
-      
-      GameState.renderer.clear();
-      GameState.renderer.render(GameState.scene, GameState.currentCamera);
+  if (!GameState.lastGameplayThumb) {
+    GameState.lastGameplayThumb = new OffscreenCanvas(size, size);
+    GameState.lastGameplayThumbCtx = GameState.lastGameplayThumb.getContext('2d')!;
+  }
+  if (!GameState.lastGameplayThumbRT) {
+    GameState.lastGameplayThumbRT = new THREE.WebGLRenderTarget(size, size, {
+      depthBuffer: true,
+      stencilBuffer: false,
+    });
+  }
 
-      const screenshot = new Image();
-      screenshot.src = GameState.canvas.toDataURL('image/png');
-      screenshot.onload = function() {
-        const ssCanvas = new OffscreenCanvas(256, 256);
-        const ctx = ssCanvas.getContext('2d');
-        ctx.drawImage(screenshot, 0, 0, 256, 256);
+  // Render WORLD ONLY into a tiny RT
+  const prevRT = GameState.renderer.getRenderTarget();
+  GameState.renderer.setRenderTarget(GameState.lastGameplayThumbRT);
+  GameState.renderer.clear(true, true, true);
+  GameState.renderer.render(GameState.scene, GameState.camera); // gameplay world camera
+  GameState.renderer.setRenderTarget(prevRT);
 
-        GameState.onScreenShot(TGAObject.FromCanvas(ssCanvas));
-      };
-      
-      GameState.composer.render(delta);
-      //Remove screenshot callback so it won't be triggered again
-      GameState.onScreenShot = undefined;
-    }
+  // Read pixels (small 256x256 so this is quick)
+  const pixels = new Uint8Array(size * size * 4);
+  GameState.renderer.readRenderTargetPixels(GameState.lastGameplayThumbRT, 0, 0, size, size, pixels);
 
-    //CameraShake: After Render
-    GameState.CameraShakeManager.afterRender();
+  // Flip Y + force alpha
+  const flipped = new Uint8ClampedArray(pixels.length);
+  const rowBytes = size * 4;
+  for (let y = 0; y < size; y++) {
+    const src = (size - 1 - y) * rowBytes;
+    const dst = y * rowBytes;
+    flipped.set(pixels.subarray(src, src + rowBytes), dst);
+  }
+  for (let i = 3; i < flipped.length; i += 4) flipped[i] = 255;
+
+  // Store into the cached canvas
+  GameState.lastGameplayThumbCtx!.putImageData(new ImageData(flipped, size, size), 0, 0);
+}
+
+
+  //Handle screenshot callback
+if (typeof GameState.onScreenShot === 'function') {
+  const cb = GameState.onScreenShot;
+  GameState.onScreenShot = undefined; // clear immediately
+
+  // Prefer the last clean gameplay frame (pre-menu)
+  if (GameState.lastGameplayThumb) {
+    cb(TGAObject.FromCanvas(GameState.lastGameplayThumb));
+    return;
+  }
+
+  // Fallback: if no cached frame exists yet, grab current frame
+  (async () => {
+    const bmp = await createImageBitmap(GameState.canvas);
+    const ssCanvas = new OffscreenCanvas(256, 256);
+    const ctx = ssCanvas.getContext('2d')!;
+    ctx.drawImage(bmp, 0, 0, 256, 256);
+    cb(TGAObject.FromCanvas(ssCanvas));
+  })();
+}
 
     //NoClickTimer: Update
     if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
