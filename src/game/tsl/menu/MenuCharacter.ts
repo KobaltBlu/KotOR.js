@@ -8,9 +8,9 @@ import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
 
 /**
  * MenuCharacter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuCharacter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -99,6 +99,32 @@ export class MenuCharacter extends K1_MenuCharacter {
       });
       this._button_y = this.BTN_AUTO;
 
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 2) {
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+
+      GameState.PartyManager.AddEventListener('change', () => {
+        if (!this.bVisible) return;
+        this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+        this.updateCharacterStats(GameState.PartyManager.party[0]);
+        this.updatePartyMemberPortraitButtons();
+      });
+
       MDLLoader.loader.load('charmain_light').then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView,
@@ -116,7 +142,7 @@ export class MenuCharacter extends K1_MenuCharacter {
 
             this._3dViewModel = model;
             this._3dView.addModel(this._3dViewModel);
-            
+
             this._3dView.camera.position.copy(model.camerahook.position);
             this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
           }catch(e){
@@ -154,31 +180,14 @@ export class MenuCharacter extends K1_MenuCharacter {
 
   show() {
     super.show();
-    try{
+    try {
       this.recalculatePosition();
       this.updateCharacterPortrait(GameState.PartyManager.party[0]);
       this.updateCharacterStats(GameState.PartyManager.party[0]);
-      
-      this.BTN_CHANGE1?.hide();
-      this.BTN_CHANGE2?.hide();
-      for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-        let partyMember = GameState.PartyManager.party[i];
-        const portraitResRef = partyMember.getPortraitResRef();
-        if (!i) {
-          
-        } else {
-          const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
-          if(BTN_CHANGE){
-            BTN_CHANGE.show();
-            if (BTN_CHANGE.getFillTextureName() != portraitResRef) {
-              BTN_CHANGE.setFillTextureName(portraitResRef);
-            }
-          }
-        }
-      }
-    }catch(e){
+      this.updatePartyMemberPortraitButtons();
+    } catch (e) {
       console.error(e);
     }
   }
-  
+
 }
