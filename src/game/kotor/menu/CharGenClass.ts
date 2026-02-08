@@ -10,8 +10,7 @@ import { GameState } from "../../../GameState";
 /**
  * CharGenClass class.
  * Character generation "CHOOSE YOUR CLASS" screen; displays six class portrait slots
- * (_3D_MODEL1–6) with hover animation. Corresponds to CSWGuiClassSelection in the
- * original game (swkotor.exe); layout from ClassSel / classsel.gui.
+ * (_3D_MODEL1–6) with hover animation. Corresponds to layout from ClassSel / classsel.gui.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
