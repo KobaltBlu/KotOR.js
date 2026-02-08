@@ -13,9 +13,9 @@ const MSG_YOU_LOSE = 32335;
 
 /**
  * MenuPazaakSetup class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakSetup.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -191,7 +191,9 @@ export class MenuPazaakSetup extends GameMenu {
 
   open(){
     super.open();
-    GameState.MenuManager.MenuPazaakWager.open();
+    if(GameState.PazaakManager.MaxWager > 0){
+      GameState.MenuManager.MenuPazaakWager.open();
+    }
     this.knownCards.clear();
     for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
       const card = GameState.PazaakManager.Cards.get(i);
