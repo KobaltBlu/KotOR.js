@@ -1,0 +1,356 @@
+{
+  "name": "kotor-forge",
+  "displayName": "KotOR Forge",
+  "description": "Complete modding toolkit for Star Wars: Knights of the Old Republic - edit GFF templates, scripts, dialogs, 3D models, textures, and more",
+  "version": "0.1.0",
+  "publisher": "kotor-community",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KobaltBlu/KotOR.js"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "kotor",
+    "knights of the old republic",
+    "swkotor",
+    "star wars",
+    "modding",
+    "nwscript",
+    "bioware"
+  ],
+  "activationEvents": [
+    "onCustomEditor:kotor.utc",
+    "onCustomEditor:kotor.utd",
+    "onCustomEditor:kotor.utp",
+    "onCustomEditor:kotor.uti",
+    "onCustomEditor:kotor.ute",
+    "onCustomEditor:kotor.uts",
+    "onCustomEditor:kotor.utt",
+    "onCustomEditor:kotor.utw",
+    "onCustomEditor:kotor.utm",
+    "onCustomEditor:kotor.gff",
+    "onCustomEditor:kotor.2da",
+    "onCustomEditor:kotor.erf",
+    "onCustomEditor:kotor.model",
+    "onCustomEditor:kotor.image",
+    "onCustomEditor:kotor.walkmesh",
+    "onCustomEditor:kotor.audio",
+    "onCustomEditor:kotor.tlk",
+    "onCustomEditor:kotor.lip",
+    "onCustomEditor:kotor.ssf",
+    "onCustomEditor:kotor.dlg",
+    "onCustomEditor:kotor.binary",
+    "onLanguage:nwscript"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "kotor.utc",
+        "displayName": "KotOR Creature Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utc"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.utd",
+        "displayName": "KotOR Door Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utd"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.utp",
+        "displayName": "KotOR Placeable Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utp"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.uti",
+        "displayName": "KotOR Item Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.uti"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.ute",
+        "displayName": "KotOR Encounter Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.ute"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.uts",
+        "displayName": "KotOR Sound Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.uts"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.utt",
+        "displayName": "KotOR Trigger Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utt"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.utw",
+        "displayName": "KotOR Waypoint Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utw"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.utm",
+        "displayName": "KotOR Merchant Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.utm"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.gff",
+        "displayName": "KotOR GFF Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.{gff,res,are,git,ifo,jrl,fac,gui,pth,vis,ltr,bic}"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.dlg",
+        "displayName": "KotOR Dialog Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.dlg"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.2da",
+        "displayName": "KotOR 2DA Table Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.2da"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.erf",
+        "displayName": "KotOR Archive Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.{erf,mod,sav,rim}"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.model",
+        "displayName": "KotOR Model Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.{mdl,mdx}"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.image",
+        "displayName": "KotOR Texture Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.{tpc,tga}"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.walkmesh",
+        "displayName": "KotOR Walkmesh Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.{wok,dwk,pwk,bwm}"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.tlk",
+        "displayName": "KotOR Talk Table Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.tlk"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.lip",
+        "displayName": "KotOR Lip Sync Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.lip"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.ssf",
+        "displayName": "KotOR Sound Set Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.ssf"
+          }
+        ],
+        "priority": "default"
+      },
+      {
+        "viewType": "kotor.audio",
+        "displayName": "KotOR Audio Player",
+        "selector": [
+          {
+            "filenamePattern": "*.{wav,mp3}"
+          }
+        ],
+        "priority": "option"
+      },
+      {
+        "viewType": "kotor.binary",
+        "displayName": "KotOR Binary Viewer",
+        "selector": [
+          {
+            "filenamePattern": "*.*"
+          }
+        ],
+        "priority": "option"
+      }
+    ],
+    "languages": [
+      {
+        "id": "nwscript",
+        "aliases": [
+          "NWScript",
+          "nwscript"
+        ],
+        "extensions": [
+          ".nss",
+          ".ncs"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "nwscript",
+        "scopeName": "source.nwscript",
+        "path": "./syntaxes/nwscript.tmLanguage.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "kotor-icons",
+        "label": "KotOR File Icons",
+        "path": "./media/icons/kotor-icon-theme.json"
+      }
+    ],
+    "configuration": {
+      "title": "KotOR Forge",
+      "properties": {
+        "kotorForge.kotorPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Knights of the Old Republic installation directory"
+        },
+        "kotorForge.tslPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to Knights of the Old Republic II: The Sith Lords installation directory"
+        },
+        "kotorForge.activeGame": {
+          "type": "string",
+          "enum": [
+            "kotor",
+            "tsl"
+          ],
+          "default": "kotor",
+          "description": "Active game for resource lookups and 2DA tables"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "webpack --mode production",
+    "watch": "webpack --mode development --watch",
+    "package": "npm run compile && npx @vscode/vsce package",
+    "vsix": "npx @vscode/vsce package --no-dependencies",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.182.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/vsce": "^2.22.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
+    "esbuild-loader": "^4.0.3",
+    "eslint": "^8.56.0",
+    "mini-css-extract-plugin": "^2.7.6",
+    "sass": "^1.69.5",
+    "sass-loader": "^13.3.2",
+    "style-loader": "^3.3.3",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "bootstrap": "^5.3.2",
+    "react": "^19.0.0",
+    "react-bootstrap": "^2.9.1",
+    "react-dom": "^19.0.0",
+    "three": "^0.149.0"
+  }
+}

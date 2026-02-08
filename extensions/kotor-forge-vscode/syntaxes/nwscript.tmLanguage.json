@@ -1,0 +1,100 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "NWScript",
+  "scopeName": "source.nwscript",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#constants" },
+    { "include": "#functions" },
+    { "include": "#strings" },
+    { "include": "#numbers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.nwscript",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.nwscript",
+          "begin": "/\\*",
+          "end": "\\*/"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.nwscript",
+          "match": "\\b(if|else|while|for|do|switch|case|default|break|continue|return)\\b"
+        },
+        {
+          "name": "keyword.other.nwscript",
+          "match": "\\b(const|struct|void)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.nwscript",
+          "match": "\\b(int|float|string|object|vector|location|effect|event|talent|itemproperty|action)\\b"
+        }
+      ]
+    },
+    "constants": {
+      "patterns": [
+        {
+          "name": "constant.language.nwscript",
+          "match": "\\b(TRUE|FALSE|OBJECT_INVALID|OBJECT_SELF)\\b"
+        },
+        {
+          "name": "constant.numeric.nwscript",
+          "match": "\\b[A-Z_][A-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.nwscript",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.nwscript",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.nwscript",
+              "match": "\\\\."
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.nwscript",
+          "match": "\\b\\d+\\.\\d+f?\\b"
+        },
+        {
+          "name": "constant.numeric.nwscript",
+          "match": "\\b0x[0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.nwscript",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    }
+  }
+}
