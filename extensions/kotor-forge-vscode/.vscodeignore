@@ -3,6 +3,11 @@
 src/**
 node_modules/**
 out/**
+server/src/**
+server/node_modules/.package-lock.json
+server/**/*.tsbuildinfo
+server/tsconfig*.json
+!server/out/**
 .gitignore
 .yarnrc
 webpack.config.js

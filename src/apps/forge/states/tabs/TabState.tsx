@@ -10,6 +10,7 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeF
 import * as KotOR from "../../KotOR";
 import { TabStoreState } from "../../interfaces/TabStoreState";
 import { pathParse } from "../../helpers/PathParse";
+import { ForgeState } from "../ForgeState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -225,6 +226,20 @@ export class TabState extends EventListenerModel {
     let currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
+    }
+    const hostAdapter = ForgeState.getHostAdapter();
+    if (hostAdapter) {
+      try {
+        const pathInfo = pathParse(currentFile.path || currentFile.getFilename() || 'file');
+        const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+        await hostAdapter.requestSave(this, saveBuffer);
+        currentFile.buffer = saveBuffer;
+        currentFile.unsaved_changes = false;
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
     }
     return new Promise<boolean>( async (resolve, reject) => {
       try{

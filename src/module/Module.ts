@@ -26,15 +26,15 @@ import { ModuleTimeManager } from "./ModuleTimeManager";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 
-type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
+type ModuleScriptKeys = 'Mod_OnAcquirItem' | 'Mod_OnActvtItem' | 'Mod_OnClientEntr' | 'Mod_OnClientLeav' | 'Mod_OnHeartbeat' | 'Mod_OnModLoad' | 'Mod_OnModStart' | 'Mod_OnPlrDeath' | 'Mod_OnPlrDying' | 'Mod_OnPlrLvlUp' | 'Mod_OnPlrRest' | 'Mod_OnSpawnBtnDn' | 'Mod_OnUnAqreItem' | 'Mod_OnUsrDefined';
 
 /**
  * Module class.
- * 
+ *
  * Class representing an ingame module.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Module.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -54,13 +54,13 @@ export class Module {
   entryX: number;
   entryY: number;
   entryZ: number;
-  
+
   scripts: { [key: string]: NWScriptInstance };
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
   timeManager: ModuleTimeManager;
 
-  archives: (RIMObject|ERFObject)[] = [];
+  archives: (RIMObject | ERFObject)[] = [];
   effects: GameEffect[] = [];
   eventQueue: GameEvent[] = [];
   customTokens: Map<number, string>;
@@ -115,7 +115,7 @@ export class Module {
   voId: string;
 
   /**
-   * Module version. Is always set to 3. 
+   * Module version. Is always set to 3.
    */
   version: number = 3;
 
@@ -153,28 +153,28 @@ export class Module {
    * ID to use for the next Effect
    */
   effectNextId: number;
-  
-  /** 
+
+  /**
    * @deprecated Deprecated: since NWN
    */
   expansionList: any[] = [];
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   globalVariableList: any[] = [];
 
-  /** 
+  /**
    * @deprecated Obsolete: since NWN
    */
   hak: string;
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   cutSceneList: any[] = [];
 
-  /** 
+  /**
    * always set to 2
    * @deprecated Deprecated: since NWN
    */
@@ -184,7 +184,7 @@ export class Module {
   readyToProcessEvents: boolean = false;
   isSaveGame: boolean = false;
 
-  constructor(){
+  constructor() {
     this.scripts = {} as { [key in ModuleObjectScript]?: NWScriptInstance };
     this.archives = [];
     this.effects = [];
@@ -196,13 +196,13 @@ export class Module {
     this.initProperties();
   }
 
-  update(delta: number = 0){
-    if(this.area){
+  update(delta: number = 0) {
+    if (this.area) {
       this.area.update(delta);
     }
   }
 
-  initProperties(){
+  initProperties() {
     this.expansionPack;
     this.areaList = [];
     this.dawnHour;
@@ -214,14 +214,14 @@ export class Module {
     this.entryX;
     this.entryY;
     this.entryZ;
-    
+
     this.isSaveGame = false;
     this.name = new CExoLocString();
 
     this.nextCharId0 = 0; // DWORD Keeps track of which id to give the next character created
     this.nextCharId1 = 0; // DWORD -
-    this.nextObjId0  = 0; // DWORD Keeps track of which id to give the next object created
-    this.nextObjId1  = 0; // DWORD -
+    this.nextObjId0 = 0; // DWORD Keeps track of which id to give the next object created
+    this.nextObjId1 = 0; // DWORD -
 
     this.tag;
     this.voId = '';
@@ -229,38 +229,45 @@ export class Module {
     this.xpScale;
   }
 
-  setFromIFO( ifo: GFFObject, isLoadingSave = false ){
-    if(!(ifo instanceof GFFObject)){ return; }
+  setFromIFO(ifo: GFFObject, isLoadingSave = false) {
+    if (!(ifo instanceof GFFObject)) { return; }
     this.ifo = ifo;
 
     //Setup Module Calendar
     this.timeManager.setFromIFO(ifo);
-    
+
     const areaList = ifo.getFieldByLabel('Mod_Area_list');
-    const areaCount = areaList.getChildStructs().length;
-    let Mod_Area = areaList.childStructs[0];
+    if (!areaList) {
+      throw new Error('Module IFO missing Mod_Area_list - corrupt or invalid module data');
+    }
+    const childStructs = areaList.getChildStructs();
+    const areaCount = childStructs.length;
+    if (areaCount === 0) {
+      throw new Error('Module IFO Mod_Area_list is empty - corrupt or invalid module data');
+    }
+    let Mod_Area = childStructs[0];
 
     this.areaName = ifo.getFieldByLabel('Area_Name', Mod_Area.getFields()).getValue();
 
     this.areaList = [];
     //KOTOR modules should only ever have one area. But just incase lets loop through the list
-    for(let i = 0; i < areaCount; i++){
-      let Mod_Area = areaList.childStructs[0];
+    for (let i = 0; i < areaCount; i++) {
+      let Mod_Area = childStructs[i];
       const area: IAreaListItem = {} as any;
 
-      if(Mod_Area.hasField('Area_Name'))
+      if (Mod_Area.hasField('Area_Name'))
         area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue()
 
-      if(Mod_Area.hasField('ObjectId'))
+      if (Mod_Area.hasField('ObjectId'))
         area.objectId = Mod_Area.getFieldByLabel('ObjectId').getValue()
 
       this.areaList.push(area);
     }
 
     //LISTS
-    if(ifo.RootNode.hasField('Expansion_Pack')){
+    if (ifo.RootNode.hasField('Expansion_Pack')) {
       this.expansionPack = ifo.getFieldByLabel('Expansion_Pack').getValue();
-    }else{
+    } else {
       this.expansionPack = 0;
     }
 
@@ -279,9 +286,9 @@ export class Module {
     this.name = ifo.getFieldByLabel('Mod_Name').getCExoLocString();
 
     //Mod_Tokens
-    if(ifo.RootNode.hasField('Mod_Tokens') && isLoadingSave){
+    if (ifo.RootNode.hasField('Mod_Tokens') && isLoadingSave) {
       const tokenList = ifo.getFieldByLabel('Mod_Tokens').getChildStructs();
-      for(let i = 0, len = tokenList.length; i < len; i++){
+      for (let i = 0, len = tokenList.length; i < len; i++) {
         this.setCustomToken(
           tokenList[i].getFieldByLabel('Mod_TokensNumber').getValue(),
           tokenList[i].getFieldByLabel('Mod_TokensValue').getValue()
@@ -289,9 +296,9 @@ export class Module {
       }
     }
 
-    if(ifo.RootNode.hasField('Mod_PlayerList') && isLoadingSave){
+    if (ifo.RootNode.hasField('Mod_PlayerList') && isLoadingSave) {
       const playerList = ifo.getFieldByLabel('Mod_PlayerList').getChildStructs();
-      if(playerList.length){
+      if (playerList.length) {
         GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
         GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc || GameState.PartyManager.PlayerTemplate;
         // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
@@ -303,63 +310,63 @@ export class Module {
     }
 
     //Scripts
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerAcquireItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerActivateItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientEnter).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientLeave).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat,   ifo.getFieldByLabel(ModuleObjectScript.ModuleOnHeartbeat).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnLoad).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnStart).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDeath).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDying).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp,    ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerLevelUp).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest,     ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerRest).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnSpawnButtonDown).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUnAcquireItem).getValue());
-    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined,  ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUserDefined).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerAcquireItem, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerActivateItem, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerActivateItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientEnter, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientEnter).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerClientLeave, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerClientLeave).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnHeartbeat, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnHeartbeat).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnLoad, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnLoad).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnStart, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnStart).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDeath, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDeath).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerDying, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerDying).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerLevelUp, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerLevelUp).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnPlayerRest, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnPlayerRest).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnSpawnButtonDown, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnSpawnButtonDown).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUnAcquireItem, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUnAcquireItem).getValue());
+    this.scriptResRefs.set(ModuleObjectScript.ModuleOnUserDefined, ifo.getFieldByLabel(ModuleObjectScript.ModuleOnUserDefined).getValue());
 
-    if(ifo.RootNode.hasField('Mod_StartMovie')){
+    if (ifo.RootNode.hasField('Mod_StartMovie')) {
       this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue();
-    }else{
+    } else {
       this.startMovie = '';
     }
 
     this.tag = ifo.getFieldByLabel('Mod_Tag').getValue();
 
-    if(ifo.RootNode.hasField('Mod_VO_ID')){
+    if (ifo.RootNode.hasField('Mod_VO_ID')) {
       this.voId = ifo.getFieldByLabel('Mod_VO_ID').getValue();
     }
 
     this.version = ifo.getFieldByLabel('Mod_Version').getValue();
     this.xpScale = ifo.getFieldByLabel('Mod_XPScale').getValue();
 
-    if(ifo.RootNode.hasField('Mod_NextCharId0'))
+    if (ifo.RootNode.hasField('Mod_NextCharId0'))
       this.nextCharId0 = ifo.getFieldByLabel('Mod_NextCharId0').getValue();
 
-    if(ifo.RootNode.hasField('Mod_NextCharId1'))
+    if (ifo.RootNode.hasField('Mod_NextCharId1'))
       this.nextCharId1 = ifo.getFieldByLabel('Mod_NextCharId1').getValue();
 
-    if(ifo.RootNode.hasField('Mod_NextObjId0'))
+    if (ifo.RootNode.hasField('Mod_NextObjId0'))
       this.nextObjId0 = ifo.getFieldByLabel('Mod_NextObjId0').getValue();
 
-    if(ifo.RootNode.hasField('Mod_NextObjId1'))
+    if (ifo.RootNode.hasField('Mod_NextObjId1'))
       this.nextObjId1 = ifo.getFieldByLabel('Mod_NextObjId1').getValue();
   }
 
-  addEffect(effect?: GameEffect, lLocation?: EngineLocation){
-    if(!(effect instanceof GameEffect)){ return; }
+  addEffect(effect?: GameEffect, lLocation?: EngineLocation) {
+    if (!(effect instanceof GameEffect)) { return; }
 
     effect.loadModel();
     const object: any = {
       model: new THREE.Object3D(),
       position: lLocation.position,
-      dispose: function(){
+      dispose: function () {
         this.onRemove();
         this.removeEffect(this);
       },
-      removeEffect: function(effect: GameEffect){
+      removeEffect: function (effect: GameEffect) {
         let index = this.effects.indexOf(effect);
-        if(index >= 0){
+        if (index >= 0) {
           this.effects.splice(index, 1);
         }
       }
@@ -381,21 +388,21 @@ export class Module {
     GameState.group.effects.add(object.model);
   }
 
-  addEvent(event: GameEvent){
-    if(this.eventQueue.indexOf(event) >= 0){ return; }
+  addEvent(event: GameEvent) {
+    if (this.eventQueue.indexOf(event) >= 0) { return; }
     this.eventQueue.push(event);
   }
 
-  tick(delta = 0){
+  tick(delta = 0) {
 
-    if(this.readyToProcessEvents){
+    if (this.readyToProcessEvents) {
 
       //Process EventQueue
       let eqLen = this.eventQueue.length - 1;
-      for(let i = eqLen; i >= 0; i--){
+      for (let i = eqLen; i >= 0; i--) {
         let event = this.eventQueue[i];
-        
-        if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
+
+        if (this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time) {
           event.execute();
           this.eventQueue.splice(i, 1);
         }
@@ -403,11 +410,11 @@ export class Module {
 
       //Process EffectList
       let elLen = this.effects.length - 1;
-      for(let i = elLen; i >= 0; i--){
+      for (let i = elLen; i >= 0; i--) {
         this.effects[i].update(delta);
       }
 
-      if(this.area){
+      if (this.area) {
         this.area.update(delta);
       }
 
@@ -417,30 +424,30 @@ export class Module {
 
   }
 
-  tickPaused(delta = 0){
-    if(this.readyToProcessEvents){
-      if(this.area){
+  tickPaused(delta = 0) {
+    if (this.readyToProcessEvents) {
+      if (this.area) {
         this.area.updatePaused(delta);
       }
     }
   }
 
-  setReturnStrRef(enabled = false, str1 = -1, str2 = -1){
+  setReturnStrRef(enabled = false, str1 = -1, str2 = -1) {
     GameState.MenuManager.MenuMap.BTN_RETURN.setText(GameState.TLKManager.GetStringById(str1).Value);
   }
 
-  async loadScene(){
-    try{
+  async loadScene() {
+    try {
       GameState.PartyManager.party = [];
-      
+
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.sun.fogOn && this.area.sun.fogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
-      }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
+      if (this.area.sun.fogOn && this.area.sun.fogColor) {
+        GameState.globalLight.color.setHex(parseInt('0x' + this.area.sun.fogColor.toString(16)));
+      } else {
+        GameState.globalLight.color.setHex(parseInt('0x' + this.area.dynamicAmbientColor.toString(16)));
       }
-      
+
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
         THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
@@ -469,215 +476,215 @@ export class Module {
 
       await this.area.loadScene();
       this.transWP = null;
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
 
-  async initScripts(){
-    for(let [key, resRef] of this.scriptResRefs){
+  async initScripts() {
+    for (let [key, resRef] of this.scriptResRefs) {
       const script = GameState.NWScript.Load(resRef);
-      if(!script){ continue; }
+      if (!script) { continue; }
       this.scripts[key] = script;
     }
 
     const onLoad = this.scripts[ModuleObjectScript.ModuleOnLoad];
-    if(onLoad){
+    if (onLoad) {
       onLoad.enteringObject = GameState.PartyManager.party[0];
       onLoad.run(this.area, 0);
     }
 
     const onPlayerClientEnter = this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter];
-    if(onPlayerClientEnter){
+    if (onPlayerClientEnter) {
       onPlayerClientEnter.enteringObject = GameState.PartyManager.party[0];
       onPlayerClientEnter.run(this.area, 0);
     }
   }
 
-  setCustomToken(tokenNumber = 0, tokenValue = ''){
+  setCustomToken(tokenNumber = 0, tokenValue = '') {
     this.customTokens.set(tokenNumber, tokenValue);
   }
 
-  getCustomToken(tokenNumber: any){
+  getCustomToken(tokenNumber: any) {
     return this.customTokens.get(tokenNumber) || `<Missing CustomToken ${tokenNumber}>`;
   }
 
-  initEventQueue(){
+  initEventQueue() {
     //Load module EventQueue after the area is intialized so that ModuleObject ID's are set
-    if(this.ifo.RootNode.hasField('EventQueue')){
+    if (this.ifo.RootNode.hasField('EventQueue')) {
       let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
-      for(let i = 0; i < eventQueue.length; i++){
+      for (let i = 0; i < eventQueue.length; i++) {
         let event_struct = eventQueue[i];
         let event = GameEventFactory.EventFromStruct(event_struct);
         console.log(event_struct, event);
-        if(event){
+        if (event) {
           this.eventQueue.push(event);
         }
       }
     }
   }
 
-  dispose(){
+  dispose() {
     GameState.collisionList = [];
-    
+
     //Remove all effects
-    if(this){
-      while(this.effects.length){
+    if (this) {
+      while (this.effects.length) {
         this.effects[0].dispose();
         this.effects.shift();
       }
     }
 
     //Cleanup texture cache
-    Array.from(TextureLoader.textures.keys()).forEach( (key) => {
+    Array.from(TextureLoader.textures.keys()).forEach((key) => {
       TextureLoader.textures.get(key).dispose();
-      TextureLoader.textures.delete(key); 
+      TextureLoader.textures.delete(key);
     });
 
     //Clear walkmesh list
-    while (GameState.walkmeshList.length){
+    while (GameState.walkmeshList.length) {
       let wlkmesh = GameState.walkmeshList.shift();
       //wlkmesh.dispose();
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
 
-    if(GameState.PartyManager.Player){
+    if (GameState.PartyManager.Player) {
       GameState.PartyManager.Player.destroy();
       GameState.PartyManager.Player = undefined;
     }
 
     //Clear emitters
-    while (GameState.group.emitters.children.length){
+    while (GameState.group.emitters.children.length) {
       GameState.group.emitters.remove(GameState.group.emitters.children[0]);
     }
-    
-    if(this.area){
+
+    if (this.area) {
       this.area.dispose();
     }
   }
 
-  async save( isSaveGame = false ){
+  async save(isSaveGame = false) {
     GameState.PartyManager.Save();
 
     const ifo = new GFFObject();
     ifo.FileType = 'IFO ';
 
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
-    const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
-    for(let i = 0; i < this.eventQueue.length; i++){
+    ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Creature List'));
+    const eventQueue = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'EventQueue'));
+    for (let i = 0; i < this.eventQueue.length; i++) {
       let event = this.eventQueue[i];
-      if(event){
-        eventQueue.addChildStruct( event.export() );
+      if (event) {
+        eventQueue.addChildStruct(event.export());
       }
     }
 
-    const areaList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Area_list') );
-    if(this.area){
-      areaList.addChildStruct( this.area.saveAreaListStruct() );
+    const areaList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Area_list'));
+    if (this.area) {
+      areaList.addChildStruct(this.area.saveAreaListStruct());
       this.area.save();
     }
 
-    ifo.RootNode.addField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID') ).setValue(this.creatorId);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_CutSceneList') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DawnHour') ).setValue(this.timeManager.dawnHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description') ).setValue( this.description );
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DuskHour') ).setValue(this.timeManager.duskHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD64, 'Mod_Effect_NxtId') ).setValue(this.effectNextId);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_Entry_Area') ).setValue(this.entryArea);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X') ).setValue(this.entryDirectionX);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_Y') ).setValue(this.entryDirectionY);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X') ).setValue(this.entryX);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y') ).setValue(this.entryY);
-    ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z') ).setValue(this.entryZ);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Expan_List') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak') ).setValue(this.hak);
-    ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsNWMFile') ).setValue(0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame') ).setValue( isSaveGame ? 1 : 0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour') ).setValue(this.timeManager.minutesPerHour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name') ).setValue( this.name );
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId0') ).setValue(this.nextCharId0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextCharId1') ).setValue(this.nextCharId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId0') ).setValue(this.nextObjId0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_NextObjId1') ).setValue(this.nextObjId1);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientLeave]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat') ).setValue(this.scripts[ModuleObjectScript.ModuleOnHeartbeat]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad') ).setValue(this.scripts[ModuleObjectScript.ModuleOnLoad]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnModStart') ).setValue(this.scripts[ModuleObjectScript.ModuleOnStart]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDeath]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDying]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest') ).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerRest]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn') ).setValue(this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUnAcquireItem]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined') ).setValue(this.scripts[ModuleObjectScript.ModuleOnUserDefined]?.name || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
+    ifo.RootNode.addField(new GFFField(GFFDataType.INT, 'Mod_Creator_ID')).setValue(this.creatorId);
+    ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_CutSceneList'));
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_DawnHour')).setValue(this.timeManager.dawnHour);
+    ifo.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description')).setValue(this.description);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_DuskHour')).setValue(this.timeManager.duskHour);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'Mod_Effect_NxtId')).setValue(this.effectNextId);
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_Entry_Area')).setValue(this.entryArea);
+    ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_X')).setValue(this.entryDirectionX);
+    ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Dir_Y')).setValue(this.entryDirectionY);
+    ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X')).setValue(this.entryX);
+    ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y')).setValue(this.entryY);
+    ifo.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z')).setValue(this.entryZ);
+    ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Expan_List'));
+    ifo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak')).setValue(this.hak);
+    ifo.RootNode.addField(new GFFField(GFFDataType.VOID, 'Mod_ID'));
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_IsNWMFile')).setValue(0);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame')).setValue(isSaveGame ? 1 : 0);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour')).setValue(this.timeManager.minutesPerHour);
+    ifo.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Name')).setValue(this.name);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_NextCharId0')).setValue(this.nextCharId0);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_NextCharId1')).setValue(this.nextCharId1);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_NextObjId0')).setValue(this.nextObjId0);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_NextObjId1')).setValue(this.nextObjId1);
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnAcquirItem')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerAcquireItem]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnActvtItem')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerActivateItem]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnClientEntr')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientEnter]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnClientLeav')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerClientLeave]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnHeartbeat')).setValue(this.scripts[ModuleObjectScript.ModuleOnHeartbeat]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnModLoad')).setValue(this.scripts[ModuleObjectScript.ModuleOnLoad]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnModStart')).setValue(this.scripts[ModuleObjectScript.ModuleOnStart]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDeath')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDeath]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnPlrDying')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerDying]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnPlrLvlUp')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerLevelUp]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnPlrRest')).setValue(this.scripts[ModuleObjectScript.ModuleOnPlayerRest]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnSpawnBtnDn')).setValue(this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnUnAqreItem')).setValue(this.scripts[ModuleObjectScript.ModuleOnUnAcquireItem]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.RESREF, 'Mod_OnUsrDefined')).setValue(this.scripts[ModuleObjectScript.ModuleOnUserDefined]?.name || '');
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_PauseDay')).setValue(this.timeManager.pauseDay);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_PauseTime')).setValue(this.timeManager.pauseTime);
 
     //Player
-    const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
-    if(GameState.PartyManager.Player){
-      playerList.addChildStruct( GameState.PartyManager.Player.save().RootNode );
+    const playerList = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_PlayerList'));
+    if (GameState.PartyManager.Player) {
+      playerList.addChildStruct(GameState.PartyManager.Player.save().RootNode);
     }
 
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartDay') ).setValue(this.timeManager.day);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartHour') ).setValue(this.timeManager.hour);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec') ).setValue(this.timeManager.milisecond);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMinute') ).setValue(this.timeManager.minute);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartMonth') ).setValue(this.timeManager.month);
-    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartSecond') ).setValue(this.timeManager.second);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.transition);
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
-    ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_StartDay')).setValue(this.timeManager.day);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_StartHour')).setValue(this.timeManager.hour);
+    ifo.RootNode.addField(new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec')).setValue(this.timeManager.milisecond);
+    ifo.RootNode.addField(new GFFField(GFFDataType.WORD, 'Mod_StartMinute')).setValue(this.timeManager.minute);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_StartMonth')).setValue(this.timeManager.month);
+    ifo.RootNode.addField(new GFFField(GFFDataType.WORD, 'Mod_StartSecond')).setValue(this.timeManager.second);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_StartYear')).setValue(this.timeManager.year);
+    ifo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag')).setValue(this.tag);
+    ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_Tokens'));
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_Transition')).setValue(this.transition);
+    ifo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Mod_Version')).setValue(this.version);
+    ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_XPScale').setValue(this.xpScale));
+    ifo.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'SWVarTable'));
+    ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
+
     this.ifo = ifo;
 
     const sav = new ERFObject();
     sav.addResource('module', ResourceTypes['ifo'], this.ifo.getExportBuffer());
-    for(let i = 0; i < this.areas.length; i++){
+    for (let i = 0; i < this.areas.length; i++) {
       const area = this.areas[i];
       sav.addResource(area.name, ResourceTypes['are'], area.are.getExportBuffer());
       sav.addResource(area.name, ResourceTypes['git'], area.git.getExportBuffer());
     }
 
-    if(this.includeInSave()){
-      await sav.export( path.join(CurrentGame.gameinprogress_dir, this.filename+'.sav') );
+    if (this.includeInSave()) {
+      await sav.export(path.join(CurrentGame.gameinprogress_dir, this.filename + '.sav'));
     }
-    
+
     console.log('Current Module Exported', this.filename);
 
     await GameState.InventoryManager.Save();
     await GameState.PartyManager.ExportPartyMemberTemplates();
-    await GameState.FactionManager.Export( path.join(CurrentGame.gameinprogress_dir, 'repute.fac') );
+    await GameState.FactionManager.Export(path.join(CurrentGame.gameinprogress_dir, 'repute.fac'));
   }
 
-  includeInSave(){
+  includeInSave() {
     const modulesave2DA = GameState.TwoDAManager.datatables.get('modulesave');
-    if(modulesave2DA){
+    if (modulesave2DA) {
       const moduleSave = modulesave2DA.getRowByColumnAndValue('modulename', this.filename);
-      if(moduleSave){
+      if (moduleSave) {
         return parseInt(moduleSave.includeInSave) == 0 ? false : true;
       }
     }
     return true;
   }
 
-  static async GetModuleMod(resRef = ''){
+  static async GetModuleMod(resRef = '') {
     const resource_path = path.join('modules', `${resRef}.mod`);
-    try{
+    try {
       const mod = new ERFObject(resource_path);
       await mod.load();
       console.log('Module.GetModuleMod success', resource_path);
       return mod;
-    }catch(e){
+    } catch (e) {
       console.error('Module.GetModuleMod failed', resource_path);
       console.error(e);
       return undefined;
@@ -686,11 +693,11 @@ export class Module {
 
   static async GetModuleRimA(resRef = ''): Promise<RIMObject> {
     const resourcePath = path.join('modules', `${resRef}.rim`);
-    try{
+    try {
       const rim = new RIMObject(resourcePath);
       await rim.load();
       return rim;
-    }catch(e){
+    } catch (e) {
       console.error('Module.GetModuleRimA failed', resourcePath);
       console.error(e);
       return undefined;
@@ -699,11 +706,11 @@ export class Module {
 
   static async GetModuleRimB(resRef = ''): Promise<RIMObject> {
     const resourcePath = path.join('modules', `${resRef}_s.rim`);
-    try{
+    try {
       const rim = new RIMObject(resourcePath);
       await rim.load();
       return rim;
-    }catch(e){
+    } catch (e) {
       console.log('Module.GetModuleRimB failed', resourcePath);
       console.error(e);
       return undefined;
@@ -712,12 +719,12 @@ export class Module {
 
   static async GetModuleLipsLoc(): Promise<ERFObject> {
     const resourcePath = path.join('lips', 'localization.mod');
-    try{
+    try {
       const mod = new ERFObject(resourcePath);
       await mod.load();
       console.log('Module.GetModuleLipsLoc success', resourcePath);
       return mod;
-    }catch(e){
+    } catch (e) {
       console.log('Module.GetModuleLipsLoc failed', resourcePath);
       console.error(e);
       return undefined;
@@ -726,11 +733,11 @@ export class Module {
 
   static async GetModuleLips(resRef = ''): Promise<ERFObject> {
     const resource_path = path.join('lips', `${resRef}_loc.mod`);
-    try{
+    try {
       const mod = new ERFObject(resource_path);
       await mod.load();
       return mod;
-    }catch(e){
+    } catch (e) {
       console.log('Module.GetModuleLips failed', resource_path);
       console.error(e);
       return undefined;
@@ -739,126 +746,126 @@ export class Module {
 
   static async GetModuleDLG(resRef = ''): Promise<ERFObject> {
     let resourcePath = path.join('modules', `${resRef}_dlg.erf`);
-    try{
+    try {
       const erf = new ERFObject(resourcePath);
       await erf.load();
       return erf;
-    }catch(e){
+    } catch (e) {
       console.log('Module.GetModuleDLG failed', resourcePath);
       console.error(e);
       return undefined;
     }
   }
 
-  static async GetModuleArchives(modName = ''): Promise<(RIMObject|ERFObject)[]> {
+  static async GetModuleArchives(modName = ''): Promise<(RIMObject | ERFObject)[]> {
     const archives: any[] = [];
     let archive = undefined;
 
     const isModuleSaved = await CurrentGame.IsModuleSaved(modName);
 
-    try{
-      if(isModuleSaved){
+    try {
+      if (isModuleSaved) {
         archive = await CurrentGame.GetModuleRim(modName);
-        if(archive instanceof ERFObject){
+        if (archive instanceof ERFObject) {
           archives.push(archive);
         }
 
         //Locate the module's MOD file
         archive = await Module.GetModuleMod(modName);
-        if(archive instanceof ERFObject){
+        if (archive instanceof ERFObject) {
           archives.push(archive);
         }
 
         //Locate the module's RIM_S file
         archive = await Module.GetModuleRimB(modName);
-        if(archive instanceof RIMObject){
+        if (archive instanceof RIMObject) {
           archives.push(archive);
         }
-      }else{
+      } else {
         //Locate the module's MOD file
         archive = await Module.GetModuleMod(modName);
-        if(archive instanceof ERFObject){
+        if (archive instanceof ERFObject) {
           archives.push(archive);
         }
 
         //Locate the module's RIM file
         archive = await Module.GetModuleRimA(modName);
-        if(archive instanceof RIMObject){
+        if (archive instanceof RIMObject) {
           archives.push(archive);
         }
 
         //Locate the module's RIM_S file
         archive = await Module.GetModuleRimB(modName);
-        if(archive instanceof RIMObject){
+        if (archive instanceof RIMObject) {
           archives.push(archive);
         }
       }
 
       //Locate the module's LIPs file
       archive = await Module.GetModuleLips(modName);
-      if(archive instanceof ERFObject){
+      if (archive instanceof ERFObject) {
         archives.push(archive);
       }
 
       //Locate the global LIPs file
       archive = await Module.GetModuleLipsLoc();
-      if(archive instanceof ERFObject){
+      if (archive instanceof ERFObject) {
         archives.push(archive);
       }
 
       //Locate the module's dialog MOD file (TSL)
       archive = await Module.GetModuleDLG(modName);
-      if(archive instanceof ERFObject){
+      if (archive instanceof ERFObject) {
         archives.push(archive);
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
-    
+
     //Return the archive array
     return archives;
   }
 
-  static async GetModuleProjectArchives(modName = ''): Promise<(RIMObject|ERFObject)[]> {
-    return new Promise<(RIMObject|ERFObject)[]> ( async (resolve, reject) => {
+  static async GetModuleProjectArchives(modName = ''): Promise<(RIMObject | ERFObject)[]> {
+    return new Promise<(RIMObject | ERFObject)[]>(async (resolve, reject) => {
       let archives: any[] = [];
       let archive = undefined;
 
-      try{
+      try {
         //Locate the module's RIM file
         archive = await Module.GetModuleRimA(modName);
-        if(archive instanceof RIMObject){
+        if (archive instanceof RIMObject) {
           archives.push(archive);
         }
 
         //Locate the module's RIM_S file
         archive = await Module.GetModuleRimB(modName);
-        if(archive instanceof RIMObject){
+        if (archive instanceof RIMObject) {
           archives.push(archive);
         }
 
         //Locate the module's dialog MOD file (TSL)
         archive = await Module.GetModuleDLG(modName);
-        if(archive instanceof ERFObject){
+        if (archive instanceof ERFObject) {
           archives.push(archive);
         }
-      }catch(e){
+      } catch (e) {
         console.error(e);
       }
-      
+
       //Return the archive array
       resolve(archives);
     });
   }
 
   //ex: end_m01aa end_m01aa_s
-  static async Load(modName: string, waypoint?: string){
+  static async Load(modName: string, waypoint?: string) {
     console.log('Load', modName);
     const module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
-    if(!modName){ return module; }
-    try{
+    if (!modName) { return module; }
+    try {
       GameState.ModuleObjectManager.Reset();
       const archives = await Module.GetModuleArchives(modName);
       await ResourceLoader.InitModuleCache(archives);
@@ -878,46 +885,46 @@ export class Module {
       module.area.setTransitionWaypoint(module.transWP);
       await module.area.load();
 
-      if(module.nextObjId0)
+      if (module.nextObjId0)
         GameState.ModuleObjectManager.COUNT = module.nextObjId0;
 
       GameState.ModuleObjectManager.module = module;
 
-      if(GameState.isLoadingSave){
+      if (GameState.isLoadingSave) {
         console.log('Module', 'SaveGame.loadInventory');
         await GameState.SaveGame.loadInventory();
       }
 
       return module;
-    }catch(e){
+    } catch (e) {
       console.log(`Module.Load: failed to load module.`);
       console.error(e);
     }
   }
 
-  toEulerianAngle(q: any){
-  	let ysqr = q.y * q.y;
+  toEulerianAngle(q: any) {
+    let ysqr = q.y * q.y;
 
-  	// roll (x-axis rotation)
-  	let t0 = +2.0 * (q.w * q.x + q.y * q.z);
-  	let t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
-  	let roll = Math.atan2(t0, t1);
+    // roll (x-axis rotation)
+    let t0 = +2.0 * (q.w * q.x + q.y * q.z);
+    let t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
+    let roll = Math.atan2(t0, t1);
 
-  	// pitch (y-axis rotation)
-  	let t2 = +2.0 * (q.w * q.y - q.z * q.x);
-  	t2 = t2 > 1.0 ? 1.0 : t2;
-  	t2 = t2 < -1.0 ? -1.0 : t2;
-  	let pitch = Math.asin(t2);
+    // pitch (y-axis rotation)
+    let t2 = +2.0 * (q.w * q.y - q.z * q.x);
+    t2 = t2 > 1.0 ? 1.0 : t2;
+    t2 = t2 < -1.0 ? -1.0 : t2;
+    let pitch = Math.asin(t2);
 
-  	// yaw (z-axis rotation)
-  	let t3 = +2.0 * (q.w * q.z + q.x *q.y);
-  	let t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
-  	let yaw = Math.atan2(t3, t4);
+    // yaw (z-axis rotation)
+    let t3 = +2.0 * (q.w * q.z + q.x * q.y);
+    let t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
+    let yaw = Math.atan2(t3, t4);
 
-    return {yaw: yaw, pitch: pitch, roll: roll};
+    return { yaw: yaw, pitch: pitch, roll: roll };
   }
 
-  Save(){
+  Save() {
 
     //Export .ifo
 

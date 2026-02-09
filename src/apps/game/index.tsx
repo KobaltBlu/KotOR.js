@@ -3,18 +3,21 @@ import React from "react";
 import * as KotOR from "./KotOR";
 import { AppProvider } from "./context/AppContext";
 import { GameApp } from "./app";
+import { registerElectronLoadingErrorHandler } from "../common/electronLoadingErrorHandler";
 import './app.scss';
 
+registerElectronLoadingErrorHandler();
+
 window.addEventListener('beforeunload', (e) => {
-  try{
+  try {
     KotOR.GameState.Debugger.close();
-  }catch(e){
+  } catch (e) {
     console.error(e);
   }
 });
 
 window.addEventListener('DOMContentLoaded', () => {
-  ( async () => {
+  (async () => {
     const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
     root.render(
       <AppProvider>

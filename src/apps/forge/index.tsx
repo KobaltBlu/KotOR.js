@@ -12,33 +12,36 @@ import './app.scss';
 import { AppProvider, useApp } from './context/AppContext';
 import * as KotOR from "./KotOR";
 import { App } from './App';
+import { registerElectronLoadingErrorHandler } from '../common/electronLoadingErrorHandler';
+
+registerElectronLoadingErrorHandler();
 
 const query = new URLSearchParams(window.location.search);
 
-switch(query.get('key')){
+switch (query.get('key')) {
   case 'kotor':
   case 'tsl':
 
-  break;
+    break;
   default:
     query.set('key', 'kotor');
-  break;
+    break;
 }
 
 const loadReactApplication = () => {
   const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
-  ( async () => {
+  (async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider>
-          <App />
-        </AppProvider>
+      <AppProvider>
+        <App />
+      </AppProvider>
       // </React.StrictMode>
     );
   })();
 }
 
-( async () => {
+(async () => {
   try {
     await KotOR.ConfigClient.Init();
     const getProfile = () => KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
@@ -53,7 +56,7 @@ const loadReactApplication = () => {
 })();
 
 const plChangeCallback = (_e: Event): void => {
-  if(document.pointerLockElement instanceof HTMLCanvasElement) {
+  if (document.pointerLockElement instanceof HTMLCanvasElement) {
     document.body.addEventListener("mousemove", plMouseMove, true);
     KotOR.Mouse.Dragging = true;
   } else {
@@ -63,17 +66,17 @@ const plChangeCallback = (_e: Event): void => {
 };
 
 const plMouseMove = (event: MouseEvent): void => {
-  if(!KotOR.Mouse.Dragging) return;
+  if (!KotOR.Mouse.Dragging) return;
   const moveX = event.movementX ?? 0;
   const moveY = event.movementY ?? 0;
-  if(moveX === 0 && moveY === 0) return;
+  if (moveX === 0 && moveY === 0) return;
   const range = 1000;
-  if(moveX > -range && moveX < range){
+  if (moveX > -range && moveX < range) {
     KotOR.Mouse.OffsetX = moveX;
   } else {
     console.log('x', moveX);
   }
-  if(moveY > -range && moveY < range){
+  if (moveY > -range && moveY < range) {
     KotOR.Mouse.OffsetY = moveY * -1.0;
   } else {
     console.log('y', moveY);

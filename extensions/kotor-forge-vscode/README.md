@@ -96,9 +96,30 @@ extensions/kotor-forge-vscode/
 
 ### Building
 
-- **Development**: `npm run watch`
-- **Production**: `npm run compile`
-- **Package**: `npm run package`
+- **Production**: `npm run compile` — one-off build (used by `vscode:prepublish` and before packaging)
+- **Package**: `npm run package` — build and create a `.vsix` for distribution
+
+### Debugging and testing
+
+1. **Start the watcher** (in a terminal from `extensions/kotor-forge-vscode/`):
+   ```bash
+   npm run watch
+   ```
+   This runs webpack in development mode and **rebuilds automatically** when you change extension or webview source. Leave it running.
+
+2. **Launch the extension**: Open the `extensions/kotor-forge-vscode` folder in VS Code and press **F5** (or Run → Start Debugging). A new window opens (Extension Development Host) with the extension loaded.
+
+3. **Test**: In that window, open a KotOR file (e.g. `.utc`, `.2da`, `.nss`) to use the custom editor. After you edit code, wait for the watcher to finish rebuilding, then in the Extension Development Host run **Developer: Reload Window** (Command Palette) to pick up changes.
+
+Without `watch`, you would have to run `npm run compile` manually after every change and then reload the window.
+
+### Forge integration (no duplication)
+
+The extension **does not duplicate** any editor logic. It depends on the existing Forge implementation in `src/apps/forge/`:
+
+- **Host adapter** (`IForgeHostAdapter` in `src/apps/forge/ForgeHostAdapter.ts`): When set, `ForgeState` delegates `tabManager`, `modalManager`, `addRecentFile`, and save I/O to the host. The extension’s webview provides `ForgeWebviewAdapter`, which implements this interface and forwards save requests to the extension host via `postMessage`.
+- **Single-tab flow**: The webview creates one `EditorFile` (with buffer and path from the init message), looks up the correct `TabState` class from `forgeEditorRegistry.ts` (e.g. `TabUTCEditorState`), adds it to the adapter’s `EditorTabManager`, then renders the same `TabManager` + `TabManagerProvider` used by the standalone Forge app. All editors (UTC, UTD, 2DA, GFF, etc.) are the real Forge components; the webview only wires file data in and save/undo out.
+- **Build**: The extension webpack config aliases `@forge` to `../../src/apps/forge` and `@kotor` to `../../src`, so the webview bundle compiles and includes the Forge and KotOR source. Run `npm run compile` from the extension directory (with the repo root’s `node_modules` available for Bootstrap, etc.).
 
 ### Architecture
 

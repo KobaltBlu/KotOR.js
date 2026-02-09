@@ -2,9 +2,9 @@
  * VS Code Webview API
  */
 export interface VSCodeAPI {
-  postMessage(message: any): void;
-  getState(): any;
-  setState(state: any): void;
+  postMessage(message: unknown): void;
+  getState(): unknown;
+  setState(state: unknown): void;
 }
 
 declare global {

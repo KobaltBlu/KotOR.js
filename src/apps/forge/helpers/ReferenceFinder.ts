@@ -216,11 +216,13 @@ export async function searchReferences(
   return results;
 }
 
-export {
+export type {
   ReferenceFileResource,
   ReferenceSearchResult,
   ReferenceFinderOptions,
   ReferenceFinderResrefOptions,
+};
+export {
   findResrefReferences,
   findFieldValueReferences,
   findScriptReferences,

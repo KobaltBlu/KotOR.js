@@ -1,1 +1,1 @@
-const App = require('./dist/electron');
+const _App = require('./dist/electron');

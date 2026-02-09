@@ -1,5 +1,6 @@
+/* eslint-disable no-console */
 import React from "react";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
+
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { TabState } from "./";
 import * as THREE from 'three';
@@ -22,6 +23,7 @@ import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
 import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
 import { ForgeState } from "../../states/ForgeState";
 import { ForgeRoom } from "../../module-editor/ForgeRoom";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
@@ -58,15 +60,15 @@ export class TabModuleEditorState extends TabState {
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
   groundMesh: THREE.LineSegments<THREE.WireframeGeometry<THREE.PlaneGeometry>, THREE.LineBasicMaterial>;
-  
+
   // Ghost preview for object placement
   ghostPreviewMesh: THREE.Mesh;
   previewPosition: THREE.Vector3 = new THREE.Vector3();
   previewValid: boolean = false;
-  
+
   // Selected game object
   selectedGameObject: ForgeGameObject | undefined;
-  
+
   // Mouse vector for raycasting (reused to avoid allocation)
   private mouseVector: THREE.Vector2 = new THREE.Vector2();
 
@@ -74,10 +76,10 @@ export class TabModuleEditorState extends TabState {
     super(options);
     this.singleInstance = true;
     this.isClosable = true;
-    
+
     // Create UI3DRenderer first
     this.ui3DRenderer = new UI3DRenderer();
-    
+
     // Geometry
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
@@ -86,7 +88,7 @@ export class TabModuleEditorState extends TabState {
 
     // Create ghost preview mesh for object placement
     const ghostGeometry = new THREE.BoxGeometry(1, 1, 1);
-    const ghostMaterial = new THREE.MeshBasicMaterial({ 
+    const ghostMaterial = new THREE.MeshBasicMaterial({
       color: 0x00ff00,
       wireframe: true,
       transparent: true,
@@ -99,7 +101,7 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
-    
+
     // Listen for keyboard events (Delete key to remove selected object)
     this.addEventListener('onKeyDown', this.onKeyDown.bind(this));
 
@@ -115,12 +117,12 @@ export class TabModuleEditorState extends TabState {
         }
       }
     };
-    
+
     // Try to add immediately if scene exists (scene is initialized in UI3DRenderer class definition)
     if(this.ui3DRenderer.scene){
       addMeshesToScene();
     }
-    
+
     // Also listen for when canvas is attached (which calls buildScene and ensures scene is ready)
     this.ui3DRenderer.addEventListener('onCanvasAttached', addMeshesToScene);
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
@@ -157,7 +159,7 @@ export class TabModuleEditorState extends TabState {
       this.ghostPreviewMesh.geometry.dispose();
       (this.ghostPreviewMesh.material as THREE.Material).dispose();
     }
-    
+
     this.ui3DRenderer.destroy();
     // this.disposeLayout();
     super.destroy();
@@ -192,7 +194,7 @@ export class TabModuleEditorState extends TabState {
       }
     }
   }
-  
+
   private onTransformControlsChange(): void {
     if(!this.selectedGameObject) return;
 
@@ -202,16 +204,16 @@ export class TabModuleEditorState extends TabState {
     // For cameras, ensure rotation order is maintained and sync quaternion/pitch
     if(this.selectedGameObject instanceof ForgeCamera){
       const camera = this.selectedGameObject as ForgeCamera;
-      
+
       // Ensure rotation order is set correctly
       camera.rotation.reorder('YZX');
-      
+
       // Update quaternion from rotation
       camera.quaternion.setFromEuler(camera.rotation);
-      
+
       // Update pitch from rotation.x (pitch is stored separately)
       camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
-      
+
       // Sync to perspective camera
       if(camera.perspectiveCamera){
         camera.perspectiveCamera.quaternion.copy(camera.quaternion);
@@ -219,7 +221,7 @@ export class TabModuleEditorState extends TabState {
         camera.perspectiveCamera.updateMatrix();
       }
     }
-    
+
     // Mark file as having unsaved changes
     this.updateFile();
   }
@@ -239,7 +241,7 @@ export class TabModuleEditorState extends TabState {
       this.previewValid = false;
       return;
     }
-    
+
     if(!this.ui3DRenderer || !this.ui3DRenderer.canvas || !this.module?.area){
       if(this.ghostPreviewMesh){
         this.ghostPreviewMesh.visible = false;
@@ -247,7 +249,7 @@ export class TabModuleEditorState extends TabState {
       this.previewValid = false;
       return;
     }
-    
+
     // Find intersection point using same logic as placement
     const intersection = this.findPlacementIntersection();
     if(intersection && intersection.point && this.ghostPreviewMesh){
@@ -275,10 +277,10 @@ export class TabModuleEditorState extends TabState {
 
     // Perform raycast
     this.ui3DRenderer.raycaster.setFromCamera(this.mouseVector, this.ui3DRenderer.camera);
-    
+
     // Try to intersect with walkmesh first, then ground plane
     let intersection: THREE.Intersection | null = null;
-    
+
     // Use cached walkmesh objects from ForgeArea
     const walkmeshObjects = this.module.area.getWalkmeshObjects();
     if(walkmeshObjects.length > 0){
@@ -287,7 +289,7 @@ export class TabModuleEditorState extends TabState {
         intersection = walkmeshIntersects[0];
       }
     }
-    
+
     // Fallback to ground plane if no walkmesh intersection
     if(!intersection && this.groundMesh){
       const planeIntersects = this.ui3DRenderer.raycaster.intersectObject(this.groundMesh);
@@ -320,14 +322,14 @@ export class TabModuleEditorState extends TabState {
   setControlMode(mode: TabModuleEditorControlMode){
     this.controlMode = mode;
 
-    const isTransformTool = 
-      mode === TabModuleEditorControlMode.TRANSFORM_CONTROL || 
-      mode === TabModuleEditorControlMode.ROTATE_CONTROL || 
+    const isTransformTool =
+      mode === TabModuleEditorControlMode.TRANSFORM_CONTROL ||
+      mode === TabModuleEditorControlMode.ROTATE_CONTROL ||
       mode === TabModuleEditorControlMode.SCALE_CONTROL;
 
-    const isSelectModeTool = 
+    const isSelectModeTool =
       mode === TabModuleEditorControlMode.SELECT;
-    
+
     // Detach transform controls when not in SELECT mode
     if(!isTransformTool && !isSelectModeTool){
       this.selectedGameObject = undefined;
@@ -336,7 +338,7 @@ export class TabModuleEditorState extends TabState {
 
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'translate';
-      this.updateTransformControlHelpers(this.selectedGameObject!);  
+      this.updateTransformControlHelpers(this.selectedGameObject!);
     } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'rotate';
       this.updateTransformControlHelpers(this.selectedGameObject!);
@@ -350,7 +352,7 @@ export class TabModuleEditorState extends TabState {
 
   onSelect(gameObject: ForgeGameObject | THREE.Object3D | undefined){
     console.log('onSelect', gameObject);
-    
+
     // Check if a vertex helper was selected
     if(gameObject instanceof THREE.Mesh && gameObject.userData?.vertexIndex !== undefined){
       const forgeGameObject = gameObject.userData.forgeGameObject as ForgeTrigger | ForgeEncounter;
@@ -364,7 +366,7 @@ export class TabModuleEditorState extends TabState {
         return;
       }
     }
-    
+
     // Otherwise, select the game object
     if(gameObject instanceof ForgeGameObject){
       this.selectGameObject(gameObject);
@@ -390,10 +392,10 @@ export class TabModuleEditorState extends TabState {
       // Prevent default browser behavior (e.g., going back in history)
       event.preventDefault();
       event.stopPropagation();
-      
+
       // Detach the selected object from the area
       this.module.area.detachObject(this.selectedGameObject);
-      
+
       // Clear selection and detach transform controls
       this.selectGameObject(undefined);
     }
@@ -430,14 +432,14 @@ export class TabModuleEditorState extends TabState {
     console.log('selectGameObject', gameObject);
     this.selectedGameObject = gameObject;
     this.ui3DRenderer.transformControls.detach();
-    
+
     // Hide vertex helpers for previously selected trigger/encounter
     if(this.selectedGameObject instanceof ForgeTrigger || this.selectedGameObject instanceof ForgeEncounter){
       const prevObject = this.selectedGameObject as ForgeTrigger | ForgeEncounter;
       prevObject.showVertexHelpers(false);
       prevObject.selectVertex(-1);
     }
-    
+
     // Enable/disable camera preview
     if(gameObject instanceof ForgeCamera){
       const camera = gameObject as ForgeCamera;
@@ -453,12 +455,12 @@ export class TabModuleEditorState extends TabState {
       // Disable preview when not selecting a camera
       this.ui3DRenderer.disablePreview();
     }
-    
+
     // Show vertex helpers for triggers and encounters
     if(gameObject instanceof ForgeTrigger || gameObject instanceof ForgeEncounter){
       gameObject.showVertexHelpers(true);
     }
-    
+
     if(gameObject){
       this.ui3DRenderer.transformControls.attach(gameObject.container);
       this.ui3DRenderer.transformControls.size = 0.5;
@@ -550,7 +552,7 @@ export class TabModuleEditorState extends TabState {
     modal.open();
   }
 
-  setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, resType: typeof KotOR.ResourceTypes){
+  setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, _resType: typeof KotOR.ResourceTypes){
     this.selectedGameObjectType = gameObjectType;
     this.selectedBlueprintResRef = resref;
     this.controlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;

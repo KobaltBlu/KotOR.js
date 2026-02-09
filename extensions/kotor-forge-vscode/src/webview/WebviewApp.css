@@ -1,0 +1,22 @@
+/* WebviewApp layout and error/loading states */
+
+.webviewApp-root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.webviewApp-error {
+  padding: 20px;
+  color: #f00;
+  font-family: system-ui;
+}
+
+.webviewApp-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-family: system-ui;
+  background: #1e1e1e;
+  color: #888;
+}

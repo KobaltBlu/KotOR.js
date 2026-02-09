@@ -20,13 +20,32 @@ import { LYTLanguageService } from "./LYTLanguageService";
 import { RecentProject } from "../RecentProject";
 import { DEFAULT_EXTRACT_OPTIONS, type ExtractOptions } from "../data/ExtractOptions";
 import { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "../data/ForgeConstants";
+import type { IForgeHostAdapter } from "../ForgeHostAdapter";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
   static project: Project
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
-  static modalManager: ModalManagerState = new ModalManagerState();
-  static tabManager: EditorTabManager = new EditorTabManager();
+
+  /** Optional host adapter (e.g. VS Code webview). When set, tabManager/modalManager/addRecentFile/save delegate to it. */
+  static _hostAdapter: IForgeHostAdapter | null = null;
+  static _defaultModalManager: ModalManagerState = new ModalManagerState();
+  static _defaultTabManager: EditorTabManager = new EditorTabManager();
+
+  static get modalManager(): ModalManagerState {
+    return ForgeState._hostAdapter ? ForgeState._hostAdapter.getModalManager() : ForgeState._defaultModalManager;
+  }
+  static get tabManager(): EditorTabManager {
+    return ForgeState._hostAdapter ? ForgeState._hostAdapter.getTabManager() : ForgeState._defaultTabManager;
+  }
+
+  static setHostAdapter(adapter: IForgeHostAdapter | null): void {
+    ForgeState._hostAdapter = adapter;
+  }
+  static getHostAdapter(): IForgeHostAdapter | null {
+    return ForgeState._hostAdapter;
+  }
+
   static explorerTabManager: EditorTabManager = new EditorTabManager();
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
@@ -290,6 +309,10 @@ export class ForgeState {
 
   static addRecentFile(file: EditorFile){
     try{
+      if (ForgeState._hostAdapter?.addRecentFile) {
+        ForgeState._hostAdapter.addRecentFile(file);
+        return;
+      }
       //Update the opened files list
       let file_path = file.getPath();
       if(file_path){

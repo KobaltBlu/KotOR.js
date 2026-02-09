@@ -1,6 +1,7 @@
 import { GameState } from "../../../GameState";
 import { EngineMode } from "../../../enums/engine/EngineMode";
 import { GameMenu, LBL_MapView } from "../../../gui";
+import { ResolutionManager } from "../../../managers/ResolutionManager";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
@@ -19,12 +20,12 @@ const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
 
-const TLK_TOOLTIP_QUEST     = 48218;
+const TLK_TOOLTIP_QUEST = 48218;
 const TLK_TOOLTIP_EQUIPMENT = 48219;
 const TLK_TOOLTIP_INVENTORY = 48220;
-const TLK_TOOLTIP_MAP       = 48221;
-const TLK_TOOLTIP_OPTIONS   = 48222;
-const TLK_TOOLTIP_MESSAGES  = 48223;
+const TLK_TOOLTIP_MAP = 48221;
+const TLK_TOOLTIP_OPTIONS = 48222;
+const TLK_TOOLTIP_MESSAGES = 48223;
 const TLK_TOOLTIP_ABILITIES = 48224;
 const TLK_TOOLTIP_CHARACTER = 48225;
 
@@ -35,9 +36,9 @@ const TLK_TOOLTIP_FRIENDLY_MINE = 48295;
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -155,18 +156,37 @@ export class InGameOverlay extends GameMenu {
   LBL_TARGET2: GUIButton;
   miniMap: LBL_MapView;
 
-  constructor(){
+  constructor() {
     super();
-    this.gui_resref = 'mipc28x6';
+    this.gui_resref = InGameOverlay.getMainInterfaceResref(
+      ResolutionManager.getViewportWidth(),
+      ResolutionManager.getViewportHeight()
+    );
     this.background = '';
     this.voidFill = false;
-    this.enablePositionScaling = true;
+    this.enablePositionScaling = false;
     this.userCanClose = false;
+    this.panelBitFlags = 0x87;
+  }
+
+  /**
+   * GUI resref selection matching CSWGuiMainInterface (0x0068c100):
+   * viewport 1024 -> mipc210x7, 1280x960 -> mipc212x9, 1280x1024 -> mipc212x10,
+   * 1600 -> mipc216x12, else mipc28x6. Panel extent in each GFF matches that resolution.
+   */
+  static getMainInterfaceResref(viewportWidth: number, viewportHeight: number): string {
+    if (viewportWidth === 1024) return 'mipc210x7';
+    if (viewportWidth === 1280) {
+      if (viewportHeight === 960) return 'mipc212x9';
+      if (viewportHeight === 1024) return 'mipc212x10';
+    }
+    if (viewportWidth === 1600) return 'mipc216x12';
+    return 'mipc28x6';
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.widget.userData.fill.visible = false;
       //this.TB_STEALTH.hideBorder();
@@ -285,9 +305,9 @@ export class InGameOverlay extends GameMenu {
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(GameState.State == EngineState.PAUSED){
+        if (GameState.State == EngineState.PAUSED) {
           GameState.AutoPauseManager.Unpause();
-        }else{
+        } else {
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
 
@@ -309,40 +329,40 @@ export class InGameOverlay extends GameMenu {
       );
 
       this.BTN_CHAR1.addEventListener('click', (e) => {
-        if(GameState.PartyManager.party[0].canLevelUp()){
+        if (GameState.PartyManager.party[0].canLevelUp()) {
           this.manager.MenuCharacter.open();
-        }else{
+        } else {
           this.manager.MenuEquipment.open();
         }
       });
 
       this.BTN_CHAR2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
       this.BTN_CHAR3.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
@@ -373,20 +393,20 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
-      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
+      for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
 
-        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
+        this.getControlByName('LBL_TARGET' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onTargetMenuAction(i);
         });
 
-        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
@@ -394,20 +414,20 @@ export class InGameOverlay extends GameMenu {
 
       }
 
-      for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
+      for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
 
-        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
+        this.getControlByName('LBL_ACTION' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onSelfMenuAction(i);
         });
 
-        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
@@ -467,7 +487,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   TogglePartyMember(nth = 0, bVisible = false) {
-    if (!bVisible) { 
+    if (!bVisible) {
       this.getControlByName('LBL_CMBTEFCTRED' + (nth + 1))?.hide();
       this.getControlByName('LBL_CMBTEFCTINC' + (nth + 1))?.hide();
       this.getControlByName('LBL_LEVELUP' + (nth + 1))?.hide();
@@ -487,30 +507,30 @@ export class InGameOverlay extends GameMenu {
       this.getControlByName('PB_VIT' + (nth + 1))?.show();
       if (!GameState.module.area.miniGame && GameState.PartyManager.party[nth]) {
         switch (nth) {
-        case 0:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP1').pulsing = true;
-            this.getControlByName('LBL_LEVELUP1')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP1')?.hide();
-          }
-          break;
-        case 1:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP3').pulsing = true;
-            this.getControlByName('LBL_LEVELUP3')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP3')?.hide();
-          }
-          break;
-        case 2:
-          if (GameState.PartyManager.party[nth].canLevelUp()) {
-            this.getControlByName('LBL_LEVELUP2').pulsing = true;
-            this.getControlByName('LBL_LEVELUP2')?.show();
-          } else {
-            this.getControlByName('LBL_LEVELUP2')?.hide();
-          }
-          break;
+          case 0:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP1').pulsing = true;
+              this.getControlByName('LBL_LEVELUP1')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP1')?.hide();
+            }
+            break;
+          case 1:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP3').pulsing = true;
+              this.getControlByName('LBL_LEVELUP3')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP3')?.hide();
+            }
+            break;
+          case 2:
+            if (GameState.PartyManager.party[nth].canLevelUp()) {
+              this.getControlByName('LBL_LEVELUP2').pulsing = true;
+              this.getControlByName('LBL_LEVELUP2')?.show();
+            } else {
+              this.getControlByName('LBL_LEVELUP2')?.hide();
+            }
+            break;
         }
       }
     }
@@ -530,8 +550,8 @@ export class InGameOverlay extends GameMenu {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
     return (
-      !this.manager.MenuContainer.bVisible && 
-      GameState.CursorManager.reticle2.visible && 
+      !this.manager.MenuContainer.bVisible &&
+      GameState.CursorManager.reticle2.visible &&
       BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
       !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
@@ -713,11 +733,11 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
-        
-        if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
+
+        if (GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1) {
           this.getControlByName('BTN_TARGETUP' + i)?.hide();
           this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
-        }else{
+        } else {
           this.getControlByName('BTN_TARGETUP' + i)?.show();
           this.getControlByName('BTN_TARGETDOWN' + i)?.show();
         }
@@ -737,11 +757,11 @@ export class InGameOverlay extends GameMenu {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
-        
-      if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+
+      if (GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1) {
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
-      }else{
+      } else {
         this.getControlByName('BTN_ACTIONUP' + i)?.show();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.show();
       }
@@ -750,22 +770,22 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * Update HUD Notification Icons
-   * 
-   * @param delta 
+   *
+   * @param delta
    */
-  UpdateHUDNotificationIcons(delta = 0){
-    if(GameState.UINotificationManager.bNotificationSoundQueued){
+  UpdateHUDNotificationIcons(delta = 0) {
+    if (GameState.UINotificationManager.bNotificationSoundQueued) {
       GameState.UINotificationManager.bNotificationSoundQueued = false;
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_quest');
     }
     /**
      * Item Lost
      */
-    if(GameState.UINotificationManager.ItemLostTimer > 0){
+    if (GameState.UINotificationManager.ItemLostTimer > 0) {
       this.LBL_ITEMLOST.show();
       this.LBL_ITEMLOST.pulsing = true;
       GameState.UINotificationManager.ItemLostTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemLostTimer = 0;
       this.LBL_ITEMLOST.hide();
     }
@@ -773,11 +793,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Item Received
      */
-    if(GameState.UINotificationManager.ItemReceivedTimer > 0){
+    if (GameState.UINotificationManager.ItemReceivedTimer > 0) {
       this.LBL_ITEMRCVD.show();
       this.LBL_ITEMRCVD.pulsing = true;
       GameState.UINotificationManager.ItemReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemReceivedTimer = 0;
       this.LBL_ITEMRCVD.hide();
     }
@@ -785,11 +805,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Credits Received
      */
-    if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
-      this.LBL_CASH.show();   
+    if (GameState.UINotificationManager.CreditsReceivedTimer > 0) {
+      this.LBL_CASH.show();
       this.LBL_CASH.pulsing = true;
       GameState.UINotificationManager.CreditsReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.CreditsReceivedTimer = 0;
       this.LBL_CASH.hide();
     }
@@ -797,11 +817,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Journal Entry Added
      */
-    if(GameState.UINotificationManager.JournalEntryAddedTimer > 0){
+    if (GameState.UINotificationManager.JournalEntryAddedTimer > 0) {
       this.LBL_JOURNAL.show();
       this.LBL_JOURNAL.pulsing = true;
       GameState.UINotificationManager.JournalEntryAddedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.JournalEntryAddedTimer = 0;
       this.LBL_JOURNAL.hide();
     }
@@ -809,11 +829,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Light Shift
      */
-    if(GameState.UINotificationManager.LightShiftTimer > 0){
+    if (GameState.UINotificationManager.LightShiftTimer > 0) {
       this.LBL_LIGHTSHIFT.show();
       this.LBL_LIGHTSHIFT.pulsing = true;
       GameState.UINotificationManager.LightShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.LightShiftTimer = 0;
       this.LBL_LIGHTSHIFT.hide();
     }
@@ -821,11 +841,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Dark Shift
      */
-    if(GameState.UINotificationManager.DarkShiftTimer > 0){
+    if (GameState.UINotificationManager.DarkShiftTimer > 0) {
       this.LBL_DARKSHIFT.show();
       this.LBL_DARKSHIFT.pulsing = true;
       GameState.UINotificationManager.DarkShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.DarkShiftTimer = 0;
       this.LBL_DARKSHIFT.hide();
     }
@@ -833,11 +853,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Plot XP Received
      */
-    if(GameState.UINotificationManager.PlotXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.PlotXPReceivedTimer > 0) {
       this.LBL_PLOTXP.show();
       this.LBL_PLOTXP.pulsing = true;
       GameState.UINotificationManager.PlotXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.PlotXPReceivedTimer = 0;
       this.LBL_PLOTXP.hide();
     }
@@ -845,11 +865,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Stealth XP Received
      */
-    if(GameState.UINotificationManager.StealthXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.StealthXPReceivedTimer > 0) {
       this.LBL_STEALTHXP.show();
       this.LBL_STEALTHXP.pulsing = true;
       GameState.UINotificationManager.StealthXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.StealthXPReceivedTimer = 0;
       this.LBL_STEALTHXP.hide();
     }
@@ -878,17 +898,17 @@ export class InGameOverlay extends GameMenu {
     this.TogglePartyMember(0, false);
     this.TogglePartyMember(1, false);
     this.TogglePartyMember(2, false);
-    
+
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       let partyMember = GameState.PartyManager.party[i];
       let id = i;
       switch (i) {
-      case 1:
-        id = 2;
-        break;
-      case 2:
-        id = 1;
-        break;
+        case 1:
+          id = 2;
+          break;
+        case 2:
+          id = 1;
+          break;
       }
       this.TogglePartyMember(id, true);
       let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
@@ -993,5 +1013,5 @@ export class InGameOverlay extends GameMenu {
       }
     }
   }
-  
+
 }

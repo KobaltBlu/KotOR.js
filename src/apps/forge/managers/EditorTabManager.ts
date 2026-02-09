@@ -8,6 +8,7 @@ import {
   TabBinaryViewerState, TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState,
   TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState, TabState,
   TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
+  TabIndoorBuilderState,
 } from "../states/tabs";
 
 import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
@@ -253,6 +254,11 @@ export class EditorTabManager extends EventListenerModel {
       case 'TabVISEditorState':
         this.addTab(
           new TabVISEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabIndoorBuilderState':
+        this.addTab(
+          new TabIndoorBuilderState({editorFile: tabState.file})
         );
       break;
 

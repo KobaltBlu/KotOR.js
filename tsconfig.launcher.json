@@ -1,33 +1,42 @@
 {
   "compilerOptions": {
-    "moduleResolution": "node",
-    "target": "ESNext",
-    "module": "commonjs",
     "declaration": false,
-    "noImplicitAny": true,
-    "removeComments": true,
-    "experimentalDecorators": true,
-    "rootDir": ".",
-    "sourceMap": false,
-    "listFiles": false,
-    "newLine": "LF",
-    "noEmitOnError": true,
-    "strictNullChecks": false,
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "jsx": "react",
-    "types": [
-      "@types/wicg-file-system-access",
-      "node",
-      "offscreencanvas",
-    ],
     "lib": [
       "ESNext",
       "dom",
       "WebWorker"
     ],
+    "listFiles": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
     "outDir": "dist",
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": false,
+    "strictNullChecks": false,
+    "target": "ESNext",
+    "types": [
+      "@types/wicg-file-system-access",
+      "node",
+      "offscreencanvas"
+    ]
   },
-  "include": ["src/apps/launcher/launcher.tsx", "src/types", "src/index.d.ts"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"]
+  "exclude": [
+    "node_modules",
+    "src/**/*.spec.ts"
+  ],
+  "include": [
+    "src/apps/launcher/launcher.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ]
 }

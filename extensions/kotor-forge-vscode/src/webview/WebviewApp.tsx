@@ -1,186 +1,146 @@
-import React, { useState, useEffect } from 'react';
-import WebviewBridge from './WebviewBridge';
+/**
+ * Webview app that uses the real Forge editors from src/apps/forge.
+ * Sets a host adapter so save/recent files delegate to VS Code; creates one tab per document.
+ */
+import React, { useState, useEffect, useRef } from 'react';
 
-// Import editor components
-import UTCEditor from './editors/UTCEditor';
-import GFFEditor from './editors/GFFEditor';
-import TwoDAEditor from './editors/TwoDAEditor';
-import ImageViewer from './editors/ImageViewer';
-import ModelViewer from './editors/ModelViewer';
+import { TabManager } from '@forge/components/tabs/TabManager';
+import { LayoutContainerProvider } from '@forge/context/LayoutContainerContext';
+import { TabManagerProvider } from '@forge/context/TabManagerContext';
+import { EditorFile } from '@forge/EditorFile';
+import { FileLocationType } from '@forge/enum/FileLocationType';
+import { ForgeState } from '@forge/states/ForgeState';
+import type { TabState } from '@forge/states/tabs/TabState';
+import * as KotOR from '@kotor/KotOR';
 
-interface EditorProps {
-  editorType: string;
-  fileData: Uint8Array;
-  fileName: string;
-  mdxData?: Uint8Array | null;
-  onEdit: (data: Uint8Array, label: string) => void;
-  onSave: () => Uint8Array;
+import { createTabStateForEditorType } from './forgeEditorRegistry';
+import { ForgeWebviewAdapter } from './ForgeWebviewAdapter';
+import bridge from './WebviewBridge';
+
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './WebviewApp.css';
+
+const LOG_PREFIX = '[Webview]';
+function logTrace(msg: string) {
+  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [trace] ${msg}`);
+}
+function logDebug(msg: string) {
+  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [debug] ${msg}`);
+}
+function logInfo(msg: string) {
+  if (typeof console !== 'undefined' && console.info) console.info(`${LOG_PREFIX} [info] ${msg}`);
+}
+function logError(msg: string, err?: unknown) {
+  if (typeof console !== 'undefined' && console.error) console.error(`${LOG_PREFIX} [error] ${msg}`, err ?? '');
 }
 
-/**
- * Editor router - selects the appropriate editor component
- */
-const EditorRouter: React.FC<EditorProps> = ({ editorType, fileName, fileData, mdxData, onEdit, onSave }) => {
-  switch (editorType) {
-    case 'utc':
-      return <UTCEditor fileData={fileData} fileName={fileName} onEdit={onEdit} />;
+function createEditorFile(fileName: string, fileData: Uint8Array, buffer2?: Uint8Array): EditorFile {
+  logTrace(`createEditorFile() fileName=${fileName} fileDataLength=${fileData?.length ?? 0} buffer2Length=${buffer2?.length ?? 0}`);
+  const ext = fileName.includes('.') ? fileName.split('.').pop()!.toLowerCase() : '';
+  const resref = fileName.includes('.') ? fileName.slice(0, fileName.lastIndexOf('.')) : fileName;
+  const reskey = (KotOR.ResourceTypes as Record<string, number>)[ext] ?? 0;
+  const path = `file:///${fileName}`;
+  const file = new EditorFile({
+    path,
+    buffer: fileData,
+    buffer2,
+    resref,
+    ext: ext || undefined,
+    reskey: reskey || undefined,
+    location: FileLocationType.OTHER
+  });
+  logTrace(`createEditorFile() created EditorFile resref=${resref} ext=${ext}`);
+  return file;
+}
 
-    case 'utd':
-    case 'utp':
-    case 'uti':
-    case 'ute':
-    case 'uts':
-    case 'utt':
-    case 'utw':
-    case 'utm':
-    case 'gff':
-      return <GFFEditor fileData={fileData} fileName={fileName} onEdit={onEdit} />;
-
-    case '2da':
-      return <TwoDAEditor fileData={fileData} fileName={fileName} onEdit={onEdit} />;
-
-    case 'image':
-      return <ImageViewer fileData={fileData} fileName={fileName} />;
-
-    case 'model':
-      return <ModelViewer fileData={fileData} fileName={fileName} mdxData={mdxData ?? null} />;
-
-    default:
-      return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          padding: '20px',
-          textAlign: 'center',
-          background: '#1e1e1e',
-          color: '#fff'
-        }}>
-          <h1 style={{ fontSize: '24px', marginBottom: '10px' }}>KotOR Forge Editor</h1>
-          <p style={{ fontSize: '16px', color: '#888', marginBottom: '20px' }}>
-            Editor Type: <strong>{editorType}</strong>
-          </p>
-          <p style={{ fontSize: '14px', color: '#888' }}>
-            File: {fileName}
-          </p>
-          <p style={{ fontSize: '14px', color: '#888' }}>
-            Size: {fileData.length} bytes
-          </p>
-          <div style={{
-            marginTop: '40px',
-            padding: '20px',
-            background: '#2a2a2a',
-            borderRadius: '8px',
-            maxWidth: '600px'
-          }}>
-            <p style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.6' }}>
-              Editor for <strong>{editorType}</strong> files is not yet implemented.
-              The infrastructure is ready and editors can be added by importing
-              existing Forge components.
-            </p>
-          </div>
-        </div>
-      );
-  }
-};
-
-/**
- * Main webview application component
- */
 export const WebviewApp: React.FC = () => {
-  const [editorType, setEditorType] = useState<string>('');
-  const [fileData, setFileData] = useState<Uint8Array>(new Uint8Array());
-  const [fileName, setFileName] = useState<string>('');
-  const [mdxData, setMdxData] = useState<Uint8Array | null>(null);
-  const [isReady, setIsReady] = useState(false);
+  const [adapter] = useState(() => new ForgeWebviewAdapter());
+  const [ready, setReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const initOnce = useRef(false);
 
   useEffect(() => {
-    const bridge = WebviewBridge;
+    if (initOnce.current) return;
+    initOnce.current = true;
+    logTrace('WebviewApp useEffect() initializing bridge handlers');
 
-    // Handle init message from extension
-    bridge.on('init', (message: any) => {
-      setEditorType(message.editorType);
-      setFileData(new Uint8Array(message.fileData));
-      setFileName(message.fileName);
-      setMdxData(message.mdxData != null ? new Uint8Array(message.mdxData) : null);
-      setIsReady(true);
+
+    bridge.on('init', async (data: unknown) => {
+      const message = data as { editorType: string; fileData: number[]; fileName: string; fileData2?: number[] };
+      logInfo(`init message received editorType=${message?.editorType} fileName=${message?.fileName} fileDataLength=${message?.fileData?.length ?? 0}`);
+      try {
+        const editorType = message.editorType;
+        const fileData = new Uint8Array(message.fileData || []);
+        const fileName = message.fileName || 'unknown';
+        const buffer2 = message.fileData2 ? new Uint8Array(message.fileData2) : undefined;
+
+        logTrace('ForgeState.setHostAdapter(adapter)');
+        ForgeState.setHostAdapter(adapter);
+
+        const editorFile = createEditorFile(fileName, fileData, buffer2);
+        logTrace(`createTabStateForEditorType(${editorType})`);
+        const TabStateClass = createTabStateForEditorType(editorType, { editorFile });
+        adapter.getTabManager().addTab(TabStateClass);
+        logInfo('Tab added, setReady(true)');
+        setReady(true);
+      } catch (e) {
+        logError('Forge init failed', e);
+        setError(e instanceof Error ? e.message : String(e));
+      }
     });
 
-    // Handle undo message
-    bridge.on('undo', (message: any) => {
-      // TODO: Implement undo handling
-      console.log('Undo requested', message);
+    bridge.on('getFileData', (data: unknown) => {
+      const message = data as { requestId?: number };
+      logTrace(`getFileData message received requestId=${message?.requestId ?? 'n/a'}`);
+      const manager = adapter.getTabManager();
+      const tab = manager.currentTab;
+      if (tab) {
+        if (typeof (tab as TabState).updateFile === 'function') (tab as TabState).updateFile();
+        tab.getExportBuffer().then((buffer) => {
+          logTrace(`getFileData sending buffer length=${buffer?.length ?? 0}`);
+          bridge.sendFileData(buffer, message.requestId);
+        }).catch((err) => {
+          logDebug(`getFileData getExportBuffer failed, sending empty: ${err}`);
+          bridge.sendFileData(new Uint8Array(0), message.requestId);
+        });
+      } else {
+        logTrace('getFileData no current tab, sending empty');
+        bridge.sendFileData(new Uint8Array(0), message.requestId);
+      }
     });
 
-    // Handle redo message
-    bridge.on('redo', (message: any) => {
-      // TODO: Implement redo handling
-      console.log('Redo requested', message);
-    });
+    bridge.on('undo', () => { logTrace('undo message received (host drives undo)'); });
+    bridge.on('redo', () => { logTrace('redo message received (host drives redo)'); });
 
-    // Handle getFileData request
-    bridge.on('getFileData', (message: any) => {
-      // Return current file data
-      bridge.sendFileData(fileData, message.requestId);
-    });
-
-    // Notify extension that webview is ready
+    logInfo('Bridge handlers registered, calling notifyReady()');
     bridge.notifyReady();
-  }, [fileData]);
+  }, [adapter]);
 
-  const handleEdit = (data: Uint8Array, label: string) => {
-    setFileData(data);
-    WebviewBridge.notifyEdit(label, data);
-  };
-
-  const handleSave = (): Uint8Array => {
-    return fileData;
-  };
-
-  if (!isReady) {
+  if (error) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100vh',
-        fontFamily: 'system-ui, -apple-system, sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #0078d4',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 20px'
-          }} />
-          <p style={{ color: '#666' }}>Loading editor...</p>
-        </div>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="webviewApp-error">
+        <h2>Failed to load editor</h2>
+        <pre>{error}</pre>
       </div>
     );
   }
 
-  // Route to the appropriate editor based on editorType
+  if (!ready) {
+    return (
+      <div className="webviewApp-loading">
+        <div>Loading KotOR Forge editor…</div>
+      </div>
+    );
+  }
+
   return (
-    <EditorRouter
-      editorType={editorType}
-      fileData={fileData}
-      fileName={fileName}
-      mdxData={mdxData}
-      onEdit={handleEdit}
-      onSave={handleSave}
-    />
+    <LayoutContainerProvider>
+      <TabManagerProvider manager={adapter.getTabManager()}>
+        <div id="app" data-theme="dark" className="webviewApp-root">
+          <TabManager />
+        </div>
+      </TabManagerProvider>
+    </LayoutContainerProvider>
   );
 };
 

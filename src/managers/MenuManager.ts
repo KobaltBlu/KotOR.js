@@ -9,9 +9,9 @@ import { PerformanceMonitor } from "../utility/PerformanceMonitor";
 
 /**
  * MenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -86,7 +86,7 @@ export class MenuManager {
   static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
   static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
 
-  static Init(){
+  static Init() {
 
     MenuManager.activeMenus = [];
     MenuManager.activeModals = [];
@@ -95,76 +95,79 @@ export class MenuManager {
 
   }
 
-  static Add(menu: GameMenu){
-    if(!menu) return;
+  static Add(menu: GameMenu) {
+    if (!menu) return;
 
     MenuManager.MenuToolTip.hide();
-    
-    if(!menu.isOverlayGUI){
+
+    if (!menu.isOverlayGUI) {
       //Hide the current top most menu in the list before adding the new Menu
-      if(MenuManager.activeMenus.length)
-        MenuManager.activeMenus[MenuManager.activeMenus.length-1].hide();
+      if (MenuManager.activeMenus.length)
+        MenuManager.activeMenus[MenuManager.activeMenus.length - 1].hide();
 
       const idx = MenuManager.activeMenus.indexOf(menu);
-      if(idx >= 0)
+      if (idx >= 0)
         MenuManager.activeMenus.splice(idx, 1);
-      
+
       MenuManager.activeMenus.push(menu);
-  
+
       MenuManager.Resize();
-    }else{
-      if(MenuManager.activeModals.indexOf(menu) == -1)
+    } else {
+      if (MenuManager.activeModals.indexOf(menu) == -1)
         MenuManager.activeModals.push(menu);
     }
   }
 
-  static Remove(menu: GameMenu){
-    if(!menu) return;
+  static Remove(menu: GameMenu) {
+    if (!menu) return;
 
-    if(!menu.isOverlayGUI){
+    if (!menu.isOverlayGUI) {
       const mIdx = MenuManager.activeMenus.indexOf(menu);
-      if(mIdx >= 0)
+      if (mIdx >= 0)
         MenuManager.activeMenus.splice(mIdx, 1);
 
       //Reshow the new top most menu in the list
-      if(MenuManager.activeMenus.length)
+      if (MenuManager.activeMenus.length)
         MenuManager.GetCurrentMenu().show();
 
       MenuManager.Resize();
 
-      if(!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI){
+      if (!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length - 1].engineMode != EngineMode.GUI) {
         GameState.RestoreEnginePlayMode();
       }
-    }else{
+    } else {
       const mIdx = MenuManager.activeModals.indexOf(menu);
-      if(mIdx >= 0)
+      if (mIdx >= 0)
         MenuManager.activeModals.splice(mIdx, 1);
     }
   }
 
-  static ClearMenus(){
-    while(MenuManager.activeMenus.length){
+  static ClearMenus() {
+    while (MenuManager.activeMenus.length) {
       MenuManager.activeMenus[0].close();
     }
-    while(MenuManager.activeModals.length){
+    while (MenuManager.activeModals.length) {
       MenuManager.activeModals[0].close();
     }
-    if(GameState.Mode == EngineMode.LOADING){
+    if (GameState.Mode == EngineMode.LOADING) {
       GameState.MenuManager.LoadScreen.open();
     }
   }
 
-  static GetCurrentMenu(){
-    return MenuManager.activeMenus[MenuManager.activeMenus.length-1];
+  static GetCurrentMenu() {
+    return MenuManager.activeMenus[MenuManager.activeMenus.length - 1];
   }
 
-  static Resize(){
-    for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
+  static Resize() {
+    for (let i = 0, len = MenuManager.activeMenus.length; i < len; i++) {
       MenuManager.activeMenus[i].resize();
+    }
+    for (let i = 0, len = MenuManager.activeModals.length; i < len; i++) {
+      MenuManager.activeModals[i].resize();
     }
   }
 
-  static Update(delta = 0){
+  static Update(delta = 0) {
     GameState.CursorManager.updateCursor();
     GameState.CursorManager.cursor.material.depthTest = false;
     GameState.CursorManager.cursor.material.depthWrite = false;
@@ -190,25 +193,25 @@ export class MenuManager {
     //   MenuManager.pulseOpacity = 1 - this.pulse;
     // }
 
-    if(GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible){
+    if (GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible) {
       MenuManager.InGameOverlay.update(delta);
     }
 
-    if(GameState.Mode == EngineMode.INGAME && GameState.State == EngineState.PAUSED){
+    if (GameState.Mode == EngineMode.INGAME && GameState.State == EngineState.PAUSED) {
       MenuManager.InGamePause.update(delta);
     }
 
     let activeMenus = MenuManager.activeMenus;
-    for(let i = 0, len = activeMenus.length; i < len; i++){
+    for (let i = 0, len = activeMenus.length; i < len; i++) {
       activeMenus[i].update(delta);
     }
 
     let activeModals = MenuManager.activeModals;
-    for(let i = 0, len = activeModals.length; i < len; i++){
+    for (let i = 0, len = activeModals.length; i < len; i++) {
       activeModals[i].update(delta);
     }
 
-    if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
+    if (GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length) {
       GameState.scene_cursor_holder.remove(GameState.scene_gui);
       GameState.scene_gui.add(GameState.scene_cursor_holder);
     }
@@ -216,17 +219,17 @@ export class MenuManager {
   }
 
   static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
-    PerformanceMonitor.start(menuConstructor.name+'.GameMenuLoader');
+    PerformanceMonitor.start(menuConstructor.name + '.GameMenuLoader');
     const menu: GameMenu = new menuConstructor();
     menu.manager = MenuManager;
     await menu.load();
-    PerformanceMonitor.stop(menuConstructor.name+'.GameMenuLoader');
+    PerformanceMonitor.stop(menuConstructor.name + '.GameMenuLoader');
     return menu;
-  }  
-  
-  static async LoadMainGameMenus(){
-    try{
-      if(GameState.GameKey == GameEngineType.KOTOR){
+  }
+
+  static async LoadMainGameMenus() {
+    try {
+      if (GameState.GameKey == GameEngineType.KOTOR) {
         //Main Menus
         MenuManager.LoadScreen = await MenuManager.GameMenuLoader(KOTOR.LoadScreen) as KOTOR.LoadScreen;
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(KOTOR.MainMenu) as KOTOR.MainMenu;
@@ -246,7 +249,7 @@ export class MenuManager {
         MenuManager.MenuKeyboardMapping = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping) as KOTOR.MenuKeyboardMapping;
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(KOTOR.InGameConfirm) as KOTOR.InGameConfirm;
-      }else if(GameState.GameKey == GameEngineType.TSL){
+      } else if (GameState.GameKey == GameEngineType.TSL) {
         MenuManager.LoadScreen = await MenuManager.GameMenuLoader(TSL.LoadScreen) as KOTOR.LoadScreen;
         MenuManager.MainMenu = await MenuManager.GameMenuLoader(TSL.MainMenu) as KOTOR.MainMenu;
         MenuManager.MainMovies = await MenuManager.GameMenuLoader(TSL.MainMovies) as KOTOR.MainMovies;
@@ -267,14 +270,14 @@ export class MenuManager {
         MenuManager.MenuKeyboardEntry = await MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry) as KOTOR.MenuKeyboardEntry;
         MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(TSL.InGameConfirm) as KOTOR.InGameConfirm;
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
-  
-  static async LoadCharGenGameMenus(){
-    try{
-      if(GameState.GameKey == GameEngineType.KOTOR){
+
+  static async LoadCharGenGameMenus() {
+    try {
+      if (GameState.GameKey == GameEngineType.KOTOR) {
         MenuManager.CharGenMain = await MenuManager.GameMenuLoader(KOTOR.CharGenMain) as KOTOR.CharGenMain;
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(KOTOR.CharGenAbilities) as KOTOR.CharGenAbilities;
         MenuManager.CharGenClass = await MenuManager.GameMenuLoader(KOTOR.CharGenClass) as KOTOR.CharGenClass;
@@ -285,7 +288,7 @@ export class MenuManager {
         MenuManager.CharGenQuickOrCustom = await MenuManager.GameMenuLoader(KOTOR.CharGenQuickOrCustom) as KOTOR.CharGenQuickOrCustom;
         MenuManager.CharGenQuickPanel = await MenuManager.GameMenuLoader(KOTOR.CharGenQuickPanel) as KOTOR.CharGenQuickPanel;
         MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(KOTOR.CharGenSkills) as KOTOR.CharGenSkills;
-      }else if(GameState.GameKey == GameEngineType.TSL){
+      } else if (GameState.GameKey == GameEngineType.TSL) {
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(TSL.CharGenAbilities) as KOTOR.CharGenAbilities;
         MenuManager.CharGenClass = await MenuManager.GameMenuLoader(TSL.CharGenClass) as KOTOR.CharGenClass;
         MenuManager.CharGenCustomPanel = await MenuManager.GameMenuLoader(TSL.CharGenCustomPanel) as KOTOR.CharGenCustomPanel;
@@ -297,18 +300,18 @@ export class MenuManager {
         MenuManager.CharGenQuickPanel = await MenuManager.GameMenuLoader(TSL.CharGenQuickPanel) as KOTOR.CharGenQuickPanel;
         MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(TSL.CharGenSkills) as KOTOR.CharGenSkills;
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
 
   static #ingameMenusLoaded = false;
-  static async LoadInGameMenus(){
-    if(MenuManager.#ingameMenusLoaded) return;
+  static async LoadInGameMenus() {
+    if (MenuManager.#ingameMenusLoaded) return;
     MenuManager.#ingameMenusLoaded = true;
     ActionMenuManager.InitActionMenuPanels();
-    try{
-      if(GameState.GameKey == GameEngineType.KOTOR){
+    try {
+      if (GameState.GameKey == GameEngineType.KOTOR) {
         MenuManager.InGameAreaTransition = await MenuManager.GameMenuLoader(KOTOR.InGameAreaTransition) as KOTOR.InGameAreaTransition;
         MenuManager.InGameBark = await MenuManager.GameMenuLoader(KOTOR.InGameBark) as KOTOR.InGameBark;
         MenuManager.InGameComputer = await MenuManager.GameMenuLoader(KOTOR.InGameComputer) as KOTOR.InGameComputer;
@@ -337,7 +340,7 @@ export class MenuManager {
         MenuManager.MenuPazaakWager = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakWager) as KOTOR.MenuPazaakWager;
         MenuManager.MenuPazaakGame = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakGame) as KOTOR.MenuPazaakGame;
         MenuManager.MenuPazaakSetup = await MenuManager.GameMenuLoader(KOTOR.MenuPazaakSetup) as KOTOR.MenuPazaakSetup;
-      }else if(GameState.GameKey == GameEngineType.TSL){
+      } else if (GameState.GameKey == GameEngineType.TSL) {
         MenuManager.InGameAreaTransition = await MenuManager.GameMenuLoader(TSL.InGameAreaTransition) as KOTOR.InGameAreaTransition;
         MenuManager.InGameBark = await MenuManager.GameMenuLoader(TSL.InGameBark) as KOTOR.InGameBark;
         MenuManager.InGameComputer = await MenuManager.GameMenuLoader(TSL.InGameComputer) as KOTOR.InGameComputer;
@@ -378,10 +381,10 @@ export class MenuManager {
       MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
 
-      if(GameState.GameKey == GameEngineType.TSL){
+      if (GameState.GameKey == GameEngineType.TSL) {
         MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }

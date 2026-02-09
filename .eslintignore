@@ -1,10 +1,9 @@
-node_modules/
+# Build / compiled output
+extensions/kotor-forge-vscode/server/out/
 dist/
-release/
-coverage/
-wiki/
-*.min.js
-*.bundle.js
 build/
-.cache/
+release/
+src/tests/
 
+# Third-party code
+vendor/

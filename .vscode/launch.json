@@ -1,26 +1,151 @@
 {
-  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Extension + Watch (compile then launch)",
+      "configurations": [
+        "Launch Extension (watch mode)"
+      ],
+      "presentation": {
+        "group": "1-extension",
+        "order": 5
+      },
+      "stopAll": true
+    }
+  ],
   "configurations": [
     {
-      "type": "chrome",
-      "request": "launch",
       "name": "KotOR Launcher",
+      "presentation": {
+        "group": "2-browser",
+        "order": 1
+      },
+      "request": "launch",
+      "type": "chrome",
       "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
+      "webRoot": "${workspaceFolder}/dist"
     },
     {
-      "type": "chrome",
-      "request": "launch",
       "name": "KotOR",
+      "presentation": {
+        "group": "2-browser",
+        "order": 2
+      },
+      "request": "launch",
+      "type": "chrome",
       "url": "http://localhost:8080/game/index.html?key=kotor",
       "webRoot": "${workspaceFolder}/dist"
     },
     {
-      "type": "chrome",
-      "request": "launch",
       "name": "TSL",
+      "presentation": {
+        "group": "2-browser",
+        "order": 3
+      },
+      "request": "launch",
+      "type": "chrome",
       "url": "http://localhost:8080/game/index.html?key=tsl",
       "webRoot": "${workspaceFolder}/dist"
+    },
+    {
+      "name": "Attach to Extension Host",
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "presentation": {
+        "group": "1-extension",
+        "order": 4
+      },
+      "request": "attach",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "node"
+    },
+    {
+      "name": "Launch Extension",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode",
+        "--disable-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Compile KotOR Forge extension",
+      "presentation": {
+        "group": "1-extension",
+        "order": 1
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
+    },
+    {
+      "name": "Launch Extension (with other extensions)",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Compile KotOR Forge extension",
+      "presentation": {
+        "group": "1-extension",
+        "order": 2
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
+    },
+    {
+      "name": "Launch Extension",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/out/**/*.js"
+      ],
+      "preLaunchTask": "npm",
+      "request": "launch",
+      "type": "extensionHost"
+    },
+    {
+      "name": "Launch Extension (watch mode)",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Watch KotOR Forge extension",
+      "presentation": {
+        "group": "1-extension",
+        "order": 3
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
     }
-  ]
+  ],
+  "version": "0.2.0"
 }

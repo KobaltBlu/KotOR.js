@@ -5,7 +5,7 @@ import { SceneGraphTreeViewManager } from "../managers/SceneGraphTreeViewManager
 import { ForgeTreeView } from "./treeview/ForgeTreeView";
 import { ListItemNode } from "./treeview/ListItemNode";
 
-export const SceneGraphTreeView = function (props: any) {
+export const SceneGraphTreeView = function (props: { manager: SceneGraphTreeViewManager }) {
   const manager: SceneGraphTreeViewManager = props.manager;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([]);
 
@@ -21,7 +21,7 @@ export const SceneGraphTreeView = function (props: any) {
     }
   }, [manager]);
   return (
-    <ForgeTreeView style={{ height: '350px', overflow: 'auto'}}>
+    <ForgeTreeView className="forgeTreeView--fixedHeight">
     {
       nodes.map( (node: SceneGraphNode) => {
         return (
@@ -33,7 +33,7 @@ export const SceneGraphTreeView = function (props: any) {
   );
 }
 
-export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props: any) {
+export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props: { manager: SceneGraphTreeViewManager; node: SceneGraphNode; depth?: number }) {
   const manager: SceneGraphTreeViewManager = props.manager;
   const node: SceneGraphNode = props.node;
   const depth: number = props.depth || 0;
@@ -57,7 +57,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
     // Initialize state from current node.nodes
     setNodes([...node.nodes]);
     setOpenState(node.open);
-    
+
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
@@ -82,11 +82,11 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
     // Add double-click logic if needed
   }, []);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((_e: React.MouseEvent) => {
     // Add context menu logic if needed
   }, []);
 
-  const handleSelect = useCallback((nodeId: string) => {
+  const handleSelect = useCallback((_nodeId: string) => {
     if(typeof node.onClick === 'function'){
       node.onClick(node);
     }
@@ -96,9 +96,9 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
   const childNodes = useMemo(() => {
     if (!openState || !nodes.length) return null;
     return nodes.map((child: SceneGraphNode) => (
-      <SceneGraphTreeViewNode 
-        key={child.id} 
-        node={child} 
+      <SceneGraphTreeViewNode
+        key={child.id}
+        node={child}
         manager={manager}
         depth={depth + 1}
       />

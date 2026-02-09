@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Server Worker
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
@@ -15,7 +16,7 @@ class OdysseyServer {
    * Handle Message From Client
    * This is the message handler for the server worker.
    */
-  static HandleMessageFromClient(msg: IPCMessage){
+  static HandleMessageFromClient(_msg: IPCMessage){
     console.log('Odyssey Server: IPC Message Received');
   }
 

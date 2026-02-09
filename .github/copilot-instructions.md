@@ -1,5 +1,9 @@
 # KotOR.js AI Coding Assistant Instructions
 
+## Observed Original Game Behavior
+- Avoid including any discussion or documentation of reverse engineering in this codebase.
+- When referencing behavior derived from agentdecompile or reva, always use phrases like "observed original game behavior" instead of terms like "reverse engineered" or similar expressions.
+
 ## Project Overview
 
 KotOR.js is a TypeScript reimplementation of the Odyssey Game Engine (from Star Wars: Knights of the Old Republic I & II). It uses THREE.js for rendering, Electron for desktop app distribution, and includes an NWScript interpreter for game scripting.
@@ -123,14 +127,14 @@ ResourceLoader.demand() → Checks archives (KEY→BIF lookup, or RIM/ERF) → P
 
 ## Key Files to Reference
 
-| Task | File(s) |
-|------|---------|
-| Add new action type | `src/actions/Action.ts` (extend), `ActionFactory.ts` (register) |
-| Add game manager | `src/managers/` + export in `index.ts` |
-| Parse new GFF-based format | `src/resource/GFFObject.ts` + create handler |
-| Add NWScript instruction | `NWScriptDefK1.ts` or `NWScriptDefK2.ts` |
-| Add rendering node type | `src/odyssey/OdysseyModelNode*.ts` |
-| Game rules/data | `src/engine/rules/SWRuleSet.ts`, `TwoDAObject.ts` |
+| Task                       | File(s)                                                         |
+| -------------------------- | --------------------------------------------------------------- |
+| Add new action type        | `src/actions/Action.ts` (extend), `ActionFactory.ts` (register) |
+| Add game manager           | `src/managers/` + export in `index.ts`                          |
+| Parse new GFF-based format | `src/resource/GFFObject.ts` + create handler                    |
+| Add NWScript instruction   | `NWScriptDefK1.ts` or `NWScriptDefK2.ts`                        |
+| Add rendering node type    | `src/odyssey/OdysseyModelNode*.ts`                              |
+| Game rules/data            | `src/engine/rules/SWRuleSet.ts`, `TwoDAObject.ts`               |
 
 ## Conventions
 

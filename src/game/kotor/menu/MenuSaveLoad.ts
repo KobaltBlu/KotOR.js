@@ -10,9 +10,9 @@ import { SaveGame } from "../../../engine/SaveGame";
 
 /**
  * MenuSaveLoad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSaveLoad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -35,7 +35,7 @@ export class MenuSaveLoad extends GameMenu {
   saves: SaveGame[] = [];
   selected: SaveGame;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'saveload';
     this.background = '1600x1200back';
@@ -44,7 +44,7 @@ export class MenuSaveLoad extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       this._button_y = this.BTN_DELETE;
@@ -53,22 +53,23 @@ export class MenuSaveLoad extends GameMenu {
       this.BTN_SAVELOAD.addEventListener('click', (e) => {
         e.stopPropagation();
         const savegame = this.selected;
-        if(this.mode == MenuSaveLoadMode.LOADGAME){
-          if(savegame){
+        if (this.mode == MenuSaveLoadMode.LOADGAME) {
+          if (savegame) {
             this.manager.ClearMenus();
-            if(GameState.module instanceof Module){
+            if (GameState.module instanceof Module) {
               GameState.module.dispose();
               GameState.module = undefined;
             }
             savegame.load();
           }
-        }else{
-          if(savegame instanceof NewSaveItem){
-            this.manager.MenuSaveName.show();
-            this.manager.MenuSaveName.onSave = ( name = '' ) => {
-              console.log('SaveGame', name);
+        } else {
+          if (savegame instanceof NewSaveItem) {
+            this.manager.MenuSaveName.onSave = async (name = '') => {
+              await SaveGame.SaveCurrentGame(name);
+              this.reloadSaves();
             };
-          }else{
+            this.manager.MenuSaveName.open();
+          } else {
 
           }
         }
@@ -100,7 +101,7 @@ export class MenuSaveLoad extends GameMenu {
     this.reloadSaves();
     if (this.mode == MenuSaveLoadMode.SAVEGAME) {
       this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1587].Value);
-    }else{
+    } else {
       this.BTN_SAVELOAD.setText(GameState.TLKManager.TLKStrings[1589].Value);
     }
     TextureLoader.LoadQueue();
@@ -113,13 +114,13 @@ export class MenuSaveLoad extends GameMenu {
         return !save.getIsQuickSave() && !save.getIsAutoSave();
       });
       saves.unshift(new NewSaveItem());
-    }else{
+    } else {
       saves = SaveGame.saves;
     }
     return saves;
   }
 
-  reloadSaves(){
+  reloadSaves() {
     this.LB_GAMES.clearItems();
     let saves = this.getSaveGames();
     for (let i = 0; i < saves.length; i++) {
@@ -142,7 +143,7 @@ export class MenuSaveLoad extends GameMenu {
       this.LB_GAMES.selectItem(this.selected);
       if (this.selected instanceof NewSaveItem) {
 
-      }else{
+      } else {
         this.selected.getThumbnail().then((texture: OdysseyTexture) => {
           this.LBL_SCREENSHOT.setFillTexture(texture);
           (this.LBL_SCREENSHOT.getFill().material as THREE.ShaderMaterial).transparent = false;
@@ -183,23 +184,23 @@ export class MenuSaveLoad extends GameMenu {
   triggerControllerDDownPress() {
     this.LB_GAMES.directionalNavigate('down');
   }
-  
+
 }
 
 export class NewSaveItem extends SaveGame {
-  constructor(){
+  constructor() {
     super();
     this.isNewSave = true;
   }
 
-  getFullName(){
+  getFullName() {
     return GameState.TLKManager.TLKStrings[1586].Value;
   }
 
-  async load(): Promise<void> {}
-  async loadNFO(): Promise<void> {}
-  async loadPIFO(): Promise<void> {}
-  async loadGlobalVARS(): Promise<void> {}
-  async loadInventory(): Promise<void> {}
-  async loadPartyTable(): Promise<void> {}
+  async load(): Promise<void> { }
+  async loadNFO(): Promise<void> { }
+  async loadPIFO(): Promise<void> { }
+  async loadGlobalVARS(): Promise<void> { }
+  async loadInventory(): Promise<void> { }
+  async loadPartyTable(): Promise<void> { }
 }

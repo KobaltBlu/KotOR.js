@@ -56,3 +56,13 @@ export {
 
 export { LIPShapeLabels } from "./LIPShapeLabels";
 export { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "./ForgeConstants";
+
+export * from "./IndoorBuilderConstants";
+export * from "./IndoorTypes";
+export * from "./IndoorKit";
+export * from "./IndoorKitLoader";
+export * from "./IndoorKitPreview";
+export * from "./IndoorWalkmesh";
+export * from "./IndoorMap";
+export * from "./IndoorMapTools";
+export * from "./IndoorCli";

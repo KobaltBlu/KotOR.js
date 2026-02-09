@@ -17,9 +17,9 @@ import type { DLGObject } from "./DLGObject";
 
 /**
  * DLGNode class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file DLGNode.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -208,7 +208,7 @@ export class DLGNode {
         return bSuccess ? true : false;
       }
     }
-    
+
     return true;
   }
 
@@ -227,7 +227,7 @@ export class DLGNode {
         return (bSuccess ? true : false);
       }
     }
-    
+
     return true;
   }
 
@@ -253,11 +253,12 @@ export class DLGNode {
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
     try{
-      console.log('saving', this.speaker.getName(), this.text);
+      const speakerName = this.speaker?.getName?.() ?? '';
+      console.log('saving', speakerName, this.text);
       if(this.nodeType == DLGNodeType.ENTRY){
         GameState.DialogMessageManager.AddEntry(
           new DialogMessageEntry(
-            this.speaker.getName(), this.text
+            speakerName, this.text
           )
         )
       }else{
@@ -635,7 +636,7 @@ export class DLGNode {
       for(let i = 0; i < structs.length; i++){
         let entryStruct = structs[i];
         let linkNode = new DLGNode(dialog);
-        
+
         if(entryStruct.hasField('Not')){
           linkNode.isActiveParams.Not = entryStruct.getFieldByLabel('Not').getValue();
         }
@@ -733,11 +734,11 @@ export class DLGNode {
           animation: '',
           participant: '',
         };
-        
+
         if(childStruct.hasField('Animation')){
           animation.animation = childStruct.getFieldByLabel('Animation').getValue();
         }
-        
+
         if(childStruct.hasField('Participant')){
           animation.participant = childStruct.getFieldByLabel('Participant').getValue().toLocaleLowerCase();
         }

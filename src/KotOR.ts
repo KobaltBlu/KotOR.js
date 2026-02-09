@@ -1,4 +1,10 @@
-export const VERSION = process.env.VERSION;
+// Note: this module is imported by both Node (extension host) and browser (VS Code webview)
+// contexts. VS Code webviews do not provide the Node global `process`, so we must guard access
+// to `process.env` to avoid a hard crash during module initialization.
+export const VERSION =
+  (typeof process !== 'undefined' && process.env)
+    ? process.env.VERSION
+    : undefined;
 // @ts-ignore
 export * as dxtJs from "dxt-js";
 export * from "./utility/polyfills";

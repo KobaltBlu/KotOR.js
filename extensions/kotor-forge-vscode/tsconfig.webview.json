@@ -1,28 +1,32 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
-    "outDir": "out",
-    "sourceMap": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
+    "composite": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "out",
+    "rootDir": "../..",
     "paths": {
+      "@forge/*": ["../../src/apps/forge/*"],
       "@kotor/*": ["../../src/*"],
-      "@forge/*": ["../../src/apps/forge/*"]
-    }
+      "@kotor/KotOR": ["../../src/KotOR"]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": false,
+    "target": "ES2020"
   },
+  "exclude": ["node_modules"],
   "include": [
     "src/webview/**/*.ts",
-    "src/webview/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules"
+    "src/webview/**/*.tsx",
+    "../../src/**/*.ts",
+    "../../src/**/*.tsx"
   ]
 }

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import React, { useCallback, useEffect, useState } from "react";
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
@@ -11,6 +12,7 @@ import { FileBrowserNode } from "../../../FileBrowserNode";
 import { ERFListNode } from "../../treeview/ERFListNode";
 import { useContextMenu } from "../../common/ContextMenu";
 import { createERFContextMenuItems } from "./ERFContextMenu";
+import "./TabERFEditor.scss";
 
 const MENU_ID = 'context-tab-erf-editor-entry';
 
@@ -103,9 +105,9 @@ export const TabERFEditor = function(props: BaseTabProps) {
 
   return (
     <>
-      <div className="file-browser">
+      <div className="file-browser tab-erf-editor">
         <div className="d-flex h-100">
-          <ForgeTreeView style={{flex: 0.5, height: '100%', overflow: 'auto'}}>
+          <ForgeTreeView className="forgeTreeView--fill">
             {
               entries.map( (node: FileBrowserNode) => {
                 return (
@@ -114,7 +116,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
               })
             }
           </ForgeTreeView>
-          <div style={{flex: 0.5, height: '100%'}}>
+          <div className="tab-erf-editor__details-panel">
             {selectedEntry && (
               <div className="d-flex flex-column h-100 text-center align-items-center justify-content-center text-uppercase">
                 <span><i className="fas fa-file-alt"></i></span>

@@ -6,7 +6,8 @@ import { ForgeState } from "./states/ForgeState";
 import {
   TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabModelViewerState, TabPTHEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState,
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState, TabBinaryViewerState,
-  TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState
+  TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState,
+  TabIndoorBuilderState
 } from "./states/tabs";
 import { ResourceTypes } from "../../KotOR";
 
@@ -150,6 +151,9 @@ export class FileTypeManager {
       break;
       case 'vis':
         ForgeState.tabManager.addTab(new TabVISEditorState({editorFile: res}));
+      break;
+      case 'indoor':
+        ForgeState.tabManager.addTab(new TabIndoorBuilderState({editorFile: res}));
       break;
       case 'bik':
         // ForgeState.tabManager.addTab(new TabMovieViewerState({editorFile: res}));

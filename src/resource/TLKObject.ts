@@ -1,19 +1,24 @@
+/* eslint-disable no-console */
 import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TLKString } from "./TLKString";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { TLKString } from "./TLKString";
 
 /**
  * TLKObject class.
- * 
+ *
  * Class representing a Talk Table file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TLKObject {
+  // eslint-disable-next-line no-undef
+  [x: string]: unknown;
 
   file: Uint8Array|string;
   reader: BinaryReader;
@@ -52,7 +57,7 @@ export class TLKObject {
         console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
         this.reader.seek(0);
-        
+
         this.FileType = this.reader.readChars(4);
         this.FileVersion = this.reader.readChars(4);
         this.LanguageID = this.reader.readUInt32();
@@ -96,7 +101,7 @@ export class TLKObject {
         }).catch( () => {
           reject();
         });
-      }).catch((err) => {
+      }).catch((_err) => {
         reject();
       })
     });
@@ -129,6 +134,77 @@ export class TLKObject {
         return true;
       }
     }).map( tlk => { return {tlk: tlk, value: tlk.Value, index: this.TLKStrings.indexOf(tlk)} });
+  }
+
+  /**
+   * Serialize the current TLK state back into a TLK V3.0 buffer.
+   *
+   * This is intentionally "best-effort" and never throws for missing/partial
+   * string entries; undefined entries are encoded as empty strings.
+   */
+  toBuffer(): Uint8Array {
+    const headerSize = 20;
+    const entrySize = 40;
+
+    const fileType = ((this.FileType ?? 'TLK ') + '    ').slice(0, 4);
+    const fileVersion = ((this.FileVersion ?? 'V3.0') + '    ').slice(0, 4);
+    const languageID = typeof this.LanguageID === 'number' ? this.LanguageID : 0;
+
+    const stringCount =
+      typeof this.StringCount === 'number' && this.StringCount >= 0
+        ? this.StringCount
+        : this.TLKStrings.length;
+
+    const stringEntriesOffset = headerSize + stringCount * entrySize;
+
+    const values: string[] = new Array(stringCount);
+    let stringDataSize = 0;
+    for(let i = 0; i < stringCount; i++){
+      const rawValue = this.TLKStrings[i]?.Value;
+      const value = (rawValue ?? '').toString().replace(/\0[\s\S]*$/g,'');
+      values[i] = value;
+      stringDataSize += value.length;
+    }
+
+    const totalSize = stringEntriesOffset + stringDataSize;
+    const writer = new BinaryWriter(new Uint8Array(totalSize));
+
+    // Header
+    writer.writeChars(fileType);
+    writer.writeChars(fileVersion);
+    writer.writeUInt32(languageID);
+    writer.writeUInt32(stringCount);
+    writer.writeUInt32(stringEntriesOffset);
+
+    // Entries
+    let runningOffset = 0; // offset relative to StringEntriesOffset
+    for(let i = 0; i < stringCount; i++){
+      const entry = this.TLKStrings[i];
+      const value = values[i] ?? '';
+
+      const flags = entry?.flags ?? 0;
+      const soundResRef = (entry?.SoundResRef ?? '').toString().replace(/\0[\s\S]*$/g,'').slice(0, 16);
+      const volumeVariance = entry?.VolumeVariance ?? 0;
+      const pitchVariance = entry?.PitchVariance ?? 0;
+      const soundLength = entry?.SoundLength ?? 0;
+
+      writer.writeUInt32(flags);
+      writer.writeChars(soundResRef.padEnd(16, '\0'));
+      writer.writeUInt32(volumeVariance);
+      writer.writeUInt32(pitchVariance);
+      writer.writeUInt32(runningOffset);
+      writer.writeUInt32(value.length);
+      writer.writeUInt32(soundLength);
+
+      runningOffset += value.length;
+    }
+
+    // String data
+    for(let i = 0; i < stringCount; i++){
+      writer.writeChars(values[i] ?? '');
+    }
+
+    return writer.buffer;
   }
 
 }

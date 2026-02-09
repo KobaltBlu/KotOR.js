@@ -1,6 +1,11 @@
-import * as vscode from 'vscode';
-import { KotorDocument } from '../KotorDocument';
 import * as path from 'path';
+
+import * as vscode from 'vscode';
+
+import { KotorDocument } from '../KotorDocument';
+import { LogScope, createScopedLogger } from '../logger';
+
+const log = createScopedLogger(LogScope.Forge);
 
 /**
  * Base class for all KotOR custom editor providers
@@ -13,9 +18,9 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
   ) {}
 
   /**
-   * Get the editor type identifier (utc, utd, 2da, etc.)
+   * Get the editor type identifier (utc, utd, 2da, etc.) for a document.
    */
-  protected abstract getEditorType(): string;
+  protected abstract getEditorTypeForDocument(document: KotorDocument): string;
 
   /**
    * Optional: return extra payload to merge into the init message (e.g. mdxData for model viewer).
@@ -30,17 +35,21 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     openContext: { backupId?: string },
     _token: vscode.CancellationToken
   ): Promise<KotorDocument> {
+    log.trace(`openCustomDocument() uri=${uri.fsPath} backupId=${openContext.backupId ?? 'undefined'}`);
     const document = await KotorDocument.create(uri, openContext.backupId, {
       getFileData: async () => {
+        log.trace(`getFileData() delegated for ${document.uri.toString()}`);
         const webviewsForDocument = Array.from(this.webviews.get(document.uri.toString()) || []);
         if (!webviewsForDocument.length) {
+          log.error(`getFileData() no webviews for document ${document.uri.toString()}`);
           throw new Error('No webviews found for document');
         }
-        // Request file data from the webview
         const panel = webviewsForDocument[0];
+        log.debug(`getFileData() requesting from webview, panel count=${webviewsForDocument.length}`);
         const response = await this.postMessageWithResponse<{ data: number[] }>(panel, {
           type: 'getFileData'
         });
+        log.trace(`getFileData() received ${response?.data?.length ?? 0} bytes`);
         return new Uint8Array(response.data);
       }
     });
@@ -48,7 +57,7 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     const listeners: vscode.Disposable[] = [];
 
     listeners.push(document.onDidChange(e => {
-      // Tell VS Code that the document has been edited by the user
+      log.trace(`onDidChangeCustomDocument fired for ${document.uri.fsPath} label=${e.label}`);
       this._onDidChangeCustomDocument.fire({
         document,
         ...e
@@ -56,11 +65,13 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     }));
 
     listeners.push(document.onDidDispose(() => {
+      log.trace(`document onDidDispose for ${document.uri.fsPath}, disposing ${listeners.length} listeners`);
       for (const listener of listeners) {
         listener.dispose();
       }
     }));
 
+    log.debug(`openCustomDocument() completed for ${uri.fsPath}`);
     return document;
   }
 
@@ -72,10 +83,10 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken
   ): Promise<void> {
-    // Add webview to our internal set
+    log.debug(`resolveCustomEditor() uri=${document.uri.fsPath}`);
     this.webviews.add(document.uri.toString(), webviewPanel);
+    log.trace(`resolveCustomEditor() webview added to collection for ${document.uri.toString()}`);
 
-    // Setup webview options
     webviewPanel.webview.options = {
       enableScripts: true,
       localResourceRoots: [
@@ -83,31 +94,36 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
         vscode.Uri.joinPath(this.context.extensionUri, 'media')
       ]
     };
+    log.trace('resolveCustomEditor() webview options set');
 
-    // Set the HTML content
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, document);
+    log.trace('resolveCustomEditor() HTML set');
 
-    // Handle messages from the webview
     webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
-    // Wait for the webview to be ready, then send the initial data (optionally with extra payload from subclass)
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
       if (e.type === 'ready') {
+        log.trace(`webview ready, sending init: ${document.uri.fsPath}`);
         const extra = await this.getExtraInitData?.(document) ?? {};
+        const editorType = this.getEditorTypeForDocument(document);
+        const fileName = path.basename(document.uri.fsPath);
+        log.debug(`sending init editorType=${editorType} fileName=${fileName} fileDataLength=${document.documentData.length}`);
         this.postMessage(webviewPanel, {
           type: 'init',
-          editorType: this.getEditorType(),
+          editorType,
           fileData: Array.from(document.documentData),
-          fileName: path.basename(document.uri.fsPath),
+          fileName,
           ...extra
         });
+        log.trace('init message sent');
       }
     });
 
-    // Clean up when the panel closes
     webviewPanel.onDidDispose(() => {
+      log.trace(`webviewPanel onDidDispose for ${document.uri.toString()}`);
       this.webviews.delete(document.uri.toString(), webviewPanel);
     });
+    log.debug(`resolveCustomEditor() completed for ${document.uri.fsPath}`);
   }
 
   private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<KotorDocument>>();
@@ -117,21 +133,27 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
    * Save the document
    */
   async saveCustomDocument(document: KotorDocument, cancellation: vscode.CancellationToken): Promise<void> {
-    return await document.save(cancellation);
+    log.trace(`saveCustomDocument() uri=${document.uri.fsPath}`);
+    await document.save(cancellation);
+    log.debug(`saveCustomDocument() completed ${document.uri.fsPath}`);
   }
 
   /**
    * Save the document to a new location
    */
   async saveCustomDocumentAs(document: KotorDocument, destination: vscode.Uri, cancellation: vscode.CancellationToken): Promise<void> {
-    return await document.saveAs(destination, cancellation);
+    log.trace(`saveCustomDocumentAs() uri=${document.uri.fsPath} destination=${destination.fsPath}`);
+    await document.saveAs(destination, cancellation);
+    log.debug(`saveCustomDocumentAs() completed`);
   }
 
   /**
    * Revert the document to its saved state
    */
   async revertCustomDocument(document: KotorDocument, cancellation: vscode.CancellationToken): Promise<void> {
-    return await document.revert(cancellation);
+    log.trace(`revertCustomDocument() uri=${document.uri.fsPath}`);
+    await document.revert(cancellation);
+    log.debug(`revertCustomDocument() completed`);
   }
 
   /**
@@ -142,20 +164,24 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     context: vscode.CustomDocumentBackupContext,
     cancellation: vscode.CancellationToken
   ): Promise<vscode.CustomDocumentBackup> {
-    return await document.backup(context.destination, cancellation);
+    log.trace(`backupCustomDocument() uri=${document.uri.fsPath} destination=${context.destination.toString()}`);
+    const backup = await document.backup(context.destination, cancellation);
+    log.debug(`backupCustomDocument() completed backupId=${backup.id}`);
+    return backup;
   }
 
   /**
    * Get the HTML content for the webview
    */
   private getHtmlForWebview(webview: vscode.Webview, document: KotorDocument): string {
+    log.trace(`getHtmlForWebview() uri=${document.uri.fsPath}`);
     const scriptUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'webview.js')
     );
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'webview.css')
     );
-
+    log.trace(`getHtmlForWebview() scriptUri=${scriptUri.toString()} styleUri=${styleUri.toString()}`);
     const nonce = getNonce();
 
     return /* html */`
@@ -163,13 +189,83 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
       <html lang="en">
       <head>
         <meta charset="UTF-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; img-src ${webview.cspSource} https:; script-src 'nonce-${nonce}'; connect-src ${webview.cspSource};">
+        <!--
+          NOTE:
+          - Webview bundles may load additional chunk scripts; allow scripts from the webview origin.
+          - We still require a nonce for our inline boot script + main entry script tag.
+          - We avoid unsafe-eval by building the webview bundle without eval-based source maps.
+        -->
+        <meta http-equiv="Content-Security-Policy" content="
+          default-src 'none';
+          img-src ${webview.cspSource} https: data:;
+          style-src ${webview.cspSource} 'unsafe-inline';
+          font-src ${webview.cspSource} data:;
+          script-src 'nonce-${nonce}' ${webview.cspSource};
+          connect-src ${webview.cspSource} https:;
+          worker-src ${webview.cspSource} blob:;
+        ">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link href="${styleUri}" rel="stylesheet">
         <title>KotOR Forge Editor</title>
       </head>
       <body>
+        <!-- Visible even if JS fails to execute (prevents silent blank editor). -->
+        <div id="boot-fallback" style="
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+          background: var(--vscode-editor-background, #1e1e1e);
+          color: var(--vscode-editor-foreground, #cccccc);
+        ">
+          <div style="max-width: 900px;">
+            <div style="font-size: 14px; opacity: 0.9;">Loading KotOR Forge editor…</div>
+            <div id="boot-detail" style="margin-top: 8px; font-size: 12px; opacity: 0.7;">
+              If this stays here, the webview script likely failed to run (CSP / missing build output).
+            </div>
+          </div>
+        </div>
         <div id="root"></div>
+        <script nonce="${nonce}">
+          (function () {
+            const bootDetail = document.getElementById('boot-detail');
+            const bootFallback = document.getElementById('boot-fallback');
+            const startedAt = Date.now();
+
+            function setDetail(text) {
+              if (bootDetail) bootDetail.textContent = text;
+            }
+
+            // Markers the bundle can set when it starts successfully.
+            window.__FORGE_WEBVIEW_LOADED__ = false;
+
+            window.addEventListener('error', (ev) => {
+              const msg = (ev && ev.message) ? ev.message : String(ev);
+              setDetail('Webview error: ' + msg);
+            });
+            window.addEventListener('unhandledrejection', (ev) => {
+              const reason = ev && ev.reason ? (ev.reason.message || String(ev.reason)) : 'unknown';
+              setDetail('Webview unhandled rejection: ' + reason);
+            });
+
+            // If the bundle hasn't started soon, show a stronger hint.
+            setTimeout(() => {
+              if (window.__FORGE_WEBVIEW_LOADED__) return;
+              setDetail(
+                'Webview bundle did not start. Common causes: CSP blocked eval() (bad source maps), ' +
+                'chunk scripts blocked by CSP, or dist/webview outputs missing.'
+              );
+            }, 2000);
+
+            // The bundle will remove the fallback when it mounts.
+            window.__FORGE_BOOT_REMOVE_FALLBACK__ = function () {
+              try { bootFallback && bootFallback.remove(); } catch {}
+            };
+          })();
+        </script>
         <script nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>
@@ -179,20 +275,36 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
   /**
    * Handle messages from the webview
    */
-  private async onMessage(document: KotorDocument, message: any) {
+  private async onMessage(document: KotorDocument, message: Record<string, unknown> & { type?: string; requestId?: number; buffer?: number[]; label?: string; data?: number[]; undoData?: unknown; redoData?: unknown; body?: unknown }) {
+    log.trace(`onMessage() uri=${document.uri.fsPath} type=${message?.type ?? 'undefined'} requestId=${message?.requestId ?? 'n/a'}`);
     switch (message.type) {
+      case 'requestSave':
+        log.debug(`onMessage requestSave uri=${document.uri.fsPath} bufferLength=${message.buffer?.length ?? 0}`);
+        try {
+          const data = new Uint8Array(message.buffer || []);
+          await vscode.workspace.fs.writeFile(document.uri, data);
+          log.info(`requestSave completed uri=${document.uri.fsPath} bytes=${data.length}`);
+          this.postMessageToWebviews(document, { type: 'saveComplete' });
+        } catch (e) {
+          log.error(`requestSave failed: ${e}`);
+          this.postMessageToWebviews(document, { type: 'saveError', error: String(e) });
+        }
+        break;
+
       case 'edit':
-        // Create an edit object for undo/redo
+        log.debug(`onMessage edit uri=${document.uri.fsPath} label=${message.label ?? 'Edit'} dataLength=${message.data?.length ?? 0}`);
         document.makeEdit({
           label: message.label || 'Edit',
           data: new Uint8Array(message.data || []),
           undo: () => {
+            log.trace(`edit undo uri=${document.uri.fsPath}`);
             this.postMessageToWebviews(document, {
               type: 'undo',
               edits: message.undoData
             });
           },
           redo: () => {
+            log.trace(`edit redo uri=${document.uri.fsPath}`);
             this.postMessageToWebviews(document, {
               type: 'redo',
               edits: message.redoData
@@ -202,13 +314,17 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
         break;
 
       case 'response':
-        // Handle responses to our requests
         if (this.messageCallbacks.has(message.requestId)) {
           const callback = this.messageCallbacks.get(message.requestId);
+          log.trace(`onMessage response requestId=${message.requestId} invoking callback`);
           callback!(message.body);
           this.messageCallbacks.delete(message.requestId);
+        } else {
+          log.trace(`onMessage response requestId=${message.requestId} no callback found`);
         }
         break;
+      default:
+        log.trace(`onMessage unhandled type=${message?.type}`);
     }
   }
 
@@ -220,14 +336,16 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
   /**
    * Track message callbacks for request/response
    */
-  private readonly messageCallbacks = new Map<number, (response: any) => void>();
+  private readonly messageCallbacks = new Map<number, (response: unknown) => void>();
   private requestId = 0;
 
   /**
    * Post a message to all webviews for a document
    */
-  private postMessageToWebviews(document: KotorDocument, message: any) {
+  private postMessageToWebviews(document: KotorDocument, message: Record<string, unknown>) {
     const webviewsForDocument = this.webviews.get(document.uri.toString());
+    const count = webviewsForDocument?.size ?? 0;
+    log.trace(`postMessageToWebviews() uri=${document.uri.toString()} type=${message?.type} panelCount=${count}`);
     if (webviewsForDocument) {
       for (const panel of webviewsForDocument) {
         panel.webview.postMessage(message);
@@ -238,17 +356,19 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
   /**
    * Post a message to a specific webview
    */
-  private postMessage(panel: vscode.WebviewPanel, message: any) {
+  private postMessage(panel: vscode.WebviewPanel, message: Record<string, unknown>) {
+    log.trace(`postMessage() type=${message?.type}`);
     panel.webview.postMessage(message);
   }
 
   /**
    * Post a message and wait for a response
    */
-  private postMessageWithResponse<T = any>(panel: vscode.WebviewPanel, message: any): Promise<T> {
-    return new Promise((resolve) => {
-      const requestId = this.requestId++;
-      this.messageCallbacks.set(requestId, resolve);
+  private postMessageWithResponse<T = unknown>(panel: vscode.WebviewPanel, message: Record<string, unknown>): Promise<T> {
+    const requestId = this.requestId++;
+    log.trace(`postMessageWithResponse() requestId=${requestId} type=${message?.type}`);
+    return new Promise<T>((resolve) => {
+      this.messageCallbacks.set(requestId, resolve as (response: unknown) => void);
       panel.webview.postMessage({
         ...message,
         requestId
@@ -267,6 +387,7 @@ class WebviewCollection {
     const set = this.webviews.get(key) || new Set();
     set.add(webview);
     this.webviews.set(key, set);
+    log.trace(`WebviewCollection.add() key=${key} size=${set.size}`);
   }
 
   public delete(key: string, webview: vscode.WebviewPanel) {
@@ -275,6 +396,9 @@ class WebviewCollection {
       set.delete(webview);
       if (set.size === 0) {
         this.webviews.delete(key);
+        log.trace(`WebviewCollection.delete() key=${key} removed (set empty)`);
+      } else {
+        log.trace(`WebviewCollection.delete() key=${key} size=${set.size}`);
       }
     }
   }
@@ -293,5 +417,6 @@ function getNonce() {
   for (let i = 0; i < 32; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
+  log.trace('getNonce() generated');
   return text;
 }

@@ -1,15 +1,17 @@
 import React, {forwardRef, useImperativeHandle, useState, useMemo, useCallback, memo} from "react";
-import { TabResourceExplorerState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
 import { Form, ProgressBar } from "react-bootstrap";
-import { FileBrowserNode } from "../../../FileBrowserNode";
+
+import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
 import { ForgeTreeView } from "../../treeview/ForgeTreeView";
 import { ResourceListNode } from "../../treeview/ResourceListNode";
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+
+import { EditorFile } from "../../../EditorFile";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { ForgeState } from "../../../states/ForgeState";
+import { TabResourceExplorerState } from "../../../states/tabs";
 import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
 import "./TabResourceExplorer.scss";
 
@@ -26,7 +28,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   const [currentPage, setCurrentPage] = useState<number>(0);
   const ITEMS_PER_PAGE = 100; // Virtual scrolling chunk size
   let searchQuery = '';
-  let searchDelay: any;
+  let searchDelay: ReturnType<typeof setTimeout>;
   let currentSearchId = 0;
 
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
@@ -54,7 +56,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const searchId = ++currentSearchId;
 
     try {
-      if(!!value.length){
+      if(value.length){
         // Process each root node asynchronously
         const searchPromises = TabResourceExplorerState.Resources.map( n => n.searchFor(value) );
         const searchResults = await Promise.all(searchPromises);
