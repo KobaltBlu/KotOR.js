@@ -1,21 +1,18 @@
-import React, { useState, useCallback, useMemo, memo } from "react";
-import { Container, Nav, Navbar } from 'react-bootstrap';
+import { useState, useCallback, memo } from "react";
+
+import { FileTypeManager } from "../FileTypeManager";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuItem } from "./MenuItem";
-import { MenuTopState } from "../states/MenuTopState";
 import { MenuTopItem } from "../MenuTopItem";
 import { ForgeState } from "../states/ForgeState";
-import { AudioPlayer } from "./AudioPlayer";
-import { FileTypeManager } from "../FileTypeManager";
+import { MenuTopState } from "../states/MenuTopState";
 
 export interface MenuTopProps {
   className?: string;
 }
 
-export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
-  const { className = '' } = props;
+export const MenuTop = memo(function MenuTop(_props: MenuTopProps = {}) {
 
-  const [items, setItems] = useState<MenuTopItem[]>([]);
+  const [, setItems] = useState<MenuTopItem[]>([]);
 
   // Memoize the recent files update logic
   const updateRecentFilesMenuItem = useCallback(() => {
@@ -25,7 +22,7 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
       MenuTopState.menuItemRecentFiles.items.push(
         new MenuTopItem({
           name: `${file.getFilename()} ${file.getPrettyPath()}`,
-          onClick: (menuItem: MenuTopItem) => {
+          onClick: (_menuItem: MenuTopItem) => {
             FileTypeManager.onOpenResource(file);
           }
         })
@@ -58,14 +55,6 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   });
 
   // Memoize menu items rendering
-  const menuItems = useMemo(() => (
-    items.map((item) => (
-      <MenuItem
-        key={`menu-item-${item.uuid}`}
-        item={item}
-      />
-    ))
-  ), [items]);
 
   // Top menu removed: render nothing to hide File/Save menus
   return null;
