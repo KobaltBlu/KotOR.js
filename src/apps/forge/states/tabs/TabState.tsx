@@ -1,5 +1,11 @@
+/* eslint-disable no-console */
 import React from "react";
-import { EditorFile, EditorFileEventListenerTypes } from "../../EditorFile";
+// IMPORTANT: EditorFile and ForgeState are NOT imported at the top level to
+// break circular-dependency TDZ errors that occur when the entire Forge
+// codebase is bundled into a single webpack chunk (VS Code webview).
+// Instead we use lazy accessors that resolve on first call, by which time
+// all modules have finished evaluating.
+import type { EditorFile as EditorFileType, EditorFileEventListenerTypes } from "../../EditorFile";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import type { EditorTabManager } from "../../managers/EditorTabManager";
 import { GetNewTabID } from "../../managers/TabIdGenerator";
@@ -10,7 +16,30 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "../../ForgeF
 import * as KotOR from "../../KotOR";
 import { TabStoreState } from "../../interfaces/TabStoreState";
 import { pathParse } from "../../helpers/PathParse";
-import { ForgeState } from "../ForgeState";
+import type { ForgeState as ForgeStateType } from "../ForgeState";
+
+// Lazy accessors – resolved on first call to avoid TDZ.
+let _EditorFile: typeof import("../../EditorFile").EditorFile | null = null;
+function getEditorFile() {
+  if (!_EditorFile) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _EditorFile = require("../../EditorFile").EditorFile;
+  }
+  return _EditorFile!;
+}
+
+let _ForgeState: typeof import("../ForgeState").ForgeState | null = null;
+function getForgeState() {
+  if (!_ForgeState) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    _ForgeState = require("../ForgeState").ForgeState;
+  }
+  return _ForgeState!;
+}
+
+function isEditorFile(obj: unknown): obj is EditorFileType {
+  return obj != null && typeof obj === 'object' && obj.constructor?.name === 'EditorFile';
+}
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -42,13 +71,13 @@ export class TabState extends EventListenerModel {
   #tabManager: EditorTabManager;
   tabName: string = 'Unnamed Tab';
 
-  file: EditorFile;
+  file: EditorFileType;
   saveTypes: FilePickerAcceptType[] = [];
 
   #tabContentView: React.ReactElement = (<></>);
 
-  #_onSaveStateChanged: (file: EditorFile) => void;
-  #_onNameChanged: (file: EditorFile) => void;
+  #_onSaveStateChanged: (file: EditorFileType) => void;
+  #_onNameChanged: (file: EditorFileType) => void;
   #_onKeyDown: (e: KeyboardEvent) => void;
   #_onKeyUp: (e: KeyboardEvent) => void;
 
@@ -69,7 +98,7 @@ export class TabState extends EventListenerModel {
       this.singleInstance = true;
     }
 
-    if(options.editorFile instanceof EditorFile){
+    if(isEditorFile(options.editorFile)){
       this.file = options.editorFile;
     }
 
@@ -79,15 +108,15 @@ export class TabState extends EventListenerModel {
       this.isClosable = options.closeable;
     }
 
-    this.#_onSaveStateChanged = (file: EditorFile) => {
+    this.#_onSaveStateChanged = (file: EditorFileType) => {
       this.editorFileUpdated();
     }
 
-    this.#_onNameChanged = (file: EditorFile) => {
+    this.#_onNameChanged = (file: EditorFileType) => {
       this.editorFileUpdated();
     }
 
-    if(this.file instanceof EditorFile){
+    if(isEditorFile(this.file)){
       this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
       this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
     }
@@ -119,7 +148,7 @@ export class TabState extends EventListenerModel {
   }
 
   editorFileUpdated(){
-    if(this.file instanceof EditorFile){
+    if(isEditorFile(this.file)){
       console.log('editor file updated', this.file.resref, this.file.ext, this.file)
       if(this.file.unsaved_changes){
         this.setTabName(`${this.file.resref}.${this.file.ext} *`);
@@ -151,7 +180,7 @@ export class TabState extends EventListenerModel {
     return;
   }
 
-  getFile(): EditorFile {
+  getFile(): EditorFileType {
     return this.file;
   }
 
@@ -227,7 +256,7 @@ export class TabState extends EventListenerModel {
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
-    const hostAdapter = ForgeState.getHostAdapter();
+    const hostAdapter = getForgeState().getHostAdapter();
     if (hostAdapter) {
       try {
         const pathInfo = pathParse(currentFile.path || currentFile.getFilename() || 'file');

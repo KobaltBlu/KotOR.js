@@ -62,7 +62,12 @@ module.exports = (_env, argv) => {
     entry: './src/webview/index.tsx',
     output: {
       path: path.resolve(__dirname, 'dist/webview'),
-      filename: 'webview.js'
+      filename: 'webview.js',
+      // VS Code webviews must load a single script; chunk scripts created by
+      // webpack's JSONP loader fail under the webview CSP / resource protocol.
+      // LimitChunkCountPlugin below enforces a single output file, so no
+      // publicPath resolution is needed for chunk loading.
+      publicPath: 'auto'
     },
     // Webview CSP blocks eval(), so never use eval-based devtools here.
     devtool: 'source-map',
@@ -123,6 +128,12 @@ module.exports = (_env, argv) => {
       ]
     },
     plugins: [
+      // VS Code webviews can only reliably load a single script file.
+      // Dynamically-created <script> tags for webpack chunks fail under the
+      // webview Content-Security-Policy (no nonce) and the vscode-resource
+      // protocol.  Collapsing everything into one file is the canonical fix.
+      // See: https://github.com/microsoft/vscode/issues/93041
+      new _webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
       new MiniCssExtractPlugin({
         filename: 'webview.css'
       }),

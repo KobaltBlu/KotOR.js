@@ -29,8 +29,34 @@ export class ForgeState {
 
   /** Optional host adapter (e.g. VS Code webview). When set, tabManager/modalManager/addRecentFile/save delegate to it. */
   static _hostAdapter: IForgeHostAdapter | null = null;
-  static _defaultModalManager: ModalManagerState = new ModalManagerState();
-  static _defaultTabManager: EditorTabManager = new EditorTabManager();
+
+  // ---------------------------------------------------------------------------
+  // Lazy-initialised singletons.
+  //
+  // These MUST be lazy (getter + backing field) instead of eager field
+  // initialisers because their constructors transitively reference
+  // `EditorFile` (via `instanceof` checks in `TabState`).  There are
+  // multiple circular-import chains
+  //   EditorFile → Project → ForgeState → EditorFile
+  //   EditorFile → ProjectFileSystem → ForgeState → EditorFile
+  // that cause ForgeState's class body to be evaluated while EditorFile
+  // is still in the Temporal Dead Zone.  Deferring construction until
+  // first access guarantees all modules have finished evaluating.
+  // ---------------------------------------------------------------------------
+  private static __defaultModalManager: ModalManagerState | null = null;
+  private static __defaultTabManager: EditorTabManager | null = null;
+  private static __explorerTabManager: EditorTabManager | null = null;
+  private static __projectExplorerTab: TabProjectExplorerState | null = null;
+  private static __resourceExplorerTab: TabResourceExplorerState | null = null;
+
+  static get _defaultModalManager(): ModalManagerState {
+    if (!ForgeState.__defaultModalManager) ForgeState.__defaultModalManager = new ModalManagerState();
+    return ForgeState.__defaultModalManager;
+  }
+  static get _defaultTabManager(): EditorTabManager {
+    if (!ForgeState.__defaultTabManager) ForgeState.__defaultTabManager = new EditorTabManager();
+    return ForgeState.__defaultTabManager;
+  }
 
   static get modalManager(): ModalManagerState {
     return ForgeState._hostAdapter ? ForgeState._hostAdapter.getModalManager() : ForgeState._defaultModalManager;
@@ -46,9 +72,27 @@ export class ForgeState {
     return ForgeState._hostAdapter;
   }
 
-  static explorerTabManager: EditorTabManager = new EditorTabManager();
-  static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
-  static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
+  static get explorerTabManager(): EditorTabManager {
+    if (!ForgeState.__explorerTabManager) ForgeState.__explorerTabManager = new EditorTabManager();
+    return ForgeState.__explorerTabManager;
+  }
+  static set explorerTabManager(value: EditorTabManager) {
+    ForgeState.__explorerTabManager = value;
+  }
+  static get projectExplorerTab(): TabProjectExplorerState {
+    if (!ForgeState.__projectExplorerTab) ForgeState.__projectExplorerTab = new TabProjectExplorerState();
+    return ForgeState.__projectExplorerTab;
+  }
+  static set projectExplorerTab(value: TabProjectExplorerState) {
+    ForgeState.__projectExplorerTab = value;
+  }
+  static get resourceExplorerTab(): TabResourceExplorerState {
+    if (!ForgeState.__resourceExplorerTab) ForgeState.__resourceExplorerTab = new TabResourceExplorerState();
+    return ForgeState.__resourceExplorerTab;
+  }
+  static set resourceExplorerTab(value: TabResourceExplorerState) {
+    ForgeState.__resourceExplorerTab = value;
+  }
 
   /** Current extract options (TPC/MDL decompile, etc.). Updated by Help → Extract Options. */
   static extractOptions: ExtractOptions = { ...DEFAULT_EXTRACT_OPTIONS };

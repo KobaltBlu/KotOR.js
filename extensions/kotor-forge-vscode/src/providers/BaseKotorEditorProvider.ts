@@ -1,5 +1,4 @@
 import * as path from 'path';
-
 import * as vscode from 'vscode';
 
 import { KotorDocument } from '../KotorDocument';
@@ -181,7 +180,10 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     const styleUri = webview.asWebviewUri(
       vscode.Uri.joinPath(this.context.extensionUri, 'dist', 'webview', 'webview.css')
     );
-    log.trace(`getHtmlForWebview() scriptUri=${scriptUri.toString()} styleUri=${styleUri.toString()}`);
+    // Base URL for webpack chunk loading (same origin as webview.js). Must be set before bundle runs.
+    const scriptBase = scriptUri.toString().replace(/\/webview\.js$/i, '/');
+    const scriptBaseEscaped = scriptBase.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    log.trace(`getHtmlForWebview() scriptUri=${scriptUri.toString()} styleUri=${styleUri.toString()} scriptBase=${scriptBase}`);
     const nonce = getNonce();
 
     return /* html */`
@@ -190,10 +192,8 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
       <head>
         <meta charset="UTF-8">
         <!--
-          NOTE:
-          - Webview bundles may load additional chunk scripts; allow scripts from the webview origin.
-          - We still require a nonce for our inline boot script + main entry script tag.
-          - We avoid unsafe-eval by building the webview bundle without eval-based source maps.
+          script-src: nonce for inline scripts; ${webview.cspSource} for webview.js and its chunks.
+          Chunk scripts are loaded by webpack from the same origin; no eval (devtool: source-map).
         -->
         <meta http-equiv="Content-Security-Policy" content="
           default-src 'none';
@@ -231,17 +231,21 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
         <div id="root"></div>
         <script nonce="${nonce}">
           (function () {
+            var scriptBase = '${scriptBaseEscaped}';
+            if (typeof window !== 'undefined' && scriptBase) {
+              window.__webpack_public_path__ = scriptBase;
+            }
+          })();
+        </script>
+        <script nonce="${nonce}">
+          (function () {
             const bootDetail = document.getElementById('boot-detail');
             const bootFallback = document.getElementById('boot-fallback');
-            const startedAt = Date.now();
-
+            const bundleScript = document.getElementById('forge-webview-bundle');
             function setDetail(text) {
               if (bootDetail) bootDetail.textContent = text;
             }
-
-            // Markers the bundle can set when it starts successfully.
             window.__FORGE_WEBVIEW_LOADED__ = false;
-
             window.addEventListener('error', (ev) => {
               const msg = (ev && ev.message) ? ev.message : String(ev);
               setDetail('Webview error: ' + msg);
@@ -250,23 +254,27 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
               const reason = ev && ev.reason ? (ev.reason.message || String(ev.reason)) : 'unknown';
               setDetail('Webview unhandled rejection: ' + reason);
             });
-
-            // If the bundle hasn't started soon, show a stronger hint.
+            if (bundleScript) {
+              bundleScript.addEventListener('error', () => {
+                setDetail(
+                  'Failed to load webview bundle (webview.js). ' +
+                  'This usually means dist/webview outputs are missing or the URI was blocked.'
+                );
+              });
+            }
             setTimeout(() => {
               if (window.__FORGE_WEBVIEW_LOADED__) return;
               setDetail(
                 'Webview bundle did not start. Common causes: CSP blocked eval() (bad source maps), ' +
                 'chunk scripts blocked by CSP, or dist/webview outputs missing.'
               );
-            }, 2000);
-
-            // The bundle will remove the fallback when it mounts.
+            }, 15000);
             window.__FORGE_BOOT_REMOVE_FALLBACK__ = function () {
               try { bootFallback && bootFallback.remove(); } catch {}
             };
           })();
         </script>
-        <script nonce="${nonce}" src="${scriptUri}"></script>
+        <script id="forge-webview-bundle" nonce="${nonce}" src="${scriptUri}"></script>
       </body>
       </html>
     `;

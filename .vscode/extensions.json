@@ -4,6 +4,7 @@
     "esbenp.prettier-vscode",
     "ms-vscode.vscode-typescript-next",
     "orta.vscode-jest",
-    "kotor-community.kotor-forge"
+    "kotor-community.kotor-forge",
+    "wix.vscode-import-cost"
   ]
 }

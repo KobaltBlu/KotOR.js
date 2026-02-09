@@ -90,7 +90,8 @@ body {
 
 #container {
   position: absolute;
-  top: $header-height;
+  // Top menu removed: do not offset content
+  top: 0;
   bottom: 0;
   left: 0;
   right: 0;

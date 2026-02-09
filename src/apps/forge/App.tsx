@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import TabManager from "./components/tabs/TabManager";
 import { TabManagerProvider } from "./context/TabManagerContext";
 import { ForgeState } from "./states/ForgeState";
-import { MenuTop } from "./components/MenuTop";
+// MenuTop removed: top menu disabled
+// import { MenuTop } from "./components/MenuTop";
 import { LayoutContainerProvider } from "./context/LayoutContainerContext";
 import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
 import ModalGrantAccess from "./components/modal/ModalGrantAccess";
@@ -91,7 +92,7 @@ export const App = (props: any) => {
   return (
     <>
       <div id="app" className={appReady ? 'app-ready' : ''}>
-        <MenuTop />
+        {/* Top menu intentionally removed to hide File/Save menus */}
         <div id="container">
           <LayoutContainerProvider>
             <LayoutContainer westContent={westContent}>

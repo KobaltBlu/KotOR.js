@@ -20,7 +20,7 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   // Memoize the recent files update logic
   const updateRecentFilesMenuItem = useCallback(() => {
     MenuTopState.menuItemRecentFiles.items = [];
-    
+
     ForgeState.recentFiles.forEach((file) => {
       MenuTopState.menuItemRecentFiles.items.push(
         new MenuTopItem({
@@ -31,7 +31,7 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
         })
       );
     });
-    
+
     MenuTopState.menuItemRecentFiles.rebuild();
   }, []);
 
@@ -60,27 +60,13 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   // Memoize menu items rendering
   const menuItems = useMemo(() => (
     items.map((item) => (
-      <MenuItem 
-        key={`menu-item-${item.uuid}`} 
+      <MenuItem
+        key={`menu-item-${item.uuid}`}
         item={item}
       />
     ))
   ), [items]);
 
-  return (
-    <Navbar className={`top-menu ${className}`.trim()} expand="lg">
-      <div className="menu-accent">
-        <span className="inner" />
-      </div>
-      <Container fluid>
-        <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            {menuItems}
-            <AudioPlayer />
-          </Nav>
-        </Navbar.Collapse>
-      </Container>
-    </Navbar>
-  );
+  // Top menu removed: render nothing to hide File/Save menus
+  return null;
 });

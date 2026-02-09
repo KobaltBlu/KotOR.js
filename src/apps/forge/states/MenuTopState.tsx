@@ -1,43 +1,40 @@
+/* eslint-disable no-console */
+import { ModalChangeGameState } from "../components/modal/ModalChangeGame";
+import { getWikiDocUrlForTab } from "../data/EditorWikiMapping";
 import { EditorFile } from "../EditorFile";
+import { SaveDestination } from "../enum/SaveDestination";
+import { FileTypeManager } from "../FileTypeManager";
+import { createEmptyErfHeader, createEmptyModHeader } from "../helpers/CloneModule";
+import { extractErfToFolder } from "../helpers/ExtractErfToFolder";
+import * as KotOR from "../KotOR";
 import { MenuTopItem } from "../MenuTopItem";
 import { Project } from "../Project";
-import { ModalChangeGameState } from "../components/modal/ModalChangeGame";
-import { ForgeState } from "./ForgeState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabState } from "./tabs/TabState";
-import { TabUTCEditorState } from "./tabs/TabUTCEditorState";
-import { TabUTDEditorState } from "./tabs/TabUTDEditorState";
-import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
-import { TabUTSEditorState } from "./tabs/TabUTSEditorState";
-import { TabUTMEditorState } from "./tabs/TabUTMEditorState";
-import { TabUTTEditorState } from "./tabs/TabUTTEditorState";
-import { TabUTWEditorState } from "./tabs/TabUTWEditorState";
-import { TabLIPEditorState } from "./tabs/tab-lip-editor/TabLIPEditorState";
 
-import * as KotOR from "../KotOR";
-import { ModalNewProjectState } from "./modal/ModalNewProjectState";
+import { ForgeState } from "./ForgeState";
 import { ModalAboutState } from "./modal/ModalAboutState";
-import { ModalUpdateCheckState } from "./modal/ModalUpdateCheckState";
-import { ModalLoadFromModuleState } from "./modal/ModalLoadFromModuleState";
 import { ModalCloneModuleState } from "./modal/ModalCloneModuleState";
-import { ModalInsertInstanceState } from "./modal/ModalInsertInstanceState";
-import { ModalSaveToModuleState } from "./modal/ModalSaveToModuleState";
-import { SaveDestination } from "../enum/SaveDestination";
-import { ModalResourceComparisonState } from "./modal/ModalResourceComparisonState";
-import { ModalLIPBatchProcessorState } from "./modal/ModalLIPBatchProcessorState";
 import { ModalExtractOptionsState } from "./modal/ModalExtractOptionsState";
 import { ModalHelpBrowserState } from "./modal/ModalHelpBrowserState";
+import { ModalInsertInstanceState } from "./modal/ModalInsertInstanceState";
+import { ModalLoadFromModuleState } from "./modal/ModalLoadFromModuleState";
+import { ModalNewProjectState } from "./modal/ModalNewProjectState";
 import { ModalPatcherProjectState } from "./modal/ModalPatcherProjectState";
-import { FileTypeManager } from "../FileTypeManager";
-import { TabTextEditorState } from "./tabs/TabTextEditorState";
-import { getWikiDocUrlForTab } from "../data/EditorWikiMapping";
-import { TabReferenceFinderState } from "./tabs/TabReferenceFinderState";
-import { CommandPaletteState } from "./CommandPaletteState";
+import { ModalResourceComparisonState } from "./modal/ModalResourceComparisonState";
+import { ModalSaveToModuleState } from "./modal/ModalSaveToModuleState";
+import { TabLIPEditorState } from "./tabs/tab-lip-editor/TabLIPEditorState";
 import { TabERFEditorState } from "./tabs/TabERFEditorState";
 import { TabHelpState } from "./tabs/TabHelpState";
-import { extractErfToFolder } from "../helpers/ExtractErfToFolder";
-import { createEmptyErfHeader, createEmptyModHeader } from "../helpers/CloneModule";
-
+import { TabQuickStartState } from "./tabs/TabQuickStartState";
+import { TabReferenceFinderState } from "./tabs/TabReferenceFinderState";
+import { TabState } from "./tabs/TabState";
+import { TabTextEditorState } from "./tabs/TabTextEditorState";
+import { TabUTCEditorState } from "./tabs/TabUTCEditorState";
+import { TabUTDEditorState } from "./tabs/TabUTDEditorState";
+import { TabUTMEditorState } from "./tabs/TabUTMEditorState";
+import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
+import { TabUTSEditorState } from "./tabs/TabUTSEditorState";
+import { TabUTTEditorState } from "./tabs/TabUTTEditorState";
+import { TabUTWEditorState } from "./tabs/TabUTWEditorState";
 
 export class MenuTopState {
 
@@ -105,62 +102,62 @@ export class MenuTopState {
   static menuItemHelpBrowser: MenuTopItem;
   static menuItemGettingStarted: MenuTopItem;
 
-  static #eventListeners: any = {};
+  static #eventListeners: Record<string, Function[]> = {};
 
-  static addEventListener(event: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
-    if(!Array.isArray(this.#eventListeners[event])){
+  static addEventListener(event: string, callback: Function) {
+    if (typeof callback !== 'function') { return; }
+    if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
     }
-    if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
-      let index = ev.indexOf(callback);
-      if(index == -1){
+    if (Array.isArray(this.#eventListeners[event])) {
+      const ev = this.#eventListeners[event];
+      const index = ev.indexOf(callback);
+      if (index == -1) {
         ev.push(callback);
-      }else{
+      } else {
         console.warn('Event Listener: Already added', event);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', event);
     }
   }
 
-  static removeEventListener(event: string, callback: Function){
-    if(typeof callback !== 'function'){ return; }
-    if(!Array.isArray(this.#eventListeners[event])){
+  static removeEventListener(event: string, callback: Function) {
+    if (typeof callback !== 'function') { return; }
+    if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
     }
-    if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
-      let index = ev.indexOf(callback);
-      if(index >= 0){
+    if (Array.isArray(this.#eventListeners[event])) {
+      const ev = this.#eventListeners[event];
+      const index = ev.indexOf(callback);
+      if (index >= 0) {
         ev.splice(index, 1);
-      }else{
+      } else {
         console.warn('Event Listener: Already removed', event);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', event);
     }
   }
 
-  static triggerEventListener(event: string, ...args: any[]){
-    if(!Array.isArray(this.#eventListeners[event])){
+  static triggerEventListener(event: string, ...args: any[]) {
+    if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
     }
-    if(Array.isArray(this.#eventListeners[event])){
-      let ev = this.#eventListeners[event];
-      for(let i = 0; i < ev.length; i++){
+    if (Array.isArray(this.#eventListeners[event])) {
+      const ev = this.#eventListeners[event];
+      for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
-        if(typeof callback === 'function'){
+        if (typeof callback === 'function') {
           callback(...args);
         }
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', event);
     }
   }
 
-  static buildMenuItems(){
+  static buildMenuItems() {
 
     //File Menu Item
     this.menuItemFile = new MenuTopItem({
@@ -188,39 +185,49 @@ export class MenuTopState {
     });
 
     //File Menu Child Items
-    this.menuItemOpenProject = new MenuTopItem({name: 'Open Project', onClick: async () => {
-      Project.OpenByDirectory();
-    }});
-
-    this.menuItemNewProject = new MenuTopItem({name: 'New Project', onClick: () => {
-      // let newProjectWizard = new NewProjectWizard();
-      // newProjectWizard.Show();
-      const newProjectModalState = new ModalNewProjectState();
-      ForgeState.modalManager.addModal(newProjectModalState);
-      newProjectModalState.open();
-    }});
-
-    this.menuItemSaveProject = new MenuTopItem({name: 'Save Project', onClick: () => {
-      if(ForgeState.project){
-        ForgeState.project.save();
+    this.menuItemOpenProject = new MenuTopItem({
+      name: 'Open Project', onClick: async () => {
+        Project.OpenByDirectory();
       }
-    }});
+    });
 
-    this.menuItemCloseProject = new MenuTopItem({name: 'Close Project', onClick: () => {
-      // Forge.Project = undefined as any;
-      // for(let i = 0; i < Forge.tabManager.tabs.length; i++){
-      //   Forge.tabManager.tabs[i].Remove();
-      // }
-      // Forge.tabManager.AddTab(new QuickStartTab());
-    }});
+    this.menuItemNewProject = new MenuTopItem({
+      name: 'New Project', onClick: () => {
+        // let newProjectWizard = new NewProjectWizard();
+        // newProjectWizard.Show();
+        const newProjectModalState = new ModalNewProjectState();
+        ForgeState.modalManager.addModal(newProjectModalState);
+        newProjectModalState.open();
+      }
+    });
 
-    this.menuItemFileSep = new MenuTopItem({type: 'separator'});
+    this.menuItemSaveProject = new MenuTopItem({
+      name: 'Save Project', onClick: () => {
+        if (ForgeState.project) {
+          ForgeState.project.save();
+        }
+      }
+    });
 
-    this.menuItemChangeGame = new MenuTopItem({name: 'Change Game', onClick: async function(){
-      ModalChangeGameState.Show();
-    }});
+    this.menuItemCloseProject = new MenuTopItem({
+      name: 'Close Project', onClick: () => {
+        // Forge.Project = undefined as any;
+        // for(let i = 0; i < Forge.tabManager.tabs.length; i++){
+        //   Forge.tabManager.tabs[i].Remove();
+        // }
+        // Forge.tabManager.AddTab(new QuickStartTab());
+      }
+    });
 
-    this.menuItemFileSep2 = new MenuTopItem({type: 'separator'});
+    this.menuItemFileSep = new MenuTopItem({ type: 'separator' });
+
+    this.menuItemChangeGame = new MenuTopItem({
+      name: 'Change Game', onClick: async function () {
+        ModalChangeGameState.Show();
+      }
+    });
+
+    this.menuItemFileSep2 = new MenuTopItem({ type: 'separator' });
 
     this.menuItemNewFile = new MenuTopItem({
       name: 'New',
@@ -231,7 +238,7 @@ export class MenuTopState {
 
     this.menuItemOpenFile = new MenuTopItem({
       name: 'Open File',
-      onClick: async function(){
+      onClick: async function () {
         ForgeState.openFile();
       }
     });
@@ -242,7 +249,7 @@ export class MenuTopState {
         const loadModal = new ModalLoadFromModuleState({
           onSelect: (resref: string, ext: string, data: Uint8Array) => {
             const reskey = KotOR.ResourceTypes[ext];
-            if (reskey == null) return;
+            if (typeof reskey !== 'number') return;
             const editorFile = new EditorFile({ buffer: data, resref, ext, reskey });
             FileTypeManager.onOpenResource(editorFile);
           },
@@ -261,8 +268,8 @@ export class MenuTopState {
           const buf = file?.buffer;
           if (buf && buf.length > 0) {
             const resource1 = {
-              resref: file.resref || 'resource',
-              ext: file.ext || 'res',
+              resref: typeof file.resref === 'string' ? file.resref : 'resource',
+              ext: typeof file.ext === 'string' ? file.ext : 'res',
               data: buf,
               filepath: file.getPath?.(),
             };
@@ -292,11 +299,11 @@ export class MenuTopState {
     this.menuItemSaveFile = new MenuTopItem({
       name: 'Save File',
       // accelerator: 'Ctrl+S',
-      onClick: async function(){
-        if(ForgeState.tabManager.currentTab instanceof TabState){
-          try{
+      onClick: async function () {
+        if (ForgeState.tabManager.currentTab instanceof TabState) {
+          try {
             ForgeState.tabManager.currentTab.save();
-          }catch(e){
+          } catch (e) {
             console.error(e);
           }
         }
@@ -306,11 +313,11 @@ export class MenuTopState {
     this.menuItemCompileFile = new MenuTopItem({
       name: 'Compile File',
       // accelerator: 'Ctrl+Shift+C',
-      onClick: function(){
-        if(ForgeState.tabManager.currentTab instanceof TabState){
-          try{
+      onClick: function () {
+        if (ForgeState.tabManager.currentTab instanceof TabState) {
+          try {
             ForgeState.tabManager.currentTab.compile();
-          }catch(e){
+          } catch (e) {
             console.error(e);
           }
         }
@@ -320,11 +327,11 @@ export class MenuTopState {
     this.menuItemSaveFileAs = new MenuTopItem({
       name: 'Save File As',
       // accelerator: 'Ctrl+Shift+S',
-      onClick: function(){
-        if(ForgeState.tabManager.currentTab instanceof TabState){
-          try{
+      onClick: function () {
+        if (ForgeState.tabManager.currentTab instanceof TabState) {
+          try {
             ForgeState.tabManager.currentTab.saveAs();
-          }catch(e){
+          } catch (e) {
             console.error(e);
           }
         }
@@ -339,8 +346,8 @@ export class MenuTopState {
           const file = tab.getFile();
           const buf = file?.buffer;
           if (buf && buf.length > 0) {
-            const resref = file.resref || 'resource';
-            const resType = file.reskey ?? KotOR.ResourceTypes.res;
+            const resref = typeof file.resref === 'string' ? file.resref : 'resource';
+            const resType = typeof file.reskey === 'number' ? file.reskey : KotOR.ResourceTypes.res;
             const modal = new ModalSaveToModuleState({ resref, resType, data: buf });
             ForgeState.modalManager.addModal(modal);
             modal.open();
@@ -401,8 +408,8 @@ export class MenuTopState {
           const file = tab.getFile();
           const buf = file?.buffer;
           if (buf && buf.length > 0) {
-            const resref = file.resref || 'resource';
-            const resType = file.reskey ?? KotOR.ResourceTypes.res;
+            const resref: string = (typeof file.resref === 'string' ? file.resref : '') || 'resource';
+            const resType: number = (typeof file.reskey === 'number' ? file.reskey : KotOR.ResourceTypes.res);
             const modal = new ModalSaveToModuleState({
               resref,
               resType,
@@ -428,8 +435,8 @@ export class MenuTopState {
           const file = tab.getFile();
           const buf = file?.buffer;
           if (buf && buf.length > 0) {
-            const resref = file.resref || 'resource';
-            const resType = file.reskey ?? KotOR.ResourceTypes.res;
+            const resref: string = (typeof file.resref === 'string' ? file.resref : '') || 'resource';
+            const resType: number = (typeof file.reskey === 'number' ? file.reskey : KotOR.ResourceTypes.res);
             const modal = new ModalSaveToModuleState({
               resref,
               resType,
@@ -468,27 +475,28 @@ export class MenuTopState {
       }
     });
 
-    this.menuItemFileSep3 = new MenuTopItem({type: 'separator'});
+    this.menuItemFileSep3 = new MenuTopItem({ type: 'separator' });
 
-    this.menuItemRecentProjects = new MenuTopItem({name: 'Recent Projects', type: 'title'});
+    this.menuItemRecentProjects = new MenuTopItem({ name: 'Recent Projects', type: 'title' });
 
-    this.menuItemRecentFiles = new MenuTopItem({name: 'Recent Files', type: 'title'});
+    this.menuItemRecentFiles = new MenuTopItem({ name: 'Recent Files', type: 'title' });
 
-    this.menuItemFileSep4 = new MenuTopItem({type: 'separator'});
+    this.menuItemFileSep4 = new MenuTopItem({ type: 'separator' });
 
     this.menuItemExitApp = new MenuTopItem({
       name: 'Exit',
-      onClick: function(){
+      onClick: function () {
         (window as any).canUnload = true;
         window.close();
       }
     });
 
-    this.menuItemLabelEngineResource = new MenuTopItem({type: 'title', name: 'Engine Resource'});
+    this.menuItemLabelEngineResource = new MenuTopItem({ type: 'title', name: 'Engine Resource' });
 
     this.menuItemNewLIP = new MenuTopItem({
       name: 'Lip Sync File',
       onClick: () => {
+        if (typeof KotOR.ResourceTypes.lip !== 'number') return;
         ForgeState.tabManager.addTab(new TabLIPEditorState({
           editorFile: new EditorFile({ resref: 'new_lip', reskey: KotOR.ResourceTypes.lip })
         }));
@@ -497,18 +505,20 @@ export class MenuTopState {
 
     this.menuItemNewScript = new MenuTopItem({
       name: 'NW Script Source File',
-      onClick: function(menuItem: MenuTopItem){
+      onClick: function (_menuItem: MenuTopItem) {
+        if (typeof KotOR.ResourceTypes.nss !== 'number') return;
         ForgeState.tabManager.addTab(new TabTextEditorState({
           editorFile: new EditorFile({ resref: 'untitled', reskey: KotOR.ResourceTypes.nss })
         }));
       }
     });
 
-    this.menuItemLabelBlueprints = new MenuTopItem({type: 'title', name: 'Blueprints'});
+    this.menuItemLabelBlueprints = new MenuTopItem({ type: 'title', name: 'Blueprints' });
 
     this.menuItemLabelNewUTC = new MenuTopItem({
       name: '.UTC - Creature',
-      onClick: function(menuItem: MenuTopItem){
+      onClick: function (_menuItem: MenuTopItem) {
+        if (typeof KotOR.ResourceTypes.utc !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTCEditorState({
           editorFile: new EditorFile({ resref: 'new_creature', reskey: KotOR.ResourceTypes.utc })
         }));
@@ -517,7 +527,8 @@ export class MenuTopState {
 
     this.menuItemLabelNewUTD = new MenuTopItem({
       name: '.UTD - Door',
-      onClick: function(menuItem: MenuTopItem){
+      onClick: function (_menuItem: MenuTopItem) {
+        if (typeof KotOR.ResourceTypes.utd !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTDEditorState({
           editorFile: new EditorFile({ resref: 'new_door', reskey: KotOR.ResourceTypes.utd })
         }));
@@ -526,7 +537,8 @@ export class MenuTopState {
 
     this.menuItemLabelNewUTP = new MenuTopItem({
       name: '.UTP - Placeable',
-      onClick: function(menuItem: MenuTopItem){
+      onClick: function (_menuItem: MenuTopItem) {
+        if (typeof KotOR.ResourceTypes.utp !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTPEditorState({
           editorFile: new EditorFile({ resref: 'new_placeable', reskey: KotOR.ResourceTypes.utp })
         }));
@@ -536,6 +548,7 @@ export class MenuTopState {
     this.menuItemLabelNewUTS = new MenuTopItem({
       name: '.UTS - Sound',
       onClick: () => {
+        if (typeof KotOR.ResourceTypes.uts !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTSEditorState({
           editorFile: new EditorFile({ resref: 'new_sound', reskey: KotOR.ResourceTypes.uts })
         }));
@@ -545,6 +558,7 @@ export class MenuTopState {
     this.menuItemLabelNewUTM = new MenuTopItem({
       name: '.UTM - Store',
       onClick: () => {
+        if (typeof KotOR.ResourceTypes.utm !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTMEditorState({
           editorFile: new EditorFile({ resref: 'new_store', reskey: KotOR.ResourceTypes.utm })
         }));
@@ -554,6 +568,7 @@ export class MenuTopState {
     this.menuItemLabelNewUTT = new MenuTopItem({
       name: '.UTT - Trigger',
       onClick: () => {
+        if (typeof KotOR.ResourceTypes.utt !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTTEditorState({
           editorFile: new EditorFile({ resref: 'new_trigger', reskey: KotOR.ResourceTypes.utt })
         }));
@@ -563,6 +578,7 @@ export class MenuTopState {
     this.menuItemLabelNewUTW = new MenuTopItem({
       name: '.UTW - Waypoint',
       onClick: () => {
+        if (typeof KotOR.ResourceTypes.utw !== 'number') return;
         ForgeState.tabManager.addTab(new TabUTWEditorState({
           editorFile: new EditorFile({ resref: 'new_waypoint', reskey: KotOR.ResourceTypes.utw })
         }));
@@ -622,9 +638,9 @@ export class MenuTopState {
       name: 'Open Module Editor',
       onClick: () => {
         // ForgeState.project
-        if(ForgeState.project instanceof Project){
+        if (ForgeState.project instanceof Project) {
           ForgeState.project.openModuleEditor();
-        }else{
+        } else {
           alert('Open or start a new project to use this feature');
         }
       }
@@ -679,9 +695,9 @@ export class MenuTopState {
       name: 'Open Editor Documentation',
       onClick: () => {
         const url = getWikiDocUrlForTab(ForgeState.tabManager.currentTab);
-        if(url){
+        if (url) {
           window.open(url, '_blank');
-        }else{
+        } else {
           alert('No documentation is mapped for this editor yet.');
         }
       }
@@ -814,7 +830,7 @@ export class MenuTopState {
     );
   }
 
-  static buildAudioMenuItems(){
+  static buildAudioMenuItems() {
     this.menuItemAudio.items = [];
     this.menuItemAudio.items.push(
       new MenuTopItem({
@@ -826,9 +842,9 @@ export class MenuTopState {
     );
 
     const eaxPresets = Object.values(KotOR.TwoDAManager.datatables.get('soundeax')?.rows || {});
-    for(let i = 0; i < eaxPresets.length; i++){
-      const eaxPreset = eaxPresets[i] as any;
-      if(eaxPreset.label == 23) break;
+    for (let i = 0; i < eaxPresets.length; i++) {
+      const eaxPreset = eaxPresets[i] as KotOR.AnalogInput;
+      if (eaxPreset.label == '23') break;
       this.menuItemAudio.items.push(
         new MenuTopItem({
           name: eaxPreset.label,

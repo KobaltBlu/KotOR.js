@@ -8,9 +8,11 @@ export class TabTLKEditorState extends TabState {
   tabName: string = 'TLK Editor';
   tlk?: KotOR.TLKObject;
   selectedStringIndex: number = -1;
-  searchFilter: string = '';
-  currentPage: number = 0;
-  pageSize: number = 50;
+  searchQuery: string = '';
+  filterQuery: string = '';
+  searchBoxVisible: boolean = false;
+  jumpBoxVisible: boolean = false;
+  jumpValue: number = 0;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -38,7 +40,18 @@ export class TabTLKEditorState extends TabState {
     await new Promise<void>((resolve, reject) => {
       this.tlk = new KotOR.TLKObject(response.buffer, () => resolve(), undefined);
     });
+    this.selectedStringIndex = -1;
+    this.searchQuery = '';
+    this.filterQuery = '';
+    this.searchBoxVisible = false;
+    this.jumpBoxVisible = false;
+    this.jumpValue = 0;
     this.processEventListener('onEditorFileLoad', [this]);
+    this.processEventListener('onSearchQueryChanged', [this.searchQuery]);
+    this.processEventListener('onFilterChanged', [this.filterQuery]);
+    this.processEventListener('onSearchBoxToggled', [this.searchBoxVisible]);
+    this.processEventListener('onJumpBoxToggled', [this.jumpBoxVisible]);
+    this.processEventListener('onJumpValueChanged', [this.jumpValue]);
   }
 
   selectString(index: number) {
@@ -46,15 +59,72 @@ export class TabTLKEditorState extends TabState {
     this.processEventListener('onStringSelected', [index]);
   }
 
-  setSearchFilter(filter: string) {
-    this.searchFilter = filter;
-    this.currentPage = 0;
-    this.processEventListener('onSearchFilterChanged', [filter]);
+  setSearchQuery(query: string) {
+    this.searchQuery = query;
+    this.processEventListener('onSearchQueryChanged', [query]);
   }
 
-  setPage(page: number) {
-    this.currentPage = page;
-    this.processEventListener('onPageChanged', [page]);
+  applySearchFilter(query?: string) {
+    this.filterQuery = typeof query === 'string' ? query : this.searchQuery;
+    this.processEventListener('onFilterChanged', [this.filterQuery]);
+  }
+
+  clearSearchFilter() {
+    this.filterQuery = '';
+    this.processEventListener('onFilterChanged', [this.filterQuery]);
+  }
+
+  toggleSearchBox(force?: boolean) {
+    const next = typeof force === 'boolean' ? force : !this.searchBoxVisible;
+    this.searchBoxVisible = next;
+    this.processEventListener('onSearchBoxToggled', [next]);
+  }
+
+  toggleJumpBox(force?: boolean) {
+    const next = typeof force === 'boolean' ? force : !this.jumpBoxVisible;
+    this.jumpBoxVisible = next;
+    this.processEventListener('onJumpBoxToggled', [next]);
+  }
+
+  setJumpValue(value: number) {
+    this.jumpValue = value;
+    this.processEventListener('onJumpValueChanged', [value]);
+  }
+
+  insertEntry() {
+    if (!this.tlk) return;
+    const entry = new KotOR.TLKString(0, '', 0, 0, 0, 0, 0, '');
+    this.tlk.TLKStrings.push(entry);
+    this.tlk.StringCount = this.tlk.TLKStrings.length;
+    const index = this.tlk.TLKStrings.length - 1;
+    this.selectString(index);
+    if (this.file) {
+      this.file.unsaved_changes = true;
+    }
+    this.processEventListener('onEntriesChanged', [this.tlk.TLKStrings.length]);
+  }
+
+  async findReferencesForIndex(index: number): Promise<void> {
+    if (index < 0) return;
+    const { ModalReferenceSearchOptionsState } = require('../modal/ModalReferenceSearchOptionsState');
+    const { ModalFileResultsState } = require('../modal/ModalFileResultsState');
+    const { ForgeState } = require('../ForgeState');
+    const { createKeyResources, findStrRefReferences } = require('../../helpers/ReferenceFinder');
+
+    const modal = new ModalReferenceSearchOptionsState({
+      onApply: async (options: any) => {
+        const resources = createKeyResources();
+        const results = await findStrRefReferences(resources, index.toString(), options);
+        const resultsModal = new ModalFileResultsState({
+          results,
+          title: `References for ${index}`,
+        });
+        resultsModal.attachToModalManager(ForgeState.modalManager);
+        resultsModal.open();
+      },
+    });
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
   }
 
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
