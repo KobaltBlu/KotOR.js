@@ -240,18 +240,23 @@ export class CharGenClass extends GameMenu {
    */
   private captureBaseExtents(): void {
     if (this._baseExtentsCaptured) return;
-    const modelControl = this.getControlByName('_3D_MODEL1');
-    const btnControl = this.getControlByName('BTN_SEL1');
+    //Hover extents can be calculated from the first model and button control
+    //They are sized differently from the other 5 controls
+    const modelControlHovered = this.getControlByName('_3D_MODEL1');
+    const btnControlHovered = this.getControlByName('BTN_SEL1');
+    this._hoverModelExtent.width = modelControlHovered.extent.width;
+    this._hoverModelExtent.height = modelControlHovered.extent.height;
+    this._hoverBtnExtent.width = btnControlHovered.extent.width;
+    this._hoverBtnExtent.height = btnControlHovered.extent.height;
+
+    //Base extents can be calculated from the 2nd model and button controls
+    const modelControl = this.getControlByName('_3D_MODEL2');
+    const btnControl = this.getControlByName('BTN_SEL2');
     if (!modelControl || !btnControl || modelControl.extent.width <= 0 || modelControl.extent.height <= 0) return;
     this._baseModelExtent.width = modelControl.extent.width;
     this._baseModelExtent.height = modelControl.extent.height;
     this._baseBtnExtent.width = btnControl.extent.width;
     this._baseBtnExtent.height = btnControl.extent.height;
-    const hoverDelta = 20;
-    this._hoverModelExtent.width = this._baseModelExtent.width + hoverDelta;
-    this._hoverModelExtent.height = this._baseModelExtent.height + hoverDelta;
-    this._hoverBtnExtent.width = this._baseBtnExtent.width + hoverDelta;
-    this._hoverBtnExtent.height = this._baseBtnExtent.height + hoverDelta;
     this._baseExtentsCaptured = true;
   }
 
@@ -260,13 +265,11 @@ export class CharGenClass extends GameMenu {
     if (!this.bVisible)
       return;
     try {
-      if (!this._baseExtentsCaptured) this.captureBaseExtents();
-
       for (let i = 0; i < 6; i++) {
-        let modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
-        let btnControl = this.getControlByName('BTN_SEL' + (i + 1));
-        let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
-        let creature = GameState.CharGenManager.creatures.get(i);
+        const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+        const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+        const _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
+        const creature = GameState.CharGenManager.creatures.get(i);
         if (creature) {
           creature.update(delta);
         }
