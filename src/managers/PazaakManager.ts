@@ -360,7 +360,6 @@ export class PazaakManager {
 
   /**
    * Cancel the Pazaak game from the wager/setup screen.
-   * Matches CSWGuiPazaakStart::HandleQuitDialog / CClientExoApp::EndPazaakGame behavior.
    */
   static CancelPazaak(){
     if(GameState.MenuManager?.MenuPazaakWager?.bVisible){

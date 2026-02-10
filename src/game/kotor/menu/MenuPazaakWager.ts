@@ -1,19 +1,18 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import type { GUILabel, GUIButton } from "../../../gui";
 
-/** TLK 32321: "Max wager" label prefix (CSWGuiWagerPopup LBL_MAXIMUM format) */
-const TLK_MAX_WAGER = 0x7e41;
+/** TLK 32321: "Max wager" label prefix */
+const TLK_MAX_WAGER = 32321;
 /** TLK 38600: "Your credits" label prefix */
-const TLK_YOUR_CREDITS = 0x96c8;
-/** TLK 42424: "Quit Pazaak?" confirmation (HandleInputEvent case 0x28/0x2e) */
-const TLK_QUIT_PAZAAK_CONFIRM = 0xa5b8;
+const TLK_YOUR_CREDITS = 38600;
+/** TLK 42424: "Quit Pazaak?" confirmation */
+const TLK_QUIT_PAZAAK_CONFIRM = 42424;
 
 /**
  * MenuPazaakWager class.
  *
- * Implements CSWGuiWagerPopup from KotOR I - wager selection popup for Pazaak.
- * Original game behavior parity: HandleButtonWager, OnBButtonPressed (quit), UpdateWagerText, LBL_MAXIMUM format.
+ * Handles the wager selection popup for the Pazaak minigame.
  *
  * @file MenuPazaakWager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -42,25 +41,22 @@ export class MenuPazaakWager extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
       /**
-       * BTN_QUIT: CSWGuiPanel::OnBButtonPressed -> HandleInputEvent(0x28/0x2e)
-       * Shows "Quit Pazaak?" confirmation. If confirmed, cancels Pazaak (HandleQuitDialog).
+       * BTN_QUIT: Show "Quit Pazaak?" confirmation.
        */
       this.BTN_QUIT.addEventListener('click', () => {
         this.handleQuitClicked();
       });
 
       /**
-       * BTN_WAGER: HandleButtonWager -> HandleInputEvent(0x2d)
-       * Confirms wager, closes popup, stays on setup (HandleWagerExit).
+       * BTN_WAGER: Confirm the wager
        */
       this.BTN_WAGER.addEventListener('click', () => {
         this.handleWagerClicked();
       });
 
       /**
-       * BTN_LESS: OnMinusButtonPushed -> HandleInputEvent(0x2f etc) decrease
+       * BTN_LESS: Decrease the wager
        */
       this.BTN_LESS.addEventListener('click', () => {
         GameState.PazaakManager.DecreaseWager();
@@ -68,7 +64,7 @@ export class MenuPazaakWager extends GameMenu {
       });
 
       /**
-       * BTN_MORE: OnPlusButtonPushed -> HandleInputEvent(0x30 etc) increase
+       * BTN_MORE: Increase the wager
        */
       this.BTN_MORE.addEventListener('click', () => {
         GameState.PazaakManager.IncreaseWager();
@@ -81,7 +77,6 @@ export class MenuPazaakWager extends GameMenu {
 
   /**
    * Handle BTN_QUIT - show confirmation then cancel if confirmed.
-   * Matches HandleInputEvent case 0x28/0x2e -> HandleQuitDialog.
    */
   private handleQuitClicked(){
     GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -96,7 +91,6 @@ export class MenuPazaakWager extends GameMenu {
 
   /**
    * Handle BTN_WAGER - confirm wager, close popup, stay on setup.
-   * Matches HandleButtonWager -> HandleInputEvent(0x2d) -> HandleWagerExit.
    */
   private handleWagerClicked(){
     GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
@@ -114,8 +108,7 @@ export class MenuPazaakWager extends GameMenu {
   }
 
   /**
-   * Matches CSWGuiWagerPopup::UpdateWagerText + LBL_MAXIMUM format.
-   * LBL_MAXIMUM: GetSimpleString(0x7e41) + " " + maxWager + "\n" + GetSimpleString(0x96c8) + " " + playerGold
+   * Update the wager text and maximum text.
    */
   rebuild(){
     const pm = GameState.PazaakManager;
