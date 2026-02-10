@@ -9,9 +9,11 @@ import { GameState } from "../../../GameState";
 
 /**
  * CharGenClass class.
- * 
+ * Character generation "CHOOSE YOUR CLASS" screen; displays six class portrait slots
+ * (_3D_MODEL1–6) with hover animation. Corresponds to layout from ClassSel / classsel.gui.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenClass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -37,6 +39,14 @@ export class CharGenClass extends GameMenu {
   BTN_SEL5: GUIButton;
 
   selecting: boolean = false;
+
+  /** Base extent sizes from the layout (classsel.gui) for model and button; used so hover animation does not shrink below layout size. */
+  private _baseModelExtent: { width: number; height: number } = { width: 0, height: 0 };
+  private _baseBtnExtent: { width: number; height: number } = { width: 0, height: 0 };
+  /** Hovered (larger) target sizes; non-hovered slots animate toward base, hovered toward hover. */
+  private _hoverModelExtent: { width: number; height: number } = { width: 0, height: 0 };
+  private _hoverBtnExtent: { width: number; height: number } = { width: 0, height: 0 };
+  private _baseExtentsCaptured: boolean = false;
 
   constructor(){
     super();
@@ -170,7 +180,9 @@ export class CharGenClass extends GameMenu {
         (control.getFill().material as THREE.ShaderMaterial).blending = 1;
       }
 
-      resolve();  
+      this.captureBaseExtents();
+
+      resolve();
     });
   }
 
@@ -221,17 +233,43 @@ export class CharGenClass extends GameMenu {
     });
   }
 
+  /**
+   * Capture base (rest) and hover target extents from the first model/button control.
+   * Layout (classsel.gui) defines the intended size; we animate between base and a slightly
+   * larger hover size so portraits never shrink below the layout dimensions.
+   */
+  private captureBaseExtents(): void {
+    if (this._baseExtentsCaptured) return;
+    //Hover extents can be calculated from the first model and button control
+    //They are sized differently from the other 5 controls
+    const modelControlHovered = this.getControlByName('_3D_MODEL1');
+    const btnControlHovered = this.getControlByName('BTN_SEL1');
+    this._hoverModelExtent.width = modelControlHovered.extent.width;
+    this._hoverModelExtent.height = modelControlHovered.extent.height;
+    this._hoverBtnExtent.width = btnControlHovered.extent.width;
+    this._hoverBtnExtent.height = btnControlHovered.extent.height;
+
+    //Base extents can be calculated from the 2nd model and button controls
+    const modelControl = this.getControlByName('_3D_MODEL2');
+    const btnControl = this.getControlByName('BTN_SEL2');
+    if (!modelControl || !btnControl || modelControl.extent.width <= 0 || modelControl.extent.height <= 0) return;
+    this._baseModelExtent.width = modelControl.extent.width;
+    this._baseModelExtent.height = modelControl.extent.height;
+    this._baseBtnExtent.width = btnControl.extent.width;
+    this._baseBtnExtent.height = btnControl.extent.height;
+    this._baseExtentsCaptured = true;
+  }
+
   update(delta = 0) {
     super.update(delta);
     if (!this.bVisible)
       return;
     try {
       for (let i = 0; i < 6; i++) {
-        
-        let modelControl = this.getControlByName('_3D_MODEL' + (i + 1))
-        let btnControl = this.getControlByName('BTN_SEL' + (i + 1));
-        let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
-        let creature = GameState.CharGenManager.creatures.get(i);
+        const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+        const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+        const _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
+        const creature = GameState.CharGenManager.creatures.get(i);
         if (creature) {
           creature.update(delta);
         }
@@ -240,22 +278,22 @@ export class CharGenClass extends GameMenu {
             GameState.CharGenManager.hoveredClass = i;
             this.textNeedsUpdate = true;
           }
-          if (btnControl.extent.height < 213) {
-            btnControl.extent.height++;
-            btnControl.extent.width++;
+          if (btnControl.extent.height < this._hoverBtnExtent.height) {
+            btnControl.extent.height = Math.min(btnControl.extent.height + 1, this._hoverBtnExtent.height);
+            btnControl.extent.width = Math.min(btnControl.extent.width + 1, this._hoverBtnExtent.width);
           }
-          if (modelControl.extent.height < 207) {
-            modelControl.extent.height++;
-            modelControl.extent.width++;
+          if (modelControl.extent.height < this._hoverModelExtent.height) {
+            modelControl.extent.height = Math.min(modelControl.extent.height + 1, this._hoverModelExtent.height);
+            modelControl.extent.width = Math.min(modelControl.extent.width + 1, this._hoverModelExtent.width);
           }
         } else {
-          if (btnControl.extent.height > 193) {
-            btnControl.extent.height--;
-            btnControl.extent.width--;
+          if (btnControl.extent.height > this._baseBtnExtent.height) {
+            btnControl.extent.height = Math.max(btnControl.extent.height - 1, this._baseBtnExtent.height);
+            btnControl.extent.width = Math.max(btnControl.extent.width - 1, this._baseBtnExtent.width);
           }
-          if (modelControl.extent.height > 187) {
-            modelControl.extent.height--;
-            modelControl.extent.width--;
+          if (modelControl.extent.height > this._baseModelExtent.height) {
+            modelControl.extent.height = Math.max(modelControl.extent.height - 1, this._baseModelExtent.height);
+            modelControl.extent.width = Math.max(modelControl.extent.width - 1, this._baseModelExtent.width);
           }
         }
         _3dView.setSize(modelControl.extent.width * 2, modelControl.extent.height * 2);
@@ -285,5 +323,5 @@ export class CharGenClass extends GameMenu {
 
   GetRandomAnimation() {
   }
-  
+
 }
