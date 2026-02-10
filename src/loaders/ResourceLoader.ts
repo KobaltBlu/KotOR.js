@@ -1,3 +1,4 @@
+import * as path from "path";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { ERFObject } from "../resource/ERFObject";
 import { RIMObject } from "../resource/RIMObject";
@@ -7,12 +8,13 @@ import { KEYManager } from "../managers/KEYManager";
 import { RIMManager } from "../managers/RIMManager";
 import { IRIMResource } from "../interface/resource/IRIMResource";
 import { IERFResource } from "../interface/resource/IERFResource";
+import { GameFileSystem } from "../utility/GameFileSystem";
 
 /**
  * ResourceLoader class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ResourceLoader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,7 +50,7 @@ export class ResourceLoader {
   static async InitGlobalCache(){
     ResourceLoader.ClearCache(CacheScope.GLOBAL);
     const cacheableTemplates = [
-      ResourceTypes['ncs'], ResourceTypes['utc'], ResourceTypes['uti'], 
+      ResourceTypes['ncs'], ResourceTypes['utc'], ResourceTypes['uti'],
       ResourceTypes['utd'], ResourceTypes['utp'], ResourceTypes['uts'],
       ResourceTypes['ute'], ResourceTypes['utt'], ResourceTypes['utw'],
       ResourceTypes['utm'], ResourceTypes['dlg'], ResourceTypes['ssf'],
@@ -83,7 +85,7 @@ export class ResourceLoader {
           const buffer = await archive.getResourceBuffer(resource);
           // console.log('InitModuleCache: RIM', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(resource.resType).set(
-            resource.resRef.toLocaleLowerCase(), 
+            resource.resRef.toLocaleLowerCase(),
             buffer
           );
         }
@@ -94,7 +96,7 @@ export class ResourceLoader {
           const buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
           // console.log('InitModuleCache: ERF', resource.resRef.toLocaleLowerCase(), buffer);
           scope.get(key.resType).set(
-            key.resRef.toLocaleLowerCase(), 
+            key.resRef.toLocaleLowerCase(),
             buffer
           );
         }
@@ -207,7 +209,7 @@ export class ResourceLoader {
       ResourceLoader.CacheScopes[type].get(resId).set(resRef, buffer);
       return;
     }
-    
+
     if(typeof ResourceLoader.cache[resId] === 'undefined')
       ResourceLoader.cache[resId] = {};
 
@@ -221,16 +223,44 @@ export class ResourceLoader {
     }
   }
 
+  /**
+   * Search for a resource in the game Override folder (loose files).
+   * Used when the resource was not pre-cached by InitOverrideCache (e.g. added after init)
+   * or when loading without a prior full override scan.
+   * Path is Override/{resRef}.{ext} where ext is derived from resId via ResourceTypes.
+   */
   static async searchOverride(resId: number, resRef = ''): Promise<Uint8Array> {
-    //TODO
-    return;
+    if (!resRef) {
+      return undefined;
+    }
+    const ext = Object.keys(ResourceTypes).find(
+      (k) => typeof ResourceTypes[k] === "number" && ResourceTypes[k] === resId
+    );
+    if (!ext) {
+      return undefined;
+    }
+    const normalizedRef = resRef.toLowerCase();
+    const filepath = path.join("Override", `${normalizedRef}.${ext}`);
+    try {
+      const exists = await GameFileSystem.exists(filepath);
+      if (!exists) {
+        return undefined;
+      }
+      const buffer = await GameFileSystem.readFile(filepath);
+      if (!buffer || !buffer.length) {
+        return undefined;
+      }
+      return buffer;
+    } catch {
+      return undefined;
+    }
   }
 
   static async searchModuleArchives(resId: number, resRef = ''): Promise<Uint8Array> {
     const archiveCount = this.ModuleArchives.length;
 
     for(let i = 0; i < archiveCount; i++){
-      const archive = this.ModuleArchives;
+      const archive = this.ModuleArchives[i];
       if(archive instanceof RIMObject){
         const data = await archive.getResourceBufferByResRef(resRef, resId);
         if(data){
