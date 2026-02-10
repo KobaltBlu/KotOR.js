@@ -116,6 +116,10 @@ export class GameState implements EngineContext {
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
   static CutsceneManager: typeof CutsceneManager;
+  static lastGameplayThumb?: OffscreenCanvas;
+  static lastGameplayThumbCtx?: OffscreenCanvasRenderingContext2D;
+  static lastGameplayThumbRT?: THREE.WebGLRenderTarget;
+
 
   static SWRuleSet: typeof SWRuleSet;
 
@@ -1408,31 +1412,6 @@ export class GameState implements EngineContext {
 
     GameState.composer.render(delta);
 
-    //Handle screenshot callback
-    if(typeof GameState.onScreenShot === 'function'){
-      console.log('Screenshot', GameState.onScreenShot);
-      
-      GameState.renderer.clear();
-      GameState.renderer.render(GameState.scene, GameState.currentCamera);
-
-      const screenshot = new Image();
-      screenshot.src = GameState.canvas.toDataURL('image/png');
-      screenshot.onload = function() {
-        const ssCanvas = new OffscreenCanvas(256, 256);
-        const ctx = ssCanvas.getContext('2d');
-        ctx.drawImage(screenshot, 0, 0, 256, 256);
-
-        GameState.onScreenShot(TGAObject.FromCanvas(ssCanvas));
-      };
-      
-      GameState.composer.render(delta);
-      //Remove screenshot callback so it won't be triggered again
-      GameState.onScreenShot = undefined;
-    }
-
-    //CameraShake: After Render
-    GameState.CameraShakeManager.afterRender();
-
     //NoClickTimer: Update
     if( ((GameState.Mode == EngineMode.MINIGAME || GameState.Mode == EngineMode.DIALOG) || (GameState.Mode == EngineMode.INGAME)) && GameState.State != EngineState.PAUSED){
       if(GameState.noClickTimer){
@@ -1454,12 +1433,70 @@ export class GameState implements EngineContext {
       GameState.deltaTime = GameState.deltaTime % 1;
   }
 
-  static async GetScreenShot(){
-    return new Promise<TGAObject>( (resolve, reject) => {
-      GameState.onScreenShot = (tga: TGAObject) => {
-        resolve(tga);
-      };
-    });
+  /**
+   * Get a screenshot of the current game from the view of the player camera
+   * @param width - The width of the screenshot (default: 256)
+   * @param height - The height of the screenshot (default: 256)
+   * @returns A promise that resolves to a TGAObject
+   */
+  static async GetScreenShot(width = 256, height = 256): Promise<TGAObject> {
+
+    if (!GameState.lastGameplayThumb) {
+      GameState.lastGameplayThumb = new OffscreenCanvas(width, height);
+      GameState.lastGameplayThumbCtx = GameState.lastGameplayThumb.getContext('2d')!;
+    }else{
+      GameState.lastGameplayThumb.width = width;
+      GameState.lastGameplayThumb.height = height;
+    }
+
+    /**
+     * Initialize the render target
+     */
+    if (!GameState.lastGameplayThumbRT) {
+      GameState.lastGameplayThumbRT = new THREE.WebGLRenderTarget(width, height, {
+        depthBuffer: true,
+        stencilBuffer: false,
+      });
+    }else{
+      GameState.lastGameplayThumbRT.setSize(width, height);
+      GameState.lastGameplayThumbRT.texture.needsUpdate = true;
+    }
+
+    // Render WORLD ONLY into a tiny RT
+    const prevRT = GameState.renderer.getRenderTarget();
+    GameState.renderer.setRenderTarget(GameState.lastGameplayThumbRT);
+    GameState.renderer.clear(true, true, true);
+    GameState.renderer.render(GameState.scene, GameState.camera); // gameplay world camera
+    GameState.renderer.setRenderTarget(prevRT);
+
+    // Read pixels (small 256x256 so this is quick)
+    const pixels = new Uint8Array(width * height * 4);
+    GameState.renderer.readRenderTargetPixels(GameState.lastGameplayThumbRT, 0, 0, width, height, pixels);
+
+    // Flip Y + force alpha
+    const flipped = new Uint8ClampedArray(pixels.length);
+    const rowBytes = width * 4;
+    for (let y = 0; y < height; y++) {
+      const src = (width - 1 - y) * rowBytes;
+      const dst = y * rowBytes;
+      flipped.set(pixels.subarray(src, src + rowBytes), dst);
+    }
+    for (let i = 3; i < flipped.length; i += 4) flipped[i] = 255;
+
+    // Store into the cached canvas
+    GameState.lastGameplayThumbCtx!.putImageData(new ImageData(flipped, width, height), 0, 0);
+
+    // Prefer the last clean gameplay frame (pre-menu)
+    if (GameState.lastGameplayThumb) {
+      return TGAObject.FromCanvas(GameState.lastGameplayThumb);
+    }
+
+    // Fallback: if no cached frame exists yet, grab current frame
+    const bmp = await createImageBitmap(GameState.canvas);
+    const ssCanvas = new OffscreenCanvas(width, height);
+    const ctx = ssCanvas.getContext('2d')!;
+    ctx.drawImage(bmp, 0, 0, width, height);
+    return TGAObject.FromCanvas(ssCanvas);
   }
 
 }
