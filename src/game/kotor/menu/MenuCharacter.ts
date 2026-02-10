@@ -9,9 +9,9 @@ import { OdysseyModel } from "../../../odyssey";
 
 /**
  * MenuCharacter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuCharacter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -118,8 +118,34 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_y = this.BTN_AUTO;
 
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 2) {
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+
+      GameState.PartyManager.AddEventListener('change', () => {
+        if (!this.bVisible) return;
+        this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+        this.updateCharacterStats(GameState.PartyManager.party[0]);
+        this.updatePartyMemberPortraitButtons();
+      });
+
       MDLLoader.loader.load('charrec_light').then((mdl: OdysseyModel) => {
-          
+
         //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
         this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
         this._3dView.setControl(this.LBL_3DCHAR);
@@ -139,7 +165,7 @@ export class MenuCharacter extends GameMenu {
 
         this.BTN_AUTO?.hide();
         this.BTN_LEVELUP?.hide();
-        
+
         OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,
           context: this._3dView
@@ -147,7 +173,7 @@ export class MenuCharacter extends GameMenu {
           //console.log('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
-          
+
           this._3dView.camera.position.copy(
             model.camerahook.position
           );
@@ -229,20 +255,17 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
-  show() {
-    super.show();
-    this.manager.MenuTop.LBLH_CHA.onHoverIn();
-    this.recalculatePosition();
-    this.SLD_ALIGN?.setValue(0.5);
-    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
-    this.updateCharacterStats(GameState.PartyManager.party[0]);
+  /**
+   * Refresh the party member portrait buttons (BTN_CHANGE1, BTN_CHANGE2) to match current party order.
+   */
+  updatePartyMemberPortraitButtons() {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     let btn_change: GUIControl;
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
+      if (btn_change) {
+        const partyMember = GameState.PartyManager.party[i];
         const portraitResRef = partyMember.getPortraitResRef();
         if (i) {
           btn_change.show();
@@ -252,6 +275,16 @@ export class MenuCharacter extends GameMenu {
         }
       }
     }
+  }
+
+  show() {
+    super.show();
+    this.manager.MenuTop.LBLH_CHA.onHoverIn();
+    this.recalculatePosition();
+    this.SLD_ALIGN?.setValue(0.5);
+    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+    this.updateCharacterStats(GameState.PartyManager.party[0]);
+    this.updatePartyMemberPortraitButtons();
   }
 
   updateCharacterPortrait( creature: ModuleCreature ){
@@ -373,5 +406,5 @@ export class MenuCharacter extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_ABI.click();
   }
-  
+
 }
