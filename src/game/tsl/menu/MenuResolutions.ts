@@ -1,6 +1,9 @@
 import { GameState } from "../../../GameState";
 import type { GUIButton, GUIListBox, GUILabel } from "../../../gui";
 import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
 
 /**
@@ -45,7 +48,7 @@ export class MenuResolutions extends K1_MenuResolutions {
       });
 
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
-        console.log('LB_RESOLUTIONS', res);
+        log.info('LB_RESOLUTIONS', res);
         this.activeResolution = res;
       }
       resolve();

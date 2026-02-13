@@ -1,4 +1,6 @@
 import type { GFFStruct } from "../resource/GFFStruct";
+
+import type { GameMenu } from "./GameMenu";
 import { GUIButton } from "./GUIButton";
 import { GUICheckBox } from "./GUICheckBox";
 import { GUIControl } from "./GUIControl";
@@ -8,7 +10,6 @@ import { GUIProgressBar } from "./GUIProgressBar";
 import { GUIProtoItem } from "./GUIProtoItem";
 import { GUIScrollBar } from "./GUIScrollBar";
 import { GUISlider } from "./GUISlider";
-import type { GameMenu } from "./GameMenu";
 
 /**
  * GUIControlFactory class.
@@ -20,6 +21,7 @@ import type { GameMenu } from "./GameMenu";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIControlFactory {
+  private constructor() {}
 
   static GUIControl: typeof GUIControl = GUIControl;
   static GUILabel: typeof GUILabel = GUILabel;

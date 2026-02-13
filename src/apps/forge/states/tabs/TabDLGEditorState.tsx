@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabDLGEditor } from "../../components/tabs/tab-dlg-editor/TabDLGEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabDLGEditorState extends TabState {
   tabName: string = 'DLG Editor';
@@ -59,7 +62,7 @@ export class TabDLGEditorState extends TabState {
     // For now, direct editing of gff fields in UI will already update the gff
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

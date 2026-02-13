@@ -1,18 +1,27 @@
 import React, { NewLifecycle, useEffect, useState } from "react";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
-import { SceneGraphNode } from "../../../SceneGraphNode";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { Button, Form } from "react-bootstrap";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 import { SectionContainer } from "../../SectionContainer";
 
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import * as KotOR from "../../../KotOR";
+import { SceneGraphNode } from "../../../SceneGraphNode";
 import { ForgeState } from "../../../states/ForgeState";
 import { ModalLIPBatchProcessorState } from "../../../states/modal/ModalLIPBatchProcessorState";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes, TabLIPEditorOptionsState } from "../../../states/tabs";
 
-export const TabLIPEditorOptions = function(props: any){
-  const tab: TabLIPEditorOptionsState = props.tab;
-  const parentTab: TabLIPEditorState = props.parentTab;
+
+const log = createScopedLogger(LogScope.Forge);
+
+export interface TabLIPEditorOptionsProps {
+  tab: TabLIPEditorOptionsState;
+  parentTab: TabLIPEditorState;
+}
+
+export const TabLIPEditorOptions = function(props: TabLIPEditorOptionsProps){
+  const { tab, parentTab } = props;
   const [nodes, setNodes] = useState<SceneGraphNode[]>(tab.sceneGraphNodes);
   const [selectedFrame, setSelectedFrame] = useState<KotOR.ILIPKeyFrame>(parentTab.selected_frame);
   const [selectedHead, setSelectedHead] = useState<string>(parentTab.current_head);
@@ -49,17 +58,17 @@ export const TabLIPEditorOptions = function(props: any){
   });
 
   useEffect( () => {
-    console.log('duration', 'change');
+    log.debug('duration', 'change');
   }, [duration]);
 
   const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+    const shape = parseInt(e.target.value);
     parentTab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     parentTab.selectKeyFrame(parentTab.selected_frame);
   }
 
   const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let head = (e.target.value);
+    const head = (e.target.value);
     parentTab.loadHead(head);
   }
 
@@ -102,12 +111,12 @@ export const TabLIPEditorOptions = function(props: any){
       </SectionContainer> */}
       <SectionContainer name="Preview Head" slim={true}>
         {
-          !!selectedFrame ? (
+          selectedFrame ? (
             <div className="selected-keyframe-head-options">
               <b>Heads</b>
               <Form.Select onChange={onPreviewHeadChange} value={selectedHead}>
                 {
-                  heads.map( (row: any, i: number) => {
+                  heads.map( (row: { head: string }, i: number) => {
                     const head = (row.head as string).toLocaleLowerCase();
                     return <option value={head}>{head}</option>
                   })

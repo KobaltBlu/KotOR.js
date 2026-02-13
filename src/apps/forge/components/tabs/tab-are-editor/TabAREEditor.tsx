@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TabAREEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
 import * as KotOR from "../../../KotOR";
+import { TabAREEditorState } from "../../../states/tabs";
 import './TabAREEditor.scss';
 
 interface BaseTabProps {
@@ -108,11 +111,12 @@ interface TabProps {
 }
 
 const BasicTab = ({ are, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return are.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = are.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -190,11 +194,12 @@ const BasicTab = ({ are, onUpdate }: TabProps) => {
 };
 
 const AudioTab = ({ are, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return are.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = are.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -268,11 +273,12 @@ const AudioTab = ({ are, onUpdate }: TabProps) => {
 };
 
 const MapTab = ({ are, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return are.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = are.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -370,11 +376,12 @@ const MapTab = ({ are, onUpdate }: TabProps) => {
 };
 
 const EnvironmentTab = ({ are, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return are.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = are.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -478,11 +485,12 @@ const EnvironmentTab = ({ are, onUpdate }: TabProps) => {
 };
 
 const ScriptsTab = ({ are, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return are.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = are.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = are.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);

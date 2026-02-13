@@ -1,6 +1,6 @@
-import { PixelManager } from "../utility/PixelManager";
-import { TPCObject } from "../resource/TPCObject";
 import { ITPCHeader } from "../interface/resource/ITPCHeader";
+import { TPCObject } from "../resource/TPCObject";
+import { PixelManager } from "../utility/PixelManager";
 
 function concatenate(resultConstructor: new (length: number) => Uint8Array, ...arrays: Uint8Array[]) {
   let totalLength = 0;

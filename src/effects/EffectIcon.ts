@@ -1,12 +1,13 @@
-import { GameEffect } from "./GameEffect";
-import { GameState } from "../GameState";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
 import { IEffectIconListItem } from "../interface/module/IEffectIconListItem";
 import { TextureLoader } from "../loaders";
 // import { TwoDAManager } from "../managers";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
 import { BitWise } from "../utility/BitWise";
+
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectIcon class.
@@ -42,10 +43,9 @@ export class EffectIcon extends GameEffect {
         if(featIcon2DA){
           const featIconRow = featIcon2DA.rows[featIconId];
           if(featIconRow){
-            const iconResRef: string = featIconRow['iconresref'];
+            const iconResRef: string = String(featIconRow['iconresref'] ?? '');
             const good: boolean = featIconRow['good'] ? true : false;
-            // const description: string = featIconRow['description'];
-            const priority: number = parseInt(featIconRow['priority']);
+            const priority: number = parseInt(String(featIconRow['priority'] ?? 0), 10);
 
             const icon: IEffectIconListItem = {
               id: featIconId,

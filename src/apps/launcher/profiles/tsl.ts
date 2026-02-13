@@ -1,4 +1,6 @@
-export const LauncherConfig: any = {
+import type { LauncherProfile } from '../types';
+
+export const LauncherConfig: LauncherProfile = {
   "name": "KotOR II",
   "full_name": "Star Wars Knights of the Old Republic II: The Sith Lords",
   "icon": "https://steamcdn-a.akamaihd.net/steamcommunity/public/images/apps/208580/c491c003d93f0947b8e514ff1933daa7c4d8c171.ico",

@@ -1,8 +1,10 @@
-import { ILayoutRoom } from "../interface/resource/ILayoutRoom";
+import * as THREE from "three";
+
 import { ILayoutDoorHook } from "../interface/resource/ILayoutDoorHook";
 import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
+import { ILayoutRoom } from "../interface/resource/ILayoutRoom";
 import { ILayoutTrack } from "../interface/resource/ILayoutTrack";
-import * as THREE from "three";
+
 
 /**
  * LYTObject class.
@@ -21,7 +23,7 @@ export class LYTObject {
   tracks: ILayoutTrack[];
   obstacles: ILayoutObstacle[];
   filedependancy: string;
-  text: any;
+  text: string;
 
   constructor( data?: Uint8Array ){
 
@@ -34,7 +36,7 @@ export class LYTObject {
     this.obstacles = [];
     this.filedependancy = '';
 
-    let decoder = new TextDecoder('utf8');
+    const decoder = new TextDecoder('utf8');
     this.text = decoder.decode(data);
     
     this._parse(this.text);

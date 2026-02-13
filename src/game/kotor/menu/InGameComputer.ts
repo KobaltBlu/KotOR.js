@@ -1,15 +1,15 @@
+import { AudioEngine } from "../../../audio/AudioEngine";
 import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameState } from "../../../GameState";
+import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
+import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel } from "../../../gui";
 import { ModuleObject } from "../../../module";
-import { DLGObject } from "../../../resource/DLGObject";
 import { DLGNode } from "../../../resource/DLGNode";
-import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { DLGObject } from "../../../resource/DLGObject";
 
 /**
  * InGameComputer class.
@@ -95,7 +95,7 @@ export class InGameComputer extends GameMenu {
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
     this.LB_MESSAGE.clearItems();
-    if (!!entry.getCompiledString()) {
+    if (entry.getCompiledString()) {
       this.LB_MESSAGE.addItem(entry.getCompiledString());
     }
     this.LB_MESSAGE.updateList();

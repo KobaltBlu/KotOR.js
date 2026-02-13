@@ -5,7 +5,6 @@ export const VERSION =
   (typeof process !== 'undefined' && process.env)
     ? process.env.VERSION
     : undefined;
-// @ts-ignore
 export * as dxtJs from "dxt-js";
 export * from "./utility/polyfills";
 export * from "./audio";

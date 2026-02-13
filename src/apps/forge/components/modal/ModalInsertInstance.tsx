@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
+
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
+import { ForgeState } from "../../states/ForgeState";
 import {
   ModalInsertInstanceState,
   InsertInstanceResourceType,
 } from "../../states/modal/ModalInsertInstanceState";
 import { ModalLoadFromModuleState } from "../../states/modal/ModalLoadFromModuleState";
-import { ForgeState } from "../../states/ForgeState";
+
 import { EditorFile } from "../../EditorFile";
 import { FileTypeManager } from "../../FileTypeManager";
 import * as KotOR from "../../KotOR";

@@ -1,26 +1,35 @@
+import { DEFAULT_EXTRACT_OPTIONS, type ExtractOptions } from "../data/ExtractOptions";
+import { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "../data/ForgeConstants";
 import { EditorFile } from "../EditorFile";
-import { Project } from "../Project";
+import { EditorFileProtocol } from "../enum/EditorFileProtocol";
+import { FileTypeManager } from "../FileTypeManager";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
+import type { IForgeHostAdapter } from "../ForgeHostAdapter";
+import { pathParse } from "../helpers/PathParse";
+import { TabStoreState } from "../interfaces/TabStoreState";
+import * as KotOR from '../KotOR';
 import { EditorTabManager } from "../managers/EditorTabManager";
+import { Project } from "../Project";
+import { ProjectFileSystem } from "../ProjectFileSystem";
+import { RecentProject } from "../RecentProject";
+
+import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+
+import { LYTLanguageService } from "./LYTLanguageService";
+import { MenuTopState } from "./MenuTopState";
+import { ModalManagerState } from "./modal/ModalManagerState";
+import { NWScriptLanguageService } from "./NWScriptLanguageService";
 import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "./tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
-import { pathParse } from "../helpers/PathParse";
-import { FileTypeManager } from "../FileTypeManager";
-import { EditorFileProtocol } from "../enum/EditorFileProtocol";
-import { TabStoreState } from "../interfaces/TabStoreState";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { ModalManagerState } from "./modal/ModalManagerState";
-import { MenuTopState } from "./MenuTopState";
 
-import * as KotOR from '../KotOR';
-import { NWScriptLanguageService } from "./NWScriptLanguageService";
-import { LYTLanguageService } from "./LYTLanguageService";
-import { RecentProject } from "../RecentProject";
-import { DEFAULT_EXTRACT_OPTIONS, type ExtractOptions } from "../data/ExtractOptions";
-import { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "../data/ForgeConstants";
-import type { IForgeHostAdapter } from "../ForgeHostAdapter";
+
+
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -103,7 +112,7 @@ export class ForgeState {
   static recentFiles: EditorFile[] = [];
   static recentProjects: RecentProject[] = [];
 
-  static #eventListeners: any = {};
+  static #eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
 
   static nwscript_nss: Uint8Array;
   static nwScriptParser: NWScriptParser;
@@ -113,35 +122,35 @@ export class ForgeState {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
-        console.warn('Event Listener: Already added', type);
+        log.warn('Event Listener: Already added', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
   static removeEventListener<T>(type: T, cb: Function): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        console.warn('Event Listener: Already removed', type);
+        log.warn('Event Listener: Already removed', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static processEventListener<T>(type: T, args: any[] = []): void {
+  static processEventListener<T>(type: T, args: unknown[] = []): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -149,11 +158,11 @@ export class ForgeState {
         }
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static triggerEventListener<T>(type: T, args: any[] = []): void {
+  static triggerEventListener<T>(type: T, args: unknown[] = []): void {
     this.processEventListener(type, args);
   }
 
@@ -196,7 +205,7 @@ export class ForgeState {
       }else{
         KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
       }
-      console.log('loading game...')
+      log.debug('loading game...');
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
       ForgeState.loaderShow();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
@@ -232,7 +241,7 @@ export class ForgeState {
                   proj.handle = handle;
                 }
               } catch(e) {
-                console.warn('Failed to restore handle for project:', proj.getDisplayName(), e);
+                log.warn('Failed to restore handle for project:', proj.getDisplayName(), e);
               }
             }
           }
@@ -279,21 +288,21 @@ export class ForgeState {
         onVerified();
       }else{
         try{
-          let dir = await (window as any).dialog.locateDirectoryDialog();
+          const dir = await (window as Window & { dialog: { locateDirectoryDialog: () => Promise<string | null> } }).dialog.locateDirectoryDialog();
           if(dir){
             KotOR.ApplicationProfile.profile.directory = dir;
             onVerified();
           }else{
-            console.error('no directory');
+            log.error('no directory');
           }
 
         }catch(e: unknown){
-          console.error(e);
+          log.error(String(e), e);
         }
       }
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
-        let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
+        const validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
         if(validated){
           onVerified();
         }else{
@@ -323,7 +332,7 @@ export class ForgeState {
           LYTLanguageService.initLYTLanguage();
           resolve();
         }
-      ).catch( (e) => {console.error(e)});
+      ).catch( (e) => { log.error(String(e), e); });
     });
   }
 
@@ -331,8 +340,8 @@ export class ForgeState {
     if(Array.isArray(KotOR.ConfigClient.options.recent_projects)){
       // Convert stored objects to RecentProject instances
       KotOR.ConfigClient.options.recent_projects = KotOR.ConfigClient.options.recent_projects
-        .filter((proj: any) => proj && (proj.path || proj.handle || proj.name))
-        .map((proj: any) => RecentProject.From(proj))
+        .filter((proj: Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }) => proj && (proj.path || proj.handle || proj.name))
+        .map((proj: Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }) => RecentProject.From(proj))
         .slice(0, 10);
     }else{
       KotOR.ConfigClient.options.recent_projects = [];
@@ -342,7 +351,7 @@ export class ForgeState {
 
   static getRecentFiles(): EditorFile[] {
     if(Array.isArray(KotOR.ConfigClient.options.recent_files)){
-      KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: any) => {
+      KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: Partial<EditorFile> & Record<string, unknown>) => {
         return Object.assign(new EditorFile(), file);
       });
     }else{
@@ -358,7 +367,7 @@ export class ForgeState {
         return;
       }
       //Update the opened files list
-      let file_path = file.getPath();
+      const file_path = file.getPath();
       if(file_path){
         this.removeRecentFile(file);
 
@@ -378,13 +387,13 @@ export class ForgeState {
         this.processEventListener('onRecentFilesUpdated', [file]);
       }
     }catch(e){
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
   static removeRecentFile(file: EditorFile){
     if(!file) return;
-    let file_path = file.getPath();
+    const file_path = file.getPath();
     if(file_path){
       const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
         return file.getPath() == file_path;
@@ -441,7 +450,7 @@ export class ForgeState {
       // We serialize the project data, but handles are stored separately
       const { set } = await import('idb-keyval');
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
-        const serialized: any = {
+        const serialized: { path?: string; name?: string; handleKey?: string } = {
           path: proj.path,
           name: proj.name
         };
@@ -450,7 +459,7 @@ export class ForgeState {
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
           set(handleKey, proj.handle).catch((e) => {
-            console.warn('Failed to store handle in IndexedDB:', e);
+            log.warn('Failed to store handle in IndexedDB:', e);
           });
           serialized.handleKey = handleKey;
         }
@@ -460,7 +469,7 @@ export class ForgeState {
       this.saveState();
       this.processEventListener('onRecentProjectsUpdated', [project]);
     }catch(e){
-      console.error('Error adding recent project:', e);
+      log.error('Error adding recent project:', e);
     }
   }
 
@@ -489,20 +498,20 @@ export class ForgeState {
         const handleKey = `project_handle_${removed.getIdentifier()}`;
         const { del } = await import('idb-keyval');
         del(handleKey).catch((e) => {
-          console.warn('Failed to delete handle from IndexedDB:', e);
+          log.warn('Failed to delete handle from IndexedDB:', e);
         });
       }
       ForgeState.recentProjects.splice(index, 1);
       const { set } = await import('idb-keyval');
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
-        const serialized: any = {
+        const serialized: { path?: string; name?: string; handleKey?: string } = {
           path: proj.path,
           name: proj.name
         };
         if(proj.handle){
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           set(handleKey, proj.handle).catch((e) => {
-            console.warn('Failed to store handle in IndexedDB:', e);
+            log.warn('Failed to store handle in IndexedDB:', e);
           });
           serialized.handleKey = handleKey;
         }
@@ -519,7 +528,7 @@ export class ForgeState {
       if (proj.handle) {
         const handleKey = `project_handle_${proj.getIdentifier()}`;
         const { del } = await import('idb-keyval');
-        del(handleKey).catch((e) => console.warn('Failed to delete handle from IndexedDB:', e));
+        del(handleKey).catch((e) => log.warn('Failed to delete handle from IndexedDB:', e));
       }
     }
     ForgeState.recentProjects = [];
@@ -530,9 +539,9 @@ export class ForgeState {
 
   static saveState(){
     try{
-      KotOR.ConfigClient.save(null as any, true); //Save the configuration silently
+      KotOR.ConfigClient.save(null as unknown, true); //Save the configuration silently
     }catch(e){
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
@@ -540,7 +549,7 @@ export class ForgeState {
    * Switch the active game profile (e.g. KOTOR vs TSL). Reloads the app with the new profile.
    * If any open tab has unsaved changes, prompts the user to confirm before switching.
    */
-  static switchGame(profile: any = {}){
+  static switchGame(profile: { key?: string } = {}){
     if (!profile?.key) return;
     const currentKey = KotOR.ApplicationProfile.profile?.key;
     if (profile.key === currentKey) return;
@@ -555,9 +564,9 @@ export class ForgeState {
     }
 
     try {
-      KotOR.ConfigClient.save(null as any, true);
+      KotOR.ConfigClient.save(null as unknown, true);
     } catch (e) {
-      console.error(e);
+      log.error(String(e), e);
     }
     window.location.search = `?key=${profile.key}`;
     window.location.reload();
@@ -570,15 +579,15 @@ export class ForgeState {
           const file_path = response.paths[0];
           const parsed = pathParse(file_path);
           if(parsed.ext == 'mdl'){
-            (window as any).dialog.showOpenDialog({
+            (window as Window & { dialog: { showOpenDialog: (opts: unknown) => Promise<{ filePaths: string[] }> } }).dialog.showOpenDialog({
               title: `Open MDX File (${parsed.name}.mdx)`,
               filters: [
                 {name: 'Model File', extensions: ['mdx']},
                 {name: 'All Formats', extensions: ['*']},
               ],
               properties: ['createDirectory'],
-            }).then( (result: any) => {
-              let file_path2 = result.filePaths[0];
+            }).then( (result: { filePaths: string[] }) => {
+              const file_path2 = result.filePaths[0];
               FileTypeManager.onOpenFile({
                 path: file_path,
                 path2: file_path2,
@@ -649,7 +658,7 @@ export class ForgeState {
       });
       KotOR.ConfigClient.set('open_tabs', states);
     }catch(e){
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
@@ -679,10 +688,10 @@ export class ForgeState {
   }
 
 }
-(window as any).ForgeState = ForgeState;
-(window as any).ProjectFileSystem = ProjectFileSystem;
+(window as Window & { ForgeState?: typeof ForgeState; ProjectFileSystem?: typeof ProjectFileSystem }).ForgeState = ForgeState;
+(window as Window & { ForgeState?: typeof ForgeState; ProjectFileSystem?: typeof ProjectFileSystem }).ProjectFileSystem = ProjectFileSystem;
 
-window.addEventListener('beforeunload', (event) => {
-  console.log('Saving Editor Config');
+window.addEventListener('beforeunload', (_event) => {
+  log.debug('Saving Editor Config');
   ForgeState.saveOpenTabsState();
 });

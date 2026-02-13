@@ -1,8 +1,9 @@
-import type { AttackResult } from "../../enums/combat/AttackResult";
 import type { ActionType } from "../../enums/actions/ActionType";
+import type { AttackResult } from "../../enums/combat/AttackResult";
+
+import type { Action } from "../../actions";
 import type { ModuleObject } from "../../module";
 import type { TalentFeat, TalentSpell } from "../../talents";
-import type { Action } from "../../actions";
 import type { ITwoDAAnimation } from "../twoDA/ITwoDAAnimation";
 
 /**

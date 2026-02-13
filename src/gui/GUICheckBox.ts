@@ -1,14 +1,18 @@
+import * as THREE from "three";
+
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { TextureType } from "../enums/loaders/TextureType";
+import { GameState } from "../GameState";
+import type { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
+import { TextureLoader } from "../loaders";
+import type { GFFStruct } from "../resource/GFFStruct";
+import type { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import type { GameMenu } from "./GameMenu";
 import { GUIControl } from "./GUIControl";
-import { GFFStruct } from "../resource/GFFStruct";
-import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GameState } from "../GameState";
-import { IGUIControlBorder } from "../interface/gui/IGUIControlBorder";
-// import { ShaderManager } from "../managers";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUICheckBox class.
@@ -21,7 +25,7 @@ import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
  */
 export class GUICheckBox extends GUIControl{
   value: number;
-  onValueChanged: Function;
+  onValueChanged?: (value: number) => void;
 
   borderSelected: IGUIControlBorder;
   highlightSelected: IGUIControlBorder;
@@ -198,10 +202,10 @@ export class GUICheckBox extends GUIControl{
       //Selected
       this.hasSelected = control.hasField('SELECTED');
       if(this.hasSelected){
-        let selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
+        const selected = control.getFieldByLabel('SELECTED').getChildStructs()[0];
 
         if(selected.hasField('COLOR')){
-          let color = selected.getFieldByLabel('COLOR').getVector();
+          const color = selected.getFieldByLabel('COLOR').getVector();
           this.borderSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -225,10 +229,10 @@ export class GUICheckBox extends GUIControl{
       //Highlight Selected
       this.hashighlightSelected = control.hasField('HILIGHTSELECTED');
       if(this.hashighlightSelected){
-        let highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
+        const highlightSelected = control.getFieldByLabel('HILIGHTSELECTED').getChildStructs()[0];
 
         if(highlightSelected.hasField('COLOR')){
-          let color = highlightSelected.getFieldByLabel('COLOR').getVector();
+          const color = highlightSelected.getFieldByLabel('COLOR').getVector();
           this.highlightSelected.color.setRGB(color.x, color.y, color.z)
         }
 
@@ -260,13 +264,13 @@ export class GUICheckBox extends GUIControl{
     if(this.borderSelected.edge != ''){
       TextureLoader.enQueue(this.borderSelected.edge, this.borderSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.borderSelected.edge, texture);
+          log.debug('initTextures', this.borderSelected.edge, texture);
           return;
         }
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -275,7 +279,7 @@ export class GUICheckBox extends GUIControl{
     if(this.borderSelected.corner != ''){
       TextureLoader.enQueue(this.borderSelected.corner, this.borderSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.borderSelected.corner, texture);
+          log.debug('initTextures', this.borderSelected.corner, texture);
           return;
         }
 
@@ -302,7 +306,7 @@ export class GUICheckBox extends GUIControl{
     if(this.highlightSelected.edge != ''){
       TextureLoader.enQueue(this.highlightSelected.edge, this.highlightSelected.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.highlightSelected.edge, texture);
+          log.debug('initTextures', this.highlightSelected.edge, texture);
           return;
         }
 
@@ -314,7 +318,7 @@ export class GUICheckBox extends GUIControl{
     if(this.highlightSelected.corner != ''){
       TextureLoader.enQueue(this.highlightSelected.corner, this.highlightSelected.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
-          console.log('initTextures', this.highlightSelected.corner, texture);
+          log.debug('initTextures', this.highlightSelected.corner, texture);
           return;
         }
 
@@ -329,7 +333,7 @@ export class GUICheckBox extends GUIControl{
         if(texture == null){
           this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
         }
-        let cbSize = this.getCBScale();
+        const cbSize = this.getCBScale();
         this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
         this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
       });
@@ -345,20 +349,20 @@ export class GUICheckBox extends GUIControl{
     //Highlight Selected
     this.attachEventListenters( this.highlightSelected.mesh );
 
-    this.addEventListener( 'mouseMove', (e: any) => { });
+    this.addEventListener( 'mouseMove', (_e) => { });
 
     this.addEventListener( 'click', () =>{
-      console.log('click', this);
+      log.debug('click', this);
       this.setValue(!this.value);
     });
 
-    this.addEventListener( 'mouseDown', (e: any) => {
+    this.addEventListener( 'mouseDown', (e) => {
       e.stopPropagation();
     });
 
     this.addEventListener( 'mouseUp', () => { });
 
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
@@ -380,7 +384,7 @@ export class GUICheckBox extends GUIControl{
 
   buildFill(){
     super.buildFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
@@ -388,7 +392,7 @@ export class GUICheckBox extends GUIControl{
 
   buildHighlightFill(){
     super.buildHighlightFill();
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
     this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
@@ -405,7 +409,7 @@ export class GUICheckBox extends GUIControl{
     this.highlight.fill.mesh.visible = false;
     this.highlightSelected.fill.mesh.visible = false;
 
-    let cbSize = this.getCBScale();
+    const cbSize = this.getCBScale();
     this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
     this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);

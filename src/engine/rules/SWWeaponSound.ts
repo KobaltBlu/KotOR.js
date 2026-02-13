@@ -91,7 +91,7 @@ export class SWWeaponSound {
     return sndIdx == 0 ? this.clash0 : this.clash1;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWWeaponSound {
     const weaponSound = new SWWeaponSound();
     weaponSound.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     weaponSound.label = TwoDAObject.normalizeValue(row.label, 'string', '');

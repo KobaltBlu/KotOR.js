@@ -1,7 +1,9 @@
 import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { TabScriptCompileLog } from "../../components/tabs/tab-script-compile-log/TabScriptCompileLog";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import { TabState } from ".";
 
 export class TabScriptCompileLogState extends TabState {
 

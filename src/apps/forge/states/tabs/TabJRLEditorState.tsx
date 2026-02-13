@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabJRLEditor } from "../../components/tabs/tab-jrl-editor/TabJRLEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabJRLEditorState extends TabState {
   tabName: string = 'JRL Editor';
@@ -65,7 +68,7 @@ export class TabJRLEditorState extends TabState {
     // Sync UI changes to JRL GFF if needed
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

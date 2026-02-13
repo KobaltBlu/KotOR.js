@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { TabTLKEditorState } from "../../../states/tabs";
+
 import { CommandPaletteState } from "../../../states/CommandPaletteState";
+import { TabTLKEditorState } from "../../../states/tabs";
 import "./TabTLKEditor.scss";
 
 interface BaseTabProps {
@@ -215,7 +216,7 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
     []
   );
 
-  if(!tlk){
+  if (!tlk) {
     return (
       <div className="forge-tlk-editor">
         <div className="forge-tlk-editor__loading">Loading talk table...</div>
@@ -252,6 +253,8 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
                     <input
                       ref={searchInputRef}
                       type="text"
+                      aria-label="Search text"
+                      placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => tab.setSearchQuery(e.target.value)}
                       onKeyDown={(e) => {
@@ -276,6 +279,7 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
                     <input
                       ref={jumpInputRef}
                       type="number"
+                      aria-label="Go to line number"
                       min={-2147483648}
                       max={Math.max(0, tlk.TLKStrings.length - 1)}
                       value={jumpValue}
@@ -297,28 +301,43 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
             </div>
 
             <div className="tlk-table" ref={tableRef} tabIndex={0} onKeyDown={handleTableKeyDown}>
-              <table className="tlk-table__table">
-                <tbody>
-                  {filteredEntries.map((entry) => (
-                    <tr
-                      key={entry.index}
-                      ref={setRowRef(entry.index)}
-                      className={selectedIndex === entry.index ? 'selected' : ''}
-                      onClick={() => tab.selectString(entry.index)}
-                      onContextMenu={(e) => handleContextMenu(e, entry.index)}
-                    >
-                      <th className="tlk-table__index">{entry.index}</th>
-                      <td className="tlk-table__text">{entry.text}</td>
+              <div className="tlk-table__header-wrap">
+                <table className="tlk-table__table tlk-table__table--header">
+                  <thead>
+                    <tr>
+                      <th className="tlk-table__index">StrRef</th>
+                      <th className="tlk-table__text">Text</th>
+                      <th className="tlk-table__sound">VoiceOver ResRef</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                </table>
+              </div>
+              <div className="tlk-table__scroll">
+                <table className="tlk-table__table">
+                  <tbody>
+                    {filteredEntries.map((entry) => (
+                      <tr
+                        key={entry.index}
+                        ref={setRowRef(entry.index)}
+                        className={selectedIndex === entry.index ? 'selected' : ''}
+                        onClick={() => tab.selectString(entry.index)}
+                        onContextMenu={(e) => handleContextMenu(e, entry.index)}
+                      >
+                        <th className="tlk-table__index" scope="row">{entry.index}</th>
+                        <td className="tlk-table__text">{entry.text}</td>
+                        <td className="tlk-table__sound">{entry.sound}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           <div className="tlk-bottom-pane">
             <textarea
               className="tlk-text-edit"
+              aria-label="Edit selected string text"
               value={textValue}
               onChange={(e) => {
                 if (!selectedEntry) return;
@@ -332,8 +351,9 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
               placeholder={selectedEntry ? '' : 'Select a row to edit its text'}
             />
             <div className="tlk-sound-row">
-              <label className="tlk-sound-label">Sound ResRef:</label>
+              <label htmlFor={`tlk-sound-resref-${tab.id}`} className="tlk-sound-label">Sound ResRef:</label>
               <input
+                id={`tlk-sound-resref-${tab.id}`}
                 type="text"
                 className="tlk-input"
                 value={soundValue}
@@ -354,22 +374,25 @@ export const TabTLKEditor = function TabTLKEditor(props: BaseTabProps) {
       </div>
 
       {contextMenu && (
-        <div
-          className="tlk-context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          role="menu"
-        >
-          <button
-            type="button"
-            className="tlk-context-menu__item"
-            onClick={() => {
-              tab.findReferencesForIndex(contextMenu.index);
-              setContextMenu(null);
-            }}
+        <>
+          <style>{`.tlk-context-menu--pos-${tab.id} { --tlk-context-menu-x: ${contextMenu.x}px; --tlk-context-menu-y: ${contextMenu.y}px; }`}</style>
+          <div
+            className={`tlk-context-menu tlk-context-menu--pos-${tab.id}`}
+            role="menu"
           >
-            Find LocalizedString references
-          </button>
-        </div>
+            <button
+              type="button"
+              className="tlk-context-menu__item"
+              role="menuitem"
+              onClick={() => {
+                tab.findReferencesForIndex(contextMenu.index);
+                setContextMenu(null);
+              }}
+            >
+              Find LocalizedString references
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

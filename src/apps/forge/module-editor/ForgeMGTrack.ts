@@ -1,4 +1,5 @@
 import * as THREE from "three";
+
 import { ILayoutTrack } from "../../../interface/resource/ILayoutTrack";
 
 export class ForgeMGTrack {

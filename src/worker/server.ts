@@ -4,6 +4,10 @@
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
  */
 
+
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 import { IPCMessage } from "../server/ipc/IPCMessage";
 
 /**
@@ -17,7 +21,7 @@ class OdysseyServer {
    * This is the message handler for the server worker.
    */
   static HandleMessageFromClient(_msg: IPCMessage){
-    console.log('Odyssey Server: IPC Message Received');
+    log.info('Odyssey Server: IPC Message Received');
   }
 
   /**
@@ -25,7 +29,7 @@ class OdysseyServer {
    * This method sends a message to the client.
    */
   static SendMessageToClient(msg: IPCMessage){
-    console.log('Odyssey Server: IPC Message Sent');
+    log.info('Odyssey Server: IPC Message Sent');
     postMessage(msg.toBuffer());
   }
 
@@ -43,15 +47,15 @@ onmessage = function (e: MessageEvent){
   }
 
   if(typeof e.data === 'string'){
-    console.log('Odyssey Server: Debug Message Received', e.data);
+    log.info('Odyssey Server: Debug Message Received', e.data);
     return;
   }
 
-  console.log('Odyssey Server: Unknown Message Received', e.data);
+  log.info('Odyssey Server: Unknown Message Received', e.data);
 }
 
 /**
  * Debug Message
  * This is a debug message for the server worker.
  */
-console.log('Odyssey Server: ONLINE');
+log.info('Odyssey Server: ONLINE');

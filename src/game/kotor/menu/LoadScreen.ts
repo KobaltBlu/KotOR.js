@@ -1,7 +1,11 @@
-import { GameState } from "../../../GameState";
+import * as THREE from "three";
+
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIProgressBar } from "../../../gui";
+import type { ITwoDARowData } from "../../../resource/TwoDAObject";
+import { createScopedLogger } from "../../../utility/Logger";
 
 /**
  * LoadScreen class.
@@ -19,7 +23,9 @@ export class LoadScreen extends GameMenu {
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
   LBL_LOADING: GUILabel;
-  defaultTex: any;
+  defaultTex: THREE.Texture | null = null;
+
+  private static readonly log = createScopedLogger(LoadScreen.name);
 
   constructor(){
     super();
@@ -70,13 +76,16 @@ export class LoadScreen extends GameMenu {
 
   showRandomHint() {
     this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
-    let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
+    const table = GameState.TwoDAManager.datatables.get('loadscreenhints');
+    const rowCount = table.RowCount ?? 0;
+    const id = Math.floor(Math.random() * (rowCount - 0 + 1)) + 0;
+    let hint: ITwoDARowData | undefined = table.rows[String(id)];
     if (!hint) {
-      console.log('showRandomHint', id);
-      hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[0];
+      LoadScreen.log.info('showRandomHint fallback', id);
+      hint = table.rows['0'];
     }
-    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[hint.gameplayhint].Value);
+    const hintRef = hint?.gameplayhint;
+    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[typeof hintRef === 'number' ? hintRef : 0].Value);
   }
 
   showSavingMessage() {

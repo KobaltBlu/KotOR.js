@@ -1,5 +1,7 @@
 import * as KotOR from "../KotOR";
+
 import { IModelListItem } from "../../../interface/module/minigame/IModelListItem";
+
 import { ForgeMGGunBank } from "./ForgeMGGunBank";
 
 export class ForgeMGEnemy {

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
+
+import { getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "../../config/ConfigUpdate";
 import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalUpdateCheckState } from "../../states/modal/ModalUpdateCheckState";
-import { getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "../../config/ConfigUpdate";
+
 import { CURRENT_VERSION } from "../../config";
 import "./ModalUpdateCheck.scss";
 

@@ -1,7 +1,13 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import type { NWScriptInstruction } from "../NWScriptInstruction";
+
+import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
 import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -60,7 +66,7 @@ export class NWScriptExpressionBuilder {
    * Local variable initializations (for looking up variable info by index)
    * Set by the converter to provide variable names and types
    */
-  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }> = [];
+  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }> = [];
   
   /**
    * Current stack pointer (for calculating source positions in CPTOPSP)
@@ -126,7 +132,7 @@ export class NWScriptExpressionBuilder {
    * Handle CONST instruction (push constant onto stack)
    */
   private handleConst(instruction: NWScriptInstruction): NWScriptExpression {
-    let value: any;
+    let value: number | string;
     let dataType: NWScriptDataType;
 
     switch (instruction.type) {
@@ -399,13 +405,13 @@ export class NWScriptExpressionBuilder {
       
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
-      console.log(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
+      log.info(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
       if (varIndex !== undefined && this.localVariableInits[varIndex]) {
         // Found variable using stack-aware resolution
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
         dataType = init.dataType;
-        console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
+        log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
@@ -431,15 +437,15 @@ export class NWScriptExpressionBuilder {
             const localVar = this.localVariables.get(offsetUnsigned)!;
             varName = localVar.name;
             dataType = localVar.dataType;
-            console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
+            log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
           } else {
             // Generate a generic name as absolute last resort
             varName = this.generateVariableName(false, offset);
             dataType = NWScriptDataType.INTEGER; // Default, could be improved
-            console.log(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
+            log.info(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
           }
         } else {
-          console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
+          log.info(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
         }
       }
     }
@@ -594,7 +600,7 @@ export class NWScriptExpressionBuilder {
   /**
    * Set local variable initializations for variable info lookup
    */
-  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }>): void {
+  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }>): void {
     this.localVariableInits = inits;
   }
   

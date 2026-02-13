@@ -32,7 +32,7 @@ export class ResolutionManager {
 
   public static get screenResolution(): IScreenResolution {
     return this.#_screenResolution;
-  };
+  }
 
   public static set screenResolution(res: IScreenResolution) {
     const isChanging = this.#_screenResolution != res;
@@ -41,7 +41,7 @@ export class ResolutionManager {
     if(isChanging){
       this.processEventListener('onChange', res, oldRes);
     }
-  };
+  }
 
 
   static #eventListeners: {[key: string]: Function[]} = {
@@ -72,7 +72,7 @@ export class ResolutionManager {
     }
   }
 
-  static processEventListener(key: string, ...args: any[]){
+  static processEventListener(key: string, ...args: (string | number | boolean | object)[]): void {
     const el = this.#eventListeners[key];
     if(Array.isArray(el)){
       for(let i = 0, len = el.length; i < len; i++){

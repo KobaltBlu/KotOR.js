@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { TabDiffToolState } from "../../../states/tabs/TabDiffToolState";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
 import { ForgeFileSystem } from "../../../ForgeFileSystem";
+import * as KotOR from "../../../KotOR";
 import { ForgeState } from "../../../states/ForgeState";
 import { ModalResourceComparisonState } from "../../../states/modal/ModalResourceComparisonState";
-import * as KotOR from "../../../KotOR";
+import { TabDiffToolState } from "../../../states/tabs/TabDiffToolState";
 import "./TabDiffTool.scss";
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface BaseTabProps {
   tab: TabDiffToolState;
@@ -49,7 +55,7 @@ export const TabDiffTool = function(props: BaseTabProps){
       const ext = pathStr && pathStr.includes('.') ? pathStr.slice(pathStr.lastIndexOf('.')) : '';
       tab.setLeftResource(pathStr || name, buffer, name, ext);
     } catch(e) {
-      console.error('Failed to open left file:', e);
+      log.error('Failed to open left file:', e as Error);
     }
   };
 
@@ -64,7 +70,7 @@ export const TabDiffTool = function(props: BaseTabProps){
       const ext = pathStr && pathStr.includes('.') ? pathStr.slice(pathStr.lastIndexOf('.')) : '';
       tab.setRightResource(pathStr || name, buffer, name, ext);
     } catch(e) {
-      console.error('Failed to open right file:', e);
+      log.error('Failed to open right file:', e as Error);
     }
   };
 

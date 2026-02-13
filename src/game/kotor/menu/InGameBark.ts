@@ -1,14 +1,18 @@
+import * as THREE from "three";
+
+import { DLGNodeType, ModuleObjectType } from "../../../enums";
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUILabel } from "../../../gui";
-import * as THREE from "three";
 import { ResourceLoader } from "../../../loaders";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { LIPObject } from "../../../resource/LIPObject";
-import { GameState } from "../../../GameState";
-import { DLGNodeType, ModuleObjectType } from "../../../enums";
-import { BitWise } from "../../../utility/BitWise";
 import { DLGNode } from "../../../resource/DLGNode";
+import { LIPObject } from "../../../resource/LIPObject";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { BitWise } from "../../../utility/BitWise";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * InGameBark class.
@@ -54,10 +58,10 @@ export class InGameBark extends GameMenu {
     });
   }
   
-  bark(entry: any) {
+  bark(entry: { text: string }) {
 
     const outText = this.gameStringParse(entry.text);
-    console.log('bark', entry, outText);
+    log.info('bark', entry, outText);
 
     if (!entry || !outText?.length) {
       return;
@@ -71,7 +75,7 @@ export class InGameBark extends GameMenu {
     this.barkTimer = InGameBark.BARK_TIMER;
     this.show();
     this.LBL_BARKTEXT.setText(entry.text);
-    let size = new THREE.Vector3();
+    const size = new THREE.Vector3();
     this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
     this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
     this.tGuiPanel.resizeControl();
@@ -79,10 +83,10 @@ export class InGameBark extends GameMenu {
     this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
     this.LBL_BARKTEXT.setText(entry.text);
 
-    if (!!entry.getVoiceResRef()?.length) {
+    if (entry.getVoiceResRef()?.length) {
       this.bHasAudio = true;
       this.bAudioPlayed = false;
-      console.log('lip', entry.getVoiceResRef());
+      log.info('lip', entry.getVoiceResRef());
       LIPObject.Load(entry.getVoiceResRef()).then((lip: LIPObject) => {
         if (BitWise.InstanceOfObject(entry.speaker, ModuleObjectType.ModuleCreature)) {
           entry.speaker.setLIP(lip);
@@ -101,7 +105,7 @@ export class InGameBark extends GameMenu {
     } else {
       this.bAudioPlayed = true;
       this.bHasAudio = false;
-      console.error('VO ERROR', entry);
+      log.error('VO ERROR', entry);
     }
   }
 

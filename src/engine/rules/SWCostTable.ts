@@ -1,5 +1,5 @@
 import { TLKManager } from "../../managers/TLKManager";
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject, type ITwoDARowData } from "../../resource/TwoDAObject";
 
 /**
  * SWItemPropsDef class.
@@ -17,7 +17,7 @@ export class SWCostTable {
   label: string;
   clientLoad: boolean;
 
-  static From2DA(row: any = {}){
+  static From2DA(row: ITwoDARowData = {} as ITwoDARowData){
     const costTable = new SWCostTable();
     costTable.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     costTable.name = TwoDAObject.normalizeValue(row.name, 'string', '');

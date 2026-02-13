@@ -1,6 +1,6 @@
-import { GameState } from "../GameState";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -49,7 +49,7 @@ export class ActionParameter {
    * @param value - Initial value for the parameter
    * @throws {Error} If the parameter type is invalid
    */
-  constructor(type = 0, value: any = 0){
+  constructor(type = 0, value: number | string | NWScriptInstance = 0) {
     this.type = type;
     if(value instanceof NWScriptInstance){
       this.scriptInstance = value;
@@ -96,32 +96,39 @@ export class ActionParameter {
       return undefined;
     }
 
-    const type = struct.getFieldByLabel('Type').getValue();
-    let value = undefined;
+    const type = struct.getNumberByLabel('Type');
+    let value: number | string | NWScriptInstance | undefined = undefined;
     switch(type){
       case ActionParameterType.INT:
       case ActionParameterType.FLOAT:
       case ActionParameterType.DWORD:
-      case ActionParameterType.STRING:
-        value = struct.getFieldByLabel('Value').getValue();
+        value = struct.getNumberByLabel('Value');
       break;
-      case ActionParameterType.SCRIPT_SITUATION:
-        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-        let script = new GameState.NWScript();
-        script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
+      case ActionParameterType.STRING:
+        value = struct.getStringByLabel('Value');
+      break;
+      case ActionParameterType.SCRIPT_SITUATION: {
+        const valueField = struct.getFieldByLabel('Value');
+        const childStructs = valueField?.getChildStructs() ?? [];
+        const scriptParamStructs = childStructs[0];
+        if (!scriptParamStructs) throw new Error('ActionParameter.FromStruct: Invalid SCRIPT_SITUATION (missing Value struct)');
+        const script = new GameState.NWScript();
+        script.name = scriptParamStructs.getStringByLabel('Name');
         script.init(
-          scriptParamStructs.getFieldByLabel('Code').getVoid(),
-          scriptParamStructs.getFieldByLabel('CodeSize').getValue()
+          scriptParamStructs.getFieldByLabel('Code')?.getVoid(),
+          scriptParamStructs.getNumberByLabel('CodeSize')
         );
-    
-        let scriptInstance = script.newInstance();
+
+        const scriptInstance = script.newInstance();
         scriptInstance.isStoreState = true;
-        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
-    
-        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
-        scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
+        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getNumberByLabel('InstructionPtr');
+
+        const stackChildStructs = scriptParamStructs.getFieldByLabel('Stack')?.getChildStructs() ?? [];
+        const stackStruct = stackChildStructs[0];
+        if (stackStruct) scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
 
         value = scriptInstance;
+      }
       break;
       default:
         throw 'ActionParameter.FromStruct: Invalid Type ('+type+')';

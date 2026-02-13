@@ -1,6 +1,7 @@
+import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
+
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUISlider, GUIListBox, GUIButton, GUICheckBox } from "../../../gui";
-import { MenuGraphics as K1_MenuGraphics } from "../../kotor/KOTOR";
 
 /**
  * MenuGraphics class.
@@ -56,9 +57,9 @@ export class MenuGraphics extends K1_MenuGraphics {
         this.manager.MenuGraphicsAdvanced.open();
       });
 
-      this.SLI_GAMMA.onValueChanged = (value: any) => {
+      this.SLI_GAMMA.onValueChanged = (value: number | boolean) => {
         //let gamma = (1.5 * value) + .25;
-        let contrast = (50 * ((value*2) - 1) )*-1;
+        const contrast = (50 * ((value*2) - 1) )*-1;
 
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
@@ -69,7 +70,7 @@ export class MenuGraphics extends K1_MenuGraphics {
 
       // this.BTN_RESOLUTION.hide();
 
-      this.CB_GRASS.onValueChanged = (value: any) => {
+      this.CB_GRASS.onValueChanged = (value: number | boolean) => {
         //Toggle Grass
         if(GameState.group.grass){
           GameState.group.grass.visible = !!value;

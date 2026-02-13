@@ -1,11 +1,14 @@
 import React from "react";
-import { TabState } from "./TabState";
+import * as THREE from 'three';
+
+import { TabUTSEditor } from "../../components/tabs/tab-uts-editor/TabUTSEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeSound } from "../../module-editor/ForgeSound";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTSEditor } from "../../components/tabs/tab-uts-editor/TabUTSEditor";
-import { ForgeSound } from "../../module-editor/ForgeSound";
+
+import { TabState } from "./TabState";
 
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;
@@ -61,7 +64,7 @@ export class TabUTSEditorState extends TabState {
   }
 
   async initializeAudioEmitter(){
-    const type = !!this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
+    const type = this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }

@@ -3,14 +3,14 @@
  * Uses AST analysis for context-aware completions
  */
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
-import { trace, debug } from './logger';
 import {
   CompletionItem,
   CompletionItemKind,
   MarkupKind,
   TextDocumentPositionParams
 } from 'vscode-languageserver/node';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
 import {
   cleanFunctionDescription,
   NWSCRIPT_KEYWORDS,
@@ -19,6 +19,7 @@ import {
   NWScriptFunction,
   NWScriptType
 } from './kotor-definitions';
+import { trace, debug } from './logger';
 import {
   ASTNode,
   Program

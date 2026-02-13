@@ -1,14 +1,30 @@
 import React, { useEffect, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabWOKEditorControlMode, TabWOKEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { Button, ButtonGroup } from "react-bootstrap";
+
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 
-import * as KotOR from "../../../KotOR";
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
 import { SectionContainer } from "../../SectionContainer";
-import { Button, ButtonGroup } from "react-bootstrap";
+import { UI3DRendererView } from "../../UI3DRendererView";
+
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import * as KotOR from "../../../KotOR";
+import { TabWOKEditorControlMode, TabWOKEditorState } from "../../../states/tabs";
+
+
+
+const log = createScopedLogger(LogScope.Forge);
+
+interface UI3DToolPaletteProps {
+  tab: TabWOKEditorState;
+}
+
+interface WOKSidebarComponentProps {
+  tab: TabWOKEditorState;
+  walkmesh?: KotOR.OdysseyWalkMesh;
+}
 
 export const TabWOKEditor = function(props: BaseTabProps) {
   const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
@@ -20,6 +36,10 @@ export const TabWOKEditor = function(props: BaseTabProps) {
 
   useEffectOnce( () => { //constructor
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
+    // Sync initial state if load completed before mount (e.g. webview buffer resolves immediately)
+    if (tab.wok) {
+      setWalkmesh(tab.wok);
+    }
     return () => { //destructor
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
     };
@@ -39,8 +59,8 @@ export const TabWOKEditor = function(props: BaseTabProps) {
   )
 }
 
-const UI3DToolPalette = function(props: any){
-  const tab = props.tab as TabWOKEditorState;
+const UI3DToolPalette = function(props: UI3DToolPaletteProps){
+  const tab = props.tab;
   const [controlMode, setControlMode] = useState<TabWOKEditorControlMode>(TabWOKEditorControlMode.FACE);
 
   const onControlModeChange = () => {
@@ -65,8 +85,8 @@ const UI3DToolPalette = function(props: any){
   );
 }
 
-const WOKSidebarComponent = function(props: any){
-  const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
+const WOKSidebarComponent = function(props: WOKSidebarComponentProps){
+  const tab = props.tab;
 
   const [walkmesh, setWalkmesh] = useState<KotOR.OdysseyWalkMesh>(props.walkmesh);
   const [selectedFace, setSelectedFace] = useState<KotOR.OdysseyFace3>();
@@ -91,7 +111,7 @@ const WOKSidebarComponent = function(props: any){
   });
 
   useEffect( () => {
-    console.log('update', selectedFace);
+    log.trace('update', selectedFace);
     rerender(!render);
   }, [selectedFace]);
 
@@ -106,7 +126,7 @@ const WOKSidebarComponent = function(props: any){
       </SectionContainer>
       <SectionContainer name="Selected Face" slim={true}>
         <div>
-          <b>Face Index:</b> {walkmesh?.faces.indexOf(selectedFace as any)}
+          <b>Face Index:</b> {selectedFace && walkmesh ? walkmesh.faces.indexOf(selectedFace) : -1}
         </div>
         <div>
           <b>Walk Type:</b> { selectedFace ? selectedFace.walkIndex : -1 }

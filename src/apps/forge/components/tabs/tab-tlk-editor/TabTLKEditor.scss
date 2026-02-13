@@ -134,10 +134,29 @@
 .tlk-table {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
   background: #181c25;
   border: 1px solid #2a3142;
   border-radius: 4px;
+}
+
+.tlk-table__header-wrap {
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #0f1116;
+  border-bottom: 1px solid #2a3142;
+}
+
+.tlk-table__table--header {
+  margin-bottom: -1px;
+}
+
+.tlk-table__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
 }
 
 .tlk-table__table {
@@ -146,7 +165,26 @@
   table-layout: fixed;
 }
 
-.tlk-table__table tr {
+.tlk-table__table thead th {
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #b8c2d8;
+  background: #0f1116;
+  border-right: 1px solid #2a3142;
+
+  &:last-child {
+    border-right: none;
+  }
+}
+
+.tlk-table__table thead th.tlk-table__index {
+  text-align: right;
+}
+
+.tlk-table__table tbody tr {
   cursor: pointer;
   border-bottom: 1px solid #2a3142;
   transition: background 0.2s ease;
@@ -162,6 +200,7 @@
 
 .tlk-table__index {
   width: 80px;
+  min-width: 80px;
   padding: 0.5rem 0.65rem;
   text-align: right;
   font-family: "Courier New", monospace;
@@ -169,6 +208,10 @@
   color: #8aa4ff;
   background: #0f1116;
   border-right: 1px solid #2a3142;
+
+  .tlk-table__table tbody & {
+    background: transparent;
+  }
 }
 
 .tlk-table__text {
@@ -178,6 +221,23 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tlk-table__sound {
+  width: 140px;
+  min-width: 140px;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  font-family: "Courier New", monospace;
+  color: #a8b8d0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid #2a3142;
+
+  .tlk-table__table thead & {
+    border-right: none;
+  }
 }
 
 .tlk-bottom-pane {
@@ -225,6 +285,8 @@
 
 .tlk-context-menu {
   position: fixed;
+  left: var(--tlk-context-menu-x, 0);
+  top: var(--tlk-context-menu-y, 0);
   background: #1b212d;
   border: 1px solid #2a3142;
   border-radius: 4px;

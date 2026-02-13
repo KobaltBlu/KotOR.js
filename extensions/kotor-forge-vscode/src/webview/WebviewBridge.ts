@@ -1,24 +1,8 @@
+import { createScopedLogger, LogScope } from '@kotor/utility/Logger';
+
 import { VSCodeAPI } from './vscode';
 
-const LOG_PREFIX = '[Webview]';
-
-function logTrace(msg: string, ...args: unknown[]) {
-  if (typeof console !== 'undefined' && console.debug) {
-    console.debug(`${LOG_PREFIX} [trace] ${msg}`, ...args);
-  }
-}
-
-function logDebug(msg: string, ...args: unknown[]) {
-  if (typeof console !== 'undefined' && console.debug) {
-    console.debug(`${LOG_PREFIX} [debug] ${msg}`, ...args);
-  }
-}
-
-function logInfo(msg: string, ...args: unknown[]) {
-  if (typeof console !== 'undefined' && console.info) {
-    console.info(`${LOG_PREFIX} [info] ${msg}`, ...args);
-  }
-}
+const log = createScopedLogger(LogScope.Webview);
 
 /**
  * Bridge between VS Code extension and webview
@@ -31,15 +15,15 @@ export class WebviewBridge {
   private requestCallbacks: Map<number, (response: unknown) => void> = new Map();
 
   private constructor() {
-    logTrace('WebviewBridge constructor() entered');
+    log.trace('WebviewBridge constructor() entered');
     this.vscode = window.acquireVsCodeApi();
     this.setupMessageListener();
-    logDebug('WebviewBridge constructor() completed');
+    log.debug('WebviewBridge constructor() completed');
   }
 
   static getInstance(): WebviewBridge {
     if (!WebviewBridge.instance) {
-      logTrace('WebviewBridge getInstance() creating new instance');
+      log.trace('WebviewBridge getInstance() creating new instance');
       WebviewBridge.instance = new WebviewBridge();
     }
     return WebviewBridge.instance;
@@ -49,29 +33,29 @@ export class WebviewBridge {
    * Listen for messages from the extension host
    */
   private setupMessageListener() {
-    logTrace('setupMessageListener() registering window message listener');
+    log.trace('setupMessageListener() registering window message listener');
     window.addEventListener('message', event => {
       const message = event.data;
-      logTrace(`message received type=${message?.type} requestId=${message?.requestId ?? 'n/a'}`);
+      log.trace('message received type=%s requestId=%s', message?.type, message?.requestId ?? 'n/a');
 
       if (message.type === 'response' && message.requestId !== undefined) {
         const callback = this.requestCallbacks.get(message.requestId);
         if (callback) {
-          logTrace(`response callback invoked requestId=${message.requestId}`);
+          log.trace('response callback invoked requestId=%s', message.requestId);
           callback(message.body);
           this.requestCallbacks.delete(message.requestId);
         } else {
-          logTrace(`response requestId=${message.requestId} no callback found`);
+          log.trace('response requestId=%s no callback found', message.requestId);
         }
         return;
       }
 
       const handler = this.messageHandlers.get(message.type);
       if (handler) {
-        logTrace(`dispatching to handler type=${message.type}`);
+        log.trace('dispatching to handler type=%s', message.type);
         handler(message);
       } else {
-        logTrace(`no handler for type=${message.type}`);
+        log.trace('no handler for type=%s', message.type);
       }
     });
   }
@@ -80,7 +64,7 @@ export class WebviewBridge {
    * Register a message handler
    */
   on(type: string, handler: (data: unknown) => void) {
-    logTrace(`on() registered handler for type=${type}`);
+    log.trace('on() registered handler for type=%s', type);
     this.messageHandlers.set(type, handler);
   }
 
@@ -88,7 +72,7 @@ export class WebviewBridge {
    * Post a message to the extension host
    */
   postMessage(message: Record<string, unknown>) {
-    logTrace(`postMessage() type=${message?.type}`);
+    log.trace('postMessage() type=%s', message?.type);
     this.vscode.postMessage(message);
   }
 
@@ -97,7 +81,7 @@ export class WebviewBridge {
    */
   postMessageWithResponse<T = unknown>(message: Record<string, unknown>): Promise<T> {
     const requestId = Math.random();
-    logTrace(`postMessageWithResponse() type=${message?.type} requestId=${requestId}`);
+    log.trace('postMessageWithResponse() type=%s requestId=%s', message?.type, requestId);
     return new Promise<T>((resolve) => {
       this.requestCallbacks.set(requestId, resolve as (response: unknown) => void);
       this.vscode.postMessage({
@@ -111,7 +95,7 @@ export class WebviewBridge {
    * Notify the extension that the webview is ready
    */
   notifyReady() {
-    logInfo('notifyReady() sending ready to extension');
+    log.info('notifyReady() sending ready to extension');
     this.postMessage({ type: 'ready' });
   }
 
@@ -119,7 +103,7 @@ export class WebviewBridge {
    * Notify the extension of an edit
    */
   notifyEdit(label: string, data: Uint8Array, undoData?: unknown, redoData?: unknown) {
-    logDebug(`notifyEdit() label=${label} dataLength=${data?.length ?? 0}`);
+    log.debug('notifyEdit() label=%s dataLength=%s', label, String(data?.length ?? 0));
     this.postMessage({
       type: 'edit',
       label,
@@ -133,7 +117,7 @@ export class WebviewBridge {
    * Send file data to the extension (for saving)
    */
   sendFileData(data: Uint8Array, requestId?: number) {
-    logTrace(`sendFileData() requestId=${requestId ?? 'n/a'} dataLength=${data?.length ?? 0}`);
+    log.trace('sendFileData() requestId=%s dataLength=%s', requestId ?? 'n/a', String(data?.length ?? 0));
     this.postMessage({
       type: 'response',
       requestId,
@@ -151,7 +135,7 @@ export class WebviewBridge {
   }
 
   setState(state: unknown) {
-    logTrace('setState() called');
+    log.trace('setState() called');
     this.vscode.setState(state);
   }
 }

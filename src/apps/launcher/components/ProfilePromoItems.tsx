@@ -1,12 +1,28 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ProfilePromoItem } from "./ProfilePromoItem";
+
 import { useApp } from "../context/AppContext";
+import type { LauncherProfile, LauncherProfileElement } from "../types";
 
+import { ProfilePromoItem } from "./ProfilePromoItem";
 
-export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
+export type ProfilePromoItemsProfile = LauncherProfile | { name: string; elements?: LauncherProfileElement[] };
+
+export interface ProfilePromoItemsProps {
+  profile: ProfilePromoItemsProfile;
+  tabRef: React.RefObject<HTMLDivElement | null>;
+  promoElementWidth?: number;
+  onClick?: (element: LauncherProfileElement) => void;
+  onDoubleClick?: (element: LauncherProfileElement) => void;
+}
+
+export interface ProfilePromoItemsRef {
+  recalculate: () => void;
+}
+
+export const ProfilePromoItems = forwardRef<ProfilePromoItemsRef, ProfilePromoItemsProps>(function(props, ref){
   const appContext = useApp();
-  const profile: any = props.profile;
-  const tabRef: any = props.tabRef;
+  const profile = props.profile;
+  const tabRef = props.tabRef;
   const promoElementsRef = useRef<HTMLDivElement>(null);
   const promoElementWidthValue: number = props.promoElementWidth || 320;
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -155,7 +171,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
       <div className="promo-elements-left" onClick={onBtnPromoLeft}><i className="fas fa-chevron-left"></i></div>
       <div ref={promoElementsRef} className="promo-elements-container" style={{ marginLeft: marginLeft, position: 'absolute' }}>
         {
-          profile.elements.map( (element: any, i: number) => {
+          profile.elements?.map( (element, i: number) => {
             return (
               <ProfilePromoItem element={element} key={`profile-proto-item-${i}`} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></ProfilePromoItem>
             )

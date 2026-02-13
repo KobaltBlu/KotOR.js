@@ -1,14 +1,19 @@
 import * as THREE from "three";
+
+import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
+import { TextureType } from "../enums/loaders/TextureType";
+import { GUIFont } from "../gui/GUIFont";
+import { IGUIControlText } from "../interface/gui/IGUIControlText";
+import { TextureLoader } from "../loaders/TextureLoader";
+import { ShaderManager } from "../managers/ShaderManager";
+import { TLKManager } from "../managers/TLKManager";
 import type { ModuleArea, ModuleObject } from "../module";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { IGUIControlText } from "../interface/gui/IGUIControlText";
-import { ShaderManager } from "../managers/ShaderManager";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 import { createQuadElements as createIndicies } from "../utility/QuadIndices";
-import { TLKManager } from "../managers/TLKManager";
-import { TextureLoader } from "../loaders/TextureLoader";
-import { TextureType } from "../enums/loaders/TextureType";
-import { TextSprite3DType } from "../enums/engine/TextSprite3DType";
-import { GUIFont } from "../gui/GUIFont";
+
+
+const log = createScopedLogger(LogScope.Game);
 import { GUIControlAlignment } from "../enums";
 
 const itemSize = 2
@@ -84,8 +89,8 @@ export class TextSprite3D {
     this.text.geometry = new THREE.BufferGeometry();
     this.text.geometry.index = new THREE.BufferAttribute( new Uint16Array(), 1 ).setUsage( THREE.StaticDrawUsage );
 
-    let posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
-    let uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    const posAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
+    const uvAttribute = new THREE.BufferAttribute( new Float32Array(), 2 ).setUsage( THREE.StaticDrawUsage );
     this.text.geometry.setAttribute( 'position', posAttribute );
     this.text.geometry.setAttribute( 'uv', uvAttribute );
 
@@ -96,7 +101,7 @@ export class TextSprite3D {
     this.text.material = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.merge([
         ShaderManager.Shaders.get('odyssey-gui')?.getUniforms()
-      ]),
+      ]) as { [uniform: string]: THREE.IUniform },
       vertexShader: ShaderManager.Shaders.get('odyssey-gui')?.getVertex(),
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui')?.getFragment(),
       side: THREE.DoubleSide,
@@ -165,7 +170,7 @@ export class TextSprite3D {
   }
 
   buildText(){
-    let self = this;
+    const self = this;
 
     if(!this.text.texture)
       return;
@@ -175,7 +180,7 @@ export class TextSprite3D {
 
     this.container.add(this.text.mesh);
     
-    let texture = this.text.texture;
+    const texture = this.text.texture;
 
     texture.flipY = false;
     texture.anisotropy = 1;
@@ -191,8 +196,8 @@ export class TextSprite3D {
         this.boundingSphere = new THREE.Sphere()
       }
     
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
+      const positions = this.attributes.position.array
+      const itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         this.boundingSphere.radius = 0
         this.boundingSphere.center.set(0, 0, 0)
@@ -200,7 +205,7 @@ export class TextSprite3D {
       }
       // this.computeSphere(positions, this.boundingSphere)
       if (isNaN(this.boundingSphere.radius)) {
-        console.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
+        log.error('THREE.BufferGeometry.computeBoundingSphere(): ' +
           'Computed radius is NaN. The ' +
           '"position" attribute is likely to have NaN values.')
       }
@@ -211,9 +216,9 @@ export class TextSprite3D {
         this.boundingBox = new THREE.Box3()
       }
     
-      let bbox = this.boundingBox
-      let positions = this.attributes.position.array
-      let itemSize = this.attributes.position.itemSize
+      const bbox = this.boundingBox
+      const positions = this.attributes.position.array
+      const itemSize = this.attributes.position.itemSize
       if (!positions || !itemSize || positions.length < 2) {
         bbox.makeEmpty()
         return
@@ -239,15 +244,15 @@ export class TextSprite3D {
   }
 
   bounds(positions: number[] = []) {
-    let count = positions.length / itemSize
+    const count = positions.length / itemSize
     box.min[0] = positions[0]
     box.min[1] = positions[1]
     box.max[0] = positions[0]
     box.max[1] = positions[1]
 
     for (let i = 0; i < count; i++) {
-      let x = positions[i * itemSize + 0]
-      let y = positions[i * itemSize + 1]
+      const x = positions[i * itemSize + 0]
+      const y = positions[i * itemSize + 1]
       box.min[0] = Math.min(x, box.min[0])
       box.min[1] = Math.min(y, box.min[1])
       box.max[0] = Math.max(x, box.max[0])

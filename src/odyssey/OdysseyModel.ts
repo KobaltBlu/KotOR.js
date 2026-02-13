@@ -1,13 +1,18 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 import { IOdysseyFileHeader } from "../interface/odyssey/IOdysseyFileHeader";
 import { IOdysseyGeometryHeader } from "../interface/odyssey/IOdysseyGeometryHeader";
 import { IOdysseyModelHeader } from "../interface/odyssey/IOdysseyModelHeader";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { OdysseyModelAnimation } from "./OdysseyModelAnimation";
 import { OdysseyModelFactory } from "./OdysseyModelFactory";
 import { OdysseyModelNode } from "./OdysseyModelNode";
+
+
+const log = createScopedLogger(LogScope.Loader);
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 const mdlStringCleaner = (str: string = ''): string => {
@@ -178,7 +183,7 @@ export class OdysseyModel {
   
       return node;
     }else{
-      console.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
+      log.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
     }
 
     return node;

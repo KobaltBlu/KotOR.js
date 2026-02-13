@@ -4,6 +4,9 @@ import type { GUILabel, GUIButton, GUICheckBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import { NWScript } from "../../../nwscript/NWScript";
 import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 
 const TLK_REMOVE = 38456;
@@ -64,8 +67,8 @@ export class MenuPartySelection extends GameMenu {
   forceNPC1 = -1;
   forceNPC2 = -1;
 
-  party: any = {
-    0: {selected: false, available: false},
+  party: Record<number, { selected: boolean; available: boolean }> = {
+    0: { selected: false, available: false },
     1: {selected: false, available: false},
     2: {selected: false, available: false},
     3: {selected: false, available: false},
@@ -179,7 +182,7 @@ export class MenuPartySelection extends GameMenu {
         e.stopPropagation();
 
         if(this.canRemove(this.selectedNPC)){
-          console.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
+          log.warn(`MenuPartySelection:RemoveNPC`, `Cannot remove a required party member ${this.selectedNPC}`);
           return false;
         }
 
@@ -286,7 +289,7 @@ export class MenuPartySelection extends GameMenu {
    */
   indexOfSelectedNPC(npcId: number) {
     for (let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++) {
-      let cpm = GameState.PartyManager.CurrentMembers[i];
+      const cpm = GameState.PartyManager.CurrentMembers[i];
       if (cpm.memberID == npcId) {
         return i;
       }
@@ -363,7 +366,7 @@ export class MenuPartySelection extends GameMenu {
         continue;
       }
       LBL_NA.hide();
-      let portrait = GameState.PartyManager.GetPortraitByIndex(i);
+      const portrait = GameState.PartyManager.GetPortraitByIndex(i);
       if (LBL_NA.getFillTextureName() != portrait && !!portrait) {
         LBL_CHAR.setFillTextureName(portrait);
         const texture = await TextureLoader.Load(portrait);

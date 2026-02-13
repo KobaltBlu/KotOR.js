@@ -79,7 +79,7 @@ export class NWScriptASTBuilder {
 
   /**
    * Accepts either a normal name token or a keyword token as an identifier.
-   * Some legacy/decompiled scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
+   * Some legacy scripts use keywords (e.g., TRUE) as identifiers in defines or vars.
    */
   private expectNameToken(): Token {
     if (this.tok.type === "name" || this.tok.type === "keyword") {
@@ -820,7 +820,7 @@ export class NWScriptASTBuilder {
       return e;
     }
 
-    // array literal (non-standard NWScript, but tolerate for decompiled/legacy input): [a, b, c]
+    // array literal (non-standard NWScript, but tolerate for legacy input): [a, b, c]
     if (this.is("punct", "[")) {
       const openTok = this.tok;
       this.next(); // consume '['

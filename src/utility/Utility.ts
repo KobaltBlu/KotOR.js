@@ -1,5 +1,10 @@
 import * as path from 'path';
+
 import * as THREE from 'three';
+
+import { createScopedLogger, LogScope } from ".//Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 import { GameFileSystem } from './GameFileSystem';
 
 const PI: number = Math.PI;
@@ -39,12 +44,12 @@ export interface OdysseyFileInfo {
  */
 export class Utility {
 
-  static bytesToSize(bytes: any) {
-    var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  static bytesToSize(bytes: number) {
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes == 0) return '0 Byte';
-    var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
+    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)).toString());
     return Math.round(bytes / Math.pow(1024, i)) + ' ' + sizes[i];
-  };
+  }
 
   // /https://github.com/mattdesl/lerp/blob/master/index.js
   static lerp(v0: number = 0, v1: number = 0, t: number = 0) {
@@ -56,7 +61,7 @@ export class Utility {
     fromAngle = (fromAngle + TWO_PI) % TWO_PI;
     toAngle = (toAngle + TWO_PI) % TWO_PI;
 
-    var diff = Math.abs(fromAngle - toAngle);
+    const diff = Math.abs(fromAngle - toAngle);
     if (diff < PI) {
       return Utility.lerp(fromAngle, toAngle, t);
     }
@@ -77,7 +82,7 @@ export class Utility {
   }
 
   static PadInt(num: number|string, size: number): string {
-    let s = "000000000" + num;
+    const s = "000000000" + num;
     return s.substr(s.length-size);
   }
 
@@ -140,7 +145,7 @@ export class Utility {
     //isLocal
     if(filePath.indexOf(':\\') > -1){
 
-      let filePathInfo = path.parse(filePath);
+      const filePathInfo = path.parse(filePath);
 
       let fileInfo = filePath.split('\\');
       fileInfo = fileInfo[fileInfo.length - 1].split('.');
@@ -162,10 +167,10 @@ export class Utility {
     //isArchive
     else if(filePath.indexOf('://') > -1){
 
-      let archivePath = filePath.split('://')[0];//.split('.');
-      let resourcePath = filePath.split('://')[1];//.split('.');
-      let archivePathInfo = path.parse(archivePath);
-      let resourcePathInfo = path.parse(resourcePath);
+      const archivePath = filePath.split('://')[0];//.split('.');
+      const resourcePath = filePath.split('://')[1];//.split('.');
+      const archivePathInfo = path.parse(archivePath);
+      const resourcePathInfo = path.parse(resourcePath);
 
       return {
         location: OdysseyPathLocation.archive,
@@ -209,7 +214,7 @@ export class Utility {
 
     let mipmaps = 1;
     while(size > 1){
-      //console.log(size);
+      //log.info(size);
       mipmaps++;
       size = size >> 1;
     }
@@ -217,7 +222,7 @@ export class Utility {
   }
 
   static Distance2DSquared(v0: THREE.Vector3|THREE.Vector2, v1: THREE.Vector3|THREE.Vector2){
-    let dx = v0.x - v1.x, dy = v0.y - v1.y;
+    const dx = v0.x - v1.x, dy = v0.y - v1.y;
     return dx * dx + dy * dy;
   }
 
@@ -247,10 +252,8 @@ export class Utility {
     return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
   }
 
-  static ArrayMatch(array1: any[]|Uint8Array, array2: any[]|Uint8Array){
-    return (array1.length == array2.length) && array1.every(function(element, index) {
-      return element === array2[index];
-    });
+  static ArrayMatch(array1: number[] | Uint8Array, array2: number[] | Uint8Array): boolean {
+    return array1.length === array2.length && array1.every((element, index) => element === array2[index]);
   }
   
   static TWO_PI = 2 * Math.PI;

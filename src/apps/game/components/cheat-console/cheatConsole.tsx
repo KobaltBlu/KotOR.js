@@ -1,5 +1,7 @@
 import React, { useState } from "react";
+
 import { useApp } from "../../context/AppContext";
+
 import { EngineDebugType } from "../../../../enums/engine/EngineDebugType";
 import './cheat-console.scss';
 import * as KotOR from "../../KotOR";

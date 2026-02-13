@@ -1,14 +1,19 @@
-import { GameState } from "../GameState";
 import { MiniGameType } from "../enums/engine/MiniGameType";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GameState } from "../GameState";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { GFFStruct } from "../resource/GFFStruct";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { ModuleMGEnemy } from "./ModuleMGEnemy";
-import type { ModuleObject } from "./ModuleObject";
 import type { ModuleMGObstacle } from "./ModuleMGObstacle";
 import type { ModuleMGPlayer } from "./ModuleMGPlayer";
+
+
+const log = createScopedLogger(LogScope.Module);
 import type { ModuleMGTrack } from "./ModuleMGTrack";
+import type { ModuleObject } from "./ModuleObject";
 
 /**
 * ModuleMiniGame class.
@@ -25,40 +30,40 @@ import type { ModuleMGTrack } from "./ModuleMGTrack";
 export class ModuleMiniGame {
   type: MiniGameType;
 
-  /** Bump plane (Reva: bump_plane). */
+  /** Bump plane. */
   bumpPlane: number = 0;
-  /** Camera FOV in degrees (Reva: camera_view_angle, default 65). */
+  /** Camera FOV in degrees (default 65). */
   cameraViewAngle: number = 65;
-  /** Depth of field (Reva: depth_of_field). */
+  /** Depth of field. */
   dof: number = 0;
-  /** Do bumping (Reva: do_bumping). */
+  /** Do bumping. */
   doBumping: number = 0;
   player: ModuleMGPlayer | undefined;
 
-  /** Far clip plane (Reva: clip_end, default 100). */
+  /** Far clip plane (default 100). */
   farClip: number = 100;
-  /** Lateral acceleration (Reva: lateral_accel). */
+  /** Lateral acceleration. */
   lateralAccel: number = 0;
-  /** Movement per second (Reva: movement_per_sec). */
+  /** Movement per second. */
   movementPerSec: number = 0;
-  /** Music resref (Reva: music CResRef). */
+  /** Music resref. */
   music: string = '';
-  /** Near clip plane (Reva: clip_start, default 0.1). */
+  /** Near clip plane (default 0.1). */
   nearClip: number = 0.1;
-  /** Use inertia (Reva: use_inertia). */
+  /** Use inertia. */
   useInertia: number = 0;
-  /** Enemy count (Reva: enemy_count); synced from enemies.length. */
+  /** Enemy count; synced from enemies.length. */
   get enemy_count(): number { return this.enemies.length; }
-  /** Obstacle count (Reva: obstacle_count); synced from obstacles.length. */
+  /** Obstacle count; synced from obstacles.length. */
   get obstacle_count(): number { return this.obstacles.length; }
 
   enemies: ModuleMGEnemy[] = [];
   obstacles: ModuleMGObstacle[] = [];
   tracks: ModuleMGTrack[] = [];
 
-  /** Last HP change (Reva: for SWMG_GetLastHPChange). */
+  /** Last HP change (for script queries). */
   lastHPChange: number = 0;
-  /** Last bullet hit part name (Reva: for SWMG_GetLastBulletHitPart). */
+  /** Last bullet hit part name. */
   lastBulletHitPart: string = '';
   /** Last bullet hit damage (for script queries). */
   lastBulletHitDamage: number = 0;
@@ -66,13 +71,13 @@ export class ModuleMiniGame {
   lastBulletHitTarget: ModuleObject | undefined;
   /** Last bullet shooter (object). */
   lastBulletHitShooter: ModuleObject | undefined;
-  /** Last bullet fired damage (for SWMG_GetLastBulletFiredDamage). */
+  /** Last bullet fired damage. */
   lastBulletFiredDamage: number = 0;
-  /** Last bullet fired target type (for SWMG_GetLastBulletFiredTarget). */
+  /** Last bullet fired target type. */
   lastBulletFiredTarget: number = 0;
-  /** Last animation key event name (Reva: for SWMG_GetLastEvent). */
+  /** Last animation key event name. */
   lastAnimEvent: string = '';
-  /** Last animation key event model name (Reva: for SWMG_GetLastEventModelName). */
+  /** Last animation key event model name. */
   lastAnimEventModelName: string = '';
 
   constructor(struct: GFFStruct) {
@@ -119,9 +124,9 @@ export class ModuleMiniGame {
   }
 
   async load() {
-    try { await this.loadMGTracks(); } catch (e) { console.error(e); }
-    if (this.player) { try { await this.loadMGPlayer(); } catch (e) { console.error(e); } }
-    try { await this.loadMGEnemies(); } catch (e) { console.error(e); }
+    try { await this.loadMGTracks(); } catch (e) { log.error(e); }
+    if (this.player) { try { await this.loadMGPlayer(); } catch (e) { log.error(e); } }
+    try { await this.loadMGEnemies(); } catch (e) { log.error(e); }
   }
 
   initMiniGameObjects() {
@@ -141,7 +146,7 @@ export class ModuleMiniGame {
   }
 
   async loadMGPlayer(): Promise<void> {
-    console.log('Loading MG Player')
+    log.info('Loading MG Player')
     const player: ModuleMGPlayer = this.player;
     await player.load();
     await player.loadCamera();

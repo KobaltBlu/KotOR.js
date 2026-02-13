@@ -1,14 +1,18 @@
-import { GFFStruct } from "../resource/GFFStruct";
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
-import { TextureType } from "../enums/loaders/TextureType";
-import { GameState } from "../GameState";
+
 import { Mouse } from "../controls/Mouse";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import { GUISliderDirection } from "../enums/gui/GUISliderDirection";
+import { TextureType } from "../enums/loaders/TextureType";
+import { GameState } from "../GameState";
+import { TextureLoader } from "../loaders";
+import { GFFStruct } from "../resource/GFFStruct";
 import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GUIControl } from "./GUIControl";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import type { GameMenu } from "./GameMenu";
+import { GUIControl } from "./GUIControl";
 
 /**
  * GUISlider class.
@@ -55,7 +59,7 @@ export class GUISlider extends GUIControl{
     this.widget.add(this.thumb.mesh);
 
     this.thumb.mesh.addEventListener('click', (e) => {
-      console.log('hello');
+      log.info('hello');
       this.mouseInside();
     });
 
@@ -67,7 +71,7 @@ export class GUISlider extends GUIControl{
       this.thumb.mesh.scale.x = this.thumb.width;
       this.thumb.mesh.scale.y = this.thumb.height;
 
-      let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      const parentPos = this.widget.getWorldPosition(new THREE.Vector3());
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(

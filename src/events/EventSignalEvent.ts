@@ -1,14 +1,18 @@
-import { GameEvent } from "./GameEvent";
+import { ModuleObjectScript, SignalEventType } from "../enums";
 import { GameEventType } from "../enums/events/GameEventType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import type { ModuleObject } from "../module/ModuleObject";
 import type { NWScriptEvent } from "../nwscript/events/NWScriptEvent";
 import { NWScriptEventFactory } from "../nwscript/events/NWScriptEventFactory";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject } from "../module/ModuleObject";
-import { ModuleObjectScript, SignalEventType } from "../enums";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import { GameEvent } from "./GameEvent";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * EventSignalEvent class.
@@ -40,13 +44,13 @@ export class EventSignalEvent extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.eventType = struct.getFieldByLabel('EventType').getValue();
+      this.eventType = struct.getNumberByLabel('EventType');
     }
   }
 
   execute(){
     const obj = this.getObject() as ModuleObject;
-    console.log('EventSignalEvent', this.eventType, obj, this.getCaller());
+    log.debug('EventSignalEvent', this.eventType, obj, this.getCaller());
     if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleObject)){
       return;
     }
@@ -200,13 +204,13 @@ export class EventSignalEvent extends GameEvent {
           obj.onDamaged();
           if(obj.linkedToObject){
             if(obj.linkedToObject.audioEmitter){
-              obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as any).trapExplosionSound);
+              obj.linkedToObject.audioEmitter.playSound((obj.linkedToObject as { trapExplosionSound?: string }).trapExplosionSound ?? '');
             }
             obj.linkedToObject.destroy();
           }
         }else if (BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
           if(obj.audioEmitter){
-            obj.audioEmitter.playSound((obj as any).trapExplosionSound);
+            obj.audioEmitter.playSound((obj as { trapExplosionSound?: string }).trapExplosionSound ?? '');
           }
           obj.destroy();
         }
@@ -215,13 +219,13 @@ export class EventSignalEvent extends GameEvent {
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject) ? this.caller.id : 2130706432 );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     if(this.event){
-      let eStruct = this.event.save();
+      const eStruct = this.event.save();
       eStruct.setType(0x4444);
       eventData.addChildStruct( eStruct );
     }

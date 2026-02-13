@@ -1,6 +1,9 @@
 import { GameState } from "../../../GameState";
 import type { GUIListBox, GUIButton } from "../../../gui";
 import { TalentFeat } from "../../../talents";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "../../kotor/KOTOR";
 
 /**
@@ -60,7 +63,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
           this.manager.CharGenMain.open();
         }catch(e){
-          console.log(e);
+          log.info(e);
         }
       });
 

@@ -1,5 +1,10 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+import { ForgeGameObject } from "./ForgeGameObject";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
@@ -29,8 +34,8 @@ export class ForgeDoor extends ForgeGameObject {
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utd;
 
   // Appearance data
-  kDoorAppearances: any[] = [];
-  kDoorAppearance: any = {};
+  kDoorAppearances: Record<string, string | number>[] = [];
+  kDoorAppearance: Record<string, string | number> = {};
 
   //Blueprint Properties
   animationState: number = 0;
@@ -93,7 +98,7 @@ export class ForgeDoor extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
     if(property === 'genericType'){
       this.loadAppearance();
       if(newValue !== oldValue){
@@ -388,7 +393,7 @@ export class ForgeDoor extends ForgeGameObject {
       });
       this.model = model;
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
       this.model = new KotOR.OdysseyModel3D();
     }
     this.modelLoading = false;

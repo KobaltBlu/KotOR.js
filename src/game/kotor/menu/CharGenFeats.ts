@@ -1,10 +1,13 @@
+import { GUIFeatItem } from "../gui/GUIFeatItem";
+
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import { GUIFeatItem } from "../gui/GUIFeatItem";
-import type { ModuleCreature } from "../../../module";
 import { TextureLoader } from "../../../loaders";
+import type { ModuleCreature } from "../../../module";
+import type { ITwoDARowData } from "../../../resource/TwoDAObject";
 import { TalentFeat } from "../../../talents";
-import { GameState } from "../../../GameState";
+import { createScopedLogger } from "../../../utility/Logger";
 
 /**
  * CharGenFeats class.
@@ -31,6 +34,8 @@ export class CharGenFeats extends GameMenu {
   BTN_BACK: GUIButton;
 
   creature: ModuleCreature;
+
+  private static readonly log = createScopedLogger(CharGenFeats.name);
 
   constructor(){
     super();
@@ -62,17 +67,17 @@ export class CharGenFeats extends GameMenu {
 
   addGrantedFeats() {
     const featCount = GameState.SWRuleSet.featCount;
-    let granted = [];
+    const granted = [];
     for (let i = 0; i < featCount; i++) {
       const feat = GameState.SWRuleSet.feats[i];
       if(this.creature){
         const mainClass = this.creature.getMainClass();
         if (mainClass && feat.constant != '****') {
-          if (mainClass.isFeatAvailable(feat)) {
-            const status = mainClass.getFeatStatus(feat);
-            if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
+          if (mainClass.isFeatAvailable(feat as unknown as ITwoDARowData)) {
+            const status = mainClass.getFeatStatus(feat as unknown as ITwoDARowData);
+            if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat as unknown as ITwoDARowData)) {
               if (!this.creature.getHasFeat(i)) {
-                console.log('Feat Granted', feat);
+                CharGenFeats.log.info('Feat Granted', feat);
                 this.creature.addFeat(TalentFeat.From2DA(feat));
                 granted.push(feat);
               }
@@ -86,15 +91,15 @@ export class CharGenFeats extends GameMenu {
   buildFeatList() {
     const feats = GameState.SWRuleSet.feats;
     const featCount = GameState.SWRuleSet.featCount;
-    let list = [];
+    const list = [];
     if(this.creature){
       const mainClass = this.creature.getMainClass();
       if(mainClass){
         for (let i = 0; i < featCount; i++) {
           const feat = feats[i];
           if (feat.constant != '****') {
-            if (mainClass.isFeatAvailable(feat)) {
-              const status = mainClass.getFeatStatus(feat);
+            if (mainClass.isFeatAvailable(feat as unknown as ITwoDARowData)) {
+              const status = mainClass.getFeatStatus(feat as unknown as ITwoDARowData);
               if (this.creature.getHasFeat(i) || status == 0 || status == 1) {
                 list.push(feat);
               }
@@ -103,7 +108,7 @@ export class CharGenFeats extends GameMenu {
         }
       }
     }
-    let groups = [];
+    const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
       const group = [];
@@ -126,7 +131,7 @@ export class CharGenFeats extends GameMenu {
       groups.push(group);
     }
     groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
-    console.log(groups);
+    CharGenFeats.log.info('feat groups', groups);
   }
   
 }

@@ -1,21 +1,27 @@
 import * as THREE from "three";
-import { GFFObject } from "../resource/GFFObject";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameState } from "../GameState";
+
+import { KeyMapper } from "../controls";
+import { Mouse } from "../controls/Mouse";
 import { EngineMode } from "../enums/engine/EngineMode";
+import { GUIControlType } from "../enums/gui/GUIControlType";
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { GameState } from "../GameState";
+import { ResourceLoader, TextureLoader } from "../loaders";
 import type { MenuManager } from "../managers/MenuManager";
 import { ResolutionManager } from "../managers/ResolutionManager";
 import { ShaderManager } from "../managers/ShaderManager"
-import { ResourceLoader, TextureLoader } from "../loaders";
+import { GFFObject } from "../resource/GFFObject";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
+import { BitWise } from "../utility/BitWise";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { GUIControl } from "./GUIControl";
 import { GUIControlFactory } from "./GUIControlFactory";
-import { BitWise } from "../utility/BitWise";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
-import { Mouse } from "../controls/Mouse";
-import { KeyMapper } from "../controls";
 import type { GUIProtoItem } from "./GUIProtoItem";
-import { GUIControlType } from "../enums/gui/GUIControlType";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameMenu class.
@@ -56,21 +62,11 @@ export class GameMenu {
   height: number = 480;
 
   /**
-   * Panel bit_flags matching the original game's CSWGuiPanel::bit_flags.
+   * Panel bit_flags for layout and centering.
    *
-   * Original default from CSWGuiPanel::CSWGuiPanel: 0x84 (bits 2,7)
-   *   - bit 7 (0x80): visible (Draw checks *(char*)&bit_flags < '\0')
-   *   - bit 2 (0x04): initial flag
-   * After StartLoadFromLayout: |= 0x02 (loaded)
-   * After per-menu LoadFromLayout: |= 0x01 (uses GetExtentAccountingForPanelOffset for hit testing)
-   *
-   * Centering flags (used by GetExtentAccountingForPanelOffset):
-   *   - 0x08: Center panel on screen (left += (vw-w)/2, top += (vh-h)/2) — MUTUALLY EXCLUSIVE with 0x20/0x40
-   *   - 0x20: Horizontal offset by (viewportWidth - 640) / 2
-   *   - 0x40: Vertical offset by (viewportHeight - 480) / 2
-   *
-   * KotOR.js default: 0x8F = original 0x87 + 0x08 for centering at arbitrary resolutions.
-   * Set to 0x87 for original behavior (no centering, panel at raw extent position).
+   * Bit layout: visible (bit 7), initial (bit 2), loaded (bit 1), hit-test (bit 0).
+   * Centering: bit 3 = center on screen; bits 5/6 = horizontal/vertical offset relative to 640x480.
+   * KotOR.js default adds centering for arbitrary resolutions.
    */
   panelBitFlags: number = 0x8F;
 
@@ -84,8 +80,8 @@ export class GameMenu {
 
   engineMode: EngineMode = EngineMode.GUI;
 
-  eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
-  context: any = GameState;
+  eventListenters: Map<string, Function[]> = new Map<string, Function[]>();
+  context: typeof GameState = GameState;
 
   constructor() {
     this._button_a = undefined;
@@ -111,8 +107,8 @@ export class GameMenu {
       this.menuGFF = new GFFObject(buffer);
       await this.buildMenu(this.menuGFF);
     } catch (e) {
-      console.error(e);
-    };
+      log.error(e);
+    }
     return this;
   }
 
@@ -135,8 +131,7 @@ export class GameMenu {
       this.tGuiPanel.widget.add(this.backgroundSprite);
     }
 
-    // Root panel position is now set by calculatePosition() during createControl(),
-    // matching the original CSWGuiPanel::GetExtentAccountingForPanelOffset behavior.
+    // Root panel position is set by calculatePosition() during createControl().
     // Do NOT override it here — that would cause an inconsistency between initial
     // load and resize (recalculatePosition sets the correct position on resize).
 
@@ -152,9 +147,9 @@ export class GameMenu {
     return this;
   }
 
-  async menuControlInitializer(skipInit: boolean = false): Promise<any> {
+  async menuControlInitializer(_skipInit: boolean = false): Promise<void> {
     return;
-  };
+  }
 
   assignChildControlsToMenu(object: GUIControl) {
     if (!object) { return; }
@@ -162,7 +157,7 @@ export class GameMenu {
     for (let i = 0, len = object.children.length; i < len; i++) {
       const ctrl = object.children[i];
       if (!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_' + ctrl.name;
-      (this as any)[ctrl.name] = ctrl;
+      (this as GameMenu & Record<string, GUIControl | undefined>)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
     }
   }
@@ -173,7 +168,6 @@ export class GameMenu {
      */
     if (this.voidFill) {
       const geometry = new THREE.PlaneGeometry(1, 1, 1);
-      // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms()
@@ -220,9 +214,9 @@ export class GameMenu {
    * Controls are assigned to the menu instance during buildMenu.
    */
   getControlByName(name: string): GUIControl | undefined {
-    const ctrl = (this as any)[name];
+    const ctrl = (this as GameMenu & Record<string, GUIControl | undefined>)[name];
     if (ctrl === undefined) {
-      console.error('getControlByName', 'Control not found', name);
+      log.error('getControlByName', 'Control not found', name);
       return undefined;
     }
     return ctrl as GUIControl;
@@ -303,7 +297,7 @@ export class GameMenu {
     }
 
     if (this.activeControls.length) {
-      for (var i = this.activeControls.length; i--;) {
+      for (let i = this.activeControls.length; i--;) {
         const control = this.activeControls[i];
         if (!control.box.containsPoint(Mouse.positionUI)) {
           control.onHoverOut();
@@ -313,7 +307,7 @@ export class GameMenu {
     }
 
     if (this.tGuiPanel && this.tGuiPanel.children) {
-      let len = this.tGuiPanel.children.length;
+      const len = this.tGuiPanel.children.length;
       for (let i = 0; i < len; i++) {
         this.tGuiPanel.children[i].update(delta);
       }
@@ -323,7 +317,7 @@ export class GameMenu {
   recalculatePosition() {
     try {
       this.tGuiPanel.recalculate();
-    } catch (e) { console.error(e); }
+    } catch (e) { log.error(e); }
   }
 
   setWidgetHoverActive(control: GUIControl, bActive: boolean = false) {
@@ -338,7 +332,7 @@ export class GameMenu {
       return false;
     }
 
-    let idx = this.activeControls.indexOf(control);
+    const idx = this.activeControls.indexOf(control);
 
     if (bActive) {
       if (idx == -1) {
@@ -482,16 +476,16 @@ export class GameMenu {
     if (typeof callback !== 'function') { return; }
 
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
+    const listeners = this.eventListenters.get(name);
     if (Array.isArray(listeners)) {
-      let idx = listeners.indexOf(callback);
+      const idx = listeners.indexOf(callback);
       if (idx >= 0) { listeners.splice(idx, 1); }
     }
   }
 
-  triggerEventListener(name: string, ...args: any) {
+  triggerEventListener(name: string, ...args: Array<string | number | boolean | object>) {
     name = name.toUpperCase().trim();
-    let listeners = this.eventListenters.get(name);
+    const listeners = this.eventListenters.get(name);
     if (Array.isArray(listeners)) {
       for (let i = 0; i < listeners.length; i++) {
         listeners[i](...args);

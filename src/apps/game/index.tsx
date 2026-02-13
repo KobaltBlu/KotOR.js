@@ -1,9 +1,12 @@
-import ReactDOM from "react-dom/client";
 import React from "react";
-import * as KotOR from "./KotOR";
-import { AppProvider } from "./context/AppContext";
-import { GameApp } from "./app";
+import ReactDOM from "react-dom/client";
+
 import { registerElectronLoadingErrorHandler } from "../common/electronLoadingErrorHandler";
+
+import { GameApp } from "./app";
+import { AppProvider } from "./context/AppContext";
+import * as KotOR from "./KotOR";
+
 import './app.scss';
 
 registerElectronLoadingErrorHandler();

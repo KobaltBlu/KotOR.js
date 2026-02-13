@@ -1,9 +1,11 @@
+import * as THREE from "three";
+
 import { GameEventType } from "../enums/events/GameEventType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+
 import { GameEvent } from "./GameEvent";
-import * as THREE from "three";
 
 /**
  * EventSpawnBodyBag class.
@@ -29,10 +31,10 @@ export class EventSpawnBodyBag extends GameEvent {
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.bodyBagId  = struct.getFieldByLabel('BodyBagId').getValue();
-      this.position.x = struct.getFieldByLabel('PositionX').getValue();
-      this.position.y = struct.getFieldByLabel('PositionY').getValue();
-      this.position.z = struct.getFieldByLabel('PositionZ').getValue();
+      this.bodyBagId  = struct.getNumberByLabel('BodyBagId');
+      this.position.x = struct.getNumberByLabel('PositionX');
+      this.position.y = struct.getNumberByLabel('PositionY');
+      this.position.z = struct.getNumberByLabel('PositionZ');
     }
   }
 
@@ -41,7 +43,7 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
   saveEventData(){
-    let struct = new GFFStruct(0x5555);
+    const struct = new GFFStruct(0x5555);
     struct.addField( new GFFField(GFFDataType.DWORD, 'BodyBagId' ) ).setValue(this.bodyBagId);
     struct.addField( new GFFField(GFFDataType.DWORD, 'PositionX' ) ).setValue(this.position.x);
     struct.addField( new GFFField(GFFDataType.DWORD, 'PositionY' ) ).setValue(this.position.y);
@@ -50,11 +52,11 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.callerId );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     eventData.addChildStruct( this.saveEventData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
     struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.objectId );

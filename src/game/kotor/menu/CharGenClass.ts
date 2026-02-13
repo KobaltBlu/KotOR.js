@@ -1,17 +1,21 @@
+import * as THREE from "three";
+
+import { CharGenClasses } from "../../CharGenClasses";
+
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
 import type { ModulePlayer } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import * as THREE from "three";
-import { CharGenClasses } from "../../CharGenClasses";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GameState } from "../../../GameState";
 
 /**
  * CharGenClass class.
  * Character generation "CHOOSE YOUR CLASS" screen; displays six class portrait slots
- * (_3D_MODEL1–6) with hover animation. Corresponds to CSWGuiClassSelection in the
- * original game (swkotor.exe); layout from ClassSel / classsel.gui.
+ * (_3D_MODEL1–6) with hover animation. Layout from ClassSel / classsel.gui.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -71,7 +75,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 0;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -88,7 +92,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 1;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -105,7 +109,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 2;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -122,7 +126,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 3;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -139,7 +143,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 4;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -156,7 +160,7 @@ export class CharGenClass extends GameMenu {
         if(this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 5;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
+        const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
         GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
         GameState.CharGenManager.selectedCreature.load();
         GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
@@ -171,8 +175,8 @@ export class CharGenClass extends GameMenu {
       this.tGuiPanel.getFill().position.z = -0.5;
 
       for(let i = 0; i < 6; i++){
-        let control = this.getControlByName('_3D_MODEL'+(i+1));
-        let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
+        const control = this.getControlByName('_3D_MODEL'+(i+1));
+        const _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
         _3dView.visible = true;
         _3dView.camera.aspect = control.extent.width / control.extent.height;
         _3dView.camera.updateProjectionMatrix();
@@ -198,9 +202,9 @@ export class CharGenClass extends GameMenu {
 
   initCharacter3D(control: GUIControl, nth = 0) {
     return new Promise<void>( (resolve, reject) => {
-      let _3dView = GameState.CharGenManager.lbl_3d_views.get(nth);
+      const _3dView = GameState.CharGenManager.lbl_3d_views.get(nth);
       let _3dViewModel = GameState.CharGenManager.models.get(nth);
-      let creature = GameState.CharGenManager.creatures.get(nth);
+      const creature = GameState.CharGenManager.creatures.get(nth);
       _3dView.setControl(control);
       _3dView.visible = true;
       control.border.fill.material.transparent = true;
@@ -264,10 +268,10 @@ export class CharGenClass extends GameMenu {
       if (!this._baseExtentsCaptured) this.captureBaseExtents();
 
       for (let i = 0; i < 6; i++) {
-        let modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
-        let btnControl = this.getControlByName('BTN_SEL' + (i + 1));
-        let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
-        let creature = GameState.CharGenManager.creatures.get(i);
+        const modelControl = this.getControlByName('_3D_MODEL' + (i + 1));
+        const btnControl = this.getControlByName('BTN_SEL' + (i + 1));
+        const _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
+        const creature = GameState.CharGenManager.creatures.get(i);
         if (creature) {
           creature.update(delta);
         }
@@ -305,8 +309,8 @@ export class CharGenClass extends GameMenu {
         this.LBL_CLASS.setText(GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.gender].Value + ' ' + GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.hoveredClass].strings.name].Value);
         this.textNeedsUpdate = false;
       }
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 

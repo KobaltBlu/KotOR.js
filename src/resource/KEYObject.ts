@@ -1,11 +1,13 @@
 import * as path from 'path';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { BIFObject } from './BIFObject';
-import { BIFManager } from '../managers/BIFManager';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { IBIFResource } from '../interface/resource/IBIFResource';
+
 import { IBIFEntry } from '../interface/resource/IBIFEntry';
+import { IBIFResource } from '../interface/resource/IBIFResource';
 import { IKEYEntry } from '../interface/resource/IKEYEntry';
+import { BIFManager } from '../managers/BIFManager';
+import { BinaryReader } from '../utility/binary/BinaryReader';
+import { GameFileSystem } from '../utility/GameFileSystem';
+
+import { BIFObject } from './BIFObject';
 
 /**
  * KEYObject class.
@@ -93,7 +95,7 @@ export class KEYObject {
 
   getFileKey(ResRef: string, ResType: number){
     for(let i = 0; i < this.keys.length; i++){
-      let key = this.keys[i];
+      const key = this.keys[i];
       if ( key.resRef == ResRef && key.resType == ResType){
         return key;
       }
@@ -103,7 +105,7 @@ export class KEYObject {
 
   getFileKeyByRes(Res: IBIFResource): IKEYEntry {
     for(let i = 0; i < this.keys.length; i++){
-      let key = this.keys[i];
+      const key = this.keys[i];
       if ( key.resId == Res.Id && key.resType == Res.resType){
         return key;
       }

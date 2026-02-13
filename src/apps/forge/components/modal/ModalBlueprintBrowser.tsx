@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, Modal } from "react-bootstrap";
+
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalBlueprintBrowserState } from "../../states/modal/ModalBlueprintBrowserState";
 import "./ModalBlueprintBrowser.scss";
 

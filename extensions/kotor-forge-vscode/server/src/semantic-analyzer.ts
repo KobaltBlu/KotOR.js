@@ -4,6 +4,7 @@
  */
 
 import { Diagnostic, DiagnosticSeverity } from 'vscode-languageserver/node';
+
 import { GameVersion, GameVersionDetector } from './game-version-detector';
 import {
   isValidDataType,
@@ -15,6 +16,7 @@ import {
   TSL_FUNCTIONS
 } from './kotor-definitions';
 import { KotorValidator } from './kotor-validator';
+import { trace, debug } from './logger';
 import {
   AssignmentExpression,
   ASTVisitor,
@@ -46,7 +48,6 @@ import {
 } from './nwscript-ast';
 import { SyntaxValidator } from './syntax-validator';
 import { TypeChecker } from './type-checker';
-import { trace, debug } from './logger';
 
 export interface SemanticError {
   message: string;

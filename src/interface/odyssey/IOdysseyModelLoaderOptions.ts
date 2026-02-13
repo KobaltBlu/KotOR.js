@@ -23,7 +23,8 @@ export interface IOdysseyModelLoaderOptions {
   isChildrenDynamic?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
-  context?: any,
-  onComplete?: Function,
-  editorMode?: boolean,
+  /** Caller context (e.g. ModuleArea, placeable) for resource resolution. */
+  context?: object;
+  onComplete?: () => void;
+  editorMode?: boolean;
 }

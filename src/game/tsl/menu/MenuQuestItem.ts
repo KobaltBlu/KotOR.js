@@ -1,5 +1,6 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MenuQuestItem as K1_MenuQuestItem } from "../../kotor/KOTOR";
+
+import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 
 /**
  * MenuQuestItem class.

@@ -1,19 +1,23 @@
 import React from "react";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import { UI3DRenderer } from "../../UI3DRenderer";
-import { IndoorMap, IndoorMapRoom, EmbeddedKit } from "../../data/IndoorMap";
-import { Kit, KitComponent } from "../../data/IndoorKit";
-import { loadKits } from "../../data/IndoorKitLoader";
-import { IndoorMap3DScene } from "../../helpers/IndoorMap3DScene";
+import * as THREE from "three";
+
 import { TabIndoorBuilder } from "../../components/tabs/tab-indoor-builder/TabIndoorBuilder";
 import {
   INDOOR_DUPLICATE_OFFSET_X,
   INDOOR_DUPLICATE_OFFSET_Y,
   INDOOR_DUPLICATE_OFFSET_Z,
 } from "../../data/IndoorBuilderConstants";
-import * as THREE from "three";
+import { Kit, KitComponent } from "../../data/IndoorKit";
+import { loadKits } from "../../data/IndoorKitLoader";
+import { IndoorMap, IndoorMapRoom, EmbeddedKit } from "../../data/IndoorMap";
+import { IndoorMap3DScene } from "../../helpers/IndoorMap3DScene";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import { EditorFile } from "../../EditorFile";
+import { UI3DRenderer } from "../../UI3DRenderer";
+
+import { TabState } from "./TabState";
+
 
 export enum IndoorBuilderViewMode {
   TwoD = "2d",

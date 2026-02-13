@@ -1,11 +1,16 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Form } from "react-bootstrap";
+
+import { useEffectOnce } from "../helpers/UseEffectOnce";
 import * as KotOR from "../KotOR";
 import { TabModelViewerState } from "../states/tabs";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
 
-export const KeyFrameTimelineComponent = function(props: any){
-  const tab: TabModelViewerState = props.tab;
+export interface KeyFrameTimelineProps {
+  tab: TabModelViewerState;
+}
+
+export const KeyFrameTimelineComponent = function(props: KeyFrameTimelineProps){
+  const tab = props.tab;
 
   const [currentAnimation, setCurrentAnimation] = useState<KotOR.OdysseyModelAnimation>();
   const [selectedAnimationIndex, setSelectedAnimationIndex] = useState<number>(tab.selectedAnimationIndex);
@@ -116,7 +121,7 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onSelectAnimationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let index = parseInt(e.target.value);
+    const index = parseInt(e.target.value);
     tab.setAnimationByIndex(index);
   }
 
@@ -129,8 +134,8 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
 
       //Update the lips elapsed time based on the seekbar position
-      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-      let time = getTimelinePixelPositionAsTime(position);
+      const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      const time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
       
       const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
@@ -139,8 +144,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
-    let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-    let time = getTimelinePixelPositionAsTime(position);
+    const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+    const time = getTimelinePixelPositionAsTime(position);
     if(tab.scrubbing){
       tab.seek(time);
       
@@ -186,9 +191,9 @@ export const KeyFrameTimelineComponent = function(props: any){
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
-      let maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
+      const maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
       
-      let position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
+      const position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
       if(position < 0) return 0;
       if(position > maxPixels) return maxPixels;
       return position;
@@ -197,8 +202,8 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const getTimelinePixelPositionAsTime = (position: number = 0) => {
-    let percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
-    let time = tab.getCurrentAnimationLength() * percentage;
+    const percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
+    const time = tab.getCurrentAnimationLength() * percentage;
     if(time < 0) return 0;
     if(time > tab.getCurrentAnimationLength()) return tab.getCurrentAnimationLength();
     return time;
@@ -216,8 +221,8 @@ export const KeyFrameTimelineComponent = function(props: any){
       factor = 60;
     }
 
-    let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
+    const nthTime = factor/60;
+    const count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
 
     for(let i = 0; i <= count; i++){
       let s = factor * i;
@@ -261,8 +266,8 @@ export const KeyFrameTimelineComponent = function(props: any){
           <a title="Timeline Zoom Out" className="fa-solid fa-magnifying-glass-minus" onClick={ (e) => onBtnZoomOut() }></a>
         </div>
       </div>
-      <div ref={keyframeWindowRef as any} className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow} onScroll={onScrollKeyFrameWindow}>
-        <canvas ref={waveformCanvasRef as any} style={{position: 'absolute', top: 0, left: 200, width: (tab.getCurrentAnimationLength() * tab.timelineZoom) }} />
+      <div ref={keyframeWindowRef} className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow} onScroll={onScrollKeyFrameWindow}>
+        <canvas ref={waveformCanvasRef} style={{position: 'absolute', top: 0, left: 200, width: (tab.getCurrentAnimationLength() * tab.timelineZoom) }} />
         <div className="keyframe-time-track" style={{ top: scrollTop, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom), zIndex: 1 }}>{ timestamps }</div>
         <div className="keyframe-track" style={{ height: scrollHeight, right: 'initial', width: 200 + (tab.getCurrentAnimationLength() * tab.timelineZoom) }}>
           {(
@@ -280,10 +285,14 @@ export const KeyFrameTimelineComponent = function(props: any){
 
 }
 
-const AnimationNodeTimelineComponent = function(props: any){
-  const node: KotOR.OdysseyModelAnimationNode = props.node;
-  const timelineZoom = props.timelineZoom;
-  const timelineOffset = props.timelineOffset;
+interface AnimationNodeTimelineProps {
+  node: KotOR.OdysseyModelAnimationNode;
+  timelineZoom: number;
+  timelineOffset: number;
+}
+
+const AnimationNodeTimelineComponent = function(props: AnimationNodeTimelineProps){
+  const { node, timelineZoom, timelineOffset } = props;
 
   return (
     <>
@@ -303,10 +312,14 @@ const AnimationNodeTimelineComponent = function(props: any){
   );
 }
 
-const ControllerTimelineComponent = function(props: any) {
-  const controller: KotOR.OdysseyController = props.controller;
-  const timelineZoom = props.timelineZoom;
-  const timelineOffset = props.timelineOffset;
+interface ControllerTimelineProps {
+  controller: KotOR.OdysseyController;
+  timelineZoom: number;
+  timelineOffset: number;
+}
+
+const ControllerTimelineComponent = function(props: ControllerTimelineProps) {
+  const { controller, timelineZoom, timelineOffset } = props;
 
   return (
     <div className="keyframe-track-wrapper controller" style={{ display: 'flex' }}>

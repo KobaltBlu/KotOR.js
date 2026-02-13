@@ -1,9 +1,14 @@
 import { GameEffectType } from "../enums/effects/GameEffectType";
+import type { ModuleObject } from "../module/ModuleObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { EffectACDecrease } from "./EffectACDecrease";
-import { EffectACIncrease } from "./EffectACIncrease";
+import { createScopedLogger , LogScope } from "../utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 import { EffectAbilityDecrease } from "./EffectAbilityDecrease";
 import { EffectAbilityIncrease } from "./EffectAbilityIncrease";
+import { EffectACDecrease } from "./EffectACDecrease";
+import { EffectACIncrease } from "./EffectACIncrease";
 import { EffectAreaOfEffect } from "./EffectAreaOfEffect";
 import { EffectAssuredDeflection } from "./EffectAssuredDeflection";
 import { EffectAssuredHit } from "./EffectAssuredHit";
@@ -29,6 +34,8 @@ import { EffectFeat } from "./EffectFeat";
 import { EffectForceFizzle } from "./EffectForceFizzle";
 import { EffectForceJump } from "./EffectForceJump";
 import { EffectForcePushed } from "./EffectForcePushed";
+import { EffectForceResistanceDecrease } from "./EffectForceResistanceDecrease";
+import { EffectForceResistanceIncrease } from "./EffectForceResistanceIncrease";
 import { EffectForceResisted } from "./EffectForceResisted";
 import { EffectForceShield } from "./EffectForceShield";
 import { EffectHaste } from "./EffectHaste";
@@ -56,8 +63,6 @@ import { EffectSpellImmunity } from "./EffectSpellImmunity";
 import { EffectTemporaryForce } from "./EffectTemporaryForce";
 import { EffectTemporaryHitPoints } from "./EffectTemporaryHitPoints";
 import { EffectVisualEffect } from "./EffectVisualEffect";
-import { EffectForceResistanceIncrease } from "./EffectForceResistanceIncrease";
-import { EffectForceResistanceDecrease } from "./EffectForceResistanceDecrease";
 import { GameEffect } from "./GameEffect";
 
 /**
@@ -163,44 +168,44 @@ export class GameEffectFactory {
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
   
-  static EffectFromStruct( struct: GFFStruct ): GameEffect {
-    if(!struct){ return undefined as any; }
+  static EffectFromStruct( struct: GFFStruct ): GameEffect | undefined {
+    if(!struct){ return undefined; }
 
-    let effect: GameEffect = undefined as any;
+    let effect: GameEffect | undefined = undefined;
 
-    let eType = struct.getFieldByLabel('Type').getValue();
-    let eSubType = struct.getFieldByLabel('SubType').getValue();
-    let eCreator = struct.getFieldByLabel('CreatorId').getValue();
-    let eSpellId = struct.getFieldByLabel('SpellId').getValue();
-    
-    let eDuration = struct.getFieldByLabel('Duration').getValue();
-    let eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
-    let eExpireTime = struct.getFieldByLabel('ExpireTime').getValue();
-    let eNumIntegers = struct.getFieldByLabel('NumIntegers').getValue();
+    const eType = struct.getNumberByLabel('Type');
+    const eSubType = struct.getNumberByLabel('SubType');
+    const eCreator = struct.getNumberByLabel('CreatorId');
+    const eSpellId = struct.getNumberByLabel('SpellId');
 
-    let intList: number[] = [];
-    let floatList: number[] = [];
-    let stringList: string[] = [];
-    let objectList: number[] = [];
+    const eDuration = struct.getNumberByLabel('Duration');
+    const eExpireDay = struct.getNumberByLabel('ExpireDay');
+    const eExpireTime = struct.getNumberByLabel('ExpireTime');
+    const eNumIntegers = struct.getNumberByLabel('NumIntegers');
+
+    const intList: number[] = [];
+    const floatList: number[] = [];
+    const stringList: string[] = [];
+    const objectList: number[] = [];
 
     let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      intList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      intList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('FloatList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      floatList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      floatList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('StringList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      stringList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      stringList[i] = tmpList[i].getStringByLabel('Value');
     }
 
     tmpList = struct.getFieldByLabel('ObjectList').getChildStructs();
     for(let i = 0, len = tmpList.length; i < len; i++){
-      objectList[i] = tmpList[i].getFieldByLabel('Value').getValue();
+      objectList[i] = tmpList[i].getNumberByLabel('Value');
     }
 
     //Initialize the effect object based on the type
@@ -378,7 +383,7 @@ export class GameEffectFactory {
       break;
     }
 
-    let eSkipOnLoad = struct.getFieldByLabel('SkipOnLoad').getValue();
+    const eSkipOnLoad = struct.getBooleanByLabel('SkipOnLoad');
     if(!eSkipOnLoad){
 
       if(typeof effect !== 'undefined'){
@@ -386,27 +391,24 @@ export class GameEffectFactory {
         effect.setExpireDay(eExpireDay);
         effect.setExpireTime(eExpireTime);
         effect.setCreator(eCreator);
-        effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
+        effect.setSpellId(eSpellId === 4294967295 ? -1 : eSpellId);
         effect.setSubTypeUnMasked(eSubType);
 
         effect.setNumIntegers(eNumIntegers);
         effect.setIntList(intList);
         effect.setFloatList(floatList);
         effect.setStringList(stringList);
-        effect.setObjectList(objectList as any);
-        //console.log('Handled Effect', eType, struct.ToJSON());
+        effect.setObjectList(objectList as unknown as ModuleObject[]);
         //effect.initialize();
       }else{
-        console.log('Unhandled Effect', eType, struct.toJSON());
+        log.debug('Unhandled Effect', eType, struct.toJSON());
       }
       return effect;
     }else{
-      if(typeof effect !== 'undefined'){
-        //console.log('Skipped Effect', eType, struct.ToJSON());
-      }else{
-        console.log('Unhandled Skipped Effect', eType, struct.toJSON());
+      if(typeof effect === 'undefined'){
+        log.debug('Unhandled Skipped Effect', eType, struct.toJSON());
       }
-      return undefined as any;
+      return undefined;
     }
   }
 }

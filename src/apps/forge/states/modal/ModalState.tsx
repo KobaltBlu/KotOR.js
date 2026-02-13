@@ -1,5 +1,7 @@
 import React from "react";
+
 import { EventListenerModel } from "../../EventListenerModel";
+
 import { ModalManagerState } from "./ModalManagerState";
 
 export class ModalState extends EventListenerModel {

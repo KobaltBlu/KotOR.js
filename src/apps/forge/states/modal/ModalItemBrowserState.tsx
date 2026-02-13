@@ -1,7 +1,10 @@
 import React from "react";
+
 import { ModalItemBrowser } from "../../components/modal/ModalItemBrowser";
-import { ModalState } from "./ModalState";
+
 import * as KotOR from "../../KotOR";
+
+import { ModalState } from "./ModalState";
 
 export interface UTIItem {
   resref: string;

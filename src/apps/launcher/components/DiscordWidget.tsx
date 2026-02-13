@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Default);
 import '../styles/DiscordWidget.scss';
 
 interface DiscordMember {
@@ -61,7 +65,7 @@ const DiscordWidget: React.FC<DiscordWidgetProps> = ({
         const data: DiscordServer = await response.json();
         setServerData(data);
       } catch (err) {
-        console.error('Error fetching Discord data:', err);
+        log.error('Error fetching Discord data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);

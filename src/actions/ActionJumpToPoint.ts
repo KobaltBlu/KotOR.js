@@ -1,10 +1,12 @@
+import * as THREE from "three";
+
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
+
 import { Action } from "./Action";
-import * as THREE from "three";
 
 /**
  * ActionJumpToPoint class.

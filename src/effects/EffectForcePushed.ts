@@ -1,9 +1,11 @@
+import * as THREE from 'three';
+
 import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
 import { GameEffectType } from "../enums/effects/GameEffectType";
-import * as THREE from 'three';
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+
 import { GameEffect } from "./GameEffect";
 
 /**
@@ -107,7 +109,7 @@ export class EffectForcePushed extends GameEffect {
     let face;
     let room;
     let surfaceId = -1;
-    let closestPoint = new THREE.Vector3();
+    const closestPoint = new THREE.Vector3();
     for(let i = 0, il = GameState.module.area.rooms.length; i < il; i++){
       room = GameState.module.area.rooms[i];
       if(room.collisionManager.walkmesh){

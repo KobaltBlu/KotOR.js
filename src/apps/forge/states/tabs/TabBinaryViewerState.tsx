@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabBinaryViewer } from "../../components/tabs/tab-binary-viewer/TabBinaryViewer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import { EditorFile } from "../../EditorFile";
+
+import { TabState } from "./TabState";
 
 interface BinaryRow {
   offset: string;

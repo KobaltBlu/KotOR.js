@@ -1,9 +1,13 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
+
+import { TabGFFEditor } from "../../components/tabs/tab-gff-editor/TabGFFEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabGFFEditor } from "../../components/tabs/tab-gff-editor/TabGFFEditor";
+
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
+
 
 
 export type TabGFFEditorStateEventListenerTypes =

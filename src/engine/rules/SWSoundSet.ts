@@ -13,7 +13,7 @@ export class SWSoundSet {
     return this.strref != -1 ? TLKManager.GetStringById(this.strref).Value : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWSoundSet {
     const soundSet = new SWSoundSet();
     soundSet.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     soundSet.label = TwoDAObject.normalizeValue(row.label, 'string', '');

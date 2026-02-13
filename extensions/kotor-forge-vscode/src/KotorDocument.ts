@@ -28,10 +28,16 @@ export class KotorDocument implements vscode.CustomDocument {
     log.trace(`create() entered uri=${uri.toString()} backupId=${backupId ?? 'undefined'}`);
     const dataFile = typeof backupId === 'string' ? vscode.Uri.parse(backupId) : uri;
     log.debug(`create() reading from dataFile=${dataFile.toString()}`);
-    const fileData = await KotorDocument.readFile(dataFile);
-    log.trace(`create() read ${fileData.length} bytes`);
+    let fileData: Uint8Array;
+    try {
+      fileData = await KotorDocument.readFile(dataFile);
+      log.trace(`create() read ${fileData.length} bytes`);
+    } catch (err) {
+      log.error(`create() readFile failed uri=${dataFile.toString()}: ${err}`);
+      throw err;
+    }
     const doc = new KotorDocument(uri, fileData, delegate);
-    log.debug(`create() returning new KotorDocument for ${uri.fsPath}`);
+    log.info(`create() returning KotorDocument uri=${uri.fsPath} bytes=${fileData.length}`);
     return doc;
   }
 

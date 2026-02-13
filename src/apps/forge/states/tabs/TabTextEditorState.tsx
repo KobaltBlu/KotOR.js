@@ -1,23 +1,33 @@
-import React from "react";
-import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
-import { EditorFile } from "../../EditorFile";
-import { EditorTabManager } from "../../managers/EditorTabManager";
-import { ForgeState } from "../ForgeState";
-// import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
-import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState, TabScriptFindReferencesState, TextReferenceMatch } from ".";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import React from "react";
 
-import * as KotOR from "../../KotOR";
-import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
-import { NWScriptLanguageService } from "../NWScriptLanguageService";
-import { LYTLanguageService } from "../LYTLanguageService";
-import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
+import { TabTextEditor } from "../../components/tabs/tab-text-editor/TabTextEditor";
 import { findAllReferencesInText, getWordAtIndex, createKeyResources, findScriptReferences, findStrRefReferences, findConversationReferences } from "../../helpers/ReferenceFinder";
+import type { ReferenceSearchResult } from "../../helpers/ReferenceFinderCore";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { EditorTabManager } from "../../managers/EditorTabManager";
+
+// import { NWScriptCompiler } from "../../../../nwscript/NWScriptCompiler";
+
+import { SemanticFunctionNode } from "../../../../nwscript/compiler/ASTSemanticTypes";
+import type { CompilerProgramNode } from "../../../../nwscript/compiler/CompilerNodeTypes";
+import { NWScriptCompiler } from "../../../../nwscript/compiler/NWScriptCompiler";
+import { NWScriptParser } from "../../../../nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
+import { ForgeState } from "../ForgeState";
+import { LYTLanguageService } from "../LYTLanguageService";
 import { ModalFileResultsState } from "../modal/ModalFileResultsState";
 import { ModalReferenceSearchOptionsState } from "../modal/ModalReferenceSearchOptionsState";
+import { NWScriptLanguageService } from "../NWScriptLanguageService";
+
+
+import { TabState } from "./TabState";
+
+import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState, TabScriptFindReferencesState, TextReferenceMatch } from ".";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabTextEditorState extends TabState {
 
@@ -58,7 +68,7 @@ export class TabTextEditorState extends TabState {
 
     // Otherwise, detect from file extension
     if(!this.file) return 'plaintext';
-    const ext = this.file.ext?.toLowerCase();
+    const ext = this.file.ext != null ? KotOR.ResourceTypes.getKeyByValue(this.file.ext).toLowerCase() : '';
     switch(ext){
       case 'lyt':
         return 'lyt';
@@ -157,20 +167,20 @@ export class TabTextEditorState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<void>( (resolve, reject) => {
+      return new Promise<void>( (resolve, _reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
 
-        if(file.ext == 'ncs'){
+        if(file.ext === KotOR.ResourceTypes.ncs){
           file.readFile().then( (buffer) => {
             this.ncs = buffer.buffer;
             this.nwScript = new KotOR.NWScript(this.ncs);
             this.nwScript.name = file?.getFilename().split('.')[0] || '';
             this.code = this.nwScript.toAssembly();
-            console.log(this.code);
+            log.debug('ncs assembly', this.code);
             this.triggerLinterTimeout();
             this.loadBookmarks();
             this.processEventListener('onEditorFileLoad');
@@ -178,7 +188,7 @@ export class TabTextEditorState extends TabState {
           });
         }else{
           file.readFile().then( (response) => {
-            let decoder = new TextDecoder('utf8');
+            const decoder = new TextDecoder('utf8');
             this.code = decoder.decode(response.buffer);
             this.triggerLinterTimeout();
 
@@ -243,11 +253,11 @@ export class TabTextEditorState extends TabState {
     const modal = new ModalReferenceSearchOptionsState({
       onApply: async (options) => {
         const resources = createKeyResources();
-        let results = [];
-
-        if (this.file?.ext?.toLowerCase() === "dlg") {
+        let results: ReferenceSearchResult[] = [];
+        const extStr = this.file?.ext != null ? KotOR.ResourceTypes.getKeyByValue(this.file.ext).toLowerCase() : "";
+        if (extStr === "dlg") {
           results = await findConversationReferences(resources, term, options);
-        } else if (this.file?.ext?.toLowerCase() === "tlk") {
+        } else if (extStr === "tlk") {
           results = await findStrRefReferences(resources, term, options);
         } else {
           results = await findScriptReferences(resources, term, options);
@@ -510,7 +520,7 @@ export class TabTextEditorState extends TabState {
     }
   }
 
-  _linter_timeout: any;
+  _linter_timeout: ReturnType<typeof setTimeout> | undefined;
 
   triggerLinterTimeout(){
     clearTimeout(this._linter_timeout);
@@ -537,7 +547,7 @@ export class TabTextEditorState extends TabState {
           }
         }
       }catch(e){
-        console.error('LYT linting error:', e);
+        log.error('LYT linting error:', e as Error);
         if(this.editor) {
           const model = this.editor.getModel() as monacoEditor.editor.ITextModel;
           if(model) {
@@ -560,8 +570,8 @@ export class TabTextEditorState extends TabState {
           const localFunctions = (this.nwScriptParser.program?.functions || []).map((f: SemanticFunctionNode) => f.name);
           NWScriptLanguageService.updateLocalFunctions(localFunctions);
 
-          console.log(this.nwScriptParser.errors);
-          const markers: any[] = [ ];
+          log.debug('nwScriptParser.errors', this.nwScriptParser.errors);
+          const markers: monacoEditor.editor.IMarkerData[] = [ ];
           for(let i = 0; i < this.nwScriptParser.errors.length; i++){
             const error = this.nwScriptParser.errors[i];
             if(error && error.offender && error.offender.source){
@@ -587,11 +597,11 @@ export class TabTextEditorState extends TabState {
           this.#tabErrorLogState.setErrors(markers);
           if(this.editor) this.monaco.editor.setModelMarkers(this.editor.getModel() as monacoEditor.editor.ITextModel, 'nwscript', markers);
         }catch(e: unknown){
-          console.log(e);
+          log.debug('triggerLinter error', e);
           const err = e as { hash?: { loc: { first_line: number; first_column: number; last_line: number; last_column: number } }; lineNumber?: number; columnNumber?: number; name?: string; message?: string };
           if(err?.hash){
-            console.log('err', err.lineNumber, err.columnNumber, err.name, err.message, err.hash);
-            console.log(JSON.stringify(e));
+            log.debug('err', err.lineNumber, err.columnNumber, err.name, err.message, err.hash);
+            log.debug('err json', JSON.stringify(e));
             const markers = [{
               severity: this.monaco.MarkerSeverity.Error,
               startLineNumber: err.hash.loc.first_line,
@@ -623,7 +633,7 @@ export class TabTextEditorState extends TabState {
   }
 
   resolveIncludes( code: string = ``, includeMap: Map<string, string> = new Map(), includeOrder: string[] = [] ){
-    return new Promise<Map<string, string>>( async (resolve, reject) => {
+    return new Promise<Map<string, string>>( (resolve, _reject) => {
       const visited = new Set<string>();
 
       const loadInclude = async (resref: string) => {
@@ -639,12 +649,12 @@ export class TabTextEditorState extends TabState {
         const source = textDecoder.decode(buffer);
 
         // Resolve nested includes first so they appear before this include
-        const nestedIncludes = [...source.matchAll(/#include\s*"?([\w\.]+)"?/g)];
-        console.log(nestedIncludes);
+        const nestedIncludes = [...source.matchAll(/#include\s*"?([\w.]+)"?/g)];
+        log.debug('nestedIncludes', nestedIncludes);
         for(const m of nestedIncludes){
           const nestedResref = m[1];
           if(nestedResref && !includeMap.has(nestedResref)){
-            console.log('loading include', nestedResref);
+            log.debug('loading include', nestedResref);
             await loadInclude(nestedResref);
           }
         }
@@ -655,23 +665,25 @@ export class TabTextEditorState extends TabState {
         }
       };
 
-      // seed includes from the root code
-      const rootIncludes = [...code.matchAll(/#include\s*"?([\w\.]+)"?/g)];
-      console.log(rootIncludes);
-      for(const m of rootIncludes){
-        const resref = m[1];
-        if(resref && !includeMap.has(resref)){
-          console.log('loading include', resref);
-          await loadInclude(resref);
+      void (async () => {
+        // seed includes from the root code
+        const rootIncludes = [...code.matchAll(/#include\s*"?([\w.]+)"?/g)];
+        log.debug('rootIncludes', rootIncludes);
+        for(const m of rootIncludes){
+          const resref = m[1];
+          if(resref && !includeMap.has(resref)){
+            log.debug('loading include', resref);
+            await loadInclude(resref);
+          }
         }
-      }
 
-      console.log(includeMap.keys());
-      resolve(includeMap);
+        log.debug('includeMap.keys', [...includeMap.keys()]);
+        resolve(includeMap);
+      })();
     });
   }
 
-  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+  async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     this.updateFile();
     return this.file.buffer ? this.file.buffer : new Uint8Array(0);
   }
@@ -685,32 +697,32 @@ export class TabTextEditorState extends TabState {
   }
 
   async compile(): Promise<boolean> {
-    console.log('compile', 'parsing...');
+    log.debug('compile', 'parsing...');
 
     // Resolve #include files and prepend them before parsing to mirror NWScript behavior
     this.resolvedIncludes = await this.resolveIncludes(this.code, this.resolvedIncludes);
     const mergedCode = [ [...this.resolvedIncludes.values()].join("\n"), this.code ].join("\n");
-    console.log(mergedCode);
+    log.debug('mergedCode', mergedCode);
     ForgeState.nwScriptParser.parseScript(mergedCode);
     if(!ForgeState.nwScriptParser.errors.length){
-      console.log('AST', ForgeState.nwScriptParser.toJSON());
-      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program as any);
-      console.log('compile', 'compiling...');
-      let buffer = nwScriptCompiler.compile();
+      log.debug('AST', ForgeState.nwScriptParser.toJSON());
+      const nwScriptCompiler = new NWScriptCompiler(ForgeState.nwScriptParser.program as CompilerProgramNode);
+      log.debug('compile', 'compiling...');
+      const buffer = nwScriptCompiler.compile();
       if(buffer){
         this.ncs = buffer;
-        console.log('compile', 'success');
-        console.log(this.ncs);
+        log.debug('compile', 'success');
+        log.debug('ncs', this.ncs);
         this.processEventListener('onCompile');
         return true;
       }
-      console.warn('compile', 'failed: no buffer returned');
+      log.warn('compile', 'failed: no buffer returned');
       return false;
     }
-    console.error(`compile Failed with (${ForgeState.nwScriptParser.errors.length}) error!`);
+    log.error(`compile Failed with (${ForgeState.nwScriptParser.errors.length}) error!`);
     for(let i = 0; i < ForgeState.nwScriptParser.errors.length; i++){
       const error = ForgeState.nwScriptParser.errors[i];
-      console.error(`Error ${i}:`, error.message, error.offender?.source?.first_line, error.offender?.source?.first_column);
+      log.error(`Error ${i}:`, error.message, error.offender?.source?.first_line, error.offender?.source?.first_column);
     }
     return false;
 

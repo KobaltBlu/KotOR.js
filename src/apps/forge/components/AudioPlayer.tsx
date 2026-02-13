@@ -1,10 +1,17 @@
-import React, { useState } from "react";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { AudioPlayerState } from "../states/AudioPlayerState";
+import React, { useState } from 'react';
 
-export const AudioPlayer = function(props: any){
+import { useEffectOnce } from '../helpers/UseEffectOnce';
+import { AudioPlayerState } from '../states/AudioPlayerState';
 
-  //<span className="glyphicon glyphicon-remove" style="cursor: pointer; position:absolute; top:3px; right:3px; z-index:101;" />
+import { createScopedLogger, LogScope } from '../../../utility/Logger';
+
+const log = createScopedLogger(LogScope.Forge);
+
+export interface AudioPlayerProps {
+  /** Optional; component uses global AudioPlayerState */
+}
+
+export const AudioPlayer: React.FC<AudioPlayerProps> = (_props) => {
 
   const [isReady, setIsReady] = useState<boolean>(false);
   const [isDisposed, setIsDisposed] = useState<boolean>(false);
@@ -17,27 +24,31 @@ export const AudioPlayer = function(props: any){
   let animationFrame: number;
 
   const onLoad = () => {
+    log.trace('AudioPlayer onLoad');
     setIsReady(true);
-  }
+  };
 
   const onPlay = () => {
+    log.debug('AudioPlayer onPlay');
     setIsPlaying(true);
     onFrame();
-  }
+  };
 
   const onPause = () => {
+    log.trace('AudioPlayer onPause');
     setIsPlaying(false);
     cancelAnimationFrame(animationFrame);
-  }
+  };
 
   const onStop = () => {
+    log.trace('AudioPlayer onStop');
     setIsPlaying(false);
     cancelAnimationFrame(animationFrame);
-  }
+  };
 
   const onLoop = () => {
-    
-  }
+    log.trace('AudioPlayer onLoop');
+  };
 
   const onFrame = () => {
     cancelAnimationFrame(animationFrame);
@@ -67,30 +78,36 @@ export const AudioPlayer = function(props: any){
   })
 
   const onBtnPlay = (e: React.MouseEvent<HTMLSpanElement>) => {
+    log.trace('AudioPlayer onBtnPlay', { isPlaying });
     if(isPlaying){
       AudioPlayerState.Pause();
     }else{
       AudioPlayerState.Play();
     }
-  }
+  };
 
   const onBtnStop = (e: React.MouseEvent<HTMLSpanElement>) => {
+    log.trace('AudioPlayer onBtnStop');
     AudioPlayerState.Stop();
-  }
+  };
 
   const onTrackBarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const seekPosition = parseFloat(e.target.value);
-    try{ AudioPlayerState.Stop(); }catch(e){}
+    log.debug('AudioPlayer onTrackBarChange seekPosition=%s', String(seekPosition));
+    try{ AudioPlayerState.Stop(); }catch(err){ log.warn('onTrackBarChange Stop failed', err); }
     AudioPlayerState.pausedAt = seekPosition;
-    try{ AudioPlayerState.Play(); }catch(e){}
-  }
+    try{ AudioPlayerState.Play(); }catch(err){ log.warn('onTrackBarChange Play failed', err); }
+  };
 
   const onBtnSave = (e: React.MouseEvent<HTMLSpanElement>) => {
+    log.info('AudioPlayer onBtnSave - exporting audio');
     AudioPlayerState.Pause();
     AudioPlayerState.ExportAudio().then( () => {
-
+      log.debug('AudioPlayer ExportAudio completed');
+    }).catch((err) => {
+      log.error('AudioPlayer ExportAudio failed', err);
     });
-  }
+  };
 
   return (
     <div className="inline-audio-player">

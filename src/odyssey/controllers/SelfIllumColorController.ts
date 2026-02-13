@@ -1,9 +1,15 @@
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
+
 import { OdysseyController } from "./OdysseyController";
+
+
+const log = createScopedLogger(LogScope.Loader);
 import * as THREE from "three";
 
 /**
@@ -39,10 +45,10 @@ export class SelfIllumColorController extends OdysseyController {
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    let lerpIllumColorR = last.x + fl * (next.x - last.x);
-    let lerpIllumColorG = last.y + fl * (next.y - last.y);
-    let lerpIllumColorB = last.z + fl * (next.z - last.z);
-    //console.log(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
+    const lerpIllumColorR = last.x + fl * (next.x - last.x);
+    const lerpIllumColorG = last.y + fl * (next.y - last.y);
+    const lerpIllumColorB = last.z + fl * (next.z - last.z);
+    //log.info(manager.modelNode.mesh.odysseyModelNode.Diffuse.r, lerpIllumColor);
     if(manager.modelNode.userData.mesh){
 
       if(manager.modelNode.userData.mesh.material instanceof THREE.ShaderMaterial){

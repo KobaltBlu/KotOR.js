@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { ContextMenuItem } from '../../common/ContextMenu';
+
 import * as KotOR from '../../../KotOR';
 
 export interface GFFContextMenuProps {

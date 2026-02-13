@@ -5019,7 +5019,6 @@ void EBO_BastilaStartConversation2()
           bValid = TRUE;
           tUse = tSpe11_03;
         }
-        //nTalent = 0xff4f;
       }
       else if (nTalentConstant == GEN_TALENT_HEALING) {
         bValid = FALSE;
@@ -5714,7 +5713,6 @@ void EBO_BastilaStartConversation2()
   {
     GN_MyPrintString("GENERIC DEBUG *************** Starting: Getting Talent Attack Code");
       int nPreviousTalentCode;
-    //GN_MyPrintString("GENERIC DEBUG *************** Cooked Return Code  0x0100");
     GN_MyPrintString("GENERIC DEBUG *************** Debilitated = " + IntToString(GetIsDebilitated(oTarget)));
     if (!GetIsDead(oTarget) && GetIsObjectValid(oTarget) && !GetIsDebilitated(oTarget) && GetLastHostileTarget() == oTarget) {
       //GN_MyPrintString("GENERIC DEBUG *************** Talent Code: Before GetPreviousTalent");
@@ -6192,14 +6190,11 @@ void EBO_BastilaStartConversation2()
   {
       int nRacial = GetRacialType(oTarget);
     if (nRacial == RACIAL_TYPE_DROID) {
-      //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x01");
       return 0x01;
     }
     else if (nRacial == RACIAL_TYPE_HUMAN) {
-      //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x02");
       return 0x02;
     }
-    //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x03");
     return 0x03;
   }
   //::///////////////////////////////////////////////
@@ -7078,7 +7073,7 @@ void EBO_BastilaStartConversation2()
       nComboType == SW_COMBO_RANGED_AGGRESSIVE ||
       nComboType == SW_COMBO_RANGED_DISCIPLINED) {
       //These are the only ranged feats in the game and therefore it is better to use a feat constant not a talent code
-      //given that 0x1101 is also used by some force powers.
+      // Talent id also used by some force powers.
       if (GetHasFeat(FEAT_SNIPER_SHOT) || GetHasFeat(FEAT_IMPROVED_SNIPER_SHOT) || GetHasFeat(FEAT_MASTER_SNIPER_SHOT) ||
         GetHasFeat(FEAT_POWER_BLAST) || GetHasFeat(FEAT_IMPROVED_POWER_BLAST) || GetHasFeat(82) || //Master Power Blast
         GetHasFeat(FEAT_RAPID_SHOT) || GetHasFeat(FEAT_MULTI_SHOT) || GetHasFeat(92))//92 = IMRPOVED_RAPID_SHOT
@@ -26368,8 +26363,6 @@ export const TSL_LIBRARY = {
   // AI for creatures that need to occassionally use Special Abilities.
   int GN_RunMonsterPowersAIRoutine(object oIntruder) {
     AurPostString("Monster Powers AI Routine", 5, 4, 3.0);
-      // This just looks for Monster Powers (which all seem to have 0x1304 as
-      // their category.
       talent tPower = GetCreatureTalentRandom(0x1304, OBJECT_SELF, TALENT_TYPE_SPELL);
     // Fire a power 20% of the time.
     if (d100() < 20) {
@@ -26892,7 +26885,6 @@ export const TSL_LIBRARY = {
           bValid = TRUE;
           tUse = tSpe11_03;
         }
-        //nTalent = 0xff4f;
       }
       else if (nTalentConstant == GEN_TALENT_HEALING) {
         bValid = FALSE;
@@ -27382,11 +27374,6 @@ export const TSL_LIBRARY = {
       }
     }
     if (bSwitch == TRUE) {
-          // DJS-OEI 4/26/2004
-          // All of the Ranged combat Feats are 0x1111, not
-          // 0x1181. This was causing droids, for instance,
-          // to never use their Ranged Feats.
-          //talent tFeat = GetCreatureTalentBest(0x1181, 20);
           talent tFeat = GetCreatureTalentBest(0x1111, 20);
       if (GetIsTalentValid(tUse) && GetCreatureHasTalent(tUse)) {
         return tFeat;
@@ -27804,7 +27791,6 @@ export const TSL_LIBRARY = {
   {
     GN_MyPrintString("GENERIC DEBUG *************** Starting: Getting Talent Attack Code");
       int nPreviousTalentCode;
-    //GN_MyPrintString("GENERIC DEBUG *************** Cooked Return Code  0x0100");
     GN_MyPrintString("GENERIC DEBUG *************** Debilitated = " + IntToString(GetIsDebilitated(oTarget)));
     if (!GetIsDead(oTarget) && GetIsObjectValid(oTarget) && !GetIsDebilitated(oTarget) && GetLastHostileTarget() == oTarget) {
       //GN_MyPrintString("GENERIC DEBUG *************** Talent Code: Before GetPreviousTalent");
@@ -28663,14 +28649,11 @@ export const TSL_LIBRARY = {
   {
       int nRacial = GetRacialType(oTarget);
     if (nRacial == RACIAL_TYPE_DROID) {
-      //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x01");
       return 0x01;
     }
     else if (nRacial == RACIAL_TYPE_HUMAN) {
-      //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x02");
       return 0x02;
     }
-    //GN_MyPrintString("GENERIC DEBUG *************** Exclusion Used: 0x03");
     return 0x03;
   }
   //::///////////////////////////////////////////////
@@ -29392,11 +29375,6 @@ export const TSL_LIBRARY = {
   }
   int GN_GetSeriesRangedFeat()
   {
-    // DJS-OEI 4/26/2004
-    // All of the Ranged combat Feats are 0x1111, not
-    // 0x1181. This was causing droids, for instance,
-    // to never use their Ranged Feats.
-    //talent tUse = GetCreatureTalentBest(0x1181, 20);
     //RWT-OEI 10/12/04 - If the character doesn't have a ranged weapon
     //equipped, give them a melee feat no matter what
     if (GN_GetWeaponType() != 2) {
@@ -29799,7 +29777,7 @@ export const TSL_LIBRARY = {
       nComboType == SW_COMBO_RANGED_AGGRESSIVE ||
       nComboType == SW_COMBO_RANGED_DISCIPLINED) {
       //These are the only ranged feats in the game and therefore it is better to use a feat constant not a talent code
-      //given that 0x1101 is also used by some force powers.
+      // Talent id also used by some force powers.
       if (GetHasFeat(FEAT_SNIPER_SHOT) || GetHasFeat(FEAT_IMPROVED_SNIPER_SHOT) || GetHasFeat(FEAT_MASTER_SNIPER_SHOT) ||
         GetHasFeat(FEAT_POWER_BLAST) || GetHasFeat(FEAT_IMPROVED_POWER_BLAST) || GetHasFeat(82) || //Master Power Blast
         GetHasFeat(FEAT_RAPID_SHOT) || GetHasFeat(FEAT_MULTI_SHOT) || GetHasFeat(92))//92 = IMRPOVED_RAPID_SHOT

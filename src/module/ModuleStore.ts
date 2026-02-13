@@ -1,23 +1,26 @@
-import { ModuleObject } from "./ModuleObject";
-import { ModuleItem } from "./ModuleItem";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { ResourceLoader } from "../loaders";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameState } from "../GameState";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import { ModuleItem } from "./ModuleItem";
+import { ModuleObject } from "./ModuleObject";
+
+const log = createScopedLogger(LogScope.Module);
 // import { ModuleObjectManager } from "../managers";
 
 /**
 * ModuleStore class.
-* 
+*
 * Class representing merchant stores found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleStore.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -27,13 +30,13 @@ export class ModuleStore extends ModuleObject {
   buySellFlag: number;
   markDown: number;
   markUp: number;
-  onOpenStore: any;
-  resref: any;
+  onOpenStore: NWScriptInstance | null;
+  resref: string;
 
   constructor( gff = new GFFObject() ){
     super(gff);
     this.objectType |= ModuleObjectType.ModuleStore;
-    
+
     this.template = gff;
     this.buySellFlag = -1;
     this.markDown = 0;
@@ -65,7 +68,7 @@ export class ModuleStore extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
       }else{
-        console.error('Failed to load ModuleStore template');
+        log.error('Failed to load ModuleStore template resref=%s', String(this.getTemplateResRef?.() ?? 'unknown'));
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -77,14 +80,14 @@ export class ModuleStore extends ModuleObject {
   }
 
   initProperties(){
-    
+
     if(!this.initialized){
       if(this.template.RootNode.hasField('ObjectId')){
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
+
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
@@ -102,10 +105,10 @@ export class ModuleStore extends ModuleObject {
 
     if(this.template.RootNode.hasField('OnOpenStore'))
       this.onOpenStore = this.template.getFieldByLabel('OnOpenStore').getValue();
-      
+
     if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue(); 
-    
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
+
     if(this.template.RootNode.hasField('XPosition'))
       this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
 
@@ -114,7 +117,7 @@ export class ModuleStore extends ModuleObject {
 
     if(this.template.RootNode.hasField('ZPosition'))
       this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
-    
+
     if(this.template.RootNode.hasField('XOrientation'))
       this.rotation.x = this.template.RootNode.getFieldByLabel('XOrientation').getValue();
 
@@ -125,12 +128,12 @@ export class ModuleStore extends ModuleObject {
       this.rotation.z = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
+      const swVarTableStruct = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0];
       if(swVarTableStruct){
         if(swVarTableStruct.hasField('BitArray')){
-          let localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+          const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
           for(let i = 0; i < localBools.length; i++){
-            let data = localBools[i].getFieldByLabel('Variable').getValue();
+            const data = localBools[i].getFieldByLabel('Variable').getValue();
             for(let bit = 0; bit < 32; bit++){
               this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
             }
@@ -138,24 +141,24 @@ export class ModuleStore extends ModuleObject {
         }
 
         if(swVarTableStruct.hasField('ByteArray')){
-          let localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+          const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
           for(let i = 0; i < localNumbers.length; i++){
-            let data = localNumbers[i].getFieldByLabel('Variable').getValue();
+            const data = localNumbers[i].getFieldByLabel('Variable').getValue();
             this.setLocalNumber(i, data);
           }
         }
       }
     }
-            
+
     if(this.template.RootNode.hasField('ItemList')){
-      let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
+      const items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
         moduleItem.load();
       }
     }
-    
+
     this.initialized = true;
 
   }
@@ -174,7 +177,7 @@ export class ModuleStore extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTM ';
     gff.RootNode.type = 6;
 
@@ -186,7 +189,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'OnOpenStore') ).setValue (this.onOpenStore instanceof NWScriptInstance ? this.onOpenStore.name : '' );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BuySellFlag') ).setValue(this.buySellFlag);
 
-    let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
+    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
       itemList.addChildStruct( this.inventory[i].save() );
     }
@@ -199,7 +202,7 @@ export class ModuleStore extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.rotation.z);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( this.actionQueueToActionList() );

@@ -1,4 +1,3 @@
-import { TextDocument } from "vscode-languageserver-textdocument";
 import {
   CompletionItem,
   createConnection,
@@ -21,6 +20,8 @@ import {
   TextDocumentSyncKind,
   WorkspaceSymbol
 } from "vscode-languageserver/node";
+import { TextDocument } from "vscode-languageserver-textdocument";
+
 import { CompletionProvider } from "./completion-provider";
 import { DiagnosticProvider } from "./diagnostic-provider";
 import { GameVersionDetector } from "./game-version-detector";
@@ -39,11 +40,11 @@ import {
   NWScriptType
 } from "./kotor-definitions";
 import { KOTOR_LIBRARY, TSL_LIBRARY } from "./kotor-scriptlib";
+import { setServerConnection } from "./logger";
 import { FunctionDeclaration, VariableDeclaration } from "./nwscript-ast";
 import { NWScriptParser } from "./nwscript-parser";
 import { SemanticAnalyzer } from "./semantic-analyzer";
 import { ScopeType } from "./variable-tracker";
-import { setServerConnection } from "./logger";
 
 // Alias/synonym functions seen in community scripts
 const FUNCTION_ALIASES: Record<string, string> = {
@@ -286,7 +287,7 @@ function parseScriptlib(source: string, includeName: string): IncludeScanResult 
   while ((cm = constRegex.exec(sanitized)) !== null) {
     const type = cm[1];
     const name = cm[2];
-    let raw = (cm[3] || '').trim();
+    const raw = (cm[3] || '').trim();
     // Basic literal parsing
     if (type === 'int') {
       const intVal = parseInt(raw, 10);
@@ -524,7 +525,7 @@ const defaultSettings: ForgeNWScriptSettings = {
 let globalSettings: ForgeNWScriptSettings = defaultSettings;
 
 // Cache for settings of all open documents
-let documentSettings: Map<string, Thenable<ForgeNWScriptSettings>> = new Map();
+const documentSettings: Map<string, Thenable<ForgeNWScriptSettings>> = new Map();
 
 // Helper function to resolve builtin script URIs based on configuration
 function resolveBuiltinScriptUri(includeName: string, currentDocumentUri: string, settings: ForgeNWScriptSettings): string {
@@ -1106,7 +1107,7 @@ connection.onHover((params: TextDocumentPositionParams): Hover | null => {
   }
 
   // Check if it's a function (core first)
-  let func = findFunction(word) || (FUNCTION_ALIASES[word] ? findFunction(FUNCTION_ALIASES[word]!) : undefined);
+  const func = findFunction(word) || (FUNCTION_ALIASES[word] ? findFunction(FUNCTION_ALIASES[word]!) : undefined);
   if (func) {
     const params = func.parameters.map((p: any) =>
       p.defaultValue ? `${p.type} ${p.name} = ${p.defaultValue}` : `${p.type} ${p.name}`
@@ -1833,7 +1834,7 @@ connection.onFoldingRanges((params) => {
   const lines = text.split('\n');
   const foldingRanges: any[] = [];
 
-  let braceStack: number[] = [];
+  const braceStack: number[] = [];
   let commentStart: number | null = null;
   let inBlockComment = false;
 

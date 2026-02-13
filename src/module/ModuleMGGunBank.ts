@@ -1,11 +1,12 @@
-import { ModuleObject } from "./ModuleObject";
-import { GameState } from "../GameState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
 import { MDLLoader } from "../loaders";
 import { OdysseyModel } from "../odyssey";
 import { GFFObject } from "../resource/GFFObject";
 import { OdysseyModel3D } from "../three/odyssey";
+
 import { ModuleMGGunBullet } from "./ModuleMGGunBullet";
+import { ModuleObject } from "./ModuleObject";
 
 /**
 * ModuleMGGunBank class.
@@ -23,17 +24,17 @@ export class ModuleMGGunBank extends ModuleObject {
   bullets: ModuleMGGunBullet[];
   owner: ModuleObject;
   isPlayer: boolean = false;
-  proto_bullet: any;
-  fire_sound: any;
-  bulletTemplate: any;
-  bullet_hook: any;
-  gunModel: any;
-  bankID: any;
-  fireSound: any;
-  horizSpread: any;
-  inaccuracy: any;
-  sensingRadius: any;
-  vertSpread: any;
+  proto_bullet: ModuleMGGunBullet | undefined;
+  fire_sound: string | undefined;
+  bulletTemplate: GFFObject;
+  bullet_hook: THREE.Object3D | undefined;
+  gunModel: string;
+  bankID: number;
+  fireSound: string | undefined;
+  horizSpread: number;
+  inaccuracy: number;
+  sensingRadius: number;
+  vertSpread: number;
 
   constructor( template: GFFObject, owner: ModuleObject, isPlayer: boolean = false ){
     super();
@@ -47,20 +48,22 @@ export class ModuleMGGunBank extends ModuleObject {
     
   }
 
-  update(delta = 0){
+  update(delta = 0): void {
+    const proto = this.proto_bullet;
+    if (!proto) return;
     //Update the gun timer
-    if(this.proto_bullet.fire_timer > 0){
-      this.proto_bullet.fire_timer -= 1 * delta;
-      if(this.proto_bullet.fire_timer < 0){
-        this.proto_bullet.fire_timer = 0;
+    if(proto.fire_timer > 0){
+      proto.fire_timer -= 1 * delta;
+      if(proto.fire_timer < 0){
+        proto.fire_timer = 0;
       }
     }else{
-      this.proto_bullet.fire_timer = 0;
+      proto.fire_timer = 0;
     }
 
     if(this.model) this.model.update(delta);
 
-    let old_bullet_indexes = [];
+    const old_bullet_indexes: number[] = [];
 
     for(let i = 0, len = this.bullets.length; i < len; i++){
       if(!this.bullets[i].update(delta)){
@@ -74,13 +77,14 @@ export class ModuleMGGunBank extends ModuleObject {
     }
   }
 
-  updatePaused(delta: number = 0){
-    
+  updatePaused(_delta: number = 0): void {
   }
 
   fire(){
-    if(!this.proto_bullet.fire_timer){
-      this.proto_bullet.fire_timer = this.proto_bullet.rate_of_fire;
+    const proto = this.proto_bullet;
+    if (!proto) return;
+    if(!proto.fire_timer){
+      proto.fire_timer = proto.rate_of_fire;
 
       if(this.fire_sound){
         GameState.guiAudioEmitter.playSoundFireAndForget(this.fire_sound);
@@ -92,10 +96,12 @@ export class ModuleMGGunBank extends ModuleObject {
 
       const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
       bullet.load().then( () => {
-        this.bullet_hook.getWorldPosition(bullet.position);
-        //this.bullet_hook.getWorldQuaternion(bullet.quaternion);
+        const hook = this.bullet_hook;
+        if (!hook) return;
+        hook.getWorldPosition(bullet.position);
+        // hook.getWorldQuaternion(bullet.quaternion);
         this.owner.model.getWorldQuaternion(bullet.quaternion);
-        this.bullet_hook.getWorldDirection(bullet.direction);
+        hook.getWorldDirection(bullet.direction);
 
         GameState.group.placeables.add(bullet.model);
         this.bullets.push(bullet);
@@ -105,15 +111,15 @@ export class ModuleMGGunBank extends ModuleObject {
 
   load(){
     this.initProperties();
-    return new Promise<void>( (resolve, reject) => {
+    return new Promise<void>( (resolve, _reject) => {
       this.loadModel().then( () => {
         resolve();
       });
     });
   }
 
-  loadModel(){
-    return new Promise<void>( (resolve, reject) => {
+  loadModel(): Promise<void> {
+    return new Promise<void>( (resolve, _reject) => {
       const resref = this.gunModel.replace(/\0[\s\S]*$/g,'').toLowerCase();
       MDLLoader.loader.load(resref).then( (mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {

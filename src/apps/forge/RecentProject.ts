@@ -67,7 +67,7 @@ export class RecentProject {
   /**
    * Create a RecentProject from a serialized object
    */
-  static From(data: any): RecentProject {
+  static From(data: RecentProjectOptions | Record<string, unknown> & { path?: string; handle?: FileSystemDirectoryHandle; name?: string }): RecentProject {
     return new RecentProject({
       path: data.path,
       handle: data.handle, // Handle will be restored from IndexedDB if stored

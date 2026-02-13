@@ -1,6 +1,6 @@
-import { OdysseyController } from "./OdysseyController";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
+
 import { AlphaController } from "./AlphaController";
 import { AlphaEndController } from "./AlphaEndController";
 import { AlphaMidController } from "./AlphaMidController";
@@ -15,6 +15,7 @@ import { FrameStartController } from "./FrameStartController";
 import { LifeExpController } from "./LifeExpController";
 import { MassController } from "./MassController";
 import { MultiplierController } from "./MultiplierController";
+import { OdysseyController } from "./OdysseyController";
 import { OrientationController } from "./OrientationController";
 import { PositionController } from "./PositionController";
 import { RadiusController } from "./RadiusController";

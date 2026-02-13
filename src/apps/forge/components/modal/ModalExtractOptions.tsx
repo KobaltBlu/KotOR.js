@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form, FormCheck } from "react-bootstrap";
+
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalExtractOptionsState } from "../../states/modal/ModalExtractOptionsState";
 
 /**

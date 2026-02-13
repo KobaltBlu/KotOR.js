@@ -1,5 +1,6 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+
+import { ForgeGameObject } from "./ForgeGameObject";
 
 export interface StoreItemEntry {
   inventoryRes: string;
@@ -31,7 +32,7 @@ export class ForgeStore extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
     if(property === 'templateResRef'){
       if(newValue !== oldValue){
         this.loadBlueprint().then(() => {

@@ -1,5 +1,6 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+
 import { Action } from "./Action";
 
 /**
@@ -13,7 +14,7 @@ import { Action } from "./Action";
  */
 export class ActionItemCastSpell extends Action {
 
-  spell: any = {}
+  spell: import("../talents/TalentSpell").TalentSpell | Record<string, never> = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);

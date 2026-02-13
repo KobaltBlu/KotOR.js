@@ -1,4 +1,5 @@
 import type { ModuleCreatureAnimState } from "../../enums/module/ModuleCreatureAnimState";
+
 import type { ITwoDAAnimation } from "../twoDA/ITwoDAAnimation";
 
 /**

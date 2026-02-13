@@ -1,10 +1,3 @@
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFField } from "../../../resource/GFFField";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { KEYManager } from "../../../managers/KEYManager";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { KEYObject } from "../../../resource/KEYObject";
 import {
   getScriptFieldsForType,
   getTagFieldsForType,
@@ -15,6 +8,15 @@ import {
   TEMPLATE_RESREF_FIELD_TYPES,
   CONVERSATION_FIELD_TYPES,
 } from "../data/ReferenceSearchConfig";
+
+import { GFFDataType } from "../../../enums/resource/GFFDataType";
+import { KEYManager } from "../../../managers/KEYManager";
+import { GFFField } from "../../../resource/GFFField";
+import { GFFObject } from "../../../resource/GFFObject";
+import { GFFStruct } from "../../../resource/GFFStruct";
+import { KEYObject } from "../../../resource/KEYObject";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+
 
 export interface ReferenceFileResource {
   resRef: string;

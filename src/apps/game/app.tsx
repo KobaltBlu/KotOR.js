@@ -1,9 +1,12 @@
 import React from "react";
-import { useApp } from "./context/AppContext";
+
+import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
+
+import { CheatConsole } from "./components/cheat-console/cheatConsole";
 import { ModalEULA } from "./components/modal-eula/modalEULA";
 import { ModalGrantAccess } from "./components/modal-grant-access/modalGrantAccess";
-import { CheatConsole } from "./components/cheat-console/cheatConsole";
-import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
+import { useApp } from "./context/AppContext";
+
 
 export const GameApp = () => {
   const appContext = useApp();

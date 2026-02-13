@@ -1,5 +1,6 @@
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
+
 import type { OdysseyModel } from "./OdysseyModel";
 import type { OdysseyModelNode } from "./OdysseyModelNode";
 import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";

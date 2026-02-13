@@ -1,24 +1,49 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export interface CommunityProviderValues {
-  lightboxImage: [ string,  React.Dispatch<string>],
-  lightboxActive: [ boolean, React.Dispatch<boolean>],
-  lightboxImageWidth: [ number,  React.Dispatch<number>],
-  lightboxImageHeight: [ number, React.Dispatch<number>],
-  videos: [ any[], React.Dispatch<any[]>],
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Launcher);
+
+/** Video item from community API (e.g. YouTube latest). */
+export interface CommunityVideoItem {
+  id?: string;
+  title?: string;
+  url?: string;
+  thumbnail?: string;
+  [key: string]: string | number | boolean | undefined;
 }
-export const CommunityContext = createContext<CommunityProviderValues>({} as any);
+
+export interface CommunityProviderValues {
+  lightboxImage: [ string,  React.Dispatch<React.SetStateAction<string>>],
+  lightboxActive: [ boolean, React.Dispatch<React.SetStateAction<boolean>>],
+  lightboxImageWidth: [ number,  React.Dispatch<React.SetStateAction<number>>],
+  lightboxImageHeight: [ number, React.Dispatch<React.SetStateAction<number>>],
+  videos: [ CommunityVideoItem[], React.Dispatch<React.SetStateAction<CommunityVideoItem[]>>],
+}
+const noop = () => {};
+const defaultCommunityValues: CommunityProviderValues = {
+  lightboxImage: [ '', noop ],
+  lightboxActive: [ false, noop ],
+  lightboxImageWidth: [ 0, noop ],
+  lightboxImageHeight: [ 0, noop ],
+  videos: [ [], noop ],
+};
+export const CommunityContext = createContext<CommunityProviderValues>(defaultCommunityValues);
 
 export function useCommunity(){
   return useContext(CommunityContext);
 }
 
-export const CommunityProvider = (props: any) => {
+export interface CommunityProviderProps {
+  children: React.ReactNode;
+}
+
+export const CommunityProvider = (props: CommunityProviderProps) => {
   const [lightboxImageValue, setLightboxImage] = useState<string>('');
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
   const [lightboxImageWidthValue, setLightboxImageWidth] = useState<number>(0);
   const [lightboxImageHeightValue, setLightboxImageHeight] = useState<number>(0);
-  const [videos, setVideos] = useState<any[]>([]);
+  const [videos, setVideos] = useState<CommunityVideoItem[]>([]);
 
   useEffect(() => {
     // console.log('useEffect lightboxActive', lightboxActiveValue);
@@ -26,9 +51,9 @@ export const CommunityProvider = (props: any) => {
 
   useEffect( () => {
     if(lightboxImageValue){
-      let img = new Image();
+      const img = new Image();
       img.onload = () => {
-        console.log('img', img.width, img.height);
+        log.debug('lightbox image loaded', img.width, img.height);
         setLightboxImageWidth(img.width);
         setLightboxImageHeight(img.height);
       }
@@ -46,12 +71,12 @@ export const CommunityProvider = (props: any) => {
         return res.json();
       }
       throw new Error('Failed to fetch YouTube videos');
-    }).then( (data) => {
+    }).then( (data: { videos?: CommunityVideoItem[] }) => {
       if(data?.videos){
         setVideos([...data.videos]);
       }
     }).catch((e) => {
-      console.error(e);
+      log.error('Failed to fetch community videos', e instanceof Error ? e : String(e));
     })
   }, [])
 

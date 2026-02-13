@@ -1,10 +1,13 @@
 import React from "react";
-import { TabState } from "./TabState";
+
+import { TabUTMEditor } from "../../components/tabs/tab-utm-editor/TabUTMEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeStore, StoreItemEntry } from "../../module-editor/ForgeStore";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTMEditor } from "../../components/tabs/tab-utm-editor/TabUTMEditor";
-import { ForgeStore, StoreItemEntry } from "../../module-editor/ForgeStore";
+
+import { TabState } from "./TabState";
 
 export class TabUTMEditorState extends TabState {
   tabName: string = `UTM`;

@@ -1,4 +1,5 @@
 import { IPCMessageType } from "../../enums/server/ipc/IPCMessageType";
+
 import { IPCMessageParam } from "./IPCMessageParam";
 
 /**

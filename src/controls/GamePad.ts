@@ -1,11 +1,15 @@
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { AnalogInput } from "./AnalogInput";
 import { KeyInput } from "./KeyInput";
 
+const log = createScopedLogger(LogScope.Game);
+
 /**
  * GamePad class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GamePad.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -75,7 +79,7 @@ export class GamePad {
       this.stick_l.update(this.gamePad, delta);
       this.stick_l_x.update(this.gamePad, delta);
       this.stick_l_y.update(this.gamePad, delta);
-      
+
       this.stick_r.update(this.gamePad, delta);
       this.stick_r_x.update(this.gamePad, delta);
       this.stick_r_y.update(this.gamePad, delta);
@@ -135,11 +139,11 @@ export class GamePad {
   static Init(){
     GamePad.GamePads = {};
 
-    function gamepadHandler(e: any, connecting: boolean = false) {
-      let gamepad = e.gamepad;
+    function gamepadHandler(e: GamepadEvent, connecting: boolean = false): void {
+      const gamepad = e.gamepad;
       // Note:
       // gamepad === navigator.getGamepads()[gamepad.index]
-      console.log('gamepadHandler', e, connecting);
+      log.trace('gamepadHandler connecting=%s index=%s', String(connecting), String(e.gamepad?.index));
       if (connecting) {
         GamePad.GamePads[gamepad.index] = gamepad;
         if(GamePad.CurrentGamePadIndex == -1){
@@ -150,7 +154,7 @@ export class GamePad {
           GamePad.CurrentGamePadIndex = -1;
           GamePad.CurrentGamePad = undefined;
         }
-        
+
         delete GamePad.GamePads[gamepad.index];
       }
     }
@@ -162,6 +166,6 @@ export class GamePad {
 
   static CurrentGamePad: GamePad;
   static CurrentGamePadIndex: number = -1;
-  static GamePads: any = {};
+  static GamePads: Record<number, GamePad> = {};
 
 }

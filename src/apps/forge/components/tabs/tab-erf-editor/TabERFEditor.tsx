@@ -1,19 +1,25 @@
-/* eslint-disable no-console */
 import React, { useCallback, useEffect, useState } from "react";
+
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabERFEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ERFListNode } from "../../treeview/ERFListNode";
 import { useContextMenu } from "../../common/ContextMenu";
+import { ERFListNode } from "../../treeview/ERFListNode";
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
+import { EditorFile } from "../../../EditorFile";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import * as KotOR from "../../../KotOR";
+import { TabERFEditorState } from "../../../states/tabs";
+
+
 import { createERFContextMenuItems } from "./ERFContextMenu";
 import "./TabERFEditor.scss";
 
+const log = createScopedLogger(LogScope.Forge);
 const MENU_ID = 'context-tab-erf-editor-entry';
 
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
@@ -54,19 +60,19 @@ export const TabERFEditor = function(props: BaseTabProps) {
   }, [selectedEntry]);
 
   const onResourceClick = (node: FileBrowserNode) => {
-    console.log('onResourceClick', node);
+    log.trace('onResourceClick', node);
     if(!node.data.resource){ return; }
     setSelectedEntry(node);
   }
 
   const onResourceDoubleClick = (node: FileBrowserNode) => {
-    console.log('onResourceDoubleClick', node);
+    log.trace('onResourceDoubleClick', node);
     if(!node.data.resource){ return; }
     openERFResource(node.data.archive, node.data.resource);
   }
 
-  const onContextMenu = (event: React.MouseEvent<any>, node: FileBrowserNode) => {
-    console.log('handleContextMenu', event, node);
+  const onContextMenu = (event: React.MouseEvent<HTMLElement>, node: FileBrowserNode) => {
+    log.trace('handleContextMenu', event, node);
     event.preventDefault();
     event.stopPropagation();
     if(!node.data.resource){ return; }
@@ -77,7 +83,7 @@ export const TabERFEditor = function(props: BaseTabProps) {
       resource: node.data.resource
     });
 
-    console.log('contextMenuItems', contextMenuItems);
+    log.trace('contextMenuItems', contextMenuItems);
     showContextMenu(event.clientX, event.clientY, contextMenuItems);
   };
 

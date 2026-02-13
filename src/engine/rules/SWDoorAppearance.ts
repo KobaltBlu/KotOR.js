@@ -22,7 +22,7 @@ export class SWDoorAppearance {
   nobin: boolean = false;
   staticanim: string = '';
 
-  static From2DA (row: any = {}): SWDoorAppearance {
+  static From2DA (row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWDoorAppearance {
     const appearance = new SWDoorAppearance();
     
     appearance.id = parseInt(row.__index);

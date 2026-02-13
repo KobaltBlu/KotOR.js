@@ -1,8 +1,12 @@
 import * as fs from "fs";
 
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import * as KotOR from "../../KotOR";
 
 import { EditorFileProtocol } from "./enum/EditorFileProtocol";
+
+const log = createScopedLogger(LogScope.Forge);
 import { FileLocationType } from "./enum/FileLocationType";
 import { EventListenerModel } from "./EventListenerModel";
 import { pathParse } from "./helpers/PathParse";
@@ -97,7 +101,7 @@ export class EditorFile extends EventListenerModel {
   }
 
   set reskey(value) {
-    // console.log('reskey', value);
+    // log.info('reskey', value);
     this._reskey = value;
     this._ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
@@ -108,7 +112,7 @@ export class EditorFile extends EventListenerModel {
   }
 
   set ext(value) {
-    // console.log('ext', value);
+    // log.info('ext', value);
     this._ext = value;
     this._reskey = KotOR.ResourceTypes[value];
     this.processEventListener<EditorFileEventListenerTypes>('onNameChanged', [this]);
@@ -232,10 +236,10 @@ export class EditorFile extends EventListenerModel {
           this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
           break;
         default:
-          console.warn('Unhandled Protocol', this.protocol, url);
+          log.warn('Unhandled Protocol', this.protocol, url);
           break;
       }
-      console.log('setPath', this);
+      log.trace('setPath', this);
     }
   }
 
@@ -266,7 +270,7 @@ export class EditorFile extends EventListenerModel {
         } else {
           if (this.archive_path) {
             const archive_path = pathParse(this.archive_path);
-            console.log(archive_path.ext)
+            log.trace('archive_path.ext', archive_path.ext);
 
             switch (this.protocol) {
               case EditorFileProtocol.BIF:
@@ -304,7 +308,7 @@ export class EditorFile extends EventListenerModel {
                 });
                 break;
               default:
-                console.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+                log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
                 break;
             }
           } else {
@@ -356,7 +360,7 @@ export class EditorFile extends EventListenerModel {
                           });
                         } else {
                           //cannot open file
-                          console.warn('EditorFile.readFile', 'unable to open file', this.protocol);
+                          log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
                           this.buffer = new Uint8Array(0);
                           resolve({
                             buffer: this.buffer,
@@ -367,11 +371,11 @@ export class EditorFile extends EventListenerModel {
                   }
                   break;
                 default:
-                  console.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+                  log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
                   break;
               }
             } else {
-              console.warn('EditorFile.readFile', 'unable to open file', this.protocol);
+                  log.warn('EditorFile.readFile', 'unable to open file', this.protocol);
               this.buffer = new Uint8Array(0);
               resolve({
                 buffer: this.buffer,
@@ -459,7 +463,7 @@ export class EditorFile extends EventListenerModel {
                 //MDX
                 if (!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) this.buffer2 = await KotOR.GameFileSystem.readFile(this.path2);
               } catch (e) {
-                console.error(e);
+                log.error(String(e), e);
               }
 
               resolve({
@@ -474,7 +478,7 @@ export class EditorFile extends EventListenerModel {
                 //MDX
                 if (!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) this.buffer2 = await getProjectFileSystem().readFile(this.path2);
               } catch (e) {
-                console.error(e);
+                log.error(String(e), e);
               }
 
               resolve({
@@ -507,7 +511,7 @@ export class EditorFile extends EventListenerModel {
                   }
 
                   if (!granted) {
-                    console.warn('EditorFile.readFile', 'unable to open (mdl) file', this.protocol);
+                    log.warn('EditorFile.readFile', 'unable to open (mdl) file', this.protocol);
                     resolve({
                       buffer: this.buffer,
                       buffer2: this.buffer2,
@@ -530,7 +534,7 @@ export class EditorFile extends EventListenerModel {
                   }
 
                   if (!granted2) {
-                    console.warn('EditorFile.readFile', 'unable to open (mdx) file', this.protocol);
+                    log.warn('EditorFile.readFile', 'unable to open (mdx) file', this.protocol);
                     resolve({
                       buffer: this.buffer,
                       buffer2: this.buffer2,
@@ -552,7 +556,7 @@ export class EditorFile extends EventListenerModel {
             }
             break;
           default:
-            console.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
+            log.warn('EditorFile.readFile', 'unhandled protocol', this.protocol);
             break;
         }
       }

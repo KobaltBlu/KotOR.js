@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
+
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalResourceComparisonState, ResourceComparisonResource } from "../../states/modal/ModalResourceComparisonState";
+
 import * as KotOR from "../../KotOR";
 import "./ModalResourceComparison.scss";
 

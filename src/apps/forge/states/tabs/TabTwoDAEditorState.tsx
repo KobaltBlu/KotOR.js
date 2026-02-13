@@ -1,9 +1,12 @@
 import React from "react";
+
 import { TabTwoDAEditor } from "../../components/tabs/tab-twoda-editor/TabTwoDAEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabTwoDAEditorState extends TabState {
   tabName: string = `2DA`;
@@ -35,11 +38,11 @@ export class TabTwoDAEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( (response) => {
           this.twoDAObject = new KotOR.TwoDAObject(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -51,7 +54,10 @@ export class TabTwoDAEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(ext == 'csv'){
+    if (!this.twoDAObject) {
+      return this.file?.buffer ? this.file.buffer.slice(0) : new Uint8Array(0);
+    }
+    if (ext === 'csv') {
       const textEncoder = new TextEncoder();
       return textEncoder.encode(this.twoDAObject.toCSV());
     }

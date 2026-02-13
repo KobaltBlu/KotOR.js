@@ -1,9 +1,10 @@
+import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
+import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
+
+import { SaveGame } from "../../../engine/SaveGame";
+import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuSaveLoad as K1_MenuSaveLoad, NewSaveItem } from "../../kotor/KOTOR";
-import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
-import { GUISaveGameItem } from "../../tsl/gui/GUISaveGameItem";
-import { SaveGame } from "../../../engine/SaveGame";
 import { TextureLoader } from "../../../loaders";
 
 /**
@@ -98,7 +99,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.LBL_TIMEPLAYED.setText('');
       this.LB_GAMES.border.inneroffsety = 7;
       this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
-      this.LB_GAMES.onSelected = (save: any) => {
+      this.LB_GAMES.onSelected = (save: SaveGame | NewSaveItem) => {
         this.selected = save;
         this.UpdateSelected();
         this.LBL_PCNAME.setText('');
@@ -129,7 +130,7 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       saves.unshift(new NewSaveItem());
     } else {
       saves = SaveGame.saves.slice();
-      let special = saves.filter(save => {
+      const special = saves.filter(save => {
         return save.getIsQuickSave() || save.getIsAutoSave();
       });
 

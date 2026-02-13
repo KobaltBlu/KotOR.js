@@ -1,5 +1,17 @@
 import type * as THREE from "three";
+
 import type { TextureType } from "../../enums/loaders/TextureType";
+
+/** Part group (e.g. OdysseyEmitter) with material for particle textures. */
+export interface ITextureLoaderPartGroup {
+  type?: string;
+  material: THREE.Material & {
+    uniforms?: Record<string, { value: unknown }>;
+    map?: THREE.Texture;
+    depthWrite?: boolean;
+    needsUpdate?: boolean;
+  };
+}
 
 /**
  * ITextureLoaderQueuedRef interface.
@@ -12,10 +24,10 @@ import type { TextureType } from "../../enums/loaders/TextureType";
  * @interface
  */
 export interface ITextureLoaderQueuedRef {
-  name: string,
-  type: TextureType,
-  material?: THREE.ShaderMaterial,
-  partGroup?: any,
-  fallback?: string,
-  onLoad?: Function,
+  name: string;
+  type: TextureType;
+  material?: THREE.ShaderMaterial;
+  partGroup?: ITextureLoaderPartGroup;
+  fallback?: string;
+  onLoad?: (texture?: unknown, ref?: ITextureLoaderQueuedRef) => void;
 }

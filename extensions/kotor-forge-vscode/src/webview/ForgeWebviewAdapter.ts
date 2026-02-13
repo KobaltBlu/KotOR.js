@@ -7,22 +7,11 @@ import type { IForgeHostAdapter } from '@forge/ForgeHostAdapter';
 import { EditorTabManager } from '@forge/managers/EditorTabManager';
 import { ModalManagerState } from '@forge/states/modal/ModalManagerState';
 import type { TabState } from '@forge/states/tabs/TabState';
+import { createScopedLogger, LogScope } from '@kotor/utility/Logger';
 
 import bridge from './WebviewBridge';
 
-const LOG_PREFIX = '[Webview]';
-function logTrace(msg: string) {
-  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [trace] ${msg}`);
-}
-function logDebug(msg: string) {
-  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [debug] ${msg}`);
-}
-function logInfo(msg: string) {
-  if (typeof console !== 'undefined' && console.info) console.info(`${LOG_PREFIX} [info] ${msg}`);
-}
-function logWarn(msg: string) {
-  if (typeof console !== 'undefined' && console.warn) console.warn(`${LOG_PREFIX} [warn] ${msg}`);
-}
+const log = createScopedLogger(LogScope.Webview);
 
 export class ForgeWebviewAdapter implements IForgeHostAdapter {
   private readonly tabManager: EditorTabManager;
@@ -31,46 +20,46 @@ export class ForgeWebviewAdapter implements IForgeHostAdapter {
   private saveReject: ((err: Error) => void) | null = null;
 
   constructor() {
-    logTrace('ForgeWebviewAdapter constructor() entered');
+    log.trace('ForgeWebviewAdapter constructor() entered');
     this.tabManager = new EditorTabManager();
     this.modalManager = new ModalManagerState();
     bridge.on('saveComplete', () => {
-      logDebug('saveComplete received from extension');
+      log.debug('saveComplete received from extension');
       if (this.saveResolve) {
         this.saveResolve();
         this.saveResolve = null;
         this.saveReject = null;
-        logTrace('saveComplete resolve called');
+        log.trace('saveComplete resolve called');
       }
     });
     bridge.on('saveError', (data: unknown) => {
       const msg = data as { error?: string };
-      logWarn(`saveError received: ${msg?.error ?? 'unknown'}`);
+      log.warn('saveError received: %s', msg?.error ?? 'unknown');
       if (this.saveReject) {
         this.saveReject(new Error(msg?.error || 'Save failed'));
         this.saveResolve = null;
         this.saveReject = null;
       }
     });
-    logTrace('ForgeWebviewAdapter constructor() completed');
+    log.trace('ForgeWebviewAdapter constructor() completed');
   }
 
   getTabManager(): EditorTabManager {
-    logTrace('getTabManager() called');
+    log.trace('getTabManager() called');
     return this.tabManager;
   }
 
   getModalManager(): ModalManagerState {
-    logTrace('getModalManager() called');
+    log.trace('getModalManager() called');
     return this.modalManager;
   }
 
   addRecentFile(_file: EditorFile): void {
-    logTrace('addRecentFile() no-op in webview');
+    log.trace('addRecentFile() no-op in webview');
   }
 
   requestSave(_tab: TabState, buffer: Uint8Array): Promise<void> {
-    logInfo(`requestSave() bufferLength=${buffer?.length ?? 0}`);
+    log.info('requestSave() bufferLength=%s', String(buffer?.length ?? 0));
     return new Promise((resolve, reject) => {
       this.saveResolve = resolve;
       this.saveReject = reject;
@@ -78,7 +67,7 @@ export class ForgeWebviewAdapter implements IForgeHostAdapter {
         type: 'requestSave',
         buffer: Array.from(buffer)
       });
-      logTrace('requestSave() postMessage sent');
+      log.trace('requestSave() postMessage sent');
     });
   }
 }

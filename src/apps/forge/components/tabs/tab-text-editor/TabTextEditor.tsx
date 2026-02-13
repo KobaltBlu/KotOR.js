@@ -1,21 +1,41 @@
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React, { useState, useRef, useEffect } from "react";
 import MonacoEditor from "react-monaco-editor";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabTextEditorState } from "../../../states/tabs";
+
+import { MenuBar, MenuItem } from "../../common/MenuBar";
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+import TabManager from "../TabManager";
+
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
 import { TabManagerProvider } from "../../../context/TabManagerContext";
-import TabManager from "../TabManager";
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { MenuBar, MenuItem } from "../../common/MenuBar";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import type { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { TabTextEditorState } from "../../../states/tabs";
+
+
+
+
 import { TabTextEditorSidebar } from "./TabTextEditorSidebar";
+
 import './TabTextEditor.scss';
 
-export const TabTextEditor = function(props: any){
-  const tab: TabTextEditorState = props.tab;
+const log = createScopedLogger(LogScope.Forge);
 
-  // const [width, setWidth] = useState<any>(`100%`);
-  // const [height, setHeight] = useState<any>(`100%`);
+interface IStandaloneCodeEditorWithCommentDisposable extends monacoEditor.editor.IStandaloneCodeEditor {
+  _nwscriptCommentDisposable?: monacoEditor.IDisposable;
+}
+
+export interface TabTextEditorProps extends BaseTabProps {
+  tab: TabTextEditorState;
+}
+
+export const TabTextEditor = function(props: TabTextEditorProps){
+  const tab = props.tab;
+
+  // const [width, setWidth] = useState<string>(`100%`);
+  // const [height, setHeight] = useState<string>(`100%`);
   const [code, setCode] = useState<string>(tab.code);
   const [isDiffMode, setIsDiffMode] = useState<boolean>(tab.isDiffMode);
   const [, forceUpdate] = useState({});
@@ -33,8 +53,7 @@ export const TabTextEditor = function(props: any){
     enableSplitViewResizing: true
   };
 
-  const onChange = (newValue: any, e: any) => {
-    // console.log('onChange', newValue, e);
+  const onChange = (newValue: string, _e: monacoEditor.editor.IModelContentChangedEvent) => {
     tab.setCode(newValue);
   };
 
@@ -47,7 +66,7 @@ export const TabTextEditor = function(props: any){
   };
 
   const editorDidMount = (editor: monacoEditor.editor.IStandaloneCodeEditor, monaco: typeof monacoEditor) => {
-    console.log('editorDidMount', editor, monaco)
+    log.debug('editorDidMount', editor, monaco);
     tab.setEditor(editor);
     tab.setMonaco(monaco);
     tab.triggerLinterTimeout();
@@ -93,7 +112,7 @@ export const TabTextEditor = function(props: any){
           }
         }
       });
-      (editor as any)._nwscriptCommentDisposable = disposable;
+      (editor as IStandaloneCodeEditorWithCommentDisposable)._nwscriptCommentDisposable = disposable;
     }
   };
 
@@ -122,7 +141,7 @@ export const TabTextEditor = function(props: any){
       // Clean up diff editor
       if(tab.diffEditor) {
         tab.diffEditor.dispose();
-        tab.diffEditor = null as any;
+        tab.diffEditor = null;
       }
     }
   };

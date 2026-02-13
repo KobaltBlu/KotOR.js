@@ -1,7 +1,12 @@
+import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
 import type { GFFStruct } from "../resource/GFFStruct";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import type { GameMenu } from "./GameMenu";
 import { GUIControl } from "./GUIControl";
-import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+
+
+const log = createScopedLogger(LogScope.Game);
 import { GUIControlEvent } from "./GUIControlEvent";
 
 /**
@@ -19,9 +24,9 @@ export class GUILabel extends GUIControl {
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUILabel;
 
-    this.onKeyDown = (e: any) => {
+    this.onKeyDown = (e: KeyboardEvent) => {
       // e.stopPropagation();
-      // console.log('onKeyDown', e);
+      // log.info('onKeyDown', e);
 
       switch(e.which){
         case 8: //Backspace
@@ -61,7 +66,7 @@ export class GUILabel extends GUIControl {
     }
   }
 
-  setText(str: any = '', renderOrder = 5){
+  setText(str: string | { toString(): string } = '', renderOrder = 5){
 
     if(this.editable){
       super.setText(str+'_', renderOrder);

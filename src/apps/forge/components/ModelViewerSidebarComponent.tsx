@@ -1,14 +1,19 @@
-import React, { useState } from "react";
-import { TabModelViewerState } from "../states/tabs";
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { Form } from "react-bootstrap";
-import { SceneGraphTreeView } from "./SceneGraphTreeView";
+import React, { useState } from 'react';
+import { Form } from 'react-bootstrap';
 
-import * as KotOR from "../KotOR";
-import { UI3DRenderer } from "../UI3DRenderer";
+import { useEffectOnce } from '../helpers/UseEffectOnce';
+import type * as KotOR from '../KotOR';
+import type { TabModelViewerState } from '../states/tabs';
+import { UI3DRenderer } from '../UI3DRenderer';
 
-export const ModelViewerSidebarComponent = function(props: any){
-  const tab: TabModelViewerState = props.tab as TabModelViewerState;
+import { SceneGraphTreeView } from './SceneGraphTreeView';
+
+export interface ModelViewerSidebarComponentProps {
+  tab: TabModelViewerState;
+}
+
+export const ModelViewerSidebarComponent: React.FC<ModelViewerSidebarComponentProps> = (props) => {
+  const tab = props.tab;
 
   const [selectedTab, setSelectedTab] = useState<string>('camera');
 
@@ -35,8 +40,8 @@ export const ModelViewerSidebarComponent = function(props: any){
 
   useEffectOnce( () => { //constructor
 
-    let keys: KotOR.IKEYEntry[] = [];
-    let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
+    const keys: KotOR.IKEYEntry[] = [];
+    const res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
     res_list.forEach( (res, index) => {
       keys.push(
         KotOR.KEYManager.Key.getFileKeyByRes(res)

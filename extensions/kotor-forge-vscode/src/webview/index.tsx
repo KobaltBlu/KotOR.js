@@ -2,11 +2,14 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 import * as KotOR from '@kotor/KotOR';
+import { createScopedLogger, LogScope } from '@kotor/utility/Logger';
 
 import { WebviewApp } from './WebviewApp';
 
 // Import Bootstrap CSS for UI styling
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+const log = createScopedLogger(LogScope.Webview);
 
 // Global styles for the webview
 const globalStyles = `
@@ -61,8 +64,6 @@ const styleElement = document.createElement('style');
 styleElement.textContent = globalStyles;
 document.head.appendChild(styleElement);
 
-const LOG_PREFIX = '[Webview]';
-
 // Tell the host boot script that the bundle started executing.
 declare global {
   interface Window {
@@ -74,16 +75,13 @@ window.__FORGE_WEBVIEW_LOADED__ = true;
 
 const container = document.getElementById('root');
 if (container) {
-  if (typeof console !== 'undefined' && console.debug) {
-    console.debug(`${LOG_PREFIX} [trace] index.tsx mount container found, creating root`);
-  }
+  log.trace('index.tsx mount container found, creating root');
   const root = createRoot(container);
   (async () => {
     try {
-      if (typeof console !== 'undefined' && console.debug) {
-        console.debug(`${LOG_PREFIX} [trace] KotOR.ConfigClient.Init() starting`);
-      }
+      log.trace('KotOR.ConfigClient.Init() starting');
       await KotOR.ConfigClient.Init();
+      log.trace('KotOR.ApplicationProfile.InitEnvironment()');
       KotOR.ApplicationProfile.InitEnvironment(() => ({
         key: 'kotor',
         directory: '',
@@ -92,17 +90,11 @@ if (container) {
         launch: { type: 'webview', path: '' }
       }));
       document.body.classList.add('kotor');
-      if (typeof console !== 'undefined' && console.info) {
-        console.info(`${LOG_PREFIX} [info] KotOR webview init completed successfully`);
-      }
+      log.info('KotOR webview init completed; waiting for init message from extension');
     } catch (e) {
-      if (typeof console !== 'undefined' && console.warn) {
-        console.warn(`${LOG_PREFIX} [warn] KotOR webview init warning`, e);
-      }
+      log.warn('KotOR webview init warning', e);
     }
-    if (typeof console !== 'undefined' && console.debug) {
-      console.debug(`${LOG_PREFIX} [trace] Rendering WebviewApp`);
-    }
+    log.trace('Rendering WebviewApp (will register bridge handlers and notifyReady)');
     root.render(
       <React.StrictMode>
         <WebviewApp />
@@ -114,12 +106,8 @@ if (container) {
     } catch {
       // ignore
     }
-    if (typeof console !== 'undefined' && console.debug) {
-      console.debug(`${LOG_PREFIX} [trace] WebviewApp rendered`);
-    }
+    log.trace('WebviewApp rendered; on init message tab will be created and editor shown');
   })();
 } else {
-  if (typeof console !== 'undefined' && console.error) {
-    console.error(`${LOG_PREFIX} [error] Root element #root not found`);
-  }
+  log.error('Root element #root not found');
 }

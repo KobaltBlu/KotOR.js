@@ -1,9 +1,11 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
 import type { NWScriptInstruction } from "../NWScriptInstruction";
+import { OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_LOGANDII, OP_JZ, OP_JNZ, OP_CPTOPSP, OP_CPTOPBP } from '../NWScriptOPCodes';
+
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
 import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
-import { OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ, OP_LOGANDII, OP_JZ, OP_JNZ, OP_CPTOPSP, OP_CPTOPBP } from '../NWScriptOPCodes';
 import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
 
 /**

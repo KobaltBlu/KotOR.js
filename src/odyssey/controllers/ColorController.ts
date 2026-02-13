@@ -1,9 +1,11 @@
-import { OdysseyController } from "./OdysseyController";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
-import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "../../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
+
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "..";
+
+import { OdysseyController } from "./OdysseyController";
 
 /**
  * ColorController class.

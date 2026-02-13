@@ -1,19 +1,23 @@
 import * as THREE from "three";
-import { ERFObject } from "../../../resource/ERFObject";
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFField } from "../../../resource/GFFField";
+
+import { OdysseyWalkMesh } from "../KotOR";
+
 import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { BinaryWriter } from "../../../utility/binary/BinaryWriter";
-import { CExoLocString } from "../../../resource/CExoLocString";
 import { AreaMap } from "../../../module/AreaMap";
 import { ModuleArea } from "../../../module/ModuleArea";
+import { CExoLocString } from "../../../resource/CExoLocString";
+import { ERFObject } from "../../../resource/ERFObject";
+import { GFFField } from "../../../resource/GFFField";
+import { GFFObject } from "../../../resource/GFFObject";
 import { LYTObject } from "../../../resource/LYTObject";
-import { IndoorMap, IndoorMapRoom } from "./IndoorMap";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { BinaryWriter } from "../../../utility/binary/BinaryWriter";
+
 import { Kit } from "./IndoorKit";
-import { cloneWalkmesh, applyWalkmeshTransform } from "./IndoorWalkmesh";
 import { loadKits } from "./IndoorKitLoader";
-import { OdysseyWalkMesh } from "../KotOR";
+import { IndoorMap, IndoorMapRoom } from "./IndoorMap";
+import { cloneWalkmesh, applyWalkmeshTransform } from "./IndoorWalkmesh";
+
 
 export type IndoorBuildOptions = {
   outputPath: string;

@@ -1,7 +1,10 @@
 import { CurrentGame } from "../../../engine/CurrentGame";
+import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIControl, GUILabel, GUIButton } from "../../../gui";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
+import { BitWise } from "../../../utility/BitWise";
 
 /**
  * CharGenCustomPanel class.
@@ -61,7 +64,10 @@ export class CharGenCustomPanel extends GameMenu {
 
       this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.manager.CharGenAbilities.setCreature(GameState.getCurrentPlayer());
+        const pc = GameState.getCurrentPlayer();
+        if (pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)) {
+          this.manager.CharGenAbilities.setCreature(pc as ModuleCreature);
+        }
         this.manager.CharGenAbilities.open();
       });
 

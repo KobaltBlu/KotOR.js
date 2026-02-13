@@ -1,6 +1,8 @@
 import React from "react";
+
 import { TabDiffTool } from "../../components/tabs/tab-diff-tool/TabDiffTool";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { TabState } from "./TabState";
 
 export class TabDiffToolState extends TabState {

@@ -1,6 +1,7 @@
-import type { NWScriptExpression } from "./NWScriptExpression";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptExpression } from "./NWScriptExpression";
 
 /**
  * AST Node Types for NWScript
@@ -64,6 +65,51 @@ export interface NWScriptASTNode {
    * Parent node (for tree traversal)
    */
   parent?: NWScriptASTNode;
+}
+
+/** Serialized parameter for JSON (name, type, optional offset/dataType). */
+export interface ISerializedASTParameter {
+  name: string;
+  type: number;
+  offset?: number;
+  dataType?: number;
+}
+
+/** Serialized expression for JSON export. */
+export interface ISerializedASTExpression {
+  type: string;
+  dataType?: number;
+  value?: number | string | boolean;
+  variableName?: string;
+  isGlobal?: boolean;
+  operator?: string;
+  left?: ISerializedASTExpression | null;
+  right?: ISerializedASTExpression | null;
+  functionName?: string;
+  arguments?: ISerializedASTExpression[];
+}
+
+/** Serialized AST node for JSON export (recursive; location uses block IDs). */
+export interface ISerializedASTNode {
+  type: string;
+  _circular?: boolean;
+  location?: { startBlockId?: number; endBlockId?: number; startAddress?: number; endAddress?: number };
+  children?: ISerializedASTNode[];
+  globals?: ISerializedASTNode[];
+  functions?: ISerializedASTNode[];
+  mainBody?: ISerializedASTNode | null;
+  name?: string;
+  returnType?: number;
+  parameters?: ISerializedASTParameter[];
+  locals?: ISerializedASTNode[];
+  body?: ISerializedASTNode | null;
+  entryBlockId?: number;
+  statements?: ISerializedASTNode[];
+  condition?: ISerializedASTExpression | null;
+  thenBody?: ISerializedASTNode | null;
+  elseBody?: ISerializedASTNode | null;
+  headerBlockId?: number;
+  [key: string]: string | number | boolean | null | ISerializedASTNode | ISerializedASTNode[] | ISerializedASTExpression | ISerializedASTParameter[] | undefined;
 }
 
 /**
@@ -786,21 +832,20 @@ export class NWScriptAST {
    * Serialize an AST node to JSON, handling circular references
    * Removes parent references and converts object references to IDs
    */
-  static toJSON(node: NWScriptASTNode): any {
+  static toJSON(node: NWScriptASTNode): ISerializedASTNode {
     return this.serializeNode(node, new Set());
   }
 
   /**
    * Internal method to serialize a node, tracking visited nodes to prevent infinite recursion
    */
-  private static serializeNode(node: NWScriptASTNode, visited: Set<NWScriptASTNode>): any {
-    // Prevent infinite recursion (though parent refs are excluded, this is a safety measure)
+  private static serializeNode(node: NWScriptASTNode, visited: Set<NWScriptASTNode>): ISerializedASTNode {
     if (visited.has(node)) {
       return { type: node.type, _circular: true };
     }
     visited.add(node);
 
-    const base: any = {
+    const base: ISerializedASTNode = {
       type: node.type
     };
 
@@ -838,18 +883,13 @@ export class NWScriptAST {
         const funcNode = node as NWScriptFunctionNode;
         base.name = funcNode.name;
         base.returnType = funcNode.returnType;
-        base.parameters = funcNode.parameters?.map(p => {
-          const param: any = {
+        base.parameters = funcNode.parameters?.map((p: { name: string; type: number; offset?: number; dataType?: number }) => {
+          const param: ISerializedASTParameter = {
             name: p.name,
             type: p.type
           };
-          // Include optional fields if they exist (from NWScriptFunctionAnalyzer)
-          if ('offset' in p && p.offset !== undefined) {
-            param.offset = p.offset;
-          }
-          if ('dataType' in p && p.dataType !== undefined) {
-            param.dataType = p.dataType;
-          }
+          if (p.offset !== undefined) param.offset = p.offset;
+          if (p.dataType !== undefined) param.dataType = p.dataType;
           return param;
         }) || [];
         base.locals = funcNode.locals?.map(l => this.serializeNode(l, visited)) || [];
@@ -965,18 +1005,13 @@ export class NWScriptAST {
   /**
    * Serialize an expression to JSON, handling potential circular references
    */
-  private static serializeExpression(expr: any): any {
-    if (!expr) return null;
-    
-    // If it's already a plain object (from JSON), return as-is
-    if (typeof expr !== 'object' || expr === null) {
-      return expr;
-    }
+  private static serializeExpression(expr: NWScriptExpression | null | undefined): ISerializedASTExpression | null {
+    if (!expr || typeof expr !== "object") return null;
 
-    // Handle NWScriptExpression objects
-    const serialized: any = {
-      type: expr.type,
-      dataType: expr.dataType
+    const ex = expr as NWScriptExpression;
+    const serialized: ISerializedASTExpression = {
+      type: ex.type as string,
+      dataType: ex.dataType
     };
 
     // Add properties based on expression type
@@ -1005,9 +1040,10 @@ export class NWScriptAST {
           serialized.left = this.serializeExpression(expr.left);
         }
         break;
-      case 'function_call':
-        serialized.functionName = expr.functionName;
-        serialized.arguments = expr.arguments?.map((arg: any) => this.serializeExpression(arg)) || [];
+      case "function_call":
+        serialized.functionName = ex.functionName;
+        serialized.arguments =
+          ex.arguments?.map((arg) => this.serializeExpression(arg)).filter((x): x is ISerializedASTExpression => x != null) ?? [];
         break;
     }
 

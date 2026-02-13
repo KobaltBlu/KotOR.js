@@ -1,5 +1,6 @@
-import type { GUILabel } from "../../../gui";
 import { InGameAreaTransition as K1_InGameAreaTransition } from "../../kotor/KOTOR";
+
+import type { GUILabel } from "../../../gui";
 
 /**
  * InGameAreaTransition class.

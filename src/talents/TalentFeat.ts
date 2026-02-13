@@ -8,17 +8,19 @@ import { TwoDAManager } from "../managers/TwoDAManager";
 import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import type { ITwoDARowData } from "../resource/TwoDAObject";
 import { TwoDAObject } from "../resource/TwoDAObject";
 import { BitWise } from "../utility/BitWise";
+
 import { TalentObject } from "./TalentObject";
 
 const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
 
 /**
  * TalentFeat class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TalentFeat.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -169,8 +171,8 @@ export class TalentFeat extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
-    let rangeTolerance = 0.25;
+    const distance = oCaster.position.distanceTo(oTarget.position);
+    const rangeTolerance = 0.25;
 
     //MELEE
     if(this.category == 0x1104){
@@ -244,7 +246,7 @@ export class TalentFeat extends TalentObject {
     }
     return 0;
   }
-  
+
   impactCaster(object: ModuleObject){
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
@@ -285,25 +287,25 @@ export class TalentFeat extends TalentObject {
       case 'jgd':
         return this.jgdGranted;
       case 'jsn':
-        return this.jsnGranted; 
+        return this.jsnGranted;
       case 'sas':
         return this.sasGranted;
       case 'sld':
         return this.sldGranted;
       case 'sma':
-        return this.smaGranted;   
+        return this.smaGranted;
       case 'jwa':
         return this.jwaGranted;
       case 'jma':
         return this.jmaGranted;
       case 'jwm':
-        return this.jwmGranted; 
+        return this.jwmGranted;
       case 'tec':
         return this.tecGranted;
       case 'drx':
         return this.drxGranted;
       case 'drc':
-        return this.drcGranted; 
+        return this.drcGranted;
       default:
         return -1;
     }
@@ -314,19 +316,19 @@ export class TalentFeat extends TalentObject {
       case 'scd':
         return this.scdRecom;
       case 'sol':
-        return this.solRecom; 
+        return this.solRecom;
       case 'sct':
         return this.sctRecom;
       case 'jcn':
         return this.jcnRecom;
       case 'jgd':
-        return this.jgdRecom; 
+        return this.jgdRecom;
       case 'jsn':
         return this.jsnRecom;
       case 'sas':
         return this.sasRecom;
       case 'sld':
-        return this.sldRecom;   
+        return this.sldRecom;
       case 'sma':
         return this.smaRecom;
       case 'jwa':
@@ -369,7 +371,7 @@ export class TalentFeat extends TalentObject {
       case 'jwa':
         return this.jwaList;
       case 'jma':
-        return this.jmaList;  
+        return this.jmaList;
       case 'jwm':
         return this.jwmList;
       case 'tec':
@@ -383,7 +385,7 @@ export class TalentFeat extends TalentObject {
     }
   }
 
-  apply2DA(row: any = {}){
+  apply2DA(row: ITwoDARowData | Record<string, string | number> = {}){
     if (row.hasOwnProperty('__rowlabel'))
       this.rowLabel = TwoDAObject.normalizeValue(row.__rowlabel, 'number', 0);
 
@@ -662,14 +664,14 @@ export class TalentFeat extends TalentObject {
       this.pips = TwoDAObject.normalizeValue(row.pips, 'number', -1);
   }
 
-  static From2DA(row: any = {}) {
+  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}) {
     const talentFeat = new TalentFeat();
     talentFeat.apply2DA(row);
     return talentFeat;
   }
 
   save(){
-    let featStruct = new GFFStruct(1);
+    const featStruct = new GFFStruct(1);
     featStruct.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(this.getId());
     return featStruct;
   }

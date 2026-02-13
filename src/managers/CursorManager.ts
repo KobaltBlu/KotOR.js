@@ -1,15 +1,20 @@
 import * as THREE from "three";
-import { TextureLoader } from "../loaders";
+
 import { Mouse } from "../controls/Mouse";
-import type { ModuleObject } from "../module";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { EngineMode, GameEngineType } from "../enums/engine";
-import type { MenuManager } from "./MenuManager";
-import { GameState } from "../GameState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+import { TextureLoader } from "../loaders";
+import type { ModuleObject } from "../module";
 import { OdysseyObject3D } from "../three/odyssey/OdysseyObject3D";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { BitWise } from "../utility/BitWise";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import type { MenuManager } from "./MenuManager";
+
+const log = createScopedLogger(LogScope.Manager);
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
@@ -297,7 +302,7 @@ export class CursorManager {
 	public static setReticleHoveredObject( object: ModuleObject ){
 		if(!object){ return; }
 
-		let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
+		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
 		CursorManager.hovered = object.getReticleNode();
 		if(CursorManager.hovered){
@@ -381,10 +386,10 @@ export class CursorManager {
 
 		CursorManager.MenuManager.hoveredGUIElement = undefined;
 
-		let uiControls = GameState.controls.MenuGetActiveUIElements();
-		let controlCount = uiControls.length;
+		const uiControls = GameState.controls.MenuGetActiveUIElements();
+		const controlCount = uiControls.length;
 		for(let i = 0; i < controlCount; i++){
-			let control = uiControls[i];
+			const control = uiControls[i];
 
 			if(!control.isVisible()){
 				continue;
@@ -399,7 +404,7 @@ export class CursorManager {
 			}
 
 			if(!guiHoverCaptured){
-				let cMenu = control.menu;
+				const cMenu = control.menu;
 				cMenu.setWidgetHoverActive(control, true);
 				guiHoverCaptured = false;
 			}
@@ -443,13 +448,13 @@ export class CursorManager {
 			if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
 				if(GameState.scene_cursor_holder.visible){
 					const moduleObject = CursorManager.onMouseHitInteractive();
-					// console.log('moduleObject', moduleObject);
+					// log.info('moduleObject', moduleObject);
 					if(moduleObject){
 						CursorManager.setReticleHoveredObject(moduleObject);
 					}
 				}else{
 					if(!CursorManager.selectedObject){
-						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
+						const closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
 						CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
@@ -516,7 +521,7 @@ export class CursorManager {
 		const points: number[] = [];
 		const sizes: number[] = [];
 		let obj;
-		let targetPosition = new THREE.Vector3();
+		const targetPosition = new THREE.Vector3();
 		const losZ = 1;
 		
 		for(let i = 0; i < objCount; i++){
@@ -549,7 +554,7 @@ export class CursorManager {
 		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
 		const intersectsT = CursorManager.raycaster.intersectObjects( occluders, false );
 		if(intersectsT[0] && intersectsT[0].object?.uuid == CursorManager.testPoints.uuid){
-			// console.log('intersects', intersectsT[0], objects[intersectsT[0]?.index], intersectsT);
+			// log.info('intersects', intersectsT[0], objects[intersectsT[0]?.index], intersectsT);
 			return objects[intersectsT[0].index];
 		}
 		CursorManager.raycaster.params.Points.threshold = pThresholdCache;

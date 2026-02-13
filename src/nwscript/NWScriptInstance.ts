@@ -13,10 +13,15 @@ import type { DLGObject } from "../resource/DLGObject";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "../talents";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import type { NWScript } from "./NWScript";
 import type { NWScriptInstruction } from "./NWScriptInstruction";
 import { NWScriptStack } from "./NWScriptStack";
 import type { NWScriptStackVariable } from "./NWScriptStackVariable";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import type { NWScriptSubroutine } from "./NWScriptSubroutine";
 
 /**
@@ -33,7 +38,12 @@ export class NWScriptInstance {
   parentUUID: string;
   name: string;
   instructions: Map<number, NWScriptInstruction> = new Map();
-  globalCache: any = null;
+  globalCache: {
+    enteringObject: ModuleObject;
+    subRoutines: NWScriptSubroutine[];
+    stack: { basePointer: number; pointer: number; stack: NWScriptStackVariable[] };
+    instr: NWScriptInstruction;
+  } | null = null;
   _disposed: boolean = false;
   isStoreState: boolean = false;
   nwscript: NWScript;
@@ -42,9 +52,9 @@ export class NWScriptInstance {
   subRoutines: NWScriptSubroutine[] = [];
   subRoutine: NWScriptSubroutine;
   state: INWScriptStoreState[] = [];
-  var1: any;
-  var2: any;
-  var3: any;
+  var1: number | string | ModuleObject | boolean | null;
+  var2: number | string | ModuleObject | boolean | null;
+  var3: number | string | ModuleObject | boolean | null;
   struct1: NWScriptStackVariable[] = [];
   struct2: NWScriptStackVariable[] = [];
   params: number[];
@@ -150,7 +160,7 @@ export class NWScriptInstance {
    * @param event The event to dispatch.
    * @param args The arguments to pass to the event.
    */
-  dispatchEvent(event: string, ...args: any) {
+  dispatchEvent(event: string, ...args: (number | string | ModuleObject | boolean | null)[]) {
     if(!Array.isArray(this.#eventListener[event])) {
       return;
     }
@@ -254,7 +264,7 @@ export class NWScriptInstance {
 
   }
 
-  setCaller(obj: any){
+  setCaller(obj: ModuleObject | null){
     this.caller = obj;
     if(typeof this.caller == 'number'){
       this.caller = GameState.ModuleObjectManager.GetObjectById(this.caller);
@@ -266,7 +276,7 @@ export class NWScriptInstance {
     return this.talent.id;
   }
 
-  run(caller: any = null, scriptVar = 0){
+  run(caller: ModuleObject | null = null, scriptVar = 0){
     this.caller = caller;
     this.scriptVar = scriptVar;
 
@@ -307,17 +317,17 @@ export class NWScriptInstance {
     //For some reason this is needed for some conditional scripts because the stack pointer is getting set back too far could be a problem with MOVSP?
     try{
       if(this.stack.stack[-1] ? true : false){
-        let _ret = (this.stack.stack[-1]);
+        const _ret = (this.stack.stack[-1]);
         delete this.stack.stack[-1];
         return _ret.value ? 1 : 0;
       }else if(this.stack.stack.length){
-        let _ret = (this.stack.pop());
+        const _ret = (this.stack.pop());
         return _ret.value ? 1 : 0;
       }else{
         return false;
       }
     }catch(e){
-      console.error(e, this);
+      log.error(e, this);
     }
   }
 
@@ -433,8 +443,8 @@ export class NWScriptInstance {
     return returnValue;
   }
 
-  executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: any[] = []){
-    //console.log('executeScript', args);
+  executeScript(instance: NWScriptInstance, parentInstance: NWScriptInstance, args: (number | string | ModuleObject | boolean | null)[] = []){
+    //log.info('executeScript', args);
     // instance.name = parentInstance.name;
     instance.parentUUID = parentInstance.uuid;
     instance.lastPerceived = parentInstance.lastPerceived;
@@ -496,7 +506,7 @@ export class NWScriptInstance {
 
   saveEventSituation(){
     //STORE_STATE
-    let scriptSituation = new GFFStruct(0x7777);
+    const scriptSituation = new GFFStruct(0x7777);
 
     scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
     scriptSituation.addField( new GFFField(GFFDataType.VOID, 'Code' ) ).setData( this.nwscript.code );
@@ -505,7 +515,7 @@ export class NWScriptInstance {
     scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
 
-    let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
+    const stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
     stack.addChildStruct( this.stack.saveForEventSituation() );
 
     return scriptSituation;

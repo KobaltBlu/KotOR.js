@@ -1,8 +1,12 @@
-
 import * as THREE from "three";
+
 import { EngineMode } from "../enums/engine/EngineMode";
 import { GameState } from "../GameState";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { TwoDAManager } from "./TwoDAManager";
+
+const log = createScopedLogger(LogScope.Manager);
 
 interface RumbleSample {
   magnitude: number;
@@ -23,7 +27,7 @@ export class CameraShakeManager {
   static position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   static quaternion: THREE.Quaternion =  new THREE.Quaternion(0, 0, 0, 1);
   static active: boolean = false;
-  static cache: any = {
+  static cache: { position: THREE.Vector3; quaternion: THREE.Quaternion } = {
     position: new THREE.Vector3(0, 0, 0),
     quaternion: new THREE.Quaternion(0, 0, 0, 1),
   };
@@ -37,19 +41,19 @@ export class CameraShakeManager {
       CameraShakeManager.cache.position.copy(GameState.currentCamera.position);
       //CameraShakeManager.cache.quaternion.copy(GameState.currentCamera.quaternion);
     }
-  };
+  }
 
   static playRumblePattern(idx = 0) {
     CameraShakeManager.lsamples = [];
     CameraShakeManager.rsamples = [];
     CameraShakeManager.time = 0;
-    let rumble = TwoDAManager.datatables.get('rumble').rows[idx];
+    const rumble = TwoDAManager.datatables.get('rumble').rows[idx];
     if(rumble){
-      let lsamples = parseInt(rumble.lsamples);
-      let rsamples = parseInt(rumble.rsamples);
+      const lsamples = parseInt(rumble.lsamples);
+      const rsamples = parseInt(rumble.rsamples);
       
       // Debug: Log the rumble data to understand the time units
-      console.log('Rumble data for index', idx, ':', rumble);
+      log.debug('Rumble data for index %s: %o', String(idx), rumble);
       
       for(let i = 0; i < lsamples; i++){
         const time = parseFloat(rumble['ltime'+(i+1)]);
@@ -117,14 +121,14 @@ export class CameraShakeManager {
       let lLeft = CameraShakeManager.lsamples.length;
       let rRight = CameraShakeManager.rsamples.length;
       while(lLeft--){
-        let sample = CameraShakeManager.lsamples[lLeft];
+        const sample = CameraShakeManager.lsamples[lLeft];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.lsamples.splice(lLeft, 1);
       }
       
       while(rRight--){
-        let sample = CameraShakeManager.rsamples[rRight];
+        const sample = CameraShakeManager.rsamples[rRight];
         if(!sample){ continue; }
         if(sample.time > 0){ continue; }
         CameraShakeManager.rsamples.splice(rRight, 1);

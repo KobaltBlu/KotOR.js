@@ -1,13 +1,16 @@
 import React from "react";
-import { TabState } from "./TabState";
+import * as THREE from 'three';
+
+import { TabUTDEditor } from "../../components/tabs/tab-utd-editor/TabUTDEditor";
+import { UI3DRendererView } from "../../components/UI3DRendererView";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeDoor } from "../../module-editor/ForgeDoor";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTDEditor } from "../../components/tabs/tab-utd-editor/TabUTDEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
-import { UI3DRendererView } from "../../components/UI3DRendererView";
-import { ForgeDoor } from "../../module-editor/ForgeDoor";
+
+import { TabState } from "./TabState";
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;

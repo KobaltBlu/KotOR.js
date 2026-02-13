@@ -1,28 +1,41 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
+
 import './app.scss';
-import { AppProvider, useApp } from "./context/AppContext";
 
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { ConfigClient } from "../../utility/ConfigClient";
-import { CategoryMenuItem } from "./components/CategoryMenuItem";
-import { ProfileTabContent } from "./components/ProfileTabContent";
 import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { Launcher } from "./context/Launcher";
+import { ConfigClient } from "../../utility/ConfigClient";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import { CategoryMenuItem } from "./components/CategoryMenuItem";
 import { CommunityTabContent } from "./components/CommunityTabContent";
-import { GOGWidget } from "./components/GOGWidget";
 import DiscordWidget from "./components/DiscordWidget";
+import { GOGWidget } from "./components/GOGWidget";
+import type { ProfileTabContentHandle } from "./components/ProfileTabContent";
+import { ProfileTabContent } from "./components/ProfileTabContent";
+import { AppProvider, useApp } from "./context/AppContext";
+import { Launcher } from "./context/Launcher";
+import type { LauncherProfile, ProfileCategory } from "./types";
 
-(window as any).Launcher = Launcher;
+const log = createScopedLogger(LogScope.Launcher);
 
-(window as any).ConfigClient = ConfigClient;
+declare global {
+  interface Window {
+    Launcher?: typeof Launcher;
+    ConfigClient?: typeof ConfigClient;
+    launcherView?: Promise<void>;
+  }
+}
+window.Launcher = Launcher;
+window.ConfigClient = ConfigClient;
 
 if(window.location.origin === 'file://'){
   ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
   ApplicationProfile.isMac = window.electron.isMac();
 }else{
   ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
-  let menuTopRight = document.getElementById('launcher-menu-top-right');
+  const menuTopRight = document.getElementById('launcher-menu-top-right');
   if(menuTopRight) menuTopRight.style.display = 'none';
 }
 
@@ -39,16 +52,16 @@ const App = function() {
 
   const [showMenuTopRight, setShowMenuTopRight] = useState(false);
 
-  let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
+  let tabRefs: React.RefObject<ProfileTabContentHandle | null>[] = Array(Object.values(profileCategoriesValue).reduce((acc: number, cat: ProfileCategory) => {
     return acc + cat.profiles.length;
-  }, 0)).fill(0).map(i=> React.createRef());
+  }, 0)).fill(0).map(() => React.createRef<ProfileTabContentHandle | null>());
 
   let resizeEndTimeout: ReturnType<typeof setTimeout>;
   const onResizeEnd = () => {
-    console.log('end');
+    log.trace('resize end');
     ConfigClient.set(['Launcher', 'width'], window.outerWidth);
     ConfigClient.set(['Launcher', 'height'], window.outerHeight);
-    console.log(tabRefs);
+    log.debug('tabRefs count', tabRefs.length);
   };
 
   const onResize = () => {
@@ -70,8 +83,7 @@ const App = function() {
   };
 
   const onFullscreenChange = (event: Event) => {
-    console.log(document.fullscreenElement);
-    console.log("FULL SCREEN CHANGE", event)
+    log.debug('fullscreenchange', document.fullscreenElement, event)
     if(document.fullscreenElement == null){
       if(event.target instanceof HTMLVideoElement){
         event.target.volume = 0;
@@ -85,7 +97,7 @@ const App = function() {
   };
 
   useEffect(() => {
-    console.log('sp', selectedProfileValue, tabRefs);
+    log.trace('selectedProfile', selectedProfileValue?.key, 'tabRefs', tabRefs.length);
 
     if(!selectedProfileValue) return;
     if(!tabRefs[selectedProfileValue.id]?.current) return;
@@ -95,7 +107,7 @@ const App = function() {
 
   //on-mount
   useEffect(() => {
-    console.log(tabRefs);
+    log.trace('mount: tabRefs initial', tabRefs.length);
     window.addEventListener('resize', onResize);
     setShowMenuTopRight(!(ApplicationProfile.ENV == ApplicationEnvironment.BROWSER));
     Launcher.InitProfiles().then( () => {
@@ -106,10 +118,10 @@ const App = function() {
         )
       );
       document.body.style.display = '';
-      tabRefs = Array(Object.values(Launcher.AppCategories).reduce((acc, cat: any) => {
+      tabRefs = Array(Object.values(Launcher.AppCategories).reduce((acc: number, cat: ProfileCategory) => {
         return acc + cat.profiles.length;
-      }, 0)).fill(0).map(i=> React.createRef());
-      console.log(tabRefs);
+      }, 0)).fill(0).map(() => React.createRef<ProfileTabContentHandle | null>());
+      log.debug('mount: tabRefs after InitProfiles', tabRefs.length);
       setAppReady(true);
     })
 
@@ -117,7 +129,7 @@ const App = function() {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     //on-unmount
     return () => {
-      // console.log('destruct');
+      log.trace('launcher unmount: removing resize/focus/fullscreen listeners');
       window.removeEventListener('resize', onResize);
       window.removeEventListener('resize', onFocus);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
@@ -126,8 +138,8 @@ const App = function() {
   }, []);
 
   useEffect(() => {
-    // console.log('cat', appContext.profileCategories);
-  }, [appContext.profileCategories])
+    log.trace('profileCategories changed', Object.keys(appContext.profileCategories).length);
+  }, [appContext.profileCategories]);
 
   const onBtnMinimize = (e: React.MouseEvent<HTMLDivElement>) => {
     // e.preventDefault();
@@ -186,16 +198,16 @@ const App = function() {
         <div className="tab-host">
           {(selectedTab == 'apps' && <div className="tab selected">
             <div className="launcher-options">
-              {Object.values(profileCategoriesValue).map((category: any, i: number) => {
+              {Object.values(profileCategoriesValue).map((category: ProfileCategory, i: number) => {
                 return (
                   <CategoryMenuItem category={category} key={`cat-menu-item-${i}`}></CategoryMenuItem>
                 )
               })}
             </div>
             <div className="launcher-contents">
-              {Object.values(profileCategoriesValue).map((category: any, index: number) => {
+              {Object.values(profileCategoriesValue).map((category: ProfileCategory, index: number) => {
                 return (
-                  category.profiles.map((profile: any, index: number) => {
+                  category.profiles.map((profile, index: number) => {
                     return (
                       <ProfileTabContent ref={tabRefs[profile.id]} profile={profile} active={selectedProfileValue == profile ? true : false} key={`profile-content-item-${profile.id}`}></ProfileTabContent>
                     )
@@ -219,15 +231,15 @@ const App = function() {
                 <div className="buy-widgets" style={{display: 'flex', gap: '20px', flexWrap: 'wrap', marginTop: '20px'}}>
                   <GOGWidget 
                     productId="1207666283" // KotOR 1 GOG ID
-                    onError={(error) => console.error('GOG Widget Error:', error)}
-                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    onError={(error) => log.error('GOG Widget Error', error)}
+                    onProductLoaded={(product) => log.info('GOG Widget product loaded', product)}
                     showPrice={true}
                     showDiscount={true}
                   />
                   <GOGWidget 
                     productId="1421404581" // KotOR 2 GOG ID
-                    onError={(error) => console.error('GOG Widget Error:', error)}
-                    onProductLoaded={(product) => console.log('Product loaded:', product)}
+                    onError={(error) => log.error('GOG Widget Error', error)}
+                    onProductLoaded={(product) => log.info('GOG Widget product loaded', product)}
                     showPrice={true}
                     showDiscount={true}
                   />
@@ -253,9 +265,14 @@ const App = function() {
 
 }
 
+/** Launcher exposes root render on window for tooling. */
+interface WindowWithLauncherView extends Window {
+  launcherView?: void;
+}
+
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
-( async () => {
-  (window as any).launcherView = root.render(
+(async () => {
+  (window as WindowWithLauncherView).launcherView = root.render(
     <React.StrictMode>
       <AppProvider>
         <App />

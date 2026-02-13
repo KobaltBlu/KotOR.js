@@ -1,5 +1,6 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+
+import { ForgeGameObject } from "./ForgeGameObject";
 
 export class ForgePlaceable extends ForgeGameObject {
 
@@ -10,10 +11,14 @@ export class ForgePlaceable extends ForgeGameObject {
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utp;
 
   // Appearance and Faction data
-  kPlaceableAppearances: any[] = [];
-  kPlaceableAppearance: any = {};
-  kFactions: any[] = [];
-  kFaction: any = {};
+  /** TwoDA row data for placeable appearances. */
+  kPlaceableAppearances: Record<string, string>[] = [];
+  /** Selected appearance row. */
+  kPlaceableAppearance: Record<string, string> = {};
+  /** TwoDA row data for factions. */
+  kFactions: Record<string, string>[] = [];
+  /** Selected faction row. */
+  kFaction: Record<string, string> = {};
 
   //Blueprint Properties
   animationState: number = 2;
@@ -81,7 +86,7 @@ export class ForgePlaceable extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
     if(property === 'faction' || property === 'placeable.faction'){
       this.loadFactions();
     }

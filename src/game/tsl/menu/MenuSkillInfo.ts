@@ -1,6 +1,7 @@
 
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MenuSkillInfo as K1_MenuSkillInfo } from "../../kotor/KOTOR";
+
+import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 
 /**
  * MenuSkillInfo class.

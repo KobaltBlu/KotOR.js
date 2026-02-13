@@ -1,9 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabAudioPlayerState } from "../../../states/tabs/TabAudioPlayerState";
-import { AudioPlayerState } from "../../../states/AudioPlayerState";
+
 import * as KotOR from "../../../../../KotOR";
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { AudioPlayerState } from "../../../states/AudioPlayerState";
+import { TabAudioPlayerState } from "../../../states/tabs/TabAudioPlayerState";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const TabAudioPlayer = function(props: BaseTabProps) {
   const tab = props.tab as TabAudioPlayerState;
@@ -51,7 +57,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
   }
 
   const onOpen = (file: KotOR.AudioFile) => {
-    console.log('onOpen', file);
+    log.debug('onOpen', file);
     if(!file){ return; }
     setFile(file);
   }
@@ -76,11 +82,11 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
     AudioPlayerState.AddEventListener('onOpen', onOpen);
     window.addEventListener('resize', onResize);
 
-    console.log('useEffect', canvasRef, canvasRef.current);
+    log.debug('useEffect', canvasRef, canvasRef.current);
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      console.log(ctx);
+      log.debug('canvas context', ctx);
       contextRef.current = (ctx as CanvasRenderingContext2D);
       onResize();
     }
@@ -93,7 +99,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       AudioPlayerState.RemoveEventListener('onStop', onStop);
       AudioPlayerState.RemoveEventListener('onLoop', onLoop);
       AudioPlayerState.RemoveEventListener('onOpen', onOpen);
-      cancelAnimationFrame(requestRef.current as any);
+      if (requestRef.current != null) cancelAnimationFrame(requestRef.current);
       setIsDisposed(true);
       window.removeEventListener('resize', onResize);
     }
@@ -147,7 +153,7 @@ export const TabAudioPlayer = function(props: BaseTabProps) {
       let secondX = (bufferLength * barWidth) - barWidth/2;
 
       context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
+      AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as Uint8Array);
 
       const totalHeight = 64;
       const maxHeight = 64;

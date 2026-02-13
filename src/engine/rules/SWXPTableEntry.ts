@@ -35,7 +35,7 @@ export class SWXPTableEntry {
   cr20: number = 0;
   cr21: number = 0;
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWXPTableEntry {
     const xpTableEntry = new SWXPTableEntry();
 
     xpTableEntry.level = parseInt(row.__index);

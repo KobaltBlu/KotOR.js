@@ -4,6 +4,7 @@
  */
 
 import { DiagnosticSeverity } from 'vscode-languageserver/node';
+
 import { trace, debug } from './logger';
 import {
   ASTNode,

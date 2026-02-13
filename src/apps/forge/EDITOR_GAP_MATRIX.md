@@ -29,7 +29,7 @@ This document maps all resource types to their current implementation status and
 | **lyt** | ✅ Full | TabTextEditorState | LYTObject | Layout text files - text editor |
 | **mdl/mdx** | ✅ Full | TabModelViewerState | MDLObject (need to verify path) | 3D model viewer |
 | **mod** | ✅ Full | TabERFEditorState | ERFObject | Module archives - same as ERF |
-| **ncs** | ✅ Full | TabTextEditorState | (binary script, decompiled to NSS) | Compiled scripts - text editor |
+| **ncs** | ✅ Full | TabTextEditorState | (binary script, converted to NSS) | Compiled scripts - text editor |
 | **nss** | ✅ Full | TabTextEditorState | (text) | Script files - Monaco editor with syntax highlighting |
 | **pth** | ✅ Full | TabPTHEditorState | (need to verify parser) | Path files - specialized editor |
 | **sav** | ⚠️ Fallback | TabSAVEditorState → ERF | ERFObject | Save game archives - redirects to ERF viewer |

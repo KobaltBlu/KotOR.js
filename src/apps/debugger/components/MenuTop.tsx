@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { Container, Nav, Navbar } from 'react-bootstrap';
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuItem } from "./MenuItem";
-import { MenuTopState } from "../states/MenuTopState";
-import { MenuTopItem } from "../MenuTopItem";
 
-export const MenuTop = function(props: any) {
+import { useEffectOnce } from "../helpers/UseEffectOnce";
+import { MenuTopItem } from "../MenuTopItem";
+import { MenuTopState } from "../states/MenuTopState";
+
+import { MenuItem } from "./MenuItem";
+
+export interface MenuTopProps {
+  /** Optional - MenuTop manages its own state from MenuTopState */
+}
+
+export const MenuTop = function(_props: MenuTopProps) {
 
   const [items, setItems] = useState<MenuTopItem[]>([]);
   const [render, rerender] = useState<boolean>(false);
@@ -26,7 +32,7 @@ export const MenuTop = function(props: any) {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            {items.map((item, i: any) => 
+            {items.map((item, i: number) => 
               (
                 <MenuItem key={(`menu-item-${item.uuid}`)} item={item}></MenuItem>
               )

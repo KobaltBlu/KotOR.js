@@ -1,10 +1,14 @@
 import { ModuleObject } from "./ModuleObject";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+
 import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
 import { NWScript } from "../nwscript/NWScript";
 import { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFObject } from "../resource/GFFObject";
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Module);
 import { GameState } from "../GameState";
 
 /**
@@ -104,7 +108,7 @@ export class ModuleMGObstacle extends ModuleObject {
       if (!resRef) continue;
       const nwscript = GameState.NWScript.Load(resRef);
       if (!nwscript) {
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+        log.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
         continue;
       }
       nwscript.caller = this;

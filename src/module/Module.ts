@@ -1,30 +1,47 @@
-import * as THREE from "three";
 import * as path from "path";
+
+import * as THREE from "three";
+
 import { AudioEmitter } from "../audio/AudioEmitter";
+import { AudioEngine } from "../audio/AudioEngine";
 import { GameEffect } from "../effects";
+import { CurrentGame } from "../engine/CurrentGame";
 import EngineLocation from "../engine/EngineLocation";
+import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
+import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import type { GameEvent } from "../events/GameEvent";
+import { GameEventFactory } from "../events/GameEventFactory";
 import { GameState } from "../GameState";
+import { IAreaListItem } from "../interface/area/IAreaListItem";
+import { IModuleScripts } from "../interface/module/IModuleScripts";
+import { ResourceLoader, TextureLoader } from "../loaders";
+import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { CExoLocString } from "../resource/CExoLocString";
+import { ERFObject } from "../resource/ERFObject";
+import { GFFField } from "../resource/GFFField";
 import { GFFObject } from "../resource/GFFObject";
 // import { NWScript } from "../nwscript/NWScript";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { CurrentGame } from "../engine/CurrentGame";
-import { RIMObject } from "../resource/RIMObject";
 import { GFFStruct } from "../resource/GFFStruct";
-import { GameEventFactory } from "../events/GameEventFactory";
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { IModuleScripts } from "../interface/module/IModuleScripts";
-import { IAreaListItem } from "../interface/area/IAreaListItem";
-import type { GameEvent } from "../events/GameEvent";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { RIMObject } from "../resource/RIMObject";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { ModuleArea } from "./ModuleArea";
+import type { ModuleObject } from "./ModuleObject";
 import { ModuleTimeManager } from "./ModuleTimeManager";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+
+
+const log = createScopedLogger(LogScope.Loader);
+
+/** Holder object for a game effect (model, position, audio, dispose). */
+interface IModuleEffectHolder {
+  model: THREE.Object3D;
+  position: THREE.Vector3;
+  audioEmitter: InstanceType<typeof AudioEmitter>;
+  dispose(): void;
+  removeEffect(effect: GameEffect): void;
+}
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem' | 'Mod_OnActvtItem' | 'Mod_OnClientEntr' | 'Mod_OnClientLeav' | 'Mod_OnHeartbeat' | 'Mod_OnModLoad' | 'Mod_OnModStart' | 'Mod_OnPlrDeath' | 'Mod_OnPlrDying' | 'Mod_OnPlrLvlUp' | 'Mod_OnPlrRest' | 'Mod_OnSpawnBtnDn' | 'Mod_OnUnAqreItem' | 'Mod_OnUsrDefined';
 
@@ -64,7 +81,7 @@ export class Module {
   effects: GameEffect[] = [];
   eventQueue: GameEvent[] = [];
   customTokens: Map<number, string>;
-  transition: any;
+  transition: number;
   transWP: string;
 
   /**
@@ -157,12 +174,12 @@ export class Module {
   /**
    * @deprecated Deprecated: since NWN
    */
-  expansionList: any[] = [];
+  expansionList: unknown[] = [];
 
   /**
    * @deprecated Deprecated: since NWN
    */
-  globalVariableList: any[] = [];
+  globalVariableList: unknown[] = [];
 
   /**
    * @deprecated Obsolete: since NWN
@@ -172,7 +189,7 @@ export class Module {
   /**
    * @deprecated Deprecated: since NWN
    */
-  cutSceneList: any[] = [];
+  cutSceneList: unknown[] = [];
 
   /**
    * always set to 2
@@ -245,23 +262,23 @@ export class Module {
     if (areaCount === 0) {
       throw new Error('Module IFO Mod_Area_list is empty - corrupt or invalid module data');
     }
-    let Mod_Area = childStructs[0];
+    const Mod_Area = childStructs[0];
 
     this.areaName = ifo.getFieldByLabel('Area_Name', Mod_Area.getFields()).getValue();
 
     this.areaList = [];
     //KOTOR modules should only ever have one area. But just incase lets loop through the list
     for (let i = 0; i < areaCount; i++) {
-      let Mod_Area = childStructs[i];
-      const area: IAreaListItem = {} as any;
+      const Mod_Area = childStructs[i];
+      const area: Partial<IAreaListItem> = {};
 
       if (Mod_Area.hasField('Area_Name'))
-        area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue()
+        area.areaName = Mod_Area.getFieldByLabel('Area_Name').getValue() as number;
 
       if (Mod_Area.hasField('ObjectId'))
-        area.objectId = Mod_Area.getFieldByLabel('ObjectId').getValue()
+        area.objectId = Mod_Area.getFieldByLabel('ObjectId').getValue() as number;
 
-      this.areaList.push(area);
+      this.areaList.push(area as IAreaListItem);
     }
 
     //LISTS
@@ -357,22 +374,23 @@ export class Module {
     if (!(effect instanceof GameEffect)) { return; }
 
     effect.loadModel();
-    const object: any = {
+    const moduleEffects = this.effects;
+    const object: IModuleEffectHolder = {
       model: new THREE.Object3D(),
       position: lLocation.position,
-      dispose: function () {
-        this.onRemove();
-        this.removeEffect(this);
-      },
-      removeEffect: function (effect: GameEffect) {
-        let index = this.effects.indexOf(effect);
-        if (index >= 0) {
-          this.effects.splice(index, 1);
+      dispose() {
+        if (typeof (effect as GameEffect & { onRemove?: () => void }).onRemove === 'function') {
+          (effect as GameEffect & { onRemove: () => void }).onRemove();
         }
-      }
+        const idx = moduleEffects.indexOf(effect);
+        if (idx >= 0) moduleEffects.splice(idx, 1);
+      },
+      removeEffect(effectToRemove: GameEffect) {
+        const idx = moduleEffects.indexOf(effectToRemove);
+        if (idx >= 0) moduleEffects.splice(idx, 1);
+      },
+      audioEmitter: new AudioEmitter(AudioEngine.GetAudioEngine())
     };
-
-    object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
     object.audioEmitter.maxDistance = 50;
     object.audioEmitter.type = AudioEmitterType.POSITIONAL;
     object.audioEmitter.load();
@@ -380,9 +398,9 @@ export class Module {
 
     object.model.position.copy(lLocation.position);
 
-    effect.setCreator(object);
+    effect.setCreator(object as unknown as ModuleObject);
     effect.setAttachedObject(this);
-    effect.onApply(object);
+    effect.onApply(object as unknown as ModuleObject);
     this.effects.push(effect);
 
     GameState.group.effects.add(object.model);
@@ -398,9 +416,9 @@ export class Module {
     if (this.readyToProcessEvents) {
 
       //Process EventQueue
-      let eqLen = this.eventQueue.length - 1;
+      const eqLen = this.eventQueue.length - 1;
       for (let i = eqLen; i >= 0; i--) {
-        let event = this.eventQueue[i];
+        const event = this.eventQueue[i];
 
         if (this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time) {
           event.execute();
@@ -409,7 +427,7 @@ export class Module {
       }
 
       //Process EffectList
-      let elLen = this.effects.length - 1;
+      const elLen = this.effects.length - 1;
       for (let i = elLen; i >= 0; i--) {
         this.effects[i].update(delta);
       }
@@ -475,14 +493,14 @@ export class Module {
       GameState.MenuManager.LoadScreen.setProgress(0);
 
       await this.area.loadScene();
-      this.transWP = null;
+      this.transWP = '';
     } catch (e) {
-      console.error(e);
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
   }
 
   async initScripts() {
-    for (let [key, resRef] of this.scriptResRefs) {
+    for (const [key, resRef] of this.scriptResRefs) {
       const script = GameState.NWScript.Load(resRef);
       if (!script) { continue; }
       this.scripts[key] = script;
@@ -505,18 +523,18 @@ export class Module {
     this.customTokens.set(tokenNumber, tokenValue);
   }
 
-  getCustomToken(tokenNumber: any) {
+  getCustomToken(tokenNumber: number) {
     return this.customTokens.get(tokenNumber) || `<Missing CustomToken ${tokenNumber}>`;
   }
 
   initEventQueue() {
     //Load module EventQueue after the area is intialized so that ModuleObject ID's are set
     if (this.ifo.RootNode.hasField('EventQueue')) {
-      let eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
+      const eventQueue = this.ifo.getFieldByLabel('EventQueue').getChildStructs();
       for (let i = 0; i < eventQueue.length; i++) {
-        let event_struct = eventQueue[i];
-        let event = GameEventFactory.EventFromStruct(event_struct);
-        console.log(event_struct, event);
+        const event_struct = eventQueue[i];
+        const event = GameEventFactory.EventFromStruct(event_struct);
+        log.debug('event_struct', event_struct, event);
         if (event) {
           this.eventQueue.push(event);
         }
@@ -543,7 +561,7 @@ export class Module {
 
     //Clear walkmesh list
     while (GameState.walkmeshList.length) {
-      let wlkmesh = GameState.walkmeshList.shift();
+      const wlkmesh = GameState.walkmeshList.shift();
       //wlkmesh.dispose();
       GameState.group.room_walkmeshes.remove(wlkmesh);
     }
@@ -572,7 +590,7 @@ export class Module {
     ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Creature List'));
     const eventQueue = ifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'EventQueue'));
     for (let i = 0; i < this.eventQueue.length; i++) {
-      let event = this.eventQueue[i];
+      const event = this.eventQueue[i];
       if (event) {
         eventQueue.addChildStruct(event.export());
       }
@@ -659,7 +677,7 @@ export class Module {
       await sav.export(path.join(CurrentGame.gameinprogress_dir, this.filename + '.sav'));
     }
 
-    console.log('Current Module Exported', this.filename);
+    log.debug('Current Module Exported', this.filename);
 
     await GameState.InventoryManager.Save();
     await GameState.PartyManager.ExportPartyMemberTemplates();
@@ -682,11 +700,10 @@ export class Module {
     try {
       const mod = new ERFObject(resource_path);
       await mod.load();
-      console.log('Module.GetModuleMod success', resource_path);
+      log.debug('Module.GetModuleMod success', resource_path);
       return mod;
     } catch (e) {
-      console.error('Module.GetModuleMod failed', resource_path);
-      console.error(e);
+      log.error('Module.GetModuleMod failed', resource_path, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
@@ -698,8 +715,7 @@ export class Module {
       await rim.load();
       return rim;
     } catch (e) {
-      console.error('Module.GetModuleRimA failed', resourcePath);
-      console.error(e);
+      log.error('Module.GetModuleRimA failed', resourcePath, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
@@ -711,8 +727,7 @@ export class Module {
       await rim.load();
       return rim;
     } catch (e) {
-      console.log('Module.GetModuleRimB failed', resourcePath);
-      console.error(e);
+      log.warn('Module.GetModuleRimB failed', resourcePath, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
@@ -722,11 +737,10 @@ export class Module {
     try {
       const mod = new ERFObject(resourcePath);
       await mod.load();
-      console.log('Module.GetModuleLipsLoc success', resourcePath);
+      log.debug('Module.GetModuleLipsLoc success', resourcePath);
       return mod;
     } catch (e) {
-      console.log('Module.GetModuleLipsLoc failed', resourcePath);
-      console.error(e);
+      log.warn('Module.GetModuleLipsLoc failed', resourcePath, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
@@ -738,27 +752,25 @@ export class Module {
       await mod.load();
       return mod;
     } catch (e) {
-      console.log('Module.GetModuleLips failed', resource_path);
-      console.error(e);
+      log.warn('Module.GetModuleLips failed', resource_path, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
 
   static async GetModuleDLG(resRef = ''): Promise<ERFObject> {
-    let resourcePath = path.join('modules', `${resRef}_dlg.erf`);
+    const resourcePath = path.join('modules', `${resRef}_dlg.erf`);
     try {
       const erf = new ERFObject(resourcePath);
       await erf.load();
       return erf;
     } catch (e) {
-      console.log('Module.GetModuleDLG failed', resourcePath);
-      console.error(e);
+      log.warn('Module.GetModuleDLG failed', resourcePath, e instanceof Error ? e : new Error(String(e)));
       return undefined;
     }
   }
 
   static async GetModuleArchives(modName = ''): Promise<(RIMObject | ERFObject)[]> {
-    const archives: any[] = [];
+    const archives: (RIMObject | ERFObject)[] = [];
     let archive = undefined;
 
     const isModuleSaved = await CurrentGame.IsModuleSaved(modName);
@@ -819,7 +831,7 @@ export class Module {
         archives.push(archive);
       }
     } catch (e) {
-      console.error(e);
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
 
     //Return the archive array
@@ -828,7 +840,7 @@ export class Module {
 
   static async GetModuleProjectArchives(modName = ''): Promise<(RIMObject | ERFObject)[]> {
     return new Promise<(RIMObject | ERFObject)[]>(async (resolve, reject) => {
-      let archives: any[] = [];
+      const archives: (RIMObject | ERFObject)[] = [];
       let archive = undefined;
 
       try {
@@ -850,7 +862,7 @@ export class Module {
           archives.push(archive);
         }
       } catch (e) {
-        console.error(e);
+        log.error(e instanceof Error ? e : new Error(String(e)));
       }
 
       //Return the archive array
@@ -860,7 +872,7 @@ export class Module {
 
   //ex: end_m01aa end_m01aa_s
   static async Load(modName: string, waypoint?: string) {
-    console.log('Load', modName);
+    log.debug('Load', modName);
     const module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
@@ -891,35 +903,34 @@ export class Module {
       GameState.ModuleObjectManager.module = module;
 
       if (GameState.isLoadingSave) {
-        console.log('Module', 'SaveGame.loadInventory');
+        log.debug('Module', 'SaveGame.loadInventory');
         await GameState.SaveGame.loadInventory();
       }
 
       return module;
     } catch (e) {
-      console.log(`Module.Load: failed to load module.`);
-      console.error(e);
+      log.warn('Module.Load: failed to load module.', e instanceof Error ? e : new Error(String(e)));
     }
   }
 
-  toEulerianAngle(q: any) {
-    let ysqr = q.y * q.y;
+  toEulerianAngle(q: THREE.Quaternion) {
+    const ysqr = q.y * q.y;
 
     // roll (x-axis rotation)
-    let t0 = +2.0 * (q.w * q.x + q.y * q.z);
-    let t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
-    let roll = Math.atan2(t0, t1);
+    const t0 = +2.0 * (q.w * q.x + q.y * q.z);
+    const t1 = +1.0 - 2.0 * (q.x * q.x + ysqr);
+    const roll = Math.atan2(t0, t1);
 
     // pitch (y-axis rotation)
     let t2 = +2.0 * (q.w * q.y - q.z * q.x);
     t2 = t2 > 1.0 ? 1.0 : t2;
     t2 = t2 < -1.0 ? -1.0 : t2;
-    let pitch = Math.asin(t2);
+    const pitch = Math.asin(t2);
 
     // yaw (z-axis rotation)
-    let t3 = +2.0 * (q.w * q.z + q.x * q.y);
-    let t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
-    let yaw = Math.atan2(t3, t4);
+    const t3 = +2.0 * (q.w * q.z + q.x * q.y);
+    const t4 = +1.0 - 2.0 * (ysqr + q.z * q.z);
+    const yaw = Math.atan2(t3, t4);
 
     return { yaw: yaw, pitch: pitch, roll: roll };
   }
@@ -933,11 +944,10 @@ export class Module {
     //Export .git
 
     return {
-      are: null,
-      git: null,
-      ifo: null
-    } as any;
-
+      are: null as GFFObject | null,
+      git: null as GFFObject | null,
+      ifo: null as GFFObject | null
+    };
   }
 
 }

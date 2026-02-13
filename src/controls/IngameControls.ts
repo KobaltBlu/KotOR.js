@@ -1,26 +1,30 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
-import { Utility } from "../utility/Utility";
+
+import { FollowerCamera } from "../engine/FollowerCamera";
+import { KeyMapAction } from "../enums/controls/KeyMapAction";
+import { MouseState } from "../enums/controls/MouseState";
 import { EngineMode } from "../enums/engine/EngineMode";
 import { EngineState } from "../enums/engine/EngineState";
-import type { ModuleObject } from "../module";
-import { KeyMapAction } from "../enums/controls/KeyMapAction";
 import { MiniGameType } from "../enums/engine/MiniGameType";
-import { FollowerCamera } from "../engine/FollowerCamera";
-// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GUIControlTypeMask } from "../enums/gui/GUIControlTypeMask";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+import type { GUIControl, GUIListBox, GUIScrollBar } from "../gui";
 import { GUIControlEventFactory } from "../gui/GUIControlEventFactory";
-import { MouseState } from "../enums/controls/MouseState";
-import { Keyboard } from "./Keyboard";
-import { GamePad } from "./GamePad";
-import { Mouse } from "./Mouse";
-import { KeyMapper } from "./KeyMapper";
-import { AnalogInput } from "./AnalogInput";
+import type { ModuleObject } from "../module";
+import type { ModuleCreature } from "../module/ModuleCreature";
 import { TGAObject } from "../resource/TGAObject";
+import { BitWise } from "../utility/BitWise";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { Utility } from "../utility/Utility";
+// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "../managers";
+
+import { AnalogInput } from "./AnalogInput";
+import { GamePad } from "./GamePad";
+import { Keyboard } from "./Keyboard";
+import { KeyMapper } from "./KeyMapper";
+import { Mouse } from "./Mouse";
+
 
 /**
  * IngameControls class.
@@ -44,7 +48,7 @@ export class IngameControls {
 
   gamePadMovement: boolean = false;
 
-  plMoveEvent: (e: any) => void;
+  plMoveEvent: (e: MouseEvent) => void;
 
   constructor(camera: THREE.Camera, element: HTMLElement){
 
@@ -183,17 +187,17 @@ export class IngameControls {
       
       let clickCaptured = false;
 
-      let customEvent = GUIControlEventFactory.generateEventObject();
+      const customEvent = GUIControlEventFactory.generateEventObject();
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
 
-      let uiControls = this.MenuGetActiveUIElements();
+      const uiControls = this.MenuGetActiveUIElements();
       for(let i = 0; i < uiControls.length; i++){
         if(!customEvent.propagate)
           break;
         
-        let control = uiControls[i];
+        const control = uiControls[i];
         if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
           clickCaptured = true;
           if(GameState.debug.CONTROLS)
@@ -279,7 +283,7 @@ export class IngameControls {
         
         let clickCaptured = false;
 
-        let customEvent = GUIControlEventFactory.generateEventObject();
+        const customEvent = GUIControlEventFactory.generateEventObject();
   
         //GameState.selected = undefined;
 
@@ -302,12 +306,12 @@ export class IngameControls {
           //}
         }
 
-        let uiControls = this.MenuGetActiveUIElements();
+        const uiControls = this.MenuGetActiveUIElements();
         for(let i = 0; i < uiControls.length; i++){
           if(!customEvent.propagate)
             break;
 
-          let control = uiControls[i];
+          const control = uiControls[i];
           if(control === Mouse.clickItem){
             if(typeof control.widget.parent !== 'undefined'){
               if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
@@ -339,15 +343,15 @@ export class IngameControls {
 
                 selectedObject = true;
 
-                let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                let distanceThreshold = 20;
+                const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                const distanceThreshold = 20;
 
                 if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                   if(typeof moduleObject.onClick === 'function'){
                     GameState.getCurrentPlayer().clearAllActions();
                     moduleObject.onClick(GameState.getCurrentPlayer());
                   }else{
-                    let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                    const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                     //console.log(distance);
                     if(distance > 1.5){
                       GameState.getCurrentPlayer().clearAllActions();
@@ -504,8 +508,8 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const pc = GameState.getCurrentPlayer();
-      if(pc){
-        pc.walk = !pc.walk;
+      if(pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)){
+        (pc as ModuleCreature).walk = !(pc as ModuleCreature).walk;
       }
     });
 
@@ -687,7 +691,10 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.getCurrentPlayer().flourish();
+      const pc = GameState.getCurrentPlayer();
+      if(pc && BitWise.InstanceOfObject(pc, ModuleObjectType.ModuleCreature)){
+        (pc as ModuleCreature).flourish();
+      }
     });
 
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
@@ -806,7 +813,7 @@ export class IngameControls {
 
     let xoffset = 0;
     let yoffset = 0;
-    let currentMenu = GameState.MenuManager.GetCurrentMenu();
+    const currentMenu = GameState.MenuManager.GetCurrentMenu();
 
     this.gamePadMovement = false;
 
@@ -892,9 +899,9 @@ export class IngameControls {
     Mouse.OldMouseY = Mouse.MouseY;
   }
 
-  plChangeCallback(e: any){
+  plChangeCallback(e: Event){
     if(document.pointerLockElement === this.element) {
-      this.element.addEventListener("mousemove", this.plMoveEvent = (e: any) => { this.plMouseMove(e); }, true);
+      this.element.addEventListener("mousemove", this.plMoveEvent = (e: MouseEvent) => { this.plMouseMove(e); }, true);
       Mouse.Dragging = true;
     } else {
       //console.log('The pointer lock status is now unlocked');
@@ -903,7 +910,7 @@ export class IngameControls {
     }
   }
 
-  plMouseMove(event: any){
+  plMouseMove(event: MouseEvent){
 
     Mouse.OffsetX = event.movementX || 0;
     Mouse.OffsetY = (event.movementY || 0)*-1.0;

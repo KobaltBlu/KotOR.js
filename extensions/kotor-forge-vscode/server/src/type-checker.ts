@@ -4,6 +4,7 @@
  */
 
 import { DiagnosticSeverity } from 'vscode-languageserver/node';
+
 import {
   DataTypeEnum,
   getDataTypeSize,

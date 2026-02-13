@@ -1,22 +1,30 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+
 import { useApp } from "../context/AppContext";
+import type { CommunityVideoItem } from "../context/CommunityContext";
 import { CommunityProvider, useCommunity } from "../context/CommunityContext";
-import { ProfilePromoItems } from "./ProfilePromoItems";
+import type { LauncherProfileElement } from "../types";
+
 import { LightboxComponent } from "./LightboxComponenet";
+import { ProfilePromoItems, ProfilePromoItemsRef } from "./ProfilePromoItems";
 
-export interface CommunityTabContentProps {};
+export interface CommunityTabContentProps {}
 
-export const CommunityTabContent = forwardRef(function(props: CommunityTabContentProps, ref: any){
+export interface CommunityTabContentRef {
+  showTab: () => void;
+}
+
+export const CommunityTabContent = forwardRef<CommunityTabContentRef, CommunityTabContentProps>(function(props, ref){
   const appContext = useApp();
   const communityContext = useCommunity();
   const tabRef = useRef<HTMLDivElement>(null);
-  const promoRef = useRef<any>(null);
+  const promoRef = useRef<ProfilePromoItemsRef | null>(null);
 
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
   const [lightboxType, setLightboxType] = useState<'image'|'ytvideo'>('ytvideo');
   const [lightboxSrc, setLightboxSrc] = useState<string>("");
 
-  const [communityProfile, setCommunityProfile] = useState<any>({
+  const [communityProfile, setCommunityProfile] = useState<{ name: string; elements: LauncherProfileElement[] }>({
     name: 'Community',
     elements: [],
   });
@@ -32,19 +40,20 @@ export const CommunityTabContent = forwardRef(function(props: CommunityTabConten
   useEffect(() => {
     setCommunityProfile({
       name: 'Community',
-      elements: videos.map( (video: any) => {
+      elements: videos.map( (video: CommunityVideoItem) => {
+        const link = video.link as { '@attributes'?: { href?: string } } | undefined;
         return {
           type: 'ytvideo',
           title: video.title,
-          url: video.link['@attributes'].href,
+          url: link?.['@attributes']?.href ?? '',
           thumbnail: video.thumbnail,
           id: video.id,
-        };
+        } as LauncherProfileElement;
       }),
     });
   }, [videos]);
 
-  const onPromoItemClick = useCallback((element: any) => {
+  const onPromoItemClick = useCallback((element: LauncherProfileElement) => {
     if(element.type === 'ytvideo'){
       setLightboxType('ytvideo');
       setLightboxSrc(element.id);

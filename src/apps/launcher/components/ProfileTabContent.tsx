@@ -1,22 +1,33 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { ProfilePromoItems } from "./ProfilePromoItems";
-import { LightboxComponent } from "./LightboxComponenet";
-import { ProfileProvider, useProfile } from "../context/ProfileContext";
-import { ProfileLaunchButtons } from "./ProfileLaunchButtons";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+
+import { useApp } from '../context/AppContext';
+import { ProfileProvider } from '../context/ProfileContext';
+import type { LauncherProfile } from '../types';
+
+import { createScopedLogger, LogScope } from '../../../utility/Logger';
+
+import { LightboxComponent } from './LightboxComponenet';
+import { ProfileLaunchButtons } from './ProfileLaunchButtons';
+import { ProfilePromoItems } from './ProfilePromoItems';
+
+const log = createScopedLogger(LogScope.Launcher);
+
+export interface ProfileTabContentHandle {
+  showTab(): void;
+}
 
 export interface ProfileTabContentProps {
-  profile: any;
-  active: boolean
-  // ref?: React.RefObject<any>;
-};
+  profile: LauncherProfile;
+  active: boolean;
+}
 
-export const ProfileTabContent = forwardRef(function(props: ProfileTabContentProps, ref: any){
+export const ProfileTabContent = forwardRef<ProfileTabContentHandle, ProfileTabContentProps>(function ProfileTabContentInner(props, ref) {
+  log.trace('ProfileTabContent render profile=%s', props.profile?.name ?? 'unknown');
   const appContext = useApp();
   const profile = props.profile;
   const active = props.active;
   const tabRef = useRef<HTMLDivElement>(null);
-  const promoRef = useRef<any>(null);
+  const promoRef = useRef<{ recalculate(): void } | null>(null);
   const [lightboxActiveValue, setLightboxActive] = useState<boolean>(false);
   const [lightboxType, setLightboxType] = useState<'image'|'ytvideo'>('ytvideo');
   const [lightboxSrc, setLightboxSrc] = useState<string>("");
@@ -27,14 +38,14 @@ export const ProfileTabContent = forwardRef(function(props: ProfileTabContentPro
 
   useImperativeHandle(ref, () => ({
     showTab() {
-      // console.warn(`showTab: ${profile.name}`);
-      if(promoRef.current) promoRef.current.recalculate();
-    }
+      log.trace('ProfileTabContent showTab() profile=%s', profile.name);
+      if (promoRef.current) promoRef.current.recalculate();
+    },
   }));
 
   
 
-  let onComponentResize = () => {
+  const onComponentResize = () => {
     // updateScroll();
     // updateScrollButtons();
   }
@@ -48,14 +59,14 @@ export const ProfileTabContent = forwardRef(function(props: ProfileTabContentPro
     };
   }, []);
 
-  const onPromoItemClick = useCallback((element: any) => {
-    console.log('onPromoItemClick', element);
-    if(element.type === 'ytvideo'){
+  const onPromoItemClick = useCallback((element: { type: string; id?: string; url?: string }) => {
+    log.debug('onPromoItemClick type=%s', element?.type ?? 'unknown');
+    if (element.type === 'ytvideo') {
       setLightboxType('ytvideo');
-      setLightboxSrc(element.id);
+        setLightboxSrc(element.id ?? '');
     } else if (element.type === 'image') {
       setLightboxType('image');
-      setLightboxSrc(element.url);
+      setLightboxSrc(element.url ?? '');
     }
     setLightboxActive(true);
   }, []);

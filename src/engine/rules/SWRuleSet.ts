@@ -1,38 +1,40 @@
-import { GameState } from "../../GameState";
-import type { INIConfig } from "../../engine/INIConfig";
 import { CreatureClass } from "../../combat/CreatureClass";
+import type { INIConfig } from "../../engine/INIConfig";
 import { TalentFeat } from "../../talents/TalentFeat";
-import { TalentSpell } from "../../talents/TalentSpell";
 import { TalentSkill } from "../../talents/TalentSkill";
-import { SWRace } from "./SWRace";
-import { SWEffectIcon } from "./SWEffectIcon";
-import { SWItemPropsDef } from "./SWItemPropsDef";
+import { TalentSpell } from "../../talents/TalentSpell";
+
+import { GameState } from "../../GameState";
 import { PazaakDeck } from "../minigames/PazaakDeck";
-import { SWXPTableEntry } from "./SWXPTableEntry";
-import { SWPortrait } from "./SWPortrait";
-import { SWFeatGain } from "./SWFeatGain";
-import { SWSpellGain } from "./SWSpellGain";
-import { SWEXPTable } from "./SWEXPTable";
-import { SWDifficulty } from "./SWDifficulty";
-import { SWBodyBag } from "./SWBodyBag";
-import { SWHead } from "./SWHead";
-import { SWPriorityGroup } from "./SWPriorityGroup";
-import { SWEncounterDifficulty } from "./SWEncounterDifficulty";
-import { SWGender } from "./SWGender";
-import { SWPhenotype } from "./SWPhenotype";
-import { SWSubRace } from "./SWSubRace";
-import { SWSoundSet } from "./SWSoundSet";
-import { SWCreatureSize } from "./SWCreatureSize";
-import { SWCreatureSpeed } from "./SWCreatureSpeed";
-import { SWRange } from "./SWRange";
+
 import { SWFaction } from "./SWFaction";
 import { SWBaseItem } from "./SWBaseItem";
+import { SWBodyBag } from "./SWBodyBag";
 import { SWCreatureAppearance } from "./SWCreatureAppearance";
-import { SWDoorAppearance } from "./SWDoorAppearance";
 import { SWPlaceableAppearance } from "./SWPlaceableAppearance";
 import { SWCostTable } from "./SWCostTable";
+import { SWCreatureSize } from "./SWCreatureSize";
+import { SWCreatureSpeed } from "./SWCreatureSpeed";
+import { SWDifficulty } from "./SWDifficulty";
+import { SWDoorAppearance } from "./SWDoorAppearance";
+import { SWEffectIcon } from "./SWEffectIcon";
+import { SWEncounterDifficulty } from "./SWEncounterDifficulty";
+import { SWEXPTable } from "./SWEXPTable";
+import { SWFeatGain } from "./SWFeatGain";
 import { SWFootStep } from "./SWFootStep";
+import { SWGender } from "./SWGender";
+import { SWHead } from "./SWHead";
+import { SWItemPropsDef } from "./SWItemPropsDef";
+import { SWPhenotype } from "./SWPhenotype";
+import { SWPortrait } from "./SWPortrait";
+import { SWPriorityGroup } from "./SWPriorityGroup";
+import { SWRace } from "./SWRace";
+import { SWRange } from "./SWRange";
+import { SWSoundSet } from "./SWSoundSet";
+import { SWSpellGain } from "./SWSpellGain";
+import { SWSubRace } from "./SWSubRace";
 import { SWWeaponSound } from "./SWWeaponSound";
+import { SWXPTableEntry } from "./SWXPTableEntry";
 
 /**
  * SWRuleSet class.
@@ -529,10 +531,11 @@ export class SWRuleSet {
    * @param iniConfig - The INIConfig
    */
   static setIniConfig(iniConfig: INIConfig) {
-    if(iniConfig.getProperty('Game Options.Difficulty Level')){
-      const difficulty = iniConfig.getProperty('Game Options.Difficulty Level');
-      if(SWRuleSet.difficulty[difficulty]){
-        SWRuleSet.currentDifficulty = difficulty;
+    const difficultyVal = iniConfig.getProperty('Game Options.Difficulty Level');
+    if (difficultyVal !== undefined && difficultyVal !== null) {
+      const idx = typeof difficultyVal === 'number' ? difficultyVal : parseInt(String(difficultyVal), 10);
+      if (!Number.isNaN(idx) && idx >= 0 && SWRuleSet.difficulty[idx]) {
+        SWRuleSet.currentDifficulty = idx;
       }
     }
   }

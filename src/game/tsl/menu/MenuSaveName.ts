@@ -1,5 +1,6 @@
-import type { GUIButton, GUILabel } from "../../../gui";
 import { MenuSaveName as K1_MenuSaveName } from "../../kotor/KOTOR";
+
+import type { GUIButton, GUILabel } from "../../../gui";
 
 /**
  * MenuSaveName class.

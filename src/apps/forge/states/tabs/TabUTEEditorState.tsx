@@ -1,11 +1,14 @@
-import { TabState } from "./TabState";
-import * as KotOR from "../../KotOR";
 import React from "react";
-import { EditorFile } from "../../EditorFile";
+
 import { TabUTEEditor } from "../../components/tabs/tab-ute-editor/TabUTEEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { EncounterDifficulty } from "../../interfaces/EncounterDifficulty";
 import { ForgeEncounter } from "../../module-editor/ForgeEncounter";
+
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabUTEEditorState extends TabState {
   tabName: string = `UTE`;
@@ -41,7 +44,7 @@ export class TabUTEEditorState extends TabState {
 
     this.encounterDifficulties = KotOR.SWRuleSet.encounterDifficulties;
 
-    this.addEventListener('onPropertyChange', (property: string, value: any) => {
+    this.addEventListener('onPropertyChange', (property: string, value: string | number | boolean | object | undefined) => {
       if(property === 'difficultyIndex'){
         // Difficulty should match the VALUE from encdifficulty.2da (obsolete but must match)
         this.encounter.difficulty = this.encounterDifficulties[value].value;

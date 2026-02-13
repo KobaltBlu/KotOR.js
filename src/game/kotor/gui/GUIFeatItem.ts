@@ -1,11 +1,16 @@
+import * as THREE from "three";
+
+import { TextureType } from "../../../enums/loaders/TextureType";
+import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
+import { GameState } from "../../../GameState";
 import { GUIProtoItem, GUIButton } from "../../../gui";
 import type { GUIControl, GameMenu } from "../../../gui";
-import * as THREE from "three";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import type { GFFStruct } from "../../../resource/GFFStruct";
-import { GameState } from "../../../GameState";
 import { TextureLoader } from "../../../loaders";
+import type { ModuleCreature } from "../../../module/ModuleCreature";
+import type { GFFStruct } from "../../../resource/GFFStruct";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { BitWise } from "../../../utility/BitWise";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
 
 /**
  * GUIFeatItem class.
@@ -16,9 +21,14 @@ import { TextureLoader } from "../../../loaders";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+const log = createScopedLogger(LogScope.Game);
+
+/** Feat row shape for list iteration. */
+interface FeatRowLike { __index: string; prereqfeat1?: string; prereqfeat2?: string; constant?: string; icon?: string }
+
 export class GUIFeatItem extends GUIProtoItem {
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | null = null, scale = false){
     super(menu, control, parent, scale);
     this.disableSelection = true;
     this.extent.height = 48;
@@ -34,20 +44,23 @@ export class GUIFeatItem extends GUIProtoItem {
       super.createControl();
       //Create the actual control elements below
 
-      let featList = this.node;
-      let spacing = 5;
+      const node = this.node;
+      const featList: FeatRowLike[] = Array.isArray(node) ? node as FeatRowLike[] : (node && typeof node === 'object' && 'length' in node ? Array.from(node as ArrayLike<FeatRowLike>) : []);
+      const spacing = 5;
+      const player = GameState.getCurrentPlayer();
+      const creature = player && BitWise.InstanceOfObject(player, ModuleObjectType.ModuleCreature) ? (player as ModuleCreature) : null;
       for(let i = 0; i < featList.length; i++){
-        let feat = featList[i];
+        const feat = featList[i];
 
-        let hasPrereqfeat1 = (feat.prereqfeat1 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat1));
-        let hasPrereqfeat2 = (feat.prereqfeat2 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat2));
-        let hasFeat = GameState.getCurrentPlayer().getHasFeat(feat.__index);
+        const hasPrereqfeat1 = (feat.prereqfeat1 == '****' || (creature?.getHasFeat(feat.prereqfeat1 ?? '') ?? false));
+        const hasPrereqfeat2 = (feat.prereqfeat2 == '****' || (creature?.getHasFeat(feat.prereqfeat2 ?? '') ?? false));
+        const hasFeat = creature?.getHasFeat(feat.__index) ?? false;
 
-        console.log(feat.constant, hasPrereqfeat1, hasPrereqfeat2);
+        log.info('GUIFeatItem', feat.constant, hasPrereqfeat1, hasPrereqfeat2);
 
-        let locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
+        const locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
 
-        let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+        const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
         buttonIcon.setText('');
         buttonIcon.disableTextAlignment();
         buttonIcon.extent.width = 56;
@@ -60,7 +73,7 @@ export class GUIFeatItem extends GUIProtoItem {
         buttonIcon.autoCalculatePosition = false;
         this.children.push(buttonIcon);
 
-        let _buttonIconWidget = buttonIcon.createControl();
+        const _buttonIconWidget = buttonIcon.createControl();
         switch(i){
           case 2:
             _buttonIconWidget.position.x = (this.extent.width/2 - buttonIcon.extent.width/2);
@@ -101,8 +114,11 @@ export class GUIFeatItem extends GUIProtoItem {
         this.widget.userData.iconSprite.position.z = 5;
         this.widget.userData.iconSprite.renderOrder = 5;
         TextureLoader.enQueue(feat.icon, this.widget.userData.iconMaterial, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          this.widget.userData.iconSprite.scale.x = texture.image.width;
-          this.widget.userData.iconSprite.scale.y = texture.image.height;
+          const img = (texture as { image?: { width: number; height: number } }).image;
+          if (img) {
+            this.widget.userData.iconSprite.scale.x = img.width;
+            this.widget.userData.iconSprite.scale.y = img.height;
+          }
           if(locked){
             this.widget.userData.iconMaterial.opacity = 0.00;
           }
@@ -116,9 +132,9 @@ export class GUIFeatItem extends GUIProtoItem {
         * BLUE ARROW
         */
         
-        let arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
+        const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
-          let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
+          const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
           arrowIcon.extent.width = 32;
@@ -133,7 +149,7 @@ export class GUIFeatItem extends GUIProtoItem {
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);
 
-          let _arrowIconWidget = arrowIcon.createControl();
+          const _arrowIconWidget = arrowIcon.createControl();
           switch(i){
             case 2:
               _arrowIconWidget.position.x = arrowOffset;
@@ -164,7 +180,7 @@ export class GUIFeatItem extends GUIProtoItem {
       }
       return this.widget;
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
 

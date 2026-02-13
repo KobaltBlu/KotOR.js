@@ -1,15 +1,22 @@
 import React, { useState, useCallback, memo } from "react";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
+import { EditorFile } from "../../../EditorFile";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import * as KotOR from "../../../KotOR";
 import { Project } from "../../../Project";
 import { ProjectFileSystem } from "../../../ProjectFileSystem";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { ForgeState } from "../../../states/ForgeState";
-import { EditorFile } from "../../../EditorFile";
 import { RecentProject } from "../../../RecentProject";
-import { FileTypeManager } from "../../../FileTypeManager";
-import * as KotOR from "../../../KotOR";
+import { ForgeState } from "../../../states/ForgeState";
+
+
 import "./TabQuickStart.scss";
 import { ModalNewProjectState } from "../../../states/modal/ModalNewProjectState";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
@@ -86,7 +93,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             const { get } = await import('idb-keyval');
             handle = await get(handleKey);
           } catch(e) {
-            console.warn('Failed to restore handle from IndexedDB:', e);
+            log.warn('Failed to restore handle from IndexedDB:', e);
           }
         }
 
@@ -107,7 +114,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             }
           } catch(permError){
             // Handle permission denied or invalid - request new access
-            console.warn('Handle permission denied or invalid, requesting new access:', permError);
+            log.warn('Handle permission denied or invalid, requesting new access:', permError);
             Project.OpenByDirectory();
           }
         } else {
@@ -118,7 +125,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
       ForgeState.loaderHide();
     } catch(e){
-      console.error('Error opening recent project:', e);
+      log.error('Error opening recent project:', e as Error);
       ForgeState.loaderHide();
       // Remove invalid project from recent list
       await ForgeState.removeRecentProject(recentProject);

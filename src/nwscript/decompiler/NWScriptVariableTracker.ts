@@ -1,12 +1,13 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
+import type { NWScriptInstruction } from "../NWScriptInstruction";
 import {
   OP_CPDOWNBP, OP_CPTOPBP, OP_CPDOWNSP, OP_CPTOPSP, OP_MOVSP,
   OP_DECIBP, OP_INCIBP, OP_DECISP, OP_INCISP
 } from '../NWScriptOPCodes';
 
 /**
- * Tracks variable usage in NWScript decompilation.
+ * Tracks variable usage during NCS-to-NSS conversion.
  * Identifies global and local variables from stack/base pointer operations.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -26,7 +27,7 @@ export interface NWScriptVariable {
   firstWrite: number | null; // instruction address
   lastRead: number | null;
   lastWrite: number | null;
-  initialValue?: any; // Initial value for global variables
+  initialValue?: number | string | boolean; // Initial value for global variables
 }
 
 export class NWScriptVariableTracker {

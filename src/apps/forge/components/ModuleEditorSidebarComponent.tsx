@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import React, { useEffect, useState } from "react";
 import * as THREE from 'three';
 
@@ -16,8 +15,12 @@ import { ForgeState } from "../states/ForgeState";
 import { ModalBlueprintBrowserState, BlueprintType } from "../states/modal/ModalBlueprintBrowserState";
 import { TabModuleEditorState } from "../states/tabs";
 
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { SceneGraphTreeView } from "./SceneGraphTreeView";
 import "./ModuleEditorSidebarComponent.scss";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const ModuleEditorSidebarComponent = function(props: unknown){
   const tab: TabModuleEditorState | undefined = (props as { tab: TabModuleEditorState })?.tab;
@@ -30,7 +33,7 @@ export const ModuleEditorSidebarComponent = function(props: unknown){
 
   useEffect(() => {
     const onSelectionChanged = (gameObject: ForgeGameObject | undefined) => {
-      console.log('onSelectionChanged', gameObject);
+      log.trace('onSelectionChanged', gameObject);
       setSelectedGameObject(gameObject);
     };
 

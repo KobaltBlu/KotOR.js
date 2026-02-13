@@ -1,11 +1,13 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { TextDocument } from 'vscode-languageserver-textdocument';
+
 import {
   Connection,
   Position,
   TextDocuments
 } from 'vscode-languageserver/node';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
 import { findConstant, findFunction, KOTOR_CONSTANTS } from './kotor-definitions';
 import { Program } from './nwscript-ast';
 import { NWScriptParser, ParseError } from './nwscript-parser';

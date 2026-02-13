@@ -1,8 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
+
+import * as THREE from "three";
+
 import { Kit, KitComponent, KitComponentHook, KitDoor, MDLMDXTuple } from "./IndoorKit";
 import { cloneWalkmeshFromBuffer } from "./IndoorWalkmesh";
-import * as THREE from "three";
 
 const numberRegex = /(\d+)/g;
 
@@ -10,6 +12,36 @@ const getNumbers = (value: string): number[] => {
   const matches = value.matchAll(numberRegex);
   return Array.from(matches, (entry) => Number(entry[1]));
 };
+
+/** Parsed kit JSON file shape. */
+interface KitJsonShape {
+  id?: string;
+  name?: string;
+  doors?: KitDoorJson[];
+  components?: KitComponentJson[];
+}
+
+interface KitDoorJson {
+  utd_k1?: string;
+  utd_k2?: string;
+  width?: number;
+  height?: number;
+}
+
+interface KitComponentJson {
+  name?: string;
+  id?: string;
+  doorhooks?: KitDoorhookJson[];
+}
+
+interface KitDoorhookJson {
+  x?: number;
+  y?: number;
+  z?: number;
+  rotation?: number;
+  door?: number;
+  edge?: number;
+}
 
 export const loadKits = async (kitsPath: string): Promise<Kit[]> => {
   const [kits] = await loadKitsWithMissingFiles(kitsPath);
@@ -35,9 +67,9 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
       continue;
     }
     const filePath = path.join(resolvedPath, entry);
-    let kitJson: any;
+    let kitJson: KitJsonShape;
     try {
-      kitJson = JSON.parse(Buffer.from(readFile(filePath)).toString("utf8"));
+      kitJson = JSON.parse(Buffer.from(readFile(filePath)).toString("utf8")) as KitJsonShape;
     } catch (err) {
       continue;
     }
@@ -159,7 +191,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
     }
 
     if (Array.isArray(kitJson.doors)) {
-      kitJson.doors.forEach((doorJson: any) => {
+      kitJson.doors.forEach((doorJson: KitDoorJson) => {
         try {
           const utdK1ResRef = String(doorJson.utd_k1);
           const utdK2ResRef = String(doorJson.utd_k2);
@@ -168,14 +200,15 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
           const utdK1 = readFile(utdK1Path);
           const utdK2 = readFile(utdK2Path);
           kit.doors.push(new KitDoor(utdK1ResRef, utdK2ResRef, utdK1, utdK2, Number(doorJson.width), Number(doorJson.height)));
-        } catch (err: any) {
-          missingFiles.push([kitName, String(err?.filename || ""), "door utd"]);
+        } catch (err: unknown) {
+          const ex = err as { filename?: string };
+          missingFiles.push([kitName, String(ex?.filename ?? ""), "door utd"]);
         }
       });
     }
 
     if (Array.isArray(kitJson.components)) {
-      kitJson.components.forEach((componentJson: any) => {
+      kitJson.components.forEach((componentJson: KitComponentJson) => {
         const name = String(componentJson.name || "");
         const componentId = String(componentJson.id || "");
         const wokPath = path.join(kitRoot, `${componentId}.wok`);
@@ -200,7 +233,7 @@ export const loadKitsWithMissingFiles = async (kitsPath: string): Promise<[Kit[]
         const component = new KitComponent(kit, name, componentId, bwm, bwmRaw, mdl, mdx);
 
         if (Array.isArray(componentJson.doorhooks)) {
-          componentJson.doorhooks.forEach((hookJson: any) => {
+          componentJson.doorhooks.forEach((hookJson: KitDoorhookJson) => {
             try {
               const position = new THREE.Vector3(Number(hookJson.x), Number(hookJson.y), Number(hookJson.z));
               const rotation = Number(hookJson.rotation);

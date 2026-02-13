@@ -1,6 +1,10 @@
+import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
-import { MainMovies as K1_MainMovies } from "../../kotor/KOTOR";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GUIMovieItem } from "../gui/GUIMovieItem";
 
 /**
@@ -50,7 +54,7 @@ export class MainMovies extends K1_MainMovies {
       this.LBL_UNLOCKED_VALUE.setText(`${table.RowCount} / ${table.RowCount}`);
 
       this.LB_MOVIES.onSelected = (node: any) => {
-        console.log(node);
+        log.info(node);
         this.selected = node;
         this.selectedIndex = this.movieList.indexOf(node);
       }

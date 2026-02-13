@@ -1,17 +1,16 @@
-import { GameEffect } from "./GameEffect";
-import { GameEffectType } from "../enums/effects/GameEffectType";
 import * as THREE from "three";
+
 import { GameEffectSetStateType } from "../enums/effects/GameEffectSetStateType";
+import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectSetState class.
- *
- * Matches reva (swkotor.exe):
- * - OnApplySetStateInternal (0x004da330): state is applied once on apply; no per-frame switch.
- * - UpdateEffectList does NOT branch on EffectSetState; only Force Push has ongoing movement (client/walk).
- * - State type = GetInteger(effect, 0). If != 9 (FORCEPUSH): clear all actions, then apply SetAIState/visual per state.
- * - RecomputeAmbientAnimationState after apply. Only FORCEPUSH uses update() for position lerp.
+ * State is applied once on apply; no per-frame switch. Only Force Push has ongoing movement.
+ * State type = GetInteger(effect, 0). If != FORCEPUSH: clear all actions, then apply SetAIState/visual per state.
+ * RecomputeAmbientAnimationState after apply. Only FORCEPUSH uses update() for position lerp.
  *
  * @file EffectSetState.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -58,19 +57,15 @@ export class EffectSetState extends GameEffect {
         // case 2: Apply SavingThrowDecrease(2,0,race_row_count); no SetAIState in switch, goto end
         break;
       case GameEffectSetStateType.DROID_STUN:
-        // case 3: VisualEffect 0x3ef, SavingThrowDecrease, SetAIState -3; then RecomputeAmbientAnimationState
         this.object.setAnimationState(ModuleCreatureAnimState.DAMAGE);
         break;
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
-        // case 4: SetAIState -3, VisualEffect 0x7d2; RecomputeAmbientAnimationState
         this.object.setAnimationState(ModuleCreatureAnimState.DAMAGE);
         break;
       case GameEffectSetStateType.CUT_SCENE_PARALYZE:
-        // case 5: SetAIState -15 (0xf)
         this.object.setAnimationState(ModuleCreatureAnimState.PARALYZED);
         break;
       case GameEffectSetStateType.SLEEP:
-        // case 6: SetAIState -0x15f
         this.object.setAnimationState(ModuleCreatureAnimState.SLEEP);
         break;
       case GameEffectSetStateType.CHOKE:
@@ -100,8 +95,7 @@ export class EffectSetState extends GameEffect {
   update(delta: number = 0) {
     super.update(delta);
 
-    // Reva: UpdateEffectList has no branch for EffectSetState. Only Force Push has ongoing
-    // position update (handled in walk/position code; we mirror that here for client presentation).
+    // Only Force Push has ongoing position update; we mirror that here for client presentation.
     if (this.getInt(0) === GameEffectSetStateType.FORCEPUSH)
       this.updateForcePush(delta);
 

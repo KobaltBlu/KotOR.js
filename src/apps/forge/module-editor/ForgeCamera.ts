@@ -1,6 +1,8 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
+
+import * as KotOR from "../KotOR";
+
+import { ForgeGameObject } from "./ForgeGameObject";
 
 export class ForgeCamera extends ForgeGameObject {
   aspectRatio: number = 1;

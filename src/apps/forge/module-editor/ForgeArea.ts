@@ -1,21 +1,29 @@
 import * as KotOR from "../KotOR";
-import type { ForgeModule } from "./ForgeModule";
+
 import { AreaMap } from "../../../module/AreaMap";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-import { ForgeMiniGame } from "./ForgeMiniGame";
-import { ForgeCreature } from "./ForgeCreature";
-import { ForgeRoom } from "./ForgeRoom";
-import { ForgeGameObject } from "./ForgeGameObject";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { ForgeCamera } from "./ForgeCamera";
+import { ForgeCreature } from "./ForgeCreature";
 import { ForgeDoor } from "./ForgeDoor";
 import { ForgeEncounter } from "./ForgeEncounter";
-import { ForgePlaceable } from "./ForgePlaceable";
+import { ForgeGameObject } from "./ForgeGameObject";
 import { ForgeItem } from "./ForgeItem";
+import { ForgeMiniGame } from "./ForgeMiniGame";
+import type { ForgeModule } from "./ForgeModule";
+
+
+const log = createScopedLogger(LogScope.Forge);
+import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+import { ProjectFileSystem } from "../ProjectFileSystem";
+
+import { ForgePlaceable } from "./ForgePlaceable";
+import { ForgeRoom } from "./ForgeRoom";
 import { ForgeSound } from "./ForgeSound";
 import { ForgeStore } from "./ForgeStore";
 import { ForgeTrigger } from "./ForgeTrigger";
 import { ForgeWaypoint } from "./ForgeWaypoint";
+
 import * as THREE from 'three';
 
 export class ForgeArea extends ForgeGameObject{
@@ -53,7 +61,7 @@ export class ForgeArea extends ForgeGameObject{
 
   dynamicAmbientColor: number = 0;
 
-  expansionList: any[] = [];
+  expansionList: unknown[] = [];
 
   flags: number = 0;
 
@@ -203,7 +211,7 @@ export class ForgeArea extends ForgeGameObject{
     if(this.are.RootNode.hasField('ObjectId'))
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
 
-    let rooms = this.are.getFieldByLabel('Rooms');
+    const rooms = this.are.getFieldByLabel('Rooms');
 
     this.alphaTest = this.are.getFieldByLabel('AlphaTest').getValue();
     this.cameraStyle = this.are.getFieldByLabel('CameraStyle').getValue();
@@ -237,7 +245,7 @@ export class ForgeArea extends ForgeGameObject{
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
-    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
+    const map = this.are.getFieldByLabel('Map').getChildStructs()[0];
     if(map){
       this.areaMap = AreaMap.FromStruct(map) as AreaMap;
     }
@@ -283,7 +291,7 @@ export class ForgeArea extends ForgeGameObject{
 
     //Rooms
     for(let i = 0; i < rooms.childStructs.length; i++ ){
-      let strt = rooms.childStructs[i];
+      const strt = rooms.childStructs[i];
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
@@ -461,11 +469,11 @@ export class ForgeArea extends ForgeGameObject{
         this.layout = new KotOR.LYTObject(lyt);
 
         //Resort the rooms based on the LYT file because it matches the walkmesh transition index numbers
-        let sortedRooms: ForgeRoom[] = [];
+        const sortedRooms: ForgeRoom[] = [];
         for(let i = 0; i < this.layout.rooms.length; i++){
-          let roomLYT = this.layout.rooms[i];
+          const roomLYT = this.layout.rooms[i];
           for(let r = 0; r != this.rooms.length; r++ ){
-            let room = this.rooms[r];
+            const room = this.rooms[r];
             if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
               room.position.copy(roomLYT.position);
               sortedRooms.push(room);
@@ -495,13 +503,13 @@ export class ForgeArea extends ForgeGameObject{
       if(vis){
         this.visObject = new KotOR.VISObject(vis);
         this.visObject.read();
-        this.visObject.attachArea(this as any);
+        this.visObject.attachArea(this);
       }
 
-      console.log('lyt', this.layout);
-      console.log('vis', this.visObject);
-    }catch(e){
-      console.error(e);
+      log.debug('lyt', this.layout);
+      log.debug('vis', this.visObject);
+    } catch (e) {
+      log.error(e as Error);
     }
 
     // await this.loadVis();
@@ -681,7 +689,7 @@ export class ForgeArea extends ForgeGameObject{
    * Load the area's rooms
    */
   async loadRooms(): Promise<void> {
-    console.log('Loading Rooms');
+    log.debug('Loading Rooms');
     // this.walkEdges = [];
     // this.walkFaces = [];
     
@@ -705,11 +713,11 @@ export class ForgeArea extends ForgeGameObject{
 
     //Room Linking Pass 2
     for(let i = 0, iLen = this.rooms.length; i < iLen; i++ ){
-      let room1 = this.rooms[i];
+      const room1 = this.rooms[i];
       //console.log(room1.linked_rooms);
       //Look for all rooms that can see this room
       for(let j = 0, jLen = this.rooms.length; j < jLen; j++){
-        let room2 = this.rooms[j];
+        const room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ForgeRoom){
           const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
@@ -1090,7 +1098,7 @@ ForgeArea.registerObjectType(ForgeSound, 'sounds', GroupType.SOUND);
 ForgeArea.registerObjectType(ForgeStore, 'stores', GroupType.STORE);
 ForgeArea.registerObjectType(ForgeTrigger, 'triggers', GroupType.TRIGGER);
 ForgeArea.registerObjectType(ForgeWaypoint, 'waypoints', GroupType.WAYPOINT);
-ForgeArea.registerObjectType(ForgeRoom as any, 'rooms', GroupType.ROOMS, (object: ForgeGameObject) => {
+ForgeArea.registerObjectType(ForgeRoom, 'rooms', GroupType.ROOMS, (object: ForgeGameObject) => {
   object.area?.invalidateWalkmeshCache();
 }, (object: ForgeGameObject) => {
   object.area?.invalidateWalkmeshCache();

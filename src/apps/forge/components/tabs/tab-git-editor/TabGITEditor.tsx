@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TabGITEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
 import * as KotOR from "../../../KotOR";
+import { TabGITEditorState } from "../../../states/tabs";
 import "./TabGITEditor.scss";
 
 interface BaseTabProps {
@@ -162,11 +165,12 @@ interface InstancePropertiesProps {
 const InstanceProperties = (props: InstancePropertiesProps) => {
   const { instance, instanceType, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return instance.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = instance.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = instance.getFieldByLabel(label);
     if(field){
       field.setValue(value);

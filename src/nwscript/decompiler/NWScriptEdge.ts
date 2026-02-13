@@ -1,4 +1,5 @@
 import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptExpression } from "./NWScriptExpression";
 
 /**
  * Represents an edge type in the control flow graph
@@ -57,7 +58,7 @@ export class NWScriptEdge {
   /**
    * Condition expression (for complex conditions)
    */
-  conditionExpression?: any; // NWScriptExpression - using any to avoid circular dependency
+  conditionExpression?: NWScriptExpression;
 
   constructor(from: NWScriptBasicBlock, to: NWScriptBasicBlock, type: EdgeType, weight: number = 1.0) {
     this.from = from;

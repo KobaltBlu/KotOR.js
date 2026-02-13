@@ -1,4 +1,5 @@
 import * as KotOR from "../KotOR";
+
 import { ForgeMGGunBullet } from "./ForgeMGGunBullet";
 
 export class ForgeMGGunBank {

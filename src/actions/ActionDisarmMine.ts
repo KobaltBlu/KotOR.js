@@ -1,16 +1,17 @@
-import { GameState } from "../GameState";
 import { ModuleTriggerType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { SkillType } from "../enums/nwscript/SkillType";
+import { GameState } from "../GameState";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleObject } from "../module/ModuleObject";
 import type { ModuleTrigger } from "../module/ModuleTrigger";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
 
 /**
@@ -41,11 +42,11 @@ export class ActionDisarmMine extends Action {
     }
 
     if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
 
       if (distance > 3) {
         // this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -61,7 +62,7 @@ export class ActionDisarmMine extends Action {
       }
 
       if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)) {
-        const trap: ModuleTrigger = this.target as any;
+        const trap = this.target as ModuleTrigger;
         if (trap.type != ModuleTriggerType.TRAP) {
           return ActionStatus.FAILED;
         }

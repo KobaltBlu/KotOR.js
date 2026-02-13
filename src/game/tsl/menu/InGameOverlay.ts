@@ -1,13 +1,14 @@
+import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
+
+import { ActionMenuManager } from "../../../engine/menu/ActionMenuManager";
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
 import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { GameState } from "../../../GameState";
 import { LBL_MapView } from "../../../gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { InGameOverlay as K1_InGameOverlay } from "../../kotor/KOTOR";
-import { ActionMenuManager } from "../../../engine/menu/ActionMenuManager";
 import { TalentObject } from "../../../talents";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
 
 /**
  * InGameOverlay class.

@@ -1,4 +1,5 @@
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
+
 import type { OdysseyModel } from "./OdysseyModel";
 import { OdysseyModelNode } from "./OdysseyModelNode";
 
@@ -23,7 +24,7 @@ export class OdysseyModelNodeReference extends OdysseyModelNode {
   readBinary(odysseyModel: OdysseyModel){
     super.readBinary(odysseyModel);
 
-    this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');;
+    this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
     this.reattachable = this.odysseyModel.mdlReader.readInt32();
   }
 

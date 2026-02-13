@@ -1,4 +1,5 @@
 import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 
 const LTR_HEADER_LENGTH = 9;
 
@@ -18,9 +19,9 @@ const LTR_HEADER_LENGTH = 9;
  */
 export class LTRObject {
 
-  static CharacterArrays: any = {
+  static CharacterArrays: Record<number, string> = {
     26: 'abcdefghijklmnopqrstuvwxyz',
-    28: 'abcdefghijklmnopqrstuvwxyz\'-'
+    28: "abcdefghijklmnopqrstuvwxyz'-",
   };
 
   buffer: Uint8Array;
@@ -134,10 +135,10 @@ export class LTRObject {
     let prob: number = 0;
     let i = 0;
     let wordIndex = 0;
-    let chars = [];
+    const chars = [];
     
     let attempts = 0;
-    let bGetFirstThree = true;
+    const bGetFirstThree = true;
     let bGenerating = false;
     let bDone = false;
 
@@ -205,6 +206,44 @@ export class LTRObject {
     return chars.map((value: number, index: number) => {
       return index == 0 ? letters[value].toUpperCase() : letters[value];
     }).join('') as string;
+  }
+
+  /**
+   * Serialize LTR back to binary (same layout as readBuffer) for editor save.
+   */
+  toBuffer(): Uint8Array {
+    const bw = new BinaryWriter();
+    const cc = this.charCount ?? 0;
+    bw.writeChars((this.fileType ?? 'LTR ').substring(0, 4).padEnd(4, '\0'));
+    bw.writeChars((this.fileVersion ?? 'V1.0').substring(0, 4).padEnd(4, '\0'));
+    bw.writeByte(cc & 0xff);
+
+    const s0 = this.singleArray?.[0] ?? [];
+    const s1 = this.singleArray?.[1] ?? [];
+    const s2 = this.singleArray?.[2] ?? [];
+    for (let i = 0; i < cc; i++) bw.writeSingle(s0[i] ?? 0);
+    for (let i = 0; i < cc; i++) bw.writeSingle(s1[i] ?? 0);
+    for (let i = 0; i < cc; i++) bw.writeSingle(s2[i] ?? 0);
+
+    const d = this.doubleArray ?? [];
+    for (let i = 0; i < cc; i++) {
+      const di = d[i] ?? [[], [], []];
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[0] ?? [])[j] ?? 0);
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[1] ?? [])[j] ?? 0);
+      for (let j = 0; j < cc; j++) bw.writeSingle((di[2] ?? [])[j] ?? 0);
+    }
+
+    const t = this.tripleArray ?? [];
+    for (let i = 0; i < cc; i++) {
+      for (let j = 0; j < cc; j++) {
+        const tij = (t[i] ?? [])[j] ?? [[], [], []];
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[0] ?? [])[k] ?? 0);
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[1] ?? [])[k] ?? 0);
+        for (let k = 0; k < cc; k++) bw.writeSingle((tij[2] ?? [])[k] ?? 0);
+      }
+    }
+
+    return bw.position > 0 ? bw.buffer.slice(0, bw.position) : new Uint8Array(0);
   }
 
 }

@@ -1,14 +1,3 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
-import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
-import { UI3DToolPalette, Tool, SubTool } from "../../UI3DToolPalette";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faArrowPointer, 
   faArrowsRotate, 
@@ -25,8 +14,21 @@ import {
   faTriangleExclamation,
   faLocationPin
 } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 
+import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
+import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
+import { UI3DRendererView } from "../../UI3DRendererView";
+import { UI3DToolPalette, Tool, SubTool } from "../../UI3DToolPalette";
+
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import * as KotOR from "../../../KotOR";
+import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "../../../states/tabs";
 
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {

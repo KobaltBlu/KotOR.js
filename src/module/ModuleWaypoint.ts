@@ -1,15 +1,21 @@
 import { ModuleObject } from "./ModuleObject";
+
 import { GFFObject } from "../resource/GFFObject";
+
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
+
 import { CExoLocString } from "../resource/CExoLocString";
 import { ResourceLoader } from "../loaders";
 import { GameState } from "../GameState";
+
+const log = createScopedLogger(LogScope.Module);
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel3D } from "../three/odyssey";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 
 /**
 * ModuleWaypoint class.
@@ -41,7 +47,7 @@ export class ModuleWaypoint extends ModuleObject {
 
   getFacingVector(){
     if(this.model instanceof OdysseyModel3D){
-      let facing = new THREE.Vector3(0, 1, 0);
+      const facing = new THREE.Vector3(0, 1, 0);
       facing.applyQuaternion(this.model.quaternion);
       return facing;
     }
@@ -77,7 +83,7 @@ export class ModuleWaypoint extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
       }else{
-        console.error('Failed to load ModuleWaypoint template');
+        log.error('Failed to load ModuleWaypoint template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -89,7 +95,7 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTW ';
     gff.RootNode.type = 5;
 
@@ -100,7 +106,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);

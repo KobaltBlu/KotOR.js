@@ -1,11 +1,15 @@
-import { TPCObject } from "../resource/TPCObject";
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
+
+import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
 import { ERFManager } from "../managers/ERFManager";
 import { KEYManager } from "../managers/KEYManager";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { TPCObject } from "../resource/TPCObject";
 import { OdysseyCompressedTexture } from "../three/odyssey";
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
+import { GameFileSystem } from "../utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Loader);
 import { TextureLoaderState } from "./TextureLoaderState";
 
 /**
@@ -71,12 +75,12 @@ export class TPCLoader {
         pack: result.pack,
       });
 
-      let texture = tpc.toCompressedTexture();
-      //console.log("loaded texture", resRef);
+      const texture = tpc.toCompressedTexture();
+      //log.info("loaded texture", resRef);
 
       return texture;
     }catch(e){
-      // console.error(e);
+      // log.error(e);
       return undefined;
     }
   }
@@ -101,7 +105,7 @@ export class TPCLoader {
     }catch(e){
 
     }
-  };
+  }
   
   /*fetchLocal( resRef = '', onLoad?: Function, onProgress?: Function, onError?: Function ) {
   
@@ -114,7 +118,7 @@ export class TPCLoader {
         });
   
         let texture = tpc.toCompressedTexture();
-        //console.log("loaded texture", texName);
+        //log.info("loaded texture", texName);
   
         if ( typeof onLoad === 'function' ) onLoad( texture );
   
@@ -162,12 +166,12 @@ export class TPCLoader {
   
         return tpc;
       }catch(e){
-        console.error(e);
+        log.error(e);
         return undefined;
       }
   
     }else{
-      console.warn('Local files not implemented yet');
+      log.warn('Local files not implemented yet');
     }
     return undefined;
   };*/

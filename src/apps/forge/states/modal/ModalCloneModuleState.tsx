@@ -1,6 +1,8 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalCloneModule } from "../../components/modal/ModalCloneModule";
+
+import { ModalState } from "./ModalState";
 
 export interface ModalCloneModuleStateOptions {
   title?: string;
@@ -78,7 +80,7 @@ export class ModalCloneModuleState extends ModalState {
     const { ForgeFileSystem } = await import("../../ForgeFileSystem");
     const response = await ForgeFileSystem.OpenFile({ ext: [".mod"] });
     const KotOR = await import("../../KotOR");
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         this.sourceModPath = response.paths[0];
       }

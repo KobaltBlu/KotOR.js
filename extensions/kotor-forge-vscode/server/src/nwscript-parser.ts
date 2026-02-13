@@ -3,6 +3,7 @@
  * Recursive descent parser that builds a complete AST
  */
 
+import { trace, debug } from './logger';
 import {
   AssignmentExpression,
   BinaryExpression,
@@ -38,7 +39,6 @@ import {
   WhileStatement
 } from './nwscript-ast';
 import { NWScriptLexer, Token, TokenType } from './nwscript-lexer';
-import { trace, debug } from './logger';
 
 export class ParseError extends Error {
   public location: SourceLocation;

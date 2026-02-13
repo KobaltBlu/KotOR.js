@@ -1,7 +1,9 @@
 import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
-import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "../SceneGraphNode";
+
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { SceneGraphTreeViewManager } from "../managers/SceneGraphTreeViewManager";
+import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "../SceneGraphNode";
+
 import { ForgeTreeView } from "./treeview/ForgeTreeView";
 import { ListItemNode } from "./treeview/ListItemNode";
 

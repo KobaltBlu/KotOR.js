@@ -1,6 +1,13 @@
-import { BrowserWindow, shell } from "electron";
 import * as path from "path";
+
+import { BrowserWindow, shell } from "electron";
+
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import Main from "./Main";
+
+
+const log = createScopedLogger(LogScope.Debug);
 
 export class LauncherWindow {
 
@@ -40,7 +47,7 @@ export class LauncherWindow {
       // this.browserWindow.webcontents.openDevTools();
       if(!this.browserWindow) { return; }
       this.browserWindow.webContents.setWindowOpenHandler((details) => {
-        console.log(details);
+        log.info('setWindowOpenHandler', details);
         if(details.frameName == '_new' || details.url.indexOf('https://') >= 0){
           shell.openExternal(details.url);
           return { action: 'deny' };
@@ -93,7 +100,7 @@ export class LauncherWindow {
     if(this.browserWindow) this.browserWindow.show();
   }
 
-  send(event: string, data: any) {
+  send(event: string, data: string | number | boolean | object) {
     if(this.browserWindow)
       this.browserWindow.webContents.send(event, data);
   }

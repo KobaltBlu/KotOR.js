@@ -1,7 +1,10 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalAbout } from "../../components/modal/ModalAbout";
+
 import { CURRENT_VERSION, LOCAL_PROGRAM_INFO, getRemoteToolsetUpdateInfo, isRemoteVersionNewer } from "../../config";
+
+import { ModalState } from "./ModalState";
 
 export interface ModalAboutStateOptions {
   title?: string;

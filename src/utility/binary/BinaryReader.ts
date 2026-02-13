@@ -1,5 +1,9 @@
 import { Endians } from "../../enums/resource/Endians";
 
+import { createScopedLogger, LogScope } from "../Logger";
+
+const log = createScopedLogger(LogScope.Resource);
+
 /**
  * BinaryReader class.
  * 
@@ -17,7 +21,7 @@ export class BinaryReader {
   endians: Endians = Endians.LITTLE;
   isLE: boolean;
 
-  _value: any;
+  _value: number | string | bigint | undefined;
 
   /**
    * Constructor for the BinaryReader class.
@@ -149,7 +153,7 @@ export class BinaryReader {
 
     this._value = this.bufferView.getUint32(this.position, this.isLE);
     if(typeof this._value ==='undefined'){
-      console.warn('readUInt32', this._value, this.position, this.buffer.length);
+      log.warn('readUInt32 undefined value position=%s bufferLength=%s', String(this.position), String(this.buffer.length));
     }
     this.position += 4;
     return this._value;
@@ -166,7 +170,7 @@ export class BinaryReader {
 
     this._value = this.bufferView.getInt32(this.position, this.isLE);
     if(typeof this._value ==='undefined'){
-      console.warn('readInt32', this._value, this.position, this.buffer.length);
+      log.warn('readInt32 undefined value position=%s bufferLength=%s', String(this.position), String(this.buffer.length));
     }
     this.position += 4;
     return this._value;
@@ -198,7 +202,7 @@ export class BinaryReader {
     const textDecoder = new TextDecoder(encoding);
     this._value = textDecoder.decode(this.buffer.slice(this.position, this.position + num));
     this.position += num;
-    //console.log(num, this._value);
+    //log.info(num, this._value);
     return this._value;
   }
 
@@ -322,9 +326,9 @@ export class BinaryReader {
    * @returns The sliced buffer.
    */
   slice(offset = 0, end = 0): BinaryReader {
-    end = (!!end) ? end : this.buffer.length;
+    end = (end) ? end : this.buffer.length;
 
-    let buffer = this.buffer.slice(offset, end);
+    const buffer = this.buffer.slice(offset, end);
     return new BinaryReader(buffer, this.endians)
   }
 

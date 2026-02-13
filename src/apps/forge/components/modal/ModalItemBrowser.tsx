@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Button, Modal } from "react-bootstrap";
+
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalItemBrowserState } from "../../states/modal/ModalItemBrowserState";
+
 import { LazyTextureCanvas } from "../LazyTextureCanvas/LazyTextureCanvas";
 import "./ModalItemBrowser.scss";
 

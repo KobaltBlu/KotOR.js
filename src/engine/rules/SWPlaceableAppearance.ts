@@ -30,7 +30,7 @@ export class SWPlaceableAppearance {
   ignorestatichitcheck: boolean = false;
   usesearch: boolean = false; //TSL
 
-  static From2DA (row: any = {}): SWPlaceableAppearance {
+  static From2DA (row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWPlaceableAppearance {
     const appearance = new SWPlaceableAppearance();
 
     appearance.id = parseInt(row.__index);

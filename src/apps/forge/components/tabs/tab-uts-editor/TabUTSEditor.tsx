@@ -1,14 +1,22 @@
 import React, { useRef, useState, useEffect, useCallback } from "react"
+
 import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTSEditorState } from "../../../states/tabs";
-import * as KotOR from "../../../KotOR";
+
 import "../../../styles/tabs/tab-uts-editor.scss";
 import { Button, Modal } from "react-bootstrap";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeState } from "../../../states/ForgeState";
+
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { FormField } from "../../form-field/FormField";
+
+import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
+
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import * as KotOR from "../../../KotOR";
 import { ForgeSound } from "../../../module-editor/ForgeSound";
+import { ForgeState } from "../../../states/ForgeState";
+import { TabUTSEditorState } from "../../../states/tabs";
+
+const log = createScopedLogger(LogScope.Forge);
 
 const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClose: () => void}){
   const [soundResRef, setSoundResRef] = useState<string>('');
@@ -84,7 +92,7 @@ const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClo
       audioBufferRef.current = bufferSourceNode;
       
     } catch (error) {
-      console.error('Error playing sound:', error);
+      log.error('Error playing sound', error instanceof Error ? error : String(error));
       setIsPlaying(false);
     }
   }
@@ -241,8 +249,13 @@ export const TabUTSEditor = function(props: BaseTabProps){
     }
 
     const resRef = sounds[index];
-    KotOR.AudioLoader.LoadSound(resRef).then((data: any) => {
-      KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data.buffer as ArrayBuffer ).then((buffer: AudioBuffer) => {
+    KotOR.AudioLoader.LoadSound(resRef).then((data: ArrayBuffer | Uint8Array | undefined) => {
+      if (!data) {
+        log.warn('LoadSound returned no data for resRef=%s', resRef);
+        return;
+      }
+      const bufferToDecode = data instanceof ArrayBuffer ? data : data.buffer;
+      KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(bufferToDecode).then((buffer: AudioBuffer) => {
         const bufferSourceNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
         bufferSourceNode.buffer = buffer;
         bufferSourceNode.connect(KotOR.AudioEngine.sfxChannel.getGainNode());

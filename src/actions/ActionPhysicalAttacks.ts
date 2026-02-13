@@ -1,27 +1,29 @@
+import * as THREE from 'three';
+
 import { CombatRound } from "../combat/CombatRound";
 import { ModuleObjectType, SSFType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { AttackResult } from "../enums/combat/AttackResult";
+import { CombatActionType } from "../enums/combat/CombatActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { GameState } from "../GameState";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
-import * as THREE from 'three';
 
 /**
  * ActionPhysicalAttacks class.
- * Executes a physical attack (melee or ranged) against a target. Matches RunActions case 0xc
- * and CSWSCreature::AIActionPhysicalAttacks: only runs for creature (object_type 5), uses
+ * Executes a physical attack (melee or ranged) against a target. Only runs for creature
+ * (object_type 5); uses
  * desired range (melee 2.0 / ranged 15.0), move-to-target when out of range, combat round
  * begin/pause, engaged vs dueling animation, then calculateAttackDamage / facing / attack sound.
- * RunActions stores action node float at 0x38 in object.field27 before the call and resets
- * after; on non-complete it calls GetWorldTime (timestamp for retry/cooldown). We end the
- * combat round when target is dead for parity.
+ * On non-complete it uses GetWorldTime for retry/cooldown. We end the combat round when
+ * target is dead for parity.
  *
  * @file ActionPhysicalAttacks.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -57,8 +59,8 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    const owner: ModuleCreature = this.owner as any;
-    const target: ModuleCreature = this.target as any;
+    const owner = this.owner as ModuleCreature;
+    const target = this.target as ModuleCreature;
 
     owner.resetExcitedDuration();
     const range = owner.isRangedEquipped() ? 15.0 : 2.0;
@@ -119,7 +121,7 @@ export class ActionPhysicalAttacks extends Action {
       combatAction.attackDamage = attackDamage ?? 0;
     }
     if (actionType !== undefined && actionType >= 0) {
-      combatAction.actionType = actionType as any;
+      combatAction.actionType = actionType as CombatActionType;
     }
     if (animationIndex !== undefined && animationIndex >= 0) {
       combatAction.animation = animationIndex;

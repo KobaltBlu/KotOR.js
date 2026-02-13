@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabSAVEditor } from "../../components/tabs/tab-sav-editor/TabSAVEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabSAVEditorState extends TabState {
   tabName: string = 'Save Game Editor';
@@ -42,8 +45,8 @@ export class TabSAVEditorState extends TabState {
     }
   }
 
-  extractSaveMetadata() {
-    const meta: any = {
+  extractSaveMetadata(): { areaName: string; lastModule: string; gameTime: number; resourceCount: number } {
+    const meta = {
       areaName: 'Unknown',
       lastModule: 'Unknown',
       gameTime: 0,
@@ -64,7 +67,7 @@ export class TabSAVEditorState extends TabState {
     // SAV is ERF-based
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

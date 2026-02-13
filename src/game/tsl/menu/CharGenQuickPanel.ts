@@ -1,7 +1,8 @@
+import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
+
 import { CurrentGame } from "../../../engine/CurrentGame";
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { CharGenQuickPanel as K1_CharGenQuickPanel } from "../../kotor/KOTOR";
 
 /**
  * CharGenQuickPanel class.

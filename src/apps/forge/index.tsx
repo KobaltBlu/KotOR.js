@@ -5,15 +5,20 @@ declare global {
   }
 }
 (window as Window & { monaco: typeof monaco }).monaco = monaco;
-import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
+
 import 'bootstrap';
 import './app.scss';
-import { AppProvider, useApp } from './context/AppContext';
-import * as KotOR from "./KotOR";
-import { App } from './App';
+import { createScopedLogger, LogScope } from '../../utility/Logger';
+
 import { registerElectronLoadingErrorHandler } from '../common/electronLoadingErrorHandler';
 
+import { App } from './App';
+import { AppProvider } from './context/AppContext';
+import * as KotOR from "./KotOR";
+
+
+const log = createScopedLogger(LogScope.Forge);
 registerElectronLoadingErrorHandler();
 
 const query = new URLSearchParams(window.location.search);
@@ -45,10 +50,10 @@ const loadReactApplication = () => {
   try {
     await KotOR.ConfigClient.Init();
     const getProfile = () => KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
-    KotOR.ApplicationProfile.InitEnvironment(getProfile());
+    KotOR.ApplicationProfile.InitEnvironment(getProfile() as unknown as Record<string, unknown>);
     document.body.classList.add(KotOR.ApplicationProfile.GameKey ?? 'kotor');
   } catch (e) {
-    console.error('Forge init error, starting with defaults', e);
+    log.error('Forge init error, starting with defaults', e);
     document.body.classList.add('kotor');
   } finally {
     loadReactApplication();
@@ -74,16 +79,16 @@ const plMouseMove = (event: MouseEvent): void => {
   if (moveX > -range && moveX < range) {
     KotOR.Mouse.OffsetX = moveX;
   } else {
-    console.log('x', moveX);
+    log.debug('x', moveX);
   }
   if (moveY > -range && moveY < range) {
     KotOR.Mouse.OffsetY = moveY * -1.0;
   } else {
-    console.log('y', moveY);
+    log.debug('y', moveY);
   }
 };
 
 document.addEventListener('pointerlockchange', plChangeCallback, true);
 document.addEventListener('pointerlockerror', (e) => {
-  console.error(e);
+  log.error(String(e), e);
 }, true);

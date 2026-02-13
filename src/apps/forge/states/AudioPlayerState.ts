@@ -1,22 +1,40 @@
-import { EditorFile } from "../EditorFile";
 import * as fs from "fs";
+
+import { EditorFile } from "../EditorFile";
 import * as KotOR from "../KotOR";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { ForgeState } from "./ForgeState";
 import { TabAudioPlayerState } from "./tabs/TabAudioPlayerState";
 
-declare const dialog: any;
+/** Runtime file dialog (Electron or browser); from external API. */
+declare const dialog: {
+  showOpenDialog?: (opts?: { filters?: { name: string; extensions: string[] }[] }) => Promise<{ filePaths?: string[]; canceled?: boolean }>;
+  showSaveDialog?: (opts?: { defaultPath?: string }) => Promise<{ filePath?: string; canceled?: boolean }>;
+};
+
+const log = createScopedLogger(LogScope.Forge);
 
 export type AudioPlayerEventListenerTypes =
-  'onPlay'|'onPause'|'onStop'|'onLoad'|'onVolume'|'onLoop'|'onOpen';
+  | "onPlay"
+  | "onPause"
+  | "onStop"
+  | "onLoad"
+  | "onVolume"
+  | "onLoop"
+  | "onOpen";
+
+export type AudioPlayerEventCallback = (...args: unknown[]) => void;
 
 export interface TabManagerEventListeners {
-  onPlay: Function[],
-  onPause: Function[],
-  onStop: Function[],
-  onLoad: Function[],
-  onVolume: Function[],
-  onLoop: Function[],
-  onOpen: Function[],
+  onPlay: AudioPlayerEventCallback[];
+  onPause: AudioPlayerEventCallback[];
+  onStop: AudioPlayerEventCallback[];
+  onLoad: AudioPlayerEventCallback[];
+  onVolume: AudioPlayerEventCallback[];
+  onLoop: AudioPlayerEventCallback[];
+  onOpen: AudioPlayerEventCallback[];
 }
 
 export class AudioPlayerState {
@@ -26,7 +44,7 @@ export class AudioPlayerState {
   // this.source = AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
   static file: EditorFile;
   static audioFile: KotOR.AudioFile;
-  static buffer: any;
+  static buffer: AudioBuffer | null = null;
 
   static eventListeners: TabManagerEventListeners = {
     onPlay: [],
@@ -51,49 +69,61 @@ export class AudioPlayerState {
   static loop: boolean;
   static loopId: NodeJS.Timeout;
 
-  static AddEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
-    if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
+  static AddEventListener(
+    type: AudioPlayerEventListenerTypes,
+    cb: AudioPlayerEventCallback
+  ) {
+    if (Array.isArray(AudioPlayerState.eventListeners[type])) {
+      const ev = AudioPlayerState.eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index === -1) {
         ev.push(cb);
-      }else{
-        console.warn('Event Listener: Already added', type);
+      } else {
+        log.warn("AudioPlayerState AddEventListener: Already added", type);
       }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
+    } else {
+      log.warn("AudioPlayerState AddEventListener: Unsupported", type);
     }
   }
 
-  static RemoveEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
-    if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
+  static RemoveEventListener(
+    type: AudioPlayerEventListenerTypes,
+    cb: AudioPlayerEventCallback
+  ) {
+    if (Array.isArray(AudioPlayerState.eventListeners[type])) {
+      const ev = AudioPlayerState.eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index >= 0) {
         ev.splice(index, 1);
-      }else{
-        console.warn('Event Listener: Already removed', type);
+      } else {
+        log.warn("AudioPlayerState RemoveEventListener: Already removed", type);
       }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
+    } else {
+      log.warn("AudioPlayerState RemoveEventListener: Unsupported", type);
     }
   }
 
-  static ProcessEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []){
-    if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
+  static ProcessEventListener(
+    type: AudioPlayerEventListenerTypes,
+    args: unknown[] = []
+  ) {
+    if (Array.isArray(AudioPlayerState.eventListeners[type])) {
+      const ev = AudioPlayerState.eventListeners[type];
+      for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
-        if(typeof callback === 'function'){
+        if (typeof callback === "function") {
           callback(...args);
         }
       }
-    }else{
-      console.warn('Event Listener: Unsupported', type);
+    } else {
+      log.warn("AudioPlayerState ProcessEventListener: Unsupported", type);
     }
   }
 
-  static TriggerEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []){
+  static TriggerEventListener(
+    type: AudioPlayerEventListenerTypes,
+    args: unknown[] = []
+  ) {
     AudioPlayerState.ProcessEventListener(type, args);
   }
 
@@ -122,29 +152,28 @@ export class AudioPlayerState {
           AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
         }
         catch (e) {
-          console.error(e);
-          //AudioPlayerState.Hide();
+          log.error("OpenAudio readFile", e instanceof Error ? e : String(e));
         }
       });
     }
   }
 
-  static GetAudioBuffer(onBuffered?: Function){
-    if(AudioPlayerState.buffer == null){
+  static GetAudioBuffer(onBuffered?: (buffer: AudioBuffer | null) => void) {
+    if (AudioPlayerState.buffer == null) {
       AudioPlayerState.audioFile.getPlayableByteStream().then((data: Uint8Array) => {
-        try{
-          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data.buffer as ArrayBuffer, (buffer: any) => {
-            AudioPlayerState.buffer = buffer;
-            if(typeof onBuffered === 'function')
-              onBuffered(AudioPlayerState.buffer);
-          }, (error: any) => {
-            console.error("decodeAudioData error", error);
-
-            // AudioPlayerState.buffer = pcm.toAudioBuffer(data);
-            console.log('Caught PCM error converting ADPCM to PCM', AudioPlayerState.buffer, AudioPlayerState.buffer instanceof AudioBuffer)
-            if(typeof onBuffered === 'function')
-              onBuffered(AudioPlayerState.buffer);
-          });
+        try {
+          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
+            data.buffer as ArrayBuffer,
+            (buffer: AudioBuffer) => {
+              AudioPlayerState.buffer = buffer;
+              if (typeof onBuffered === "function") onBuffered(AudioPlayerState.buffer);
+            },
+            (error: DOMException) => {
+              log.error("decodeAudioData error", error.message);
+              if (typeof onBuffered === "function")
+                onBuffered(AudioPlayerState.buffer);
+            }
+          );
         }catch( e ){
 
         }
@@ -181,10 +210,10 @@ export class AudioPlayerState {
   static Play(){
     AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     if(!AudioPlayerState.loading){
-      AudioPlayerState.GetAudioBuffer((data: any) => {
+      AudioPlayerState.GetAudioBuffer((_data: AudioBuffer | null) => {
         if(AudioPlayerState.source){
           AudioPlayerState.loading = false;
-          let offset = AudioPlayerState.pausedAt;
+          const offset = AudioPlayerState.pausedAt;
           AudioPlayerState.source.buffer = AudioPlayerState.buffer;
           AudioPlayerState.analyser = KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
           AudioPlayerState.analyser.fftSize = 128; 
@@ -227,7 +256,7 @@ export class AudioPlayerState {
   }
 
   static Pause(){
-    let elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+    const elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
     AudioPlayerState.pausedAt = elapsed;
     AudioPlayerState.ProcessEventListener('onPause');
     AudioPlayerState.Stop();
@@ -240,7 +269,9 @@ export class AudioPlayerState {
         AudioPlayerState.source.disconnect();
         AudioPlayerState.source.stop(0);
       }
-    }catch(e){ console.error(e); }
+    } catch (e) {
+      log.error("Stop", e instanceof Error ? e : String(e));
+    }
     AudioPlayerState.pausedAt = 0;
     AudioPlayerState.startedAt = 0;
     AudioPlayerState.playing = false;
@@ -250,7 +281,7 @@ export class AudioPlayerState {
 
   static async ExportAudio() {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      let payload = await dialog.showSaveDialog({
+      const payload = await dialog.showSaveDialog({
         title: 'Export Audio File',
         defaultPath: AudioPlayerState.audioFile.filename,
         properties: ['createDirectory'],
@@ -263,11 +294,9 @@ export class AudioPlayerState {
       if(!payload.canceled && typeof payload.filePath != 'undefined'){
         fs.writeFile(payload.filePath, AudioPlayerState.audioFile.getExportableData() || new Uint8Array(0), (err) => {
           if (err) {
-            console.warn('AudioFile Save Fail', payload.filePath);
-            // if(typeof args.onError == 'function')
-            //   args.onError(err);
-          }else{
-            console.log('AudioFile Saved', payload.filePath);
+            log.warn("AudioFile Save Fail", payload.filePath);
+          } else {
+            log.info("AudioFile Saved", payload.filePath);
             // if(typeof args.onComplete == 'function')
             //   args.onComplete();
           }
@@ -295,9 +324,10 @@ export class AudioPlayerState {
       } as SaveFilePickerOptions ).then( async (handle: FileSystemFileHandle) => {
         if(handle){
           const writable = await handle.createWritable();
-          await writable.write(AudioPlayerState.audioFile.getExportableData() as any || new Uint8Array(0) as any);
+          const exportData: BufferSource = AudioPlayerState.audioFile.getExportableData() ?? new Uint8Array(0);
+          await writable.write(exportData);
           await writable.close();
-          console.log('AudioFile Saved', handle.name);
+          log.info('AudioFile Saved name=%s', handle.name);
         }
       })
     }
@@ -315,18 +345,20 @@ export class AudioPlayerState {
     return 0;
   }
 
-  static GetDuration() {
-    try{
+  static GetDuration(): number {
+    try {
+      if (AudioPlayerState.buffer == null) return 0;
       return AudioPlayerState.buffer.duration;
-    }catch(e){ }
-    return 0;
+    } catch (_e) {
+      return 0;
+    }
   }
 
   static SecondsToTimeString(time: number){
     time = time | 0
-    let h = Math.floor(time / 3600);
-    let m = Math.floor(time % 3600 / 60);
-    let s = Math.floor(time % 3600 % 60);
+    const h = Math.floor(time / 3600);
+    const m = Math.floor(time % 3600 / 60);
+    const s = Math.floor(time % 3600 % 60);
     return ((h > 0 ? h + ":" + (m < 10 ? "0" : "") : "") + m + ":" + (s < 10 ? "0" : "") + s);
   }
 

@@ -1,10 +1,13 @@
 import React from "react";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
+
+import { TabGUIEditor } from "../../components/tabs/tab-gui-editor/TabGUIEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabGUIEditor } from "../../components/tabs/tab-gui-editor/TabGUIEditor";
 import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
 
 
 export type TabGUIEditorStateEventListenerTypes =

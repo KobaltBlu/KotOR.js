@@ -1,11 +1,14 @@
-import type { ModuleObject } from "../module";
-import type { TalentSpell } from "../talents";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-// import { NWScript } from "../nwscript/NWScript";
-import { OdysseyModel } from "../odyssey";
+
 import { GameState } from "../GameState";
 import { MDLLoader } from "../loaders";
+import type { ModuleObject } from "../module";
+import { OdysseyModel } from "../odyssey";
+import type { TalentSpell } from "../talents";
+import { OdysseyModel3D } from "../three/odyssey";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * SpellCastInstance class.
@@ -30,8 +33,8 @@ export class SpellCastInstance {
   catchtime: string;
   conjanim: string;
   hostilesetting: number;
-  iconresref: any;
-  projectileHook: any;
+  iconresref: string;
+  projectileHook: THREE.Object3D | null;
   projectileOrigin: THREE.Vector3;
   projectileTarget: THREE.Vector3;
   projectileCurve: THREE.QuadraticBezierCurve3;
@@ -74,16 +77,16 @@ export class SpellCastInstance {
       this.projectileCurve.v2.copy(this.projectileTarget);
     }
 
-    if(this.spell.projmodel != ''){
-      console.log('projectile', this.spell.projmodel);
+    if (this.spell.projmodel !== "") {
+      log.debug("SpellCastInstance init projectile model", this.spell.projmodel);
       MDLLoader.loader.load(this.spell.projmodel.toLowerCase())
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.owner.context
         }).then((model: OdysseyModel3D) => {
           this.projectile = model;
-          console.log('projectile', model);
-          if(this.owner.model){
+          log.debug("SpellCastInstance projectile model loaded", model?.name ?? "");
+          if (this.owner.model) {
             if(this.owner.model.rhand){
               this.owner.context.group.effects.add(model);
               this.projectileHook = this.owner.model.rhand;
@@ -160,15 +163,15 @@ export class SpellCastInstance {
     if(this.impacted) return;
     this.impacted = true;
     
-    if(this.impactscript != ''){
-      console.log('Casting spell', this.impactscript, this);
+    if (this.impactscript !== "") {
+      log.debug("SpellCastInstance impact", this.impactscript, this.spell?.name ?? "");
       const instance = GameState.NWScript.Load(this.impactscript);
       if(instance) {
         //pass the talent to the script instance and run it
         instance.talent = this.spell;
         //instance.spellTarget = oTarget;
         instance.run(this.owner, 0);
-      };
+      }
     }
 
     if(this.casthandvisual != ''){

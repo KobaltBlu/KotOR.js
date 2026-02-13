@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabGITEditor } from "../../components/tabs/tab-git-editor/TabGITEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabGITEditorState extends TabState {
   tabName: string = 'GIT Editor';
@@ -57,7 +60,7 @@ export class TabGITEditorState extends TabState {
     // Sync UI changes to GIT GFF if needed
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

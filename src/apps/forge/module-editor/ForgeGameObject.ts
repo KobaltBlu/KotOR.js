@@ -1,9 +1,15 @@
+import * as THREE from 'three';
+
 import { EventListenerModel } from "../EventListenerModel";
 import * as KotOR from "../KotOR";
 import { TabState } from "../states/tabs/TabState";
 import { UI3DRenderer } from "../UI3DRenderer";
-import * as THREE from 'three';
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import type { ForgeArea } from "./ForgeArea";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeGameObject extends EventListenerModel {
   context: UI3DRenderer;
@@ -77,7 +83,7 @@ export class ForgeGameObject extends EventListenerModel {
 
   setGITInstance(instance: KotOR.GFFStruct){
     // stub method to be overridden by child classes
-    console.error(`setGITInstance not implemented for ${this.constructor.name}`);
+    log.error(`setGITInstance not implemented for ${this.constructor.name}`);
   }
 
   /**
@@ -244,13 +250,13 @@ export class ForgeGameObject extends EventListenerModel {
     };
   };
 
-  getProperty(property: keyof this): any{
-    return (this as any)[property];
+  getProperty<K extends keyof this>(property: K): this[K]{
+    return this[property];
   }
 
-  setProperty(property: keyof this, value: any){
-    const old = (this as any)[property];
-    (this as any)[property] = value;
+  setProperty<K extends keyof this>(property: K, value: this[K]){
+    const old = this[property];
+    this[property] = value;
     this.processEventListener('onPropertyChange', [property, value, old]);
     return value;
   }

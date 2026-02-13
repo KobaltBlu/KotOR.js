@@ -1,12 +1,19 @@
-import { DeepObject } from "../utility/DeepObject";
 import * as swKotOR from "../game/kotor/swkotor-config";
 import * as swKotOR2 from "../game/tsl/swkotor2-config";
+import { DeepObject } from "../utility/DeepObject";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Default);
+
+/** INI value: primitive or nested section. */
+export type IniValue = string | number | boolean | Record<string, string | number | boolean | Record<string, string | number | boolean>>;
 
 /**
  * INIConfig class.
- * Loads/saves swKotor.ini (K1) or swKotor2.ini (K2). Section and key names are 1:1 with reva
- * (Sound Options, Graphics Options, Game Options, Keymapping, Autopause Options; K2: Display Options, config; both: Movies Shown).
+ * Loads/saves swKotor.ini (K1) or swKotor2.ini (K2). Section and key names match the
+ * original game INI layout (Sound Options, Graphics Options, Game Options, Keymapping,
+ * Autopause Options; K2: Display Options, config; both: Movies Shown).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -16,16 +23,16 @@ import { GameFileSystem } from "../utility/GameFileSystem";
  */
 export class INIConfig {
   ini_path: string;
-  defaults: any;
-  options: any = {};
-  current_section: any;
+  defaults: Record<string, IniValue>;
+  options: Record<string, IniValue> = {};
+  current_section: string | null = null;
 
-  static defaultConfigs: any = {
+  static defaultConfigs: Record<string, Record<string, IniValue>> = {
     swKotOR: swKotOR.default,
     swKotOR2: swKotOR2.default
   };
 
-  constructor(ini_path: string, defaults: any = {}) {
+  constructor(ini_path: string, defaults: Record<string, IniValue> = {}) {
     this.ini_path = ini_path;
     this.defaults = defaults;
     this.options = {};
@@ -35,8 +42,8 @@ export class INIConfig {
     try {
       const buffer = await GameFileSystem.readFile(this.ini_path);
       const decoder = new TextDecoder('utf-8');
-      let ini_text = decoder.decode(buffer);
-      let lines = ini_text.split(/\r?\n/);
+      const ini_text = decoder.decode(buffer);
+      const lines = ini_text.split(/\r?\n/);
 
       this.current_section = null;
 
@@ -62,7 +69,10 @@ export class INIConfig {
           }
 
           if (this.current_section) {
-            this.options[this.current_section][name] = value;
+            const section = this.options[this.current_section];
+            if (typeof section === 'object' && section !== null && !Array.isArray(section)) {
+              (section as Record<string, IniValue>)[name] = value;
+            }
           } else {
             this.options[name] = value;
           }
@@ -71,7 +81,7 @@ export class INIConfig {
       this.options = DeepObject.Merge(this.defaults, this.options);
       return;
     } catch (e) {
-      console.error(e);
+      log.error('INIConfig.load', e as Error);
       this.options = DeepObject.Merge(this.defaults, this.options);
       return;
     }
@@ -81,30 +91,30 @@ export class INIConfig {
   // https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
   // Answer by Salakar:
   // https://stackoverflow.com/users/2938161/salakar
-  getProperty(key: string) {
+  getProperty(key: string): IniValue | undefined {
     //https://stackoverflow.com/a/20424385
     const parts = key.split('.');
-    let o = this.options;
+    let o: Record<string, IniValue> = this.options;
     if (parts.length > 1) {
       for (let i = 0; i < parts.length - 1; i++) {
         if (!o[parts[i]])
           o[parts[i]] = {};
-        o = o[parts[i]];
+        o = o[parts[i]] as Record<string, IniValue>;
       }
     }
 
     return o[parts[parts.length - 1]];
   }
 
-  setProperty(key: string, value: any) {
+  setProperty(key: string, value: IniValue) {
     //https://stackoverflow.com/a/20424385
     const parts = key.split('.');
-    let o = this.options;
+    let o: Record<string, IniValue> = this.options;
     if (parts.length > 1) {
       for (let i = 0; i < parts.length - 1; i++) {
         if (!o[parts[i]])
           o[parts[i]] = {};
-        o = o[parts[i]];
+        o = o[parts[i]] as Record<string, IniValue>;
       }
     }
 
@@ -120,10 +130,10 @@ export class INIConfig {
     return '\r\n' + string;
   }
 
-  toStringNodeWalker(key: string, value: any): string {
-    if (typeof value == 'object') {
+  toStringNodeWalker(key: string, value: IniValue): string {
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       let string = '[' + key + ']\r\n';
-      let keys = Object.keys(value);
+      const keys = Object.keys(value);
       for (let i = 0, len = keys.length; i < len; i++) {
         string += this.toStringNodeWalker(keys[i], value[keys[i]]);
       }
@@ -135,12 +145,12 @@ export class INIConfig {
 
   async save() {
     try {
-      console.log(`INIConfig saving: ${this.ini_path}`);
+      log.debug(`INIConfig saving: ${this.ini_path}`);
       const encoder = new TextEncoder();
       await GameFileSystem.writeFile(this.ini_path, encoder.encode(this.toString()));
-      console.log(`INIConfig saved: ${this.ini_path}`);
+      log.debug(`INIConfig saved: ${this.ini_path}`);
     } catch (e) {
-      console.error(e);
+      log.error('INIConfig.save', e as Error);
     }
   }
 

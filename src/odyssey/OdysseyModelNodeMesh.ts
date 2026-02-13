@@ -1,11 +1,13 @@
 import * as THREE from "three";
+
 import { OdysseyModelEngine } from "../enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelMDXFlag } from "../enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
 import { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { OdysseyModelNode } from "./OdysseyModelNode";
+
 import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModelNode } from "./OdysseyModelNode";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 import { OdysseyWalkMesh } from "./OdysseyWalkMesh";
 
@@ -23,17 +25,25 @@ const mdlStringCleaner = (str: string = ''): string => {
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
+/** Tangent/bitangent/normal data for mesh lighting. */
+export interface IOdysseyTangentSet {
+  tangents: number[];
+  bitangents: number[];
+  normals: number[];
+  computed: number[];
+}
+
 export class OdysseyModelNodeMesh extends OdysseyModelNode {
-  vertices: any[];
+  vertices: number[];
   normals: number[];
   colors: number[];
   tvectors: number[][];
-  texCords: any[][];
-  tangents: any[][];
-  indexArray: any[];
-  uvs: any[];
+  texCords: number[][][];
+  tangents: number[][];
+  indexArray: number[];
+  uvs: number[];
   faces: OdysseyFace3[];
-  indices: any[];
+  indices: number[];
   functionPointer0: number;
   functionPointer1: number;
   boundingBox: { min: THREE.Vector3; max: THREE.Vector3; };
@@ -73,10 +83,10 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   _unknown2: number;
   _totalArea: number;
   _unknown4: number;
-  tangent1: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent2: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent3: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
-  tangent4: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
+  tangent1: IOdysseyTangentSet;
+  tangent2: IOdysseyTangentSet;
+  tangent3: IOdysseyTangentSet;
+  tangent4: IOdysseyTangentSet;
   faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
 
@@ -209,7 +219,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     if ((this.verticesCount == 0) || (this.faceArrayDefinition.count == 0))
       return;
 
-    let cachedPosition = this.odysseyModel.mdlReader.position;
+    const cachedPosition = this.odysseyModel.mdlReader.position;
 
     //Tangent1
     if(this.MDXDataBitmap & OdysseyModelMDXFlag.TANGENT1){
@@ -253,7 +263,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     for (let i = 0; i < this.verticesCount; i++) {
       // Base Position Offset
-      let basePosition = (this.MDXNodeDataOffset + (i * this.MDXDataSize));
+      const basePosition = (this.MDXNodeDataOffset + (i * this.MDXDataSize));
 
       // Vertex
       if(this.MDXDataBitmap & OdysseyModelMDXFlag.VERTEX){
@@ -345,7 +355,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
     if(this.vertexLocArrayDef.count){
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + this.vertexLocArrayDef.offset;
-      let offVerts = this.odysseyModel.mdlReader.readUInt32();
+      const offVerts = this.odysseyModel.mdlReader.readUInt32();
       this.odysseyModel.mdlReader.position = this.odysseyModel.fileHeader.modelDataOffset + offVerts;
     }
 
@@ -383,14 +393,14 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
 
   }
 
-  computeTangent(tangentObject: any, index: number){
-    let n = new THREE.Vector3().fromArray(tangentObject.normals, index * 3);
-    let n2 = n.clone();
+  computeTangent(tangentObject: IOdysseyTangentSet, index: number){
+    const n = new THREE.Vector3().fromArray(tangentObject.normals, index * 3);
+    const n2 = n.clone();
 
-    let t = new THREE.Vector3().fromArray(tangentObject.tangents, index * 3);
-    let t2 = new THREE.Vector3().fromArray(tangentObject.bitangents, index * 3);
-    let tmp = new THREE.Vector3();
-    let tmp2 = new THREE.Vector3();
+    const t = new THREE.Vector3().fromArray(tangentObject.tangents, index * 3);
+    const t2 = new THREE.Vector3().fromArray(tangentObject.bitangents, index * 3);
+    const tmp = new THREE.Vector3();
+    const tmp2 = new THREE.Vector3();
 
     // Gram-Schmidt orthogonalize
 
@@ -400,8 +410,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
     // Calculate handedness
 
     tmp2.crossVectors( n2, t );
-    let test = tmp2.dot( t2 );
-    let w = ( test < 0.0 ) ? - 1.0 : 1.0;
+    const test = tmp2.dot( t2 );
+    const w = ( test < 0.0 ) ? - 1.0 : 1.0;
 
     tangentObject.computed[(index * 4) + 0] = tmp.x;
     tangentObject.computed[(index * 4) + 1] = tmp.y;

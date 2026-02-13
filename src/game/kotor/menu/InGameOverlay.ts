@@ -1,17 +1,21 @@
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import { ResolutionManager } from "../../../managers/ResolutionManager";
-import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import * as THREE from "three";
+
+import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { EngineMode } from "../../../enums/engine/EngineMode";
+import { EngineState } from "../../../enums/engine/EngineState";
 import { Anchor } from "../../../enums/gui/Anchor";
 import { SSFType } from "../../../enums/resource/SSFType";
+import { GameState } from "../../../GameState";
+import { GameMenu, LBL_MapView } from "../../../gui";
+import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "../../../gui";
+import { TextureLoader } from "../../../loaders";
+import { ResolutionManager } from "../../../managers/ResolutionManager";
 import { TalentObject } from "../../../talents";
-import { EngineState } from "../../../enums/engine/EngineState";
-import { AutoPauseState } from "../../../enums/engine/AutoPauseState";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
 import { BitWise } from "../../../utility/BitWise";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { KeyMapAction, ModuleObjectType } from "../../../enums";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
@@ -170,8 +174,7 @@ export class InGameOverlay extends GameMenu {
   }
 
   /**
-   * GUI resref selection matching CSWGuiMainInterface (0x0068c100):
-   * viewport 1024 -> mipc210x7, 1280x960 -> mipc212x9, 1280x1024 -> mipc212x10,
+   * GUI resref by viewport: 1024 -> mipc210x7, 1280x960 -> mipc212x9, 1280x1024 -> mipc212x10,
    * 1600 -> mipc216x12, else mipc28x6. Panel extent in each GFF matches that resolution.
    */
   static getMainInterfaceResref(viewportWidth: number, viewportHeight: number): string {
@@ -541,8 +544,8 @@ export class InGameOverlay extends GameMenu {
       TextureLoader.Load(sTexture).then((texture: OdysseyTexture) => {
         this.miniMap.setTexture(texture);
       });
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e);
     }
   }
 
@@ -656,9 +659,9 @@ export class InGameOverlay extends GameMenu {
     if (health > 100)
       health = 100;
     this.PB_HEALTH.setProgress(health);
-    let maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
-    let maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
-    let targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
+    const maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
+    const maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
+    const targetScreenPosition = new THREE.Vector3(640 / 2, 480 / 2, 0);
     let pos = new THREE.Vector3();
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
       pos.copy(GameState.CursorManager.selectedObject.position);
@@ -706,9 +709,9 @@ export class InGameOverlay extends GameMenu {
     this.LBL_NAMEBG.recalculate();
     this.PB_HEALTH.recalculate();
     this.LBL_HEALTHBG.recalculate();
-    if (!!GameState.ActionMenuManager.targetActionCount()) {
+    if (GameState.ActionMenuManager.targetActionCount()) {
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
-        let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
+        const xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
         this.getControlByName('BTN_TARGET' + i).scale = false;
         this.getControlByName('BTN_TARGET' + i).extent.left = targetScreenPosition.x + xPos;
         this.getControlByName('BTN_TARGET' + i).extent.top = targetScreenPosition.y;
@@ -900,7 +903,7 @@ export class InGameOverlay extends GameMenu {
     this.TogglePartyMember(2, false);
 
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      let partyMember = GameState.PartyManager.party[i];
+      const partyMember = GameState.PartyManager.party[i];
       let id = i;
       switch (i) {
         case 1:
@@ -911,7 +914,7 @@ export class InGameOverlay extends GameMenu {
           break;
       }
       this.TogglePartyMember(id, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (id + 1));
       const portraitResRef = partyMember.getPortraitResRef();
       if (pmBG.getFillTextureName() != portraitResRef) {
         pmBG.setFillTextureName(portraitResRef);
@@ -929,10 +932,10 @@ export class InGameOverlay extends GameMenu {
     }
     if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
       this.showCombatUI();
-      let action0 = oPC.combatRound.action;
-      let action1 = oPC.combatRound.scheduledActionList[0];
-      let action2 = oPC.combatRound.scheduledActionList[1];
-      let action3 = oPC.combatRound.scheduledActionList[2];
+      const action0 = oPC.combatRound.action;
+      const action1 = oPC.combatRound.scheduledActionList[0];
+      const action2 = oPC.combatRound.scheduledActionList[1];
+      const action3 = oPC.combatRound.scheduledActionList[2];
       if (action0 != undefined) {
         if (this.LBL_QUEUE0.getFillTextureName() != action0.iconResRef) {
           this.LBL_QUEUE0.setFillTextureName(action0.iconResRef);
@@ -1004,7 +1007,7 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearAllActions();
         GameState.CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
       } else {
-        let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
+        const distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
           GameState.getCurrentPlayer().clearAllActions();
           GameState.CursorManager.selectedObject.clearAllActions();

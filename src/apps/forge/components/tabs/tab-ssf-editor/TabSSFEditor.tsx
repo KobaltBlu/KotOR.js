@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { TabSSFEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
 import * as KotOR from "../../../KotOR";
+import { TabSSFEditorState } from "../../../states/tabs";
 import "./TabSSFEditor.scss";
 
 interface BaseTabProps {

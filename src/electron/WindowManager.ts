@@ -1,8 +1,15 @@
+import * as path from "path";
+
 import { BrowserWindow, dialog } from "electron";
+
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { ApplicationWindow } from "./ApplicationWindow";
 import { LauncherWindow } from "./LauncherWindow";
-import * as path from "path";
 //exec & execFile are used for launching the original games from the launcher
+
+
+const log = createScopedLogger(LogScope.Extension);
 import { execFile, exec } from "child_process";
 
 export class WindowManager {
@@ -26,14 +33,14 @@ export class WindowManager {
   }
 
   static addWindow(window: ApplicationWindow) {
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if (index < 0) {
       WindowManager.windows.push(window);
     }
   }
 
   static removeWindow(window: ApplicationWindow) {
-    let index = WindowManager.windows.indexOf(window);
+    const index = WindowManager.windows.indexOf(window);
     if (index >= 0) {
       WindowManager.windows.splice(index, 1);
     }
@@ -64,7 +71,7 @@ export class WindowManager {
     });
 
     ipcMain.handle('win-minimize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if (win) {
         win.minimize();
         return true;
@@ -73,9 +80,9 @@ export class WindowManager {
     });
 
     ipcMain.handle('win-maximize', (event, data) => {
-      let win = BrowserWindow.getFocusedWindow();
+      const win = BrowserWindow.getFocusedWindow();
       if (win) {
-        console.log(win.isMaximized());
+        log.debug('win-maximize isMaximized=%s', String(win.isMaximized()));
         if (win.isMaximized()) {
           win.unmaximize();
           return true;
@@ -111,7 +118,7 @@ export class WindowManager {
 
     ipcMain.handle('save-file-dialog', (event, data: Electron.SaveDialogOptions) => {
       return new Promise((resolve, reject) => {
-        console.log('save-file-dialog2', event, data[0]);
+        log.info('save-file-dialog2', event, data[0]);
         dialog.showSaveDialog(data[0]).then(result => {
           resolve(result);
         }).catch(err => {
@@ -143,7 +150,7 @@ export class WindowManager {
 
     ipcMain.on('launch_executable', (event, exe_path) => {
       WindowManager.hideLauncher();
-      let cwd = path.parse(exe_path);
+      const cwd = path.parse(exe_path);
       if (process.platform == 'linux') {
         //Attempt to find wine so we can run the exe
         exec(`which wine`, (error) => {
@@ -158,19 +165,19 @@ export class WindowManager {
           } else {
             //Attempt to launch with wine
             exec(`cd ${cwd.dir} && wine ./${cwd.base}`, (error, stdout, stderr) => {
-              console.error(error);
-              console.error(stdout);
-              console.error(stderr);
+              log.error(error);
+              log.error(stdout);
+              log.error(stderr);
               WindowManager.showLauncher();
             });
           }
         });
       } else {
-        console.log('Launching', exe_path, 'in', cwd.dir);
+        log.info('Launching', exe_path, 'in', cwd.dir);
         execFile(exe_path, [], { cwd: cwd.dir }, (error, stdout, stderr) => {
-          console.error(error);
-          console.error(stdout);
-          console.error(stderr);
+          log.error(error);
+          log.error(stdout);
+          log.error(stderr);
           WindowManager.showLauncher();
         });
       }

@@ -1,20 +1,24 @@
 import React from "react";
-import { KotORModal } from "../modal/modal";
-import { useApp } from "../../context/AppContext";
+
 import { ApplicationEnvironment } from "../../KotOR";
+import { useApp } from "../../context/AppContext";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+import { KotORModal } from "../modal/modal";
+
+const log = createScopedLogger(LogScope.Game);
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
 
-  const onCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access denied");
+  const onCancel = (_e: React.MouseEvent<HTMLButtonElement>) => {
+    log.info("File System: access denied");
     alert("You must grant access to your local game directory to continue.");
     window.close();
   }
   
   const showBrowserDirectoryPicker = async () => {
-    let handle = await window.showDirectoryPicker({
+    const handle = await window.showDirectoryPicker({
       mode: "readwrite"
     });
     if(!handle) return;
@@ -28,21 +32,21 @@ export const ModalGrantAccess = () => {
 
   const showElectronDirectoryPicker = async () => {
     try{
-      const directory = await(window as any).electron.locate_game_directory(appState.appProfile);
+      const directory = await window.electron.locate_game_directory(appState.appProfile ?? {});
       if(directory){
         appState.attachDirectoryPath(directory);
         return directory;
       }
     }catch(e){
       appState.attachDirectoryPath('');
-      console.error(e);
+      log.error('Electron locate_game_directory failed', e);
       alert("Unable to access your local game directory. Please try again.");
     }
     return;
   }
 
-  const onOk = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access granted");
+  const onOk = async (_e: React.MouseEvent<HTMLButtonElement>) => {
+    log.info("File System: access granted");
 
     // Electron
     if(appState.env == ApplicationEnvironment.ELECTRON){
@@ -54,7 +58,7 @@ export const ModalGrantAccess = () => {
     if(appState.env == ApplicationEnvironment.BROWSER){
       const handle = await showBrowserDirectoryPicker();
       if(!handle){
-        console.log("File System: access denied");
+        log.warn("File System: access denied");
         alert("Unable to access your local game directory. Please try again.");
         return;
       }

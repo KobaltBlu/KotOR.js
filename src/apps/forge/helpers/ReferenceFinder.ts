@@ -1,7 +1,8 @@
 import { EditorFile } from "../EditorFile";
+import { EditorFileProtocol } from "../enum/EditorFileProtocol";
 import { FileBrowserNode } from "../FileBrowserNode";
 import { ProjectFileSystem } from "../ProjectFileSystem";
-import { EditorFileProtocol } from "../enum/EditorFileProtocol";
+
 import {
   ReferenceFileResource,
   ReferenceSearchResult,

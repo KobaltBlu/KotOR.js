@@ -1,47 +1,52 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Debug);
+
 export class EventListenerModel {
   
-  #eventListeners: any = {};
+  #eventListeners: Record<string, ((...args: (string | number | boolean | object | null)[]) => void)[]> = {};
 
-  addEventListener<T>(type: T, cb: Function): void {
+  addEventListener<T extends string>(type: T, cb: (...args: (string | number | boolean | object | null)[]) => void): void {
+    log.trace('addEventListener', type);
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
-        console.warn('Event Listener: Already added', type);
+        log.warn('Event Listener: Already added', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  removeEventListener<T>(type: T, cb: Function): void {
+  removeEventListener<T extends string>(type: T, cb: (...args: unknown[]) => void): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        console.warn('Event Listener: Already removed', type);
+        log.warn('Event Listener: Already removed', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  processEventListener<T>(type: T, args: any[] = []): void {
+  processEventListener<T extends string>(type: T, args: (string | number | boolean | object | null)[] = []): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -49,11 +54,11 @@ export class EventListenerModel {
         }
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  triggerEventListener<T>(type: T, args: any[] = []): void {
+  triggerEventListener<T extends string>(type: T, args: (string | number | boolean | object | null)[] = []): void {
     this.processEventListener(type, args);
   }
 }

@@ -1,9 +1,11 @@
 import React from "react";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import { TabReferenceFinder } from "../../components/tabs/tab-reference-finder/TabReferenceFinder";
 import { ReferenceHit, ReferenceScope, searchReferences } from "../../helpers/ReferenceFinder";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { TabResourceExplorerState } from "./TabResourceExplorerState";
+import { TabState } from "./TabState";
 
 export interface TabReferenceFinderStateOptions extends BaseTabStateOptions {
   query?: string;

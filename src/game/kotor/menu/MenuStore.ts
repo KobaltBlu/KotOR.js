@@ -1,5 +1,5 @@
-import { GameState } from "../../../GameState";
 import { ModuleObjectType } from "../../../enums/module/ModuleObjectType";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { TextureLoader } from "../../../loaders";
@@ -34,7 +34,7 @@ export class MenuStore extends GameMenu {
   creature: ModuleCreature;
   bonusMarkUp: number;
   bonusMarkDown: number;
-  sellMode: any;
+  sellMode: boolean = false;
 
   constructor(){
     super();
@@ -88,7 +88,7 @@ export class MenuStore extends GameMenu {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        let inv = GameState.InventoryManager.getSellableInventory();
+        const inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
@@ -106,7 +106,7 @@ export class MenuStore extends GameMenu {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
-        let inv = this.storeObject.getInventory();
+        const inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_SHOPITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));

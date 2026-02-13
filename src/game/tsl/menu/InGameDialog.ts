@@ -1,8 +1,10 @@
+import * as THREE from "three";
+
+import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
+
 import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox } from "../../../gui";
 import { ITwoDAAnimation } from "../../../interface";
-import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
-import * as THREE from "three";
 
 /**
  * InGameDialog class.
@@ -41,8 +43,8 @@ export class InGameDialog extends K1_InGameDialog {
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
 
-      let geometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      let material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
+      const geometry = new THREE.PlaneGeometry( 1, 1, 1 );
+      const material = new THREE.MeshBasicMaterial( {color: 0x000000, side: THREE.DoubleSide} );
       this.topBar = new THREE.Mesh( geometry, material );
       this.bottomBar = new THREE.Mesh( geometry, material );
 

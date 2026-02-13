@@ -1,14 +1,19 @@
 import React, { ChangeEvent, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
 
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { UI3DRendererView } from "../../UI3DRendererView";
+
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import * as KotOR from "../../../KotOR";
 import { TabGUIEditorState, TabGUIEditorStateEventListenerTypes } from "../../../states/tabs";
 
-import * as KotOR from "../../../KotOR";
 // import { Form, InputGroup } from "react-bootstrap";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { UI3DRendererView } from "../../UI3DRendererView";
+
+
+
 import { UI3DRendererEventListenerTypes } from "../../../UI3DRenderer";
 // import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
 
@@ -30,18 +35,18 @@ export const TabGUIEditor = function(props: BaseTabProps){
     rerender(!render);
   };
 
-  const onNodeAdded = function(_arg: any){
+  const onNodeAdded = function(_arg: KotOR.GFFField | KotOR.GFFStruct){
     setSelectedNode(null);
     rerender(!render);
   };
 
-  const onNodeRemoved = function(_arg: any){
+  const onNodeRemoved = function(_arg: KotOR.GFFField | KotOR.GFFStruct){
     setSelectedNode(null);
     rerender(!render);
   };
 
   const onMouseWheel = function(e: WheelEvent){
-    if(!!e.ctrlKey){
+    if(e.ctrlKey){
       let tmpCanvasScale = menu?.tGuiPanel.widget.scale.x || 0;
       const maxScale = 5;
       const minScale = 0.1;
@@ -57,7 +62,11 @@ export const TabGUIEditor = function(props: BaseTabProps){
     tab.addEventListener<TabGUIEditorStateEventListenerTypes>('onNodeAdded', onNodeAdded);
     tab.addEventListener<TabGUIEditorStateEventListenerTypes>('onNodeRemoved', onNodeRemoved);
     tab.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseWheel', onMouseWheel);
-
+    // Sync initial state if load completed before mount (e.g. webview buffer resolves immediately)
+    if (tab.gff) {
+      setGFF(tab.gff);
+      setMenu(tab.menu);
+    }
     return () => { //destructor
       tab.removeEventListener<TabGUIEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener<TabGUIEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);

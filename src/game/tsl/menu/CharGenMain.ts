@@ -1,5 +1,6 @@
-import { LBL_3DView, type GUILabel } from "../../../gui";
 import { CharGenMain as K1_CharGenMain } from "../../kotor/KOTOR";
+
+import { LBL_3DView, type GUILabel } from "../../../gui";
 
 /**
  * CharGenMain class.

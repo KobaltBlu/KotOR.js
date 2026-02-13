@@ -5,6 +5,8 @@ import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
 import { ForgeTreeView } from "../../treeview/ForgeTreeView";
 import { ResourceListNode } from "../../treeview/ResourceListNode";
 
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
 import { EditorFile } from "../../../EditorFile";
 import { FileBrowserNode } from "../../../FileBrowserNode";
 import { FileTypeManager } from "../../../FileTypeManager";
@@ -15,6 +17,7 @@ import { TabResourceExplorerState } from "../../../states/tabs";
 import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
 import "./TabResourceExplorer.scss";
 
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabResourceExplorerProps extends BaseTabProps {
   tab: TabResourceExplorerState;
@@ -71,7 +74,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         }
       }
     } catch (error) {
-      console.error('Search error:', error);
+      log.error('Search error:', error);
       if(searchId === currentSearchId){
         updateVisibleItems(TabResourceExplorerState.Resources);
       }
@@ -150,7 +153,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
             }
           ];
 
-          showContextMenu((e as any).clientX, (e as any).clientY, items);
+          showContextMenu(e.clientX, e.clientY, items);
         }}
       />
     ));

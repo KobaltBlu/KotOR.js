@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { CaseInsensitiveMap } from "./CaseInsensitiveMap";
+
 import type { OdysseyWalkMesh } from "../KotOR";
+
+import { CaseInsensitiveMap } from "./CaseInsensitiveMap";
 
 export class Kit {
   name: string;

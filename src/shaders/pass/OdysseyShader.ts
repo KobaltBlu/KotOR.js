@@ -1,7 +1,10 @@
 import * as THREE from 'three';
 
+/** Shader uniform value types used by OdysseyShader. */
+type OdysseyUniformValue = THREE.Texture | null | number | THREE.Vector3;
+
 interface OdysseyShader {
-  uniforms: { [uniform: string]: THREE.IUniform<any>; },
+  uniforms: { [uniform: string]: THREE.IUniform<OdysseyUniformValue> };
   vertexShader: string;
   fragmentShader: string;
 }

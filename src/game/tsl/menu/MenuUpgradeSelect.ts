@@ -1,5 +1,6 @@
-import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 import { MenuUpgradeSelect as K1_MenuUpgradeSelect } from "../../kotor/KOTOR";
+
+import type { GUIButton, GUILabel, GUIListBox } from "../../../gui";
 
 /**
  * MenuUpgradeSelect class.

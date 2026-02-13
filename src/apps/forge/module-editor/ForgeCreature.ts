@@ -1,6 +1,12 @@
+
 import * as KotOR from "../KotOR";
 import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { ForgeGameObject } from "./ForgeGameObject";
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -21,9 +27,9 @@ export interface SpecialAbilityEntry {
    */
   spellCasterLevel: number;
   /**
-   * 0x01 = readied
-   * 0x02 = spontaneous
-   * 0x04 = unlimited use
+   * Bit 0 = readied
+   * Bit 1 = spontaneous
+   * Bit 2 = unlimited use
    */
   spellFlags: number;
 }
@@ -35,20 +41,14 @@ export interface KnownSpellEntry {
   spell: number;
 
   /**
-   * 0x00 - None
-   * 0x01 - Empower
-   * 0x02 - Extend
-   * 0x04 - Maximize
-   * 0x08 - Quicken
-   * 0x10 - Silent
-   * 0x20 - Still
+   * None, Empower, Extend, Maximize, Quicken, Silent, Still (bit flags)
    */
   spellMetaMagic: number;
 
   /**
-   * 0x01 = readied
-   * 0x02 = spontaneous
-   * 0x04 = unlimited use
+   * Bit 0 = readied
+   * Bit 1 = spontaneous
+   * Bit 2 = unlimited use
    */
   spellFlags: number;
 }
@@ -190,7 +190,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: keyof ForgeCreature, newValue: any, oldValue: any){
+  onPropertyChange(property: keyof ForgeCreature, newValue: string | number | boolean, oldValue: string | number | boolean){
     if(property === 'appearanceType'){
       if(newValue !== oldValue){
         this.loadAppearance();
@@ -371,7 +371,7 @@ export class ForgeCreature extends ForgeGameObject {
         };
       }
     }catch(e){
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
@@ -383,8 +383,8 @@ export class ForgeCreature extends ForgeGameObject {
       await this.loadBody();
       await this.loadHead();
     }catch(e){
-      console.error(e);
-    } 
+      log.error(String(e), e);
+    }
     this.modelLoading = false;
   }
 
@@ -396,8 +396,8 @@ export class ForgeCreature extends ForgeGameObject {
     }
 
     const appearance = this.creatureAppearance;
-    let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
-    let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
+    const bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
+    const textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
 
     try{
@@ -448,7 +448,7 @@ export class ForgeCreature extends ForgeGameObject {
     }
     catch(e)
     {
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 

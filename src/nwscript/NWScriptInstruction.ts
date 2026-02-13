@@ -1,7 +1,15 @@
-import { NWScriptInstructionInfo } from "./NWScriptInstructionInfo";
-import type { NWScriptInstance } from "./NWScriptInstance";
+import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
 
+import type { NWScriptInstance } from "./NWScriptInstance";
+import { NWScriptInstructionInfo } from "./NWScriptInstructionInfo";
+import {
+  CALL_CPDOWNSP, CALL_RSADD, CALL_CPTOPSP, CALL_CONST, CALL_ACTION, CALL_LOGANDII, CALL_LOGORII, CALL_INCORII, CALL_EXCORII,
+  CALL_BOOLANDII, CALL_EQUAL, CALL_NEQUAL, CALL_GEQ, CALL_GT, CALL_LT, CALL_LEQ, CALL_SHLEFTII, CALL_SHRIGHTII, CALL_USHRIGHTII,
+  CALL_ADD, CALL_SUB, CALL_MUL, CALL_DIV, CALL_MOD, CALL_NEG, CALL_COMPI, CALL_MOVSP, CALL_STORE_STATEALL, CALL_JMP,   CALL_JSR,
+  CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
+  CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
+} from './NWScriptInstructionSet';
 import {
   OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
   OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
@@ -10,14 +18,6 @@ import {
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
 } from './NWScriptOPCodes';
 
-import {
-  CALL_CPDOWNSP, CALL_RSADD, CALL_CPTOPSP, CALL_CONST, CALL_ACTION, CALL_LOGANDII, CALL_LOGORII, CALL_INCORII, CALL_EXCORII,
-  CALL_BOOLANDII, CALL_EQUAL, CALL_NEQUAL, CALL_GEQ, CALL_GT, CALL_LT, CALL_LEQ, CALL_SHLEFTII, CALL_SHRIGHTII, CALL_USHRIGHTII,
-  CALL_ADD, CALL_SUB, CALL_MUL, CALL_DIV, CALL_MOD, CALL_NEG, CALL_COMPI, CALL_MOVSP, CALL_STORE_STATEALL, CALL_JMP,   CALL_JSR,
-  CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
-  CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
-} from './NWScriptInstructionSet';
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
 
 const OP_CALL_MAP: Map<number, ( this: NWScriptInstance, instruction: NWScriptInstruction ) => void> = new Map([
   [OP_CPDOWNSP, CALL_CPDOWNSP],
@@ -209,7 +209,7 @@ export class NWScriptInstruction {
    * The arguments of the instruction
    * - Used for the ACTION opcode
    */
-  arguments: any[] = [];
+  arguments: (number | string | object)[] = [];
 
   /**
    * The integer value of the instruction

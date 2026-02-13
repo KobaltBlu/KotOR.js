@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { TabLTREditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
 import * as KotOR from "../../../KotOR";
+import { TabLTREditorState } from "../../../states/tabs";
 import "./TabLTREditor.scss";
+
+const log = createScopedLogger(LogScope.Forge);
 
 interface BaseTabProps {
   tab: TabLTREditorState;
@@ -49,7 +55,7 @@ export const TabLTREditor = function(props: BaseTabProps){
         const name = ltr.getName();
         names.push(name);
       } catch(e) {
-        console.error('Failed to generate name:', e);
+        log.error('Failed to generate name:', e as Error);
       }
     }
     setGeneratedNames(names);

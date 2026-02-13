@@ -1,6 +1,8 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalResourceComparison } from "../../components/modal/ModalResourceComparison";
+
+import { ModalState } from "./ModalState";
 
 export interface ResourceComparisonResource {
   resref: string;

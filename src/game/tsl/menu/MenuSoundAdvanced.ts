@@ -1,5 +1,6 @@
-import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
 import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "../../kotor/KOTOR";
+
+import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "../../../gui";
 
 /**
  * MenuSoundAdvanced class.

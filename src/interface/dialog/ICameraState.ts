@@ -1,6 +1,7 @@
 import type { CameraMode } from "../../enums/dialog/CameraMode";
 import type { DLGCameraAngle } from "../../enums/dialog/DLGCameraAngle";
 import type { OdysseyModelAnimation } from "../../odyssey/OdysseyModelAnimation";
+
 import type { ICameraParticipant } from "./ICameraParticipant";
 
 /**

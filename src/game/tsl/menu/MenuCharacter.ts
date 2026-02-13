@@ -1,10 +1,14 @@
+import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
+
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MenuCharacter class.
@@ -135,10 +139,10 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dView.visible = true;
             this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
             this._3dView.camera.updateProjectionMatrix();
-            (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-            (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).uniforms.map.value = this._3dView.texture.texture;
+            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).transparent = false;
             this._3dView.setControl(this.LBL_3DCHAR);
-            (this.LBL_3DCHAR.getFill().material as any).visible = true;
+            (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).visible = true;
 
             this._3dViewModel = model;
             this._3dView.addModel(this._3dViewModel);
@@ -146,7 +150,7 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dView.camera.position.copy(model.camerahook.position);
             this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
           }catch(e){
-            console.error(e);
+            log.error(e instanceof Error ? e : String(e));
             resolve();
             return;
           }
@@ -155,12 +159,12 @@ export class MenuCharacter extends K1_MenuCharacter {
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
-        }).catch( (e: any) => {
-          console.error(e);
+        }).catch((e: unknown) => {
+          log.error(e instanceof Error ? e : String(e));
           resolve();
         });
-      }).catch( (e: any) => {
-        console.error(e);
+      }).catch((e: unknown) => {
+        log.error(e instanceof Error ? e : String(e));
         resolve();
       });
     });
@@ -174,8 +178,8 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-      (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) { }
+      (this.LBL_3DCHAR.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).needsUpdate = true;
+    } catch (_e: unknown) { }
   }
 
   show() {
@@ -186,7 +190,7 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.updateCharacterStats(GameState.PartyManager.party[0]);
       this.updatePartyMemberPortraitButtons();
     } catch (e) {
-      console.error(e);
+      log.error(e instanceof Error ? e : String(e));
     }
   }
 

@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabImageViewerState } from "../../../states/tabs";
+
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
 
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import * as KotOR from "../../../KotOR";
+import { TabImageViewerState } from "../../../states/tabs";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const TabImageViewer = function(props: BaseTabProps){
 
@@ -23,8 +28,8 @@ export const TabImageViewer = function(props: BaseTabProps){
     if(canvasRef.current){
       const canvas = canvasRef.current;
       tab.getPixelData().then( (pixelData) => {
-        console.log('pixel data', pixelData);
-        let ctx = canvas.getContext('2d');
+        log.trace('pixel data', pixelData);
+        const ctx = canvas.getContext('2d');
         if(ctx){
           // let data = pixelData;
           tab.workingData = pixelData;
@@ -39,7 +44,7 @@ export const TabImageViewer = function(props: BaseTabProps){
               width = image.header.width;
               height = image.header.height;
             }else{
-              height = image.header.height * ((image.header as any).faces || 1);
+              height = image.header.height * ((image.header as { faces?: number }).faces ?? 1);
             }
           }
 
@@ -51,7 +56,7 @@ export const TabImageViewer = function(props: BaseTabProps){
           canvas.width = width;
           canvas.height = height;
 
-          let imageData = ctx.getImageData(0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
           if(image instanceof KotOR.TPCObject){
 
             if(tab.bitsPerPixel == 24)
@@ -99,7 +104,7 @@ export const TabImageViewer = function(props: BaseTabProps){
 
   const onMouseWheel = (e: WheelEvent) => {
     // let tmpCanvasScale = canvasScale;
-    if(!!e.ctrlKey){
+    if(e.ctrlKey){
       if(e.deltaY < 0){
         tmpCanvasScale -= 0.25;
       }else{
@@ -127,7 +132,7 @@ export const TabImageViewer = function(props: BaseTabProps){
   });
 
   useEffect(() => {
-    console.log('containerRef', containerRef);
+    log.trace('containerRef', containerRef);
     if(containerRef.current){
       containerRef.current.addEventListener('wheel', onMouseWheel);
     }

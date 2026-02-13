@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabIFOEditor } from "../../components/tabs/tab-ifo-editor/TabIFOEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabIFOEditorState extends TabState {
   tabName: string = 'IFO Editor';
@@ -53,7 +56,7 @@ export class TabIFOEditorState extends TabState {
     // Sync UI changes to IFO GFF if needed
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

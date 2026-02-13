@@ -143,6 +143,11 @@ module.exports = (_env, argv) => {
             from: path.resolve(__dirname, '../../src/apps/forge/assets'),
             to: path.resolve(__dirname, 'dist/webview/assets'),
             noErrorOnMissing: true
+          },
+          {
+            from: path.resolve(__dirname, '../../src/assets/forge/assets'),
+            to: path.resolve(__dirname, 'dist/webview/assets'),
+            noErrorOnMissing: true
           }
         ]
       })

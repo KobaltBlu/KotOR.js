@@ -25,4 +25,4 @@ export enum DamageType {
   // POISON      = 13,
   BASE        = 13,
   PHYSICAL    = 14,
-};
+}

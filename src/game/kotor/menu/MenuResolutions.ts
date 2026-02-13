@@ -1,6 +1,9 @@
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
 
 /**
@@ -48,7 +51,7 @@ export class MenuResolutions extends GameMenu {
       });
 
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
-        console.log('LB_RESOLUTIONS', res);
+        log.info('LB_RESOLUTIONS', res);
         this.activeResolution = res;
       }
       resolve();

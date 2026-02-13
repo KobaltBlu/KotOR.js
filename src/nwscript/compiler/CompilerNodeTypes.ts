@@ -184,21 +184,28 @@ export type CompilerExpressionNode =
   | CompilerBinaryNode;
 
 export type CompilerStatementNode =
-  | CompilerStructNode
-  | CompilerVariableNode
-  | CompilerVariableListNode
-  | CompilerFunctionNode
-  | CompilerIfNode
+  | CompilerBlockNode
+  | CompilerBreakNode
+  | CompilerCaseNode
+  | CompilerContinueNode
+  | CompilerDefaultNode
+  | CompilerDoWhileNode
   | CompilerElseIfNode
   | CompilerElseNode
-  | CompilerWhileNode
-  | CompilerDoWhileNode
   | CompilerForNode
-  | CompilerSwitchNode
-  | CompilerCaseNode
-  | CompilerDefaultNode
+  | CompilerFunctionNode
+  | CompilerIfNode
   | CompilerReturnNode
-  | CompilerBreakNode
-  | CompilerContinueNode
-  | CompilerBlockNode
+  | CompilerStructNode
+  | CompilerSwitchNode
+  | CompilerVariableListNode
+  | CompilerVariableNode
+  | CompilerWhileNode
   | CompilerExpressionNode;
+
+/** Compiler-internal context marker added during compilation */
+export interface CompilerStatementContext {
+  statement_context?: 'statement' | 'condition' | 'initializer' | 'incrementor';
+}
+
+export type CompilerStatementNodeWithContext = CompilerStatementNode & CompilerStatementContext;

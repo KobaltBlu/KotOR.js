@@ -1,7 +1,9 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
+
+import { EditorFile } from "../../EditorFile";
 import { FileBrowserNode } from "../../FileBrowserNode";
 import { FileTypeManager } from "../../FileTypeManager";
-import { EditorFile } from "../../EditorFile";
+
 import { ListItemNode } from "./ListItemNode";
 
 export interface ERFListNodeProps {

@@ -1,7 +1,9 @@
 import React from "react";
+
 import {TabQuickStart} from "../../components/tabs/tab-quick-start/TabQuickStart";
-import { TabState } from "./";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import { TabState } from "./";
 
 export class TabQuickStartState extends TabState {
 

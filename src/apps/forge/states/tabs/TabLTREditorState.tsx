@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabLTREditor } from "../../components/tabs/tab-ltr-editor/TabLTREditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabLTREditorState extends TabState {
   tabName: string = 'LTR Editor';
@@ -37,18 +40,20 @@ export class TabLTREditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    // LTRObject doesn't have export method yet, return buffer
-    if(this.file && this.file.buffer){
+    if (this.ltr) {
+      return this.ltr.toBuffer();
+    }
+    if (this.file?.buffer) {
       return this.file.buffer;
     }
     return new Uint8Array(0);
   }
 
   updateFile() {
-    // LTR editing would require export implementation
+    // LTR edits are in-memory; getExportBuffer uses ltr.toBuffer()
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

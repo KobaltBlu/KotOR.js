@@ -1,5 +1,5 @@
-import { GameState } from "../../../GameState";
 import { FeedbackOption } from "../../../enums/engine/FeedbackOption";
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
 

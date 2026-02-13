@@ -1,13 +1,14 @@
 import React from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabHelpState } from "../../../states/tabs/TabHelpState";
+
+import { WIKI_BASE_URL } from "../../../data/EditorWikiMapping";
 import {
   HELP_FOLDERS,
   getHelpDocUrl,
   type HelpFolder,
   type HelpDocument,
 } from "../../../data/HelpContents";
-import { WIKI_BASE_URL } from "../../../data/EditorWikiMapping";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { TabHelpState } from "../../../states/tabs/TabHelpState";
 
 export const TabHelp = function TabHelp(props: BaseTabProps) {
   const tab = props.tab as TabHelpState;

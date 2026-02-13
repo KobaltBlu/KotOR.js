@@ -1,19 +1,25 @@
 import { AudioEmitter } from "../audio";
-import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import { DialogMessageEntry } from "../engine/DialogMessageEntry";
+import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
 import { DLGNodeEngineType } from "../enums/dialog/DLGNodeEngineType";
+import { DLGNodeType } from "../enums/dialog/DLGNodeType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
-import { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
+import type { IDLGNodeCheckList } from "../interface/dialog/IDLGNodeCheckList";
+import type { IDLGNodeScriptParams } from "../interface/dialog/IDLGNodeScriptParams";
 // import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "../managers";
 import type { ModuleCreature, ModuleObject } from "../module";
 // import { NWScript } from "../nwscript/NWScript";
 import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { LIPObject } from "./LIPObject";
-import { GFFStruct } from "./GFFStruct";
-import { DialogMessageEntry } from "../engine/DialogMessageEntry";
 import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import { CExoLocString } from "./CExoLocString";
 import type { DLGObject } from "./DLGObject";
+import { GFFStruct } from "./GFFStruct";
+import { LIPObject } from "./LIPObject";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * DLGNode class.
@@ -27,7 +33,7 @@ import type { DLGObject } from "./DLGObject";
 export class DLGNode {
   nodeType: DLGNodeType;
   nodeEngineType: DLGNodeEngineType;
-  animations: any[];
+  animations: unknown[];
   cameraAngle: number;
   cameraID: number;
   cameraAnimation: number;
@@ -59,18 +65,20 @@ export class DLGNode {
   soundExists: number;
   speakerTag: string;
   text: string;
+  textLoc: CExoLocString;
   vo_resref: string;
   waitFlags: number;
   elapsed: number = 0;
   fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
   speaker: ModuleObject;
   dialog: DLGObject;
+  gffStruct?: GFFStruct;
 
   listener: ModuleObject;
   owner: ModuleObject;
 
-  checkList: any = {};
-  timeout: any;
+  checkList: IDLGNodeCheckList = {};
+  timeout: unknown;
   skippable: boolean;
 
   alienRaceNode: number = 0;
@@ -120,6 +128,7 @@ export class DLGNode {
     this.soundExists = 0;
     this.speakerTag = '';
     this.text = '';
+    this.textLoc = new CExoLocString();
     this.vo_resref = '';
     this.waitFlags = 0;
     this.fade = {
@@ -236,10 +245,10 @@ export class DLGNode {
   }
 
   getActiveReplies(): number[] {
-    let totalReplies = this.replies.length;
-    let replyIds: number[] = [];
+    const totalReplies = this.replies.length;
+    const replyIds: number[] = [];
     for(let i = 0; i < totalReplies; i++){
-      let replyLink = this.replies[i];
+      const replyLink = this.replies[i];
       if(replyLink.runActiveScripts()){
         replyIds.push(replyLink.index);
       }
@@ -254,7 +263,7 @@ export class DLGNode {
     }
     try{
       const speakerName = this.speaker?.getName?.() ?? '';
-      console.log('saving', speakerName, this.text);
+      log.trace('saving', speakerName, this.text);
       if(this.nodeType == DLGNodeType.ENTRY){
         GameState.DialogMessageManager.AddEntry(
           new DialogMessageEntry(
@@ -262,24 +271,22 @@ export class DLGNode {
           )
         )
       }else{
-        if(this.text.length){
-
-        }
+        if(this.text.length){ /* empty */ }
       }
     }catch(e){
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
   update(delta: number = 0): boolean {
     this.elapsed += delta * 1000;
     this.processFadeOverlay();
-    if(!!this.checkList.voiceOverError){
+    if(this.checkList.voiceOverError){
       if(this.elapsed >= this.delay){
         this.checkList.voiceOverComplete = true;
       }
     }
-    return this.checkList.isComplete();
+    return this.checkList.isComplete?.() ?? false;
   }
 
   setNodeDelay(delay: number = 0){
@@ -315,8 +322,8 @@ export class DLGNode {
   }
 
   loadResources(): Promise<void> {
-    return new Promise( (resolve, reject) => {
-
+    return new Promise((_resolve, _reject) => {
+      // Dialog node resources (VO, LIP, etc.) loaded on demand when node plays
     });
   }
 
@@ -352,7 +359,7 @@ export class DLGNode {
           return true;
         }
         return false;
-      }catch(e){
+      }catch(_e){
         this.checkList.voiceOverError = true;
         return false;
       }
@@ -405,59 +412,64 @@ export class DLGNode {
   }
 
   static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
-    let node = new DLGNode(dialog);
+    const node = new DLGNode(dialog);
     node.setDialog(dialog);
+    node.gffStruct = struct;
 
     if(struct.hasField('Quest')){
-      node.quest = struct.getFieldByLabel('Quest').getValue();
+      node.quest = struct.getStringByLabel('Quest');
+    }
+
+    if(struct.hasField('Comment')){
+      node.comment = struct.getStringByLabel('Comment');
     }
 
     if(struct.hasField('QuestEntry')){
-      node.questEntry = struct.getFieldByLabel('QuestEntry').getValue();
+      node.questEntry = struct.getNumberByLabel('QuestEntry');
     }
 
     if(struct.hasField('PlotXPPercentage')){
-      node.plotXPPercentage = struct.getFieldByLabel('PlotXPPercentage').getValue();
+      node.plotXPPercentage = struct.getNumberByLabel('PlotXPPercentage');
     }
 
     if(struct.hasField('PlotIndex')){
-      node.plotIndex = struct.getFieldByLabel('PlotIndex').getValue();
+      node.plotIndex = struct.getNumberByLabel('PlotIndex');
     }
 
     if(struct.hasField('Listener')){
-      node.listenerTag = struct.getFieldByLabel('Listener').getValue();
+      node.listenerTag = struct.getStringByLabel('Listener');
     }
 
     if(struct.hasField('Speaker')){
-      node.speakerTag = struct.getFieldByLabel('Speaker').getValue();
+      node.speakerTag = struct.getStringByLabel('Speaker');
     }
 
     if(struct.hasField('VO_ResRef')){
-      node.vo_resref = struct.getFieldByLabel('VO_ResRef').getValue();
+      node.vo_resref = struct.getStringByLabel('VO_ResRef');
     }
 
     if(struct.hasField('Sound')){
-      node.sound = struct.getFieldByLabel('Sound').getValue();
+      node.sound = struct.getStringByLabel('Sound');
     }
 
     if(struct.hasField('CameraID')){
-      node.cameraID = struct.getFieldByLabel('CameraID').getValue();
+      node.cameraID = struct.getNumberByLabel('CameraID');
     }
 
     if(struct.hasField('CameraAnimation')){
-      node.cameraAnimation = struct.getFieldByLabel('CameraAnimation').getValue();
+      node.cameraAnimation = struct.getNumberByLabel('CameraAnimation');
     }
 
     if(struct.hasField('CameraAngle')){
-      node.cameraAngle = struct.getFieldByLabel('CameraAngle').getValue();
+      node.cameraAngle = struct.getNumberByLabel('CameraAngle');
     }
 
     if(struct.hasField('CamVidEffect')){
-      node.camVidEffect = struct.getFieldByLabel('CamVidEffect').getValue();
+      node.camVidEffect = struct.getNumberByLabel('CamVidEffect');
     }
 
     if(struct.hasField('Script')){
-      const resref = struct.getFieldByLabel('Script').getValue();
+      const resref = struct.getStringByLabel('Script');
       if(resref){
         const instance = GameState.NWScript.Load(resref);
         if(instance){
@@ -469,7 +481,7 @@ export class DLGNode {
 
     if(struct.hasField('Script2')){
       node.nodeEngineType = DLGNodeEngineType.K2;
-      const resref = struct.getFieldByLabel('Script2').getValue();
+      const resref = struct.getStringByLabel('Script2');
       if(resref){
         const instance = GameState.NWScript.Load(resref);
         if(instance){
@@ -480,129 +492,130 @@ export class DLGNode {
 
       //k2 MODE
       if(struct.hasField('ActionParam1')){
-        node.scriptParams.Param1 = struct.getFieldByLabel('ActionParam1').getValue();
+        node.scriptParams.Param1 = struct.getNumberByLabel('ActionParam1');
       }
 
       if(struct.hasField('ActionParam2')){
-        node.scriptParams.Param2 = struct.getFieldByLabel('ActionParam2').getValue();
+        node.scriptParams.Param2 = struct.getNumberByLabel('ActionParam2');
       }
 
       if(struct.hasField('ActionParam3')){
-        node.scriptParams.Param3 = struct.getFieldByLabel('ActionParam3').getValue();
+        node.scriptParams.Param3 = struct.getNumberByLabel('ActionParam3');
       }
 
       if(struct.hasField('ActionParam4')){
-        node.scriptParams.Param4 = struct.getFieldByLabel('ActionParam4').getValue();
+        node.scriptParams.Param4 = struct.getNumberByLabel('ActionParam4');
       }
 
       if(struct.hasField('ActionParam5')){
-        node.scriptParams.Param5 = struct.getFieldByLabel('ActionParam5').getValue();
+        node.scriptParams.Param5 = struct.getNumberByLabel('ActionParam5');
       }
 
       if(struct.hasField('ActionParamStrA')){
-        node.scriptParams.String = struct.getFieldByLabel('ActionParamStrA').getValue();
+        node.scriptParams.String = struct.getStringByLabel('ActionParamStrA');
       }
 
       //k2 MODE
       if(struct.hasField('ActionParam1b')){
-        node.script2Params.Param1 = struct.getFieldByLabel('ActionParam1b').getValue();
+        node.script2Params.Param1 = struct.getNumberByLabel('ActionParam1b');
       }
 
       if(struct.hasField('ActionParam2b')){
-        node.script2Params.Param2 = struct.getFieldByLabel('ActionParam2b').getValue();
+        node.script2Params.Param2 = struct.getNumberByLabel('ActionParam2b');
       }
 
       if(struct.hasField('ActionParam3b')){
-        node.script2Params.Param3 = struct.getFieldByLabel('ActionParam3b').getValue();
+        node.script2Params.Param3 = struct.getNumberByLabel('ActionParam3b');
       }
 
       if(struct.hasField('ActionParam4b')){
-        node.script2Params.Param4 = struct.getFieldByLabel('ActionParam4b').getValue();
+        node.script2Params.Param4 = struct.getNumberByLabel('ActionParam4b');
       }
 
       if(struct.hasField('ActionParam5b')){
-        node.script2Params.Param5 = struct.getFieldByLabel('ActionParam5b').getValue();
+        node.script2Params.Param5 = struct.getNumberByLabel('ActionParam5b');
       }
 
       if(struct.hasField('ActionParamStrB')){
-        node.script2Params.String = struct.getFieldByLabel('ActionParamStrB').getValue();
+        node.script2Params.String = struct.getStringByLabel('ActionParamStrB');
       }
 
     }
 
     if(struct.hasField('CamFieldOfView')){
-      node.camFieldOfView = struct.getFieldByLabel('CamFieldOfView').getValue();
+      node.camFieldOfView = struct.getNumberByLabel('CamFieldOfView');
     }
 
     if(struct.hasField('RepliesList')){
       const structs = struct.getFieldByLabel('RepliesList').getChildStructs();
       node.entries = [];
       for(let i = 0; i < structs.length; i++){
-        let replyStruct = structs[i];
-        let linkNode = new DLGNode(dialog);
+        const replyStruct = structs[i];
+        const linkNode = new DLGNode(dialog);
+        linkNode.gffStruct = replyStruct;
 
         if(replyStruct.hasField('Not')){
-          linkNode.isActiveParams.Not = replyStruct.getFieldByLabel('Not').getValue();
+          linkNode.isActiveParams.Not = replyStruct.getBooleanByLabel('Not');
         }
 
         if(replyStruct.hasField('Param1')){
-          linkNode.isActiveParams.Param1 = replyStruct.getFieldByLabel('Param1').getValue();
+          linkNode.isActiveParams.Param1 = replyStruct.getNumberByLabel('Param1');
         }
 
         if(replyStruct.hasField('Param2')){
-          linkNode.isActiveParams.Param2 = replyStruct.getFieldByLabel('Param2').getValue();
+          linkNode.isActiveParams.Param2 = replyStruct.getNumberByLabel('Param2');
         }
 
         if(replyStruct.hasField('Param3')){
-          linkNode.isActiveParams.Param3 = replyStruct.getFieldByLabel('Param3').getValue();
+          linkNode.isActiveParams.Param3 = replyStruct.getNumberByLabel('Param3');
         }
 
         if(replyStruct.hasField('Param4')){
-          linkNode.isActiveParams.Param4 = replyStruct.getFieldByLabel('Param4').getValue();
+          linkNode.isActiveParams.Param4 = replyStruct.getNumberByLabel('Param4');
         }
 
         if(replyStruct.hasField('Param5')){
-          linkNode.isActiveParams.Param5 = replyStruct.getFieldByLabel('Param5').getValue();
+          linkNode.isActiveParams.Param5 = replyStruct.getNumberByLabel('Param5');
         }
 
         if(replyStruct.hasField('ParamStrA')){
-          linkNode.isActiveParams.String = replyStruct.getFieldByLabel('ParamStrA').getValue();
+          linkNode.isActiveParams.String = replyStruct.getStringByLabel('ParamStrA');
         }
 
         if(replyStruct.hasField('Not2')){
-          linkNode.isActive2Params.Not = replyStruct.getFieldByLabel('Not2').getValue();
+          linkNode.isActive2Params.Not = replyStruct.getBooleanByLabel('Not2');
         }
 
         if(replyStruct.hasField('Param1b')){
-          linkNode.isActive2Params.Param1 = replyStruct.getFieldByLabel('Param1b').getValue();
+          linkNode.isActive2Params.Param1 = replyStruct.getNumberByLabel('Param1b');
         }
 
         if(replyStruct.hasField('Param2b')){
-          linkNode.isActive2Params.Param2 = replyStruct.getFieldByLabel('Param2b').getValue();
+          linkNode.isActive2Params.Param2 = replyStruct.getNumberByLabel('Param2b');
         }
 
         if(replyStruct.hasField('Param3b')){
-          linkNode.isActive2Params.Param3 = replyStruct.getFieldByLabel('Param3b').getValue();
+          linkNode.isActive2Params.Param3 = replyStruct.getNumberByLabel('Param3b');
         }
 
         if(replyStruct.hasField('Param4b')){
-          linkNode.isActive2Params.Param4 = replyStruct.getFieldByLabel('Param4b').getValue();
+          linkNode.isActive2Params.Param4 = replyStruct.getNumberByLabel('Param4b');
         }
 
         if(replyStruct.hasField('Param5b')){
-          linkNode.isActive2Params.Param5 = replyStruct.getFieldByLabel('Param5b').getValue();
+          linkNode.isActive2Params.Param5 = replyStruct.getNumberByLabel('Param5b');
         }
 
         if(replyStruct.hasField('ParamStrB')){
-          linkNode.isActive2Params.String = replyStruct.getFieldByLabel('ParamStrB').getValue();
+          linkNode.isActive2Params.String = replyStruct.getStringByLabel('ParamStrB');
         }
 
         if(replyStruct.hasField('Logic')){
-          linkNode.Logic = !!replyStruct.getFieldByLabel('Logic').getValue();
+          linkNode.Logic = replyStruct.getBooleanByLabel('Logic');
         }
 
         if(replyStruct.hasField('Active')){
-          const resref = replyStruct.getFieldByLabel('Active').getValue();
+          const resref = replyStruct.getStringByLabel('Active');
           if(resref){
             linkNode.isActive = GameState.NWScript.Load(resref);
             if(linkNode.isActive){
@@ -612,7 +625,7 @@ export class DLGNode {
         }
 
         if(replyStruct.hasField('Active2')){
-          const resref = replyStruct.getFieldByLabel('Active2').getValue();
+          const resref = replyStruct.getStringByLabel('Active2');
           if(resref){
             linkNode.isActive2 = GameState.NWScript.Load(resref);
             if(linkNode.isActive2){
@@ -622,7 +635,7 @@ export class DLGNode {
         }
 
         if(replyStruct.hasField('Index')){
-          linkNode.index = replyStruct.getFieldByLabel('Index').getValue();
+          linkNode.index = replyStruct.getNumberByLabel('Index');
         }
 
         node.replies.push(linkNode);
@@ -634,71 +647,72 @@ export class DLGNode {
       const structs = struct.getFieldByLabel('EntriesList').getChildStructs();
       node.replies = [];
       for(let i = 0; i < structs.length; i++){
-        let entryStruct = structs[i];
-        let linkNode = new DLGNode(dialog);
+        const entryStruct = structs[i];
+        const linkNode = new DLGNode(dialog);
+        linkNode.gffStruct = entryStruct;
 
         if(entryStruct.hasField('Not')){
-          linkNode.isActiveParams.Not = entryStruct.getFieldByLabel('Not').getValue();
+          linkNode.isActiveParams.Not = entryStruct.getBooleanByLabel('Not');
         }
 
         if(entryStruct.hasField('Param1')){
-          linkNode.isActiveParams.Param1 = entryStruct.getFieldByLabel('Param1').getValue();
+          linkNode.isActiveParams.Param1 = entryStruct.getNumberByLabel('Param1');
         }
 
         if(entryStruct.hasField('Param2')){
-          linkNode.isActiveParams.Param2 = entryStruct.getFieldByLabel('Param2').getValue();
+          linkNode.isActiveParams.Param2 = entryStruct.getNumberByLabel('Param2');
         }
 
         if(entryStruct.hasField('Param3')){
-          linkNode.isActiveParams.Param3 = entryStruct.getFieldByLabel('Param3').getValue();
+          linkNode.isActiveParams.Param3 = entryStruct.getNumberByLabel('Param3');
         }
 
         if(entryStruct.hasField('Param4')){
-          linkNode.isActiveParams.Param4 = entryStruct.getFieldByLabel('Param4').getValue();
+          linkNode.isActiveParams.Param4 = entryStruct.getNumberByLabel('Param4');
         }
 
         if(entryStruct.hasField('Param5')){
-          linkNode.isActiveParams.Param5 = entryStruct.getFieldByLabel('Param5').getValue();
+          linkNode.isActiveParams.Param5 = entryStruct.getNumberByLabel('Param5');
         }
 
         if(entryStruct.hasField('ParamStrA')){
-          linkNode.isActiveParams.String = entryStruct.getFieldByLabel('ParamStrA').getValue();
+          linkNode.isActiveParams.String = entryStruct.getStringByLabel('ParamStrA');
         }
 
         if(entryStruct.hasField('Not2')){
-          linkNode.isActive2Params.Not = entryStruct.getFieldByLabel('Not2').getValue();
+          linkNode.isActive2Params.Not = entryStruct.getBooleanByLabel('Not2');
         }
 
         if(entryStruct.hasField('Param1b')){
-          linkNode.isActive2Params.Param1 = entryStruct.getFieldByLabel('Param1b').getValue();
+          linkNode.isActive2Params.Param1 = entryStruct.getNumberByLabel('Param1b');
         }
 
         if(entryStruct.hasField('Param2b')){
-          linkNode.isActive2Params.Param2 = entryStruct.getFieldByLabel('Param2b').getValue();
+          linkNode.isActive2Params.Param2 = entryStruct.getNumberByLabel('Param2b');
         }
 
         if(entryStruct.hasField('Param3b')){
-          linkNode.isActive2Params.Param3 = entryStruct.getFieldByLabel('Param3b').getValue();
+          linkNode.isActive2Params.Param3 = entryStruct.getNumberByLabel('Param3b');
         }
 
         if(entryStruct.hasField('Param4b')){
-          linkNode.isActive2Params.Param4 = entryStruct.getFieldByLabel('Param4b').getValue();
+          linkNode.isActive2Params.Param4 = entryStruct.getNumberByLabel('Param4b');
         }
 
         if(entryStruct.hasField('Param5b')){
-          linkNode.isActive2Params.Param5 = entryStruct.getFieldByLabel('Param5b').getValue();
+          linkNode.isActive2Params.Param5 = entryStruct.getNumberByLabel('Param5b');
         }
 
         if(entryStruct.hasField('ParamStrB')){
-          linkNode.isActive2Params.String = entryStruct.getFieldByLabel('ParamStrB').getValue();
+          linkNode.isActive2Params.String = entryStruct.getStringByLabel('ParamStrB');
         }
 
         if(entryStruct.hasField('Logic')){
-          linkNode.Logic = !!entryStruct.getFieldByLabel('Logic').getValue();
+          linkNode.Logic = entryStruct.getBooleanByLabel('Logic');
         }
 
         if(entryStruct.hasField('Active')){
-          const resref = entryStruct.getFieldByLabel('Active').getValue();
+          const resref = entryStruct.getStringByLabel('Active');
           if(resref){
             linkNode.isActive = GameState.NWScript.Load(resref);
             if(linkNode.isActive){
@@ -708,7 +722,7 @@ export class DLGNode {
         }
 
         if(entryStruct.hasField('Active2')){
-          const resref = entryStruct.getFieldByLabel('Active2').getValue();
+          const resref = entryStruct.getStringByLabel('Active2');
           if(resref){
             linkNode.isActive2 = GameState.NWScript.Load(resref);
             if(linkNode.isActive2){
@@ -718,7 +732,7 @@ export class DLGNode {
         }
 
         if(entryStruct.hasField('Index')){
-          linkNode.index = entryStruct.getFieldByLabel('Index').getValue();
+          linkNode.index = entryStruct.getNumberByLabel('Index');
         }
 
         node.entries.push(linkNode);
@@ -729,18 +743,18 @@ export class DLGNode {
     if(struct.hasField('AnimList')){
       const structs = struct.getFieldByLabel('AnimList').getChildStructs();
       for(let i = 0; i < structs.length; i++){
-        let childStruct = structs[i];
-        let animation = {
+        const childStruct = structs[i];
+        const animation = {
           animation: '',
           participant: '',
         };
 
         if(childStruct.hasField('Animation')){
-          animation.animation = childStruct.getFieldByLabel('Animation').getValue();
+          animation.animation = childStruct.getStringByLabel('Animation');
         }
 
         if(childStruct.hasField('Participant')){
-          animation.participant = childStruct.getFieldByLabel('Participant').getValue().toLocaleLowerCase();
+          animation.participant = childStruct.getStringByLabel('Participant').toLocaleLowerCase();
         }
 
         node.animations.push(animation);
@@ -748,57 +762,59 @@ export class DLGNode {
     }
 
     if(struct.hasField('Text')){
-      node.text = struct.getFieldByLabel('Text').getValue();
+      const textField = struct.getFieldByLabel('Text');
+      node.text = struct.getStringByLabel('Text');
+      node.textLoc = textField.getCExoLocString();
     }
 
     if(struct.hasField('Delay')){
-      node.delay = struct.getFieldByLabel('Delay').getValue() & 0xFFFFFFFF;
+      node.delay = struct.getNumberByLabel('Delay') & 0xFFFFFFFF;
     }
 
     if(struct.hasField('FadeType')){
-      node.fade.type = struct.getFieldByLabel('FadeType').getValue();
+      node.fade.type = struct.getNumberByLabel('FadeType');
     }
 
     if(struct.hasField('FadeLength')){
-      node.fade.length = struct.getFieldByLabel('FadeLength').getValue();
+      node.fade.length = struct.getNumberByLabel('FadeLength');
     }
 
     if(struct.hasField('FadeDelay')){
-      node.fade.delay = struct.getFieldByLabel('FadeDelay').getValue();
+      node.fade.delay = struct.getNumberByLabel('FadeDelay');
     }
 
     if(struct.hasField('NodeUnskippable')){
-      node.skippable = !struct.getFieldByLabel('NodeUnskippable').getValue();
+      node.skippable = !struct.getBooleanByLabel('NodeUnskippable');
     }else{
       node.skippable = true;
     }
 
     if(struct.hasField('AlienRaceNode')){
-      node.alienRaceNode = struct.getFieldByLabel('AlienRaceNode').getValue();
+      node.alienRaceNode = struct.getNumberByLabel('AlienRaceNode');
     }
 
     if(struct.hasField('Emotion')){
-      node.emotion = struct.getFieldByLabel('Emotion').getValue();
+      node.emotion = struct.getNumberByLabel('Emotion');
     }
 
     if(struct.hasField('FacialAnim')){
-      node.facialAnimation = struct.getFieldByLabel('FacialAnim').getValue();
+      node.facialAnimation = struct.getNumberByLabel('FacialAnim');
     }
 
     if(struct.hasField('PostProcNode')){
-      node.postProcessNode = struct.getFieldByLabel('PostProcNode').getValue();
+      node.postProcessNode = struct.getNumberByLabel('PostProcNode');
     }
 
     if(struct.hasField('RecordNoVOOverri')){
-      node.recordNoVOOverride = struct.getFieldByLabel('RecordNoVOOverri').getValue();
+      node.recordNoVOOverride = struct.getNumberByLabel('RecordNoVOOverri');
     }
 
     if(struct.hasField('RecordVO')){
-      node.recordVO = struct.getFieldByLabel('RecordVO').getValue();
+      node.recordVO = struct.getNumberByLabel('RecordVO');
     }
 
     if(struct.hasField('VOTextChanged')){
-      node.voTextChanged = !!struct.getFieldByLabel('VOTextChanged').getValue();
+      node.voTextChanged = struct.getBooleanByLabel('VOTextChanged');
     }
 
     return node;
@@ -808,11 +824,11 @@ export class DLGNode {
     let text = this.text;
     text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
     //if(this.speaker instanceof ModuleCreature){
-      text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
-      text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
-      text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());
-      text = text.replace(/<CUSTOM(\d+)>/gm, function(match, p1, offset, string){
-        return GameState.module.getCustomToken(parseInt(p1));
+      text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getStringByLabel('FirstName') ?? '');
+      text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getStringByLabel('FirstName') ?? '');
+      text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getStringByLabel('LastName') ?? '');
+      text = text.replace(/<CUSTOM(\d+)>/gm, (_match, p1: string) => {
+        return GameState.module.getCustomToken(parseInt(p1, 10));
       });
     //}
 

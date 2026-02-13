@@ -1,7 +1,8 @@
 import * as THREE from "three";
+
 import { Kit, KitComponent, KitComponentHook, KitDoor } from "./IndoorKit";
-import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from "./IndoorWalkmesh";
 import { IndoorLocalizedString, ColorRGB } from "./IndoorTypes";
+import { cloneWalkmesh, cloneWalkmeshFromBuffer, applyWalkmeshTransform } from "./IndoorWalkmesh";
 
 export type DoorInsertion = {
   door: KitDoor;
@@ -123,7 +124,7 @@ export class IndoorMap {
         let hook1 = room1.component.hooks[hookIndex];
         let hook2: KitComponentHook | null = null;
         let door = hook1.door;
-        let position = room1.hookPosition(hook1);
+        const position = room1.hookPosition(hook1);
         let rotation = hook1.rotation + room1.rotation;
 
         if (connection) {

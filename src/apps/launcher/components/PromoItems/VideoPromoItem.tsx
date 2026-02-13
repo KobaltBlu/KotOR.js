@@ -1,22 +1,29 @@
 import React, { useRef } from "react";
+
 import { useApp } from "../../context/AppContext";
 
-export interface ProfilePromoItemProps {
-  element: any;
-  onClick?: (element: any) => void;
-  onDoubleClick?: (element: any) => void;
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+
+import type { LauncherProfileElement } from "../../../types";
+
+const log = createScopedLogger(LogScope.Launcher);
+
+export interface VideoPromoItemProps {
+  element: LauncherProfileElement;
+  onClick?: (element: LauncherProfileElement) => void;
+  onDoubleClick?: (element: LauncherProfileElement) => void;
 }
 
-export const VideoPromoItem = function(props: ProfilePromoItemProps){
-  const element: any = props.element;
+export const VideoPromoItem = function(props: VideoPromoItemProps){
+  const element = props.element;
 
   const appContext = useApp();
 
   const videoElement = useRef(null) as React.RefObject<HTMLVideoElement>;
   const onVideoClick: React.MouseEventHandler<HTMLDivElement> = (e: React.MouseEvent<HTMLDivElement>) => {
-    console.log('onVideoClick', videoElement.current, e);
+    log.debug('onVideoClick', videoElement.current, e);
     if(videoElement.current){
-      let elem: HTMLVideoElement = videoElement.current;
+      const elem: HTMLVideoElement = videoElement.current;
       if(elem === document.fullscreenElement){
         if (elem.paused == false) {
           elem.pause();
@@ -36,9 +43,9 @@ export const VideoPromoItem = function(props: ProfilePromoItemProps){
   };
 
   const onVideoDoubleClick: React.MouseEventHandler<HTMLVideoElement> = (e: React.MouseEvent<HTMLVideoElement>) => {
-    console.log('onVideoDoubleClick', videoElement.current, e);
+    log.trace('onVideoDoubleClick', videoElement.current, e);
     if(videoElement.current){
-      let elem: HTMLVideoElement = videoElement.current;
+      const elem: HTMLVideoElement = videoElement.current;
       if(elem === document.fullscreenElement){
         document.exitFullscreen()
       }

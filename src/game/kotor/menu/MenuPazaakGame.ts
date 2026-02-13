@@ -1,10 +1,10 @@
-import { PazaakTurnMode } from "../../../enums/minigames/PazaakTurnMode";
 import { PazaakHandSlots } from "../../../enums/minigames/PazaakHandSlots";
 import { PazaakTableSlots } from "../../../enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "../../../enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "../../../enums/minigames/PazaakTurnState";
 import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUILabel, GUIButton } from "../../../gui";
-import { PazaakTurnState } from "../../../enums/minigames/PazaakTurnState";
 
 /**
  * MenuPazaakGame class.
@@ -384,7 +384,7 @@ export class MenuPazaakGame extends GameMenu {
           tableCardButton.hide();
           tableCardLabel.hide();
           continue;
-        };
+        }
 
         tableCardButton.show();
         tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);

@@ -113,6 +113,19 @@ extensions/kotor-forge-vscode/
 
 Without `watch`, you would have to run `npm run compile` manually after every change and then reload the window.
 
+### Verification
+
+These checks apply across the extension:
+
+1. **Rendering (all GFF resource editors)**  
+   Open **any** GFF-based resource in VS Code with KotOR Forge (e.g. `.uts`, `.gff`, `.uti`, `.utc`, `.are`, `.dlg`, `.git`, `.ifo`, `.fac`, `.jrl`, `.gui`, `.ltr`, `.pth`, `.vis`, `.res`, `.bic`). The editor should show the GFF tree (generic editor) or the specific blueprint form (e.g. UTS, UTC, UTI) instead of staying blank.
+
+2. **Two editors (all GFF types)**  
+   For **any** of the GFF-related extensions above: right-click the file → **Open With** → **KotOR Forge (Generic GFF)**. The file should open in the generic GFF tree editor. The default **KotOR Forge Editor** continues to use the specific editor when available (e.g. UTS form for `.uts`).
+
+3. **Logging (all resource editors)**  
+   In the Output panel, select **Forge-KotOR.js** and set the level to **Trace**. Open **any** KotOR resource (GFF, 2DA, DLG, model, etc.). The log should show the full path: document create → resolve custom editor → webview ready → init sent → tab created and editor rendered. Use this to debug load or render issues for any editor type.
+
 ### Forge integration (no duplication)
 
 The extension **does not duplicate** any editor logic. It depends on the existing Forge implementation in `src/apps/forge/`:

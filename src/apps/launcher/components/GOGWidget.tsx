@@ -1,4 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Default);
 import '../styles/GOGWidget.scss';
 
 // Types and Interfaces
@@ -76,21 +80,42 @@ const generateBackgroundUrl = (template: string, formatter?: string): string => 
   return template.replace(extension[0], formatter ? "_" + formatter + extension[0] : extension[0]);
 };
 
-// API functions
-const fetchProductData = async (productId: string): Promise<any> => {
+/** GOG API product response shape (external API - structure from gog.com) */
+interface GOGProductApiResponse {
+  _embedded?: {
+    product?: {
+      title?: string;
+      isAvailableForSale?: boolean;
+      isPreorder?: boolean;
+      _links?: { image?: { href?: string }; prices?: { href?: string } };
+    };
+    supportedOperatingSystems?: Array<{ operatingSystem?: { name?: string } }>;
+  };
+  _links?: { store?: { href?: string }; backgroundImage?: { href?: string } };
+}
+
+/** GOG API price response shape (external API) */
+interface GOGPriceApiResponse {
+  _embedded?: {
+    prices?: Array<{ basePrice?: string | number; finalPrice?: string | number; currency?: { code?: string } }>;
+  };
+}
+
+// API functions - fetch from external gog.com API
+const fetchProductData = async (productId: string): Promise<GOGProductApiResponse> => {
   const response = await fetch(`https://api.gog.com/v1/games/${productId}?locale=en-US`);
   if (!response.ok) {
     throw new Error(`Failed to fetch product data: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response.json() as Promise<GOGProductApiResponse>;
 };
 
-const fetchPriceData = async (distributorId: string, productId: string): Promise<any> => {
+const fetchPriceData = async (distributorId: string, productId: string): Promise<GOGPriceApiResponse> => {
   const response = await fetch(`https://api.gog.com/widget/${distributorId}/${productId}/prices`);
   if (!response.ok) {
     throw new Error(`Failed to fetch price data: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response.json() as Promise<GOGPriceApiResponse>;
 };
 
 // Main GOGWidget Component
@@ -133,7 +158,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         currency: '',
         basePrice: 0,
         finalPrice: 0,
-        supportedOs: productResponse._embedded?.supportedOperatingSystems?.map((os: any) => 
+        supportedOs: productResponse._embedded?.supportedOperatingSystems?.map((os) =>
           os.operatingSystem?.name || 'Unknown'
         ) || [],
         imageFormatterTemplate: productData._links?.image?.href || '',
@@ -169,10 +194,10 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
             currency
           } : null);
         } else {
-          console.warn('No price data found in response:', priceResponse);
+          log.warn('No price data found in response:', priceResponse);
         }
       } catch (priceError) {
-        console.warn('Failed to load price data:', priceError);
+        log.warn('Failed to load price data:', priceError);
         // Don't fail the entire widget if price loading fails
       }
 

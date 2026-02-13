@@ -1,3 +1,5 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import {
   OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
   OP_BOOLANDII, OP_EQUAL, OP_NEQUAL, OP_GEQ, OP_GT, OP_LT, OP_LEQ, OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
@@ -5,6 +7,10 @@ import {
   OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
 } from '../NWScriptOPCodes';
+
+
+const log = createScopedLogger(LogScope.NWScript);
+import type { SemanticDataType } from "./ASTSemanticTypes";
 import {
   CompilerProgramNode,
   CompilerFunctionNode,
@@ -22,6 +28,7 @@ import {
   CompilerCaseNode,
   CompilerDefaultNode,
 } from './CompilerNodeTypes';
+import type { CompilerLiteralNode } from './CompilerNodeTypes';
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -97,12 +104,12 @@ export class NWScriptCompiler {
   program: CompilerProgramNode | null = null;
   basePointer = 0;
   stackPointer = 0;
-  log: any = [];
+  log: unknown[] = [];
   scope: NWScriptScope;
   scopes: NWScriptScope[] = [];
   _silent: boolean = false;
 
-  _eventListeners: any = {
+  _eventListeners: Record<string, Array<(() => void) | undefined>> = {
     log: [],
     compile_start: [],
     compile_fail: [],
@@ -112,8 +119,8 @@ export class NWScriptCompiler {
   bytesWritten: number = 0;
   freezeBytesWritten: boolean = false;
   basePointerWriting: boolean;
-  functionBlockStartOffset: any;
-  errors: { type: string, message: string, statement: any, offender: any }[] = [];
+  functionBlockStartOffset: number | undefined = undefined;
+  errors: { type: string; message: string; statement: CompilerStatementNode | undefined; offender: CompilerStatementNode | undefined }[] = [];
 
   constructor(ast: CompilerProgramNode){
 
@@ -180,7 +187,7 @@ export class NWScriptCompiler {
 
   opcodeDebug(name: string, buffer: Uint8Array){
     if( this._silent ) return;
-    // console.log( (name + "                ").slice(0, 16), buffer );
+    // log.info( (name + "                ").slice(0, 16), buffer );
   }
 
   scopePush( scope: NWScriptScope ){
@@ -208,7 +215,7 @@ export class NWScriptCompiler {
 
   scopeAddBytesWritten( nNumBytes = 0 ){
     if(!this.scope){
-      console.error('scopeAddBytesWritten: scope is undefined');
+      log.error('scopeAddBytesWritten: scope is undefined');
       return;
     }
     if(!this.freezeBytesWritten){
@@ -229,7 +236,7 @@ export class NWScriptCompiler {
     }
   }
 
-  getStatementLength( statement: any ){
+  getStatementLength( statement: CompilerStatementNode ): number {
     const bpCache = this.basePointer;
     const spCache = this.stackPointer;
     this._silent = true;
@@ -246,7 +253,7 @@ export class NWScriptCompiler {
     this.basePointer = 0;
     this.stackPointer = 0;
     this.scopes = [];
-    this.scope = undefined as any;
+    this.scope = undefined!;
     this.bytesWritten = 0;
     this.basePointerWriting = false;
     this._silent = false;
@@ -258,16 +265,16 @@ export class NWScriptCompiler {
    */
   compileGlobal(buffers: ByteArray[] = [], returnInt: boolean = false): ByteArray[] {
     if(!this.program){
-      console.error('compileGlobal: program is undefined');
+      log.error('compileGlobal: program is undefined');
       return buffers;
     }
-    const globalStatements = this.program.statements.filter( (s: any) => {
+    const globalStatements = this.program.statements.filter( (s: CompilerStatementNode) => {
       return ((s.type == 'variable' || s.type == 'variableList') && s.is_const == false) || s.type == 'struct';
     });
     if(globalStatements.length){
       this.basePointerWriting = true;
       for(let i = 0; i < globalStatements.length; i++){
-        buffers.push( this.compileStatement( globalStatements[i]) as any );
+        buffers.push( this.compileStatement( globalStatements[i]) as Uint8Array );
       }
     
       buffers.push( this.writeSAVEBP() );
@@ -292,10 +299,10 @@ export class NWScriptCompiler {
   }
 
   compilePass(funcMain: CompilerFunctionNode, returnInt: boolean = false): ByteArray[] {
-    console.log('compilePass: Begin');
+    log.info('compilePass: Begin');
     const buffers: ByteArray[] = [new Uint8Array(0)];
     if(!this.program){
-      console.error('compilePass: program is undefined');
+      log.error('compilePass: program is undefined');
       return buffers;
     }
 
@@ -318,7 +325,7 @@ export class NWScriptCompiler {
     this.compileGlobal(buffers, returnInt);
 
     const functions = this.program.functions as unknown as CompilerFunctionNode[];
-    const subroutines = functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
+    const subroutines = functions.filter( (f: CompilerFunctionNode) => f.called ).sort( (a: CompilerFunctionNode, b: CompilerFunctionNode) => (a.callIndex ?? 0) - (b.callIndex ?? 0) );
 
     funcMain.blockOffset = this.bytesWritten;
     buffers.push( this.compileFunction( funcMain ) );
@@ -333,20 +340,20 @@ export class NWScriptCompiler {
     }
 
     this.scopePop();
-    console.log('compilePass: End');
+    log.info('compilePass: End');
     return buffers;
   }
 
-  compileStart(funcMain: any, returnInt: boolean = false): ByteArray {
+  compileStart(funcMain: CompilerFunctionNode, returnInt: boolean = false): ByteArray {
     this.basePointer  = 0;
     this.stackPointer = 0;
     this.scopes = [];
     if(!this.program || this.program.type != 'program'){
-      console.error('CompileStart: program is undefined');
+      log.error('CompileStart: program is undefined');
       return new Uint8Array(0);
     }
     
-    console.log('CompileStart: Begin');
+    log.info('CompileStart: Begin');
 
     const pass1 = this.compilePass(funcMain, returnInt);
     const pass2 = this.compilePass(funcMain, returnInt);
@@ -364,7 +371,7 @@ export class NWScriptCompiler {
     NCS_Header[7] = 0x30; // 0
     
     const T = this.writeT(program.length + 13);
-    console.log('CompileStart: Complete');
+    log.info('CompileStart: Complete');
     return concatBuffers([NCS_Header, T, program]);
   }
 
@@ -378,7 +385,7 @@ export class NWScriptCompiler {
    * @param datatype - The datatype to get the stack length for
    * @returns The stack length of bytes required to store the datatype
    */
-  getDataTypeStackLength( datatype?: any ): number {
+  getDataTypeStackLength( datatype?: SemanticDataType | { type?: string; value?: string } ): number {
     if(datatype && datatype.type == 'datatype'){
       switch(datatype.value){
         case 'void':    return 0;
@@ -400,12 +407,12 @@ export class NWScriptCompiler {
       if(statement.function_reference) return this.getDataTypeStackLength(statement.function_reference.returntype);
       if(statement.property_reference) return this.getDataTypeStackLength(statement.property_reference.datatype);
     }
-    console.error('getStatementDataTypeSize');
-    console.log(statement);
+    log.error('getStatementDataTypeSize');
+    log.info(statement);
     throw 'Invalid statement object';
   }
 
-  compileStatement( statement: CompilerStatementNode | any ){
+  compileStatement( statement: CompilerStatementNode ): ByteArray {
     if(statement){
       switch(statement.type){
         case 'literal':       return this.compileLiteral( statement );
@@ -442,8 +449,8 @@ export class NWScriptCompiler {
         case 'continue':      return this.compileContinue( statement );
         case 'break':         return this.compileBreak( statement );
         case 'assign':         return this.compileAssign( statement );
-        default: console.error('unhandled statement', statement.type);
-        console.log(statement);
+        default: log.error('unhandled statement', statement.type);
+        log.info(statement);
       }
     }
     throw new Error('compileStatement: statement is undefined or invalid');
@@ -492,7 +499,7 @@ export class NWScriptCompiler {
       if(value.type == 'inc') return this.getDataType(value.value);
       if(value.type == 'dec') return this.getDataType(value.value);
     }
-    console.log('getDataType', value);
+    log.info('getDataType', value);
     throw 'Invalid value for getDataType: ' + value;
   }
 
@@ -770,7 +777,7 @@ export class NWScriptCompiler {
       buffers.push( this.writeMOVSP( -stackOffset ) );
       this.stackPointer += stackOffset;
     }else if(stackOffset < 0){
-      console.warn(`${this.scope.block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
+      log.warn(`${this.scope.block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
     }
 
     //Jump to the end of the current executing block
@@ -847,7 +854,7 @@ export class NWScriptCompiler {
     if(stackOffset > 0){
       buffers.push( this.writeMOVSP(-stackOffset));
     }else if(stackOffset < 0){
-      console.warn(`${block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
+      log.warn(`${block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
     }
 
     //byte offset to the end of this function block
@@ -895,7 +902,7 @@ export class NWScriptCompiler {
       const __arguments = statement.function_reference.arguments.slice(0).reverse();
       let argumentsDataSize = 0;
       for(let i = 0; i < __arguments.length; i++){
-        let arg = _arguments[i];
+        const arg = _arguments[i];
         const arg_ref = __arguments[i];
 
         if(!arg){
@@ -951,7 +958,7 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
-  compileAnonymousBlock( statement: any ){
+  compileAnonymousBlock( statement: CompilerBlockNode ): Uint8Array {
     const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'block'){
@@ -1194,7 +1201,7 @@ export class NWScriptCompiler {
           statement.jz_2 = this.scope.bytes_written;
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: LOGANDII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: LOGANDII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '||'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1202,7 +1209,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeLOGORII() );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: LOGORII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: LOGORII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '>='){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1211,7 +1218,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeGEQ(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: GEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: GEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '>'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1220,7 +1227,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeGT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: GT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: GT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1229,7 +1236,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeLT(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: LT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: LT datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }else if(statement.operator.value == '<='){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
@@ -1238,7 +1245,7 @@ export class NWScriptCompiler {
           buffers.push( this.writeLEQ(NWCompileDataTypes.FF) );
         }else{
           //ERROR: unsupported datatypes to compare
-          console.error('Unsupported: LEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
+          log.error('Unsupported: LEQ datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
         }
       }
     }
@@ -1599,7 +1606,7 @@ export class NWScriptCompiler {
         //return the stack pointer to it's previous state so that the outer loop is not affected
         this.stackPointer += stackOffset;
       }else{
-        //console.log('noting to remove')
+        //log.info('noting to remove')
       }
       buffers.push( 
         this.writeJMP( 
@@ -1607,7 +1614,7 @@ export class NWScriptCompiler {
         )
       );  
     }else{
-      //console.log('no active loop');
+      //log.info('no active loop');
       //can't use continue outside of a loop
     }
 
@@ -1631,7 +1638,7 @@ export class NWScriptCompiler {
         //return the stack pointer to it's previous state so that the outer loop is not affected
         this.stackPointer += stackOffset;
       }else{
-        //console.log('noting to remove')
+        //log.info('noting to remove')
       }
       buffers.push( 
         this.writeJMP( 
@@ -1639,7 +1646,7 @@ export class NWScriptCompiler {
         )
       );  
     }else{
-      //console.log('no active loop');
+      //log.info('no active loop');
       //can't use break outside of a loop
     }
 

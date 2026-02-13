@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
+
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalCloneModuleState } from "../../states/modal/ModalCloneModuleState";
 
 export const ModalCloneModule = (props: BaseModalProps) => {
@@ -61,8 +62,8 @@ export const ModalCloneModule = (props: BaseModalProps) => {
     const { ForgeFileSystem } = await import("../../ForgeFileSystem");
     const KotOR = await import("../../KotOR");
     let outputPath: string | undefined;
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
-      const dialog = (window as any).dialog;
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+      const dialog = window.dialog;
       if (dialog?.showSaveDialog) {
         const result = await dialog.showSaveDialog({
           title: "Save Cloned Module",

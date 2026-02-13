@@ -1,6 +1,7 @@
-import { KeyInput } from "./KeyInput";
 import { KeyboardAction } from "../enums/controls/KeyboardAction";
 import { KeyboardKeyActions } from "../interface/input/KeyboardKeyActions";
+
+import { KeyInput } from "./KeyInput";
 
 /**
  * Keyboard class.
@@ -120,9 +121,9 @@ export class Keyboard {
     this.init();
   }
 
-  init(){
-    for (let key in this.action) {
-      (this.action as any)[key] = new KeyInput(key);
+  init(): void {
+    for (const key in this.action) {
+      (this.action as Record<string, KeyInput>)[key] = new KeyInput(key as KeyboardAction);
     }
   }
 
@@ -152,10 +153,10 @@ export class Keyboard {
 
   }
 
-  onFrameEnd(delta: number = 0){
-    //Set all pressed keys to false so they can only be triggered on this frame 
-    for (let key in this.action) {
-      (this.action as any)[key].pressed = false;
+  onFrameEnd(_delta: number = 0): void {
+    // Set all pressed keys to false so they can only be triggered on this frame
+    for (const key in this.action) {
+      (this.action as Record<string, KeyInput>)[key].pressed = false;
     }
   }
 

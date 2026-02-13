@@ -1,9 +1,14 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalFileResults } from "../../components/modal/ModalFileResults";
-import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
+import { ReferenceSearchResult } from "../../helpers/ReferenceFinder";
+
+import type { EditorFile } from "../../EditorFile";
+import type { EditorFileOptions } from "../../interfaces/EditorFileOptions";
 import { ResourceTypes } from "../../../../resource/ResourceTypes";
+
+import { ModalState } from "./ModalState";
 
 export interface ModalFileResultsStateOptions {
   results: ReferenceSearchResult[];
@@ -41,7 +46,7 @@ export class ModalFileResultsState extends ModalState {
     return lines.join("\n");
   }
 
-  getEditorFileOptions(result: ReferenceSearchResult): Record<string, any> {
+  getEditorFileOptions(result: ReferenceSearchResult): EditorFileOptions {
     const ext = result.fileResource.extension.toLowerCase();
     const reskey = ResourceTypes[ext];
     const resref = result.fileResource.resRef;

@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabAREEditor } from "../../components/tabs/tab-are-editor/TabAREEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabAREEditorState extends TabState {
   tabName: string = 'ARE Editor';
@@ -53,7 +56,7 @@ export class TabAREEditorState extends TabState {
     // Sync UI changes to ARE GFF if needed
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

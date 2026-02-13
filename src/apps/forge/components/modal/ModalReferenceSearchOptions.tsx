@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form, FormCheck, FormControl } from "react-bootstrap";
+
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalReferenceSearchOptionsState } from "../../states/modal/ModalReferenceSearchOptionsState";
 
 export const ModalReferenceSearchOptions = (props: BaseModalProps) => {

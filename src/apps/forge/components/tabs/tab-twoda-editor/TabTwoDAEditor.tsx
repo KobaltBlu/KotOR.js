@@ -1,17 +1,17 @@
 import React, { useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import { ProgressBar } from "react-bootstrap";
+
+import { TwoDAEditorColumnHeader } from "../../TwoDAEditorColumnHeader";
+import { TwoDAEditorRow } from "../../TwoDAEditorRow";
 
 import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabTwoDAEditorState } from "../../../states/tabs";
-import { ProgressBar } from "react-bootstrap";
-import { TwoDAEditorRow } from "../../TwoDAEditorRow";
-import { TwoDAEditorColumnHeader } from "../../TwoDAEditorColumnHeader";
-
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
 import * as KotOR from "../../../KotOR";
+import { TabTwoDAEditorState } from "../../../states/tabs";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
   const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
-  const [selectedRowIndex, setSelectedRowIndex] = useState<any>(-1);
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
 
   const onFileLoad = () => {
     const tab: TabTwoDAEditorState = props.tab as TabTwoDAEditorState;
@@ -26,16 +26,16 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     }
   });
 
-  const onClickRow = (e: React.MouseEvent<any>, rowIndex: string = '0') => {
+  const onCellSelected = (
+    _row: Record<string, string>,
+    _cell: string | undefined,
+    rowIndex: number
+  ) => {
     setSelectedRowIndex(rowIndex);
-  }
-
-  const onCellSelected = (row: any, cell: any, rowIndex: any) => {
-    setSelectedRowIndex(rowIndex);
-  }
+  };
 
   return (
-    (!!twoDAObject) ? (
+    (twoDAObject) ? (
       <div style={{position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, overflow: 'auto'}}>
         <table className="twoda">
           <thead>
@@ -51,12 +51,16 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
           </thead>
           <tbody>
             {
-              Object.entries(twoDAObject.rows).map( (row_parts: any[], rIndex: number) => {
-                const row: any = row_parts[1];
-                return (
-                  <TwoDAEditorRow key={`row-${rIndex * twoDAObject.ColumnCount}`} selected={rIndex == selectedRowIndex} onCellSelected={onCellSelected} row={row} index={rIndex} twoDAObject={twoDAObject} onClick={onClickRow}></TwoDAEditorRow>
-                )
-              })
+              Object.entries(twoDAObject.rows).map(([_, row], rIndex: number) => (
+                <TwoDAEditorRow
+                  key={`row-${rIndex * twoDAObject.ColumnCount}`}
+                  selected={rIndex === selectedRowIndex}
+                  onCellSelected={onCellSelected}
+                  row={row as Record<string, string>}
+                  index={rIndex}
+                  twoDAObject={twoDAObject}
+                />
+              ))
             }
           </tbody>
         </table>

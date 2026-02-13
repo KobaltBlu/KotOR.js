@@ -1,12 +1,18 @@
-import { EditorFile } from "./EditorFile";
-import * as KotOR from "./KotOR";
-import { EditorFileProtocol } from "./enum/EditorFileProtocol";
-import { ForgeState } from "./states/ForgeState";
-import { TabProjectExplorerState } from "./states/tabs";
-import * as path from "path";
 import * as fs from "fs";
+import * as path from "path";
+
 import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "../../interface/filesystem/IGameFileSystemReadDirOptions";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import { EditorFile } from "./EditorFile";
+import { EditorFileProtocol } from "./enum/EditorFileProtocol";
+import * as KotOR from "./KotOR";
+import { ForgeState } from "./states/ForgeState";
+import { TabProjectExplorerState } from "./states/tabs";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {
@@ -59,7 +65,7 @@ export class ProjectFileSystem {
         }
         fs.mkdir(path.join(this.rootDirectoryPath, dirPath), { recursive: !!opts.recursive }, async (err) => {
           if(err){
-            console.error(err);
+            log.error(err instanceof Error ? err : String(err));
             resolve(false);
             return;
           }
@@ -93,7 +99,7 @@ export class ProjectFileSystem {
             await spleep(100);
             resolve(true);
           }catch(e){
-            console.error(e);
+            log.error(e instanceof Error ? e : String(e));
             resolve(false);
             return;
           }
@@ -106,7 +112,7 @@ export class ProjectFileSystem {
   }
 
   // Override readFile to use project directory
-  static async readFile(filepath: string, options: any = {}): Promise<Uint8Array> {
+  static async readFile(filepath: string, options: { encoding?: BufferEncoding } | {} = {}): Promise<Uint8Array> {
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       if(!this.rootDirectoryPath){
         throw new Error('Project root directory not set');
@@ -121,7 +127,7 @@ export class ProjectFileSystem {
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
       
-      let handle = await file.getFile();
+      const handle = await file.getFile();
       return new Uint8Array( await handle.arrayBuffer() );
     }
   }
@@ -160,13 +166,13 @@ export class ProjectFileSystem {
         if(!newFile) throw new Error('Failed to create file');
 
         try{
-          let stream = await newFile.createWritable();
-          await stream.write(data as any);
+          const stream = await newFile.createWritable();
+          await stream.write(data as BufferSource);
           await stream.close();
           resolve(true);
           return;
         }catch(e){
-          console.error(e);
+          log.error(e instanceof Error ? e : String(e));
           resolve(false);
           return;
         }
@@ -176,7 +182,7 @@ export class ProjectFileSystem {
 
   // Override readdir to use project directory
   static async readdir(
-    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: any[] = []
+    dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: string[] = []
   ): Promise<string[]> {
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return await this.readdir_fs_project(dirpath, options, files);
@@ -195,8 +201,7 @@ export class ProjectFileSystem {
         }
         fs.stat(path.join(this.rootDirectoryPath, dirOrFilePath), (err, stats) => {
           if(err){
-            console.log(dirOrFilePath);
-            console.error(err);
+            log.debug('exists() failed for path', dirOrFilePath, err);
             resolve(false);
             return;
           }
@@ -206,9 +211,9 @@ export class ProjectFileSystem {
         const details = path.parse(dirOrFilePath);
         try{
           if(details.ext){
-            let handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
+            const handle = await this.resolveFilePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
-              let fileHandle = await handle.getFileHandle(details.base);
+              const fileHandle = await handle.getFileHandle(details.base);
               if(fileHandle){
                 resolve(true);
                 return;
@@ -221,7 +226,7 @@ export class ProjectFileSystem {
               return;
             }
           }else{
-            let handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
+            const handle = await this.resolvePathDirectoryHandleProject(dirOrFilePath);
             if(handle){
               resolve(true);
               return;
@@ -231,8 +236,8 @@ export class ProjectFileSystem {
             }
           }
         }catch(e){
-          console.log(dirOrFilePath);
-          console.error(e);
+          log.debug('resolvePathDirectoryHandleProject failed for path', dirOrFilePath);
+          log.error(e instanceof Error ? e : String(e));
           resolve(false);
           return;
         }
@@ -241,7 +246,7 @@ export class ProjectFileSystem {
   }
 
   // Override open to use project directory
-  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
+  static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<number | FileSystemFileHandle> {
     if(KotOR.ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       if(!this.rootDirectoryPath){
         throw new Error('Project root directory not set');
@@ -249,7 +254,7 @@ export class ProjectFileSystem {
       return new Promise<number>( (resolve, reject) => {
         fs.open(path.join(this.rootDirectoryPath, filepath), (err, fd) => {
           if(err){
-            console.error(err);
+            log.error(err instanceof Error ? err : String(err));
             reject(err);
             return;
           }
@@ -352,7 +357,7 @@ export class ProjectFileSystem {
   }
 
   // Override readdir_fs to use project directory
-  private static async readdir_fs_project(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
+  private static async readdir_fs_project(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: string[] = [], depthState?: { folder: string; depth: number }) {
     if(typeof depthState === 'undefined'){
       depthState = {
         'folder': resource_path,
@@ -367,7 +372,7 @@ export class ProjectFileSystem {
           resolve(files);
           return;
         }
-        let dir_path = path.join(this.rootDirectoryPath, resource_path);
+        const dir_path = path.join(this.rootDirectoryPath, resource_path);
         
         if(!(await this.isFSDirectoryProject(resource_path))){
           if(!opts.list_dirs){
@@ -379,7 +384,7 @@ export class ProjectFileSystem {
           if((depthState.depth < 1) || !!opts.recursive ){
             fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
               if(err){
-                console.error(err);
+                log.error(err instanceof Error ? err : String(err));
                 reject(err);
                 return;
               }
@@ -394,8 +399,8 @@ export class ProjectFileSystem {
                 file_path = path.join(resource_path, file.name);
                 is_dir = (await this.isFSDirectoryProject(file_path));
                 try{
-                  if(!!is_dir){
-                    if(!!opts.recursive){
+                  if(is_dir){
+                    if(opts.recursive){
                       await this.readdir_fs_project(file_path, opts, files, depthState);
                     }else{
                       files.push(path.join(file_path));
@@ -406,7 +411,7 @@ export class ProjectFileSystem {
                     }
                   }
                 }catch(e){
-                  console.error(e);
+                  log.error(e instanceof Error ? e : String(e));
                 }
               }
               resolve(files);
@@ -422,7 +427,7 @@ export class ProjectFileSystem {
   }
 
   // Override readdir_web to use project directory handle
-  private static async readdir_web_project(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = [], dirbase: string = ''): Promise<string[]> {
+  private static async readdir_web_project(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: IGameFileSystemReadDirOptions = {},  files: string[] = [], dirbase: string = ''): Promise<string[]> {
     try{
       let dirHandle: FileSystemDirectoryHandle | undefined;
       if(typeof pathOrHandle === 'string'){
@@ -480,7 +485,7 @@ export class ProjectFileSystem {
       return files;
 
     }catch(e){
-      console.error(e);
+      log.error(e instanceof Error ? e : String(e));
       if(typeof pathOrHandle === 'string'){
         throw new Error('Failed to resolve directory inside project folder: '+pathOrHandle);
       }else{
@@ -497,7 +502,7 @@ export class ProjectFileSystem {
     return new Promise<boolean>( (resolve, reject) => {
       fs.stat(path.join(this.rootDirectoryPath, resource_path), (err, stats) => {
         if(err){
-          console.error(err);
+          log.error(err instanceof Error ? err : String(err));
           reject();
           return;
         }

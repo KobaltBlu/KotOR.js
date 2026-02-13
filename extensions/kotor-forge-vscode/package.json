@@ -25,10 +25,7 @@
     "nwscript",
     "bioware"
   ],
-  "activationEvents": [
-    "onCustomEditor:kotor.forge",
-    "onLanguage:nwscript"
-  ],
+  "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
     "customEditors": [
@@ -78,6 +75,35 @@
           { "filenamePattern": "*.wok" }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "kotor.forge.gff",
+        "displayName": "KotOR Forge (Generic GFF)",
+        "selector": [
+          { "filenamePattern": "*.are" },
+          { "filenamePattern": "*.bic" },
+          { "filenamePattern": "*.dlg" },
+          { "filenamePattern": "*.fac" },
+          { "filenamePattern": "*.gff" },
+          { "filenamePattern": "*.git" },
+          { "filenamePattern": "*.gui" },
+          { "filenamePattern": "*.ifo" },
+          { "filenamePattern": "*.jrl" },
+          { "filenamePattern": "*.ltr" },
+          { "filenamePattern": "*.pth" },
+          { "filenamePattern": "*.res" },
+          { "filenamePattern": "*.utc" },
+          { "filenamePattern": "*.utd" },
+          { "filenamePattern": "*.ute" },
+          { "filenamePattern": "*.uti" },
+          { "filenamePattern": "*.utm" },
+          { "filenamePattern": "*.utp" },
+          { "filenamePattern": "*.uts" },
+          { "filenamePattern": "*.utt" },
+          { "filenamePattern": "*.utw" },
+          { "filenamePattern": "*.vis" }
+        ],
+        "priority": "option"
       }
     ],
     "languages": [

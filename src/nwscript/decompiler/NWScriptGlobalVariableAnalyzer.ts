@@ -1,9 +1,11 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScript } from "../NWScript";
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
+import type { NWScript } from "../NWScript";
+import type { NWScriptInstruction } from "../NWScriptInstruction";
 import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_CPDOWNBP, OP_MOVSP, OP_NEG, OP_ACTION, OP_SAVEBP, OP_JSR, OP_RESTOREBP, OP_RETN } from '../NWScriptOPCodes';
+
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
 import { EdgeType } from './NWScriptEdge';
 
 /**
@@ -12,7 +14,7 @@ import { EdgeType } from './NWScriptEdge';
 export interface NWScriptGlobalInit {
   offset: number; // BP offset for the global variable
   dataType: NWScriptDataType;
-  initialValue: any;
+  initialValue: number | string | boolean;
   hasInitializer: boolean; // Whether this variable has an explicit initializer
   instructionAddress: number; // Address of the RSADD instruction
 }
@@ -150,7 +152,7 @@ export class NWScriptGlobalVariableAnalyzer {
 
       // Check CPDOWNSP parameters
       // CPDOWNSP FFFFFFF8 means offset -8 (writing to the space reserved by RSADD)
-      // The offset is a signed 32-bit integer, so 0xFFFFFFF8 is -8
+      // The offset is a signed 32-bit integer (e.g. -8)
       const cpdownspOffset = cpdownsp.offset;
       const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
       if (cpdownspOffsetSigned !== -8 || cpdownsp.size !== 4) continue;
@@ -389,7 +391,7 @@ export class NWScriptGlobalVariableAnalyzer {
     }
 
     // Extract value from CONST instruction
-    let initialValue: any;
+    let initialValue: number | string | undefined;
     let hasInitializer = true;
     
     switch (constInstr.type) {

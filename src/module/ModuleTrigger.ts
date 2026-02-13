@@ -1,19 +1,26 @@
 import { ModuleObject } from "./ModuleObject";
+
 import { GFFObject } from "../resource/GFFObject";
+
 import * as THREE from "three";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { GameState } from "../GameState";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { ConfigClient } from "../utility/ConfigClient";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { EngineMode } from "../enums/engine/EngineMode";
+
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleDoorAnimState, SignalEventType } from "../enums";
+import { EngineMode } from "../enums/engine/EngineMode";
+
+
+const log = createScopedLogger(LogScope.Module);
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { GFFField } from "../resource/GFFField";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
+import { ConfigClient } from "../utility/ConfigClient";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
@@ -117,13 +124,13 @@ export class ModuleTrigger extends ModuleObject {
   getCurrentRoom(){
     let _distance = 1000000000;
     for(let i = 0; i < GameState.module.area.rooms.length; i++){
-      let room = GameState.module.area.rooms[i];
-      let model = room.model;
+      const room = GameState.module.area.rooms[i];
+      const model = room.model;
       if(model instanceof OdysseyModel3D){
-        let pos = this.position.clone();
+        const pos = this.position.clone();
         if(model.box.containsPoint(pos)){
-          let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
-          let distance = pos.distanceTo(roomCenter);
+          const roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
+          const distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
             _distance = distance;
             this.attachToRoom(room);
@@ -143,7 +150,7 @@ export class ModuleTrigger extends ModuleObject {
       trigGeom.setIndex(triangles.flat());
       trigGeom.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
     }catch(e){
-      console.error('ModuleTrigger', 'Failed to generate faces', {
+      log.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
         error: e
       })
@@ -169,7 +176,7 @@ export class ModuleTrigger extends ModuleObject {
         this.initObjectsInside();
         this.loadTrap();
       }else{
-        console.error('Failed to load ModuleTrigger template');
+        log.error('Failed to load ModuleTrigger template');
         if(this.template instanceof GFFObject){
           this.initProperties();
           this.loadScripts();
@@ -211,9 +218,9 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   buildGeometry(){
-    let trigGeom = this.getGeometry();
+    const trigGeom = this.getGeometry();
 
-    let material = new THREE.MeshBasicMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: new THREE.Color( 0xFFFFFF ),
       side: THREE.DoubleSide
     });
@@ -418,11 +425,11 @@ export class ModuleTrigger extends ModuleObject {
 
   onEnter(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger.onEnter', this.type,  this.getTag());
+    log.info('ModuleTrigger.onEnter', this.type,  this.getTag());
     if(this.type == ModuleTriggerType.TRAP && !this.trapTriggered){
       if(object.isHostile(this)){
         this.trapTriggered = true;
-        console.log('ModuleTrigger.onEnter', 'Trap Triggered')
+        log.info('ModuleTrigger.onEnter', 'Trap Triggered')
         const event = new GameState.GameEventFactory.EventSignalEvent();
         event.setCaller(object);
         event.setObject(this);
@@ -438,7 +445,7 @@ export class ModuleTrigger extends ModuleObject {
       return;
     }
 
-    console.log('ModuleTrigger', this.getTag(), 'enter 1')
+    log.info('ModuleTrigger', this.getTag(), 'enter 1')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -450,7 +457,7 @@ export class ModuleTrigger extends ModuleObject {
 
   onExit(object?: ModuleObject){
     if(!object){ return; }
-    console.log('ModuleTrigger', this.getTag(), 'exit')
+    log.info('ModuleTrigger', this.getTag(), 'exit')
     const event = new GameState.GameEventFactory.EventSignalEvent();
     event.setCaller(object);
     event.setObject(this);
@@ -520,7 +527,7 @@ export class ModuleTrigger extends ModuleObject {
 
       //Push verticies
       for(let i = 0; i < this.geometry.length; i++){
-        let tgv = this.geometry[i];
+        const tgv = this.geometry[i];
         this.vertices[i] = new THREE.Vector3( 
           tgv.getFieldByLabel('PointX').getValue(),
           tgv.getFieldByLabel('PointY').getValue(),
@@ -617,10 +624,10 @@ export class ModuleTrigger extends ModuleObject {
       this.zOrientation = this.template.RootNode.getFieldByLabel('ZOrientation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      //log.info(localBools);
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -653,19 +660,19 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTT ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
+    const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue( this.commandable );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue(this.creatorId ?? 0x7f000000);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cursor') ).setValue(this.cursor);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
 
-    let geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
+    const geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){
-      let vertStruct = new GFFStruct();
+      const vertStruct = new GFFStruct();
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointX') ).setValue(this.vertices[i].x);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointY') ).setValue(this.vertices[i].y);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointZ') ).setValue(this.vertices[i].z);
@@ -689,7 +696,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Scripts

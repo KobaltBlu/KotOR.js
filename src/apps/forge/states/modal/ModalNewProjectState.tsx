@@ -1,8 +1,15 @@
-import React from "react";
-import { ModalNewProject } from "../../components/modal/ModalNewProject";
-import { ModalState } from "./ModalState";
-import * as KotOR from "../../KotOR";
 import path from "path";
+
+import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
+import React from "react";
+
+import { ModalNewProject } from "../../components/modal/ModalNewProject";
+
+import * as KotOR from "../../KotOR";
+
+import { ModalState } from "./ModalState";
+
+const log = createScopedLogger(LogScope.Forge);
 
 type GameModule = {
   moduleName: string;
@@ -76,7 +83,7 @@ const loadGameModules = async () => {
       GameModules.set(moduleName, gameModule);
       results.push(gameModule);
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
     }
   }
   return results;

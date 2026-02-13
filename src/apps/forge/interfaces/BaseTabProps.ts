@@ -1,4 +1,5 @@
 import type React from "react";
+
 import { TabState } from "../states/tabs";
 
 export interface BaseTabProps {

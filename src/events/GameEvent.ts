@@ -1,6 +1,6 @@
 
-import { GameState } from "../GameState";
 import { ModuleObjectType } from "../enums";
+import { GameState } from "../GameState";
 import type { ModuleObject } from "../module/ModuleObject";
 import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
@@ -74,7 +74,7 @@ export class GameEvent {
 
   }
 
-  export(): any {
+  export(): Record<string, unknown> | GFFStruct | undefined {
     return undefined;
   }
 

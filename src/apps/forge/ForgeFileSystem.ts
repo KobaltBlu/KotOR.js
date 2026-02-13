@@ -1,5 +1,11 @@
 import * as fs from "fs";
+
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import * as KotOR from "./KotOR";
+
+const log = createScopedLogger(LogScope.Forge);
+
 /** Electron dialog when ENV is ELECTRON; provided by preload. */
 declare const dialog: {
   showOpenDialog: (options: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[]; properties?: string[]; message?: string; securityScopedBookmarks?: boolean }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
@@ -81,10 +87,10 @@ export class ForgeFileSystem {
             paths: [],
             multiple: options.multiple,
           });
-          // console.log(result.canceled);
-          // console.log(result.filePaths);
+          // log.info(result.canceled);
+          // log.info(result.filePaths);
         }).catch( (e: unknown) => {
-          console.error(e);
+          log.error(String(e), e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_PATH_STRING,
             paths: [],
@@ -111,7 +117,7 @@ export class ForgeFileSystem {
             multiple: options.multiple,
           });
         }).catch((e: unknown) => {
-          console.error(e);
+          log.error(String(e), e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
             handles: [],
@@ -131,7 +137,7 @@ export class ForgeFileSystem {
       const response = await ForgeFileSystem.OpenFile(options);
       return await ForgeFileSystem.ReadFileBufferFromResponse(response);
     }catch(e: unknown){
-      console.error(e);
+      log.error(String(e), e);
     }
     return new Uint8Array(0);
   }
@@ -153,7 +159,7 @@ export class ForgeFileSystem {
         }
       }
     } catch (e: unknown) {
-      console.error(e);
+      log.error(String(e), e);
     }
     return new Uint8Array(0);
   }
@@ -170,9 +176,9 @@ export class ForgeFileSystem {
           title: 'Open Directory',
           // filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
           properties: ['createDirectory', 'openDirectory'],
-        }).then( (result: any) => {
+        }).then( (result: { canceled?: boolean; filePaths?: string[] }) => {
           if(!result.canceled){
-            if(result.filePaths.length){
+            if(result.filePaths?.length){
               resolve({
                 type: ForgeFileSystemResponseType.FILE_PATH_STRING,
                 paths: result.filePaths as string[],
@@ -186,10 +192,10 @@ export class ForgeFileSystem {
             paths: [],
             multiple: false,
           });
-          // console.log(result.canceled);
-          // console.log(result.filePaths);
+          // log.info(result.canceled);
+          // log.info(result.filePaths);
         }).catch( (e: unknown) => {
-          console.error(e);
+          log.error(String(e), e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_PATH_STRING,
             paths: [],
@@ -214,7 +220,7 @@ export class ForgeFileSystem {
             multiple: options.multiple,
           });
         }).catch((e: unknown) => {
-          console.error(e);
+          log.error(String(e), e);
           resolve({
             type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
             handles: [],
@@ -267,10 +273,10 @@ export class ForgeFileSystem {
           message: options.message,
           securityScopedBookmarks: options.securityScopedBookmarks,
         });
-        console.log('result', result);
+        log.trace('result', result);
         cancelled = !!result.canceled;
         if(!cancelled){
-          if(result.filePaths.length){
+          if(result.filePaths?.length){
             return {
               type: responseType,
               path: result.filePaths[0],
@@ -279,7 +285,7 @@ export class ForgeFileSystem {
           }
         }
       }catch(e){
-        console.error(e);
+        log.error(String(e), e);
         cancelled = true;
       }
     }
@@ -289,7 +295,7 @@ export class ForgeFileSystem {
         const result = await window.showDirectoryPicker({
           mode: (options.mode || "readwrite") as FileSystemPermissionMode,
         });
-        console.log('result', result);
+        log.trace('result', result);
 
         if(result){
           return {
@@ -299,7 +305,7 @@ export class ForgeFileSystem {
           };
         }
       }catch(e){
-        console.error(e);
+        log.error(String(e), e);
         cancelled = true;
       }
     }
@@ -315,7 +321,11 @@ export class ForgeFileSystem {
 
 (window as Window & { ForgeFileSystem?: typeof ForgeFileSystem }).ForgeFileSystem = ForgeFileSystem
 
-export const supportedFilePickerTypes: any[] = [
+export interface FilePickerAcceptEntry {
+  description: string;
+  accept: { [key: string]: string[] };
+}
+export const supportedFilePickerTypes: FilePickerAcceptEntry[] = [
   {
     description: 'All Supported Formats',
     accept: {
@@ -486,7 +496,11 @@ export const supportedFilePickerTypes: any[] = [
   // },
 ];
 
-export const supportedFileDialogTypes: any[] = [
+export interface FileDialogFilterEntry {
+  name: string;
+  extensions: string[];
+}
+export const supportedFileDialogTypes: FileDialogFilterEntry[] = [
   {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'phn', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
   {name: 'TPC Image', extensions: ['tpc']},
   {name: 'TGA Image', extensions: ['tga']},

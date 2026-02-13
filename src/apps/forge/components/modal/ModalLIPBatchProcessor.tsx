@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { Modal, Button, Form, ListGroup } from "react-bootstrap";
-import { ModalLIPBatchProcessorState, AudioFileEntry } from "../../states/modal/ModalLIPBatchProcessorState";
-import { ForgeFileSystem } from "../../ForgeFileSystem";
-import { processAudioToLIP } from "../../helpers/LIPBatchProcessor";
-import * as KotOR from "../../KotOR";
 import * as fs from "fs";
+
+import React, { useEffect, useState } from "react";
+import { Modal, Button, Form, ListGroup } from "react-bootstrap";
+
+import { processAudioToLIP } from "../../helpers/LIPBatchProcessor";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
+import { ModalLIPBatchProcessorState, AudioFileEntry } from "../../states/modal/ModalLIPBatchProcessorState";
+
+import { ForgeFileSystem } from "../../ForgeFileSystem";
+import * as KotOR from "../../KotOR";
 
 export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
   const modal = props.modal as ModalLIPBatchProcessorState;
@@ -49,7 +52,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
       ext: [".wav", ".mp3"],
     });
     const entries: AudioFileEntry[] = [];
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         for (const p of response.paths) {
           const name = p.split(/[/\\]/).pop() || "unknown";
@@ -77,7 +80,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
 
   const handleBrowseOutput = async () => {
     const response = await ForgeFileSystem.OpenDirectory({});
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         modal.setOutputDir(response.paths[0]);
       }
@@ -105,7 +108,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
 
     for (const entry of modal.audioFiles) {
       let buf = entry.buffer;
-      if (!buf && entry.path && KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+      if (!buf && entry.path && KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
         try {
           const b = await fs.promises.readFile(entry.path);
           buf = b.buffer as ArrayBuffer;
@@ -135,7 +138,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
       const stem = entry.name.replace(/\.[^/.]+$/, "");
       const lipName = `${stem}.lip`;
 
-      if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON && modal.outputDirPath) {
+      if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON && modal.outputDirPath) {
         const sep = process?.platform === "win32" ? "\\" : "/";
         const outPath = `${modal.outputDirPath}${sep}${lipName}`;
         try {
@@ -147,7 +150,7 @@ export const ModalLIPBatchProcessor = (props: BaseModalProps) => {
       } else if (modal.outputDirHandle) {
         try {
           const ws = await (modal.outputDirHandle as FileSystemDirectoryHandle).getFileHandle(lipName, { create: true });
-          const writable = await (ws as any).createWritable?.();
+          const writable = await (ws as FileSystemFileHandle).createWritable?.();
           if (writable) {
             await writable.write(result.lipBuffer);
             await writable.close();

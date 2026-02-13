@@ -1,5 +1,6 @@
 import { GameEventType } from "../enums/events/GameEventType";
 import { GFFStruct } from "../resource/GFFStruct";
+
 import { EventApplyEffect } from "./EventApplyEffect";
 import { EventAquireItem } from "./EventAquireItem";
 import { EventAreaTransition } from "./EventAreaTransition";
@@ -67,18 +68,18 @@ export class GameEventFactory {
   static EventAreaTransition: typeof EventAreaTransition = EventAreaTransition;
   static EventControllerRumble: typeof EventControllerRumble = EventControllerRumble;
 
-  static EventFromStruct( struct: GFFStruct ): GameEvent {
-    if(!struct){ return undefined as any; }
-    let event: GameEvent = undefined as any;
+  static EventFromStruct( struct: GFFStruct ): GameEvent | undefined {
+    if(!struct){ return undefined; }
+    let event: GameEvent | undefined = undefined;
 
-    let eType: GameEventType = struct.getFieldByLabel('EventId').getValue();
-    let eObjectId = struct.getFieldByLabel('ObjectId').getValue();
-    let eCallerId = struct.getFieldByLabel('CallerId').getValue();
-    let eDay = struct.getFieldByLabel('Day').getValue();
-    let eTime = struct.getFieldByLabel('Time').getValue();
+    const eType = struct.getNumberByLabel('EventId') as GameEventType;
+    const eObjectId = struct.getNumberByLabel('ObjectId');
+    const eCallerId = struct.getNumberByLabel('CallerId');
+    const eDay = struct.getNumberByLabel('Day');
+    const eTime = struct.getNumberByLabel('Time');
 
-    let eventDataField = struct.getFieldByLabel('EventData');
-    let eventData: GFFStruct = undefined as any;
+    const eventDataField = struct.getFieldByLabel('EventData');
+    let eventData: GFFStruct | undefined = undefined;
     if(eventDataField){
       eventData = eventDataField.getChildStructs()[0];
     }
@@ -167,7 +168,7 @@ export class GameEventFactory {
         event = new EventControllerRumble();
       break;
       default:
-        event = undefined as any;
+        event = undefined;
       break;
     }
 
@@ -182,7 +183,7 @@ export class GameEventFactory {
       }
     }
 
-    return event;
+    return event ?? undefined;
   }
 
 }

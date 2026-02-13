@@ -15,10 +15,10 @@ export class SWCreatureSpeed {
   }
 
   getTwoDAName(){
-    return !!this.twoDAName ? this.twoDAName : this.label;
+    return this.twoDAName ? this.twoDAName : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWCreatureSpeed {
     const creatureSpeed = new SWCreatureSpeed();
     creatureSpeed.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     creatureSpeed.label = TwoDAObject.normalizeValue(row.label, 'string', '');

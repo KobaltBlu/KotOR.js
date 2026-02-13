@@ -1,29 +1,33 @@
-/* eslint-disable no-console */
 import React from "react";
-
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./";
 import * as THREE from 'three';
-import * as KotOR from '../../KotOR';
-import { Project } from "../../Project";
-import { ForgeArea } from "../../module-editor/ForgeArea";
-import { ForgeModule } from "../../module-editor/ForgeModule";
+
 import { TabModuleEditor } from "../../components/tabs/tab-module-editor/TabModuleEditor";
-import { ForgeGameObject } from "../../module-editor/ForgeGameObject";
-import { ForgeCreature } from "../../module-editor/ForgeCreature";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeArea } from "../../module-editor/ForgeArea";
 import { ForgeCamera } from "../../module-editor/ForgeCamera";
+import { ForgeCreature } from "../../module-editor/ForgeCreature";
 import { ForgeDoor } from "../../module-editor/ForgeDoor";
 import { ForgeEncounter } from "../../module-editor/ForgeEncounter";
+import { ForgeGameObject } from "../../module-editor/ForgeGameObject";
 import { ForgeItem } from "../../module-editor/ForgeItem";
+import { ForgeModule } from "../../module-editor/ForgeModule";
 import { ForgePlaceable } from "../../module-editor/ForgePlaceable";
+import { ForgeRoom } from "../../module-editor/ForgeRoom";
 import { ForgeSound } from "../../module-editor/ForgeSound";
 import { ForgeStore } from "../../module-editor/ForgeStore";
 import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
-import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
 import { ForgeState } from "../../states/ForgeState";
-import { ForgeRoom } from "../../module-editor/ForgeRoom";
+import { ModalBlueprintBrowserState, BlueprintType } from "../../states/modal/ModalBlueprintBrowserState";
+
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+import * as KotOR from '../../KotOR';
+import { Project } from "../../Project";
 import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "../../UI3DRenderer";
+
+import { TabState } from "./";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
@@ -31,7 +35,7 @@ export enum TabModuleEditorControlMode {
   ROTATE_CONTROL = 3,
   SCALE_CONTROL = 4,
   ADD_GAME_OBJECT = 5
-};
+}
 
 export enum GameObjectType {
   ROOM = 'room',
@@ -45,7 +49,7 @@ export enum GameObjectType {
   STORE = 'store',
   TRIGGER = 'trigger',
   WAYPOINT = 'waypoint'
-};
+}
 
 export class TabModuleEditorState extends TabState {
 
@@ -351,7 +355,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   onSelect(gameObject: ForgeGameObject | THREE.Object3D | undefined){
-    console.log('onSelect', gameObject);
+    log.trace('onSelect', gameObject);
 
     // Check if a vertex helper was selected
     if(gameObject instanceof THREE.Mesh && gameObject.userData?.vertexIndex !== undefined){
@@ -429,7 +433,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   selectGameObject(gameObject: ForgeGameObject | undefined){
-    console.log('selectGameObject', gameObject);
+    log.trace('selectGameObject', gameObject);
     this.selectedGameObject = gameObject;
     this.ui3DRenderer.transformControls.detach();
 
@@ -483,7 +487,7 @@ export class TabModuleEditorState extends TabState {
 
     const gameObject = this.createGameObject(this.selectedGameObjectType);
     if(!gameObject){
-      console.error(`Failed to create game object of type: ${this.selectedGameObjectType}`);
+      log.error(`Failed to create game object of type: ${this.selectedGameObjectType}`);
       return;
     }
 
@@ -628,14 +632,14 @@ export class TabModuleEditorState extends TabState {
       case GameObjectType.WAYPOINT:
         return new ForgeWaypoint();
       default:
-        console.error(`Unknown game object type: ${type}`);
+        log.error(`Unknown game object type: ${type}`);
         return null;
     }
   }
 
   //This should only be used inside KotOR Forge
   static async FromProject(project: Project): Promise<ForgeModule | undefined> {
-    console.log('BuildFromExisting', project);
+    log.trace('BuildFromExisting', project);
     if(!project){
       return undefined;
     }
@@ -648,7 +652,7 @@ export class TabModuleEditorState extends TabState {
      */
     const ifoFile = await project.module_ifo?.readFile();
     if(!ifoFile){
-      console.error('IFO file not found');
+      log.error('IFO file not found');
       return undefined;
     }
     const ifo = new KotOR.GFFObject(ifoFile.buffer);
@@ -660,7 +664,7 @@ export class TabModuleEditorState extends TabState {
      */
     const areFile = await project.module_are?.readFile();
     if(!areFile){
-      console.error('ARE file not found');
+      log.error('ARE file not found');
       return undefined;
     }
     const are = new KotOR.GFFObject(areFile.buffer);
@@ -670,7 +674,7 @@ export class TabModuleEditorState extends TabState {
      */
     const gitFile = await project.module_git?.readFile();
     if(!gitFile){
-      console.error('GIT file not found');
+      log.error('GIT file not found');
       return undefined;
     }
     const git = new KotOR.GFFObject(gitFile.buffer);

@@ -1,4 +1,5 @@
 import type { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
+
 import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
 
 /**

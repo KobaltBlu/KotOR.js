@@ -1,16 +1,21 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GameState } from "../GameState";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
+
 import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
+import { IModelListItem } from "../interface/module/minigame/IModelListItem";
+import { MDLLoader } from "../loaders";
+import { NWScript } from "../nwscript/NWScript";
+import { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
+import { GFFObject } from "../resource/GFFObject";
+import { OdysseyModel3D } from "../three/odyssey";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import { ModuleMGGunBank } from "./ModuleMGGunBank";
+import { ModuleObject } from "./ModuleObject";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
 * ModuleMGEnemy class.
@@ -42,17 +47,17 @@ export class ModuleMGEnemy extends ModuleObject {
   sphere_geom: THREE.Mesh;
   sphere_radius: number;
   hit_points: number;
-  died: any;
+  died: boolean;
   invince_period: number;
-  accel_secs: any;
-  bump_damage: any;
-  cameraName: any;
-  cameraRotate: any;
-  max_hps: any;
-  maximum_speed: any;
-  minimum_speed: any;
-  num_loops: any;
-  trackName: any;
+  accel_secs: number;
+  bump_damage: number;
+  cameraName: string;
+  cameraRotate: number;
+  max_hps: number;
+  maximum_speed: number;
+  minimum_speed: number;
+  num_loops: number;
+  trackName: string;
 
   collided: boolean = false;
 
@@ -73,7 +78,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.invince = 0;
 
     this.box = new THREE.Box3();
-    this.model = this.container as any;
+    this.model = this.container as THREE.Object3D;
 
     this.alive = true;
 
@@ -118,7 +123,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
 
     for (let i = 0; i < this.models.length; i++) {
-      let child_model = this.models[i];
+      const child_model = this.models[i];
       if (child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible) {
 
         if (this.hit_points > 0) {
@@ -140,7 +145,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
     if (this.hit_points <= 0 && this.alive) {
       this.alive = false;
-      console.log('MGEnemy death', this);
+      log.debug('MGEnemy death', this);
       const onDeath = this.scripts[ModuleObjectScript.MGEnemyOnDeath];
       if (onDeath) {
         onDeath.run(this);
@@ -206,7 +211,7 @@ export class ModuleMGEnemy extends ModuleObject {
       const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
       if (anim) {
         if (n3) {
-          console.log(anim);
+          log.trace('playAnimation anim', anim);
           const animManager = new OdysseyModelAnimationManager(model);
           const state = animManager.createAnimationState();
           state.loop = true;
@@ -225,10 +230,10 @@ export class ModuleMGEnemy extends ModuleObject {
     for (let i = 0; i < this.models.length; i++) {
       model = this.models[i];
       if (model instanceof OdysseyModel3D) {
-        let anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
+        const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
 
         if (anim) {
-          let animLoopIdx = model.animLoops.indexOf(anim);
+          const animLoopIdx = model.animLoops.indexOf(anim);
           if (animLoopIdx >= 0) {
             model.animLoops.splice(animLoopIdx, 1);
           }
@@ -278,7 +283,7 @@ export class ModuleMGEnemy extends ModuleObject {
           this.onAnimEvent();
         });
       } catch (e) {
-        console.error(e);
+        log.error(e instanceof Error ? e : String(e));
       }
     }
   }
@@ -378,7 +383,7 @@ export class ModuleMGEnemy extends ModuleObject {
         if (!resRef) { continue; }
         const nwscript = GameState.NWScript.Load(resRef);
         if (!nwscript) {
-          console.warn(`ModuleMGEnemy.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+          log.warn(`loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
           continue;
         }
         nwscript.caller = this;
@@ -426,9 +431,9 @@ export class ModuleMGEnemy extends ModuleObject {
 
 
     if (this.template.RootNode.hasField('Models')) {
-      let models = this.template.getFieldByLabel('Models').getChildStructs();
+      const models = this.template.getFieldByLabel('Models').getChildStructs();
       for (let i = 0; i < models.length; i++) {
-        let modelStruct = models[i];
+        const modelStruct = models[i];
         this.modelProps.push({
           model: modelStruct.getFieldByLabel('Model').getValue(),
           rotating: modelStruct.getFieldByLabel('RotatingModel').getValue() ? true : false

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { Modal, Button, Form } from "react-bootstrap";
-import { ModalSaveToModuleState } from "../../states/modal/ModalSaveToModuleState";
-import { ForgeFileSystem } from "../../ForgeFileSystem";
+
 import { SaveDestination } from "../../enum/SaveDestination";
 import { saveResourceToOverride } from "../../helpers/SaveToOverride";
 import { saveResourceToRim } from "../../helpers/SaveToRim";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
+import { ModalSaveToModuleState } from "../../states/modal/ModalSaveToModuleState";
+
+import { ForgeFileSystem } from "../../ForgeFileSystem";
 import * as KotOR from "../../KotOR";
 
 export const ModalSaveToModule = (props: BaseModalProps) => {
@@ -51,7 +53,7 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
 
   const handleBrowse = async () => {
     const response = await ForgeFileSystem.OpenFile({ ext: [".mod"] });
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
       if (response.paths && response.paths.length > 0) {
         modal.setModPath(response.paths[0]);
         setModPath(response.paths[0]);
@@ -72,8 +74,8 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
   };
 
   const handleBrowseOverride = async () => {
-    if (KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
-      const dialog = (window as any).dialog;
+    if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+      const dialog = (window as Window & { dialog?: { showOpenDialog: (opts: { title?: string; properties?: string[] }) => Promise<{ canceled?: boolean; filePaths?: string[] }> } }).dialog;
       if (!dialog?.showOpenDialog) return;
       const result = await dialog.showOpenDialog({
         title: "Choose Override folder",
@@ -98,11 +100,11 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
   };
 
   const handleBrowseRim = async () => {
-    if (KotOR.ApplicationProfile.ENV !== (KotOR as any).ApplicationEnvironment.ELECTRON) {
+    if (KotOR.ApplicationProfile.ENV !== KotOR.ApplicationEnvironment.ELECTRON) {
       modal.setError("Save to RIM requires Electron.");
       return;
     }
-    const dialog = (window as any).dialog;
+    const dialog = (window as Window & { dialog?: { showSaveDialog: (opts: { title?: string; defaultPath?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ canceled?: boolean; filePath?: string }> } }).dialog;
     if (!dialog?.showSaveDialog) return;
     const result = await dialog.showSaveDialog({
       title: "Save as RIM",
@@ -195,8 +197,8 @@ export const ModalSaveToModule = (props: BaseModalProps) => {
       await erf.load();
       erf.addResource(targetResref, modal.resType, modal.data);
       const outBuffer = erf.getExportBuffer();
-      const fs = (typeof require !== "undefined" && require("fs")) || (typeof window !== "undefined" && (window as any).require?.("fs"));
-      if (fs?.promises?.writeFile && KotOR.ApplicationProfile.ENV === (KotOR as any).ApplicationEnvironment.ELECTRON) {
+      const fs = (typeof require !== "undefined" && require("fs")) || (typeof window !== "undefined" && (window as Window & { require?: (id: string) => { promises?: { writeFile: (path: string, data: Buffer) => Promise<void> } } }).require?.("fs"));
+      if (fs?.promises?.writeFile && KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
         const path = modal.modPath;
         if (path) {
           await fs.promises.writeFile(path, Buffer.from(outBuffer));

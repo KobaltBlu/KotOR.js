@@ -1,11 +1,14 @@
 import React from "react";
-import { TabState } from "./TabState";
+import * as THREE from 'three';
+
+import { TabUTWEditor } from "../../components/tabs/tab-utw-editor/TabUTWEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTWEditor } from "../../components/tabs/tab-utw-editor/TabUTWEditor";
-import { ForgeWaypoint } from "../../module-editor/ForgeWaypoint";
+
+import { TabState } from "./TabState";
 
 export class TabUTWEditorState extends TabState {
   tabName: string = `UTW`;

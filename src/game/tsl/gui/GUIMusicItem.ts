@@ -1,6 +1,9 @@
 import { GameState } from "../../../GameState";
 import { GUIProtoItem } from "../../../gui";
 import type { GameMenu, GUIControl } from "../../../gui";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GFFStruct } from "../../../resource/GFFStruct";
 
 /**
@@ -26,7 +29,7 @@ export class GUIMusicItem extends GUIProtoItem {
       super.createControl();
       this.setText(GameState.TLKManager.GetStringById(this.node.strrefname).Value);
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
   }

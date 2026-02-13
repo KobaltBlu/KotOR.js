@@ -1,4 +1,5 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
+
 import { NWScriptEvent } from "./NWScriptEvent";
 
 /**

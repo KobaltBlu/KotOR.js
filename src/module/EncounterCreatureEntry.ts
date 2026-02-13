@@ -19,7 +19,7 @@ export class EncounterCreatureEntry {
   singleSpawn = 0;
 
   save(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     //struct.addField( new GFFField(GFFDataType.INT, 'Appearance') ).setValue(this.appearance);
     struct.addField( new GFFField(GFFDataType.RESREF, 'ResRef') ).setValue(this.resref);
@@ -31,7 +31,7 @@ export class EncounterCreatureEntry {
 
   static FromStruct( struct: GFFStruct ){
     if(struct instanceof GFFStruct){
-      let entry = new EncounterCreatureEntry();
+      const entry = new EncounterCreatureEntry();
       if(struct.hasField('Appearance'))
         entry.appearance = struct.getFieldByLabel('Appearance').getValue();
 

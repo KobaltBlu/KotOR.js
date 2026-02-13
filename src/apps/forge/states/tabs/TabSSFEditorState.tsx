@@ -1,9 +1,11 @@
 import React from "react";
+
 import { TabSSFEditor } from "../../components/tabs/tab-ssf-editor/TabSSFEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
-import { BinaryWriter } from "../../../../utility/binary/BinaryWriter";
+
+import { TabState } from "./TabState";
 
 export class TabSSFEditorState extends TabState {
   tabName: string = 'SSF Editor';
@@ -38,18 +40,8 @@ export class TabSSFEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(this.ssf){
-      // Export SSF back to binary
-      const writer = new BinaryWriter();
-      writer.writeChars(this.ssf.FileType);
-      writer.writeChars(this.ssf.FileVersion);
-      writer.writeUInt32(12); // unknown constant
-
-      for(const soundRef of this.ssf.sound_refs){
-        writer.writeUInt32(soundRef);
-      }
-
-      return new Uint8Array(writer.buffer);
+    if (this.ssf) {
+      return this.ssf.toBuffer();
     }
     return new Uint8Array(0);
   }
@@ -58,7 +50,7 @@ export class TabSSFEditorState extends TabState {
     // SSF changes are already in ssf.sound_refs array
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

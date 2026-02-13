@@ -1,10 +1,11 @@
-import { TwoDAObject } from "../resource/TwoDAObject";
-// import { TwoDAManager } from "../managers";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { WeaponType } from "../enums/combat/WeaponType";
-import { WeaponSize } from "../enums/combat/WeaponSize";
 import { DiceType } from "../enums/combat/DiceType";
+import { WeaponSize } from "../enums/combat/WeaponSize";
+import { WeaponType } from "../enums/combat/WeaponType";
+import { WeaponWield } from "../enums/combat/WeaponWield";
 import { GameState } from "../GameState";
+import { TwoDAObject } from "../resource/TwoDAObject";
+import type { ITwoDARowData } from "../resource/TwoDAObject";
+// import { TwoDAManager } from "../managers";
 
 /**
  * BaseItem class.
@@ -116,11 +117,11 @@ export class BaseItem {
   static From2DA (baseItemId: number = -1): BaseItem {
     const baseItem = new BaseItem();
 
-    let row: any = {};
+    let row: ITwoDARowData | Record<string, string | number> = {};
     if(baseItemId >= 0){
       const datatable = GameState.TwoDAManager.datatables.get('baseitems');
       if(datatable){
-        row = datatable.getRowByIndex(baseItemId);
+        row = datatable.getRowByIndex(baseItemId) ?? row;
       }
     }
     
@@ -141,7 +142,7 @@ export class BaseItem {
     if(row.hasOwnProperty('genderspecific'))
       baseItem.genderSpecific = TwoDAObject.normalizeValue(row.genderspecific, 'number', 0) as number;
     if(row.hasOwnProperty('partenvmap'))
-      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', 0) as boolean;
+      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', false) as boolean;
     if(row.hasOwnProperty('defaultmodel'))
       baseItem.defaultModel = TwoDAObject.normalizeValue(row.defaultmodel, 'string', 'I_Null') as string;
     if(row.hasOwnProperty('defaulticon'))
@@ -167,7 +168,7 @@ export class BaseItem {
     if(row.hasOwnProperty('maxrange'))
       baseItem.maxRange = TwoDAObject.normalizeValue(row.maxrange, 'number', 100) as number;
     if(row.hasOwnProperty('bloodcolr'))
-      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as any;
+      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as BaseItem['bloodColor'];
     if(row.hasOwnProperty('numdice'))
       baseItem.numDice = TwoDAObject.normalizeValue(row.numdice, 'number', 0) as number;
     if(row.hasOwnProperty('dietoroll'))
@@ -233,7 +234,7 @@ export class BaseItem {
     if(row.hasOwnProperty('itemtype'))
       baseItem.itemType = TwoDAObject.normalizeValue(row.itemtype, 'number', 0) as number;
     if(row.hasOwnProperty('bodyvar'))
-      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as any;
+      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as BaseItem['bodyVar'];
     if(row.hasOwnProperty('specfeat'))
       baseItem.specFeat = TwoDAObject.normalizeValue(row.specfeat, 'number', -1) as number;
     if(row.hasOwnProperty('focfeat'))

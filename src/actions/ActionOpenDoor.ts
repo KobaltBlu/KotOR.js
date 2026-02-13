@@ -8,6 +8,7 @@ import type { ModuleDoor } from "../module/ModuleDoor";
 import type { ModuleObject } from "../module/ModuleObject";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
 
 /**
@@ -42,12 +43,12 @@ export class ActionOpenDoor extends Action {
       return ActionStatus.FAILED;
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
         this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

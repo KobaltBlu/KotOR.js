@@ -5,6 +5,7 @@ import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleItem } from "../module/ModuleItem";
 import { BitWise } from "../utility/BitWise";
+
 import { Action } from "./Action";
 
 /**

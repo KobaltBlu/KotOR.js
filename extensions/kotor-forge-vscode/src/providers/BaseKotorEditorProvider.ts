@@ -34,7 +34,7 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     openContext: { backupId?: string },
     _token: vscode.CancellationToken
   ): Promise<KotorDocument> {
-    log.trace(`openCustomDocument() uri=${uri.fsPath} backupId=${openContext.backupId ?? 'undefined'}`);
+    log.trace(`openCustomDocument() entered uri=${uri.fsPath} backupId=${openContext.backupId ?? 'undefined'}`);
     const document = await KotorDocument.create(uri, openContext.backupId, {
       getFileData: async () => {
         log.trace(`getFileData() delegated for ${document.uri.toString()}`);
@@ -49,7 +49,7 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
           type: 'getFileData'
         });
         log.trace(`getFileData() received ${response?.data?.length ?? 0} bytes`);
-        return new Uint8Array(response.data);
+        return new Uint8Array(response.data ?? []);
       }
     });
 
@@ -70,7 +70,7 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
       }
     }));
 
-    log.debug(`openCustomDocument() completed for ${uri.fsPath}`);
+    log.info(`openCustomDocument() completed for ${uri.fsPath} documentDataLength=${document.documentData.length}`);
     return document;
   }
 
@@ -82,9 +82,9 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
     webviewPanel: vscode.WebviewPanel,
     _token: vscode.CancellationToken
   ): Promise<void> {
-    log.debug(`resolveCustomEditor() uri=${document.uri.fsPath}`);
+    log.trace(`resolveCustomEditor() entered uri=${document.uri.fsPath}`);
     this.webviews.add(document.uri.toString(), webviewPanel);
-    log.trace(`resolveCustomEditor() webview added to collection for ${document.uri.toString()}`);
+    log.debug(`resolveCustomEditor() webview added uri=${document.uri.toString()}`);
 
     webviewPanel.webview.options = {
       enableScripts: true,
@@ -93,28 +93,31 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
         vscode.Uri.joinPath(this.context.extensionUri, 'media')
       ]
     };
-    log.trace('resolveCustomEditor() webview options set');
+    log.trace('resolveCustomEditor() webview options set (scripts, localResourceRoots)');
 
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview, document);
-    log.trace('resolveCustomEditor() HTML set');
+    log.debug('resolveCustomEditor() HTML set, webview will load and post ready');
 
     webviewPanel.webview.onDidReceiveMessage(e => this.onMessage(document, e));
 
     webviewPanel.webview.onDidReceiveMessage(async (e) => {
+      log.trace(`resolveCustomEditor() message from webview type=${e?.type}`);
       if (e.type === 'ready') {
-        log.trace(`webview ready, sending init: ${document.uri.fsPath}`);
+        log.info(`resolveCustomEditor() webview ready, sending init uri=${document.uri.fsPath}`);
         const extra = await this.getExtraInitData?.(document) ?? {};
         const editorType = this.getEditorTypeForDocument(document);
         const fileName = path.basename(document.uri.fsPath);
-        log.debug(`sending init editorType=${editorType} fileName=${fileName} fileDataLength=${document.documentData.length}`);
+        const logLevel = vscode.workspace.getConfiguration('kotorForge').get<string>('logLevel', 'info');
+        log.debug(`resolveCustomEditor() init payload editorType=${editorType} fileName=${fileName} fileDataLength=${document.documentData.length} extraKeys=${Object.keys(extra).join(',') || 'none'}`);
         this.postMessage(webviewPanel, {
           type: 'init',
           editorType,
           fileData: Array.from(document.documentData),
           fileName,
+          logLevel,
           ...extra
         });
-        log.trace('init message sent');
+        log.info(`resolveCustomEditor() init message sent; Forge will create tab and render editor`);
       }
     });
 
@@ -122,7 +125,7 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
       log.trace(`webviewPanel onDidDispose for ${document.uri.toString()}`);
       this.webviews.delete(document.uri.toString(), webviewPanel);
     });
-    log.debug(`resolveCustomEditor() completed for ${document.uri.fsPath}`);
+    log.trace(`resolveCustomEditor() completed for ${document.uri.fsPath}`);
   }
 
   private readonly _onDidChangeCustomDocument = new vscode.EventEmitter<vscode.CustomDocumentEditEvent<KotorDocument>>();
@@ -284,17 +287,17 @@ export abstract class BaseKotorEditorProvider implements vscode.CustomEditorProv
    * Handle messages from the webview
    */
   private async onMessage(document: KotorDocument, message: Record<string, unknown> & { type?: string; requestId?: number; buffer?: number[]; label?: string; data?: number[]; undoData?: unknown; redoData?: unknown; body?: unknown }) {
-    log.trace(`onMessage() uri=${document.uri.fsPath} type=${message?.type ?? 'undefined'} requestId=${message?.requestId ?? 'n/a'}`);
+    log.trace(`onMessage() received uri=${document.uri.fsPath} type=${message?.type ?? 'undefined'} requestId=${message?.requestId ?? 'n/a'}`);
     switch (message.type) {
       case 'requestSave':
-        log.debug(`onMessage requestSave uri=${document.uri.fsPath} bufferLength=${message.buffer?.length ?? 0}`);
+        log.info(`onMessage requestSave uri=${document.uri.fsPath} bufferLength=${message.buffer?.length ?? 0}`);
         try {
           const data = new Uint8Array(message.buffer || []);
           await vscode.workspace.fs.writeFile(document.uri, data);
           log.info(`requestSave completed uri=${document.uri.fsPath} bytes=${data.length}`);
           this.postMessageToWebviews(document, { type: 'saveComplete' });
         } catch (e) {
-          log.error(`requestSave failed: ${e}`);
+          log.error(`requestSave failed uri=${document.uri.fsPath}: ${e}`);
           this.postMessageToWebviews(document, { type: 'saveError', error: String(e) });
         }
         break;

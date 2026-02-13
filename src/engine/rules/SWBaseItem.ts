@@ -3,6 +3,7 @@ import { WeaponSize } from "../../enums/combat/WeaponSize";
 import { WeaponType } from "../../enums/combat/WeaponType";
 import { WeaponWield } from "../../enums/combat/WeaponWield";
 import { TwoDAObject } from "../../resource/TwoDAObject";
+import type { ITwoDARowData } from "../../resource/TwoDAObject";
 
 export class SWBaseItem {
   id: number = 0;
@@ -101,7 +102,7 @@ export class SWBaseItem {
     }
   }
 
-  static From2DA (row: any = {}): SWBaseItem {
+  static From2DA (row: ITwoDARowData | Record<string, string | number> = {}): SWBaseItem {
     const baseItem = new SWBaseItem();
     
     if(row.hasOwnProperty('__index'))
@@ -121,7 +122,7 @@ export class SWBaseItem {
     if(row.hasOwnProperty('genderspecific'))
       baseItem.genderSpecific = TwoDAObject.normalizeValue(row.genderspecific, 'number', 0) as number;
     if(row.hasOwnProperty('partenvmap'))
-      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', 0) as boolean;
+      baseItem.partEnvMap = TwoDAObject.normalizeValue(row.partenvmap, 'boolean', false) as boolean;
     if(row.hasOwnProperty('defaultmodel'))
       baseItem.defaultModel = TwoDAObject.normalizeValue(row.defaultmodel, 'string', 'I_Null') as string;
     if(row.hasOwnProperty('defaulticon'))
@@ -147,7 +148,7 @@ export class SWBaseItem {
     if(row.hasOwnProperty('maxrange'))
       baseItem.maxRange = TwoDAObject.normalizeValue(row.maxrange, 'number', 100) as number;
     if(row.hasOwnProperty('bloodcolr'))
-      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as any;
+      baseItem.bloodColor = TwoDAObject.normalizeValue(row.bloodcolr, 'string', '') as SWBaseItem['bloodColor'];
     if(row.hasOwnProperty('numdice'))
       baseItem.numDice = TwoDAObject.normalizeValue(row.numdice, 'number', 0) as number;
     if(row.hasOwnProperty('dietoroll'))
@@ -213,7 +214,7 @@ export class SWBaseItem {
     if(row.hasOwnProperty('itemtype'))
       baseItem.itemType = TwoDAObject.normalizeValue(row.itemtype, 'number', 0) as number;
     if(row.hasOwnProperty('bodyvar'))
-      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as any;
+      baseItem.bodyVar = TwoDAObject.normalizeValue(row.bodyvar, 'string', undefined) as SWBaseItem['bodyVar'];
     if(row.hasOwnProperty('specfeat'))
       baseItem.specFeat = TwoDAObject.normalizeValue(row.specfeat, 'number', -1) as number;
     if(row.hasOwnProperty('focfeat'))

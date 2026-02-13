@@ -1,13 +1,14 @@
+import type { ITwoDARowData } from "../../resource/TwoDAObject";
 import { TwoDAObject } from "../../resource/TwoDAObject";
 
 export class SWPortrait {
-  static portraits: any[] = [];
+  static portraits: ITwoDARowData[] = [];
   id: number;
   appearancenumber: number;
   baseresref: string;
   sex: number;
   race: number;
-  inanimatetype: any;
+  inanimatetype: string | number;
   plot: number;
   lowgore: number;
   appearance_s: number;
@@ -23,21 +24,21 @@ export class SWPortrait {
     const evilIndex = Math.floor(nGoodEvil/10);
     switch(evilIndex){
       case 0:
-        return !!this.baseresrefvvve ? this.baseresrefvvve : this.baseresref;
+        return this.baseresrefvvve ? this.baseresrefvvve : this.baseresref;
       case 1:
-        return !!this.baseresrefvve ? this.baseresrefvve : this.baseresref;
+        return this.baseresrefvve ? this.baseresrefvve : this.baseresref;
       case 2:
-        return !!this.baseresrefve ? this.baseresrefve : this.baseresref;
+        return this.baseresrefve ? this.baseresrefve : this.baseresref;
       case 3:
-        return !!this.baseresrefe ? this.baseresrefe : this.baseresref;
+        return this.baseresrefe ? this.baseresrefe : this.baseresref;
       case 4:
         return this.baseresref;
       default:
-        return this.baseresref; 
+        return this.baseresref;
     }
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}): SWPortrait {
     const portrait = new SWPortrait();
 
     if(row.hasOwnProperty('__index'))

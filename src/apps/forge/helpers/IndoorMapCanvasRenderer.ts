@@ -1,6 +1,5 @@
 import * as THREE from "three";
-import { IndoorMap, IndoorMapRoom } from "../data/IndoorMap";
-import { KitComponent } from "../data/IndoorKit";
+
 import {
   IndoorDragMode,
   INDOOR_BACKGROUND_COLOR,
@@ -25,6 +24,8 @@ import {
   INDOOR_WARP_POINT_COLOR,
   INDOOR_WARP_POINT_RADIUS,
 } from "../data/IndoorBuilderConstants";
+import { KitComponent } from "../data/IndoorKit";
+import { IndoorMap, IndoorMapRoom } from "../data/IndoorMap";
 import { clamp, toRadians } from "../data/IndoorTypes";
 
 type RendererOptions = {

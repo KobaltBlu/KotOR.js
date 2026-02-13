@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
+
 import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "../enums";
+import { GameState } from "../GameState";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import { BitWise } from "../utility/BitWise";
+
 import { Action } from "./Action";
 
 /**
@@ -38,9 +40,9 @@ export class ActionRandomWalk extends Action {
       return ActionStatus.FAILED;
     }
 
-    let run = false;
-    let maxDistance = 1.5;
-    let position = new THREE.Vector3();
+    const run = false;
+    const maxDistance = 1.5;
+    const position = new THREE.Vector3();
 
     const faces = owner.room.collisionManager.walkmesh.walkableFaces;
     const face = faces[Math.floor(Math.random()*faces.length)];

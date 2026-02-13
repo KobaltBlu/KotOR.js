@@ -1,10 +1,15 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react"
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
 import { useApp } from "../context/AppContext";
 import * as KotOR from "../KotOR";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
+
+const log = createScopedLogger(LogScope.Debug);
+
 import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "../../../enums/server/ipc/IPCMessageTypeDebug";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP, OP_RSADD } from "../../../nwscript/NWScriptOPCodes";
 import {} from "@fortawesome/free-solid-svg-icons";
 
 /**
@@ -125,7 +130,7 @@ const InstructionOffset = (props: {instance: KotOR.NWScriptInstance, instruction
   const {instance, instruction} = props;
   const [address, setAddress] = useState(instruction.intToHex(instruction.offset + instruction.address, 8));
   const onClick = () => {
-    console.log("Seeking to", instruction.intToHex(instruction.offset + instruction.address, 8));
+    log.debug('Seeking to', instruction.intToHex(instruction.offset + instruction.address, 8));
     if(instance){
       instance.seek = (instruction.offset + instruction.address);
       instance.dispatchEvent('seek', instance.seek);
@@ -161,7 +166,7 @@ const InstructionNode = (props: {instance: KotOR.NWScriptInstance, instruction: 
 
   const callToggleBreakpoint = () => {
     if(!instance) return;
-    console.log("Toggling breakpoint", instance.uuid, instruction.address);
+    log.debug('Toggling breakpoint', instance.uuid, instruction.address);
     instance.toggleBreakpoint(instruction.address);
     setIsBreakpoint(instance?.breakPoints.has(instruction.address) || false);
   }
@@ -211,7 +216,7 @@ export const ScriptInstanceWindow = () => {
   const [render, rerender] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log("Instance changed", instance?.uuid);
+    log.trace('Instance changed', instance?.uuid);
     rerender(!render);
   }, [breakpointMap]);
 

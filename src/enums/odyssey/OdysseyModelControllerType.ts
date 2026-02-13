@@ -75,4 +75,4 @@ export enum OdysseyModelControllerType {
   ColorStart           = 392,
   Detonate             = 502,
   INVALID              =   0,
-};
+}

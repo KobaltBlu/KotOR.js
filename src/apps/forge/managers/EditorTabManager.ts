@@ -1,6 +1,10 @@
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { EditorFile } from "../EditorFile";
 import { EventListenerModel } from "../EventListenerModel";
 import { TabStoreState } from "../interfaces/TabStoreState";
+
+const log = createScopedLogger(LogScope.Forge);
 import {
   TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
   TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
@@ -10,9 +14,9 @@ import {
   TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
   TabIndoorBuilderState,
 } from "../states/tabs";
-
 import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
 import { TabScriptFindReferencesState } from "../states/tabs/TabScriptFindReferencesState";
+
 import { GetNewTabID } from "./TabIdGenerator";
 
 export type TabManagerEventListenerTypes =
@@ -48,14 +52,14 @@ export class EditorTabManager extends EventListenerModel {
       }
     }
 
-    let alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
+    const alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
     if(alreadyAdded){
-      console.warn('Tab already added to the TabManager', tab);
+      log.warn('Tab already added to the TabManager', tab);
       return;
     }
 
     //Check to see if a tab is already editing this resource
-    let alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
+    const alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
     if(alreadyOpen != null){
       //Show the tab that is already open
       alreadyOpen.show();
@@ -79,7 +83,7 @@ export class EditorTabManager extends EventListenerModel {
 
     for(let i = 0; i < length; i++){
       if(tab == this.tabs[i]){
-        console.log('removeTab', 'Tab found. Deleting');
+        log.debug('removeTab', 'Tab found. Deleting');
         tab.destroy();
         this.tabs.splice(i, 1);
         break;
@@ -90,15 +94,15 @@ export class EditorTabManager extends EventListenerModel {
         let tabIndexToSelect = tabIndex-1;
         if(tabIndexToSelect < 0) tabIndexToSelect = 0;
         if(this.tabs.length){
-          console.log('removeTab', 'Current tab removed. Trying to show sibling child');
+          log.debug('removeTab', 'Current tab removed. Trying to show sibling child');
           const t = this.tabs[tabIndexToSelect];
           if(t){
-            console.log(t);
+            log.trace(t);
             t.show();
           }
         }
       }
-    }catch(e){ console.log(e); }
+    }catch(e){ log.debug(String(e), e); }
 
     this.processEventListener('onTabRemoved');
 
@@ -119,7 +123,7 @@ export class EditorTabManager extends EventListenerModel {
 
   }
 
-  getTabByType(tabClass: any){
+  getTabByType(tabClass: string): TabState | undefined {
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return this.tabs[i];
@@ -128,7 +132,7 @@ export class EditorTabManager extends EventListenerModel {
   }
 
   tabTypeExists(tab: TabState){
-    let tabClass = tab.constructor.name;
+    const tabClass = tab.constructor.name;
     for(let i = 0; i < this.tabs.length; i++){
       if(this.tabs[i].constructor.name === tabClass)
         return true;
@@ -145,7 +149,7 @@ export class EditorTabManager extends EventListenerModel {
   restoreTabState(tabState: TabStoreState) {
     if(tabState.file){
       tabState.file = Object.assign(new EditorFile(), tabState.file);
-      console.log('file', tabState.file);
+      log.trace('file', tabState.file);
     }
     switch(tabState.type){
       case 'TabQuickStartState':

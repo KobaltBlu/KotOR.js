@@ -1,6 +1,9 @@
 import { GameState } from "../GameState";
 import type { INIConfig } from "../engine/INIConfig";
 import { AutoPauseState } from "../enums/engine/AutoPauseState";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 import { EngineState } from "../enums/engine/EngineState";
 
 /**
@@ -32,7 +35,7 @@ export class AutoPauseManager {
   static onPauseStateChange: Function;
 
   static Init(){
-    console.log('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
+    log.info('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
     this.AutoPauseEnabled.Generic = true;
     this.AutoPauseEnabled.CombatRoundEnd = this.INIConfig.getProperty('Autopause Options.End Of Combat Round') == 1
     this.AutoPauseEnabled.EnemySighted = this.INIConfig.getProperty('Autopause Options.Enemy Sighted') == 1

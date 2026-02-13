@@ -1,9 +1,14 @@
 import React from "react";
-import { TabState } from "./TabState";
+
+import { TabAudioPlayer } from "../../components/tabs/tab-audio-player/TabAudioPlayer";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 
-import * as KotOR from "../../KotOR";
-import { TabAudioPlayer } from "../../components/tabs/tab-audio-player/TabAudioPlayer";
+import * as KotOR from '../../KotOR';
+
+import type { EditorFile } from '../../EditorFile';
+import { TabState } from './TabState';
+
+
 
 export class TabAudioPlayerState extends TabState {
   tabName: string = `Audio Player`;
@@ -36,9 +41,9 @@ export class TabAudioPlayerState extends TabState {
     // ];
   }
 
-  public openFile(file?: any){
-    return new Promise<any>( (resolve, reject) => {
-      
+  public openFile(file?: EditorFile): Promise<void> {
+    return new Promise<void>(() => {
+      // Open file dialog / load file; resolve when done
     });
   }
 }

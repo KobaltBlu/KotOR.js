@@ -1,7 +1,8 @@
 import * as KotOR from "../KotOR";
+
 import { ForgeMGEnemy } from "./ForgeMGEnemy";
-import { ForgeMGPlayer } from "./ForgeMGPlayer";
 import { ForgeMGObstacle } from "./ForgeMGObstacle";
+import { ForgeMGPlayer } from "./ForgeMGPlayer";
 import { ForgeMGTrack } from "./ForgeMGTrack";
 
 export class ForgeMiniGame {

@@ -1,12 +1,13 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
+
 import { EngineMode } from "../enums/engine/EngineMode";
-import { Utility } from "../utility/Utility";
-import type { ModuleArea, ModuleMGPlayer } from "../module";
 import { MiniGameType } from "../enums/engine/MiniGameType";
-import { BitWise } from "../utility/BitWise";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
 import { ResolutionManager } from "../managers/ResolutionManager";
+import type { ModuleArea, ModuleMGPlayer } from "../module";
+import { BitWise } from "../utility/BitWise";
+import { Utility } from "../utility/Utility";
 
 /**
  * FollowerCamera class.
@@ -41,11 +42,11 @@ export class FollowerCamera {
   static minSpeed: number = 0;
   static rampSpeed: number = 10;
 
-  static cameraStyle: any = {};
+  static cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {};
 
   static raycaster: THREE.Raycaster = new THREE.Raycaster();
 
-  static setCameraStyle(cameraStyle: any = {}){
+  static setCameraStyle(cameraStyle: { pitch?: string | number; height?: string | number; distance?: string | number } = {}){
     FollowerCamera.cameraStyle = cameraStyle;
     if(typeof cameraStyle.pitch !== 'undefined') FollowerCamera.pitch = cameraStyle.pitch == '****' ? 0 : parseInt(cameraStyle.pitch);
     if(typeof cameraStyle.height !== 'undefined') FollowerCamera.height = cameraStyle.height == '****' ? 0 : parseFloat(cameraStyle.height);
@@ -78,7 +79,7 @@ export class FollowerCamera {
 
     FollowerCamera.turning = false;
 
-    let followee = GameState.getCurrentPlayer();
+    const followee = GameState.getCurrentPlayer();
     if(!followee) return;
 
     let offsetHeight = 0;
@@ -86,19 +87,20 @@ export class FollowerCamera {
     if(GameState.Mode == EngineMode.MINIGAME){
       offsetHeight = 1;
     }else{
-      if( followee.getAppearance().cameraheightoffset >= 0 ){
-        offsetHeight = followee.getAppearance().cameraheightoffset;
+      const appearance = followee.getAppearance();
+      if ('cameraheightoffset' in appearance && typeof (appearance as { cameraheightoffset: number }).cameraheightoffset === 'number' && (appearance as { cameraheightoffset: number }).cameraheightoffset >= 0){
+        offsetHeight = (appearance as { cameraheightoffset: number }).cameraheightoffset;
       }
     }
     
-    let camHeight = (1.35 + FollowerCamera.height)-offsetHeight;
+    const camHeight = (1.35 + FollowerCamera.height)-offsetHeight;
     let distance = FollowerCamera.maxDistance * GameState.CameraDebugZoom;
 
     FollowerCamera.raycaster.far = 10;
     FollowerCamera.raycaster.ray.direction.set(Math.cos(FollowerCamera.facing), Math.sin(FollowerCamera.facing), 0).normalize();
     FollowerCamera.raycaster.ray.origin.set(followee.position.x, followee.position.y, followee.position.z + camHeight);
 
-    let aabbFaces = [];
+    const aabbFaces = [];
     let intersects;
 
     FollowerCamera.box.min.copy(FollowerCamera.raycaster.ray.origin);
@@ -113,7 +115,7 @@ export class FollowerCamera {
     }
 
     for(let j = 0, jl = area.doors.length; j < jl; j++){
-      let door = area.doors[j];
+      const door = area.doors[j];
       if(door && door.collisionManager.walkmesh && !door.isOpen()){
         if(door.box.intersectsBox(FollowerCamera.box) || door.box.containsBox(FollowerCamera.box)){
           aabbFaces.push({
@@ -125,7 +127,7 @@ export class FollowerCamera {
     }
     
     for(let k = 0, kl = aabbFaces.length; k < kl; k++){
-      let castableFaces = aabbFaces[k];
+      const castableFaces = aabbFaces[k];
       intersects = castableFaces.object.collisionManager.walkmesh.raycast(FollowerCamera.raycaster, castableFaces.faces) || [];
       if ( intersects.length > 0 ) {
         for(let i = 0; i < intersects.length; i++){
@@ -153,7 +155,7 @@ export class FollowerCamera {
             break;
           }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-        })(followee as any);
+        })(followee as ModuleMGPlayer);
       }
     }else{
       FollowerCamera.camera.position.copy(followee.position);

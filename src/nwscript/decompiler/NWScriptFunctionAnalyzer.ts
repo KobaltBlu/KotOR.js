@@ -1,12 +1,16 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
+import type { NWScriptInstruction } from "../NWScriptInstruction";
 import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP } from '../NWScriptOPCodes';
 
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
+import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
+
+
+
 /**
- * Represents a function/subroutine in the decompiled code.
+ * Represents a function/subroutine in the reconstructed script.
  */
 export interface NWScriptFunction {
   name: string;
@@ -184,7 +188,7 @@ export class NWScriptFunctionAnalyzer {
     // function definitions (RSADD + JSR = function with return type).
     
     // Search through entry block for first RSADD and JSR
-    // The entry block may start with T (0x42) instruction, so we need to search
+    // The entry block may start with T instruction, so we need to search
     // Pattern: [T] [RSADD] JSR RETN
     let entryRSADD: NWScriptInstruction | null = null;
     let firstJSR: NWScriptInstruction | null = null;
@@ -571,7 +575,7 @@ export class NWScriptFunctionAnalyzer {
    */
   private isInitializationBlock(block: NWScriptBasicBlock): boolean {
     // Check if all instructions in the block are initialization instructions
-    let allInit = true;
+    const allInit = true;
     let hasNonInit = false;
 
     for (const instruction of block.instructions) {

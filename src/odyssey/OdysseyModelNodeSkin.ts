@@ -1,9 +1,11 @@
 import * as THREE from "three";
+
 import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import type { OdysseyModelNode } from "./OdysseyModelNode";
+
 import type { OdysseyModel } from "./OdysseyModel";
+import type { OdysseyModelNode } from "./OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
 import { OdysseyModelUtility } from "./OdysseyModelUtility";
 
 /**
@@ -99,7 +101,7 @@ import { OdysseyModelUtility } from "./OdysseyModelUtility";
       if (this.boneQuaternionDefinition.count > 0) {
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.boneQuaternionDefinition.offset);
         for(let i = 0; i < this.boneQuaternionDefinition.count; i++){
-          let w = this.odysseyModel.mdlReader.readSingle();
+          const w = this.odysseyModel.mdlReader.readSingle();
           this.bone_quaternions[i] = new THREE.Quaternion(this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), this.odysseyModel.mdlReader.readSingle(), w);
         }
       }

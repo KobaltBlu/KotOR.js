@@ -1,12 +1,19 @@
-import React from "react";
-import { TabProjectExplorer } from "../../components/tabs/tab-project-explorer/TabProjectExplorer";
-import { TabState } from "./";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
 import * as path from "path";
+
+import React from "react";
+
+import { TabProjectExplorer } from "../../components/tabs/tab-project-explorer/TabProjectExplorer";
 import { EditorFileProtocol } from "../../enum/EditorFileProtocol";
-import { ForgeState } from "../ForgeState";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
 import { FileBrowserNode } from "../../FileBrowserNode";
+import { ProjectFileSystem } from "../../ProjectFileSystem";
+import { ForgeState } from "../ForgeState";
+
+import { TabState } from "./";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class TabProjectExplorerState extends TabState {
 
@@ -43,8 +50,8 @@ export class TabProjectExplorerState extends TabState {
     return new Promise<void>( (resolve, reject) => {
       const nodeList = TabProjectExplorerState.Resources;
       ProjectFileSystem.readdir('').then( (files: string[]) => {
-        console.log('TabProjectExplorerState.LoadFiles', files);
-        let subTypes: {[key: string]: FileBrowserNode} = {};
+        log.debug('TabProjectExplorerState.LoadFiles', files);
+        const subTypes: {[key: string]: FileBrowserNode} = {};
         for(let i = 0; i < files.length; i++){
           const file = files[i];
           const parsed = path.parse(file);

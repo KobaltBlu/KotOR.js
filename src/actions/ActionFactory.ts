@@ -1,14 +1,22 @@
 import { ActionType } from "../enums/actions/ActionType";
 import { GFFStruct } from "../resource/GFFStruct";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 
-import { ActionCombat } from "./ActionCombat"; 
+const log = createScopedLogger(LogScope.Game);
+
+import type { Action } from "./Action";
 import { ActionCastSpell } from "./ActionCastSpell"; 
 import { ActionCloseDoor } from "./ActionCloseDoor"; 
+import { ActionCombat } from "./ActionCombat"; 
 import { ActionDialogObject } from "./ActionDialogObject"; 
+import { ActionDisarmMine } from "./ActionDisarmMine";
 import { ActionDoCommand } from "./ActionDoCommand";
 import { ActionDropItem } from "./ActionDropItem";
 import { ActionEquipItem } from "./ActionEquipItem";
+import { ActionExamineMine } from "./ActionExamineMine";
+import { ActionFlagMine } from "./ActionFlagMine";
 import { ActionFollowLeader } from "./ActionFollowLeader";
+import { ActionForceFollowObject } from "./ActionForceFollowObject";
 import { ActionGiveItem } from "./ActionGiveItem";
 import { ActionItemCastSpell } from "./ActionItemCastSpell";
 import { ActionJumpToObject } from "./ActionJumpToObject";
@@ -18,36 +26,36 @@ import { ActionMoveToPoint } from "./ActionMoveToPoint";
 import { ActionOpenDoor } from "./ActionOpenDoor";
 import { ActionPauseDialog } from "./ActionPauseDialog";
 import { ActionPhysicalAttacks } from "./ActionPhysicalAttacks";
+import { ActionPickUpItem } from "./ActionPickUpItem";
 import { ActionPlayAnimation } from "./ActionPlayAnimation";
+import { ActionRandomWalk } from "./ActionRandomWalk";
+import { ActionRecoverMine } from "./ActionRecoverMine";
 import { ActionResumeDialog } from "./ActionResumeDialog";
 import { ActionSetCommandable } from "./ActionSetCommandable";
+import { ActionSetMine } from "./ActionSetMine";
+import { ActionSpeak } from "./ActionSpeak";
+import { ActionSpeakStrRef } from "./ActionSpeakStrRef";
 import { ActionTakeItem } from "./ActionTakeItem";
-import { ActionUnlockObject } from "./ActionUnlockObject";
 import { ActionUnequipItem } from "./ActionUnequipItem";
+import { ActionUnlockObject } from "./ActionUnlockObject";
 import { ActionUseObject } from "./ActionUseObject";
 import { ActionWait } from "./ActionWait";
-import { ActionRandomWalk } from "./ActionRandomWalk";
-import { ActionPickUpItem } from "./ActionPickUpItem";
-import { ActionForceFollowObject } from "./ActionForceFollowObject";
-import { ActionSpeakStrRef } from "./ActionSpeakStrRef";
-import { ActionSetMine } from "./ActionSetMine";
-import { ActionFlagMine } from "./ActionFlagMine";
-import { ActionRecoverMine } from "./ActionRecoverMine";
-import { ActionDisarmMine } from "./ActionDisarmMine";
-import { ActionExamineMine } from "./ActionExamineMine";
-import { ActionSpeak } from "./ActionSpeak";
-import type { Action } from "./Action";
 
 /**
  * ActionFactory class.
- * 
+ * Static-only registry of action constructors; do not instantiate.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionFactory {
+
+  private constructor() {
+    // Static-only class; use ActionFactory.ActionX to access action types.
+  }
 
   static ActionCombat: typeof ActionCombat = ActionCombat;
   static ActionCastSpell: typeof ActionCastSpell = ActionCastSpell;
@@ -86,13 +94,13 @@ export class ActionFactory {
   static ActionSpeak: typeof ActionSpeak = ActionSpeak;
 
   static FromStruct( struct: GFFStruct ): Action {
-    let action: Action = undefined as any;
-    const actionId = struct.getFieldByLabel('ActionId').getValue();
-    const groupId = struct.getFieldByLabel('GroupActionId').getValue();
-    const paramCount = struct.getFieldByLabel('NumParams').getValue();
+    let action: Action | undefined;
+    const actionId: number = struct.getNumberByLabel('ActionId');
+    const groupId: number = struct.getNumberByLabel('GroupActionId');
+    const paramCount: number = struct.getNumberByLabel('NumParams');
 
-    const paramStructs: GFFStruct[] = (struct.hasField('Paramaters')) ? 
-      struct.getFieldByLabel('Paramaters').getChildStructs() : [];
+    const paramStructs: GFFStruct[] = (struct.hasField('Paramaters')) ?
+      (struct.getFieldByLabel('Paramaters')?.getChildStructs() ?? []) : [];
 
     switch(actionId){
       case ActionType.ActionCombat:
@@ -186,31 +194,32 @@ export class ActionFactory {
         action = new ActionExamineMine(actionId, groupId);
       break;
       default:
-        console.log('ActionList Unhandled Action', '0x' + (actionId.toString(16).toUpperCase()), paramCount);
-        for(let i = 0; i < paramCount; i++){
-          const struct = paramStructs[i];
-          const type = struct.getFieldByLabel('Type').getValue();
-          
-          if(type == 1){
-            console.log('INT', struct.getFieldByLabel('Value').getValue());
-          }else if(type == 2){
-            console.log('FLOAT', struct.getFieldByLabel('Value').getValue());
-          }else if(type == 3){
-            console.log('DWORD', struct.getFieldByLabel('Value').getValue());
-          }else if(type == 4){
-            console.log('STRING', struct.getFieldByLabel('Value').getValue());
-          }else if(type == 5){
-            console.log('SCRIPT', struct.getFieldByLabel('Value'));
+        log.debug('ActionList Unhandled Action', '0x' + (actionId.toString(16).toUpperCase()), paramCount);
+        for (let i = 0; i < paramCount; i++) {
+          const paramStruct = paramStructs[i];
+          if (!paramStruct) continue;
+          const type = paramStruct.getFieldByLabel('Type')?.getNumber() ?? 0;
+          const valueField = paramStruct.getFieldByLabel('Value');
+          if (type === 1) {
+            log.debug('INT', valueField?.getNumber());
+          } else if (type === 2) {
+            log.debug('FLOAT', valueField?.getNumber());
+          } else if (type === 3) {
+            log.debug('DWORD', valueField?.getNumber());
+          } else if (type === 4) {
+            log.debug('STRING', valueField?.getString());
+          } else if (type === 5) {
+            log.debug('SCRIPT', valueField);
           }
         }
-      break;
+        break;
     }
 
-    if(action){
+    if (action) {
       action.setParameters(paramStructs, paramCount);
     }
 
-    return action;
+    return action as Action;
   }
 
 }

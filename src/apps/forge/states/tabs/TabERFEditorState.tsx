@@ -1,11 +1,13 @@
 import React from "react";
-import { TabState } from "./TabState";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { TabERFEditor } from "../../components/tabs/tab-erf-editor/TabERFEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { EditorFile } from "../../EditorFile";
 import { FileBrowserNode } from "../../FileBrowserNode";
-
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 const arfArchiveTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav']];
 

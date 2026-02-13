@@ -16,4 +16,4 @@ export enum OdysseyModelEmitterRenderMode {
   AlignToWorldZ = "Aligned_to_World_Z", 
   AlignToParticleDir = "Aligned_to_Particle_Dir", 
   Linked = "Linked"
-};
+}

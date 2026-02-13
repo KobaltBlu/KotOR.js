@@ -1,9 +1,13 @@
-import { GameState } from "../../../GameState";
+import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
+
+import { GUIKeyMapItem } from "../gui/GUIKeyMapItem";
+
 import { KeyInput } from "../../../controls/KeyInput";
 import { KeyCodeToLanguage0, KeyMapper, Keymap, language0ToKeyCode } from "../../../controls/KeyMapper";
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "../../kotor/KOTOR";
-import { GUIKeyMapItem } from "../gui/GUIKeyMapItem";
+
+
 
 /**
  * MenuKeyboardMapping class.
@@ -75,21 +79,21 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
       this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
       this.LST_EventList.border.inneroffset = 5;
       this.LST_EventList.border.inneroffsety = 5;
-      this.LST_EventList.onSelected = (node: any, control: GUIKeyMapItem) => {
+      this.LST_EventList.onSelected = (node: Keymap, control: GUIKeyMapItem) => {
         this.selectedKey = node;
         this.selectedKeyControl = control;
       }
 
       this.addEventListener('keyup', (e: KeyboardEvent) => {
         if(this.selectedKey){
-          const lang0 = (KeyCodeToLanguage0 as any)[e.code];
+          const lang0 = (KeyCodeToLanguage0 as Record<string, number>)[e.code];
           if(typeof lang0 === 'number' && lang0 != this.selectedKey.language0){
             const key = this.processKeyName(e.key);
             this.selectedKey.character = key;
             this.selectedKey.language0 = lang0;
             this.selectedKeyControl.setKeyText(key);
 
-            const action: KeyInput = (GameState.controls.keyboard.action as any)[language0ToKeyCode(lang0)];
+            const action: KeyInput = (GameState.controls.keyboard.action as Record<string, KeyInput>)[language0ToKeyCode(lang0)];
             if(action){
               this.selectedKey.keyboardInput = action;
             }

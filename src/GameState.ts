@@ -1,39 +1,15 @@
 import * as THREE from "three";
-import {
-  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
-  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
-  VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
-} from "./managers";
 
-import type { SWRuleSet } from "./engine/rules/SWRuleSet";
 
-import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import type { ModuleObject, ModuleCreature, Module, ModuleDoor } from "./module";
-import type { NWScript } from "./nwscript/NWScript";
-import type { SaveGame } from "./engine/SaveGame";
-import type { GameEffectFactory } from "./effects/GameEffectFactory";
-import type { GameEventFactory } from "./events/GameEventFactory";
 
-import type { ActionMenuManager } from "./engine/menu/ActionMenuManager";
-import type { ActionFactory } from "./actions/ActionFactory";
 
-import { IngameControls } from "./controls/IngameControls";
+
 // import { Mouse } from "./controls/Mouse";
 
-import { INIConfig } from "./engine/INIConfig";
-import { VideoPlayer } from "./engine/VideoPlayer";
 
 // import { OdysseyObject3D } from "./three/odyssey";
-import { AudioEngine, AudioEmitter } from "./audio";
-import { TGAObject } from "./resource/TGAObject";
 
-import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
-import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
 
-import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "./enums/engine";
-import { TextureType } from "./enums/loaders/TextureType";
 
 import { EngineContext } from "./engine/EngineContext";
 
@@ -49,28 +25,55 @@ import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
-import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
-import { BitWise } from "./utility/BitWise";
-import { ModuleObjectType } from "./enums/module/ModuleObjectType";
-import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
+import type { ActionFactory } from "./actions/ActionFactory";
+import { AudioEngine, AudioEmitter } from "./audio";
+import { IngameControls } from "./controls/IngameControls";
+import type { GameEffectFactory } from "./effects/GameEffectFactory";
 // import { GUIControlTypeMask } from "./enums/gui/GUIControlTypeMask";
 
-import { ModuleTriggerType } from "./enums";
 import { Planetary } from "./engine/Planetary";
 import { Debugger } from "./engine/Debugger";
+import { INIConfig } from "./engine/INIConfig";
+import type { ActionMenuManager } from "./engine/menu/ActionMenuManager";
+import type { SWRuleSet } from "./engine/rules/SWRuleSet";
+import type { SaveGame } from "./engine/SaveGame";
+import { VideoPlayer } from "./engine/VideoPlayer";
+import { ModuleTriggerType } from "./enums";
+import { AudioEmitterType } from "./enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "./enums/audio/AudioEngineChannel";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "./enums/engine";
+import { TextureType } from "./enums/loaders/TextureType";
+import { ModuleObjectType } from "./enums/module/ModuleObjectType";
 import { DebuggerState } from "./enums/server/DebuggerState";
-import type { IPCMessage } from "./server/ipc/IPCMessage";
 import { IPCMessageType } from "./enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "./enums/server/ipc/IPCMessageTypeDebug";
+import type { GameEventFactory } from "./events/GameEventFactory";
+import { IGameStateGroups } from "./interface/engine/IGameStateGroups";
+import { ITextureLoaderQueuedRef } from "./interface/loaders/ITextureLoaderQueuedRef";
+import {
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
+  ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
+  VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
+} from "./managers";
+import type { ModuleObject, ModuleCreature, Module, ModuleDoor, ModuleMGPlayer } from "./module";
+import type { NWScript } from "./nwscript/NWScript";
+import { TGAObject } from "./resource/TGAObject";
+import type { IPCMessage } from "./server/ipc/IPCMessage";
+import type { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
+import { BitWise } from "./utility/BitWise";
+import { createScopedLogger, LogScope } from "./utility/Logger";
 import { PerformanceMonitor } from "./utility/PerformanceMonitor";
+
+const log = createScopedLogger(LogScope.Game);
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
   GameDirectory: string, //path to the local game install directory
   Env: GameEngineEnv,
-};
+}
 
 const namedGroup = (name: string = 'na'): THREE.Group => {
   const group = new THREE.Group();
@@ -80,7 +83,7 @@ const namedGroup = (name: string = 'na'): THREE.Group => {
 
 export class GameState implements EngineContext {
 
-  static eventListeners: any = {
+  static eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {
     "init": [],
     "start": [],
     "ready": [],
@@ -241,8 +244,8 @@ export class GameState implements EngineContext {
   static globalLight: THREE.AmbientLight;
   static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
-  static collisionList: any[];
-  static walkmeshList: any[];
+  static collisionList: THREE.Object3D[];
+  static walkmeshList: THREE.Object3D[];
 
   static group: IGameStateGroups = {
     creatures: new THREE.Group,
@@ -268,7 +271,7 @@ export class GameState implements EngineContext {
     collision_helpers: new THREE.Group,
   };
 
-  static interactableObjects: any[];
+  static interactableObjects: THREE.Group[];
 
   static scene_cursor_holder: THREE.Group;
   static controls: IngameControls;
@@ -310,7 +313,7 @@ export class GameState implements EngineContext {
 
   static SetDebugState(type: EngineDebugType, enabled: boolean) {
     this.debug[type] = enabled;
-    console.log('SetDebugState', type, enabled);
+    log.debug('SetDebugState', type, enabled);
     switch (type) {
       case EngineDebugType.PATH_FINDING:
         if (!GameState?.module?.area?.path)
@@ -416,17 +419,17 @@ export class GameState implements EngineContext {
     }
   }
 
-  static addEventListener(event: string, callback: Function) {
-    if (GameState.eventListeners.hasOwnProperty(event)) {
-      const callbacks: any[] = GameState.eventListeners[event];
+  static addEventListener(event: string, callback: (...args: unknown[]) => void) {
+    if (Object.prototype.hasOwnProperty.call(GameState.eventListeners, event)) {
+      const callbacks = GameState.eventListeners[event];
       if (callbacks) {
         callbacks.push(callback);
       }
     }
   }
 
-  static processEventListener(event: string, args: any[] = []) {
-    if (GameState.eventListeners.hasOwnProperty(event)) {
+  static processEventListener(event: string, args: unknown[] = []) {
+    if (Object.prototype.hasOwnProperty.call(GameState.eventListeners, event)) {
       const callbacks = GameState.eventListeners[event];
       if (callbacks && callbacks.length) {
         for (let i = 0, len = callbacks.length; i < len; i++) {
@@ -447,11 +450,11 @@ export class GameState implements EngineContext {
    */
   static async Init() {
     GameState.Debugger.addEventListener('open', () => {
-      console.log('Debugger: Open');
+      log.info('Debugger: Open');
       GameState.debugMode = true;
     });
     GameState.Debugger.addEventListener('close', () => {
-      console.log('Debugger: Close');
+      log.info('Debugger: Close');
       GameState.debugMode = false;
     });
     GameState.Debugger.addEventListener('message', (msg: IPCMessage) => {
@@ -460,7 +463,7 @@ export class GameState implements EngineContext {
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
         if (instance) {
-          console.log("Setting breakpoint", address, "on instance", instanceUUID);
+          log.debug("Setting breakpoint", address, "on instance", instanceUUID);
           instance.setBreakpoint(address);
         }
       } else if (msg.type == IPCMessageType.RemoveScriptBreakpoint) {
@@ -468,7 +471,7 @@ export class GameState implements EngineContext {
         const address = msg.getParam(1).getInt32();
         const instance = GameState.NWScript.NWScriptInstanceMap.get(instanceUUID);
         if (instance) {
-          console.log("Removing breakpoint", address, "on instance", instanceUUID);
+          log.debug("Removing breakpoint", address, "on instance", instanceUUID);
           instance.removeBreakpoint(address);
         }
       } else if (msg.type == IPCMessageType.ContinueScript) {
@@ -536,7 +539,7 @@ export class GameState implements EngineContext {
     GameState.renderer.setSize(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
     GameState.renderer.setClearColor(0x000000);
 
-    let pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
+    const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
     GameState.depthTarget = new THREE.WebGLRenderTarget(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight(), pars);
     GameState.depthTarget.texture.generateMipmaps = false;
     GameState.depthTarget.stencilBuffer = false;
@@ -607,7 +610,6 @@ export class GameState implements EngineContext {
     GameState.viewportFrustum = new THREE.Frustum();
     GameState.viewportProjectionMatrix = new THREE.Matrix4();
 
-    //0x60534A
     GameState.globalLight = new THREE.AmbientLight(0xFFFFFF);
     GameState.globalLight.position.x = 0;
     GameState.globalLight.position.y = 0;
@@ -803,7 +805,7 @@ export class GameState implements EngineContext {
       GameState.scene.add(GameState.CursorManager.reticle2);
       GameState.scene_gui.add(GameState.CursorManager.arrow);
       GameState.scene.add(GameState.CursorManager.testPoints);
-      console.log('CursorManager: Complete');
+      log.debug('CursorManager: Complete');
 
       PerformanceMonitor.start('PartyManager.Initialize');
       GameState.PartyManager.Initialize();
@@ -835,9 +837,9 @@ export class GameState implements EngineContext {
       if (GameState.OpeningMoviesComplete) {
         GameState.Start();
       }
-      console.log(PerformanceMonitor.toString());
+      log.debug(PerformanceMonitor.toString());
     } catch (e) {
-      console.error(e);
+      log.error(String(e), e);
     }
   }
 
@@ -855,8 +857,8 @@ export class GameState implements EngineContext {
 
   static EventOnResize() {
     GameState.ResolutionManager.recalculate();
-    let width = GameState.ResolutionManager.getViewportWidth();
-    let height = GameState.ResolutionManager.getViewportHeight();
+    const width = GameState.ResolutionManager.getViewportWidth();
+    const height = GameState.ResolutionManager.getViewportHeight();
 
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
@@ -906,11 +908,11 @@ export class GameState implements EngineContext {
     this.EventOnResize();
   }
 
-  public static getCurrentPlayer(): ModuleCreature {
+  public static getCurrentPlayer(): ModuleCreature | ModuleMGPlayer {
     if (GameState.Mode == EngineMode.MINIGAME) {
-      return GameState.module.area.miniGame.player as any;
+      return GameState.module.area.miniGame!.player!;
     }
-    let p = GameState.PartyManager.party[0];
+    const p = GameState.PartyManager.party[0];
     return p ? p : GameState.PartyManager.Player;
   }
 
@@ -934,7 +936,7 @@ export class GameState implements EngineContext {
 
     const objCount = objects.length;
     let obj: ModuleObject;
-    let dir = new THREE.Vector3();
+    const dir = new THREE.Vector3();
     const losZ = 1;
     const playerPosition = player.position.clone();
     playerPosition.z += losZ;
@@ -949,7 +951,7 @@ export class GameState implements EngineContext {
 
       const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
       if (isDoor) {
-        if ((obj as ModuleDoor).isOpen()) { continue; };
+        if ((obj as ModuleDoor).isOpen()) { continue; }
       }
 
       targetPosition.copy(obj.position);
@@ -1052,10 +1054,10 @@ export class GameState implements EngineContext {
 
     if (GameState.module) {
       try { await GameState.module.save(); } catch (e) {
-        console.error(e);
+        log.error(String(e), e);
       }
       try { GameState.module.dispose(); } catch (e) {
-        console.error(e);
+        log.error(String(e), e);
       }
     }
 
@@ -1070,7 +1072,7 @@ export class GameState implements EngineContext {
     GameState.module = module;
 
     if (!module) {
-      console.error('Module.Load failed: could not load module', name);
+      log.error(`Module.Load failed: could not load module ${name}`);
       GameState.MenuManager.LoadScreen.close();
       GameState.SetEngineMode(EngineMode.GUI);
       return;
@@ -1078,16 +1080,16 @@ export class GameState implements EngineContext {
 
     GameState.scene.visible = false;
 
-    console.log('Module.loadScene');
+    log.debug('Module.loadScene');
     await module.loadScene();
     await TextureLoader.LoadQueue((ref: ITextureLoaderQueuedRef) => {
-      const material = ref.material as any;
+      const material = ref.material;
       if (material?.map) {
         GameState.renderer.initTexture(material.map);
       }
     });
     module.initEventQueue();
-    console.log('Module.initScripts');
+    log.debug('Module.initScripts');
     await module.initScripts();
 
     //GameState.scene_gui.background = null;
@@ -1106,14 +1108,14 @@ export class GameState implements EngineContext {
     GameState.renderer.compile(GameState.scene, GameState.currentCamera);
     GameState.renderer.setClearColor(new THREE.Color(GameState.module.area.sun.fogColor));
 
-    console.log('ModuleArea.initAreaObjects');
+    log.debug('ModuleArea.initAreaObjects');
     await GameState.module.area.initAreaObjects(runSpawnScripts);
     GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
-    console.log('ModuleArea: ready to play');
+    log.debug('ModuleArea: ready to play');
     GameState.module.readyToProcessEvents = true;
 
     if (GameState.Mode == EngineMode.INGAME) {
-      const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+      const anyCanLevel = GameState.PartyManager.party.some((p: ModuleCreature) => p.canLevelUp());
       if (anyCanLevel) {
         GameState.audioEmitter.playSound('gui_level');
       }
@@ -1227,7 +1229,7 @@ export class GameState implements EngineContext {
 
     GameState.forwardVector.set(0, 0, -1);
 
-    let delta = GameState.clock.getDelta();
+    const delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;
@@ -1375,25 +1377,25 @@ export class GameState implements EngineContext {
 
       //Handle visibility state for debug helpers
       if (GameState.Mode == EngineMode.INGAME) {
-        let obj: any;
+        let obj: THREE.Object3D;
         for (let i = 0, len = GameState.group.room_walkmeshes.children.length; i < len; i++) {
           obj = GameState.group.room_walkmeshes.children[i];
           if (obj.type === 'Mesh') {
-            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
+            (obj as THREE.Mesh).material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
 
         for (let i = 0, len = GameState.walkmeshList.length; i < len; i++) {
           obj = GameState.walkmeshList[i];
           if (obj.type === 'Mesh') {
-            obj.material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
+            (obj as THREE.Mesh).material.visible = true;//ConfigClient.get('GameState.debug.show_collision_meshes');
           }
         }
 
         for (let i = 0, len = GameState.collisionList.length; i < len; i++) {
           obj = GameState.collisionList[i];
           if (obj.type === 'Mesh') {
-            obj.material.visible = false;
+            (obj as THREE.Mesh).material.visible = false;
           }
         }
 
@@ -1418,7 +1420,7 @@ export class GameState implements EngineContext {
 
     //Handle screenshot callback
     if (typeof GameState.onScreenShot === 'function') {
-      console.log('Screenshot', GameState.onScreenShot);
+      log.debug('Screenshot', GameState.onScreenShot);
 
       GameState.renderer.clear();
       GameState.renderer.render(GameState.scene, GameState.currentCamera);
@@ -1463,7 +1465,7 @@ export class GameState implements EngineContext {
   }
 
   static async GetScreenShot() {
-    return new Promise<TGAObject>((resolve, reject) => {
+    return new Promise<TGAObject>((resolve, _reject) => {
       GameState.onScreenShot = (tga: TGAObject) => {
         resolve(tga);
       };

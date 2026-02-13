@@ -1,7 +1,9 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
 import * as THREE from "three";
+
 import { CreatureListEntry } from "../interfaces/CreatureListEntry";
+import * as KotOR from "../KotOR";
+
+import { ForgeGameObject } from "./ForgeGameObject";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const ENCOUNTER_MATERIAL = new THREE.MeshBasicMaterial({
@@ -62,7 +64,7 @@ export class ForgeEncounter extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined): void {
     if(property === 'templateResRef'){
       if(newValue !== oldValue){
         this.loadBlueprint().then(() => {

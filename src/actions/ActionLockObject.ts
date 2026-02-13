@@ -4,9 +4,12 @@ import { ActionType } from "../enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
+import type { ModuleDoor } from "../module/ModuleDoor";
 import type { ModuleObject } from "../module/ModuleObject";
+import type { ModulePlaceable } from "../module/ModulePlaceable";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
 
 /**
@@ -36,12 +39,12 @@ export class ActionLockObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
             
       if(distance > 2 && !this.target.box.intersectsBox(this.owner.box)){
         
-        // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        this.owner.openSpot = undefined;
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -62,23 +65,23 @@ export class ActionLockObject extends Action {
         this.owner.setFacingObject( this.target );
 
         if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
-          (this.target as any).closeDoor(this.owner);
+          (this.target as ModuleDoor).closeDoor(this.owner);
         }else if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
-          (this.target as any).close(this.owner);
+          (this.target as ModulePlaceable).close(this.owner);
         }
 
-        (this.target as any).setLocked(true);
+        (this.target as ModuleDoor | ModulePlaceable).setLocked(true);
         return ActionStatus.COMPLETE;
         
       }
     }else{
       if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
-        (this.target as any).closeDoor(this.owner);
+        (this.target as ModuleDoor).closeDoor(this.owner);
       }else if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
-        (this.target as any).close(this.owner);
+        (this.target as ModulePlaceable).close(this.owner);
       }
 
-      (this.target as any).setLocked(true);
+      (this.target as ModuleDoor | ModulePlaceable).setLocked(true);
       return ActionStatus.COMPLETE;
     }
 

@@ -1,4 +1,8 @@
+import type { CombatRoundAction } from "../combat/CombatRoundAction";
 import { TalentObjectType } from "../enums/engine/TalentObjectType";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import type { ModuleObject } from "../module";
 
 /**
@@ -37,14 +41,14 @@ export class TalentObject {
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
-    //console.log('useTalentOnObject', oCaster, this, oTarget);
+    //log.info('useTalentOnObject', oCaster, this, oTarget);
   }
 
   talentCombatRoundEnd(oTarget: ModuleObject, oCaster: ModuleObject){
-    //console.log('talentCombatRoundEnd', oCaster, this, oTarget);
+    //log.info('talentCombatRoundEnd', oCaster, this, oTarget);
   }
 
-  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: any, delta: number = 0){
+  update(oTarget: ModuleObject, oCaster: ModuleObject, combatAction: CombatRoundAction, delta: number = 0){
 
   }
 

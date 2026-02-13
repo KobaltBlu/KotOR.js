@@ -26,4 +26,4 @@ export interface ITGAHeader {
   imageDescriptor: number;
 
   pixelDataOffset: number;
-};
+}

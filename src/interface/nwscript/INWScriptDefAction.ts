@@ -15,5 +15,5 @@ export interface INWScriptDefAction {
   name: string,
   type: NWScriptDataType,
   args: NWScriptDataType[],
-  action?: (args: any[]) => any
-};
+  action?: (args: import("../../nwscript/NWScriptStackVariable").NWScriptStackVariable[]) => number | string | object | undefined;
+}

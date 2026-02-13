@@ -14,4 +14,4 @@ export enum TXITexType {
   'NORMALMAP'= 2,
   'ENVMAP'= 3,
   'LIGHTMAP'= 4
-};
+}

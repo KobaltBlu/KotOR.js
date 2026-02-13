@@ -1,10 +1,13 @@
+import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
+import { EngineMode, GameEngineType } from "../enums/engine";
+import { EngineState } from "../enums/engine/EngineState";
 import * as KOTOR from "../game/kotor/KOTOR";
 import * as TSL from "../game/tsl/TSL";
 import { GameState } from "../GameState";
-import { EngineMode, GameEngineType } from "../enums/engine";
 import type { GUIControl, GameMenu } from "../gui";
-import { ActionMenuManager } from "../engine/menu/ActionMenuManager";
-import { EngineState } from "../enums/engine/EngineState";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Manager);
 import { PerformanceMonitor } from "../utility/PerformanceMonitor";
 
 /**
@@ -201,12 +204,12 @@ export class MenuManager {
       MenuManager.InGamePause.update(delta);
     }
 
-    let activeMenus = MenuManager.activeMenus;
+    const activeMenus = MenuManager.activeMenus;
     for (let i = 0, len = activeMenus.length; i < len; i++) {
       activeMenus[i].update(delta);
     }
 
-    let activeModals = MenuManager.activeModals;
+    const activeModals = MenuManager.activeModals;
     for (let i = 0, len = activeModals.length; i < len; i++) {
       activeModals[i].update(delta);
     }
@@ -218,7 +221,7 @@ export class MenuManager {
 
   }
 
-  static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
+  static async GameMenuLoader(menuConstructor: new () => GameMenu): Promise<GameMenu> {
     PerformanceMonitor.start(menuConstructor.name + '.GameMenuLoader');
     const menu: GameMenu = new menuConstructor();
     menu.manager = MenuManager;
@@ -271,7 +274,7 @@ export class MenuManager {
         MenuManager.InGameConfirm = await MenuManager.GameMenuLoader(TSL.InGameConfirm) as KOTOR.InGameConfirm;
       }
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
   }
 
@@ -301,7 +304,7 @@ export class MenuManager {
         MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(TSL.CharGenSkills) as KOTOR.CharGenSkills;
       }
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
   }
 
@@ -385,7 +388,7 @@ export class MenuManager {
         MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
       }
     } catch (e) {
-      console.error(e);
+      log.error(e);
     }
   }
 

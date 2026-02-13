@@ -69,4 +69,4 @@ export enum ModuleItemProperty {
   UseLimitationClass = 44,
   UseLimitationRacial = 45,
   Use_Limitation_Feat = 57,
-};
+}

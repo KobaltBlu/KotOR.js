@@ -1,32 +1,35 @@
 import * as path from "path";
-import { GameState } from "./GameState";
-import { ERFObject } from "./resource/ERFObject";
-import { ResourceTypes } from "./resource/ResourceTypes";
-import { RIMObject } from "./resource/RIMObject";
-import { GameFileSystem } from "./utility/GameFileSystem";
+
+import { ActionFactory } from "./actions/ActionFactory";
 import { GamePad, KeyMapper } from "./controls";
+import { GameEffectFactory } from "./effects/GameEffectFactory";
 import { CurrentGame } from "./engine/CurrentGame";
-import { ConfigClient } from "./utility/ConfigClient";
+import { INIConfig } from "./engine/INIConfig";
+import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
+import { SWRuleSet } from "./engine/rules/SWRuleSet";
+import { SaveGame } from "./engine/SaveGame";
+import { CacheScope } from "./enums";
+import { GameEngineType } from "./enums/engine";
+import { GameEventFactory } from "./events/GameEventFactory";
+import { GameState } from "./GameState";
+import { ResourceLoader } from "./loaders";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager, KEYManager, RIMManager, ERFManager, VideoEffectManager, PazaakManager, UINotificationManager, CutsceneManager
 } from "./managers";
-import { SWRuleSet } from "./engine/rules/SWRuleSet";
-import { ResourceLoader } from "./loaders";
-import { GameEngineType } from "./enums/engine";
-import { SaveGame } from "./engine/SaveGame";
 import { Module } from "./module/Module";
 import { NWScript } from "./nwscript/NWScript";
-
+import { ERFObject } from "./resource/ERFObject";
+import { ResourceTypes } from "./resource/ResourceTypes";
+import { RIMObject } from "./resource/RIMObject";
 import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "./talents";
-import { ActionMenuManager } from "./engine/menu/ActionMenuManager";
-import { ActionFactory } from "./actions/ActionFactory";
-import { GameEffectFactory } from "./effects/GameEffectFactory";
-import { GameEventFactory } from "./events/GameEventFactory";
-import { INIConfig } from "./engine/INIConfig";
-import { CacheScope } from "./enums";
+import { ConfigClient } from "./utility/ConfigClient";
+import { GameFileSystem } from "./utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "./utility/Logger";
 import { PerformanceMonitor } from "./utility/PerformanceMonitor";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GameInitializer class.
@@ -58,15 +61,15 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if (Array.isArray(this.#eventListeners[type])) {
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if (index == -1) {
         ev.push(cb);
       } else {
-        console.warn('Event Listener: Already added', type);
+        log.warn('Event Listener: Already added', type);
       }
     } else {
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
@@ -80,15 +83,15 @@ export class GameInitializer {
       this.#eventListeners[type] = [];
     }
     if (Array.isArray(this.#eventListeners[type])) {
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if (index >= 0) {
         ev.splice(index, 1);
       } else {
-        console.warn('Event Listener: Already removed', type);
+        log.warn('Event Listener: Already removed', type);
       }
     } else {
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
@@ -97,12 +100,12 @@ export class GameInitializer {
    * @param type
    * @param args
    */
-  static ProcessEventListener<T extends string>(type: T, args: any[] = []): void {
+  static ProcessEventListener<T extends string>(type: T, args: unknown[] = []): void {
     if (!Array.isArray(this.#eventListeners[type])) {
       this.#eventListeners[type] = [];
     }
     if (Array.isArray(this.#eventListeners[type])) {
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
         if (typeof callback === 'function') {
@@ -110,7 +113,7 @@ export class GameInitializer {
         }
       }
     } else {
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
@@ -231,8 +234,8 @@ export class GameInitializer {
     GameInitializer.SetLoadingMessage("Loading INI File");
     /**
      * Initialize INIConfig.
-     * Filenames match reva (WinMain): K2 "swKotor2.ini", K1 "swKotor.ini".
-     * Sections/keys match binary strings (Sound Options, Graphics Options, Game Options, Keymapping, Autopause Options; K2 also Display Options).
+     * K2: swKotor2.ini, K1: swKotor.ini. Sections/keys match the original game (Sound Options,
+     * Graphics Options, Game Options, Keymapping, Autopause Options; K2 also Display Options).
      */
     if (GameState.GameKey == GameEngineType.TSL) {
       GameState.iniConfig = new INIConfig('swKotor2.ini', INIConfig.defaultConfigs.swKotOR2);
@@ -266,7 +269,8 @@ export class GameInitializer {
     await SaveGame.GetSaveGames();
     PerformanceMonitor.stop('SaveGame.GetSaveGames');
 
-    VideoEffectManager.Init2DA(TwoDAManager.datatables.get('videoeffects') as any);
+    const videoeffects = TwoDAManager.datatables.get('videoeffects');
+    if (videoeffects) VideoEffectManager.Init2DA(videoeffects);
   }
 
   static async LoadGameResources() {
@@ -321,8 +325,8 @@ export class GameInitializer {
           }
           break;
         default:
-          console.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
-          console.log(module_obj);
+          log.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
+          log.debug(String(module_obj));
           break;
       }
     }
@@ -330,7 +334,7 @@ export class GameInitializer {
   }
 
   static async LoadModules() {
-    let data_dir = 'modules';
+    const data_dir = 'modules';
     PerformanceMonitor.start('GameInitializer.LoadModules');
     try {
       const filenames = await GameFileSystem.readdir(data_dir);
@@ -367,14 +371,14 @@ export class GameInitializer {
             }
             break;
           default:
-            console.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
-            console.log(module_obj);
+            log.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
+            log.debug(String(module_obj));
             break;
         }
       }
     } catch (e) {
-      console.warn('GameInitializer.LoadModules: Failed to load modules');
-      console.error(e);
+      log.warn('GameInitializer.LoadModules: Failed to load modules');
+      log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadModules');
   }
@@ -411,8 +415,8 @@ export class GameInitializer {
         }
       }));
     } catch (e) {
-      console.warn('GameInitializer.LoadTexturePacks: Failed to load texture packs');
-      console.error(e);
+      log.warn('GameInitializer.LoadTexturePacks: Failed to load texture packs');
+      log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadTexturePacks');
   }
@@ -422,9 +426,9 @@ export class GameInitializer {
     try {
       const files = await GameFileSystem.readdir(folder, { recursive: true })
       for (let i = 0, len = files.length; i < len; i++) {
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1, _parsed.ext.length);
+        const f = files[i];
+        const _parsed = path.parse(f);
+        const ext = _parsed.ext.substr(1, _parsed.ext.length);
 
         if (typeof ResourceTypes[ext] != 'undefined') {
           ResourceLoader.setResource(ResourceTypes[ext], _parsed.name.toLowerCase(), {
@@ -439,8 +443,8 @@ export class GameInitializer {
         }
       }
     } catch (e) {
-      console.warn(`GameInitializer.LoadGameAudioResources[${folder}]: Failed to load game audio resources`);
-      console.error(e);
+      log.warn(`GameInitializer.LoadGameAudioResources[${folder}]: Failed to load game audio resources`);
+      log.error(String(e), e);
     }
     PerformanceMonitor.stop(`GameInitializer.LoadGameAudioResources[${folder}]`);
   }
@@ -450,9 +454,9 @@ export class GameInitializer {
     try {
       const files = await GameFileSystem.readdir('Override', { recursive: false });
       for (let i = 0, len = files.length; i < len; i++) {
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
+        const f = files[i];
+        const _parsed = path.parse(f);
+        const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
         const resId = ResourceTypes[ext];
 
         if (typeof resId === 'undefined') {
@@ -465,8 +469,8 @@ export class GameInitializer {
         ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
       }
     } catch (e) {
-      console.warn('GameInitializer.LoadOverride: Failed to load override');
-      console.error(e);
+      log.warn('GameInitializer.LoadOverride: Failed to load override');
+      log.error(String(e), e);
     }
     PerformanceMonitor.stop('GameInitializer.LoadOverride');
   }

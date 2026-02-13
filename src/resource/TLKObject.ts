@@ -2,7 +2,9 @@
 import { BinaryReader } from "../utility/binary/BinaryReader";
 import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 
+const log = createScopedLogger(LogScope.Resource);
 import { TLKString } from "./TLKString";
 
 /**
@@ -35,7 +37,7 @@ export class TLKObject {
   constructor(file: Uint8Array|string = '', onSuccess?: Function, onProgress?: Function){
     this.file = file;
     this.TLKStrings = [];
-    console.log('TLKObject', 'Opening TLK');
+    log.info('TLKObject', 'Opening TLK');
     if(typeof this.file === 'string'){
       this.LoadFromDisk(this.file, onProgress).then( () => {
         if(typeof onSuccess === 'function') onSuccess();
@@ -54,7 +56,7 @@ export class TLKObject {
   LoadFromBuffer( buffer: Uint8Array, onProgress?: Function ){
     return new Promise<void>( (resolve, reject) => {
       try{
-        console.log('TLKObject', 'Reading');
+        log.info('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
         this.reader.seek(0);
 
@@ -76,16 +78,16 @@ export class TLKObject {
             null
           );
 
-          let pos = this.reader.tell();
+          const pos = this.reader.tell();
           this.reader.seek(this.TLKStrings[i].StringOffset);
-          //console.log(this.TLKStrings[i].StringOffset);
+          //log.info(this.TLKStrings[i].StringOffset);
           this.TLKStrings[i].Value = this.reader.readChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
           this.reader.seek(pos);
 
           if(typeof onProgress == 'function')
             onProgress(i+1, this.StringCount);
         }
-        console.log('TLKObject', 'Done');
+        log.info('TLKObject', 'Done');
         resolve();
       }catch(e){
         reject(e);

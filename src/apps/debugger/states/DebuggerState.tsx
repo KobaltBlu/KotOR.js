@@ -1,8 +1,12 @@
+import * as KotOR from "../KotOR";
+
 import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
 import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
 import { IPCMessage } from "../../../server/ipc/IPCMessage";
 import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import * as KotOR from "../KotOR";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Debug);
 
 export class DebuggerState {
 
@@ -25,7 +29,7 @@ export class DebuggerState {
     }
     this.#channel.onmessage = (event) => {
       if(typeof event.data == 'string'){
-        console.log(event.data);
+        log.trace('channel message (string)', event.data);
         return;
       }else if(event.data?.constructor == Uint8Array){
         const message = IPCMessage.fromBuffer(event.data);
@@ -45,7 +49,7 @@ export class DebuggerState {
            * If the script is not already in the map, we need to create a new one
            */
           if(!this.scriptMap.has(name)){
-            let nwscript = new KotOR.NWScript();
+            const nwscript = new KotOR.NWScript();
             nwscript.name = name;
             const code = message.getParam(4).getVoid();
             const progSize = message.getParam(3).getInt32();
@@ -92,14 +96,14 @@ export class DebuggerState {
         }else if(message.type == IPCMessageType.UpdateScriptState){
           const uuid = message.getParam(0).getString();
           const parentUUID = message.getParam(1).getString();
-          let name = message.getParam(2).getString();
-          console.log("Update Scripte State Received", uuid);
+          const name = message.getParam(2).getString();
+          log.debug('UpdateScriptState received', uuid);
           const instance = KotOR.NWScript.NWScriptInstanceMap.get(uuid);
           if(instance){
             instance.seek = message.getParam(3).getInt32();
             instance.stack = KotOR.NWScript.NWScriptStack.FromDebuggerPacket(message.getParam(4).getVoid());
             this.setSelectedInstance(instance);
-            console.log("Script state updated", uuid, instance.seek, instance);
+            log.debug('Script state updated', uuid, instance.seek);
             instance.dispatchEvent('update');
             this.dispatchEvent('instance-updated', instance);
           }
@@ -118,8 +122,8 @@ export class DebuggerState {
     this.dispatchEvent('selected-instance', instance);
   }
 
-  _breakPointUpdateHandler = (address: number, added: false) => {
-    console.log('breakPointUpdateHandler', address, added);
+  _breakPointUpdateHandler = (address: number, added: boolean) => {
+    log.debug('breakPointUpdateHandler', address, added);
     if(!this.selectedInstance) return;
 
     const ipcMessage = new IPCMessage(added ? IPCMessageType.SetScriptBreakpoint : IPCMessageType.RemoveScriptBreakpoint);
@@ -128,18 +132,18 @@ export class DebuggerState {
     this.sendMessage(ipcMessage.toBuffer());
   }
 
-  sendMessage(data: any){
+  sendMessage(data: ArrayBuffer | ArrayBufferView){
     this.#channel.postMessage(data);
   }
 
   dispose(){
-    console.log("Closing channel");
+    log.debug("Closing channel");
     this.#channel.close();
   }
   
-  #eventListeners: Map<string, Function[]> = new Map();
+  #eventListeners: Map<string, ((...args: (string | number | boolean | object | null)[]) => void)[]> = new Map();
 
-  addEventListener(type: string, listener: Function){
+  addEventListener(type: string, listener: (...args: (string | number | boolean | object | null)[]) => void): void {
     let listeners = this.#eventListeners.get(type);
     if(!listeners){
       listeners = [];
@@ -150,14 +154,14 @@ export class DebuggerState {
     }
   }
 
-  removeEventListener(type: string, listener: Function){
+  removeEventListener(type: string, listener: (...args: (string | number | boolean | object | null)[]) => void): void {
     const listeners = this.#eventListeners.get(type);
     if(listeners){
       listeners.splice(listeners.indexOf(listener), 1);
     }
   }
 
-  dispatchEvent(type: string, ...args: any[]){
+  dispatchEvent(type: string, ...args: (string | number | boolean | object | null)[]): void {
     const listeners = this.#eventListeners.get(type);
     if(listeners){
       listeners.forEach(listener => listener(...args));

@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Modal, Button, Form, FormControl } from "react-bootstrap";
+
 import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalHelpBrowserState } from "../../states/modal/ModalHelpBrowserState";
+
 import { type HelpDocument } from "../../data";
 
 interface FilteredFolder {

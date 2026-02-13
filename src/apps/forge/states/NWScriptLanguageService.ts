@@ -1,14 +1,21 @@
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+
 import { EditorFile } from "../EditorFile";
 import { FileTypeManager } from "../FileTypeManager";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
+import * as KotOR from '../KotOR';
+
+import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
 import { NWScriptASTBuilder } from "../../../nwscript/compiler/NWScriptASTBuilder";
 import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGen";
+import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { ForgeState } from "./ForgeState";
-import * as KotOR from '../KotOR';
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import type { TabState } from "./tabs/TabState";
-import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
 import type { TabTextEditorState } from "./tabs/TabTextEditorState";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 
 // Format NWScript code using AST
 function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {
@@ -20,12 +27,12 @@ function formatNWScript(code: string, options: monacoEditor.languages.Formatting
     
     if (!ast) {
       // If parsing fails, return original code
-      console.warn('AST formatting failed, returning original');
+      log.warn('AST formatting failed, returning original');
       return code;
     }
     
     // Generate formatted code from AST
-    console.log('AST formatting successful, generating code from AST');
+    log.debug('AST formatting successful, generating code from AST');
     const codeGen = new NWScriptASTCodeGen({
       tabSize: options.tabSize || 2,
       insertSpaces: options.insertSpaces !== false,
@@ -38,9 +45,9 @@ function formatNWScript(code: string, options: monacoEditor.languages.Formatting
     // Only log unexpected errors (not parse errors)
     const err = error as { name?: string; type?: string };
     if (err?.name !== 'NWScriptASTBuilderError' && err?.type !== 'parse') {
-      console.warn('AST formatting failed, returning original code:', error);
+      log.warn('AST formatting failed, returning original code:', error);
     }
-    console.error(error);
+    log.error(error as Error);
     return code;
   }
 }
@@ -50,31 +57,28 @@ export class NWScriptLanguageService {
   static nwScriptTokenConfig: monacoEditor.languages.IMonarchLanguage | null = null;
 
   static initNWScriptLanguage() {
-    const arg_value_parser = function( value: any ): any {
+    type ArgValue = { x?: number; y?: number; z?: number; type?: string; value?: ArgValue; datatype?: { value?: string } };
+    const arg_value_parser = function( value: ArgValue | string | number | undefined ): string | number | undefined {
       if(typeof value === 'undefined') return 'NULL';
-      if(typeof value == 'object'){
-        if(typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
-          return `[${value.x}, ${value.y}, ${value.z}]`;
-        }else if(value.type == 'neg'){
-          return '-'+arg_value_parser(value.value);
-        }else if(value?.datatype?.value == 'object'){
-          if(value.value == 0x7FFFFFFF) return 'OBJECT_INVALID';
-          if(value.value == 0) return 'OBJECT_SELF';
-          return arg_value_parser(value.value);
-        }else if(value?.datatype?.value == 'int'){
-          return arg_value_parser(value.value);
-        }else if(value?.datatype?.value == 'float'){
-          return arg_value_parser(value.value);
-        }else if(value?.datatype?.value == 'string'){
-          return arg_value_parser(value.value);
-        }else if(value?.datatype?.value == 'vector'){
-          return arg_value_parser(value.value);
+      if(typeof value === 'object' && value !== null){
+        const v = value as ArgValue;
+        if(typeof v.x === 'number' && typeof v.y === 'number' && typeof v.z === 'number'){
+          return `[${v.x}, ${v.y}, ${v.z}]`;
+        }else if(v.type === 'neg'){
+          return '-' + (arg_value_parser(v.value) ?? '');
+        }else if(v?.datatype?.value === 'object'){
+          if((v.value as number) === 0x7FFFFFFF) return 'OBJECT_INVALID';
+          if((v.value as number) === 0) return 'OBJECT_SELF';
+          return arg_value_parser(v.value);
+        }else if(v?.datatype?.value === 'int' || v?.datatype?.value === 'float' || v?.datatype?.value === 'string' || v?.datatype?.value === 'vector'){
+          return arg_value_parser(v.value);
         }
-      }else if(typeof value == 'string'){
+      }else if(typeof value === 'string'){
         return value;
-      }else if(typeof value == 'number'){
+      }else if(typeof value === 'number'){
         return value;
       }
+      return undefined;
     }
 
     // Register a new language
@@ -333,7 +337,7 @@ export class NWScriptLanguageService {
         kind: monacoEditor.languages.CompletionItemKind.Keyword,
         insertText: keywords[i],
         insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-        range: null as any
+        range: undefined
       });
     }
 
@@ -347,7 +351,7 @@ export class NWScriptLanguageService {
         insertText: `${nw_type.name}`,
         insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         documentation: `Engine Type #${nw_type.index+1}:\n\n${nw_type.name}`,
-        range: null as any
+        range: undefined
       });
     }
 
@@ -361,7 +365,7 @@ export class NWScriptLanguageService {
         insertText: `${nw_constant.name}`,
         insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         documentation: `Engine Constant #${nw_constant.index+1}:\n\n${nw_constant.datatype.value} ${nw_constant.name} = ${arg_value_parser(nw_constant.value)};`,
-        range: null as any
+        range: undefined
       });
     }
 
@@ -390,7 +394,7 @@ export class NWScriptLanguageService {
         insertText: `${action.name}(${args.join(', ')})`,
         insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
         documentation: `Engine Routine #${action.index}:\n\n${action.returntype.value} ${action.name}(${args.join(', ')})\n\n`+action.comment,
-        range: null as any
+        range: undefined
       });
     });
 
@@ -406,7 +410,7 @@ export class NWScriptLanguageService {
               insertText: ['void main () {', '\t$0', '}'].join('\n'),
               insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'void main() Statement',
-              range: null as any
+              range: undefined
             },
             {
               label: 'int StartingConditional()',
@@ -414,7 +418,7 @@ export class NWScriptLanguageService {
               insertText: ['int StartingConditional () {', '\t$0', '}'].join('\n'),
               insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'int StartingConditional() Statement',
-              range: null as any
+              range: undefined
             },
             {
               label: 'if',
@@ -424,7 +428,7 @@ export class NWScriptLanguageService {
               documentation: 'if statement',
               filterText: 'if',
               sortText: '0if',
-              range: null as any
+              range: undefined
             },
             {
               label: 'ifelse',
@@ -432,7 +436,7 @@ export class NWScriptLanguageService {
               insertText: ['if (${1:condition}) {', '\t$0', '} else {', '\t', '}'].join('\n'),
               insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
               documentation: 'If-Else Statement',
-              range: null as any
+              range: undefined
             },
             {
               label: 'for',
@@ -442,7 +446,7 @@ export class NWScriptLanguageService {
               documentation: 'for loop',
               filterText: 'for',
               sortText: '0for',
-              range: null as any
+              range: undefined
             },
             {
               label: 'while',
@@ -452,7 +456,7 @@ export class NWScriptLanguageService {
               documentation: 'while loop',
               filterText: 'while',
               sortText: '0while',
-              range: null as any
+              range: undefined
             },
             {
               label: 'switch',
@@ -462,7 +466,7 @@ export class NWScriptLanguageService {
               documentation: 'switch statement',
               filterText: 'switch',
               sortText: '0switch',
-              range: null as any
+              range: undefined
             },
             {
               label: 'struct',
@@ -472,11 +476,11 @@ export class NWScriptLanguageService {
               documentation: 'struct declaration',
               filterText: 'struct',
               sortText: '0struct',
-              range: null as any
+              range: undefined
             }
           ];
 
-          const parser = (ForgeState.tabManager.currentTab as any).nwScriptParser;
+          const parser = (ForgeState.tabManager.currentTab as TabTextEditorState | null)?.nwScriptParser;
           if(parser){
             try {
               //Local Variables - safely access, parser might be in error state
@@ -493,22 +497,22 @@ export class NWScriptLanguageService {
                     insertText: `${l_variable.name}`,
                     insertTextRules: monacoEditor.languages.CompletionItemInsertTextRule.InsertAsSnippet,
                     documentation: `Variable:\n\n${l_variable.datatype?.value || 'unknown'} ${l_variable.name};`,
-                    range: null as any
+                    range: undefined
                   });
                 }
               }
             } catch (e) {
               // Silently fail - don't break autocomplete if variable access fails
-              console.warn('Error accessing parser variables:', e);
+              log.warn('Error accessing parser variables:', e);
             }
           }
-          console.log('Autocomplete', ([] as any[]).concat(local_suggestions, nw_suggestions))
-          return { 
-            incomplete: true, 
-            suggestions: ([] as any[]).concat(local_suggestions, nw_suggestions) 
+          log.debug('Autocomplete', [...local_suggestions, ...nw_suggestions]);
+          return {
+            incomplete: true,
+            suggestions: [...local_suggestions, ...nw_suggestions] as monacoEditor.languages.CompletionItem[],
           };
         }catch(e){
-          console.error('Autocomplete error:', e);
+          log.error('Autocomplete error:', e as Error);
           // Always return at least the engine suggestions even on error
           return { 
             incomplete: true, 
@@ -597,7 +601,7 @@ export class NWScriptLanguageService {
                   args += `${arg.name} ${def_arg.name}`;
                 }
               }else{
-                console.warn('invalid argument', i, function_definition)
+                log.warn('invalid argument', i, function_definition);
               }
             }
             let hoverContent = `\`\`\`nwscript\n${function_definition.returntype.value} ${action.name}(${args})\n\`\`\``;
@@ -615,7 +619,7 @@ export class NWScriptLanguageService {
             };
           }
 
-          const parser = (ForgeState.tabManager.currentTab as any).nwScriptParser;
+          const parser = (ForgeState.tabManager.currentTab as TabTextEditorState | null)?.nwScriptParser;
           if(parser){
 
             const structPropertyMatches = model.getValue().matchAll(
@@ -676,7 +680,7 @@ export class NWScriptLanguageService {
                 const funcLine = l_function.source.first_line - 1; // Convert to 0-based index
                 
                 // Look backwards for comment blocks (similar to engine actions)
-                let commentLines: string[] = [];
+                const commentLines: string[] = [];
                 let inBlockComment = false;
                 
                 for (let i = funcLine - 1; i >= 0; i--) {
@@ -753,7 +757,7 @@ export class NWScriptLanguageService {
                     args.push(`${def_arg.datatype.value} ${def_arg.name}`);
                   }
                 }else{
-                  console.warn('invalid argument', i, l_function)
+                  log.warn('invalid argument', i, l_function);
                 }
               }
               
@@ -783,7 +787,7 @@ export class NWScriptLanguageService {
           ),
         };
       }
-    } as any);
+    });
 
     // Register document symbol provider for outline/navigation (Ctrl+Shift+O / Cmd+Shift+O)
     monacoEditor.languages.registerDocumentSymbolProvider('nwscript', {
@@ -793,7 +797,7 @@ export class NWScriptLanguageService {
           const text = model.getValue();
           
           // Get the parser from the current tab if available
-          const currentTab = ForgeState.tabManager.currentTab as any;
+          const currentTab = ForgeState.tabManager.currentTab as TabTextEditorState | null;
           let parser = currentTab?.nwScriptParser;
           
           // If no parser available, create a temporary one
@@ -922,7 +926,7 @@ export class NWScriptLanguageService {
 
           return symbols;
         } catch (e) {
-          console.error('Error providing document symbols:', e);
+          log.error('Error providing document symbols:', e as Error);
           return [];
         }
       }
@@ -937,7 +941,7 @@ export class NWScriptLanguageService {
             return [];
           }
 
-          const currentTab = ForgeState.tabManager.currentTab as any;
+          const currentTab = ForgeState.tabManager.currentTab as TabTextEditorState | null;
           if (!currentTab || !currentTab.nwScriptParser) {
             return [];
           }
@@ -979,7 +983,7 @@ export class NWScriptLanguageService {
               
               // Find tab by file resref
               for (const tab of ForgeState.tabManager.tabs) {
-                if (tab.file && tab.file.resref === resref && tab.file.ext === 'nss') {
+                if (tab.file && tab.file.resref === resref && tab.file.ext === KotOR.ResourceTypes.nss) {
                   targetTab = tab;
                   break;
                 }
@@ -1014,9 +1018,9 @@ export class NWScriptLanguageService {
                   
                       // Find the newly opened tab and wait for file to load, then scroll
                       const findAndScroll = () => {
-                        const newTab = ForgeState.tabManager.tabs.find((tab) => 
-                          tab.file && tab.file.resref === resref && tab.file.ext === 'nss'
-                        ) as any;
+                        const newTab = ForgeState.tabManager.tabs.find((tab) =>
+                          tab.file && tab.file.resref === resref && tab.file.ext === KotOR.ResourceTypes.nss
+                        ) as TabTextEditorState | undefined;
                         
                         if (newTab) {
                           // Set up a one-time listener for when the file loads
@@ -1049,7 +1053,7 @@ export class NWScriptLanguageService {
                       setTimeout(findAndScroll, 50);
                     }
                   }).catch((error: Error) => {
-                    console.error('Error loading file from KEY system:', error);
+                    log.error('Error loading file from KEY system:', error as Error);
                   });
                 }
               }
@@ -1070,9 +1074,9 @@ export class NWScriptLanguageService {
             const column = nw_constant.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
-              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
-            ) as any;
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+            ) as TabTextEditorState | undefined;
             
             if (nwscriptTab) {
               // File is already open - focus it and scroll
@@ -1099,8 +1103,8 @@ export class NWScriptLanguageService {
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
                   const newTab = ForgeState.tabManager.tabs.find((tab) => 
-                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
-                  ) as any;
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+                  ) as TabTextEditorState | undefined;
                   
                   if (newTab) {
                     const onFileLoad = () => {
@@ -1149,9 +1153,9 @@ export class NWScriptLanguageService {
             const column = nw_action.source.first_column || 1;
             
             // Check if nwscript.nss is already open
-            let nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
-              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
-            ) as any;
+            const nwscriptTab = ForgeState.tabManager.tabs.find((tab) => 
+              tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+            ) as TabTextEditorState | undefined;
             
             if (nwscriptTab) {
               // File is already open - focus it and scroll
@@ -1175,9 +1179,9 @@ export class NWScriptLanguageService {
                 
                 // Find the newly opened tab and scroll
                 const findAndScroll = () => {
-                  const newTab = ForgeState.tabManager.tabs.find((tab: TabState) => 
-                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === 'nss'
-                  ) as any;
+                  const newTab = ForgeState.tabManager.tabs.find((tab: TabState) =>
+                    tab.file && tab.file.resref === 'nwscript' && tab.file.ext === KotOR.ResourceTypes.nss
+                  ) as TabTextEditorState | undefined;
                   
                   if (newTab) {
                     const onFileLoad = () => {
@@ -1282,7 +1286,7 @@ export class NWScriptLanguageService {
 
           return [];
         } catch (e) {
-          console.error('Error providing definition:', e);
+          log.error('Error providing definition:', e as Error);
           return [];
         }
       }

@@ -9,8 +9,12 @@ import { GameState } from "../GameState";
 import type { ModuleObject } from "../module/ModuleObject";
 import { DLGObject } from "../resource/DLGObject";
 import { BitWise } from "../utility/BitWise";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionDialogObject class.
@@ -41,11 +45,11 @@ export class ActionDialogObject extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    //console.log('ActionDialogObject', this);
+    log.trace('ActionDialogObject update()');
 
     this.target = this.getParameter<ModuleObject>(0);
-    let conversation_resref: string = this.getParameter<string>(1) || '';
-    let ignoreStartRange = this.getParameter<number>(4) || 0;
+    const conversation_resref: string = this.getParameter<string>(1) || '';
+    const ignoreStartRange = this.getParameter<number>(4) || 0;
 
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
@@ -55,7 +59,7 @@ export class ActionDialogObject extends Action {
     }
 
     if(GameState.Mode == EngineMode.DIALOG){
-      console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
+      log.info('ActionDialogObject: Already in dialog owner=%s tag=%s', this.owner.getName(), this.owner.getTag());
       return ActionStatus.FAILED;
     }
 
@@ -65,10 +69,10 @@ export class ActionDialogObject extends Action {
       return ActionStatus.COMPLETE;
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
-      // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      log.debug('ActionDialogObject: moving to target distance=%.2f', distance);
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

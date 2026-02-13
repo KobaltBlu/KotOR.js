@@ -1,8 +1,8 @@
 # KotOR.js AI Coding Assistant Instructions
 
 ## Observed Original Game Behavior
-- Avoid including any discussion or documentation of reverse engineering in this codebase.
-- When referencing behavior derived from agentdecompile or reva, always use phrases like "observed original game behavior" instead of terms like "reverse engineered" or similar expressions.
+- Avoid including any discussion or documentation of how behavior was determined or verified.
+- When referencing behavior derived from the original game, use phrases like "observed original game behavior" instead of terms that suggest implementation method.
 
 ## Project Overview
 
@@ -52,7 +52,7 @@ Handles binary file format parsing:
 - `NWScript` - Compiled script loader/executor (.ncs bytecode files)
 - `NWScriptInstance` - Runtime script execution environment
 - `NWScriptDefK1`/`NWScriptDefK2` - Action definitions for each game version
-- Decompiler in `NWScript.decompiler` for debugging
+- NCS-to-NSS converter in `NWScript.decompiler` for debugging
 
 ## Developer Workflows
 
@@ -159,7 +159,7 @@ ResourceLoader.demand() → Checks archives (KEY→BIF lookup, or RIM/ERF) → P
 1. **Electron DevTools**: Available in runtime, use console.log and debugger
 2. **Type checking**: `npx tsc --noEmit` for full project type check
 3. **Performance**: `PerformanceMonitor` utility in codebase for profiling
-4. **Script decompilation**: NWScript has built-in decompiler for .ncs files
+4. **Script conversion**: NWScript converts .ncs bytecode to NSS source
 5. **Resource issues**: Check archive loading order (KEY→BIF→RIM→ERF) in GameFileSystem
 
 ---

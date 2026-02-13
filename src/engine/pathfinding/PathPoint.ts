@@ -1,10 +1,11 @@
 import * as THREE from 'three';
+
 import { IPathPointOptions } from "../../interface/engine/pathfinding/IPathPointOptions";
-import { Utility } from '../../utility/Utility';
 import type { ModuleArea } from '../../module/ModuleArea';
-import type { GFFStruct } from '../../resource/GFFStruct';
-import type { WalkmeshEdge } from '../../odyssey/WalkmeshEdge';
 import type { ModuleObject } from '../../module/ModuleObject';
+import type { WalkmeshEdge } from '../../odyssey/WalkmeshEdge';
+import type { GFFStruct } from '../../resource/GFFStruct';
+import { Utility } from '../../utility/Utility';
 
 /**
  * PathPoint class.
@@ -150,11 +151,11 @@ export class PathPoint {
     return new PathPoint({
       id: -1,
       connections: [],
-      first_connection: struct.getFieldByLabel('First_Conection').getValue(),
-      num_connections: struct.getFieldByLabel('Conections').getValue(),
+      first_connection: struct.getNumberByLabel('First_Conection'),
+      num_connections: struct.getNumberByLabel('Conections'),
       vector: new THREE.Vector3(
-        struct.getFieldByLabel('X').getValue(), 
-        struct.getFieldByLabel('Y').getValue(), 
+        struct.getNumberByLabel('X'),
+        struct.getNumberByLabel('Y'),
         0
       )
     });

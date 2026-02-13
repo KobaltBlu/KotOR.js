@@ -1,7 +1,10 @@
-import { GameState } from "../../../GameState";
 import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameMenu } from "../../../gui/GameMenu";
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "../../../gui";
+import { GameMenu } from "../../../gui/GameMenu";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GUIMusicItem } from "../gui/GUIMusicItem";
 
 /**
@@ -70,7 +73,7 @@ export class MainMusic extends GameMenu {
       this.LBL_TRACKNUM.setText(`${0} / ${table.RowCount}`);
 
       this.LB_MUSIC.onSelected = (node: any) => {
-        console.log(node);
+        log.info(node);
         this.selected = node;
         this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(node.strrefname).Value);
         this.LBL_TRACKNUM.setText(`${node.__rowlabel} / ${table.RowCount}`);
@@ -82,7 +85,7 @@ export class MainMusic extends GameMenu {
         AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
           this.setBackgroundMusic(data.buffer as ArrayBuffer);
         }, () => {
-          console.error('Background Music not found', this.selected.filename);
+          log.error('Background Music not found', this.selected.filename);
         });
       });
 
@@ -97,7 +100,7 @@ export class MainMusic extends GameMenu {
         if(this.selectedIndex >= table.RowCount){
           this.selectedIndex = 0;
         }
-        console.log(this.selectedIndex);
+        log.info(this.selectedIndex);
         this.LB_MUSIC.selectItem(this.LB_MUSIC.listItems[this.selectedIndex]);
       });
 

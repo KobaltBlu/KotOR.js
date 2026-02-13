@@ -1,11 +1,15 @@
+import * as THREE from "three";
+
+import { TextureType } from "../../../enums/loaders/TextureType";
+import { GameState } from "../../../GameState";
 import { GUIProtoItem, GUIButton } from "../../../gui";
 import type { GUIControl, GameMenu } from "../../../gui";
-import * as THREE from "three";
-import { TextureType } from "../../../enums/loaders/TextureType";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import type { GFFStruct } from "../../../resource/GFFStruct";
-import { GameState } from "../../../GameState";
 import { TextureLoader } from "../../../loaders";
+import type { GFFStruct } from "../../../resource/GFFStruct";
+import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * GUIFeatItem class.
@@ -18,8 +22,8 @@ import { TextureLoader } from "../../../loaders";
  */
 export class GUIFeatItem extends GUIProtoItem {
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
-    super(menu, control, parent, scale);
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl | null | undefined = undefined, scale = false){
+    super(menu, control, parent ?? undefined, scale);
     this.disableSelection = true;
     this.extent.height = 45;
   }
@@ -34,23 +38,23 @@ export class GUIFeatItem extends GUIProtoItem {
       super.createControl();
       //Create the actual control elements below
 
-      let iconHeight = this.extent.height;
-      let arrowHeight = iconHeight/2; //32
+      const iconHeight = this.extent.height;
+      const arrowHeight = iconHeight/2; //32
 
-      let featList = this.node;
+      const featList = this.node;
       for(let i = 0; i < featList.length; i++){
-        let feat = featList[i];
+        const feat = featList[i];
 
-        let hasPrereqfeat1 = (feat.prereqfeat1 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat1));
-        let hasPrereqfeat2 = (feat.prereqfeat2 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat2));
-        let hasFeat = GameState.getCurrentPlayer().getHasFeat(feat.__index);
+        const hasPrereqfeat1 = (feat.prereqfeat1 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat1));
+        const hasPrereqfeat2 = (feat.prereqfeat2 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat2));
+        const hasFeat = GameState.getCurrentPlayer().getHasFeat(feat.__index);
 
-        console.log(feat.constant, hasPrereqfeat1, hasPrereqfeat2);
+        log.debug('feat', feat.constant, hasPrereqfeat1, hasPrereqfeat2);
 
-        let locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
+        const locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
         if(locked){ continue; }
 
-        let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
+        const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
         buttonIcon.name = 'BUTTON';
         buttonIcon.setText('');
         buttonIcon.disableTextAlignment();
@@ -64,7 +68,7 @@ export class GUIFeatItem extends GUIProtoItem {
         buttonIcon.autoCalculatePosition = false;
         this.children.push(buttonIcon);
 
-        let _buttonIconWidget = buttonIcon.createControl();
+        const _buttonIconWidget = buttonIcon.createControl();
         switch(i){
           case 2:
             _buttonIconWidget.position.x = (this.extent.width/2 - buttonIcon.extent.width/2);
@@ -122,9 +126,9 @@ export class GUIFeatItem extends GUIProtoItem {
          * BLUE ARROW
          */
         
-        let arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
+        const arrowOffset = (this.extent.width/2 - buttonIcon.extent.width/2)/2;
         if(i > 0){
-          let arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
+          const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
           arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
@@ -140,7 +144,7 @@ export class GUIFeatItem extends GUIProtoItem {
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);
 
-          let _arrowIconWidget = arrowIcon.createControl();
+          const _arrowIconWidget = arrowIcon.createControl();
           switch(i){
             case 2:
               _arrowIconWidget.position.x = arrowOffset;
@@ -169,7 +173,7 @@ export class GUIFeatItem extends GUIProtoItem {
       }
       return this.widget;
     }catch(e){
-      console.error(e);
+      log.error('GUIFeatItem createControl', e);
     }
     return this.widget;
 

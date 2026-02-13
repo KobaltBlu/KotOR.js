@@ -36,4 +36,4 @@ export enum GameEventType {
   EventAquireItem                  = 0x19,
   EventAreaTransition              = 0x1A,
   EventControllerRumble            = 0x1B,
-};
+}

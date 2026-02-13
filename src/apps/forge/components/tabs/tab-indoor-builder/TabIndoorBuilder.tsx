@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+
 import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { UI3DRendererView } from "../../UI3DRendererView";
+
 import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { TabIndoorBuilderState, IndoorBuilderViewMode } from "../../../states/tabs/TabIndoorBuilderState";
-import { IndoorMapCanvasRenderer } from "../../../helpers/IndoorMapCanvasRenderer";
-import { IndoorMapRoom } from "../../../data/IndoorMap";
 import { Kit, KitComponent } from "../../../data/IndoorKit";
 import { ensureComponentPreview } from "../../../data/IndoorKitPreview";
+import { IndoorMapRoom } from "../../../data/IndoorMap";
 import { ForgeFileSystem } from "../../../ForgeFileSystem";
-import { UI3DRendererView } from "../../UI3DRendererView";
+import { IndoorMapCanvasRenderer } from "../../../helpers/IndoorMapCanvasRenderer";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { TabIndoorBuilderState, IndoorBuilderViewMode } from "../../../states/tabs/TabIndoorBuilderState";
+
+
 import "./TabIndoorBuilder.scss";
 import * as THREE from "three";
 

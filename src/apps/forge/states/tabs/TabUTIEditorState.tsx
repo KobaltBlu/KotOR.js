@@ -1,12 +1,17 @@
 import React from "react";
-import { TabState } from "./TabState";
+import * as THREE from "three";
+
+import { TabUTIEditor } from "../../components/tabs/tab-uti-editor/TabUTIEditor";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+import { ForgeItem } from "../../module-editor/ForgeItem";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabUTIEditor } from "../../components/tabs/tab-uti-editor/TabUTIEditor";
 import { UI3DRenderer } from "../../UI3DRenderer";
-import * as THREE from "three";
-import { ForgeItem } from "../../module-editor/ForgeItem";
+
+
+
+import { TabState } from "./TabState";
 
 export interface ItemPropertyEntry {
   chanceAppear: number;
@@ -52,7 +57,7 @@ export class TabUTIEditorState extends TabState {
       }
     ];
     
-    this.item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
+    this.item.addEventListener('onPropertyChange', (property: string, newValue: string | number | boolean | object | undefined, oldValue: string | number | boolean | object | undefined) => {
       if(property === 'baseItem' || property === 'modelVariation'){
         this.processEventListener('onModelChange', [this]);
       }

@@ -1,8 +1,9 @@
 import * as path from "path";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
+
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ResourceLoader } from "../loaders/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
+import { ApplicationProfile } from "../utility/ApplicationProfile";
 import { GameFileSystem } from "../utility/GameFileSystem";
 
 /** BIK (Bink Video) resource type id for cache lookups */

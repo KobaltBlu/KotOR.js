@@ -1,7 +1,14 @@
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { AudioEngine } from "./AudioEngine";
 import { AudioLoader } from "./AudioLoader";
+
+const log = createScopedLogger(LogScope.Game);
+
+/** AudioBufferSourceNode with optional custom .name (resRef) for tracking. */
+type AudioBufferSourceWithName = AudioBufferSourceNode & { name?: string };
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -152,7 +159,7 @@ export class AudioEmitter {
     try{
       this.gainNode.disconnect();
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
     }
 
     switch(this.channel){
@@ -185,10 +192,10 @@ export class AudioEmitter {
       try{
         await this.addSound(resRef, data);
       }catch(e){
-        console.error('AudioEmitter', 'Sound not added to emitter', resRef);
+        log.error('AudioEmitter', 'Sound not added to emitter', resRef);
       }
     }catch(e){
-      console.error('AudioEmitter', 'Sound not found', resRef);
+      log.error('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
@@ -198,15 +205,15 @@ export class AudioEmitter {
     if(resRef == '****' || !resRef?.length){ return; }
     try{
       const sound: AudioBufferSourceNode = this.engine.audioCtx.createBufferSource();
-      (sound as any).name = resRef;
+      (sound as AudioBufferSourceWithName).name = resRef;
       let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
       if(!buffer){
-        let data = await AudioLoader.LoadSound(resRef);
+        const data = await AudioLoader.LoadSound(resRef);
         buffer = await this.addSound(resRef, data);
       }
 
       if(!buffer){
-        console.error('AudioEmitter', 'Sound not found', resRef);
+        log.error('AudioEmitter', 'Sound not found', resRef);
         return;
       }
 
@@ -223,8 +230,8 @@ export class AudioEmitter {
       }
       return sound;
     }catch(e){
-      console.error('AudioEmitter', 'Failed to play sound', resRef);
-      console.error(e);
+      log.error('AudioEmitter', 'Failed to play sound', resRef);
+      log.error(e as Error);
     }
     return;
   }
@@ -237,7 +244,7 @@ export class AudioEmitter {
     if(this.buffers.has(resRef)){
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
-      (this.currentSound as any).name = resRef;
+      (this.currentSound as AudioBufferSourceWithName).name = resRef;
       this.currentSound.loop = this.isLooping;
       this.currentSound.connect(this.mainNode);
       this.currentSound.start(this.engine.audioCtx.currentTime);
@@ -251,17 +258,17 @@ export class AudioEmitter {
         const buffer = await this.addSound(resRef, data);
         this.currentSound = this.engine.audioCtx.createBufferSource();
         this.currentSound.buffer = buffer;
-        (this.currentSound as any).name = resRef;
+        (this.currentSound as AudioBufferSourceWithName).name = resRef;
         this.currentSound.loop = this.isLooping;
         this.currentSound.connect(this.mainNode);
         this.currentSound.start(this.engine.audioCtx.currentTime);
         return this.currentSound;
       }catch(e){
-        console.log('AudioEmitter', 'Sound not added to emitter', resRef);
-        console.error(e);
+        log.info('AudioEmitter', 'Sound not added to emitter', resRef);
+        log.error(e as Error);
       }
     }catch(e){
-      console.log('AudioEmitter', 'Sound not found', resRef);
+      log.info('AudioEmitter', 'Sound not found', resRef);
     }
   }
 
@@ -274,7 +281,7 @@ export class AudioEmitter {
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = this.buffers.get(resRef);
       // this.currentSound.buffer.onEnd = onEnd;
-      (this.currentSound as any).name = resRef;
+      (this.currentSound as AudioBufferSourceWithName).name = resRef;
       this.currentSound.start(this.engine.audioCtx.currentTime);
       this.currentSound.connect(this.mainNode);
       return this.currentSound;
@@ -289,17 +296,17 @@ export class AudioEmitter {
         this.currentSound = this.engine.audioCtx.createBufferSource();
         this.currentSound.buffer = buffer;
         // this.currentSound.buffer.onEnd = onEnd;
-        (this.currentSound as any).name = resRef;
+        (this.currentSound as AudioBufferSourceWithName).name = resRef;
         this.currentSound.start(this.engine.audioCtx.currentTime);
         this.currentSound.connect(this.mainNode);
 
         return this.currentSound;
-      }catch(e: any){
-        console.log('AudioEmitter', 'Sound not added to emitter', resRef);
+      }catch(e){
+        log.info('AudioEmitter', 'Sound not added to emitter', resRef);
         throw e;
       }
     }catch(e){
-      console.log('AudioEmitter', 'Failed to locate StreamWave', resRef);
+      log.info('AudioEmitter', 'Failed to locate StreamWave', resRef);
       throw e;
     }
   }
@@ -343,7 +350,7 @@ export class AudioEmitter {
   }
 
   getCurrentSoundName(): string {
-    return this.currentSound ? (this.currentSound as any).name || '' : '';
+    return this.currentSound ? (this.currentSound as AudioBufferSourceWithName).name || '' : '';
   }
 
   isPlayingSound(resRef: string): boolean {
@@ -366,7 +373,7 @@ export class AudioEmitter {
     this.currentSound = this.engine.audioCtx.createBufferSource();
     this.currentSound.buffer = this.buffers.get(resRef);
     this.currentSound.loop = (this.sounds.length == 1 && this.isLooping);
-    (this.currentSound as any).name = resRef;
+    (this.currentSound as AudioBufferSourceWithName).name = resRef;
     this.currentSound.playbackRate.value = this.getPlaybackRate();
     this.gainNode.gain.value = this.getVolume();
 
@@ -392,22 +399,27 @@ export class AudioEmitter {
     this.currentSound.connect(this.mainNode);
   }
 
-  async addSound(resRef: string, data: Uint8Array): Promise<AudioBuffer> {
+  async addSound(resRef: string, data: Uint8Array | ArrayBuffer): Promise<AudioBuffer> {
     if(!data){
-      console.error('AudioEmitter.addSound: No audio data present');
+      log.error('AudioEmitter.addSound: No audio data present');
       throw new Error('No audio data present');
     }
-    
+    const rawBuffer = data instanceof Uint8Array
+      ? data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+      : data.slice(0);
+    const arrayBuffer: ArrayBuffer = rawBuffer instanceof SharedArrayBuffer
+      ? new Uint8Array(rawBuffer).slice(0).buffer
+      : rawBuffer;
     try{
-      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
+      const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(arrayBuffer);
       this.buffers.set(resRef, buffer);
       return buffer;
     }catch(e){
-      console.error('AudioEmitter.addSound: Failed to decodeAudioData');
+      log.error('AudioEmitter.addSound: Failed to decodeAudioData');
       if (e.name === 'DataCloneError') {
-        console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
+        log.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');
       }
-      console.error(e);
+      log.error(e as Error);
       throw e;
     }
   }
@@ -420,8 +432,8 @@ export class AudioEmitter {
       this.currentSound.onended = undefined;
       this.currentSound.disconnect();
       this.currentSound.stop(0);
-    }catch(e: any) { 
-      console.error('Failed to disconnect sound', e);
+    }catch(e) {
+      log.error('Failed to disconnect sound', e instanceof Error ? e : new Error(String(e)));
     }
     this.currentSound = null;
   }

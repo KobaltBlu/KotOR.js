@@ -1,11 +1,11 @@
-import { GameState } from "../GameState";
 import { ModuleTriggerType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { SkillType } from "../enums/nwscript/SkillType";
+import { GameState } from "../GameState";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleDoor } from "../module/ModuleDoor";
 import type { ModuleObject } from "../module/ModuleObject";
@@ -13,6 +13,7 @@ import type { ModulePlaceable } from "../module/ModulePlaceable";
 import type { ModuleTrigger } from "../module/ModuleTrigger";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
+
 import { Action } from "./Action";
 
 /**
@@ -138,8 +139,9 @@ export class ActionExamineMine extends Action {
       trap.detectTrap();
     }
 
+    const gs = GameState as GameState & { lastExamineMineResult?: { targetId: number; target: ModuleObject; detected: boolean; trapType: number; difficulty: number; skillRank: number; d20Roll: number; detectDC: number; rawDisarmDC: number } };
     if (GameState.module) {
-      (GameState as any).lastExamineMineResult = {
+      gs.lastExamineMineResult = {
         targetId: this.target.id,
         target: this.target,
         detected,

@@ -1,7 +1,11 @@
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import type { ModuleObject } from "../module";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import type { Action } from "./Action";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * ActionQueue class.
@@ -12,26 +16,27 @@ import type { Action } from "./Action";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ActionQueue extends Array {
+export class ActionQueue extends Array<Action> {
+  static AUTO_INCREMENT_GROUP_ID = 0xffff;
+  static MAX_GROUP_ID = 0xfffe;
 
-  static AUTO_INCREMENT_GROUP_ID = 0xFFFF;
-  static MAX_GROUP_ID = 0xFFFE;
-  
   NEXT_GROUP_ID: number = 0;
   nextGroupId: number;
   lastGroupId: number;
-  owner: any;
+  owner: ModuleObject | undefined;
 
   /**
    * ActionQueue
    * initializes a new ActionQueue object
    *
-   * @param ...items - an array of actions to initialize the queue with
-   * @returns void
-   *
+   * @param items - optional actions to initialize the queue with
    */
-  constructor(...items: any[]){
-    super(...items);
+  constructor(...items: Action[]) {
+    super();
+    log.trace("ActionQueue constructor", items.length);
+    for (let i = 0; i < items.length; i++) {
+      this.push(items[i]);
+    }
     this.nextGroupId = 1;
     this.lastGroupId = 0;
     this.owner = undefined;
@@ -85,7 +90,7 @@ export class ActionQueue extends Array {
   #processGroupId(actionNode: Action){
     let newGroupId = actionNode.groupId;
     if(newGroupId < 0 || newGroupId > 0xFFFF){
-      console.warn('Invalid GroupID', newGroupId);
+      log.warn('Invalid GroupID %s, clamping to AUTO_INCREMENT', String(newGroupId));
       newGroupId = 0xFFFF;
     }
     if(newGroupId == ActionQueue.AUTO_INCREMENT_GROUP_ID){
@@ -113,7 +118,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
+  // @ts-expect-error - Array.push returns number; we override to not return to match legacy action queue API
   push( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = this;
@@ -128,7 +133,7 @@ export class ActionQueue extends Array {
    * @returns void
    *
    */
-  //@ts-expect-error
+  // @ts-expect-error - Array.unshift returns number; we override to not return to match legacy action queue API
   unshift( actionNode: Action ){
     actionNode.owner = this.owner;
     actionNode.queue = undefined;
@@ -144,10 +149,10 @@ export class ActionQueue extends Array {
    *
    */
   process( delta: number = 0 ){
-    let action = this[0];
+    const action = this[0];
     if(!action){ return; }
     action.owner = this.owner;
-    let status = action.update( delta );
+    const status = action.update( delta );
     if(status != ActionStatus.IN_PROGRESS){
       this.shift();
     }

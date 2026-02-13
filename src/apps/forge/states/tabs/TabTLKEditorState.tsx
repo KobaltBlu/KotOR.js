@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabTLKEditor } from "../../components/tabs/tab-tlk-editor/TabTLKEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabTLKEditorState extends TabState {
   tabName: string = 'TLK Editor';
@@ -112,7 +115,7 @@ export class TabTLKEditorState extends TabState {
     const { createKeyResources, findStrRefReferences } = require('../../helpers/ReferenceFinder');
 
     const modal = new ModalReferenceSearchOptionsState({
-      onApply: async (options: any) => {
+      onApply: async (options: import('../modal/ModalReferenceSearchOptionsState').ReferenceSearchOptionsStateValues) => {
         const resources = createKeyResources();
         const results = await findStrRefReferences(resources, index.toString(), options);
         const resultsModal = new ModalFileResultsState({
@@ -141,7 +144,7 @@ export class TabTLKEditorState extends TabState {
     // UI edits TLKStrings in place; getExportBuffer uses this.tlk.toBuffer()
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

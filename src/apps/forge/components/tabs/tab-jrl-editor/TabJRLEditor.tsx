@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TabJRLEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
 import * as KotOR from "../../../KotOR";
+import { TabJRLEditorState } from "../../../states/tabs";
 import "./TabJRLEditor.scss";
 
 interface BaseTabProps {
@@ -144,11 +147,12 @@ interface QuestPropertiesProps {
 const QuestProperties = (props: QuestPropertiesProps) => {
   const { quest, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return quest.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = quest.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = quest.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -237,11 +241,12 @@ interface EntryPropertiesProps {
 const EntryProperties = (props: EntryPropertiesProps) => {
   const { entry, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return entry.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = entry.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = entry.getFieldByLabel(label);
     if(field){
       field.setValue(value);

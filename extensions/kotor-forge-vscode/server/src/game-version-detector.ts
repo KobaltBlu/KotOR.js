@@ -4,8 +4,9 @@
  */
 
 import { DiagnosticSeverity } from 'vscode-languageserver/node';
-import { SemanticError } from './semantic-analyzer';
+
 import { trace } from './logger';
+import { SemanticError } from './semantic-analyzer';
 
 export type GameVersion = 'kotor1' | 'kotor2' | 'both';
 

@@ -1,10 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Form, Table, Button, Spinner, Alert } from "react-bootstrap";
-import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
-import { ReferenceScope } from "../../../helpers/ReferenceFinder";
+
 import { FileTypeManager } from "../../../FileTypeManager";
-import { ModalReferenceSearchOptionsState } from "../../../states/modal/ModalReferenceSearchOptionsState";
+import { ReferenceScope } from "../../../helpers/ReferenceFinder";
 import { ForgeState } from "../../../states/ForgeState";
+import { ModalReferenceSearchOptionsState } from "../../../states/modal/ModalReferenceSearchOptionsState";
+import type { ReferenceHit } from "../../../helpers/ReferenceFinder";
+import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
+
+export type TabReferenceFinderEventType = "onResults" | "onSearchState" | "onError";
 
 export interface TabReferenceFinderProps {
   tab: TabReferenceFinderState;

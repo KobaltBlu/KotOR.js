@@ -1,5 +1,39 @@
-import type { GFFField } from "./GFFField";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import type { GFFField , GFFFieldValue } from "./GFFField";
+
+
+const log = createScopedLogger(LogScope.Resource);
 import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
+
+/** Value that getValue() can return (includes bigint for DWORD64). */
+type GFFFieldValueOrBigInt = GFFFieldValue | bigint | undefined;
+
+/** Coerce GFF field value to number for typed reads. Exported for use by GFFObject and callers. */
+export function coerceGFFToNumber(val: GFFFieldValueOrBigInt): number {
+  if (val === undefined || val === null) return 0;
+  if (typeof val === 'number' && !Number.isNaN(val)) return val;
+  if (typeof val === 'string') { const n = parseInt(val, 10); return Number.isNaN(n) ? 0 : n; }
+  if (typeof val === 'bigint') return Number(val);
+  return 0;
+}
+
+/** Coerce GFF field value to string for typed reads. */
+export function coerceGFFToString(val: GFFFieldValueOrBigInt): string {
+  if (val === undefined || val === null) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'bigint') return String(val);
+  return '';
+}
+
+/** Coerce GFF field value to boolean for typed reads. */
+export function coerceGFFToBoolean(val: GFFFieldValueOrBigInt): boolean {
+  if (val === undefined || val === null) return false;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'number') return val !== 0;
+  if (typeof val === 'string') return val.toLowerCase() === '1' || val.toLowerCase() === 'true' || val === '1';
+  return Boolean(val);
+}
 
 /**
  * Represents a GFF (Generic File Format) structure containing a collection of fields.
@@ -13,7 +47,7 @@ import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
  * @example
  * ```typescript
  * // Create a new GFF structure
- * const struct = new GFFStruct(0x1234); // 0x1234 is the structure type
+ * const struct = new GFFStruct(4660); // structure type id
  * 
  * // Add fields to the structure
  * const nameField = new GFFField('Name', GFFDataType.CExoString, 'PlayerName');
@@ -24,7 +58,7 @@ import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
  * 
  * // Check if a field exists
  * if (struct.hasField('Name')) {
- *   console.log('Name field exists');
+ *   log.info('Name field exists');
  * }
  * ```
  * 
@@ -58,10 +92,10 @@ export class GFFStruct {
    * @example
    * ```typescript
    * // Create a creature structure
-   * const creatureStruct = new GFFStruct(0x0007);
+   * const creatureStruct = new GFFStruct(7);
    * 
    * // Create an item structure  
-   * const itemStruct = new GFFStruct(0x0008);
+   * const itemStruct = new GFFStruct(8);
    * ```
    */
   constructor(type = 0){
@@ -79,7 +113,7 @@ export class GFFStruct {
    * @example
    * ```typescript
    * const struct = new GFFStruct();
-   * struct.setType(0x0007); // Set to creature type
+   * struct.setType(7); // Set to creature type
    * ```
    */
   setType(i: number){
@@ -118,7 +152,7 @@ export class GFFStruct {
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
    * const removed = struct.removeFieldByLabel('Name');
-   * console.log(removed); // true
+   * log.info(removed); // true
    * ```
    */
   removeFieldByLabel(label = ''){
@@ -140,8 +174,8 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct(0x0007);
-   * console.log(struct.getType()); // 0x0007
+   * const struct = new GFFStruct(7);
+   * log.info(struct.getType()); // 7
    * ```
    */
   getType(){
@@ -160,7 +194,7 @@ export class GFFStruct {
    * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
    * 
    * const fields = struct.getFields();
-   * console.log(fields.length); // 2
+   * log.info(fields.length); // 2
    * ```
    */
   getFields(){
@@ -180,13 +214,13 @@ export class GFFStruct {
    * 
    * const nameField = struct.getFieldByLabel('Name');
    * if (nameField) {
-   *   console.log(nameField.getValue()); // 'PlayerName'
+   *   log.info(nameField.getValue()); // 'PlayerName'
    * }
    * ```
    */
-  getFieldByLabel(Label: string): GFFField {
+  getFieldByLabel(Label: string): GFFField | null {
 
-    for(let i = 0; i < this.fields.length; i++){
+    for (let i = 0; i < this.fields.length; i++) {
       const field = this.fields[i];
       if (field.label == Label){
         return field;
@@ -207,6 +241,33 @@ export class GFFStruct {
   }
 
   /**
+   * Returns the value of the field with the given label as a number.
+   * Missing field or non-numeric value returns 0.
+   */
+  getNumberByLabel(label: string): number {
+    const field = this.getFieldByLabel(label);
+    return field ? coerceGFFToNumber(field.getValue()) : 0;
+  }
+
+  /**
+   * Returns the value of the field with the given label as a string.
+   * Missing field returns ''.
+   */
+  getStringByLabel(label: string): string {
+    const field = this.getFieldByLabel(label);
+    return field ? coerceGFFToString(field.getValue()) : '';
+  }
+
+  /**
+   * Returns the value of the field with the given label as a boolean.
+   * Missing field or falsy value returns false.
+   */
+  getBooleanByLabel(label: string): boolean {
+    const field = this.getFieldByLabel(label);
+    return field ? coerceGFFToBoolean(field.getValue()) : false;
+  }
+
+  /**
    * Merges another GFFStruct into this structure by adding all its fields.
    * 
    * @param {GFFStruct} strt - The structure to merge into this one
@@ -221,7 +282,7 @@ export class GFFStruct {
    * struct2.addField(new GFFField('Level', GFFDataType.UInt32, 1));
    * 
    * struct1.mergeStruct(struct2);
-   * console.log(struct1.getFields().length); // 2
+   * log.info(struct1.getFields().length); // 2
    * ```
    */
   mergeStruct(strt: GFFStruct){
@@ -245,11 +306,11 @@ export class GFFStruct {
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * 
    * if (struct.hasField('Name')) {
-   *   console.log('Name field exists');
+   *   log.info('Name field exists');
    * }
    * 
    * if (!struct.hasField('Level')) {
-   *   console.log('Level field does not exist');
+   *   log.info('Level field does not exist');
    * }
    * ```
    */
@@ -269,14 +330,14 @@ export class GFFStruct {
    * 
    * @example
    * ```typescript
-   * const struct = new GFFStruct(0x0007);
+   * const struct = new GFFStruct(7);
    * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
    * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
    * 
    * const json = struct.toJSON();
-   * console.log(json.type); // 0x0007
-   * console.log(json.fields.Name.value); // 'PlayerName'
-   * console.log(json.fields.Level.value); // 1
+   * log.info(json.type); // 7
+   * log.info(json.fields.Name.value); // 'PlayerName'
+   * log.info(json.fields.Level.value); // 1
    * ```
    */
   toJSON(): IGFFStructJSON {

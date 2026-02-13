@@ -1,8 +1,11 @@
 import * as THREE from "three";
-import { PathPoint } from "./PathPoint";
+
 import type { ModuleObject } from "../../module/ModuleObject";
+
 import { GameState } from "../../GameState";
+
 import { BinaryHeap } from "./BinaryHeap";
+import { PathPoint } from "./PathPoint";
 
 export class ComputedPath {
   owner: ModuleObject;
@@ -75,12 +78,12 @@ export class ComputedPath {
 
       const neighbors = currentNode.connections;
       for(let i = 0, il = neighbors.length; i < il; i++) {
-        let neighbor = neighbors[i];
+        const neighbor = neighbors[i];
         if(neighbor.closed || !neighbor.hasLOS(currentNode, this.owner)) {
           continue;
         }
-        let gScore = currentNode.g + neighbor.cost;
-        let beenVisited = neighbor.visited;
+        const gScore = currentNode.g + neighbor.cost;
+        const beenVisited = neighbor.visited;
         if(!beenVisited || gScore < neighbor.g) {
           neighbor.visited = true;
           neighbor.parent = currentNode;

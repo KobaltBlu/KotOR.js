@@ -1,5 +1,7 @@
 import React from "react";
+
 import { ModalUpdateCheck } from "../../components/modal/ModalUpdateCheck";
+
 import { ModalState } from "./ModalState";
 
 export class ModalUpdateCheckState extends ModalState {

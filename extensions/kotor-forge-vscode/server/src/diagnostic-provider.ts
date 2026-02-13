@@ -4,7 +4,7 @@
  */
 
 import { Diagnostic, DiagnosticRelatedInformation } from 'vscode-languageserver/node';
-import { trace, debug } from './logger';
+
 import { GameVersionDetector } from './game-version-detector';
 import {
   KOTOR_CONSTANTS,
@@ -12,6 +12,7 @@ import {
   NWScriptConstant,
   NWScriptFunction
 } from './kotor-definitions';
+import { trace, debug } from './logger';
 import { SemanticError } from './semantic-analyzer';
 
 export interface EnhancedDiagnostic extends Diagnostic {

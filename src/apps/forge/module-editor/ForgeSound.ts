@@ -1,5 +1,7 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+import { CExoLocString, ResourceTypes } from "../KotOR";
+
+import { ForgeGameObject } from "./ForgeGameObject";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
 const PRIORITY_POSITIONAL_AMBIENTS = 5;
@@ -8,7 +10,7 @@ const PRIORITY_SINGLE_SHOT_POSITIONAL = 22;
 
 export class ForgeSound extends ForgeGameObject {
   //GIT Instance Properties
-  templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.uts;
+  templateResType: number = ResourceTypes.uts;
   generatedType: number = 0;
 
   //Blueprint Properties
@@ -19,7 +21,7 @@ export class ForgeSound extends ForgeGameObject {
   hours: number = 0;
   interval: number = 0;
   intervalVariation: number = 0;
-  locName: KotOR.CExoLocString = new KotOR.CExoLocString();
+  locName: KotOR.CExoLocString = new CExoLocString();
   looping: boolean = false;
   maxDistance: number = 0;
   minDistance: number = 0;
@@ -45,7 +47,7 @@ export class ForgeSound extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: unknown, oldValue: unknown){
     if(property === 'looping' || property === 'positional'){
       this.calculatePriority();
     }
@@ -156,7 +158,7 @@ export class ForgeSound extends ForgeGameObject {
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
     if(!root) return this.blueprint;
-    
+
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Active', this.active ? 1 : 0) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
     root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Continuous', this.continuous ? 1 : 0) );
@@ -196,7 +198,7 @@ export class ForgeSound extends ForgeGameObject {
   calculatePriority(){
     const isLooping = this.looping ? 1 : 0;
     const isPositional = this.positional ? 1 : 0;
-    
+
     // Row 4: Looping area-wide ambients (looping=1, positional=0)
     if (isLooping === 1 && isPositional === 0) {
       this.priority = PRIORITY_LOOPING_AREAWIDE_AMBIENTS;

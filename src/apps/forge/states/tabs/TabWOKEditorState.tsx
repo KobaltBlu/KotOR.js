@@ -1,25 +1,33 @@
 import React from "react";
-import { TabState } from "./TabState";
+import * as THREE from 'three';
+
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+
+import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
+
+const log = createScopedLogger(LogScope.Forge);
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
 import { EditorFile } from "../../EditorFile";
 import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
 import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { TabWOKEditor } from "../../components/tabs/tab-wok-editor/TabWOKEditor";
+
+
+import { TabState } from "./TabState";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
   VERTEX = 1,
   EDGE = 2,
-};
+}
 
 /**
  * Get the complementary color of a given hex color
- * @param hexColor 
- * @returns 
+ * @param hexColor
+ * @returns
  */
 const getComplementaryColor = (hexColor: number) => {
-  // Extract RGB components from 0xRRGGBB
+  // Extract RGB components from packed hex color
   const r = (hexColor >> 16) & 0xff;
   const g = (hexColor >> 8) & 0xff;
   const b = hexColor & 0xff;
@@ -29,7 +37,7 @@ const getComplementaryColor = (hexColor: number) => {
   const invertedG = 255 - g;
   const invertedB = 255 - b;
 
-  // Combine back into a 0xRRGGBB number
+  // Combine back into packed RGB number
   const complementary = (invertedR << 16) | (invertedG << 8) | invertedB;
 
   return complementary;
@@ -67,7 +75,7 @@ export class TabWOKEditorState extends TabState {
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
-    
+
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
@@ -85,7 +93,7 @@ export class TabWOKEditorState extends TabState {
       // Emulate GL_POLYGON_OFFSET_LINE
       shader.vertexShader = shader.vertexShader.replace( '<worldpos_vertex>', '<worldpos_vertex>\ngl_Position.z -= 0.0001;' );
     };
-    
+
 
     this.faceHelperGeometry = new THREE.BufferGeometry();
     this.faceHelperGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
@@ -129,7 +137,7 @@ export class TabWOKEditorState extends TabState {
     ];
 
     this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
-      
+
     });
   }
 
@@ -138,13 +146,13 @@ export class TabWOKEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
+
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
+
         file.readFile().then( (response) => {
-          console.log(response.buffer);
+          log.debug('TabWOKEditorState file.readFile response buffer length', response.buffer?.length ?? 0);
           this.wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(response.buffer));
           this.wok.material.visible = true;
           this.wok.material.side = THREE.DoubleSide;
@@ -152,7 +160,7 @@ export class TabWOKEditorState extends TabState {
           this.wok.material.transparent = true;
           this.ui3DRenderer.selectable.add(this.wok.mesh);
 
-          
+
 
           this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true, wireframeLinewidth: 2 } );
           this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
@@ -305,7 +313,7 @@ export class TabWOKEditorState extends TabState {
 
       break;
     }
-    
+
   }
 
   buildVertexHelpers(){
@@ -338,11 +346,11 @@ export class TabWOKEditorState extends TabState {
       color.setX(index, face.color.r);
       color.setY(index, face.color.g);
       color.setZ(index, face.color.b);
-      
+
       color.setX(index + 1, face.color.r);
       color.setY(index + 1, face.color.g);
       color.setZ(index + 1, face.color.b);
-      
+
       color.setX(index + 2, face.color.r);
       color.setY(index + 2, face.color.g);
       color.setZ(index + 2, face.color.b);
@@ -362,11 +370,11 @@ export class TabWOKEditorState extends TabState {
       color.setX(index, this.selectColor.r);
       color.setY(index, this.selectColor.g);
       color.setZ(index, this.selectColor.b);
-      
+
       color.setX(index + 1, this.selectColor.r);
       color.setY(index + 1, this.selectColor.g);
       color.setZ(index + 1, this.selectColor.b);
-      
+
       color.setX(index + 2, this.selectColor.r);
       color.setY(index + 2, this.selectColor.g);
       color.setZ(index + 2, this.selectColor.b);

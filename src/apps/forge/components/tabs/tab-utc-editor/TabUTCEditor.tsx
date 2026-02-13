@@ -1,18 +1,23 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTCEditorState } from "../../../states/tabs";
-import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "../../../module-editor/ForgeCreature";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import * as KotOR from "../../../KotOR";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
-import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
-import { ForgeState } from "../../../states/ForgeState";
-import { InfoBubble } from "../../info-bubble/info-bubble";
 import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useCallback, useEffect, useState } from "react"
+
+import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { InfoBubble } from "../../info-bubble/info-bubble";
+import { TextureCanvas } from "../../TextureCanvas/TextureCanvas";
+
+import { CExoLocStringEditor } from "../../CExoLocStringEditor";
+import { SubTabHost, SubTab } from "../../SubTabHost";
+import { UI3DRendererView } from "../../UI3DRendererView";
+
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import * as KotOR from "../../../KotOR";
+import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "../../../module-editor/ForgeCreature";
+import { ForgeState } from "../../../states/ForgeState";
+import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
+import { TabUTCEditorState } from "../../../states/tabs";
+
+
 import './TabUTCEditor.scss';
 
 export const TabUTCEditor = function(props: BaseTabProps){

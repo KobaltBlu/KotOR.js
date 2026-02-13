@@ -1,7 +1,9 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalExtractOptions } from "../../components/modal/ModalExtractOptions";
 import { DEFAULT_EXTRACT_OPTIONS } from "../../data/ExtractOptions";
+
+import { ModalState } from "./ModalState";
 
 export interface ExtractOptionsStateValues {
   tpcDecompile: boolean;

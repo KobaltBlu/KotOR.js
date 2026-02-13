@@ -4,6 +4,7 @@
  */
 
 import { KOTOR_CONSTANTS } from './kotor-definitions';
+import * as log from './logger';
 import {
   AssignmentExpression,
   ASTNode,
@@ -723,7 +724,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
     // Handle common built-in functions
     switch (name) {
       case 'PrintString':
-        console.log(args[0]?.value || '');
+        log.info(String(args[0]?.value ?? ''));
         return this.createValue('void', null);
 
       // String conversion functions
@@ -863,7 +864,7 @@ export class NWScriptRuntime implements ASTVisitor<NWScriptValue> {
 
       default:
         // For unknown functions, return a default value based on expected return type
-        console.warn(`Unknown function: ${name}`);
+        log.warn('Unknown function: %s', name);
         return this.createValue('int', 0);
     }
   }

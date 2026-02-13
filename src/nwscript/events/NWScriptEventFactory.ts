@@ -1,9 +1,14 @@
 import { NWScriptEventType } from "../../enums/nwscript/NWScriptEventType";
 import { GFFStruct } from "../../resource/GFFStruct";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import { EventActivateItem } from "./EventActivateItem";
 import { EventConversation } from "./EventConversation";
 import { EventSpellCastAt } from "./EventSpellCastAt";
 import { EventUserDefined } from "./EventUserDefined";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import { NWScriptEvent } from "./NWScriptEvent";
 
 /**
@@ -17,16 +22,16 @@ import { NWScriptEvent } from "./NWScriptEvent";
  */
 export class NWScriptEventFactory {
 
-  static EventFromStruct( struct: GFFStruct ){
+  static EventFromStruct(struct: GFFStruct): NWScriptEvent | undefined {
     if(struct instanceof GFFStruct){
-      let event: NWScriptEvent = undefined as any;
+      let event: NWScriptEvent | undefined;
 
-      let eType = struct.getFieldByLabel('EventType').getValue();
+      const eType = struct.getFieldByLabel('EventType').getValue();
 
-      let intList: number[] = [];
-      let floatList: number[] = [];
-      let stringList: string[] = [];
-      let objectList: number[] = [];
+      const intList: number[] = [];
+      const floatList: number[] = [];
+      const stringList: string[] = [];
+      const objectList: number[] = [];
 
       let tmpList = struct.getFieldByLabel('IntList').getChildStructs();
       for(let i = 0, len = tmpList.length; i < len; i++){
@@ -71,15 +76,15 @@ export class NWScriptEventFactory {
         event.setFloatList(floatList);
         event.setStringList(stringList);
         event.setObjectList(objectList);
-        console.log('NWScriptEvent', event, struct);
+        log.debug('EventFromStruct created event type=%s', String(eType));
       }else{
-        console.log('NWScriptEvent', event, struct);
+        log.warn('EventFromStruct unknown event type=%s', String(eType));
       }
 
       return event;
-
     }
 
+    return undefined;
   }
 
 }

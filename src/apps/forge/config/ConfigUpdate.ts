@@ -3,7 +3,11 @@
  * Uses fetch for GitHub API; no Qt/widgets.
  */
 
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
 import { LOCAL_PROGRAM_INFO } from "./ConfigInfo";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface RemoteUpdateInfo {
   currentVersion?: string;
@@ -68,7 +72,7 @@ export async function getRemoteToolsetUpdateInfo(
     const info = await fetchUpdateInfo(updateLink, timeout);
     return (info && typeof info === "object" ? info : LOCAL_PROGRAM_INFO) as RemoteUpdateInfo;
   } catch (e) {
-    if (!silent) console.warn("Update check failed:", e);
+    if (!silent) log.warn("Update check failed:", e);
     return e instanceof Error ? e : new Error(String(e));
   }
 }

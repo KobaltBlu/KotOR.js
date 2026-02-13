@@ -1,10 +1,14 @@
-import { GameState } from "../../../GameState";
+import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
+
+import { GUIInventoryItem } from "../gui/GUIInventoryItem";
+
 import { ModuleCreatureArmorSlot } from "../../../enums";
+import { GameState } from "../../../GameState";
 import type { GUILabel, GUIButton, GUIListBox } from "../../../gui";
 import { TextureLoader } from "../../../loaders/TextureLoader";
 import type { ModuleItem } from "../../../module/ModuleItem";
-import { MenuInventory as K1_MenuInventory } from "../../kotor/KOTOR";
-import { GUIInventoryItem } from "../gui/GUIInventoryItem";
+
+
 
 enum InventoryFilter {
   DATAPADS = 1,
@@ -14,7 +18,7 @@ enum InventoryFilter {
   QUESTS = 16,
   MISC = 32,
   ALL = -1
-};
+}
 
 /**
  * MenuInventory class.
@@ -134,7 +138,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   filterInventory(){
     this.LB_ITEMS.clearItems();
-    let inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
+    const inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
       switch(this.filter){
         case InventoryFilter.DATAPADS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'i_datapad';

@@ -1,5 +1,5 @@
-import { GameState } from "../GameState";
 import { EventTimedEvent } from "../events";
+import { GameState } from "../GameState";
 
 /**
  * NWScriptSubroutine class.
@@ -19,7 +19,7 @@ export class NWScriptSubroutine {
     this.returnAddress = returnAddress;
   }
 
-  addDelayCommand( command?: any ){
+  addDelayCommand( command?: EventTimedEvent ){
     if(typeof command == 'object'){
       this.delayCommands.push(command);
     }

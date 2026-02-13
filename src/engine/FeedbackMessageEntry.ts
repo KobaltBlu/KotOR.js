@@ -32,9 +32,9 @@ export class FeedbackMessageEntry {
   static FromStruct(struct: GFFStruct): FeedbackMessageEntry {
     const entry = new FeedbackMessageEntry();
     if(struct instanceof GFFStruct){
-      if(struct.hasField('PT_FB_MSG_COLOR')) entry.color = struct.getFieldByLabel('PT_FB_MSG_COLOR')?.getValue();
-      if(struct.hasField('PT_FB_MSG_MSG')) entry.message = struct.getFieldByLabel('PT_FB_MSG_MSG')?.getValue();
-      if(struct.hasField('PT_FB_MSG_TYPE')) entry.type = struct.getFieldByLabel('PT_FB_MSG_TYPE')?.getValue();
+      if(struct.hasField('PT_FB_MSG_COLOR')) entry.color = struct.getNumberByLabel('PT_FB_MSG_COLOR') as FeebackMessageColor;
+      if(struct.hasField('PT_FB_MSG_MSG')) entry.message = struct.getStringByLabel('PT_FB_MSG_MSG');
+      if(struct.hasField('PT_FB_MSG_TYPE')) entry.type = struct.getNumberByLabel('PT_FB_MSG_TYPE');
     }
     return entry;
   }

@@ -1,33 +1,38 @@
 import React, { useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabProjectExplorerState } from "../../../states/tabs";
-import { FileTypeManager } from "../../../FileTypeManager";
-import { EditorFile } from "../../../EditorFile";
-import { FileLocationType } from "../../../enum/FileLocationType";
-import { FileBrowserNode } from "../../../FileBrowserNode";
-import { ForgeTreeView } from "../../treeview/ForgeTreeView";
-import { ForgeState } from "../../../states/ForgeState";
-import { Project } from "../../../Project";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
 import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
+
+const log = createScopedLogger(LogScope.Forge);
+import { ForgeTreeView } from "../../treeview/ForgeTreeView";
+
+import { EditorFile } from "../../../EditorFile";
+import { FileBrowserNode } from "../../../FileBrowserNode";
+import { FileTypeManager } from "../../../FileTypeManager";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { Project } from "../../../Project";
+import { ForgeState } from "../../../states/ForgeState";
+import { TabProjectExplorerState } from "../../../states/tabs";
 import { TabReferenceFinderState } from "../../../states/tabs/TabReferenceFinderState";
 import "./TabProjectExplorer.scss";
 
 export interface ResourceListNodeProps {
   node: FileBrowserNode;
   depth?: number;
-  children?: any;
+  children?: unknown;
   onContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
 }
 
-export const ResourceListNode = function(props: ResourceListNodeProps){
+export const ResourceListNode = function (props: ResourceListNodeProps) {
   const node = props.node;
   const [openState, setOpenState] = useState<boolean>(node.open);
 
-  const onClickNode = (e: React.MouseEvent<HTMLLIElement>, node: FileBrowserNode) => {
+  const onClickNode = (e: React.MouseEvent, node: FileBrowserNode) => {
     e.stopPropagation();
-    if(node.type == 'resource'){
-      console.log('resource', node);
+    if (node.type == 'resource') {
+      log.debug('resource', node);
 
       FileTypeManager.onOpenResource(
         new EditorFile({
@@ -38,15 +43,15 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
     }
   };
 
-  const onChangeCheckbox = (e: React.ChangeEvent<HTMLInputElement>, node: FileBrowserNode) => {
+  const onChangeCheckbox = (_e: React.ChangeEvent, _node: FileBrowserNode) => {
     setOpenState(!openState);
   };
 
-  const onLabelClick = (e: React.MouseEvent<HTMLLabelElement>, node: FileBrowserNode) => {
+  const onLabelClick = (_e: React.MouseEvent, _node: FileBrowserNode) => {
     setOpenState(!openState);
   }
 
-  if(node.nodes.length){
+  if (node.nodes.length) {
     return (
       <li
         onClick={(e) => onClickNode(e, props.node)}
@@ -61,7 +66,7 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
         <ul>
           {
             (openState) ? (
-              node.nodes.map( (child: FileBrowserNode) => (
+              node.nodes.map((child: FileBrowserNode) => (
                 <ResourceListNode key={child.id} node={child} onContextMenu={props.onContextMenu} />
               ))
             ) : (<></>)
@@ -69,7 +74,7 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
         </ul>
       </li>
     );
-  }else{
+  } else {
     return (
       <li
         className="link"
@@ -87,14 +92,14 @@ export const ResourceListNode = function(props: ResourceListNodeProps){
   }
 }
 
-export const TabProjectExplorer = function(props: BaseTabProps) {
+export const TabProjectExplorer = function (props: BaseTabProps) {
   const [resourceList, setResourceList] = useState<FileBrowserNode[]>([]);
 
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
   useEffectOnce(() => {
     const tab = props.tab as TabProjectExplorerState;
-    if(tab){
+    if (tab) {
       tab.onReload = () => {
         setResourceList(TabProjectExplorerState.Resources);
       }
@@ -128,16 +133,16 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
     <div className="scroll-container tab-project-explorer__scroll">
       <ForgeTreeView>
         {
-          resourceList.map( (node: FileBrowserNode) => {
+          resourceList.map((node: FileBrowserNode) => {
             return (
               <ResourceListNode
                 key={node.id}
                 node={node}
                 depth={0}
-                onContextMenu={(e, n) => {
+                onContextMenu={(e: React.MouseEvent, n: FileBrowserNode) => {
                   const items: ContextMenuItem[] = [];
 
-                  if(n.type === 'resource'){
+                  if (n.type === 'resource') {
                     const resref = (n.name || '').split('.')[0] ?? '';
                     items.push({
                       id: 'open-file',
@@ -174,8 +179,8 @@ export const TabProjectExplorer = function(props: BaseTabProps) {
                     });
                   }
 
-                  if(items.length){
-                    showContextMenu((e as any).clientX, (e as any).clientY, items);
+                  if (items.length) {
+                    showContextMenu(e.clientX, e.clientY, items);
                   }
                 }}
               />

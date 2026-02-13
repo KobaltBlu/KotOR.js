@@ -1,10 +1,13 @@
 import * as THREE from 'three';
-import { TwoDAManager } from "../managers/TwoDAManager";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { OdysseyModelAnimationNode } from './OdysseyModelAnimationNode';
-import type { OdysseyModel } from './OdysseyModel';
-import { OdysseyModelUtility } from './OdysseyModelUtility';
+
 import { IOdysseyAnimationEvent } from '../interface/odyssey/IOdysseyAnimationEvent';
+import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
+import { TwoDAManager } from "../managers/TwoDAManager";
+
+import type { OdysseyModel } from './OdysseyModel';
+import { OdysseyModelAnimationNode } from './OdysseyModelAnimationNode';
+import { OdysseyModelUtility } from './OdysseyModelUtility';
+
 
 /**
  * OdysseyModelAnimation class.
@@ -68,7 +71,7 @@ export class OdysseyModelAnimation {
     this.transition = this.odysseyModel.mdlReader.readSingle();
     this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
 
-    let _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
+    const _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     //anim.events = OdysseyModelUtility.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
     this.events = new Array(_eventsDef.count);
     this.odysseyModel.mdlReader.skip(4); //Unknown uint32
@@ -97,7 +100,7 @@ export class OdysseyModelAnimation {
     this.nodes.push(node);
 
     //Child Animation Nodes
-    let len = node.childOffsets.length;
+    const len = node.childOffsets.length;
     for (let i = 0; i < len; i++) {
       node.children.push(
         this.readAnimationNode( this.odysseyModel.fileHeader.modelDataOffset + node.childOffsets[i] )
@@ -107,15 +110,24 @@ export class OdysseyModelAnimation {
     return node;
   }
 
-  static From(original: any){
+  /** Shape accepted by From() for cloning an animation (e.g. from another OdysseyModelAnimation). */
+  static From(original: {
+    rootNode: OdysseyModelAnimationNode;
+    nodes: OdysseyModelAnimationNode[];
+    ModelName?: string;
+    events?: IOdysseyAnimationEvent[];
+    name?: string;
+    length?: number;
+    transition?: number;
+  }): OdysseyModelAnimation {
     const anim = new OdysseyModelAnimation();
     anim.rootNode = original.rootNode;
-    anim.nodes = original.nodes;
-    anim.modelName = original.ModelName;
-    anim.events = original.events;
-    anim.name = original.name?.toLowerCase().trim() || '';
-    anim.length = original.length;
-    anim.transition = original.transition;
+    anim.nodes = original.nodes ?? [];
+    anim.modelName = original.ModelName ?? '';
+    anim.events = original.events ?? [];
+    anim.name = (original.name ?? '').toLowerCase().trim() || '';
+    anim.length = original.length ?? 0;
+    anim.transition = original.transition ?? 0;
 
     return anim;
   }
@@ -129,12 +141,30 @@ export class OdysseyModelAnimation {
     return 0.5;
   }
 
-  static GetAnimation2DA(name = ''): ITwoDAAnimation {
+  static GetAnimation2DA(name = ''): ITwoDAAnimation | undefined {
     const animations2DA = TwoDAManager.datatables.get('animations');
-    if(animations2DA){
-      for(let i = 0, len = animations2DA.RowCount; i < len; i++){
-        if(animations2DA.rows[i].name.toLowerCase() == name.toLowerCase()){
-          return animations2DA.rows[i];
+    if (animations2DA) {
+      const key = name.toLowerCase();
+      for (let i = 0, len = animations2DA.RowCount; i < len; i++) {
+        const row = animations2DA.getRow(i);
+        if (row && row.getString('name').toLowerCase() === key) {
+          return {
+            name: row.getString('name'),
+            stationary: row.getString('stationary'),
+            pause: row.getString('pause'),
+            walking: row.getString('walking'),
+            looping: row.getString('looping'),
+            running: row.getString('running'),
+            fireforget: row.getString('fireforget'),
+            overlay: row.getString('overlay'),
+            playoutofplace: row.getString('playoutofplace'),
+            dialog: row.getString('dialog'),
+            damage: row.getString('damage'),
+            parry: row.getString('parry'),
+            dodge: row.getString('dodge'),
+            attack: row.getString('attack'),
+            hideequippeditems: row.getString('hideequippeditems'),
+          };
         }
       }
     }

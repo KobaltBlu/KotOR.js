@@ -1,10 +1,38 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { AudioFileAudioType } from "../enums/audio/AudioFileAudioType";
 import { AudioFileWaveEncoding } from "../enums/audio/AudioFileWaveEncoding";
+import { BinaryReader } from "../utility/binary/BinaryReader";
+import { BinaryWriter } from "../utility/binary/BinaryWriter";
 import { GameFileSystem } from "../utility/GameFileSystem";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 import { Utility } from "../utility/Utility";
+
 import { ADPCMDecoder } from "./ADPCMDecoder";
+
+const log = createScopedLogger(LogScope.Loader);
+
+/** WAV/RIFF header structure read from audio file. */
+export interface IAudioFileHeader {
+  riff?: Record<string, unknown>;
+  riffSize?: Record<string, unknown>;
+  wave?: Record<string, unknown>;
+  format?: number;
+  sampleRate?: number;
+  frameSize?: number;
+  channels?: number;
+  bits?: number;
+  fmt?: string;
+  chunkSize?: number;
+  bytesPerSec?: number;
+  blobSize?: number;
+  blobData?: Uint8Array;
+}
+
+/** Options for exporting an audio file. */
+export interface IAudioFileExportOptions {
+  file?: string | null;
+  onComplete?: (() => void) | null;
+  onError?: ((err: Error) => void) | null;
+}
 
 //Header Tests
 const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
@@ -30,8 +58,8 @@ export class AudioFile {
   audioType: AudioFileAudioType;
   data: Uint8Array;
   isProcessed: boolean;
-  filename: any;
-  header: any = { riff: {}, riffSize: {}, wave: {}, };
+  filename: string | undefined;
+  header: IAudioFileHeader = { riff: {}, riffSize: {}, wave: {} };
   reader: BinaryReader;
 
   constructor(data: Uint8Array){
@@ -45,7 +73,7 @@ export class AudioFile {
     //String file path
     if(typeof this.data == 'string'){
 
-      let info = Utility.filePathInfo(this.data);
+      const info = Utility.filePathInfo(this.data);
 
       if(info.location == 'local'){
 
@@ -58,7 +86,7 @@ export class AudioFile {
             this.processFile();
             return this.data;
           }catch (e) {
-            console.error(e);
+            log.error(e instanceof Error ? e : new Error(String(e)));
             throw e;
           }
         }catch(e){
@@ -73,7 +101,7 @@ export class AudioFile {
             //   this.reader = new BinaryReader(buffer);
             //   this.processFile(onComplete);
             //   return;
-            // }, (e: any) => {
+            // }, (e: Error) => {
             //   throw 'Resource not found in BIF archive '+pathInfo.archive.name;
             // });
           break;
@@ -110,8 +138,8 @@ export class AudioFile {
 
   processFile(){
     this.isProcessed = true;
-    let flag = this.reader.readBytes(4);
-    let riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
+    const flag = this.reader.readBytes(4);
+    const riffSize = this.reader.readUInt32(); //for an MP3 this will be 50
     this.reader.seek(0);
 
     if(Utility.ArrayMatch(flag, fakeHeaderTest)) {
@@ -166,7 +194,7 @@ export class AudioFile {
     const b = await this.getBinaryStream();
 
     if(!(this.reader instanceof BinaryReader))
-      console.error('AudioFile.getPlayableByteStream', this.data);
+      log.error('AudioFile.getPlayableByteStream', this.data);
 
     this.reader.seek(0);
 
@@ -198,18 +226,18 @@ export class AudioFile {
     }else if(this.audioType == AudioFileAudioType.MP3){
       return this.reader.buffer;
     }else{
-      console.error('AudioFile.getPlayableByteStream', this.header);
-      throw 'Not a valid audio file'
+      log.error('AudioFile.getPlayableByteStream', this.header);
+      throw new Error('Not a valid audio file');
     }
 
   }
 
-  readMP3Header (reader: BinaryReader): any {
+  readMP3Header (_reader: BinaryReader): Record<string, never> {
     return {};
   }
 
-  waveSubChunkParser (header: any, reader: BinaryReader) {
-    let chunkID = reader.readChars(4);
+  waveSubChunkParser (header: IAudioFileHeader, reader: BinaryReader) {
+    const chunkID = reader.readChars(4);
     switch(chunkID){
       case 'fmt ':
         header.fmt = chunkID;
@@ -247,7 +275,7 @@ export class AudioFile {
 
   }
 
-  readWavHeader (reader: BinaryReader): any {
+  readWavHeader (reader: BinaryReader): IAudioFileHeader {
     const header = {
       riff: reader.readChars(4),
       riffSize: reader.readUInt32(),
@@ -262,15 +290,15 @@ export class AudioFile {
     return header;
   }
 
-  buildWave(header: any, data: Uint8Array){
+  buildWave(header: IAudioFileHeader & { bits?: number }, data: Uint8Array){
 
-    let riffHeaderLen = 8;
-    let waveHeaderLen = 56;
+    const riffHeaderLen = 8;
+    const waveHeaderLen = 56;
 
-    let buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
-    let bWriter = new BinaryWriter(buffer);
+    const buffer = new Uint8Array( data.length + 44 );//data.length + riffHeaderLen + waveHeaderLen );
+    const bWriter = new BinaryWriter(buffer);
 
-    let riffSize = data.length + waveHeaderLen;
+    const riffSize = data.length + waveHeaderLen;
 
     //console.log(header)
     //console.log((header.channels == 2 ? 4 : 2))
@@ -308,7 +336,7 @@ export class AudioFile {
     return buffer;
   }
 
-  getExportableData(){
+  getExportableData(): Uint8Array {
 
     switch(this.audioType){
       case AudioFileAudioType.WAVE:
@@ -354,15 +382,15 @@ export class AudioFile {
     }
   }
 
-  export( args: any = {} ){
+  export( args: IAudioFileExportOptions = {} ){
 
-    args = Object.assign({
+    const options = Object.assign({
       file: null,
       onComplete: null,
       onError: null
-    }, args);
+    } as IAudioFileExportOptions, args);
 
-    if(args.file!=null){
+    if(options.file != null){
 
       // fs.writeFile(args.file, this.getExportableData(), (err) => {
       //   if (err) {

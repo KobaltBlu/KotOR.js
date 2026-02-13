@@ -1,17 +1,21 @@
-import { MDLLoader } from "../loaders/MDLLoader";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { MDLLoader } from "../loaders/MDLLoader";
 import { OdysseyModel } from "../odyssey";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
-import { TwoDAObject } from "../resource/TwoDAObject";
-import { GameState } from "../GameState";
+import { TwoDAObject, type ITwoDARowData } from "../resource/TwoDAObject";
+import { createScopedLogger , LogScope } from "../utility/Logger";
+
+
+const log = createScopedLogger(LogScope.Game);
 
 
 /**
  * Planetary class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Planetary.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -29,7 +33,7 @@ export class Planetary {
     Planetary.selectedIndex = -1;
     const planetary2DA = GameState.TwoDAManager.datatables.get('planetary');
     Planetary.selected = undefined;
-    let planetList = planetary2DA.rows;
+    const planetList = planetary2DA.rows;
     for(let i = 0; i < planetary2DA.RowCount; i++){
       const planet = new Planet(planetList[i]);
       Planetary.planets.push(planet);
@@ -40,7 +44,7 @@ export class Planetary {
             Planetary.models.set(planet.model, mdl);
           }
         }catch(e){
-          console.error(e);
+          log.error(e);
         }
       }
     }
@@ -70,19 +74,19 @@ export class Planetary {
 
     return;
   }
-  
+
   static GetPlanetByIndex(index: number = 0): Planet {
     return Planetary.planets[index];
   }
 
   static SaveStruct(){
-    let struct = new GFFStruct();
+    const struct = new GFFStruct();
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
 
     let planetMask = 0
     for(let i = 0; i < Planetary.planets.length; i++){
-      let planet = Planetary.planets[i];
+      const planet = Planetary.planets[i];
       if(planet.enabled){
         planetMask |= 1 << planet.id;
       }
@@ -108,15 +112,16 @@ export class Planet {
   selectable: boolean;
   lockedOutReason: number = -1;
 
-  constructor(_2da: any = {}){
-    this.id = parseInt(TwoDAObject.cellParser(_2da.__rowlabel));
-    this.label = TwoDAObject.cellParser(_2da.label);
-    this.name = parseInt( TwoDAObject.cellParser(_2da.name) );
-    this.description = parseInt( TwoDAObject.cellParser(_2da.description) );
-    this.icon = TwoDAObject.cellParser(_2da.icon);
-    this.model = TwoDAObject.cellParser(_2da.model);
-    this.guitag = TwoDAObject.cellParser(_2da.guitag);
-    this.lockedOutReason = TwoDAObject.normalizeValue(_2da.lockedoutreason,'number', -1);
+  constructor(_2da: ITwoDARowData | Record<string, string | number> = {}){
+    const row = _2da as Record<string, string | number>;
+    this.id = parseInt(String(TwoDAObject.cellParser(row.__rowlabel ?? row.__index ?? '') ?? ''));
+    this.label = String(TwoDAObject.cellParser(row.label ?? '') ?? '');
+    this.name = parseInt( String(TwoDAObject.cellParser(row.name ?? '') ?? '') );
+    this.description = parseInt( String(TwoDAObject.cellParser(row.description ?? '') ?? '') );
+    this.icon = String(TwoDAObject.cellParser(row.icon ?? '') ?? '');
+    this.model = String(TwoDAObject.cellParser(row.model ?? '') ?? '');
+    this.guitag = String(TwoDAObject.cellParser(row.guitag ?? '') ?? '');
+    this.lockedOutReason = TwoDAObject.normalizeValue(row.lockedoutreason,'number', -1) as number;
 
     this.enabled = false;
     this.selectable = false;

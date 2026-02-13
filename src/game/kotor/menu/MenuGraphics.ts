@@ -52,9 +52,9 @@ export class MenuGraphics extends GameMenu {
         this.manager.MenuGraphicsAdvanced.open();
       });
 
-      this.SLI_GAMMA.onValueChanged = (value: any) => {
+      this.SLI_GAMMA.onValueChanged = (value: number | boolean) => {
         //let gamma = (1.5 * value) + .25;
-        let contrast = (50 * ((value*2) - 1) )*-1;
+        const contrast = (50 * ((value*2) - 1) )*-1;
 
         GameState.canvas.style.filter = 'contrast('+(100 + contrast)+'%)';
       };
@@ -65,7 +65,7 @@ export class MenuGraphics extends GameMenu {
 
       // this.BTN_RESOLUTION.hide();
 
-      this.CB_GRASS.onValueChanged = (value: any) => {
+      this.CB_GRASS.onValueChanged = (value: number | boolean) => {
         //Toggle Grass
         if(GameState.group.grass){
           GameState.group.grass.visible = !!value;

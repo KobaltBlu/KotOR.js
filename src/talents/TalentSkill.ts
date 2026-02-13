@@ -1,13 +1,15 @@
-import { GameState } from "../GameState";
 import { ActionUnlockObject } from "../actions/ActionUnlockObject";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { TalentObjectType } from "../enums/engine/TalentObjectType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
 import type { ModuleObject } from "../module";
 import { GFFField } from "../resource/GFFField";
 import { GFFStruct } from "../resource/GFFStruct";
+import type { ITwoDARowData } from "../resource/TwoDAObject";
 import { TwoDAObject } from "../resource/TwoDAObject";
+
 import { TalentObject } from "./TalentObject";
 
 interface SkillClass {
@@ -116,7 +118,7 @@ export class TalentSkill extends TalentObject {
   }
 
   save(){
-    let skillStruct = new GFFStruct();
+    const skillStruct = new GFFStruct();
     skillStruct.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue(this.getRank());
     return skillStruct;
   }
@@ -142,7 +144,7 @@ export class TalentSkill extends TalentObject {
     return skill;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
     const skill = new TalentSkill();
     skill.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     skill.label = TwoDAObject.normalizeValue(row.label, 'string', '');

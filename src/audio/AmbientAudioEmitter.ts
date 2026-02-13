@@ -1,5 +1,6 @@
-import type { AudioEngine } from "./AudioEngine";
 import { EventListener } from "../utility/EventListener";
+
+import type { AudioEngine } from "./AudioEngine";
 
 /**
  * AmbientAudioEmitter class.

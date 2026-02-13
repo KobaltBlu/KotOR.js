@@ -1,11 +1,12 @@
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
 import type { NWScriptASTNode, NWScriptProgramNode, NWScriptFunctionNode, NWScriptBlockNode, NWScriptIfNode, NWScriptIfElseNode, NWScriptWhileNode, NWScriptDoWhileNode, NWScriptForNode, NWScriptExpressionStatementNode, NWScriptAssignmentNode, NWScriptReturnNode, NWScriptVariableDeclarationNode, NWScriptGlobalVariableDeclarationNode } from "./NWScriptAST";
 import { NWScriptASTNodeType } from "./NWScriptAST";
 import type { NWScriptExpression } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
 
 /**
  * Generates NSS source code from an Abstract Syntax Tree.
- * This is the final step in the decompilation pipeline.
+ * This is the final step in the NCS-to-NSS conversion pipeline.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 

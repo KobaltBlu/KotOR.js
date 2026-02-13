@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { useState } from "react";
+import React, { useEffect , useState } from "react";
+
 import { useLoadingScreen } from "../context/LoadingScreenContext";
 
 export const LoadingScreen = function(props: any){
@@ -32,10 +32,10 @@ export const LoadingScreen = function(props: any){
 
   //style={{display: (enabled) ? 'block' : 'none'}}
   return (
-    <div className={`loading-screen se-pre-con ${!!enabled ? 'fade-in' : 'fade-out'}`} style={{display: (enabled) ? 'block' : 'none'}}>
-      <div className="background" style={{backgroundImage: (!!backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
+    <div className={`loading-screen se-pre-con ${enabled ? 'fade-in' : 'fade-out'}`} style={{display: (enabled) ? 'block' : 'none'}}>
+      <div className="background" style={{backgroundImage: (backgroundURL) ? `url(${backgroundURL})` : 'initial'}}></div>
       <div className="logo-wrapper">
-        <img src={logoURL} style={{display: (!!logoURL) ? 'block' : 'none'}} />
+        <img src={logoURL} style={{display: (logoURL) ? 'block' : 'none'}} />
       </div>
       <div className="loading-container">
         <div className="spinner-wrapper">

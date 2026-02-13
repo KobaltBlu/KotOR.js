@@ -1,7 +1,8 @@
-import { GameEffect } from "./GameEffect";
 import { GameEffectType } from "../enums/effects/GameEffectType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { BitWise } from "../utility/BitWise";
+
+import { GameEffect } from "./GameEffect";
 
 /**
  * EffectDamage class.
@@ -48,7 +49,7 @@ export class EffectDamage extends GameEffect {
       
     super.onApply();
     
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
+    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject) && typeof this.creator === 'object' && this.creator != null){
       this.object.subtractHP(this.getDamageAmount());
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;

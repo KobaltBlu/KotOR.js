@@ -1,7 +1,10 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalHelpBrowser } from "../../components/modal/ModalHelpBrowser";
+
 import { HELP_FOLDERS, type HelpFolder } from "../../data";
+
+import { ModalState } from "./ModalState";
 
 export class ModalHelpBrowserState extends ModalState {
   title: string = "Forge Help & Tutorials";

@@ -12,10 +12,10 @@ import type { IOdysseyControllerFrameGeneric } from "./IOdysseyControllerFrameGe
  */
 export interface IOdysseyControllerGeneric {
   type: number;
-  nodeType: number;
+  nodeType?: number;
   frameCount: number;
   timeKeyIndex: number;
   dataValueIndex: number;
   columnCount: number;
-  data: IOdysseyControllerFrameGeneric[],
+  data: IOdysseyControllerFrameGeneric[];
 }

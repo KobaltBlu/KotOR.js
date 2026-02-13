@@ -7,7 +7,7 @@ export interface SceneGraphNodeOptions {
   nodes?: SceneGraphNode[];
   onClick?: (node: SceneGraphNode) => void;
   parent?: SceneGraphNode;
-  data?: any;
+  data?: Record<string, unknown>;
   open?: boolean;
 }
 

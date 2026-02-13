@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from "react";
+
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 import { CameraView, UI3DRenderer } from "../UI3DRenderer";
+
 import { MenuBar, MenuItem } from "./common/MenuBar";
 
 // Re-export MenuItem for backward compatibility

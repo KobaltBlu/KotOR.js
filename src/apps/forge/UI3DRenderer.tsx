@@ -1,13 +1,19 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import { SceneGraphTreeViewManager } from "./managers/SceneGraphTreeViewManager";
 import { EventListenerModel } from "./EventListenerModel";
 import * as KotOR from "./KotOR";
+
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+const log = createScopedLogger(LogScope.Forge);
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-import { ForgeModule } from "./module-editor/ForgeModule";
+
 import { ForgeGameObject } from "./module-editor/ForgeGameObject";
+import { ForgeModule } from "./module-editor/ForgeModule";
 
 export enum CameraView {
   Top = 'top',
@@ -21,14 +27,14 @@ export enum CameraView {
 }
 
 export type UI3DRendererEventListenerTypes =
-  'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect'|'onMouseDown'|'onMouseUp'|'onMouseMove'|'onMouseWheel'|'onKeyDown'|'onKeyUp';
+  'onBeforeRender' | 'onAfterRender' | 'onCreate' | 'onDispose' | 'onResize' | 'onCanvasAttached' | 'onSelect' | 'onMouseDown' | 'onMouseUp' | 'onMouseMove' | 'onMouseWheel' | 'onKeyDown' | 'onKeyUp';
 
 export interface UI3DRendererEventListeners {
   onBeforeRender: Function[],
-  onAfterRender:  Function[],
-  onCreate:       Function[],
-  onDispose:      Function[],
-  onResize:       Function[],
+  onAfterRender: Function[],
+  onCreate: Function[],
+  onDispose: Function[],
+  onResize: Function[],
   onCanvasAttached: Function[],
   onSelect: Function[],
   onMouseDown: Function[],
@@ -37,10 +43,10 @@ export interface UI3DRendererEventListeners {
   onMouseWheel: Function[],
   onKeyDown: Function[],
   onKeyUp: Function[],
-  
+
 }
 
-const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({color: 0x00ff00}));
+const dummyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.25, 0.25), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
 
 interface CameraViewCache {
   position: THREE.Vector3;
@@ -87,24 +93,24 @@ export enum ObjectType {
 
 /**
  * UI3DRenderer class.
- * 
+ *
  * This class is used to create and manage 3d rendering instances in the KotOR Forge application.
  * The main use is for the model previews in the template editors for UTC, UTD, and UTP files
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file UI3DRenderer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class UI3DRenderer extends EventListenerModel {
-  
+
   static CameraMoveSpeed: number = 10;
 
   uuid: string;
 
   sceneGraphManager: SceneGraphTreeViewManager;
-  
+
   time: number;
   deltaTime: number;
   deltaTimeFixed: number = 0;
@@ -145,15 +151,15 @@ export class UI3DRenderer extends EventListenerModel {
     orthogonal?: CameraViewCache,
     default?: CameraViewCache
   } = {
-    top: undefined,
-    bottom: undefined,
-    left: undefined,
-    right: undefined,
-    front: undefined,
-    back: undefined,
-    orthogonal: undefined,
-    default: undefined
-  }
+      top: undefined,
+      bottom: undefined,
+      left: undefined,
+      right: undefined,
+      front: undefined,
+      back: undefined,
+      orthogonal: undefined,
+      default: undefined
+    }
 
   lightManager: KotOR.LightManager = new KotOR.LightManager();
 
@@ -181,24 +187,24 @@ export class UI3DRenderer extends EventListenerModel {
   previewEnabled: boolean = false;
   previewSize: number = 400; // Size of preview in pixels
 
-  group: { 
+  group: {
     [key in GroupType]: THREE.Group;
   } = {
-    [GroupType.CAMERA]: new THREE.Group(),
-    [GroupType.LIGHTS]: new THREE.Group(),
-    [GroupType.LIGHT_HELPERS]: new THREE.Group(),
-    [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
-    [GroupType.ROOMS]: new THREE.Group(),
-    [GroupType.CREATURE]: new THREE.Group(),
-    [GroupType.DOOR]: new THREE.Group(),
-    [GroupType.PLACEABLE]: new THREE.Group(),
-    [GroupType.ITEM]: new THREE.Group(),
-    [GroupType.TRIGGER]: new THREE.Group(),
-    [GroupType.WAYPOINT]: new THREE.Group(),
-    [GroupType.SOUND]: new THREE.Group(),
-    [GroupType.STORE]: new THREE.Group(),
-    [GroupType.ENCOUNTER]: new THREE.Group(),
-  };
+      [GroupType.CAMERA]: new THREE.Group(),
+      [GroupType.LIGHTS]: new THREE.Group(),
+      [GroupType.LIGHT_HELPERS]: new THREE.Group(),
+      [GroupType.SHADOW_LIGHTS]: new THREE.Group(),
+      [GroupType.ROOMS]: new THREE.Group(),
+      [GroupType.CREATURE]: new THREE.Group(),
+      [GroupType.DOOR]: new THREE.Group(),
+      [GroupType.PLACEABLE]: new THREE.Group(),
+      [GroupType.ITEM]: new THREE.Group(),
+      [GroupType.TRIGGER]: new THREE.Group(),
+      [GroupType.WAYPOINT]: new THREE.Group(),
+      [GroupType.SOUND]: new THREE.Group(),
+      [GroupType.STORE]: new THREE.Group(),
+      [GroupType.ENCOUNTER]: new THREE.Group(),
+    };
 
   visibilityState: { [key in ObjectType]: boolean } = {
     [ObjectType.CAMERA]: true,
@@ -222,7 +228,7 @@ export class UI3DRenderer extends EventListenerModel {
   transformControlsDragging: boolean = false;
   focusMode: CameraFocusMode = CameraFocusMode.SCENE;
 
-  constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
+  constructor(canvas?: HTMLCanvasElement, width: number = 640, height: number = 480) {
     super();
     this.uuid = crypto.randomUUID();
     this.sceneGraphManager = new SceneGraphTreeViewManager();
@@ -258,42 +264,42 @@ export class UI3DRenderer extends EventListenerModel {
     }
 
     this.resizeObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
-      for(let i = 0; i < elements.length; i++){
+      for (let i = 0; i < elements.length; i++) {
         const entry = elements[i];
         this.setSize(entry.contentRect.width, entry.contentRect.height);
       }
     });
 
     this.buildCamera();
-    if(this.canvas){
+    if (this.canvas) {
       this.buildWebGLRenderer();
       this.buildDepthTarget();
       this.buildAmbientLight();
       this.buildScene();
     }
-    
+
     this.selectionBox.visible = false;
     this.buildTransformControls();
     this.buildViewHelper();
     this.buildDOMEventHandlers();
 
-    this.lightManager.init(this);
+    this.lightManager.init(this as unknown as Record<string, unknown>);
   }
 
   setModule(module: ForgeModule) {
     this.module = module;
-    if(module){
+    if (module) {
       this.processEventListener('onModuleSet', [module]);
     }
   }
 
   buildTransformControls() {
-    if(this.transformControls){
+    if (this.transformControls) {
       this.transformControls.dispose();
       (this.transformControls as unknown as THREE.Object3D).removeFromParent();
     }
-    if(this.canvas){
-      if(this.orbitControls){
+    if (this.canvas) {
+      if (this.orbitControls) {
         this.orbitControls.dispose();
       }
       this.orbitControls = new OrbitControls(this.currentCamera, this.canvas);
@@ -307,12 +313,12 @@ export class UI3DRenderer extends EventListenerModel {
       tcObj.visible = false;
       this.unselectable.add(tcObj);
       tcObj.userData.uuids = [];
-      tcObj.traverse( (obj: THREE.Object3D) => {
+      tcObj.traverse((obj: THREE.Object3D) => {
         tcObj.userData.uuids.push(obj.uuid);
       });
 
       this.transformControls.addEventListener('dragging-changed', (event: { value: unknown }) => {
-        this.transformControlsDragging = event.value === true;  
+        this.transformControlsDragging = event.value === true;
         if (this.orbitControls) {
           this.orbitControls.enabled = !this.transformControlsDragging;
         }
@@ -328,24 +334,24 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   buildViewHelper() {
-    if(this.viewHelper) this.viewHelper.dispose();
-    if(this.canvas){
-      this.viewHelper = new ViewHelper(this.currentCamera as any, this.canvas);
+    if (this.viewHelper) this.viewHelper.dispose();
+    if (this.canvas) {
+      this.viewHelper = new ViewHelper(this.currentCamera as THREE.PerspectiveCamera, this.canvas);
     }
   }
 
   lookAtObject(object?: THREE.Object3D) {
-    if(!object || !this.camera || !this.orbitControls) return;
+    if (!object || !this.camera || !this.orbitControls) return;
     this.orbitControls.target.copy(object.position);
     this.orbitControls.update();
   }
 
   reorientCamera(view: CameraView) {
-    console.log('reorientCamera', view);
-    if(!this.camera || !this.orbitControls) return;
+    log.trace('reorientCamera', view);
+    if (!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
-    if(oldView == view) return;
+    if (oldView == view) return;
     this.cameraView = view;
 
     this.cameraViewCache[oldView] = {
@@ -353,7 +359,7 @@ export class UI3DRenderer extends EventListenerModel {
       target: this.orbitControls.target.clone()
     };
 
-    if(this.cameraViewCache[view]){
+    if (this.cameraViewCache[view]) {
       this.camera.position.copy(this.cameraViewCache[view].position);
       this.camera.lookAt(this.cameraViewCache[view].target);
       this.orbitControls.target.copy(this.cameraViewCache[view].target);
@@ -365,8 +371,8 @@ export class UI3DRenderer extends EventListenerModel {
     this.cameraView = view;
     const distance = 10; // Distance from origin
     const lookAt = new THREE.Vector3(0, 0, 0);
-    
-    switch(view) {
+
+    switch (view) {
       case CameraView.Top:
         this.camera.position.set(0, 0, distance);
         this.camera.up.set(0, 1, 0);
@@ -402,9 +408,9 @@ export class UI3DRenderer extends EventListenerModel {
 
     this.camera.lookAt(lookAt);
     this.camera.updateProjectionMatrix();
-    
+
     // Update orbit controls target to maintain the look-at point
-    if(this.orbitControls) {
+    if (this.orbitControls) {
       this.orbitControls.target.copy(lookAt);
       this.orbitControls.update();
       this.orbitControls.enableRotate = view === CameraView.Default;
@@ -414,18 +420,18 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
-    console.log('setCameraFocusMode', mode);
+    log.trace('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
-  
+
   #center: THREE.Vector3 = new THREE.Vector3();
   #box3: THREE.Box3 = new THREE.Box3();
 
   private updateCameraFocus(): void {
-    console.log('updateCameraFocus');
+    log.trace('updateCameraFocus');
     this.#box3 = new THREE.Box3();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
-    for(let i = 0; i < objects.length; i++){
+    for (let i = 0; i < objects.length; i++) {
       this.#box3.expandByObject(objects[i]);
     }
     this.#box3.getCenter(this.#center);
@@ -433,14 +439,14 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
-    console.log('fitCameraToScene', offset);
+    log.trace('fitCameraToScene', offset);
     this.updateCameraFocus();
-    if(!this.#center) return;
-    
+    if (!this.#center) return;
+
     // Calculate bounding box size (box3 is already calculated in updateCameraFocus)
     const boxSize = this.#box3.getSize(new THREE.Vector3());
     const maxSize = Math.max(boxSize.x, boxSize.y, boxSize.z);
-    
+
     const fov = THREE.MathUtils.degToRad(this.camera.fov); // vertical fov in radians
     const aspect = this.camera.aspect;
 
@@ -475,8 +481,8 @@ export class UI3DRenderer extends EventListenerModel {
 
   private getDirectionForView(view: CameraView): THREE.Vector3 {
     const direction = new THREE.Vector3();
-    
-    switch(view) {
+
+    switch (view) {
       case CameraView.Top:
         direction.set(0, 0, 1);
         break;
@@ -501,12 +507,12 @@ export class UI3DRenderer extends EventListenerModel {
         direction.set(1, 1, 1).normalize();
         break;
     }
-    
+
     return direction;
   }
 
   private updateCameraUpForView(view: CameraView): void {
-    switch(view) {
+    switch (view) {
       case CameraView.Top:
       case CameraView.Bottom:
         this.camera.up.set(0, 1, 0);
@@ -523,7 +529,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   buildDOMEventHandlers() {
-    if(this.canvas){
+    if (this.canvas) {
       this.canvas.addEventListener('mousedown', this.onMouseDown.bind(this));
       this.canvas.addEventListener('mouseup', this.onMouseUp.bind(this));
       this.canvas.addEventListener('mousemove', this.onMouseMove.bind(this));
@@ -537,7 +543,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   removeDOMEventHandlers() {
-    if(this.canvas){
+    if (this.canvas) {
       this.canvas.removeEventListener('mousedown', this.onMouseDown.bind(this));
       this.canvas.removeEventListener('mouseup', this.onMouseUp.bind(this));
       this.canvas.removeEventListener('mousemove', this.onMouseMove.bind(this));
@@ -550,20 +556,20 @@ export class UI3DRenderer extends EventListenerModel {
   onKeyDown(event: KeyboardEvent) {
     this.processEventListener('onKeyDown', [event]);
     // Only handle key events when canvas is visible and enabled
-    if(!this.canvas || !this.enabled) {
+    if (!this.canvas || !this.enabled) {
       return;
     }
 
     // Check if canvas is visible in the viewport
     const rect = this.canvas.getBoundingClientRect();
-    if(rect.width === 0 || rect.height === 0) {
+    if (rect.width === 0 || rect.height === 0) {
       return;
     }
 
     // Prevent default behavior for camera view keys
     const key = event.key.toLowerCase();
-    
-    switch(key) {
+
+    switch (key) {
       case '1':
         event.preventDefault();
         this.reorientCamera(CameraView.Top);
@@ -617,7 +623,7 @@ export class UI3DRenderer extends EventListenerModel {
 
   onMouseDown(event: MouseEvent) {
     this.processEventListener('onMouseDown', [event]);
-    if(event.target != this.canvas){
+    if (event.target != this.canvas) {
       return;
     }
 
@@ -626,20 +632,20 @@ export class UI3DRenderer extends EventListenerModel {
     KotOR.Mouse.MouseDown = true;
     KotOR.Mouse.MouseX = event.pageX - offset.left;
     KotOR.Mouse.MouseY = event.pageY - offset.top;
-    KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.canvas.width ) * 2 - 1;
-    KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.canvas.height ) * 2 + 1;
+    KotOR.Mouse.Vector.x = ((KotOR.Mouse.MouseX) / this.canvas.width) * 2 - 1;
+    KotOR.Mouse.Vector.y = - ((KotOR.Mouse.MouseY) / this.canvas.height) * 2 + 1;
 
-    if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT && !this.transformControlsDragging){
-      this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
-      const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
-      if(intersects.length){
+    if (KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT && !this.transformControlsDragging) {
+      this.raycaster.setFromCamera(KotOR.Mouse.Vector, this.camera);
+      const intersects = this.raycaster.intersectObjects(this.selectable.children, true);
+      if (intersects.length) {
         const closestIntersection = intersects[0];
-        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh && 
+        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh &&
           closestIntersection.object.userData?.vertexIndex !== undefined;
-        
+
         this.selectObject(closestIntersection.object);
         // this.processEventListener('onSelect', [intersection]);
-      }else{
+      } else {
         this.selectObject(undefined);
         // this.processEventListener('onSelect', [undefined]);
       }
@@ -655,15 +661,15 @@ export class UI3DRenderer extends EventListenerModel {
 
   onMouseMove(event: MouseEvent) {
     this.processEventListener('onMouseMove', [event]);
-    if(event.target != this.canvas){
+    if (event.target != this.canvas) {
       return;
     }
 
     const offset = this.canvas.getBoundingClientRect();
     KotOR.Mouse.MouseX = event.pageX - offset.left;
     KotOR.Mouse.MouseY = event.pageY - offset.top;
-    KotOR.Mouse.Vector.x = ( (KotOR.Mouse.MouseX) / this.canvas.width ) * 2 - 1;
-    KotOR.Mouse.Vector.y = - ( (KotOR.Mouse.MouseY) / this.canvas.height ) * 2 + 1;
+    KotOR.Mouse.Vector.x = ((KotOR.Mouse.MouseX) / this.canvas.width) * 2 - 1;
+    KotOR.Mouse.Vector.y = - ((KotOR.Mouse.MouseY) / this.canvas.height) * 2 + 1;
   }
 
   onMouseWheel(event: WheelEvent) {
@@ -671,85 +677,85 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   toggleVisibilityByType(type: ObjectType) {
-    switch(type) {
+    switch (type) {
       case 'room':
-        this.group.rooms.children.forEach( (child) => {
+        this.group.rooms.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.ROOM];
         });
         break;
       case 'walkmesh':
-        this.group.rooms.children.forEach( (child) => {
+        this.group.rooms.children.forEach((child) => {
           ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
         });
         break;
       case 'creature':
-        this.group.creature.children.forEach( (child) => {
+        this.group.creature.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.CREATURE];
         });
         break;
       case 'door':
-        this.group.door.children.forEach( (child) => {
+        this.group.door.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.DOOR];
         });
         break;
       case 'placeable':
-        this.group.placeable.children.forEach( (child) => {
+        this.group.placeable.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.PLACEABLE];
         });
         break;
       case 'item':
-        this.group.item.children.forEach( (child) => {
+        this.group.item.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.ITEM];
         });
         break;
       case 'trigger':
-        this.group.trigger.children.forEach( (child) => {
+        this.group.trigger.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.TRIGGER];
         });
         break;
       case 'waypoint':
-        this.group.waypoint.children.forEach( (child) => {
+        this.group.waypoint.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.WAYPOINT];
         });
         break;
       case 'sound':
-        this.group.sound.children.forEach( (child) => {
+        this.group.sound.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.SOUND];
         });
         break;
       case 'camera':
-        this.group.camera.children.forEach( (child) => {
+        this.group.camera.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.CAMERA];
         });
         break;
       case 'encounter':
-        this.group.encounter.children.forEach( (child) => {
+        this.group.encounter.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.ENCOUNTER];
         });
         break;
       case 'store':
-        this.group.store.children.forEach( (child) => {
+        this.group.store.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.STORE];
         });
         break;
       case 'light_helpers':
-        this.group.light_helpers.children.forEach( (child) => {
+        this.group.light_helpers.children.forEach((child) => {
           child.visible = !this.visibilityState[ObjectType.LIGHT_HELPERS];
         });
         break;
       default:
-        console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
+        log.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
         break;
     }
     this.visibilityState[type] = !this.visibilityState[type];
   }
 
   addObjectToGroup(object: THREE.Object3D, group: GroupType) {
-    switch(group) {
+    switch (group) {
       case GroupType.ROOMS:
         this.group[GroupType.ROOMS].add(object);
         object.visible = this.visibilityState[ObjectType.ROOM];
-        if(object instanceof KotOR.OdysseyModel3D){
+        if (object instanceof KotOR.OdysseyModel3D) {
           (object.wok.mesh.material as THREE.Material).visible = this.visibilityState[ObjectType.WALKMESH];
         }
         break;
@@ -797,13 +803,13 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.CAMERA].add(object);
         break;
       default:
-        console.warn(`addObjectToGroup: unhandled group type, ${group}`);
+        log.warn(`addObjectToGroup: unhandled group type, ${group}`);
         break;
     }
   }
 
   removeObjectFromGroup(object: THREE.Object3D, group: GroupType) {
-    switch(group) {
+    switch (group) {
       case GroupType.ROOMS:
         this.group[GroupType.ROOMS].remove(object);
         break;
@@ -844,19 +850,19 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.CAMERA].remove(object);
         break;
       default:
-        console.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
+        log.warn(`removeObjectFromGroup: unhandled group type, ${group}`);
         break;
     }
   }
 
-  attachObject(object: THREE.Object3D, selectable: boolean = true){
-    if(object){
-      if(selectable) this.selectable.add(object);
+  attachObject(object: THREE.Object3D, selectable: boolean = true) {
+    if (object) {
+      if (selectable) this.selectable.add(object);
       else this.unselectable.add(object);
 
-      object.traverse( (node) => {
-        if(node instanceof KotOR.OdysseyModel3D){
-          if(this.odysseyModels.indexOf(node) == -1){
+      object.traverse((node) => {
+        if (node instanceof KotOR.OdysseyModel3D) {
+          if (this.odysseyModels.indexOf(node) == -1) {
             this.odysseyModels.push(node);
           }
         }
@@ -866,13 +872,13 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
-  detachObject(object: THREE.Object3D){
+  detachObject(object: THREE.Object3D) {
     object.removeFromParent();
 
-    object.traverse( (node) => {
-      if(node instanceof KotOR.OdysseyModel3D){
+    object.traverse((node) => {
+      if (node instanceof KotOR.OdysseyModel3D) {
         const index = this.odysseyModels.indexOf(node);
-        if(index >= 0){
+        if (index >= 0) {
           this.odysseyModels.splice(index, 1);
         }
       }
@@ -880,36 +886,36 @@ export class UI3DRenderer extends EventListenerModel {
 
     this.sceneGraphManager.rebuild();
   }
-  
-  attachCamera(camera: THREE.PerspectiveCamera){
-    camera.userData.heler = new THREE.CameraHelper( camera );
-    this.scene.add( camera.userData.heler );
+
+  attachCamera(camera: THREE.PerspectiveCamera) {
+    camera.userData.heler = new THREE.CameraHelper(camera);
+    this.scene.add(camera.userData.heler);
     this.cameras.push(camera);
   }
 
-  selectObject(object: THREE.Object3D | undefined){
-    if(!object || this.disableSelection){
+  selectObject(object: THREE.Object3D | undefined) {
+    if (!object || this.disableSelection) {
       this.selectionBox.visible = false;
       this.processEventListener('onSelect', [undefined]);
       return;
     }
 
     // Check if this is a vertex helper - if so, pass it through directly
-    if(object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined){
+    if (object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined) {
       this.processEventListener('onSelect', [object]);
       return;
     }
 
     // Handle ForgeGameObject picking
     let forgeGameObject: ForgeGameObject | undefined;
-    if(object instanceof ForgeGameObject){
+    if (object instanceof ForgeGameObject) {
       forgeGameObject = object;
       object = object.container;
     } else {
       // Try to find ForgeGameObject from userData or by traversing up the tree
       let current: THREE.Object3D | null = object;
-      while(current){
-        if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+      while (current) {
+        if (current.userData?.forgeGameObject instanceof ForgeGameObject) {
           forgeGameObject = current.userData.forgeGameObject;
           object = forgeGameObject.container;
           break;
@@ -918,35 +924,34 @@ export class UI3DRenderer extends EventListenerModel {
       }
     }
 
-    if(object instanceof KotOR.OdysseyWalkMesh){
-      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
+    if (object instanceof KotOR.OdysseyWalkMesh) {
+      log.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
       return;
     }
 
-    const nodeType: KotOR.OdysseyModelNodeType = (object as any).odysseyModelNode?.nodeType || 1;
+    type ObjectWithOdysseyNode = THREE.Object3D & { odysseyModelNode?: { nodeType: number } };
+    const nodeType: KotOR.OdysseyModelNodeType = (object as ObjectWithOdysseyNode).odysseyModelNode?.nodeType || 1;
     const isGeometry = (object instanceof THREE.Mesh) || (object instanceof THREE.Line) || (object instanceof THREE.Points) || ((nodeType & KotOR.OdysseyModelNodeType.Mesh) == KotOR.OdysseyModelNodeType.Mesh);
     const arr = ((this.selectionBox.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array)
     arr.fill(0);
     this.selectionBox.geometry.attributes.position.needsUpdate = true;
 
-    //@ts-ignore
-    this.selectionBox.setFromObject(object, true);
+    this.selectionBox.setFromObject(object as THREE.Object3D, true);
     this.selectionBox.visible = true;
 
-    const size = arr.reduce( (a, b) => a + b, 0 );
+    const size = arr.reduce((a, b) => a + b, 0);
 
-    if((!size || !isGeometry) && !forgeGameObject){
+    if ((!size || !isGeometry) && !forgeGameObject) {
       dummyMesh.position.copy(object.position);
       // object.getWorldPosition(dummyMesh.position);
       object.getWorldQuaternion(dummyMesh.quaternion);
       // dummyMesh.scale.copy(object.scale);
-      //@ts-ignore
       this.selectionBox.setFromObject(dummyMesh, true);
       this.selectionBox.visible = true;
     }
 
     // Store the ForgeGameObject reference in selectionBox userData for easy access
-    if(forgeGameObject){
+    if (forgeGameObject) {
       this.selectionBox.userData.forgeGameObject = forgeGameObject;
       this.processEventListener('onSelect', [forgeGameObject]);
     } else {
@@ -955,14 +960,14 @@ export class UI3DRenderer extends EventListenerModel {
     }
   }
 
-  setCanvas(canvas: HTMLCanvasElement){
+  setCanvas(canvas: HTMLCanvasElement) {
     //remove old event handlers
     this.removeDOMEventHandlers();
 
     const oCanvas = this.canvas;
-    if(oCanvas?.parentElement) this.resizeObserver.unobserve(oCanvas.parentElement);
+    if (oCanvas?.parentElement) this.resizeObserver.unobserve(oCanvas.parentElement);
     this.canvas = canvas;
-    if(this.canvas && oCanvas != this.canvas){
+    if (this.canvas && oCanvas != this.canvas) {
       this.buildWebGLRenderer();
       this.buildDepthTarget();
 
@@ -970,22 +975,22 @@ export class UI3DRenderer extends EventListenerModel {
       this.buildAmbientLight();
       this.buildScene();
     }
-    if(this.canvas){
+    if (this.canvas) {
       this.buildTransformControls();
       this.buildViewHelper();
       this.buildDOMEventHandlers();
-      if(this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
+      if (this.canvas.parentElement) this.resizeObserver.observe(this.canvas.parentElement);
       this.setSize(this.canvas.width, this.canvas.height);
       this.processEventListener('onCanvasAttached', [this.canvas]);
     }
   }
 
-  private buildCamera(){
+  private buildCamera() {
     // if(this.camera) this.camera.dispose();
-    this.camera = new THREE.PerspectiveCamera( 50, this.width / this.height, 0.1, 1500 );
-    this.camera.up = new THREE.Vector3( 0, 0, 1 );
-    this.camera.position.set( .1, 5, 1 ); // offset the camera a bit
-    this.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
+    this.camera = new THREE.PerspectiveCamera(50, this.width / this.height, 0.1, 1500);
+    this.camera.up = new THREE.Vector3(0, 0, 1);
+    this.camera.position.set(.1, 5, 1); // offset the camera a bit
+    this.camera.lookAt(new THREE.Vector3(0, 0, 0));
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
 
@@ -996,26 +1001,26 @@ export class UI3DRenderer extends EventListenerModel {
       this.height / 2, this.height / -2,
       1, 1000
     );
-    this.guiCamera.up = new THREE.Vector3( 0, 0, 1 );
+    this.guiCamera.up = new THREE.Vector3(0, 0, 1);
     this.guiCamera.position.z = 500;
     this.guiCamera.updateProjectionMatrix();
   }
 
-  private buildAmbientLight(){
-    if(this.globalLight) {
+  private buildAmbientLight() {
+    if (this.globalLight) {
       this.globalLight.removeFromParent();
       this.globalLight.dispose();
     }
-    this.globalLight = new THREE.AmbientLight(0x7F7F7F); //0x60534A
+    this.globalLight = new THREE.AmbientLight(0x7F7F7F);
     this.globalLight.name = 'Ambient Light';
     this.globalLight.position.x = 0;
     this.globalLight.position.y = 0;
     this.globalLight.position.z = 0;
-    this.globalLight.intensity  = 1;
+    this.globalLight.intensity = 1;
     this.lights.add(this.globalLight);
   }
 
-  private buildScene(){
+  private buildScene() {
     // this.scene = new THREE.Scene();
     this.group.light_helpers.visible = false;
 
@@ -1040,9 +1045,9 @@ export class UI3DRenderer extends EventListenerModel {
     this.selectable.add(this.group.store);
     this.sceneGraphManager.rebuild();
   }
-  
-  private buildWebGLRenderer(){
-    if(this.renderer) this.renderer.dispose();
+
+  private buildWebGLRenderer() {
+    if (this.renderer) this.renderer.dispose();
     this.renderer = new THREE.WebGLRenderer({
       canvas: this.canvas,
       antialias: true,
@@ -1053,17 +1058,17 @@ export class UI3DRenderer extends EventListenerModel {
       preserveDrawingBuffer: false,
     });
 
-    if(this.renderer){
+    if (this.renderer) {
       this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
-      this.renderer.setSize( this.width, this.height );
+      this.renderer.setSize(this.width, this.height);
     }
   }
 
-  private buildDepthTarget(){
-    if(this.depthTarget) this.depthTarget.dispose();
+  private buildDepthTarget() {
+    if (this.depthTarget) this.depthTarget.dispose();
     const pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat };
-		this.depthTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+    this.depthTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, pars);
     this.depthTarget.texture.generateMipmaps = false;
     this.depthTarget.stencilBuffer = false;
     this.depthTarget.depthBuffer = true;
@@ -1071,15 +1076,15 @@ export class UI3DRenderer extends EventListenerModel {
     this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
   }
 
-  setSize( width = 100, height = 100){
+  setSize(width = 100, height = 100) {
     this.width = width;
     this.height = height;
-    if(this.renderer) this.renderer.setSize(this.width, this.height);
+    if (this.renderer) this.renderer.setSize(this.width, this.height);
 
-    this.camera.up = new THREE.Vector3( 0, 0, 1 );
+    this.camera.up = new THREE.Vector3(0, 0, 1);
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
-    this.depthTarget.setSize( this.width, this.height );
+    this.depthTarget.setSize(this.width, this.height);
 
     this.guiCamera.left = this.width / -2;
     this.guiCamera.right = this.width / 2;
@@ -1089,94 +1094,93 @@ export class UI3DRenderer extends EventListenerModel {
     this.guiCamera.updateProjectionMatrix();
   }
 
-  triggerResize(){
-    if(this.canvas){
+  triggerResize() {
+    if (this.canvas) {
       this.setSize(this.canvas.width, this.canvas.height);
     }
   }
 
-  resetScene(){
+  resetScene() {
     this.scene = new THREE.Scene();
     this.scene.add(this.light);
 
     return this.scene;
   }
 
-  getScene(){
+  getScene() {
     return this.scene;
   }
 
-  getCamera(){
+  getCamera() {
     return this.camera;
   }
 
   getRenderedImage(): string {
-    if(this.canvas){
+    if (this.canvas) {
       return this.canvas.toDataURL();
     }
     return '';
   }
 
-  render(){
-    if(!this.enabled) return;
-    this.queuedAnimationFrame = requestAnimationFrame( () => {
+  render() {
+    if (!this.enabled) return;
+    this.queuedAnimationFrame = requestAnimationFrame(() => {
       this.render();
     });
-    if(this.renderer){
+    if (this.renderer) {
       this.renderer.clear();
       // this.selectionBox.update();
 
       const delta = this.clock.getDelta();
       this.time += delta;
       this.deltaTime += delta;
-      this.deltaTimeFixed += (1/60);
+      this.deltaTimeFixed += (1 / 60);
 
-      if(this.viewHelper && this.viewHelper.animating === true ) {
+      if (this.viewHelper && this.viewHelper.animating === true) {
         this.viewHelper.update(delta);
       }
 
-      if(this.orbitControls){
-        //@ts-ignore
+      if (this.orbitControls) {
         this.orbitControls.update(delta);
       }
 
       //Custom render logic can run here
       this.processEventListener('onBeforeRender', [delta]);
 
-      if(!this.loadingTextures && KotOR.TextureLoader.queue.length){
+      if (!this.loadingTextures && KotOR.TextureLoader.queue.length) {
         this.loadingTextures = true;
-        KotOR.TextureLoader.LoadQueue().then( () => {
+        KotOR.TextureLoader.LoadQueue().then(() => {
           this.loadingTextures = false;
         });
       }
 
-      if(this.currentCamera){
+      if (this.currentCamera) {
         this.currentCamera.updateProjectionMatrix();
-        this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
+        this.frustumMat4.multiplyMatrices(this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse)
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
       }
 
       // Render main scene
-      this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
+      this.renderer.render(this.scene, this.guiMode ? this.guiCamera : this.currentCamera);
 
       // Render camera preview if enabled
-      if(this.previewEnabled && this.previewCamera && this.canvas){
+      if (this.previewEnabled && this.previewCamera && this.canvas) {
         const previewSize = this.previewSize;
         const x = this.width - previewSize - 10; // 10px margin from right
         const y = 10; // 10px margin from top
-        
+
         // Save current viewport and scissor state
         const currentViewport = new THREE.Vector4();
         const currentScissor = new THREE.Vector4();
         this.renderer.getViewport(currentViewport);
         this.renderer.getScissor(currentScissor);
         const scissorTest = this.renderer.getScissorTest();
-        
+
         // Hide camera helpers from preview
         const hiddenHelpers: THREE.Object3D[] = [];
-        if(this.module){
-          for(const camera of this.module.area.cameras){
+        if (this.module) {
+          for (const camera of this.module.area.cameras) {
             camera.cameraHelper.visible = false;
             hiddenHelpers.push(camera.cameraHelper);
           }
@@ -1186,23 +1190,23 @@ export class UI3DRenderer extends EventListenerModel {
         // Update preview camera aspect ratio (square preview)
         this.previewCamera.aspect = 1.0;
         this.previewCamera.updateProjectionMatrix();
-        
+
         // Set viewport for preview (top right corner)
         // Note: WebGL viewport uses bottom-left origin
         const viewportY = this.height - y - previewSize;
         this.renderer.setViewport(x, viewportY, previewSize, previewSize);
         this.renderer.setScissor(x, viewportY, previewSize, previewSize);
         this.renderer.setScissorTest(true);
-        
+
         // Clear only the preview area (color and depth, but not stencil)
         // This ensures the preview area is clean before rendering
         this.renderer.clear(true, true, false);
-        
+
         // Render preview scene
         this.renderer.render(this.scene, this.previewCamera);
-        
+
         // Restore camera helpers visibility
-        for(const helper of hiddenHelpers){
+        for (const helper of hiddenHelpers) {
           helper.visible = true;
         }
         (this.transformControls as unknown as THREE.Object3D).visible = wasTransformControlsVisible;
@@ -1212,7 +1216,7 @@ export class UI3DRenderer extends EventListenerModel {
         this.renderer.setScissorTest(scissorTest);
       }
 
-      if(this.viewHelper){
+      if (this.viewHelper) {
         this.viewHelper.render(this.renderer);
       }
 
@@ -1224,7 +1228,7 @@ export class UI3DRenderer extends EventListenerModel {
   /**
    * Enable camera preview with the specified camera
    */
-  setPreviewCamera(camera: THREE.PerspectiveCamera | null){
+  setPreviewCamera(camera: THREE.PerspectiveCamera | null) {
     this.previewCamera = camera;
     this.previewEnabled = camera !== null;
   }
@@ -1232,32 +1236,32 @@ export class UI3DRenderer extends EventListenerModel {
   /**
    * Disable camera preview
    */
-  disablePreview(){
+  disablePreview() {
     this.previewEnabled = false;
     this.previewCamera = null;
   }
 
-  destroy(){
+  destroy() {
     //remove old event handlers
     this.removeDOMEventHandlers();
-    
+
     this.enabled = false;
     cancelAnimationFrame(this.queuedAnimationFrame);
-    
-    if(this.renderer) this.renderer.dispose();
+
+    if (this.renderer) this.renderer.dispose();
     this.renderer = undefined;
 
-    if(this.orbitControls){
+    if (this.orbitControls) {
       this.orbitControls.dispose();
     }
 
-    if(this.camera){
+    if (this.camera) {
       this.camera.removeFromParent();
     }
-    if(this.guiCamera){
+    if (this.guiCamera) {
       this.guiCamera.removeFromParent();
     }
-    while(this.scene.children.length){
+    while (this.scene.children.length) {
       this.scene.children[0].removeFromParent();
     }
     this.canvas = undefined;

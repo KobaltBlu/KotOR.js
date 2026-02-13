@@ -1,7 +1,13 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptExpression } from "./NWScriptExpression";
 import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import type { NWScriptInstruction } from "../NWScriptInstruction";
+
+import { NWScriptExpression } from "./NWScriptExpression";
 import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+
+
+const log = createScopedLogger(LogScope.NWScript);
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -22,7 +28,7 @@ interface StackItem {
 }
 
 /**
- * Simulates the NWScript stack during decompilation.
+ * Simulates the NWScript stack during conversion.
  * Tracks stack pointer (SP) and stack contents accurately.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -76,7 +82,7 @@ export class NWScriptStackSimulator {
    * Local variable initializations (for looking up variable info by index)
    * Set by the converter to provide variable names and types
    */
-  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }> = [];
+  private localVariableInits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }> = [];
 
   /**
    * Track stack state at each instruction address (for debugging/analysis)
@@ -187,7 +193,7 @@ export class NWScriptStackSimulator {
    * Handle CONST instruction (push constant onto stack)
    */
   private handleConst(instruction: NWScriptInstruction): NWScriptExpression {
-    let value: any;
+    let value: number | string;
     let dataType: NWScriptDataType;
 
     switch (instruction.type) {
@@ -577,7 +583,7 @@ export class NWScriptStackSimulator {
     const itemsToSave = Math.floor(sizeOfElementToSave / 4);
     
     if (totalItemsToRemove === 0 || this.stack.length === 0) {
-      console.warn('DESTRUCT', sizeToDestroy, offsetToSaveElement, sizeOfElementToSave, this.stack.length);
+      log.warn('DESTRUCT', sizeToDestroy, offsetToSaveElement, sizeOfElementToSave, this.stack.length);
       // Nothing to remove, but still update stack pointer
       return;
     }
@@ -620,7 +626,7 @@ export class NWScriptStackSimulator {
     // The variable will live at this stack position
     
     // Determine the default value based on instruction type
-    let defaultValue: any;
+    let defaultValue: number | string | undefined;
     let dataType: NWScriptDataType;
     
     switch (instruction.type) {
@@ -805,7 +811,7 @@ export class NWScriptStackSimulator {
   /**
    * Set local variable initializations for variable info lookup
    */
-  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: any }>): void {
+  setLocalVariableInits(inits: Array<{ offset: number, dataType: NWScriptDataType, hasInitializer: boolean, initialValue?: number | string | boolean }>): void {
     this.localVariableInits = inits;
   }
 

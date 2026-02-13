@@ -1,6 +1,7 @@
 import { ActionStatus, ActionType, ModuleObjectType } from "../enums";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import { BitWise } from "../utility/BitWise";
+
 import { Action } from "./Action";
 
 /**

@@ -1,5 +1,10 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+import { ForgeGameObject } from "./ForgeGameObject";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -20,7 +25,7 @@ export class ForgeRoom extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
     if(property === 'roomName'){
       if(newValue !== oldValue){
         this.load();
@@ -116,7 +121,7 @@ export class ForgeRoom extends ForgeGameObject {
       }
       return this.walkmesh;
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
     }
     return undefined;
   }

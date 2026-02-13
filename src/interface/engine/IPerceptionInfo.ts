@@ -1,5 +1,6 @@
-import type { ModuleObject } from "../../module";
 import type { PerceptionType } from "../../enums/engine/PerceptionType";
+
+import type { ModuleObject } from "../../module";
 
 /**
  * IPerceptionInfo interface.
@@ -16,4 +17,4 @@ export interface IPerceptionInfo {
   object: ModuleObject;
   objectId: number;
   data: number;
-};
+}

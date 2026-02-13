@@ -1,17 +1,23 @@
 import React, { useEffect, useRef, useState } from "react"
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import TabManager from "../TabManager";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabManagerProvider } from "../../../context/TabManagerContext";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import Draggable from "react-draggable";
 import { Form } from "react-bootstrap";
-import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
+import Draggable from "react-draggable";
 
-import * as KotOR from "../../../KotOR";
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
 import { UI3DRendererView } from "../../UI3DRendererView";
+import TabManager from "../TabManager";
+
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
+import { TabManagerProvider } from "../../../context/TabManagerContext";
+import { LIPShapeLabels } from "../../../data/LIPShapeLabels";
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import * as KotOR from "../../../KotOR";
+import { TabLIPEditorState, TabLIPEditorStateEventListenerTypes } from "../../../states/tabs";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 export const TabLIPEditor = function(props: BaseTabProps){
 
@@ -27,7 +33,7 @@ export const TabLIPEditor = function(props: BaseTabProps){
 
   useEffectOnce(() => {
     tab.openFile().then( (lip: KotOR.LIPObject) => {
-      console.log('lip', lip);
+      log.debug('lip', lip);
     });
     return () => {
 
@@ -73,7 +79,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
       if(ctx){
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         if(tab.audio_buffer instanceof AudioBuffer){
-          let samples = tab.audio_buffer.getChannelData(0);
+          const samples = tab.audio_buffer.getChannelData(0);
           let i, len = samples.length;
 
           const parentHeight = canvas.parentElement?.clientHeight || 0;
@@ -85,7 +91,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
           canvas.height = height;
           canvas.width = tab.audio_buffer.duration * tab.timeline_zoom;
 
-          let width = canvas.width;
+          const width = canvas.width;
           ctx.strokeStyle = '#5bc0de';
           ctx.fillStyle = 'rgba(0, 0, 0, 0)';
           ctx.fillRect(0, 0, width, height);
@@ -265,9 +271,9 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
 
   const rebuildTimelineLabels = () => {
     //Build timeline second markers
-    let nthTime = timelineScaleFactor/60;
-    let count = Math.ceil(Math.ceil(duration) / nthTime);
-    let timestamps: string[] = [];
+    const nthTime = timelineScaleFactor/60;
+    const count = Math.ceil(Math.ceil(duration) / nthTime);
+    const timestamps: string[] = [];
     for(let i = 0; i < count; i++){
       let s = (timelineScaleFactor * i);
       timestamps.push(
@@ -283,9 +289,9 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
-      let maxPixels = (tab.lip.duration * tab.timeline_zoom);
+      const maxPixels = (tab.lip.duration * tab.timeline_zoom);
 
-      let position = (e.pageX - bRect.left + keyframeWindowElement.scrollLeft);
+      const position = (e.pageX - bRect.left + keyframeWindowElement.scrollLeft);
       if(position < 0) return 0;
       if(position > maxPixels) return maxPixels;
       return position;
@@ -294,8 +300,8 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
   }
 
   const getTimelinePixelPositionAsTime = (position: number = 0) => {
-    let percentage = position / (tab.lip.duration * tab.timeline_zoom);
-    let time = tab.lip.duration * percentage;
+    const percentage = position / (tab.lip.duration * tab.timeline_zoom);
+    const time = tab.lip.duration * percentage;
     if(time < 0) return 0;
     if(time > tab.lip.duration) return tab.lip.duration;
     return time;
@@ -305,8 +311,8 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
 
       //Update the lips elapsed time based on the seekbar position
-      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-      let time = getTimelinePixelPositionAsTime(position);
+      const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      const time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
 
       const seekPosition = (tab.lip.elapsed * tab.timeline_zoom);
@@ -348,15 +354,15 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
   }
 
   const onClickAddKeyFrame = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    let newFrame = tab.addKeyFrame(
+    const newFrame = tab.addKeyFrame(
       tab.lip.elapsed, 0
     );
     tab.selectKeyFrame(newFrame);
   }
 
   const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
-    let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-    let time = getTimelinePixelPositionAsTime(position);
+    const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+    const time = getTimelinePixelPositionAsTime(position);
     if(tab.scrubbing){
       tab.seek(time);
 
@@ -405,7 +411,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
   }
 
   const onKeyFrameShapeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let shape = parseInt(e.target.value);
+    const shape = parseInt(e.target.value);
     tab.selected_frame.shape = !isNaN(shape) ? shape : 0;
     tab.selectKeyFrame(tab.selected_frame);
   }
@@ -415,7 +421,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
       <div className="keyframe-controls">
         <div className="keyframe-controls-left">
         {
-          !!selectedFrame ? (
+          selectedFrame ? (
             <div className="selected-keyframe-edit-options">
               <Form.Select onChange={onKeyFrameShapeChange} value={selectedFrame.shape}>
                 {
@@ -444,7 +450,7 @@ export const UILIPKeyFramePanel = function(props: UILIPKeyFramePanelProps){
         </div>
       </div>
       <div className="keyframe-bar" onClick={onClickKeyFrameWindow} onMouseDown={onMouseDownKeyFrameWindow} onMouseUp={onMouseUpKeyFrameWindow} onMouseMove={onMouseMoveKeyFrameWindow}>
-        <canvas ref={waveformCanvasRef as any} style={{position: 'absolute', top: 25, left: 0 }} />
+        <canvas ref={waveformCanvasRef} style={{position: 'absolute', top: 25, left: 0 }} />
         <div className="keyframe-time-track" style={{width: (Math.ceil(duration) * zoom)}}>
           {
             timestamps.map( (label: string, index: number) => {

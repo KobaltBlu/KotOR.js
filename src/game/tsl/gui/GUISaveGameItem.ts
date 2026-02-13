@@ -1,6 +1,9 @@
 import type { SaveGame } from "../../../engine/SaveGame";
 import { GUIProtoItem } from "../../../gui";
 import type { GameMenu, GUIControl } from "../../../gui";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GFFStruct } from "../../../resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
@@ -39,7 +42,7 @@ export class GUISaveGameItem extends GUIProtoItem {
       }
       super.createControl();
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
   }

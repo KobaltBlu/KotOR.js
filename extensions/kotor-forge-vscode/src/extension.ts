@@ -19,12 +19,12 @@ export function activate(context: vscode.ExtensionContext) {
   log.debug(`Extension extensionPath: ${context.extensionPath}`);
   log.trace(`Extension subscriptions count: ${context.subscriptions.length}`);
 
-  // Register a single Forge-backed custom editor for all KotOR file types
-  log.trace('Registering KotorForgeProvider');
+  // Register Forge-backed custom editors: default + Generic GFF option for GFF types
+  log.trace('Registering KotorForgeProvider (default + kotor.forge.gff)');
   context.subscriptions.push(
     KotorForgeProvider.register(context)
   );
-  log.debug('KotorForgeProvider registered successfully');
+  log.info('KotorForgeProvider registered; open files with KotOR Forge or "Open With" > KotOR Forge (Generic GFF) for GFF types');
 
   // Start NWScript language server for .nss/.ncs IntelliSense, diagnostics, and debugging
   log.trace('Calling activateLsp()');

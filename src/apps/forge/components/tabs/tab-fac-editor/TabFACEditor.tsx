@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TabFACEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
 import * as KotOR from "../../../KotOR";
+import { TabFACEditorState } from "../../../states/tabs";
 import "./TabFACEditor.scss";
 
 interface BaseTabProps {
@@ -109,11 +112,12 @@ interface FactionPropertiesProps {
 const FactionProperties = (props: FactionPropertiesProps) => {
   const { faction, allFactions, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return faction.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = faction.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = faction.getFieldByLabel(label);
     if(field){
       field.setValue(value);

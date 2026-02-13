@@ -1,20 +1,33 @@
 import React, { useState, useEffect } from "react";
+
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
+
+import { CommandPalette } from "./components/CommandPalette";
+import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
+import { ModalChangeGame } from "./components/modal/ModalChangeGame";
+import ModalGrantAccess from "./components/modal/ModalGrantAccess";
+import { ModalManager } from "./components/modal/ModalManager";
 import TabManager from "./components/tabs/TabManager";
+import { useApp } from "./context/AppContext";
+import { LayoutContainerProvider } from "./context/LayoutContainerContext";
 import { TabManagerProvider } from "./context/TabManagerContext";
+import { useEffectOnce } from "./helpers/UseEffectOnce";
 import { ForgeState } from "./states/ForgeState";
 // MenuTop removed: top menu disabled
 // import { MenuTop } from "./components/MenuTop";
-import { LayoutContainerProvider } from "./context/LayoutContainerContext";
-import { LayoutContainer } from "./components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "./components/modal/ModalGrantAccess";
-import { ModalChangeGame } from "./components/modal/ModalChangeGame";
-import { useEffectOnce } from "./helpers/UseEffectOnce";
-import { useApp } from "./context/AppContext";
-import { ModalManager } from "./components/modal/ModalManager";
-import { LoadingScreen } from "../common/components/loadingScreen/LoadingScreen";
-import { CommandPalette } from "./components/CommandPalette";
 
-export const App = (props: any) => {
+
+
+
+const log = createScopedLogger(LogScope.Forge);
+
+export interface AppProps {
+  [key: string]: unknown;
+}
+
+export const App = (_props: AppProps) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
@@ -57,11 +70,11 @@ export const App = (props: any) => {
   useEffectOnce( () => {
 
     ForgeState.VerifyGameDirectory(() => {
-      console.log('Game Directory', 'verified');
+      log.debug('Game Directory', 'verified');
       setShowGrantModal(false);
       beginInit();
     }, () => {
-      console.warn('Game Directory', 'not found');
+      log.warn('Game Directory', 'not found');
       setShowGrantModal(true);
     });
 

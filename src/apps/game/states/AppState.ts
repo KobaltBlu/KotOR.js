@@ -1,11 +1,34 @@
 import * as KotOR from "../KotOR";
+
 import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
+
+/** Profile shape from ConfigClient.get - used by game app. */
+export interface GameAppProfile {
+  key?: string;
+  full_name?: string;
+  directory?: string;
+  directory_handle?: FileSystemDirectoryHandle;
+  background?: string;
+  logo?: string;
+  launch?: { args?: { gameChoice?: number } };
+}
+
+/** EULA config stored in localStorage. */
+interface EULAConfig {
+  key: KotOR.GameEngineType;
+  version: string | null;
+  date: string | null;
+  accepted: boolean;
+}
 
 export class AppState {
   static eulaAccepted: boolean = false;
   static directoryLocated: boolean = false;
   static gameKey: KotOR.GameEngineType = KotOR.GameEngineType.KOTOR;
-  static appProfile: any;
+  static appProfile: GameAppProfile | undefined;
   static env: ApplicationEnvironment;
   static statsMode: number|undefined = undefined;
 
@@ -28,12 +51,12 @@ export class AppState {
       AppState.env = ApplicationEnvironment.BROWSER;
     }
 
-    AppState.appProfile = await AppState.getProfile();
-    KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile);
+    AppState.appProfile = (await AppState.getProfile()) as GameAppProfile | undefined;
+    KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile as Record<string, unknown>);
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
     
-    switch(AppState.appProfile.launch.args.gameChoice){
+    switch(AppState.appProfile?.launch?.args?.gameChoice){
       case 2:
         AppState.gameKey = KotOR.GameEngineType.TSL;
       break;
@@ -42,7 +65,8 @@ export class AppState {
       break;
     }
 
-    const eulaState: any = Object.assign({}, JSON.parse(window.localStorage.getItem('acceptEULA') as string));
+    const raw = window.localStorage.getItem('acceptEULA');
+    const eulaState: Record<string, EULAConfig> = Object.assign({}, raw ? (JSON.parse(raw) as Record<string, EULAConfig>) : {});
     const gameEULAConfig = Object.assign({
       key: AppState.gameKey,
       version: null,
@@ -55,8 +79,8 @@ export class AppState {
 
     AppState.loaderShow();
 
-    console.log('gameEULAConfig', gameEULAConfig);
-    console.log('eulaState', eulaState);
+    log.debug('gameEULAConfig', gameEULAConfig);
+    log.debug('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
     if(AppState.eulaAccepted){
       await AppState.loadGameDirectory();
@@ -163,7 +187,7 @@ export class AppState {
     }else{
       KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
     }
-    console.log('loading game...');
+    log.info('loading game...');
     AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
@@ -180,7 +204,7 @@ export class AppState {
 
     await KotOR.GameInitializer.Init(AppState.gameKey);
 
-    console.log('loaded')
+    log.info('loaded');
     KotOR.GameState.OpeningMoviesComplete = true;
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
@@ -199,7 +223,7 @@ export class AppState {
     AppState.loaderMessage('GameState: Initializing...');
     await KotOR.GameState.Init();
     document.body.append(KotOR.GameState.stats.domElement);
-    console.log('init complete');
+    log.info('init complete');
     AppState.loaderHide();
   }
 
@@ -236,13 +260,13 @@ export class AppState {
       }
       return false;
     }catch(e){
-      console.error(e);
+      log.error('validateDirectoryHandle failed', e);
       return false;
     }
   }
 
   static consoleCommand(command: string){
-    console.log('consoleCommand', command);
+    log.debug('consoleCommand', command);
     KotOR.GameState.CheatConsoleManager.processCommand(command);
   }
 
@@ -257,7 +281,7 @@ export class AppState {
       mode = undefined;
     }
     AppState.statsMode = mode;
-    KotOR.GameState.stats.showPanel(mode as any);
+    KotOR.GameState.stats.showPanel(mode ?? undefined);
   }
 
   static toggleDebugger(){
@@ -276,42 +300,42 @@ export class AppState {
    * Event Listeners
    */
 
-  static #eventListeners: any = {};
+  static #eventListeners: Record<string, ((...args: unknown[]) => void)[]> = {};
 
-  static addEventListener<T>(type: T, cb: Function): void {
+  static addEventListener<T extends string>(type: T, cb: (...args: unknown[]) => void): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
-        console.warn('Event Listener: Already added', type);
+        log.warn('Event Listener: Already added', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static removeEventListener<T>(type: T, cb: Function): void {
+  static removeEventListener<T extends string>(type: T, cb: (...args: unknown[]) => void): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        console.warn('Event Listener: Already removed', type);
+        log.warn('Event Listener: Already removed', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static processEventListener<T>(type: T, args: any[] = []): void {
+  static processEventListener<T>(type: T, args: (string | number | boolean | object | null)[] = []): void {
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -319,7 +343,7 @@ export class AppState {
         }
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('Event Listener: Unsupported', type);
     }
   }
 

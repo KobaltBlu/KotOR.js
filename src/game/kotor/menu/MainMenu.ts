@@ -1,3 +1,4 @@
+import { AudioEngine } from "../../../audio/AudioEngine";
 import { AudioLoader } from "../../../audio/AudioLoader";
 import { CurrentGame } from "../../../engine/CurrentGame";
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
@@ -7,7 +8,9 @@ import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { AudioEngine } from "../../../audio/AudioEngine";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
@@ -65,7 +68,7 @@ export class MainMenu extends GameMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        //Game.LoadModule('danm14aa', null, () => { log.info('ready to load'); })
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
         this.manager.MenuSaveLoad.open()
       });
@@ -74,7 +77,7 @@ export class MainMenu extends GameMenu {
         e.stopPropagation();
         //this.Hide();
         this.manager.MainMovies.open();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
+        //Game.LoadModule('danm14aa', null, () => { log.info('ready to load'); })
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e) => {
@@ -96,13 +99,13 @@ export class MainMenu extends GameMenu {
         (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this._3dView.texture.texture;
         (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
         this._3dView.setControl(this.LBL_3DVIEW);
-        (this.LBL_3DVIEW.getFill().material as any).visible = true;
+        (this.LBL_3DVIEW.getFill().material as { visible?: boolean }).visible = true;
         
         OdysseyModel3D.FromMDL(mdl, { 
           // manageLighting: false,
           context: this._3dView
         }).then( (model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
+          log.debug('Model Loaded', model);
           this._3dViewModel = model;
           
           this._3dView.camera.position.copy(model.camerahook.position);
@@ -113,7 +116,7 @@ export class MainMenu extends GameMenu {
             this._3dViewModel.playAnimation(0, true);
             resolve();
           });
-        }).catch((e: any) => {
+        }).catch((e: unknown) => {
 
         });
       });
@@ -130,7 +133,7 @@ export class MainMenu extends GameMenu {
         resolve();
       }, () => {
         this.open();
-        console.error('Background Music not found', this.bgMusicResRef);
+        log.error('Background Music not found', this.bgMusicResRef);
         resolve();
       });
     });
@@ -140,8 +143,8 @@ export class MainMenu extends GameMenu {
     super.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : String(e));
     }
   }
 

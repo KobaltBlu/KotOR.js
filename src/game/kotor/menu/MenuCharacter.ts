@@ -1,10 +1,14 @@
+import * as THREE from "three";
+
 import { GameState } from "../../../GameState";
 import { GameMenu, LBL_3DView } from "../../../gui";
 import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import type { ModuleCreature, ModuleItem } from "../../../module";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import * as THREE from "three";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { OdysseyModel } from "../../../odyssey";
 
 /**
@@ -170,7 +174,7 @@ export class MenuCharacter extends GameMenu {
           // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
+          //log.info('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
 
@@ -188,10 +192,10 @@ export class MenuCharacter extends GameMenu {
             resolve();
           });
 
-        }).catch((e: any) => {
+        }).catch((e: unknown) => {
           resolve();
         });
-      }).catch((e: any) => {
+      }).catch((e: unknown) => {
         resolve();
       });
     });
@@ -205,7 +209,7 @@ export class MenuCharacter extends GameMenu {
       this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
+    } catch (e: unknown) {
     }
   }
 
@@ -297,8 +301,8 @@ export class MenuCharacter extends GameMenu {
     }
     if(creature){
       this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
+      const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+      const clone = creature;
       objectCreature.appearance = clone.appearance;
       objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
       if (clone.equipment.ARMOR) {

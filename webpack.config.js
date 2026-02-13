@@ -421,6 +421,8 @@ const forgeConfig = (name, color) => ({
   resolve: {
     alias: {
       three: path.resolve('./node_modules/three'),
+      '@kotor': path.resolve('./src'),
+      '@forge': path.resolve('./src/apps/forge'),
     },
     extensions: ['.tsx', '.ts', '.js'],
     fallback: {

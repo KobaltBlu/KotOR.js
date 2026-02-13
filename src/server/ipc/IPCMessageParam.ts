@@ -1,5 +1,5 @@
-import { BinaryReader } from "../../utility/binary/BinaryReader";
 import { IPCDataType } from "../../enums/server/ipc/IPCDataType";
+import { BinaryReader } from "../../utility/binary/BinaryReader";
 
 /**
  * Represents an IPCMessageParam.
@@ -22,7 +22,7 @@ export class IPCMessageParam {
    */
   size: number = IPCMessageParam.HeaderSize;
 
-  constructor(type: IPCDataType, value?: any){
+  constructor(type: IPCDataType, value?: Uint8Array | string | number){
     this.type = type;
     if(value?.constructor == Uint8Array){
       /**

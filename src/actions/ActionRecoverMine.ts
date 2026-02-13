@@ -1,12 +1,12 @@
-import { GameState } from "../GameState";
+import { SignalEventType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
+import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { SkillType } from "../enums/nwscript/SkillType";
-import { SignalEventType } from "../enums";
+import { GameState } from "../GameState";
 import { ResourceLoader } from "../loaders/ResourceLoader";
 import type { ModuleCreature } from "../module/ModuleCreature";
 import type { ModuleDoor } from "../module/ModuleDoor";
@@ -17,21 +17,23 @@ import { GFFObject } from "../resource/GFFObject";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { BitWise } from "../utility/BitWise";
 import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
 
-/** Recover delay in seconds (matches StartGuiTimingBar 0x1194 = 4500ms). */
+import { Action } from "./Action";
+import type { ActionFactory } from "./ActionFactory";
+
+/** Recover delay in seconds (4.5s). */
 const RECOVER_DELAY_SECONDS = 4.5;
 
-/** Use-range margin for GetIsInUseRange (Reva: 0.25). */
+/** Use-range margin for GetIsInUseRange. */
 const USE_RANGE_MARGIN = 0.25;
 
-/** Default use range when not in range (Reva: GetUseRange fallback; we use 3.0). */
+/** Default use range when not in range. */
 const DEFAULT_USE_RANGE = 3.0;
 
-/** BroadcastSkillData skill id (Reva: SetInteger 0, 0x5fb = 1531). */
+/** BroadcastSkillData skill id. */
 const BROADCAST_SKILL_ID = 0x5fb;
 
-/** BroadcastSkillData subtype (Reva: SetInteger 6, 0x144 = 324). */
+/** BroadcastSkillData subtype. */
 const BROADCAST_SKILL_SUBTYPE = 0x144;
 
 /** Recover result type: 0 = fail, 1 = success, 2 = critical fail, 3 = auto-fail (roll failed), 4 = auto success. */
@@ -46,15 +48,15 @@ export const RecoverMineResultType = {
 /**
  * ActionRecoverMine class.
  * Recover a trap/mine: remove the trap and add the trap item to inventory.
- * 1:1 parity with CSWSCreature::AIActionRecoverMine (Reva 0x00518c40):
+ * Behavior:
  * - Target: Trigger (TRAP), Door, or Placeable (object type from param 0).
  * - Range: GetIsInUseRange(target, 0.25); if false, GetUseRange → move (we use 3.0).
- * - First run: set recoverMineInProgress, queue self + Wait(4.5s) + ChangeFacing(0x13) + PlayAnimation(0x06), StartGuiTimingBar(0x1194), return IN_PROGRESS.
+ * - First run: set recoverMineInProgress, queue self + Wait(4.5s) + ChangeFacing + PlayAnimation, StartGuiTimingBar, return IN_PROGRESS.
  * - Second run: Demolitions + d20 vs DC (DC = max(1, disarm_dc + 10); raw <= -10 → 1).
  * - Auto-success: creator == owner, or (creator in party or creator is PC) and (owner in party or owner is PC).
  * - Critical fail (rollTotal < DC-5): trap fires on recoverer (OnTrapTriggered); only for Trigger.
  * - Success: create item from traps.2da ResRef by trapType, add to inventory; trigger: destroy + remove from area if count==1; door/placeable: clear trap fields.
- * - BroadcastSkillData: skill 0x5fb, d20, skillRank, DC, isAutoRoll(1/0), resultType; subtype 0x144.
+ * - BroadcastSkillData: skill id, d20, skillRank, DC, isAutoRoll(1/0), resultType; subtype.
  *
  * @file ActionRecoverMine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -83,7 +85,7 @@ export class ActionRecoverMine extends Action {
     const ownerCreature = this.owner as ModuleCreature;
     const distance = Utility.Distance2D(this.owner.position, this.target.position);
 
-    // Reva: GetIsInUseRange(this, targetId, 0.25); if false → GetUseRange (move).
+    // GetIsInUseRange(this, targetId, margin); if false, move into range.
     const inUseRange = distance <= DEFAULT_USE_RANGE - USE_RANGE_MARGIN;
     if (!inUseRange) {
       const moveRange = DEFAULT_USE_RANGE;
@@ -126,7 +128,8 @@ export class ActionRecoverMine extends Action {
     ownerCreature.recoverMineInProgress = false;
 
     const skillRank = ownerCreature.getSkillLevel(SkillType.DEMOLITIONS);
-    const isAutoRoll = (ownerCreature as any).field59_0x4e0 === 0 ? 1 : 0;
+    const autoRollFlag = (ownerCreature as ModuleCreature & { field59_0x4e0?: number }).field59_0x4e0;
+    const isAutoRoll = autoRollFlag === 0 ? 1 : 0;
     const d20Roll = isAutoRoll ? 20 : Math.floor(Math.random() * 20) + 1;
     const rollTotal = skillRank + d20Roll;
 
@@ -226,7 +229,8 @@ export class ActionRecoverMine extends Action {
     }
 
     const trapRow = GameState.TwoDAManager.datatables.get('traps')?.rows?.[trapType];
-    const resref = trapRow?.resref ?? (isTrigger ? (trap as ModuleTrigger).trapResRef : undefined);
+    const resrefRaw = trapRow?.resref ?? (isTrigger ? (trap as ModuleTrigger).trapResRef : undefined);
+    const resref = typeof resrefRaw === 'string' ? resrefRaw : (resrefRaw != null ? String(resrefRaw) : undefined);
 
     if (resref && resref !== '****' && resref !== '') {
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], resref);
@@ -251,17 +255,18 @@ export class ActionRecoverMine extends Action {
 
   private createChangeFacingAction(): Action | null {
     if (!this.target) return null;
-    const ActionFactory = GameState.ActionFactory as any;
-    if (typeof ActionFactory.ActionChangeFacingObject !== 'function') return null;
-    const action = new (ActionFactory.ActionChangeFacingObject)(-1, this.groupId);
+    const ActionFactoryClass = GameState.ActionFactory as typeof ActionFactory & { ActionChangeFacingObject?: new (actionId: number, groupId: number) => Action };
+    const Ctor = ActionFactoryClass.ActionChangeFacingObject;
+    if (typeof Ctor !== 'function') return null;
+    const action = new Ctor(-1, this.groupId);
     action.setParameter(0, ActionParameterType.DWORD, this.target);
     return action;
   }
 
   private createPlayAnimationAction(): Action | null {
-    const ActionFactory = GameState.ActionFactory as any;
-    if (!ActionFactory.ActionPlayAnimation) return null;
-    const action = new ActionFactory.ActionPlayAnimation(-1, this.groupId);
+    const ActionFactoryClass = GameState.ActionFactory;
+    if (!ActionFactoryClass.ActionPlayAnimation) return null;
+    const action = new ActionFactoryClass.ActionPlayAnimation(-1, this.groupId);
     action.setParameter(0, ActionParameterType.INT, 10116);
     action.setParameter(1, ActionParameterType.FLOAT, 1.0);
     action.setParameter(2, ActionParameterType.FLOAT, RECOVER_DELAY_SECONDS);
@@ -270,8 +275,9 @@ export class ActionRecoverMine extends Action {
   }
 
   private startGuiTimingBar(owner: ModuleCreature): void {
-    if (typeof (owner as any).startGuiTimingBar === 'function') {
-      (owner as any).startGuiTimingBar(0x1194, 2);
+    const o = owner as ModuleCreature & { startGuiTimingBar?(a: number, b: number): void };
+    if (typeof o.startGuiTimingBar === 'function') {
+      o.startGuiTimingBar(0x1194, 2);
     }
   }
 
@@ -279,8 +285,9 @@ export class ActionRecoverMine extends Action {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const c = this.owner as ModuleCreature;
     c.recoverMineInProgress = false;
-    if (typeof (c as any).stopGuiTimingBar === 'function') {
-      (c as any).stopGuiTimingBar();
+    const creatureWithBar = c as ModuleCreature & { stopGuiTimingBar?(): void };
+    if (typeof creatureWithBar.stopGuiTimingBar === 'function') {
+      creatureWithBar.stopGuiTimingBar();
     }
   }
 
@@ -292,8 +299,9 @@ export class ActionRecoverMine extends Action {
     isAutoRoll: number,
     resultType: number
   ): void {
-    if (typeof (GameState as any).broadcastSkillData === 'function') {
-      (GameState as any).broadcastSkillData(owner, {
+    const gs = GameState as GameState & { broadcastSkillData?(owner: ModuleCreature, data: { skillId: number; d20: number; skillRank: number; dc: number; isAutoRoll: number; resultType: number; subtype: number }): void };
+    if (typeof gs.broadcastSkillData === 'function') {
+      gs.broadcastSkillData(owner, {
         skillId: BROADCAST_SKILL_ID,
         d20: d20Roll,
         skillRank,
@@ -325,8 +333,9 @@ export class ActionRecoverMine extends Action {
     dc: number,
     resultType: number
   ): void {
+    const gs = GameState as GameState & { lastRecoverMineResult?: { targetId: number; target: ModuleObject; success: boolean; skillRank: number; d20Roll: number; dc: number; resultType: number } };
     if (GameState.module && this.target) {
-      (GameState as any).lastRecoverMineResult = {
+      gs.lastRecoverMineResult = {
         targetId: this.target.id,
         target: this.target,
         success,

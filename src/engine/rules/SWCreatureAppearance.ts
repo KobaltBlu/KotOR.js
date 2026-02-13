@@ -1,4 +1,7 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
+import { TwoDAObject, type ITwoDARowData } from "../../resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { Utility } from "../../utility/Utility";
 
 /**
@@ -126,7 +129,7 @@ export class SWCreatureAppearance {
 
   getBodyModelInfo(bodyVariation: string = '', textureVariation: number = 1): { model: string, texture: string } {
     textureVariation = Math.max(1, textureVariation);
-    console.log('getBodyModelInfo', bodyVariation, textureVariation);
+    log.info('getBodyModelInfo', bodyVariation, textureVariation);
     const defaultModel = this.modela.replace(/\0[\s\S]*$/g,'');
     const defaultTexture = this.texa.replace(/\0[\s\S]*$/g,'');
     let bodyModel = defaultModel; 
@@ -180,20 +183,20 @@ export class SWCreatureAppearance {
       break;
     }
 
-    if(!!bodyTexture){
+    if(bodyTexture){
       bodyTexture += Utility.PadInt( textureVariation, 2);
     }
 
     return {
-      model: !!bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
-      texture: !!bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
+      model: bodyModel ? bodyModel.toLowerCase() : defaultModel.toLowerCase(), 
+      texture: bodyTexture ? bodyTexture.toLowerCase() : defaultTexture.toLowerCase()
     };
   }
 
-  static From2DA (row: any = {}): SWCreatureAppearance {
+  static From2DA (row: ITwoDARowData = {} as ITwoDARowData): SWCreatureAppearance {
     const appearance = new SWCreatureAppearance();
-    
-    appearance.id = parseInt(row.__index);
+
+    appearance.id = parseInt(String(row.__index ?? 0), 10);
 
     if(row.hasOwnProperty('label'))
       appearance.label = TwoDAObject.normalizeValue(row.label, 'string', '');
@@ -216,7 +219,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('racetex'))
       appearance.racetex = TwoDAObject.normalizeValue(row.racetex, 'string', '');
     if(row.hasOwnProperty('modeltype'))
-      appearance.modeltype = TwoDAObject.normalizeValue(row.modeltype, 'string', 'B');
+      appearance.modeltype = TwoDAObject.normalizeValue(row.modeltype, 'string', 'B') as 'B'|'F'|'S'|'L';
     if(row.hasOwnProperty('normalhead'))
       appearance.normalhead = TwoDAObject.normalizeValue(row.normalhead, 'number', -1);
     if(row.hasOwnProperty('backuphead'))
@@ -313,14 +316,14 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('envmap'))
       appearance.envmap = TwoDAObject.normalizeValue(row.envmap, 'string', '');
     if(row.hasOwnProperty('bloodcolr'))
-      appearance.bloodcolr = TwoDAObject.normalizeValue(row.bloodcolr, 'string', 'R');
+      appearance.bloodcolr = TwoDAObject.normalizeValue(row.bloodcolr, 'string', 'R') as 'R'|'S'|'G';
 
       if(row.hasOwnProperty('weaponscale'))
       appearance.weaponscale = TwoDAObject.normalizeValue(row.weaponscale, 'number', 1.0);
     if(row.hasOwnProperty('wing_tail_scale'))
       appearance.wing_tail_scale = TwoDAObject.normalizeValue(row.wing_tail_scale, 'number', 1.0);
     if(row.hasOwnProperty('moverate'))
-      appearance.moverate = TwoDAObject.normalizeValue(row.moverate, 'string', 'NORM');
+      appearance.moverate = TwoDAObject.normalizeValue(row.moverate, 'string', 'NORM') as SWCreatureAppearance['moverate'];
     if(row.hasOwnProperty('driveaccl'))
       appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 50);
     if(row.hasOwnProperty('drivemaxspeed'))
@@ -336,7 +339,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('height'))
       appearance.height = TwoDAObject.normalizeValue(row.height, 'number', 0);
     if(row.hasOwnProperty('targetheight'))
-      appearance.targetheight = TwoDAObject.normalizeValue(row.targetheight, 'string', 'l');
+      appearance.targetheight = TwoDAObject.normalizeValue(row.targetheight, 'string', 'l') as 'l';
     if(row.hasOwnProperty('abortonparry'))
       appearance.abortonparry = TwoDAObject.normalizeValue(row.abortonparry, 'boolean', false);
     if(row.hasOwnProperty('racialtype'))
@@ -381,7 +384,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('prefatckdist'))
       appearance.prefatckdist = TwoDAObject.normalizeValue(row.prefatckdist, 'number', 0.5);
     if(row.hasOwnProperty('groundtilt'))
-      appearance.groundtilt = TwoDAObject.normalizeValue(row.groundtilt, 'boolean', false);
+      appearance.groundtilt = TwoDAObject.normalizeValue(row.groundtilt, 'number', 0);
     if(row.hasOwnProperty('body_bag'))
       appearance.body_bag = TwoDAObject.normalizeValue(row.body_bag, 'number', -1);
     if(row.hasOwnProperty('freelookeffect'))

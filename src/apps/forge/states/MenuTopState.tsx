@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 import { ModalChangeGameState } from "../components/modal/ModalChangeGame";
 import { getWikiDocUrlForTab } from "../data/EditorWikiMapping";
 import { EditorFile } from "../EditorFile";
@@ -9,6 +9,8 @@ import { extractErfToFolder } from "../helpers/ExtractErfToFolder";
 import * as KotOR from "../KotOR";
 import { MenuTopItem } from "../MenuTopItem";
 import { Project } from "../Project";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
 
 import { ForgeState } from "./ForgeState";
 import { ModalAboutState } from "./modal/ModalAboutState";
@@ -35,6 +37,8 @@ import { TabUTPEditorState } from "./tabs/TabUTPEditorState";
 import { TabUTSEditorState } from "./tabs/TabUTSEditorState";
 import { TabUTTEditorState } from "./tabs/TabUTTEditorState";
 import { TabUTWEditorState } from "./tabs/TabUTWEditorState";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class MenuTopState {
 
@@ -115,10 +119,10 @@ export class MenuTopState {
       if (index == -1) {
         ev.push(callback);
       } else {
-        console.warn('Event Listener: Already added', event);
+        log.warn('Event Listener: Already added', event);
       }
     } else {
-      console.warn('Event Listener: Unsupported', event);
+      log.warn('Event Listener: Unsupported', event);
     }
   }
 
@@ -133,14 +137,14 @@ export class MenuTopState {
       if (index >= 0) {
         ev.splice(index, 1);
       } else {
-        console.warn('Event Listener: Already removed', event);
+        log.warn('Event Listener: Already removed', event);
       }
     } else {
-      console.warn('Event Listener: Unsupported', event);
+      log.warn('Event Listener: Unsupported', event);
     }
   }
 
-  static triggerEventListener(event: string, ...args: any[]) {
+  static triggerEventListener(event: string, ...args: unknown[]) {
     if (!Array.isArray(this.#eventListeners[event])) {
       this.#eventListeners[event] = [];
     }
@@ -153,7 +157,7 @@ export class MenuTopState {
         }
       }
     } else {
-      console.warn('Event Listener: Unsupported', event);
+      log.warn('Event Listener: Unsupported', event);
     }
   }
 
@@ -304,7 +308,7 @@ export class MenuTopState {
           try {
             ForgeState.tabManager.currentTab.save();
           } catch (e) {
-            console.error(e);
+            log.error(String(e), e);
           }
         }
       }
@@ -318,7 +322,7 @@ export class MenuTopState {
           try {
             ForgeState.tabManager.currentTab.compile();
           } catch (e) {
-            console.error(e);
+            log.error(String(e), e);
           }
         }
       }
@@ -332,7 +336,7 @@ export class MenuTopState {
           try {
             ForgeState.tabManager.currentTab.saveAs();
           } catch (e) {
-            console.error(e);
+            log.error(String(e), e);
           }
         }
       }
@@ -369,7 +373,7 @@ export class MenuTopState {
             alert('Extract to folder is only available in the Electron app.');
             return;
           }
-          const dialog = (window as any).dialog;
+          const dialog = (window as Window & { dialog?: { showOpenDialog: (opts: { title: string; properties: string[] }) => Promise<{ canceled?: boolean; filePaths?: string[] }> } }).dialog;
           if (!dialog?.showOpenDialog) {
             alert('File dialog not available.');
             return;
@@ -460,8 +464,8 @@ export class MenuTopState {
         const tabs = ForgeState.tabManager.tabs;
         for (let i = 0; i < tabs.length; i++) {
           const tab = tabs[i];
-          if (tab instanceof TabState && typeof (tab as any).save === 'function') {
-            try { (tab as any).save(); } catch (e) { console.error(e); }
+          if (tab instanceof TabState) {
+            try { tab.save(); } catch (e) { log.error(String(e), e); }
           }
         }
       }
@@ -486,7 +490,7 @@ export class MenuTopState {
     this.menuItemExitApp = new MenuTopItem({
       name: 'Exit',
       onClick: function () {
-        (window as any).canUnload = true;
+        (window as Window & { canUnload?: boolean }).canUnload = true;
         window.close();
       }
     });

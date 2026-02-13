@@ -1,6 +1,11 @@
-import { ForgeGameObject } from "./ForgeGameObject";
 import * as KotOR from "../KotOR";
 import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+import { ForgeGameObject } from "./ForgeGameObject";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
@@ -28,7 +33,7 @@ export class ForgeItem extends ForgeGameObject {
   // Model data
   model: KotOR.OdysseyModel3D;
   modelLoading: boolean = false;
-  kBaseItem: any = {};
+  kBaseItem: Record<string, string | number> = {};
 
   constructor(buffer?: Uint8Array){
     super();
@@ -38,7 +43,7 @@ export class ForgeItem extends ForgeGameObject {
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
+  onPropertyChange(property: string, newValue: string | number | boolean | object, oldValue: string | number | boolean | object){
     if(property === 'baseItem'){
       this.loadBaseItem();
       if(newValue !== oldValue){
@@ -195,7 +200,7 @@ export class ForgeItem extends ForgeGameObject {
   }
 
   nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }
@@ -237,7 +242,7 @@ export class ForgeItem extends ForgeGameObject {
       this.processEventListener('onModelChange', [this]);
       return this.model;
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
       this.model = new KotOR.OdysseyModel3D();
       this.modelLoading = false;
       this.processEventListener('onModelChange', [this]);

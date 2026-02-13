@@ -1,6 +1,7 @@
 import { ApplicationEnvironment } from "../enums/ApplicationEnvironment";
 import { ApplicationMode } from "../enums/ApplicationMode";
 import { GameEngineType } from "../enums/engine";
+
 import { OSInfo } from "./OSInfo";
 
 /**
@@ -19,13 +20,13 @@ export class ApplicationProfile {
   static directory: string;
   static directoryHandle: FileSystemDirectoryHandle;
   static key: string;
-  static launch: any;
+  static launch: (() => void) | undefined;
   static path_sep: string = '/';
   static GameKey: GameEngineType = GameEngineType.KOTOR;
-  static profile: any = {};
+  static profile: Record<string, unknown> = {};
   static isMac: boolean = false;
 
-  static InitEnvironment(profile: any){
+  static InitEnvironment(profile: Record<string, unknown>): void {
     if(typeof profile === 'object'){
       ApplicationProfile.profile = profile;
     }
@@ -45,11 +46,11 @@ export class ApplicationProfile {
       }
     }
 
-    if(ApplicationProfile.profile){
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        ApplicationProfile.directory = ApplicationProfile.profile.directory;
-      }else{
-        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle;
+    if (ApplicationProfile.profile && Object.keys(ApplicationProfile.profile).length > 0) {
+      if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
+        ApplicationProfile.directory = ApplicationProfile.profile.directory as string;
+      } else {
+        ApplicationProfile.directoryHandle = ApplicationProfile.profile.directory_handle as FileSystemDirectoryHandle;
       }
     }
   }

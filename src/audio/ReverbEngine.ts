@@ -1,3 +1,7 @@
+
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { EAXPresets } from "./EAXPresets";
 
 /**
@@ -64,7 +68,7 @@ export class ReverbEngine {
   private listenerOrientation: [number, number, number] = [0, 0, 1];
 
   constructor(context: AudioContext) {
-    console.log("Initializing ReverbEngine");
+    log.info("Initializing ReverbEngine");
     this.context = context;
     this.currentPreset = 0;
 
@@ -132,12 +136,12 @@ export class ReverbEngine {
    * Load preset and apply all parameters with correct EAX mapping
    */
   loadPreset(index: number) {
-    console.log("Loading preset:", index);
+    log.info("Loading preset:", index);
     if (this.currentPreset === index) return;
 
     const preset = EAXPresets.PresetFromIndex(index);
     if (!preset) {
-      console.error('EAX preset not found', index);
+      log.error('EAX preset not found', index);
       return;
     }
 
@@ -179,7 +183,7 @@ export class ReverbEngine {
    * Generate proper EAX impulse response with early reflections and late reverb
    */
   private generateEAXImpulse(preset: any): AudioBuffer {
-    console.log("Generating EAX impulse for preset");
+    log.info("Generating EAX impulse for preset");
     const sampleRate = this.context.sampleRate;
     const length = Math.ceil(preset.decayTime * sampleRate);
     const buffer = this.context.createBuffer(2, length, sampleRate);
@@ -280,7 +284,7 @@ export class ReverbEngine {
    * Connect audio source into the engine - proper EAX routing
    */
   connectSource(source: AudioNode) {
-    console.log("Connecting source to ReverbEngine");
+    log.info("Connecting source to ReverbEngine");
     source.connect(this.earlyReflections);
     source.connect(this.dryGain);
   }

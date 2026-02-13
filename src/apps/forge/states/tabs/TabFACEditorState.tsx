@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabFACEditor } from "../../components/tabs/tab-fac-editor/TabFACEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabFACEditorState extends TabState {
   tabName: string = 'FAC Editor';
@@ -55,7 +58,7 @@ export class TabFACEditorState extends TabState {
     // Sync UI changes to FAC GFF if needed
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

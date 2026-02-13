@@ -192,15 +192,14 @@ export class BinaryWriter {
    * @param chars - The string to write.
    * @param encoding - The encoding of the string.
    */
-  writeChars(chars: any|any[] = [], encoding='ascii'){
-    if(typeof chars === 'string')
-      chars = chars.split('');
+  writeChars(chars: string | string[] = [], _encoding = 'ascii'): void {
+    const arr = typeof chars === 'string' ? chars.split('') : chars;
 
-    if(!chars.length){ return; }
+    if (!arr.length) { return; }
 
-    const tmpBuffer = new Uint8Array(chars.length);
-    for(let i = 0; i < chars.length; i++){
-      tmpBuffer[i] = chars[i].charCodeAt(0) & 0xFF;
+    const tmpBuffer = new Uint8Array(arr.length);
+    for (let i = 0; i < arr.length; i++) {
+      tmpBuffer[i] = (arr[i] as string).charCodeAt(0) & 0xFF;
     }
     this.appendData(tmpBuffer);
   }

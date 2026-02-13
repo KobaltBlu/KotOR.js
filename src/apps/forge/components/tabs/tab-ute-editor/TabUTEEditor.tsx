@@ -1,15 +1,19 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { TabUTEEditorState } from "../../../states/tabs/TabUTEEditorState";
-import { EncounterDifficulty } from "../../../interfaces/EncounterDifficulty";
-import { CreatureListEntry } from "../../../interfaces/CreatureListEntry";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
+
 import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
+import { FormField } from "../../form-field/FormField";
+
+import { BaseTabProps } from "../../../interfaces/BaseTabProps";
+import { CreatureListEntry } from "../../../interfaces/CreatureListEntry";
+import { EncounterDifficulty } from "../../../interfaces/EncounterDifficulty";
+import * as KotOR from "../../../KotOR";
+
 import "../../../styles/tabs/tab-ute-editor.scss";
 import { SubTab, SubTabHost } from "../../SubTabHost/SubTabHost";
+
 import { ForgeEncounter } from "../../../module-editor/ForgeEncounter";
+import { TabUTEEditorState } from "../../../states/tabs/TabUTEEditorState";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;

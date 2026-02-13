@@ -1,6 +1,9 @@
 import type { SaveGame } from "../../../engine/SaveGame";
 import { GUIProtoItem } from "../../../gui";
 import type { GameMenu, GUIControl } from "../../../gui";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 import { GFFStruct } from "../../../resource/GFFStruct";
 
 /**
@@ -25,7 +28,7 @@ export class GUISaveGameItem extends GUIProtoItem {
       super.createControl();
       this.setText(this.node.getFullName());
     }catch(e){
-      console.error(e);
+      log.error(e);
     }
     return this.widget;
   }

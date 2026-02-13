@@ -1,17 +1,21 @@
-import { EditorFile } from "./EditorFile";
 import { DeepObject } from "../../utility/DeepObject";
-import { ForgeState } from "./states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
+import { createScopedLogger, LogScope } from "../../utility/Logger";
 
-import * as KotOR from "./KotOR";
+import { EditorFile } from "./EditorFile";
+
+const log = createScopedLogger(LogScope.Forge);
+
 import { ProjectType } from "./enum/ProjectType";
 import { FileTypeManager } from "./FileTypeManager";
-import { ProjectFileSystem } from "./ProjectFileSystem";
 import { ForgeFileSystem } from "./ForgeFileSystem";
 import { ProjectSettings } from "./interfaces/ProjectSettings";
+import * as KotOR from "./KotOR";
 import { ForgeArea } from "./module-editor/ForgeArea";
 import { ForgeModule } from "./module-editor/ForgeModule";
 import { ForgeRoom } from "./module-editor/ForgeRoom";
+import { ProjectFileSystem } from "./ProjectFileSystem";
+import { ForgeState } from "./states/ForgeState";
+import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';
@@ -29,7 +33,7 @@ export class Project {
   dir: string = '';
 
   className: string;
-  files: any[];
+  files: EditorFile[] = [];
   settings: ProjectSettings = {} as ProjectSettings;
   moduleEditor: TabModuleEditorState | undefined;
   module: ForgeModule | undefined;
@@ -40,10 +44,10 @@ export class Project {
   module_lyt: EditorFile | undefined;
   module_vis: EditorFile | undefined;
 
-  static Types: any;
+  static Types: Record<string, unknown>;
 
   constructor(){
-    console.log("Project Class");
+    log.debug("Project Class");
     this.className = "Project";
     this.files = [];
     this.settings = DeepObject.Merge(defaults, {});
@@ -67,7 +71,7 @@ export class Project {
         if(response.handles && response.handles.length){
           const handle = response.handles[0] as FileSystemDirectoryHandle;
           ProjectFileSystem.rootDirectoryHandle = handle;
-          console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
+          log.debug('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
           ForgeState.project = new Project();
           const loaded = await ForgeState.project.load();
           if(loaded){
@@ -148,7 +152,7 @@ export class Project {
     }
 
     if ( !await ProjectFileSystem.exists(`${DIR_FORGE}/settings.json`) ) {
-      console.warn('Project.loadSettings', `creating default settings file: ${DIR_FORGE}/settings.json`);
+      log.warn('Project.loadSettings', `creating default settings file: ${DIR_FORGE}/settings.json`);
       this.settings = DeepObject.Merge(defaults, {});
       ProjectFileSystem.writeFile(`${DIR_FORGE}/settings.json`, new TextEncoder().encode(JSON.stringify(this.settings, null, "\t")));
       return true;
@@ -156,20 +160,20 @@ export class Project {
 
     try{
       const buffer = await ProjectFileSystem.readFile(`${DIR_FORGE}/settings.json`);
-      let decoder = new TextDecoder('utf8');
+      const decoder = new TextDecoder('utf8');
       this.settings = JSON.parse(
         decoder.decode(buffer)
       );
 
       if(typeof this.settings != 'object'){
-        console.warn('Project.loadSettings', `Malformed ${DIR_FORGE}/settings.json file data: ${this.settings}`);
+        log.warn('Project.loadSettings', `Malformed ${DIR_FORGE}/settings.json file data: ${this.settings}`);
         this.settings = {} as ProjectSettings;
       }
 
       this.settings = DeepObject.Merge(defaults, this.settings);
       return true;
     }catch(e){
-      console.error('Project.loadSettings: Failed to load settings file', e);
+      log.error('Project.loadSettings: Failed to load settings file', e);
       alert('Project.loadSettings: Failed to load settings file');
       this.settings = DeepObject.Merge(defaults, {});
       return false;
@@ -181,11 +185,11 @@ export class Project {
     //load project.json
     await this.load();
     try{
-      console.log('project', this.settings);
+      log.debug('project', this.settings);
 
       const quickStart = ForgeState.tabManager.getTabByType(TabQuickStartState.name);
       if(quickStart){
-        console.log(quickStart);
+        log.debug('quickStart', quickStart);
         ForgeState.tabManager.removeTab(quickStart);
       }
 
@@ -208,7 +212,7 @@ export class Project {
         }
       }
     }catch(e){
-      console.error(e);
+      log.error(e as Error);
       alert('Project Open Failed');
     }
 
@@ -225,7 +229,7 @@ export class Project {
         //TODO: Implement other project types
       break;
     }
-    console.log('Project Init');
+    log.debug('Project Init');
 
     //Reopen files
     for(let i = 0, len = this.settings.open_files.length; i < len; i++){
@@ -262,7 +266,7 @@ export class Project {
   }
 
   getTemplatesByType ( restype = '' ) {
-    let files: any[] = [];
+    const files: EditorFile[] = [];
 
     for(let i = 0; i < this.files.length; i++){
       if(this.files[i].ext == restype)
@@ -275,7 +279,7 @@ export class Project {
   addToOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index == -1){
           this.settings.open_files.push(editor_file.getPath());
           this.saveSettings();
@@ -289,7 +293,7 @@ export class Project {
   removeFromOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
       if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
+        const index = this.settings.open_files.indexOf(editor_file.getPath());
         if(index >= 0){
           this.settings.open_files.splice(index, 1);
           this.saveSettings();
@@ -331,19 +335,19 @@ export class Project {
 
   async initDirectoryStructure(){
     if(!await ProjectFileSystem.exists(`${DIR_BLUEPRINTS}`)){
-      console.log('Creating directory', `./${DIR_BLUEPRINTS}/`);
+      log.debug('Creating directory', `./${DIR_BLUEPRINTS}/`);
       await ProjectFileSystem.mkdir(`${DIR_BLUEPRINTS}`, { recursive: false });
     }
     if(!await ProjectFileSystem.exists(`${DIR_MODELS}`)){
-      console.log('Creating directory', `./${DIR_MODELS}/`);
+      log.debug('Creating directory', `./${DIR_MODELS}/`);
       await ProjectFileSystem.mkdir(`${DIR_MODELS}`, { recursive: false });
     }
     if(!await ProjectFileSystem.exists(`${DIR_TEXTURES}`)){
-      console.log('Creating directory', `./${DIR_TEXTURES}/`);
+      log.debug('Creating directory', `./${DIR_TEXTURES}/`);
       await ProjectFileSystem.mkdir(`${DIR_TEXTURES}`, { recursive: false });
     }
     if(!await ProjectFileSystem.exists(`${DIR_DIALOGS}`)){
-      console.log('Creating directory', `./${DIR_DIALOGS}/`);
+      log.debug('Creating directory', `./${DIR_DIALOGS}/`);
       await ProjectFileSystem.mkdir(`${DIR_DIALOGS}`, { recursive: false });
     }
     // if(!await ProjectFileSystem.exists(`${DIR_SOUNDS}`)){
@@ -353,7 +357,7 @@ export class Project {
     //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
     // }
     if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
-      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
+      log.debug('Creating directory', `./${DIR_SCRIPTS}/`);
       await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
     }
   }
@@ -368,22 +372,22 @@ export class Project {
         `${DIR_FORGE}/settings.json`, encoder.encode( JSON.stringify(this.settings, null, "\t") )
       );
       if(!saved){
-        console.error('Project.saveSettings');
+        log.error('Project.saveSettings');
         return;
       }
     }catch(e){
-      console.error('Project.saveSettings', e);
+      log.error('Project.saveSettings', e as Error);
     }
   }
 
 }
 
-const defaults: any = {
+const defaults: ProjectSettings = {
   name: '',
-  game: 1,
-  type: 1,
+  game: 1 as ProjectSettings['game'],
+  type: 1 as ProjectSettings['type'],
   module_editor: {
     open: false
   },
   open_files: [],
-}
+};

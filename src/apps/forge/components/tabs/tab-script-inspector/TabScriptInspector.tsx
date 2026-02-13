@@ -1,11 +1,23 @@
 import React, { useState } from "react";
-import * as KotOR from "../../../KotOR";
-import { TabTextEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
 
-export const TabScriptInspector = function(props: any){
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
+import { createScopedLogger, LogScope } from "../../../../../utility/Logger";
+
+import { useEffectOnce } from "../../../helpers/UseEffectOnce";
+import * as KotOR from "../../../KotOR";
+import { TabTextEditorState } from "../../../states/tabs";
+
+
+
+const log = createScopedLogger(LogScope.NWScript);
+
+export interface TabScriptInspectorProps {
+  parentTab: TabTextEditorState;
+}
+
+export const TabScriptInspector = function(props: TabScriptInspectorProps){
   const parentTab: TabTextEditorState = props.parentTab;
 
   const [instructions, setInstructions] = useState<KotOR.NWScriptInstruction[]>([]);
@@ -13,7 +25,7 @@ export const TabScriptInspector = function(props: any){
   const offset = 13;
 
   const onCompile = () => {
-    // console.log('onCompile');
+    // log.info('onCompile');
     const script = new KotOR.NWScript(parentTab.ncs);
     setInstructions([...script.instructions.values()]);
   };
@@ -23,7 +35,7 @@ export const TabScriptInspector = function(props: any){
       const assemblyText = instructions
         .map(instruction => instruction.toAssemblyString())
         .join('\n');
-      
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(assemblyText);
       } else {
@@ -38,7 +50,7 @@ export const TabScriptInspector = function(props: any){
         document.body.removeChild(textArea);
       }
     } catch (err) {
-      console.error('Failed to copy assembly to clipboard:', err);
+      log.error('Failed to copy assembly to clipboard', err instanceof Error ? err : String(err));
     }
   };
 
@@ -65,7 +77,7 @@ export const TabScriptInspector = function(props: any){
   return (
     <div className="tab-pane-content scroll-y log-list bg-dark" style={{ position: 'relative', width: '100%', height: '100%' }}>
       <MenuBar items={menuItems} />
-      <div style={{ 
+      <div style={{
         position: 'absolute',
         top: '24px',
         left: 0,
@@ -87,7 +99,7 @@ export const TabScriptInspector = function(props: any){
         <tbody>
           {
             instructions.map( (instruction) => {
-              const address = ('000000000' + (parseInt(instruction.address as any, 16) + offset).toString(16).toUpperCase()).substr(-8);
+              const address = ('000000000' + (Number(instruction.address) + offset).toString(16).toUpperCase()).substr(-8);
               const code_hex = instruction.code_hex.toUpperCase();
               const type_hex = instruction.type_hex.toUpperCase();
               let value = ``;
@@ -95,28 +107,28 @@ export const TabScriptInspector = function(props: any){
               if(instruction.code == OP_CONST){
                 switch(instruction.type){
                   case 3:
-                    value = (instruction as any).integer;
+                    value = String(instruction.integer);
                   break;
                   case 4:
-                    value = (instruction as any).float;
+                    value = String(instruction.float);
                   break;
                   case 5:
-                    value = `"${(instruction as any).string}"`;
+                    value = `"${instruction.string}"`;
                   break;
                   case 6:
-                    value = (instruction as any).object;
+                    value = String(instruction.object);
                   break;
                   case 12:
                     value = ``;
                   break;
                   default:
-                    console.warn('CONST', instruction.type, instruction);
+                    log.warn('CONST instruction with unsupported type', String(instruction.type), instruction);
                   break;
                 }
               }else if(instruction.code == OP_MOVSP || instruction.code == OP_JMP || instruction.code == OP_JSR || instruction.code == OP_JZ || instruction.code == OP_JNZ){
-                value = `${(instruction as any).offset}`;
+                value = `${instruction.offset}`;
               }else if(instruction.code == OP_CPTOPSP || instruction.code == OP_CPDOWNSP || instruction.code == OP_CPDOWNBP || instruction.code == OP_CPTOPBP){
-                value = `${(instruction as any).offset}, ${(instruction as any).size}`;
+                value = `${instruction.offset}, ${instruction.size}`;
               }
 
               return (

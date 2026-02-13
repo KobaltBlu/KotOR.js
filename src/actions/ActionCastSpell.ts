@@ -1,4 +1,3 @@
-import { Action } from "./Action";
 import { SpellCastInstance } from "../combat";
 import { ModuleObjectType } from "../enums";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
@@ -8,8 +7,10 @@ import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
 import { GameState } from "../GameState";
 // import { TalentSpell } from "../talents/TalentSpell";
-import { BitWise } from "../utility/BitWise";
 import type { ModuleObject } from "../module/ModuleObject";
+import { BitWise } from "../utility/BitWise";
+
+import { Action } from "./Action";
 
 /**
  * ActionCastSpell class.
@@ -22,7 +23,7 @@ import type { ModuleObject } from "../module/ModuleObject";
  */
 export class ActionCastSpell extends Action {
   
-  spell: any = {}
+  spell: import("../talents/TalentSpell").TalentSpell | Record<string, never> = {}
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -52,8 +53,8 @@ export class ActionCastSpell extends Action {
     if(this.spell){
       if(!this.spell.inRange(this.target, this.owner)){
 
-        // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
+        this.owner.openSpot = undefined;
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(this.groupId);
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);

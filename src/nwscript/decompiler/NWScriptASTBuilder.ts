@@ -1,15 +1,6 @@
-import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
-import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
-import type { NWScriptStatement } from "./NWScriptStatementBuilder";
-import type { NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
-import { NWScriptExpression } from "./NWScriptExpression";
-import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
-import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
-import { ControlStructureType } from "./NWScriptControlStructureBuilder";
-import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion } from "./NWScriptAST";
-import type {
+import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+
+import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion ,
   NWScriptProgramNode,
   NWScriptFunctionNode,
   NWScriptBlockNode,
@@ -29,7 +20,17 @@ import type {
   NWScriptVariableDeclarationNode,
   NWScriptGlobalVariableDeclarationNode
 } from "./NWScriptAST";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
+import type { NWScriptControlStructure } from "./NWScriptControlStructureBuilder";
+import { ControlStructureType } from "./NWScriptControlStructureBuilder";
+import { NWScriptExpression, type NWScriptConstantValue } from "./NWScriptExpression";
+import type { NWScriptFunction } from "./NWScriptFunctionAnalyzer";
+import type { NWScriptGlobalInit } from "./NWScriptGlobalVariableAnalyzer";
+import type { NWScriptLocalInit } from "./NWScriptLocalVariableAnalyzer";
+import type { NWScriptStatement , NWScriptProcessedBlock } from "./NWScriptStatementBuilder";
+
+
 
 /**
  * Builds an Abstract Syntax Tree (AST) from control structures and statements.
@@ -974,7 +975,7 @@ export class NWScriptASTBuilder {
   /**
    * Convert a value to an expression
    */
-  private valueToExpression(value: any, dataType: NWScriptDataType): NWScriptExpression {
+  private valueToExpression(value: NWScriptConstantValue, dataType: NWScriptDataType): NWScriptExpression {
     return NWScriptExpression.constant(value, dataType);
   }
 }

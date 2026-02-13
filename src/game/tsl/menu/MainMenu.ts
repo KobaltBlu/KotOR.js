@@ -1,3 +1,5 @@
+import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
+
 import { MenuSaveLoadMode } from "../../../enums/gui/MenuSaveLoadMode";
 import { GameState } from "../../../GameState";
 import { LBL_3DView } from "../../../gui";
@@ -5,7 +7,9 @@ import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
 import { MDLLoader, TextureLoader } from "../../../loaders";
 import { OdysseyModel } from "../../../odyssey";
 import { OdysseyModel3D } from "../../../three/odyssey";
-import { MainMenu as K1_MainMenu } from "../../kotor/KOTOR";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
@@ -81,14 +85,14 @@ export class MainMenu extends K1_MainMenu {
         window.close();
       });
       
-      (this.tGuiPanel.widget.userData.fill as any).visible = false;
+      (this.tGuiPanel.widget.userData.fill as { visible?: boolean }).visible = false;
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
-      (this.LBL_3DVIEW.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-      (this.LBL_3DVIEW.getFill().material as any).transparent = false;
+      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).uniforms.map.value = this._3dView.texture.texture;
+      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).transparent = false;
       this._3dView.setControl(this.LBL_3DVIEW);
-      (this.LBL_3DVIEW.getFill().material as any).visible = true;
+      (this.LBL_3DVIEW.getFill().material as THREE.Material & { uniforms?: { map?: { value: THREE.Texture } }; transparent?: boolean; visible?: boolean }).visible = true;
       
       MDLLoader.loader.load('mainmenu01')
       .then((mdl: OdysseyModel) => {
@@ -96,7 +100,7 @@ export class MainMenu extends K1_MainMenu {
           // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
+          log.debug('Model Loaded', model);
           this._3dViewModel = model;
           
           this._3dView.camera.position.copy(model.camerahook.position);

@@ -1,16 +1,17 @@
-import { GameState } from "../GameState";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject, ModuleItem } from "../module";
+import { GameState } from "../GameState";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "../module";
 import { BitWise } from "../utility/BitWise";
+
 import { Action } from "./Action";
 
 /**
  * ActionGiveItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionGiveItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,7 +27,7 @@ export class ActionGiveItem extends Action {
     // 1 - dword: oGiveTo
   }
 
-  update(delta: number = 0): ActionStatus {
+  update(_delta: number = 0): ActionStatus {
 
     if(
       !BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
@@ -50,7 +51,7 @@ export class ActionGiveItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(GameState.PartyManager.party.indexOf(oGiveTo as any) >= 0){
+    if(GameState.PartyManager.party.indexOf(oGiveTo as ModuleCreature) >= 0){
       GameState.InventoryManager.addItem( oItem );
     }else{
       oGiveTo.addItem( oItem );

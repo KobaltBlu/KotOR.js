@@ -1,8 +1,11 @@
 import React from "react";
+
 import { TabVISEditor } from "../../components/tabs/tab-vis-editor/TabVISEditor";
 import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState } from "./TabState";
+
 import * as KotOR from "../../KotOR";
+
+import { TabState } from "./TabState";
 
 export class TabVISEditorState extends TabState {
   tabName: string = 'VIS Editor';
@@ -44,29 +47,8 @@ export class TabVISEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(this.vis){
-      // Use VISObject export logic
-      const writer = new KotOR.BinaryWriter();
-      const rooms = Array.from(this.vis.rooms.values());
-      
-      for(let i = 0; i < rooms.length; i++){
-        const room = rooms[i];
-        const roomCount = room.rooms.length;
-        
-        writer.writeChars(room.name + ' ' + roomCount);
-        writer.writeByte(13); // CR
-        writer.writeByte(10); // LF
-        
-        for(let j = 0; j < roomCount; j++){
-          writer.writeChars('  ' + room.rooms[j]);
-          if(i < (rooms.length - 1) || j < (roomCount - 1)){
-            writer.writeByte(13); // CR
-            writer.writeByte(10); // LF
-          }
-        }
-      }
-      
-      return new Uint8Array(writer.buffer);
+    if (this.vis) {
+      return this.vis.toBuffer();
     }
     return new Uint8Array(0);
   }
@@ -75,7 +57,7 @@ export class TabVISEditorState extends TabState {
     // VIS changes are in vis.rooms map
   }
 
-  getResourceID(): any {
-    return this.file?.resref + this.file?.reskey;
+  getResourceID(): string | undefined {
+    return this.file ? `${this.file.resref ?? ''}${this.file.reskey ?? ''}` : undefined;
   }
 }

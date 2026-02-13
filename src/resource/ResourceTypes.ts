@@ -7,10 +7,8 @@
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export const ResourceTypes: {
-  [key: string]: number;
-  getKeyByValue: (value: number) => string;
-} = {
+/** Resource extension/code to numeric type. Index access returns number; getKeyByValue is the reverse lookup. */
+export const ResourceTypes = {
   "NA": 0xFFFF,
   "res": 0,
   "bmp": 1,
@@ -334,13 +332,14 @@ export const ResourceTypes: {
   "bif": 9998,
   "key": 9999,
 
-  getKeyByValue: function (value: number): string {
+  getKeyByValue: function (this: Record<string, number> & { getKeyByValue(value: number): string }, value: number): string {
     for (const prop in this) {
+      if (prop === 'getKeyByValue') continue;
       if (Object.prototype.hasOwnProperty.call(this, prop)) {
-        if (this[prop] == value)
-          return prop;
+        const v = this[prop];
+        if (typeof v === 'number' && v === value) return prop;
       }
     }
     return "NA";
   }
-}
+} as unknown as Record<string, number> & { getKeyByValue(value: number): string };

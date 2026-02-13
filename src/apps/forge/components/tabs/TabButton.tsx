@@ -1,7 +1,12 @@
 import React, { MouseEventHandler, useEffect, useState } from "react";
+
 import { useTabManager } from "../../context/TabManagerContext";
-import { TabState } from "../../states/tabs";
 import { useEffectOnce } from "../../helpers/UseEffectOnce";
+import { TabState } from "../../states/tabs";
+
+import { createScopedLogger, LogScope } from "../../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface TabButtonProps {
   tab: TabState
@@ -22,7 +27,7 @@ export const TabButton = function(props: TabButtonProps) {
   }, [tabName]);
 
   const onTabNameChange = () => {
-    console.log('onTabNameChange', tab.tabName)
+    log.debug('onTabNameChange', tab.tabName);
     setTabName(tab.tabName);
   };
 

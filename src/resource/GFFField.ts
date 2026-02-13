@@ -1,7 +1,24 @@
 import { GFFDataType } from "../enums/resource/GFFDataType";
+import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
+import type { IGFFStructJSON } from "../interface/resource/IGFFStructJSON";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { CExoLocString } from "./CExoLocString";
 import { GFFStruct } from "./GFFStruct";
-import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
+
+const log = createScopedLogger(LogScope.Loader);
+
+/** Type-dependent value for a GFF field (primitives, vectors, orientation, void, or nested structs). */
+export type GFFFieldValue =
+  | number
+  | string
+  | bigint
+  | Uint8Array
+  | { x: number; y: number; z: number }
+  | { x: number; y: number; z: number; w: number }
+  | CExoLocString
+  | GFFStruct
+  | GFFStruct[];
 
 /**
  * Represents a field within a GFF (Generic File Format) structure.
@@ -23,10 +40,10 @@ import type { IGFFFieldJSON } from "../interface/resource/IGFFFieldJSON";
  * 
  * // Create a nested structure field
  * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
- * structField.addChildStruct(new GFFStruct(0x0007));
+ * structField.addChildStruct(new GFFStruct(7));
  * 
  * // Get and set values
- * console.log(nameField.getValue()); // 'PlayerName'
+ * log.info(nameField.getValue()); // 'PlayerName'
  * nameField.setValue('NewName');
  * ```
  * 
@@ -50,9 +67,9 @@ export class GFFField {
   /** DataView for reading binary data */
   dataView: DataView;
   
-  /** The actual value stored in this field */
-  value: any;
-  
+  /** The actual value stored in this field (type-dependent). */
+  value: GFFFieldValue | undefined;
+
   /** Array of child structures (for STRUCT and LIST types) */
   childStructs: GFFStruct[] = [];
   
@@ -76,7 +93,7 @@ export class GFFField {
    * 
    * @param {number} [type=0] - The data type of the field (from GFFDataType enum)
    * @param {string} [label=""] - The label/name of the field
-   * @param {any} [value] - The initial value for the field (type-specific)
+   * @param {GFFFieldValue} [value] - The initial value for the field (type-specific)
    * 
    * @example
    * ```typescript
@@ -93,7 +110,7 @@ export class GFFField {
    * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
    * ```
    */
-  constructor(type: number = 0, label: string = "", value?: any){
+  constructor(type: number = 0, label: string = "", value?: GFFFieldValue) {
     this.uuid = crypto.randomUUID();
     this.type = type;
     this.label = label;
@@ -114,20 +131,22 @@ export class GFFField {
       break;
       case GFFDataType.ORIENTATION:
         this.value = 0;
-        if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number' && typeof value.w == 'number'){
-          this.orientation = value;
-        }else{
-          this.orientation = {x: 0, y: 0, z: 0, w: 1};
+        if (typeof value === 'object' && value != null && 'x' in value && 'y' in value && 'z' in value && 'w' in value) {
+          const o = value as { x: number; y: number; z: number; w: number };
+          this.orientation = o;
+        } else {
+          this.orientation = { x: 0, y: 0, z: 0, w: 1 };
         }
-      break;
+        break;
       case GFFDataType.VECTOR:
         this.value = 0;
-        if(typeof value == 'object' && typeof value.x == 'number' && typeof value.y == 'number' && typeof value.z == 'number'){
-          this.vector = value;
-        }else{
-          this.vector = {x: 0, y: 0, z: 0};
+        if (typeof value === 'object' && value != null && 'x' in value && 'y' in value && 'z' in value) {
+          const v = value as { x: number; y: number; z: number };
+          this.vector = v;
+        } else {
+          this.vector = { x: 0, y: 0, z: 0 };
         }
-      break;
+        break;
       case GFFDataType.STRUCT:
         this.childStructs[0] = new GFFStruct();
       break;
@@ -147,7 +166,7 @@ export class GFFField {
    * @example
    * ```typescript
    * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
-   * console.log(field.getType()); // GFFDataType.CExoString
+   * log.info(field.getType()); // GFFDataType.CExoString
    * ```
    */
   getType(): GFFDataType {
@@ -162,7 +181,7 @@ export class GFFField {
    * @example
    * ```typescript
    * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
-   * console.log(field.getLabel()); // 'Name'
+   * log.info(field.getLabel()); // 'Name'
    * ```
    */
   getLabel(): string {
@@ -193,21 +212,21 @@ export class GFFField {
    * - DWORD64: Returns the 64-bit unsigned integer value
    * - Other types: Returns the stored value directly
    * 
-   * @returns {any} The field's value (type-dependent)
+   * @returns {GFFFieldValue | undefined} The field's value (type-dependent)
    * 
    * @example
    * ```typescript
    * const stringField = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
-   * console.log(stringField.getValue()); // 'PlayerName'
+   * log.info(stringField.getValue()); // 'PlayerName'
    * 
    * const intField = new GFFField(GFFDataType.INT, 'Level', 5);
-   * console.log(intField.getValue()); // 5
+   * log.info(intField.getValue()); // 5
    * 
    * const vectorField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
-   * console.log(vectorField.getValue()); // Vector3 {x: 1, y: 2, z: 3}
+   * log.info(vectorField.getValue()); // Vector3 {x: 1, y: 2, z: 3}
    * ```
    */
-  getValue(){
+  getValue(): GFFFieldValue | bigint | undefined {
     switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
         return this.cexoLocString.getValue();
@@ -219,6 +238,30 @@ export class GFFField {
   }
 
   /**
+   * Returns the field value as a number. Use for INT, DWORD, BYTE, WORD, FLOAT, etc.
+   * Returns 0 if the value is not a number or is undefined.
+   */
+  getNumber(): number {
+    const v = this.getValue();
+    if (v === undefined || v === null) return 0;
+    if (typeof v === 'number' && !Number.isNaN(v)) return v;
+    if (typeof v === 'bigint') return Number(v);
+    if (typeof v === 'string') return parseInt(v, 10) || 0;
+    return 0;
+  }
+
+  /**
+   * Returns the field value as a string. Use for CExoString, ResRef, or CExoLocString (via getValue()).
+   * Returns '' if not a string type.
+   */
+  getString(): string {
+    const v = this.getValue();
+    if (typeof v === 'string') return v;
+    if (this.type === GFFDataType.CEXOLOCSTRING && this.cexoLocString) return this.cexoLocString.getValue() ?? '';
+    return '';
+  }
+
+  /**
    * Gets the 3D vector value for VECTOR type fields.
    * 
    * @returns {THREE.Vector3} The 3D vector value
@@ -227,7 +270,7 @@ export class GFFField {
    * ```typescript
    * const vectorField = new GFFField(GFFDataType.VECTOR, 'Position', new THREE.Vector3(1, 2, 3));
    * const position = vectorField.getVector();
-   * console.log(position.x, position.y, position.z); // 1, 2, 3
+   * log.info(position.x, position.y, position.z); // 1, 2, 3
    * ```
    */
   getVector(){
@@ -242,11 +285,11 @@ export class GFFField {
    * @example
    * ```typescript
    * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
-   * const childStruct = new GFFStruct(0x0007);
+   * const childStruct = new GFFStruct(7);
    * structField.addChildStruct(childStruct);
    * 
    * const firstStruct = structField.getFieldStruct();
-   * console.log(firstStruct.getType()); // 0x0007
+   * log.info(firstStruct.getType()); // 7
    * ```
    */
   getFieldStruct(): GFFStruct {
@@ -261,11 +304,11 @@ export class GFFField {
    * @example
    * ```typescript
    * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
-   * listField.addChildStruct(new GFFStruct(0x0008));
-   * listField.addChildStruct(new GFFStruct(0x0008));
+   * listField.addChildStruct(new GFFStruct(8));
+   * listField.addChildStruct(new GFFStruct(8));
    * 
    * const children = listField.getChildStructs();
-   * console.log(children.length); // 2
+   * log.info(children.length); // 2
    * ```
    */
   getChildStructs(): GFFStruct[] {
@@ -281,11 +324,11 @@ export class GFFField {
    * @example
    * ```typescript
    * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
-   * listField.addChildStruct(new GFFStruct(0x0008)); // Item type
-   * listField.addChildStruct(new GFFStruct(0x0007)); // Creature type
+   * listField.addChildStruct(new GFFStruct(8)); // Item type
+   * listField.addChildStruct(new GFFStruct(7)); // Creature type
    * 
-   * const itemStruct = listField.getChildStructByType(0x0008);
-   * console.log(itemStruct.getType()); // 0x0008
+   * const itemStruct = listField.getChildStructByType(8);
+   * log.info(itemStruct.getType()); // 8
    * ```
    */
   getChildStructByType(type = -1): GFFStruct | null {
@@ -305,18 +348,18 @@ export class GFFField {
    * @example
    * ```typescript
    * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
-   * const childStruct = new GFFStruct(0x0007);
+   * const childStruct = new GFFStruct(7);
    * childStruct.addField(new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName'));
    * structField.addChildStruct(childStruct);
    * 
    * const nameField = structField.getFieldByLabel('Name');
-   * console.log(nameField.getValue()); // 'PlayerName'
+   * log.info(nameField.getValue()); // 'PlayerName'
    * ```
    */
   getFieldByLabel(Label: string): GFFField | null {
     if(this.childStructs.length){
       for(let i = 0; i < this.childStructs[0].fields.length; i++){
-        let field = this.childStructs[0].fields[i];
+        const field = this.childStructs[0].fields[i];
         if (field.label == Label){
           return field;
         }
@@ -351,7 +394,7 @@ export class GFFField {
    * ```typescript
    * const orientField = new GFFField(GFFDataType.ORIENTATION, 'Rotation', new THREE.Quaternion(0, 0, 0, 1));
    * const rotation = orientField.getOrientation();
-   * console.log(rotation.x, rotation.y, rotation.z, rotation.w); // 0, 0, 0, 1
+   * log.info(rotation.x, rotation.y, rotation.z, rotation.w); // 0, 0, 0, 1
    * ```
    */
   getOrientation(): {x: number, y: number, z: number, w: number} {
@@ -389,7 +432,7 @@ export class GFFField {
    * - DWORD: Validates range 0-4294967295
    * - VOID: Accepts Uint8Array or ArrayBuffer
    * 
-   * @param {any} val - The value to set (type-dependent)
+   * @param {GFFFieldValue} val - The value to set (type-dependent)
    * @returns {this} This field instance for method chaining
    * 
    * @example
@@ -411,7 +454,7 @@ export class GFFField {
    * descField.setValue('Hello World');
    * ```
    */
-  setValue(val: any): this {
+  setValue(val: GFFFieldValue): this {
 
     switch(this.type){
       case GFFDataType.CEXOLOCSTRING:
@@ -455,22 +498,22 @@ export class GFFField {
           val = 0;
         }
         
-        if(val >= 0 && val <= 255){
+        if ((val as number) >= 0 && (val as number) <= 255) {
           this.value = val;
-        }else{
-          console.error('Field.setValue BYTE OutOfBounds', val, this);
+        } else {
+          log.error('Field.setValue BYTE OutOfBounds', val, this);
           this.value = val;
         }
-      break;
+        break;
       case GFFDataType.SHORT:
-        if(typeof val === 'undefined'){
+        if (typeof val === 'undefined') {
           val = 0;
         }
-        
-        if(val >= -32768 && val <= 32767){
+
+        if ((val as number) >= -32768 && (val as number) <= 32767) {
           this.value = val;
-        }else{
-          console.error('Field.setValue SHORT OutOfBounds', val, this);
+        } else {
+          log.error('Field.setValue SHORT OutOfBounds', val, this);
           this.value = val;
         }
       break;
@@ -479,22 +522,22 @@ export class GFFField {
           val = 0;
         }
         
-        if(val >= -2147483648 && val <= 21474836487){
+        if ((val as number) >= -2147483648 && (val as number) <= 2147483647) {
           this.value = val;
-        }else{
-          console.error('Field.setValue INT OutOfBounds', val, this);
+        } else {
+          log.error('Field.setValue INT OutOfBounds', val, this);
           this.value = val;
         }
-      break;
+        break;
       case GFFDataType.WORD:
-        if(typeof val === 'undefined'){
+        if (typeof val === 'undefined') {
           val = 0;
         }
 
-        if(val >= 0 && val <= 65535){
+        if ((val as number) >= 0 && (val as number) <= 65535) {
           this.value = val;
         }else{
-          console.error('Field.setValue WORD OutOfBounds', val, this);
+          log.error('Field.setValue WORD OutOfBounds', val, this);
           this.value = val;
         }
       break;
@@ -503,13 +546,13 @@ export class GFFField {
           val = 0;
         }
 
-        if(val >= 0 && val <= 4294967296){
+        if ((val as number) >= 0 && (val as number) <= 4294967295) {
           this.value = val;
-        }else{
-          console.error('Field.setValue DWORD OutOfBounds', val, this);
+        } else {
+          log.error('Field.setValue DWORD OutOfBounds', val, this);
           this.value = val;
         }
-      break;
+        break;
       case GFFDataType.VOID:
         if(val instanceof Uint8Array){
           this.value = val;
@@ -627,17 +670,17 @@ export class GFFField {
    * ```typescript
    * // Add to a list field
    * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
-   * listField.addChildStruct(new GFFStruct(0x0008));
-   * listField.addChildStruct(new GFFStruct(0x0008));
+   * listField.addChildStruct(new GFFStruct(8));
+   * listField.addChildStruct(new GFFStruct(8));
    * 
    * // Set a structure field
    * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
-   * structField.addChildStruct(new GFFStruct(0x0007));
+   * structField.addChildStruct(new GFFStruct(7));
    * ```
    */
   addChildStruct(strt: GFFStruct): this {
     if(!(strt instanceof GFFStruct)){
-      console.log('addChildStruct invalid type', strt);
+      log.warn('addChildStruct invalid type', strt);
       return this;
     }
 
@@ -662,15 +705,15 @@ export class GFFField {
    * @example
    * ```typescript
    * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
-   * const itemStruct = new GFFStruct(0x0008);
+   * const itemStruct = new GFFStruct(8);
    * listField.addChildStruct(itemStruct);
    * 
    * listField.removeChildStruct(itemStruct);
-   * console.log(listField.getChildStructs().length); // 0
+   * log.info(listField.getChildStructs().length); // 0
    * ```
    */
   removeChildStruct(strt: GFFStruct): this {
-    let index = this.childStructs.indexOf(strt);
+    const index = this.childStructs.indexOf(strt);
     if(index >= 0){
       this.childStructs.splice(index, 1);
     }
@@ -687,13 +730,13 @@ export class GFFField {
    * ```typescript
    * const listField = new GFFField(GFFDataType.LIST, 'ItemList');
    * const structures = [
-   *   new GFFStruct(0x0008),
-   *   new GFFStruct(0x0008),
-   *   new GFFStruct(0x0008)
+   *   new GFFStruct(8),
+   *   new GFFStruct(8),
+   *   new GFFStruct(8)
    * ];
    * 
    * listField.setChildStructs(structures);
-   * console.log(listField.getChildStructs().length); // 3
+   * log.info(listField.getChildStructs().length); // 3
    * ```
    */
   setChildStructs(strts: GFFStruct[]): this {
@@ -715,21 +758,21 @@ export class GFFField {
    * ```typescript
    * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
    * const json = field.toJSON();
-   * console.log(json.type); // GFFDataType.CExoString
-   * console.log(json.value); // 'PlayerName'
+   * log.info(json.type); // GFFDataType.CExoString
+   * log.info(json.value); // 'PlayerName'
    * 
    * // With child structures
    * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
-   * structField.addChildStruct(new GFFStruct(0x0007));
+   * structField.addChildStruct(new GFFStruct(7));
    * const structJson = structField.toJSON();
-   * console.log(structJson.structs.length); // 1
+   * log.info(structJson.structs.length); // 1
    * ```
    */
   toJSON(): IGFFFieldJSON {
-    const field = {
+    const field: IGFFFieldJSON = {
       type: this.getType(),
       value: this.getValue(),
-      structs: [] as any[]
+      structs: [] as IGFFStructJSON[],
     };
 
     switch (this.getType()) {

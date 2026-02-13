@@ -1,5 +1,6 @@
 import { TLKManager } from "../../managers/TLKManager";
 import { TwoDAObject } from "../../resource/TwoDAObject";
+import type { ITwoDARowData } from "../../resource/TwoDAObject";
 
 /**
  * SWRace class.
@@ -40,7 +41,7 @@ export class SWRace {
     return this.name != -1 ? TLKManager.GetStringById(this.name).Value : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: ITwoDARowData | Record<string, string | number> = {}){
     const race = new SWRace();
 
     race.id = parseInt(row.__index);
@@ -97,7 +98,7 @@ export class SWRace {
       race.featsTable = TwoDAObject.normalizeValue(row.featstable, 'string', '') as string;
     
     if(row.hasOwnProperty('biography'))
-      race.biography = TwoDAObject.normalizeValue(row.biography, 'string', '') as number;
+      race.biography = TwoDAObject.normalizeValue(row.biography, 'number', -1) as number;
     
     if(row.hasOwnProperty('playerrace'))
       race.playerRace = TwoDAObject.normalizeValue(row.playerrace, 'boolean', false) as boolean;

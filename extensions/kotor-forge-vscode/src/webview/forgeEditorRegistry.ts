@@ -37,14 +37,9 @@ import {
   TabSAVEditorState,
   TabAudioPlayerState
 } from '@forge/states/tabs';
+import { createScopedLogger, LogScope } from '@kotor/utility/Logger';
 
-const LOG_PREFIX = '[Webview]';
-function logTrace(msg: string) {
-  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [trace] ${msg}`);
-}
-function logDebug(msg: string) {
-  if (typeof console !== 'undefined' && console.debug) console.debug(`${LOG_PREFIX} [debug] ${msg}`);
-}
+const log = createScopedLogger(LogScope.Webview);
 
 type TabStateClass = new (options?: BaseTabStateOptions) => TabState;
 
@@ -86,17 +81,18 @@ export function createTabStateForEditorType(
   editorType: string,
   options: BaseTabStateOptions
 ): TabState {
-  logTrace(`createTabStateForEditorType() editorType=${editorType}`);
+  log.trace(`createTabStateForEditorType() entered editorType=${editorType}`);
   const Ctor = EDITOR_MAP[editorType] ?? TabBinaryViewerState;
-  const tabState = new Ctor(options);
   if (!EDITOR_MAP[editorType]) {
-    logDebug(`createTabStateForEditorType() fallback to TabBinaryViewerState for ${editorType}`);
+    log.debug(`createTabStateForEditorType() no specific editor for ${editorType}, using TabBinaryViewerState`);
   }
+  const tabState = new Ctor(options);
+  log.trace(`createTabStateForEditorType() created tabState=${tabState.constructor.name} id=${tabState.id}`);
   return tabState;
 }
 
 export function getSupportedEditorTypes(): string[] {
   const types = Object.keys(EDITOR_MAP);
-  logTrace(`getSupportedEditorTypes() count=${types.length}`);
+  log.trace(`getSupportedEditorTypes() count=${types.length}`);
   return types;
 }

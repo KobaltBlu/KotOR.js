@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTDEditorState } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { SubTabHost, SubTab } from "../../SubTabHost";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor";
-import * as KotOR from "../../../KotOR";
+
 import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { InfoBubble } from "../../info-bubble/info-bubble";
 import { FormField } from "../../form-field/FormField";
+import { InfoBubble } from "../../info-bubble/info-bubble";
+
+import { CExoLocStringEditor } from "../../CExoLocStringEditor";
+import { SubTabHost, SubTab } from "../../SubTabHost";
+import { UI3DRendererView } from "../../UI3DRendererView";
+
+import { BaseTabProps } from "../../../interfaces/BaseTabProps"
+import * as KotOR from "../../../KotOR";
 import { ForgeDoor } from "../../../module-editor/ForgeDoor";
+import { TabUTDEditorState } from "../../../states/tabs";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 

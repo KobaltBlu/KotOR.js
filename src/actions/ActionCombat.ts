@@ -1,11 +1,12 @@
+import { ModuleObjectConstant, ModuleObjectType } from "../enums";
+import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
-import { Action } from "./Action";
 import { CombatActionType } from "../enums/combat/CombatActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ModuleObjectConstant, ModuleObjectType } from "../enums";
-import { BitWise } from "../utility/BitWise";
 import { GameState } from "../GameState";
+import { BitWise } from "../utility/BitWise";
+
+import { Action } from "./Action";
 import { ActionQueue } from "./ActionQueue";
 
 /**

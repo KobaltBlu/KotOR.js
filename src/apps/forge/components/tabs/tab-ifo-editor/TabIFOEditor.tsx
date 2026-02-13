@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { TabIFOEditorState } from "../../../states/tabs";
+
 import { MenuBar, MenuItem } from "../../common/MenuBar";
+
+import type { GFFFieldValue } from "../../../interfaces/GFFFormField";
 import * as KotOR from "../../../KotOR";
+import { TabIFOEditorState } from "../../../states/tabs";
 import "./TabIFOEditor.scss";
 
 interface BaseTabProps {
@@ -101,11 +104,12 @@ interface TabProps {
 }
 
 const BasicTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = ifo.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = ifo.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -187,11 +191,12 @@ const BasicTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = ifo.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = ifo.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -277,11 +282,12 @@ const EntryPointTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const ScriptsTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = ifo.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = ifo.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);
@@ -349,11 +355,12 @@ const AreasTab = ({ ifo, onUpdate }: TabProps) => {
 };
 
 const AdvancedTab = ({ ifo, onUpdate }: TabProps) => {
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return ifo.RootNode.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = ifo.RootNode.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = ifo.RootNode.getFieldByLabel(label);
     if(field){
       field.setValue(value);

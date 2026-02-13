@@ -1,11 +1,19 @@
 import * as path from 'path';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { ResourceTypes } from './ResourceTypes';
+
 import { IRIMResource } from '../interface/resource/IRIMResource';
+import { BinaryReader } from '../utility/binary/BinaryReader';
+import { BinaryWriter } from '../utility/binary/BinaryWriter';
+import { GameFileSystem } from '../utility/GameFileSystem';
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+import { ResourceTypes } from './ResourceTypes';
+
+
+const log = createScopedLogger(LogScope.Resource);
 import { IRIMHeader } from '../interface/resource/IRIMHeader';
 
 const RIM_HEADER_LENGTH = 160;
+const RIM_RESOURCE_ENTRY_SIZE = 34;
 
 /**
  * RIMObject class.
@@ -52,6 +60,42 @@ export class RIMObject {
 
   }
 
+  /**
+   * Load RIM from buffer synchronously (PyKotor read_rim parity for read_unknown_resource).
+   * Populates header and resources from the buffer. getExportBuffer() requires in-memory buffer.
+   */
+  static fromBufferSync(buffer: Uint8Array): RIMObject {
+    if (buffer.length < RIM_HEADER_LENGTH) {
+      throw new Error('RIM buffer too short for header.');
+    }
+    const rim = new RIMObject(buffer);
+    rim.reader = new BinaryReader(buffer.slice(0, RIM_HEADER_LENGTH));
+    rim.header = {} as IRIMHeader;
+    rim.header.fileType = rim.reader.readChars(4);
+    rim.header.fileVersion = rim.reader.readChars(4);
+    rim.reader.skip(4);
+    rim.header.resourceCount = rim.reader.readUInt32();
+    rim.header.resourcesOffset = rim.reader.readUInt32();
+    rim.rimDataOffset = rim.header.resourcesOffset + rim.header.resourceCount * RIM_RESOURCE_ENTRY_SIZE;
+    if (buffer.length < rim.rimDataOffset) {
+      throw new Error('RIM buffer too short for structure.');
+    }
+    rim.reader.reuse(buffer.slice(0, rim.rimDataOffset));
+    rim.reader.seek(rim.header.resourcesOffset);
+    for (let i = 0; i < rim.header.resourceCount; i++) {
+      rim.addResource({
+        resRef: rim.reader.readChars(16).replace(/\0[\s\S]*$/g, '').trim().toLowerCase(),
+        resType: rim.reader.readUInt16(),
+        unused: rim.reader.readUInt16(),
+        resId: rim.reader.readUInt32(),
+        offset: rim.reader.readUInt32(),
+        size: rim.reader.readUInt32()
+      });
+    }
+    rim.reader.dispose();
+    return rim;
+  }
+
   async load(): Promise<RIMObject> {
     try {
       if (!this.inMemory) {
@@ -60,7 +104,7 @@ export class RIMObject {
         await this.loadFromBuffer(this.buffer);
       }
     } catch (e) {
-      console.error(e);
+      log.error(e);
       throw e;
     }
     return this;
@@ -78,7 +122,7 @@ export class RIMObject {
     this.header.resourcesOffset = this.reader.readUInt32();
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * RIM_RESOURCE_ENTRY_SIZE));
     const header = new Uint8Array(buffer.slice(0, this.rimDataOffset));
     this.reader = new BinaryReader(header);
     this.reader.seek(this.header.resourcesOffset);
@@ -111,7 +155,7 @@ export class RIMObject {
     this.header.resourcesOffset = this.reader.readUInt32();
 
     //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * 34));
+    this.rimDataOffset = (this.header.resourcesOffset + (this.header.resourceCount * RIM_RESOURCE_ENTRY_SIZE));
     header = new Uint8Array(this.rimDataOffset);
     await GameFileSystem.read(fd, header, 0, this.rimDataOffset, 0);
     this.reader.reuse(header);
@@ -155,13 +199,13 @@ export class RIMObject {
     try {
       await this.readHeaderFromFileDecriptor(fd);
     } catch (e) {
-      console.error('RIM Header Read', e);
+      log.error('RIM Header Read', e);
     }
     await GameFileSystem.close(fd);
   }
 
   getResource(resRef: string, resType: number): IRIMResource {
-    let typeMap = this.resourceMap.get(resType);
+    const typeMap = this.resourceMap.get(resType);
     if (!typeMap) {
       return undefined;
     }
@@ -192,7 +236,7 @@ export class RIMObject {
       }
     }
     catch (e) {
-      console.error(e);
+      log.error(e);
     }
     return new Uint8Array(0);
   }
@@ -204,6 +248,44 @@ export class RIMObject {
     }
 
     return await this.getResourceBuffer(resource);
+  }
+
+  /**
+   * Serialize RIM to binary (PyKotor bytes_rim parity). Only valid when loaded from buffer (in memory).
+   */
+  getExportBuffer(): Uint8Array {
+    if (!this.inMemory || !this.buffer) {
+      throw new Error('RIMObject.getExportBuffer requires in-memory buffer (load from buffer first).');
+    }
+    const output = new BinaryWriter();
+    const resourcesOffset = RIM_HEADER_LENGTH;
+    let dataOffset = resourcesOffset + this.resources.length * RIM_RESOURCE_ENTRY_SIZE;
+    output.writeString((this.header.fileType ?? 'RIM ').slice(0, 4).padEnd(4, '\0').slice(0, 4));
+    output.writeString((this.header.fileVersion ?? 'V1.0').slice(0, 4).padEnd(4, '\0').slice(0, 4));
+    output.writeBytes(new Uint8Array(4));
+    output.writeUInt32(this.resources.length);
+    output.writeUInt32(resourcesOffset);
+    const padding = RIM_HEADER_LENGTH - (4 + 4 + 4 + 4 + 4);
+    if (padding > 0) output.writeBytes(new Uint8Array(padding));
+    const resourceData: Uint8Array[] = [];
+    for (const res of this.resources) {
+      output.writeString(res.resRef.padEnd(16, '\0').slice(0, 16));
+      output.writeUInt16(res.resType);
+      output.writeUInt16(res.unused ?? 0);
+      output.writeUInt32(res.resId);
+      output.writeUInt32(dataOffset);
+      output.writeUInt32(res.size);
+      if (res.offset + res.size <= this.buffer.length) {
+        resourceData.push(this.buffer.slice(res.offset, res.offset + res.size));
+      } else {
+        resourceData.push(new Uint8Array(0));
+      }
+      dataOffset += res.size;
+    }
+    for (const chunk of resourceData) {
+      output.writeBytes(chunk);
+    }
+    return output.buffer;
   }
 
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {

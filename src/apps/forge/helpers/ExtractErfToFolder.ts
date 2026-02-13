@@ -4,10 +4,12 @@
  * Electron only (uses path and fs).
  */
 
-import type { ERFObject } from "../../../resource/ERFObject";
-import type { IERFKeyEntry } from "../../../interface/resource/IERFKeyEntry";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
 import type { ExtractOptions } from "../data/ExtractOptions";
+
+import type { IERFKeyEntry } from "../../../interface/resource/IERFKeyEntry";
+import type { ERFObject } from "../../../resource/ERFObject";
+import { ResourceTypes } from "../../../resource/ResourceTypes";
+
 
 export interface ExtractErfToFolderOptions {
   erf: ERFObject;

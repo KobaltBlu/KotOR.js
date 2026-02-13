@@ -1,20 +1,35 @@
+import { faArrowPointer, faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import React, { useEffect, useState } from "react";
+
+import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
+
+import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
+
+import { SceneGraphTreeView } from "../../SceneGraphTreeView";
+import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
+import { UI3DRendererView } from "../../UI3DRendererView";
+
+import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
 import { BaseTabProps } from "../../../interfaces/BaseTabProps";
 import { TabPTHEditorState } from "../../../states/tabs";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowPointer, faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
-import { SceneGraphTreeView } from "../../SceneGraphTreeView";
 
 
-const UI3DToolPalette = function(props: any){
-  const tab = props.tab as TabPTHEditorState;
-  const [controlMode, setControlMode] = useState<any>(0);
+
+const log = createScopedLogger(LogScope.Forge);
+
+interface UI3DToolPaletteProps {
+  tab: TabPTHEditorState;
+}
+
+const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = (props) => {
+  const tab = props.tab;
+  const [controlMode, setControlMode] = useState<number>(tab.controlMode ?? 0);
+
+  log.trace('UI3DToolPalette render', 'controlMode=', controlMode);
 
   const onControlModeChange = () => {
+    log.debug('UI3DToolPalette onControlModeChange', 'tab.controlMode=', tab.controlMode);
     setControlMode(tab.controlMode);
   };
 
@@ -28,14 +43,14 @@ const UI3DToolPalette = function(props: any){
   return (
     <div className="UI3DToolPalette" style={{ marginTop: '25px' }}>
       <ul>
-        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(0)}>
+        <li className={`${controlMode == 0 ? 'selected' : ''}`} onClick={(e) => { log.trace('TabPTHEditor setControlMode 0 (Select Point)'); tab.setControlMode(0); }}>
           <a title="Select Point">
             <span className="fa-layers fa-fw">
               <FontAwesomeIcon icon={faArrowPointer} size='lg' color="white" />
             </span>
           </a>
         </li>
-        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(1)}>
+        <li className={`${controlMode == 1 ? 'selected' : ''}`} onClick={(e) => { log.trace('TabPTHEditor setControlMode 1 (Add Point)'); tab.setControlMode(1); }}>
           <a title="Add Point">
             <span className="fa-layers fa-fw">
               <FontAwesomeIcon icon={faCircle} size='lg' color="green" />
@@ -43,7 +58,7 @@ const UI3DToolPalette = function(props: any){
             </span>
           </a>
         </li>
-        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => tab.setControlMode(2)}>
+        <li className={`${controlMode == 2 ? 'selected' : ''}`} onClick={(e) => { log.trace('TabPTHEditor setControlMode 2 (Add Connection)'); tab.setControlMode(2); }}>
           <a title="Add Connection">
             <span className="fa-layers fa-fw">
               <FontAwesomeIcon icon={faCircleNodes} size='lg' color="yellow" />
@@ -57,6 +72,7 @@ const UI3DToolPalette = function(props: any){
 }
 
 export const TabPTHEditor = function(props: BaseTabProps){
+  log.trace('TabPTHEditor render');
   const tab: TabPTHEditorState = props.tab as TabPTHEditorState;
 
   const eastPanel = (<>

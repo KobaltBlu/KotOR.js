@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Modal, Form, ListGroup } from "react-bootstrap";
+
 import { CommandPaletteState, CommandPaletteCommand } from "../states/CommandPaletteState";
 import "./CommandPalette.scss";
 

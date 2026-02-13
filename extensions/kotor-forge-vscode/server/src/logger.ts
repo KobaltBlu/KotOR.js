@@ -17,32 +17,40 @@ export function setServerConnection(conn: Connection): void {
   conn.console.log(`${PREFIX} [trace] Logger connected; server log level controlled by Output panel`);
 }
 
-export function trace(msg: string): void {
+function formatMsg(level: string, msg: string, ...args: unknown[]): string {
+  let formatted = msg;
+  if (args.length > 0) {
+    formatted = msg.replace(/%[sdifoO]/g, () => String(args.shift() ?? ''));
+  }
+  return `${PREFIX} [${level}] ${formatted}`;
+}
+
+export function trace(msg: string, ...args: unknown[]): void {
   if (connection) {
-    connection.console.log(`${PREFIX} [trace] ${msg}`);
+    connection.console.log(formatMsg('trace', msg, ...args));
   }
 }
 
-export function debug(msg: string): void {
+export function debug(msg: string, ...args: unknown[]): void {
   if (connection) {
-    connection.console.log(`${PREFIX} [debug] ${msg}`);
+    connection.console.log(formatMsg('debug', msg, ...args));
   }
 }
 
-export function info(msg: string): void {
+export function info(msg: string, ...args: unknown[]): void {
   if (connection) {
-    connection.console.info(`${PREFIX} [info] ${msg}`);
+    connection.console.info(formatMsg('info', msg, ...args));
   }
 }
 
-export function warn(msg: string): void {
+export function warn(msg: string, ...args: unknown[]): void {
   if (connection) {
-    connection.console.warn(`${PREFIX} [warn] ${msg}`);
+    connection.console.warn(formatMsg('warn', msg, ...args));
   }
 }
 
-export function error(msg: string): void {
+export function error(msg: string, ...args: unknown[]): void {
   if (connection) {
-    connection.console.error(`${PREFIX} [error] ${msg}`);
+    connection.console.error(formatMsg('error', msg, ...args));
   }
 }

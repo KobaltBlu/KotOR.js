@@ -1,30 +1,37 @@
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { DLGNode } from "../resource/DLGNode";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { ConversationState } from "../enums/dialog/ConversationState";
-import { GameState } from "../GameState";
-import { DLGConversationType } from "../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AudioLoader } from "../audio/AudioLoader";
-import { AudioEngine } from "../audio/AudioEngine";
-import { CutsceneMode } from "../enums/dialog/CutsceneMode";
 import * as THREE from "three";
-import { CameraMode } from "../enums/dialog/CameraMode";
-import { ICameraState } from "../interface/dialog/ICameraState";
+
 import { AudioEmitter } from "../audio/AudioEmitter";
+import { AudioEngine } from "../audio/AudioEngine";
+import { CameraMode } from "../enums/dialog/CameraMode";
+import { ConversationState } from "../enums/dialog/ConversationState";
+import { CutsceneMode } from "../enums/dialog/CutsceneMode";
+import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
+import { DLGConversationType } from "../enums/dialog/DLGConversationType";
+import { EngineMode } from "../enums/engine/EngineMode";
+import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GameState } from "../GameState";
 import { ICameraParticipant } from "../interface/dialog/ICameraParticipant";
+import { ICameraState } from "../interface/dialog/ICameraState";
+import type { ModuleCreature, ModuleObject } from "../module";
+import { DLGNode } from "../resource/DLGNode";
+import { DLGObject } from "../resource/DLGObject";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+import { BitWise } from "../utility/BitWise";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Game);
 
 const ENTRY_DELAY = 3000;
 const HALF_PI = Math.PI / 2;
-const QUARTER_PI = Math.PI / 4;
 
 const SINGLE_SHOT_ANGLE_OFFSET = 0.5;
 
+/** Listener signature for CutsceneManager events (conversation ended, etc.). */
+type CutsceneEventListener = (...args: (string | number | boolean | object)[]) => void;
+
+/** Dialog/cutscene controller. Static namespace by design (see GameState.CutsceneManager). */
+/* eslint-disable-next-line @typescript-eslint/no-extraneous-class -- Static namespace; not a constructible service. */
 export class CutsceneManager {
 
   static active: boolean = false;
@@ -32,8 +39,8 @@ export class CutsceneManager {
 
   static conversation_name: string;
   static dialog: DLGObject;
-  static startingEntry: DLGNode;
-  static currentEntry: DLGNode;
+  static startingEntry: DLGNode | null;
+  static currentEntry: DLGNode | null;
   static currentReplies: DLGNode[] = [];
 
   static lastSpokenString: string = '';
@@ -77,7 +84,7 @@ export class CutsceneManager {
   }
 
   static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
-    console.log('CutsceneManager.startConversation', dialog, owner, listener);
+    log.debug('CutsceneManager.startConversation', String(dialog), owner, listener);
     this.active = true;
     this.cameraState.currentCameraAnimation = undefined;
     this.owner = owner;
@@ -117,7 +124,7 @@ export class CutsceneManager {
     this.isListening = true;
     this.startingEntry = this.getNextEntry(this.dialog.startingList);
     if(!this.startingEntry){
-      console.warn('CutsceneManager.startConversation: No starting entry found');
+      log.warn('CutsceneManager.startConversation: No starting entry found');
       this.endConversation();
       return;
     }
@@ -148,22 +155,22 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
-    console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
+    log.debug(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
 
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
     this.dialog.loadStuntCamera().then(() => {
-      console.log('CutsceneManager.startConversation: loadStuntCamera');
+      log.debug('CutsceneManager.startConversation: loadStuntCamera');
       this.dialog.loadStuntActors().then(() => {
-        console.log('CutsceneManager.startConversation: loadStuntActors');
+        log.debug('CutsceneManager.startConversation: loadStuntActors');
         this.dialog.loadBackgroundMusic().then(() => {
-          console.log('CutsceneManager.startConversation: loadBackgroundMusic');
+          log.debug('CutsceneManager.startConversation: loadBackgroundMusic');
           switch (this.dialog.getConversationType()) {
             case DLGConversationType.COMPUTER:
-              console.log('CutsceneManager.startConversation: Computer');
+              log.debug('CutsceneManager.startConversation: Computer');
               GameState.MenuManager.InGameComputer.open();
               break;
             default:
-              console.log('CutsceneManager.startConversation: Conversation');
+              log.debug('CutsceneManager.startConversation: Conversation');
               GameState.MenuManager.InGameDialog.open();
               break;
           }
@@ -192,9 +199,9 @@ export class CutsceneManager {
 
   /**
    * Handle the player skipping a dialog entry
-   * @param currentEntry - The entry to skip
+   * @param _currentEntry - The entry to skip (unused; skip applies to this.currentEntry)
    */
-  static playerSkipEntry(currentEntry: DLGNode) {
+  static playerSkipEntry(_currentEntry: DLGNode): void {
     if(!this.currentEntry) { return; }
     if(!this.currentEntry.skippable) { return; }
     if(this.currentEntry.checkList.isSkipped){ return; }
@@ -285,12 +292,12 @@ export class CutsceneManager {
   static selectReplyAtIndex(index: number) {
     const reply = this.currentReplies[index];
     if(!reply){
-      console.warn('CutsceneManager.selectReplyAtIndex: No reply found');
+      log.warn('CutsceneManager.selectReplyAtIndex: No reply found');
       return;
     }
 
     if(this.state != ConversationState.WAITING_FOR_PC_CHOICE){
-      console.warn('CutsceneManager.selectReplyAtIndex: Not in waiting for pc choice state');
+      log.warn('CutsceneManager.selectReplyAtIndex: Not in waiting for pc choice state');
       return;
     }
     this.onReplySelect(reply);
@@ -334,7 +341,7 @@ export class CutsceneManager {
     //Get First Reply
     const reply = this.dialog.getReplyByIndex(entry.replies[0]?.index);
     if(!reply){
-      console.warn('CutsceneManager.showReplies: No reply found');
+      log.warn('CutsceneManager.showReplies: No reply found');
       this.endConversation();
       return;
     }
@@ -345,7 +352,7 @@ export class CutsceneManager {
     //End Dialog
     if (isEndDialog || !entry.replies.length) {
       if(!entry.replies.length){
-        console.warn('CutsceneManager.showReplies: No replies found');
+        log.warn('CutsceneManager.showReplies: No replies found');
       }
 
       reply?.runScripts();
@@ -373,8 +380,8 @@ export class CutsceneManager {
           this.getCurrentOwner().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
 
     //Update Listener Animation State
@@ -385,8 +392,8 @@ export class CutsceneManager {
           this.getCurrentListener().dialogPlayAnimation(anim);
         }
       }
-    } catch (e: any) {
-      console.error(e);
+    } catch (e: unknown) {
+      log.error(e instanceof Error ? e : new Error(String(e)));
     }
 
     this.setListenerCamera();
@@ -421,13 +428,13 @@ export class CutsceneManager {
     if(this.dialog){
       if (this.dialog.animatedCamera instanceof OdysseyModel3D)
         this.dialog.animatedCamera.animationManager.currentAnimation = undefined;
-      console.log('CutsceneManager.endConversation: onEndConversation', this.dialog.scripts.onEndConversation);
+      log.debug('CutsceneManager.endConversation: onEndConversation', String(this.dialog.scripts.onEndConversation));
       if (!aborted) {
         if(this.dialog.scripts.onEndConversation){
           this.dialog.scripts.onEndConversation.run(this.owner, 0);
         }
       }else{
-        console.log('CutsceneManager.endConversation: onEndConversationAbort', this.dialog.scripts.onEndConversationAbort);
+        log.debug('CutsceneManager.endConversation: onEndConversationAbort', String(this.dialog.scripts.onEndConversationAbort));
         if(this.dialog.scripts.onEndConversationAbort){
           this.dialog.scripts.onEndConversationAbort.run(this.owner, 0);
         }
@@ -450,7 +457,7 @@ export class CutsceneManager {
   static setAnimatedEntryAnimations(entry: DLGNode) {
     for (let i = 0; i < entry.animations.length; i++) {
       const participant = entry.animations[i];
-      console.log('participant', participant)
+      log.debug('participant', participant);
       if (this.dialog.stuntActors.has(participant.participant)) {
         try {
           const actor = this.dialog.stuntActors.get(participant.participant);
@@ -463,28 +470,28 @@ export class CutsceneManager {
               creature.dialogPlayOdysseyAnimation(odysseyAnimation);
             }
           }
-        } catch (e: any) {
-          console.error(e);
+        } catch (e: unknown) {
+          log.error(e instanceof Error ? e : new Error(String(e)));
         }
       } else {
         const actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
         if(!actor){ continue; }
-        console.log('actor', actor);
+        log.debug('actor', actor);
         if (participant.animation >= 10000) {
           const anim = actor.animationConstantToAnimation(participant.animation);
-          console.log('anim', anim)
+          log.debug('anim', anim);
           if (anim) {
             actor.dialogPlayAnimation(anim);
           } else {
-            console.error('Anim', participant.animation);
+            log.error('Anim', String(participant.animation));
           }
         }else{
           const anim = this.getDialogAnimation(participant.animation);
-          console.log('anim', anim)
+          log.debug('anim', anim);
           if (anim) {
             actor.dialogPlayAnimation(anim);
           } else {
-            console.error('Anim', participant.animation);
+            log.error('Anim', String(participant.animation));
           }
         }
       }
@@ -522,7 +529,7 @@ export class CutsceneManager {
         if (anim) {
           actor.dialogPlayAnimation(anim);
         } else {
-          console.error('Anim', participant.animation);
+          log.error('Anim', String(participant.animation));
         }
       }
     }
@@ -542,8 +549,8 @@ export class CutsceneManager {
    * @param index - The index of the animation
    * @returns The dialog animation
    */
-  static getDialogAnimation(index = 0): any {
-    console.log('GetDialogAnimation', index);
+  static getDialogAnimation(index = 0): { name: string; looping: string } | undefined {
+    log.debug('GetDialogAnimation', String(index));
     if (index >= 1000 && index < 1400) {
       const id = (index - 999);
       return {
@@ -699,9 +706,9 @@ export class CutsceneManager {
    * @param nCamera - The camera to set
    */
   static setPlaceableCamera(nCamera: number) {
-    let cam = GameState.getCameraById(nCamera);
+    const cam = GameState.getCameraById(nCamera);
     if (!cam) {
-      console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
+      log.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
@@ -723,7 +730,7 @@ export class CutsceneManager {
    */
   static setAnimatedCamera(nCamera: number, nFOV: number = -1) {
     if (!this.dialog?.animatedCamera) {
-      console.warn('setAnimatedCamera: no animated camera model, falling back to dialog camera');
+      log.warn('setAnimatedCamera: no animated camera model, falling back to dialog camera');
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
@@ -731,13 +738,13 @@ export class CutsceneManager {
     if(nCamera == -1){
       this.currentEntry.checkList.cameraAnimationComplete = true;
       this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
-      console.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
+      log.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
 
     if (!(this.dialog.animatedCamera instanceof OdysseyModel3D)) {
-      console.warn(`No animated camera model found for camera [${nCamera}] falling back to dialog camera`);
+      log.warn(`No animated camera model found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
@@ -929,12 +936,12 @@ export class CutsceneManager {
    * setCameraAngleSpeaker
    * Speaker front: a standard head-and-shoulders shot of the current speaker.
    */
-  static updateCameraAngleSpeaker(delta: number = 0){
+  static updateCameraAngleSpeaker(_delta: number = 0): void {
     // Get camera positions for both speaker and listener (with camera hooks if available)
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
     const speakerCameraPosition = speaker.getCameraHookPosition();
-    const listenerCameraPosition = listener.getCameraHookPosition();
+    const _listenerCameraPosition = listener.getCameraHookPosition();
 
     // Fixed distance for close-up head-on shot - not dependent on listener distance
     const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
@@ -966,7 +973,7 @@ export class CutsceneManager {
    * Uses collision detection to prevent camera from clipping through walls
    * Falls back to setCameraAngleSpeaker if camera would collide with walkmesh
    */
-  static updateCameraAngleSpeakerBehindPlayer(delta: number = 0){
+  static updateCameraAngleSpeakerBehindPlayer(_delta: number = 0): void {
     // Get camera positions for both speaker and listener (with camera hooks if available)
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
@@ -996,7 +1003,7 @@ export class CutsceneManager {
     const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
 
     // Calculate initial camera position
-    let cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
 
     // Adjust camera distance based on collision detection (similar to FollowerCamera)
     const adjustedDistance = this.adjustCameraDistanceForCollision(cameraPosition, listenerCameraPosition, behindDistance);
@@ -1026,7 +1033,7 @@ export class CutsceneManager {
    * Camera positioned to show both participants with proper framing and distance
    * Falls back to setCameraAngleSpeakerBehindPlayer if camera would collide with walkmesh
    */
-  static updateCameraAngleTwoShot(delta: number = 0){
+  static updateCameraAngleTwoShot(_delta: number = 0): void {
     // Get speaker and listener positions with camera height
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
@@ -1079,12 +1086,12 @@ export class CutsceneManager {
    * Update the listener camera
    * @param delta - The delta time
    */
-  static updateListenerCamera(delta: number = 0){
+  static updateListenerCamera(_delta: number = 0): void {
     // Get camera positions for both speaker and listener (with camera hooks if available)
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
     const speakerCameraPosition = speaker.getCameraHookPosition();
-    const listenerCameraPosition = listener.getCameraHookPosition();
+    const _listenerCameraPosition = listener.getCameraHookPosition();
 
     // Fixed distance for close-up head-on shot - not dependent on listener distance
     const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
@@ -1157,7 +1164,8 @@ export class CutsceneManager {
     raycaster.far = cameraPosition.distanceTo(targetPosition);
 
     // Collect walkmesh faces for collision testing
-    const aabbFaces: any[] = [];
+    type AabbFacesEntry = { object: { collisionManager: { walkmesh: { faces: unknown[]; raycast: (r: THREE.Raycaster, f: unknown[]) => { distance: number }[] } } }; faces: unknown[] };
+    const aabbFaces: AabbFacesEntry[] = [];
 
     // Add room walkmesh faces
     if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
@@ -1234,7 +1242,8 @@ export class CutsceneManager {
     raycaster.far = maxDistance;
 
     // Collect walkmesh faces for collision testing
-    const aabbFaces: any[] = [];
+    type AabbFacesEntryAdj = { object: { collisionManager: { walkmesh: { faces: unknown[]; raycast: (r: THREE.Raycaster, f: unknown[]) => { distance: number }[] } } }; faces: unknown[] };
+    const aabbFaces: AabbFacesEntryAdj[] = [];
 
     // Add room walkmesh faces
     if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
@@ -1285,8 +1294,8 @@ export class CutsceneManager {
     return adjustedDistance;
   }
 
-  static #eventListeners: Map<string, Function[]> = new Map();
-  static addEventListener(type: string, listener: Function){
+  static #eventListeners: Map<string, CutsceneEventListener[]> = new Map();
+  static addEventListener(type: string, listener: CutsceneEventListener): void {
     let listeners = this.#eventListeners.get(type);
     if(!listeners){
       listeners = [];
@@ -1298,8 +1307,8 @@ export class CutsceneManager {
     listeners.push(listener);
   }
 
-  static removeEventListener(type: string, listener: Function){
-    let listeners = this.#eventListeners.get(type);
+  static removeEventListener(type: string, listener: CutsceneEventListener): void {
+    const listeners = this.#eventListeners.get(type);
     if(!listeners || listeners.indexOf(listener) !== -1){
       return;
     }
@@ -1308,8 +1317,8 @@ export class CutsceneManager {
     }
   }
 
-  static dispatchEvent(type: string, ...args: any[]){
-    let listeners = this.#eventListeners.get(type);
+  static dispatchEvent(type: string, ...args: (string | number | boolean | object)[]): void {
+    const listeners = this.#eventListeners.get(type);
     if(listeners){
       listeners.forEach(listener => listener(...args));
     }

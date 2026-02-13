@@ -1,4 +1,5 @@
 import { EventListenerModel } from "../../EventListenerModel";
+
 import { ModalState } from "./ModalState";
 
 export class ModalManagerState extends EventListenerModel {

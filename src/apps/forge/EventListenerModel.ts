@@ -1,21 +1,27 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
+
+/** Map of event type to list of callback functions */
+type EventListenerMap = Record<string, Function[]>;
+
 export class EventListenerModel {
-  
-  #eventListeners: any = {};
+  #eventListeners: EventListenerMap = {};
 
   addEventListener<T>(type: T, cb: Function): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
       }else{
-        console.warn('Event Listener: Already added', type);
+        log.warn('EventListenerModel', 'Event listener already added', String(type));
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('EventListenerModel', 'Unsupported event type', String(type));
     }
   }
 
@@ -24,24 +30,24 @@ export class EventListenerModel {
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
       if(index >= 0){
         ev.splice(index, 1);
       }else{
-        console.warn('Event Listener: Already removed', type);
+        log.warn('Event Listener: Already removed', type);
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('EventListenerModel', 'Unsupported event type', String(type));
     }
   }
 
-  processEventListener<T>(type: T, args: any[] = []): void {
+  processEventListener<T>(type: T, args: unknown[] = []): void {
     if(!Array.isArray(this.#eventListeners[type])){
       this.#eventListeners[type] = [];
     }
     if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
+      const ev = this.#eventListeners[type];
       for(let i = 0; i < ev.length; i++){
         const callback = ev[i];
         if(typeof callback === 'function'){
@@ -49,11 +55,25 @@ export class EventListenerModel {
         }
       }
     }else{
-      console.warn('Event Listener: Unsupported', type);
+      log.warn('EventListenerModel', 'Unsupported event type', String(type));
     }
   }
 
-  triggerEventListener<T>(type: T, args: any[] = []): void {
+  triggerEventListener<T>(type: T, args: unknown[] = []): void {
+    this.processEventListener(type, args);
+  }
+}0; i < ev.length; i++){
+        const callback = ev[i];
+        if(typeof callback === 'function'){
+          callback(...args);
+        }
+      }
+    }else{
+      log.warn('Event Listener: Unsupported', type);
+    }
+  }
+
+  triggerEventListener<T extends string>(type: T, args: (string | number | boolean | object | null)[] = []): void {
     this.processEventListener(type, args);
   }
 }

@@ -1,19 +1,23 @@
 import { ModuleObject } from "./ModuleObject";
+
 import { AudioEmitter } from "../audio/AudioEmitter";
 import { AudioEngine } from "../audio/AudioEngine";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 // import { ModuleObjectManager } from "../managers";
 import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { GameState } from "../GameState";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+
+const log = createScopedLogger(LogScope.Module);
 import { AudioGeneratedType } from "../enums/audio/AudioGeneratedType";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { GFFDataType } from "../enums/resource/GFFDataType";
+import { GameState } from "../GameState";
+import { MDLLoader, ResourceLoader } from "../loaders";
+import { GFFField } from "../resource/GFFField";
+import { GFFObject } from "../resource/GFFObject";
+import { GFFStruct } from "../resource/GFFStruct";
+import { ResourceTypes } from "../resource/ResourceTypes";
+import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
+import { createScopedLogger, LogScope } from "../utility/Logger";
 
 /**
 * ModuleSound class.
@@ -151,7 +155,7 @@ export class ModuleSound extends ModuleObject {
         this.template.merge(gff);
         this.initProperties();
       }else{
-        console.error('Failed to load ModuleSound template');
+        log.error('Failed to load ModuleSound template');
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -182,7 +186,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   async loadSound(){
-    const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    const type = this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }
@@ -360,9 +364,9 @@ export class ModuleSound extends ModuleObject {
       this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
 
     if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
       for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        const data = localBools[i].getFieldByLabel('Variable').getValue();
         for(let bit = 0; bit < 32; bit++){
           this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
         }
@@ -379,7 +383,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   save(){
-    let gff = new GFFObject();
+    const gff = new GFFObject();
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
@@ -404,13 +408,13 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     //Sounds
-    let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
+    const sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
     for(let i = 0; i < this.soundResRefs.length; i++){
-      let soundStruct = new GFFStruct();
+      const soundStruct = new GFFStruct();
       soundStruct.addField( new GFFField(GFFDataType.RESREF, 'Sound', this.soundResRefs[i]) );
       sounds.addChildStruct(soundStruct);
     }

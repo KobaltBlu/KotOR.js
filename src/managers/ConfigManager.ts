@@ -1,5 +1,9 @@
 import * as fs from 'fs';
+
 import { DeepObject } from "../utility/DeepObject";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
+const log = createScopedLogger(LogScope.Config);
 
 /**
  * ConfigManager class.
@@ -10,22 +14,23 @@ import { DeepObject } from "../utility/DeepObject";
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ConfigManager{
-  listeners: any = {};
-  options: any;
+export type ConfigValue = string | number | boolean | null | ConfigValue[] | Record<string, ConfigValue>;
 
-  constructor(json_path: string){
+export class ConfigManager {
+  listeners: Record<string, ((path: string, value: ConfigValue, old: ConfigValue) => void)[]> = {};
+  options: Record<string, ConfigValue>;
 
-    let _settings: any = {};
+  constructor(json_path: string) {
+    let _settings: Record<string, ConfigValue> = {};
     this.listeners = {};
 
     try{
-      //console.log('ConfigManager', json_path);
+      log.trace('ConfigManager constructor json_path=%s', json_path);
       try{
         _settings = JSON.parse(fs.readFileSync(json_path, 'utf-8'));
-      }catch(e){ console.error('ConfigManager', e); }
-      //console.log('ConfigManager', json_path, _settings);
-    }catch(e){ console.error('ConfigManager', e); }
+      }catch(e){ log.error('ConfigManager parse/read failed', e as Error); }
+      log.trace('ConfigManager loaded settings');
+    }catch(e){ log.error('ConfigManager init failed', e as Error); }
 
     this.options = DeepObject.Merge(defaults, _settings);
     this.cache();
@@ -57,45 +62,38 @@ export class ConfigManager{
       try{
         fs.mkdirSync(this.get('Projects_Directory'));
       }catch(e){
-        console.warn('ConfigManager', 'Failed to create the projects directory: "'+this.get('Projects_Directory')+'"', e);
+        log.warn('Failed to create the projects directory: "%s"', String(this.get('Projects_Directory')), e);
       }
     }
 
   }
   
-  _cache: any = {};
+  _cache: Record<string, ConfigValue> = {};
 
-  //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  diff(obj1: any, obj2:any, key: string = '', diffs: any[] = []){
-
-    // Make sure an object to compare is provided
+  // https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
+  diff(obj1: Record<string, ConfigValue>, obj2: Record<string, ConfigValue>, key = '', diffs: { key: string; value: ConfigValue; old: ConfigValue }[] = []): { key: string; value: ConfigValue; old: ConfigValue }[] {
     if (!obj2 || Object.prototype.toString.call(obj2) !== '[object Object]') {
-      return obj1;
+      return diffs;
     }
 
-    let _key;
-
-    // Compare our objects
-    for (_key in obj1) {
-      if (obj1.hasOwnProperty(_key)) {
-        this._compare(obj1[_key], obj2[_key], key ? key+'.'+_key : _key, diffs);
+    for (const _key in obj1) {
+      if (Object.prototype.hasOwnProperty.call(obj1, _key)) {
+        this._compare(obj1[_key], obj2[_key], key ? key + '.' + _key : _key, diffs);
       }
     }
 
     return diffs;
-
   }
 
-  cache(){
-    this._cache = JSON.parse(JSON.stringify(this.options));
+  cache(): void {
+    this._cache = JSON.parse(JSON.stringify(this.options)) as Record<string, ConfigValue>;
   }
 
-  //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  _compare(item1: any, item2: any, key: any, diffs: any[]){
+  _compare(item1: ConfigValue, item2: ConfigValue, key: string, diffs: { key: string; value: ConfigValue; old: ConfigValue }[]): void {
 
     // Get the object type
-    let type1 = Object.prototype.toString.call(item1);
-    let type2 = Object.prototype.toString.call(item2);
+    const type1 = Object.prototype.toString.call(item1);
+    const type2 = Object.prototype.toString.call(item2);
 
     // If type2 is undefined it has been removed
     if (type2 === '[object Undefined]') {
@@ -104,7 +102,7 @@ export class ConfigManager{
 
     // If an object, compare recursively
     if (type1 === '[object Object]') {
-      this.diff(item1, item2, key, diffs);
+      this.diff(item1 as Record<string, ConfigValue>, (item2 ?? {}) as Record<string, ConfigValue>, key, diffs);
       return;
     }
     
@@ -133,13 +131,13 @@ export class ConfigManager{
   }
 
   //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  _arraysMatch(arr1: any[], arr2: any[]){
+  _arraysMatch(arr1: ConfigValue[], arr2: ConfigValue[]): boolean {
 
     // Check if the arrays are the same length
     if (arr1.length !== arr2.length) return false;
   
     // Check if all items exist and are in the same order
-    for (var i = 0; i < arr1.length; i++) {
+    for (let i = 0; i < arr1.length; i++) {
       if (arr1[i] !== arr2[i]) return false;
     }
   
@@ -148,11 +146,11 @@ export class ConfigManager{
   
   }
 
-  get(path: string = '', defaultValue?:any){
+  get(path: string | string[] = '', defaultValue?: ConfigValue): ConfigValue | undefined {
     if(Array.isArray(path))
       path = path.join('.');
 
-    let parts = path.split('.');
+    const parts = path.split('.');
     let property = this.options;
     for(let i = 0, len = parts.length; i < len; i++){
       if(typeof property[parts[i]] != 'undefined'){
@@ -173,12 +171,12 @@ export class ConfigManager{
     return undefined;
   }
 
-  set(path = '', value = ''): any {
+  set(path: string | string[] = '', value: ConfigValue = ''): ConfigValue | undefined {
     if(Array.isArray(path))
       path = path.join('.');
 
     if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
-      let parts = path.split('.');
+      const parts = path.split('.');
       let scope = this.options;
       let i = 0, len = Math.max(parts.length-1, 0);
       for(i = 0; i < len; i++){
@@ -187,7 +185,7 @@ export class ConfigManager{
         }
         
         if(typeof scope == 'undefined'){
-          console.warn('ConfigManager.set', 'Invalid property', path);
+          log.warn('ConfigManager.set Invalid property path=%s', path);
           return undefined;
         }
       }
@@ -201,7 +199,7 @@ export class ConfigManager{
       }
 
       if(typeof scope[parts[len]] != 'undefined'){
-        let _old = JSON.parse(JSON.stringify(scope[parts[len]]));
+        const _old = JSON.parse(JSON.stringify(scope[parts[len]]));
         scope[parts[len]] = value;
         if(_old != value){
           this.triggerEvent(path, value, _old);
@@ -209,16 +207,16 @@ export class ConfigManager{
         }
       }
     }else{
-      console.warn('ConfigManager.set', 'Invalid value type', typeof value, value);
+      log.warn('ConfigManager.set Invalid value type type=%s', typeof value, value);
     }
   }
 
-  triggerEvent(path: string, value: any, old: any){
-    let listener = this.listeners[path];
-    if(Array.isArray(listener)){
-      for(let i = 0, len = listener.length; i < len; i++){
-        let callback = listener[i];
-        if(typeof callback == 'function'){
+  triggerEvent(path: string, value: ConfigValue, old: ConfigValue): void {
+    const listener = this.listeners[path];
+    if (Array.isArray(listener)) {
+      for (let i = 0, len = listener.length; i < len; i++) {
+        const callback = listener[i];
+        if (typeof callback === 'function') {
           callback(path, value, old);
         }
       }
@@ -232,7 +230,7 @@ export class ConfigManager{
     if(path){
       let listenerObject = this.listeners[path];
       if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
+        const index = listenerObject.indexOf(callback);
         if(index == -1){ //Don't let the same callback be applied twice
           listenerObject.push( callback );
         }
@@ -248,9 +246,9 @@ export class ConfigManager{
   //EventListeners can have multiple callbacks per property
   off(path = '', callback?: Function){
     if(path){
-      let listenerObject = this.listeners[path];
+      const listenerObject = this.listeners[path];
       if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
+        const index = listenerObject.indexOf(callback);
         if(index >= 0){
           listenerObject.splice(index, 1);
         }
@@ -258,7 +256,7 @@ export class ConfigManager{
     }
   }
 
-  getRecentFiles(): any[]{
+  getRecentFiles(): string[] {
     // switch(GameKey){
     //   case 'KOTOR':
     //     return this.options.Games.KOTOR.recent_files;
@@ -268,7 +266,7 @@ export class ConfigManager{
     return [];
   }
 
-  getRecentProjects(): any[]{
+  getRecentProjects(): string[] {
     // switch(GameKey){
     //   case 'KOTOR':
     //     return this.options.Games.KOTOR.recent_projects;
@@ -281,14 +279,14 @@ export class ConfigManager{
   save(onSave?: Function, silent?: boolean){
     //NotificationManager.Notify(NotificationManager.Types.INFO, 'Saving Configuration');
     //Write out the settings to the settings.json file in the home directory
-    //console.log('ConfigManager.save');
+    //log.info('ConfigManager.save');
 
     try{
       fs.writeFile('settings.json',
         JSON.stringify(this.options, null, "\t"),
         (err) => {
           if(err){
-            console.error('ConfigManager.Save', err);
+            log.error('ConfigManager.Save failed', err);
             return;
           }
 
@@ -298,17 +296,17 @@ export class ConfigManager{
         }
       );
     }catch(e){
-      console.error('ConfigManager.save', e);
+      log.error('ConfigManager.save failed', e as Error);
     }
 
-    //console.log('ConfigManager.save', 'Updating other processes.');
+    //log.info('ConfigManager.save', 'Updating other processes.');
     // ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
 
   }
 
 }
 
-const defaults: any = {
+const defaults: Record<string, ConfigValue> = {
   first_run: true,
   Games: {
     KOTOR: {

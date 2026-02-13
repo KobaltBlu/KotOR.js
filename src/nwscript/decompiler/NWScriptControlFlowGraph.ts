@@ -1,13 +1,70 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
 import type { NWScript } from "../NWScript";
 import type { NWScriptInstruction } from "../NWScriptInstruction";
+
 import { NWScriptBasicBlock } from "./NWScriptBasicBlock";
 import { NWScriptEdge, EdgeType } from "./NWScriptEdge";
+import type { NWScriptExpression } from "./NWScriptExpression";
+
 import {
   OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEALL
-} from '../NWScriptOPCodes';
+} from "../NWScriptOPCodes";
+
+const log = createScopedLogger(LogScope.NWScript);
+
+/** Serialized form of an NWScript instruction (for JSON export). */
+export interface ISerializedNWScriptInstruction {
+  address: number;
+  code: number;
+  codeName: string;
+  codeHex: string;
+  type: number;
+  typeHex: string;
+  instructionSize?: number;
+  index?: number;
+  isArg?: boolean;
+  breakPoint?: boolean;
+  offset?: number;
+  bpOffset?: number;
+  spOffset?: number;
+  size?: number;
+  sizeToDestroy?: number;
+  offsetToSaveElement?: number;
+  sizeOfElementToSave?: number;
+  sizeOfStructure?: number;
+  action?: number;
+  argCount?: number;
+  integer?: number;
+  float?: number;
+  string?: string;
+  object?: number;
+  actionDefinition?: { name: string; comment?: string; type: number; args?: number[] };
+  nextInstructionAddress?: number;
+  prevInstructionAddress?: number;
+}
+
+/** Serializable condition expression (primitives or nested object for JSON). */
+export type SerializedConditionExpression =
+  | { _error: string; _type: string }
+  | { _type?: string; _constructor?: string; [key: string]: string | number | boolean | null | SerializedConditionExpression | undefined };
+
+/** JSON-serializable value for CFG export. */
+export type NWScriptCFGJsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | NWScriptCFGJsonValue[]
+  | { [key: string]: NWScriptCFGJsonValue };
+
+/** Top-level shape of CFG JSON export (structure is large; key names documented in toJSON()). */
+export interface INWScriptCFGJSON {
+  [key: string]: NWScriptCFGJsonValue;
+}
 
 /**
- * Control Flow Graph for NWScript decompilation.
+ * Control Flow Graph for NCS-to-NSS conversion.
  * Represents the control flow structure of a compiled NCS script.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -61,7 +118,7 @@ export class NWScriptControlFlowGraph {
   /**
    * Subroutine return points (after JSR instructions)
    */
-  subroutineReturns: Map<number, NWScriptBasicBlock> = new Map();
+  subroutineReturns: Map<number, NWScriptBasicBlock | null> = new Map();
 
   /**
    * JMP targets that are part of STORE_STATE patterns (not function entries)
@@ -227,7 +284,7 @@ export class NWScriptControlFlowGraph {
     // Step 4: Identify entry and exit blocks
     this.identifyEntryAndExitBlocks();
 
-    // Step 5: Compute dominators (for loop detection and decompilation)
+    // Step 5: Compute dominators (for loop detection and conversion)
     // Note: Loop identification is done by NWScriptControlStructureBuilder, not here
     this.computeDominators();
 
@@ -300,7 +357,7 @@ export class NWScriptControlFlowGraph {
 
       // For JSR, also mark the return point (next instruction)
       if (instruction.code === OP_JSR && instruction.nextInstr) {
-        this.subroutineReturns.set(instruction.address, null as any);
+        this.subroutineReturns.set(instruction.address, null);
       }
     }
   }
@@ -1094,7 +1151,7 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Get all blocks in topological order (for decompilation)
+   * Get all blocks in topological order (for conversion)
    */
   getTopologicalOrder(): NWScriptBasicBlock[] {
     const visited = new Set<NWScriptBasicBlock>();
@@ -1359,7 +1416,7 @@ export class NWScriptControlFlowGraph {
     // Basic validation: check that exit blocks post-dominate themselves
     for (const exitBlock of this.exitBlocks) {
       if (!exitBlock.postDominators.has(exitBlock)) {
-        console.warn(`CFG Warning: Exit block ${exitBlock.id} does not post-dominate itself`);
+        log.warn(`CFG Warning: Exit block ${exitBlock.id} does not post-dominate itself`);
       }
     }
 
@@ -1480,7 +1537,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with dominators of first block
-    let common = new Set(blocks[0].dominators);
+    const common = new Set(blocks[0].dominators);
 
     // Intersect with dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -1516,7 +1573,7 @@ export class NWScriptControlFlowGraph {
     if (blocks.length === 1) return blocks[0];
 
     // Start with post-dominators of first block
-    let common = new Set(blocks[0].postDominators);
+    const common = new Set(blocks[0].postDominators);
 
     // Intersect with post-dominators of other blocks
     for (let i = 1; i < blocks.length; i++) {
@@ -1824,8 +1881,8 @@ export class NWScriptControlFlowGraph {
   /**
    * Safely serialize an instruction without circular references
    */
-  private serializeInstruction(instr: NWScriptInstruction): any {
-    const result: any = {
+  private serializeInstruction(instr: NWScriptInstruction): ISerializedNWScriptInstruction {
+    const result: ISerializedNWScriptInstruction = {
       address: instr.address,
       code: instr.code,
       codeName: instr.codeName || `OP_${instr.code}`,
@@ -1875,43 +1932,39 @@ export class NWScriptControlFlowGraph {
   /**
    * Safely serialize a condition expression (or return null if it's too complex)
    */
-  private serializeConditionExpression(expr: any): any {
+  private serializeConditionExpression(expr: NWScriptExpression | null | undefined): SerializedConditionExpression | null {
     if (!expr) return null;
-    
-    // Try to serialize if it's a simple object
+
     try {
-      // If it has a toJSON method, use it
-      if (typeof expr.toJSON === 'function') {
-        return expr.toJSON();
+      if (typeof (expr as NWScriptExpression & { toJSON?: () => SerializedConditionExpression }).toJSON === "function") {
+        return (expr as NWScriptExpression & { toJSON: () => SerializedConditionExpression }).toJSON();
       }
-      
-      // If it's a simple object with primitive values, serialize it
-      if (typeof expr === 'object' && expr !== null) {
+
+      if (typeof expr === "object" && expr !== null) {
         const keys = Object.keys(expr);
         if (keys.length === 0) return null;
-        
-        // Check if it's a simple object (no functions, no circular refs)
-        const simple: any = {};
+
+        const simple: Record<string, string | number | boolean | null | SerializedConditionExpression> = {};
         for (const key of keys) {
           const value = expr[key];
           if (value === null || value === undefined) continue;
-          if (typeof value === 'function') continue; // Skip functions
-          if (typeof value === 'object' && value !== null) {
-            // Check for circular reference by checking if it's the same object
-            if (value === expr) continue; // Skip self-reference
-            // For nested objects, just include a type indicator
-            simple[key] = { _type: typeof value, _constructor: value.constructor?.name || 'Object' };
+          if (typeof value === "function") continue;
+          if (typeof value === "object" && value !== null) {
+            if (value === expr) continue;
+            simple[key] = {
+              _type: typeof value,
+              _constructor: (value as { constructor?: { name?: string } }).constructor?.name ?? "Object"
+            };
           } else {
-            simple[key] = value;
+            simple[key] = value as string | number | boolean | null;
           }
         }
-        return Object.keys(simple).length > 0 ? simple : null;
+        return Object.keys(simple).length > 0 ? (simple as SerializedConditionExpression) : null;
       }
-      
-      return expr;
-    } catch (e) {
-      // If serialization fails, return a placeholder
-      return { _error: 'Could not serialize condition expression', _type: typeof expr };
+
+      return null;
+    } catch (_e) {
+      return { _error: "Could not serialize condition expression", _type: typeof expr };
     }
   }
 
@@ -1919,7 +1972,7 @@ export class NWScriptControlFlowGraph {
    * Export CFG to comprehensive JSON format for AI analysis
    * Includes all graph structure, analysis results, and metadata
    */
-  toJSON(): any {
+  toJSON(): INWScriptCFGJSON {
     const sortedBlocks = this.getBlocksInOrder();
     const graphMetrics = this.getGraphMetrics();
 
@@ -2180,8 +2233,8 @@ export class NWScriptControlFlowGraph {
    * This is the union of dominance frontiers, iterated until fixed point
    */
   getIteratedDominanceFrontier(blocks: Set<NWScriptBasicBlock>): Set<NWScriptBasicBlock> {
-    let df = new Set<NWScriptBasicBlock>();
-    let worklist = new Set(blocks);
+    const df = new Set<NWScriptBasicBlock>();
+    const worklist = new Set(blocks);
 
     while (worklist.size > 0) {
       const current = Array.from(worklist)[0];
@@ -2739,15 +2792,15 @@ export class NWScriptControlFlowGraph {
   /**
    * Get condition expression for an edge (if available)
    */
-  getConditionExpression(edge: NWScriptEdge): any | null {
-    return edge.conditionExpression || null;
+  getConditionExpression(edge: NWScriptEdge): NWScriptExpression | null {
+    return edge.conditionExpression ?? null;
   }
 
   /**
    * Set condition expression for an edge
    */
-  setConditionExpression(edge: NWScriptEdge, expression: any): void {
-    edge.conditionExpression = expression;
+  setConditionExpression(edge: NWScriptEdge, expression: NWScriptExpression | null): void {
+    edge.conditionExpression = expression ?? undefined;
   }
 
   /**
@@ -2900,7 +2953,8 @@ export class NWScriptControlFlowGraph {
   /**
    * Static method to deserialize CFG from JSON
    */
-  static fromJSON(json: any, script: NWScript): NWScriptControlFlowGraph {
+  /** Rebuild CFG from script; json is from external source (e.g. JSON.parse). */
+  static fromJSON(json: unknown, script: NWScript): NWScriptControlFlowGraph {
     const cfg = new NWScriptControlFlowGraph(script);
     
     // Note: This is a simplified deserialization

@@ -1,8 +1,11 @@
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import * as THREE from "three";
+
+import { ComputedPath } from "../engine/pathfinding/ComputedPath";
 import { ActionParameterType } from "../enums/actions/ActionParameterType";
 import { ActionStatus } from "../enums/actions/ActionStatus";
 import { ActionType } from "../enums/actions/ActionType";
 import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "../enums/module/ModuleObjectType";
 import { GameState } from "../GameState";
 import { ICombatAction } from "../interface/combat/ICombatAction";
 // import { ModuleObjectManager, PartyManager } from "../managers";
@@ -10,10 +13,11 @@ import { type ModuleCreature, type ModuleObject } from "../module";
 // import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
 import { GFFStruct } from "../resource/GFFStruct";
 import { BitWise } from "../utility/BitWise";
+
 import { ActionParameter } from "./ActionParameter";
 import { ActionQueue } from "./ActionQueue";
-import * as THREE from "three";
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
+
+
 
 /**
  * Base class for all game actions in the engine.
@@ -50,10 +54,10 @@ export class Action {
   parameters: ActionParameter[];
 
   /** Pathfinding data for movement-based actions */
-  path: any;
+  path: ComputedPath | undefined;
 
   /** Position data for finding open spaces */
-  openSpot: any;
+  openSpot: { targetVector: THREE.Vector3 } | undefined;
 
   /** Whether this action can be cleared from the queue */
   clearable: boolean = true;
@@ -163,7 +167,7 @@ export class Action {
    */
   runCreatureAvoidance(delta = 0, finalTarget: THREE.Vector3, excludeTarget?: ModuleObject) {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
-    const owner: ModuleCreature = this.owner as any;
+    const owner = this.owner as ModuleCreature;
 
     // Early exit if no movement vector
     if (owner.forceVector.lengthSq() < 0.001) return;
@@ -395,7 +399,7 @@ export class Action {
    * @returns The parameter value, converted to appropriate type
    */
   getParameter<T>(index = 0): T {
-    let param = this.parameters[index];
+    const param = this.parameters[index];
     if (!param) { return; }
     switch (param.type) {
       case ActionParameterType.DWORD:
@@ -416,7 +420,11 @@ export class Action {
    * @returns The converted parameter value
    * @throws Error if parameter type is invalid
    */
-  setParameter<T>(index = 0, type = 0, value: any = 0): T {
+  setParameter<T>(
+    index = 0,
+    type = 0,
+    value: number | string | boolean | GFFStruct | object = 0
+  ): T {
     let param = this.parameters[index];
 
     if (typeof param == 'undefined') {
@@ -424,21 +432,44 @@ export class Action {
     }
 
     switch (param.type) {
-      case ActionParameterType.INT:
-        param.value = !isNaN((value | 0)) ? (value | 0) : 0;
+      case ActionParameterType.INT: {
+        const n =
+          typeof value === "number"
+            ? value
+            : typeof value === "boolean"
+              ? (value ? 1 : 0)
+              : Number(value);
+        param.value = !isNaN(n) ? n : 0;
         break;
-      case ActionParameterType.FLOAT:
-        param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
+      }
+      case ActionParameterType.FLOAT: {
+        const n = typeof value === "number" ? value : parseFloat(String(value));
+        param.value = !isNaN(n) ? n : 0;
         break;
-      case ActionParameterType.DWORD:
-        if (BitWise.InstanceOfObject(value, ModuleObjectType.ModuleObject)) {
-          param.value = value.id ? value.id : ModuleObjectConstant.OBJECT_INVALID;
+      }
+      case ActionParameterType.DWORD: {
+        const objLike =
+          typeof value === "object" && value !== null && "objectType" in value
+            ? (value as { id?: number; objectType?: number })
+            : null;
+        if (
+          objLike &&
+          BitWise.InstanceOfObject(objLike, ModuleObjectType.ModuleObject)
+        ) {
+          param.value =
+            objLike.id !== undefined && objLike.id !== null
+              ? objLike.id
+              : ModuleObjectConstant.OBJECT_INVALID;
         } else {
-          param.value = !isNaN(parseInt(value)) ? parseInt(value) : 0;
+          const n =
+            typeof value === "number" ? value : parseInt(String(value), 10);
+          param.value = !isNaN(n) ? n : 0;
         }
         break;
+      }
       case ActionParameterType.STRING:
-        param.value = value.toString();
+        param.value =
+          typeof value === "string" ? value : String(value ?? "");
         break;
       case ActionParameterType.SCRIPT_SITUATION:
         if (value instanceof GameState.NWScript.NWScriptInstance)

@@ -1,8 +1,15 @@
 import React, { ComponentProps, ReactEventHandler, useState } from "react";
 import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
+
+import type { MenuTopItem } from "../MenuTopItem";
 import { useEffectOnce } from "../helpers/UseEffectOnce";
 
-export const MenuItem = function(props: any){
+export interface MenuItemProps {
+  item: MenuTopItem;
+  parent?: MenuTopItem;
+}
+
+export const MenuItem = function(props: MenuItemProps){
   const item = props.item;
   const parent = props.parent;
 
@@ -33,7 +40,7 @@ export const MenuItem = function(props: any){
   }else if(item.items.length){
     return (
       <NavDropdown title={item.name}>
-        {item.items.map((child: any, i: any) => 
+        {item.items.map((child: MenuTopItem, i: number) => 
           (
             <MenuItem key={(`menu-item-${child.uuid}`)} item={child} parent={item}></MenuItem>
           )

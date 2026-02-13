@@ -18,7 +18,7 @@ export class SWEffectIcon {
   description: number = -1;
   priority: number = 0;
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWEffectIcon {
     const effectIcon = new SWEffectIcon();
 
     effectIcon.id = parseInt(row.__index);

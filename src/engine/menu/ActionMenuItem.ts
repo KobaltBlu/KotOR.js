@@ -1,5 +1,20 @@
-import { GameState } from "../../GameState";
+import type { ModuleCreature } from "../../module/ModuleCreature";
 import type { ModuleItem } from "../../module/ModuleItem";
+import type { ModuleObject } from "../../module/ModuleObject";
+
+import type { Action } from "../../actions/Action";
+import type { TalentFeat } from "../../talents/TalentFeat";
+import type { TalentSpell } from "../../talents/TalentSpell";
+
+import { GameState } from "../../GameState";
+
+export interface ActionMenuItemProps {
+  action?: Action;
+  talent?: TalentFeat | TalentSpell;
+  target?: ModuleObject;
+  icon?: string;
+  item?: ModuleItem;
+}
 
 /**
  * ActionMenuItem class.
@@ -12,20 +27,21 @@ import type { ModuleItem } from "../../module/ModuleItem";
  */
 export class ActionMenuItem {
   type = 0;
-  target: any = undefined;
-  action: any = undefined;
-  talent: any = undefined;
+  target: ModuleObject | undefined = undefined;
+  action: Action | undefined = undefined;
+  talent: TalentFeat | TalentSpell | undefined = undefined;
   icon = '';
-  item: ModuleItem;
+  item: ModuleItem | undefined;
 
-  constructor( props: any = {} ){
-    props = Object.assign({
+  constructor( props: ActionMenuItemProps = {} ){
+    const defaults: ActionMenuItemProps = {
       action: undefined,
       talent: undefined,
       target: GameState.ActionMenuManager.oTarget,
       icon: '',
       item: undefined
-    }, props);
+    };
+    props = Object.assign(defaults, props);
     this.action = props.action;
     this.talent = props.talent;
     this.icon = props.icon;

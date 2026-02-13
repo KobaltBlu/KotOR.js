@@ -1,9 +1,9 @@
 import * as path from 'path';
-
 import * as vscode from 'vscode';
 
 import { KotorDocument } from '../KotorDocument';
 import { LogScope, createScopedLogger } from '../logger';
+
 import { BaseKotorEditorProvider } from './BaseKotorEditorProvider';
 
 const log = createScopedLogger(LogScope.Forge);
@@ -40,16 +40,32 @@ function getEditorTypeFromExt(ext: string): string {
 
 /**
  * Single VS Code custom editor provider that delegates ALL editor logic to Forge.
+ * Can optionally force a specific editor type (e.g. 'gff' for "Open in Generic GFF Editor").
  */
 export class KotorForgeProvider extends BaseKotorEditorProvider {
   public static readonly viewType = 'kotor.forge';
+  public static readonly viewTypeGff = 'kotor.forge.gff';
+
+  /** If set, overrides editor type (e.g. 'gff' for generic GFF editor regardless of extension). */
+  private readonly forceEditorType?: string;
+
+  constructor(
+    context: vscode.ExtensionContext,
+    forceEditorType?: string
+  ) {
+    super(context);
+    this.forceEditorType = forceEditorType;
+    log.trace(`KotorForgeProvider constructed forceEditorType=${forceEditorType ?? 'none'}`);
+  }
 
   public static register(context: vscode.ExtensionContext): vscode.Disposable {
-    log.debug('Registering KotorForgeProvider');
-    log.trace(`register() viewType=${KotorForgeProvider.viewType}`);
-    const disposable = vscode.window.registerCustomEditorProvider(
+    log.debug('Registering KotorForgeProvider (default and GFF)');
+    log.trace(`register() viewType=${KotorForgeProvider.viewType} viewTypeGff=${KotorForgeProvider.viewTypeGff}`);
+    const defaultProvider = new KotorForgeProvider(context);
+    const gffProvider = new KotorForgeProvider(context, 'gff');
+    const disp1 = vscode.window.registerCustomEditorProvider(
       KotorForgeProvider.viewType,
-      new KotorForgeProvider(context),
+      defaultProvider,
       {
         webviewOptions: {
           retainContextWhenHidden: true
@@ -57,14 +73,28 @@ export class KotorForgeProvider extends BaseKotorEditorProvider {
         supportsMultipleEditorsPerDocument: false
       }
     );
-    log.debug('KotorForgeProvider registered successfully');
-    return disposable;
+    const disp2 = vscode.window.registerCustomEditorProvider(
+      KotorForgeProvider.viewTypeGff,
+      gffProvider,
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true
+        },
+        supportsMultipleEditorsPerDocument: false
+      }
+    );
+    log.info('KotorForgeProvider registered (default + Generic GFF)');
+    return vscode.Disposable.from(disp1, disp2);
   }
 
   protected getEditorTypeForDocument(document: KotorDocument): string {
+    if (this.forceEditorType) {
+      log.debug(`getEditorTypeForDocument: forced editorType=${this.forceEditorType} uri=${document.uri.fsPath}`);
+      return this.forceEditorType;
+    }
     const ext = path.extname(document.uri.fsPath).replace('.', '');
     const editorType = getEditorTypeFromExt(ext);
-    log.trace(`getEditorTypeForDocument: ${document.uri.fsPath} -> ${editorType}`);
+    log.trace(`getEditorTypeForDocument: ${document.uri.fsPath} ext=${ext} -> ${editorType}`);
     return editorType;
   }
 

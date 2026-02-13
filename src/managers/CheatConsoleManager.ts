@@ -1,11 +1,12 @@
+import { ExperienceType } from "../enums/engine/ExperienceType";
 import { GameState } from "../GameState";
-import { InventoryManager } from "./InventoryManager";
+import { ResourceLoader } from "../loaders";
 import { ModuleItem } from "../module";
 import { GFFObject } from "../resource/GFFObject";
-import { ResourceLoader } from "../loaders";
 import { ResourceTypes } from "../resource/ResourceTypes";
+
+import { InventoryManager } from "./InventoryManager";
 import { KEYManager } from "./KEYManager";
-import { ExperienceType } from "../enums/engine/ExperienceType";
 
 /**
  * CheatConsoleManager class.

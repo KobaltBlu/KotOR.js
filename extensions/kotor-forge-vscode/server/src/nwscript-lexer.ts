@@ -341,7 +341,7 @@ export class NWScriptLexer {
   private scanNumber(start: SourceLocation): Token {
     const startPos = this.position - 1;
     
-    // Check for hexadecimal numbers (0x prefix)
+    // Check for hex literals
     if (this.source.charAt(startPos) === '0' && (this.peek() === 'x' || this.peek() === 'X')) {
       this.advance(); // consume 'x'
       

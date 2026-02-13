@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import Draggable from 'react-draggable';
+
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
 import { useEffectOnce } from "../../forge/helpers/UseEffectOnce";
+
+const log = createScopedLogger(LogScope.Debug);
 
 export interface LayoutContainerProps {
   northContent?: JSX.Element;
@@ -51,30 +55,30 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   const eastContent: JSX.Element = props.eastContent as JSX.Element;
   const westContent: JSX.Element = props.westContent as JSX.Element;
 
-  let layout_north_enabled: boolean = northContent ? true : false;
-  let layout_south_enabled: boolean = southContent ? true : false;
-  let layout_east_enabled: boolean = eastContent ? true : false;
-  let layout_west_enabled: boolean = westContent ? true : false;
+  const layout_north_enabled: boolean = northContent ? true : false;
+  const layout_south_enabled: boolean = southContent ? true : false;
+  const layout_east_enabled: boolean = eastContent ? true : false;
+  const layout_west_enabled: boolean = westContent ? true : false;
 
-  let centerStyle: any = {width: `100%`, height: `100%`};//{ position: string; top: number; bottom: number; left: number; right: number; };
-  let eastStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
-  let westStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
-  let northStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
-  let southStyle: any = {};//{ position: string; top: number; bottom: number; right: number; left: number; };
-  let northHandleStyle: any = {};//{ position: string; top: number; left: number; right: number; height: number; display: string; justifyContent: string; alignContent: string; cursor: string; };
-  let northHandleToggleStyle: any = {};//{ width: number; height: string; };
-  let southHandleStyle: any = {};//{ position: string; top: number; left: number; right: number; height: number; display: string; justifyContent: string; alignContent: string; cursor: string; };
-  let southHandleToggleStyle: any = {};//{ width: number; height: string; };
-  let eastHandleStyle: any = {};//{ position: string; bottom: number; top: number; left: number; width: number; display: string; justifyContent: string; alignContent: string; alignItems: string; cursor: string; };
-  let eastHandleToggleStyle: any = {};//{ height: number; width: string; };
-  let westHandleStyle: any = {};//{ position: string; bottom: number; top: number; left: number; width: number; display: string; justifyContent: string; alignContent: string; alignItems: string; cursor: string; };
-  let westHandleToggleStyle: any = {};//{ height: number; width: string; };
+  let centerStyle: React.CSSProperties = { width: '100%', height: '100%' };
+  let eastStyle: React.CSSProperties = {};
+  let westStyle: React.CSSProperties = {};
+  let northStyle: React.CSSProperties = {};
+  let southStyle: React.CSSProperties = {};
+  let northHandleStyle: React.CSSProperties = {};
+  const northHandleToggleStyle: React.CSSProperties = {};
+  let southHandleStyle: React.CSSProperties = {};
+  const southHandleToggleStyle: React.CSSProperties = {};
+  let eastHandleStyle: React.CSSProperties = {};
+  const eastHandleToggleStyle: React.CSSProperties = {};
+  let westHandleStyle: React.CSSProperties = {};
+  const westHandleToggleStyle: React.CSSProperties = {};
 
-  const handleStart = (e: any, handle: string) => {
-    // console.log('start', handle, e);
+  const handleStart = (_e: { clientX: number; clientY: number }, handle: string) => {
+    log.trace('Layout drag start', handle);
   }
 
-  const handleStop = (e: any, handle: string) => {
+  const handleStop = (e: { clientX: number; clientY: number }, handle: string) => {
     let offsetLeft = 0;
     let offsetTop = 0;
 
@@ -87,11 +91,11 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       offsetTop = rect.top;
     }
 
-    let x = e.clientX - offsetLeft;
+    const x = e.clientX - offsetLeft;
     let y = e.clientY - offsetTop;
     if(y < 0) y = 0;
 
-    let barSizeHalf = layoutBarOpenSize.current/2;
+    const barSizeHalf = layoutBarOpenSize.current/2;
 
     switch(handle){
       case 'north':
@@ -118,7 +122,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
     calculateLayout();
   }
 
-  const onPaneToggle = (e: any, handle: string) => {
+  const onPaneToggle = (e: React.MouseEvent, handle: string) => {
     e.preventDefault();
     switch(handle){
       case 'north':
@@ -142,7 +146,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
   }
 
   useEffect(() => {
-    // console.log('containerRef', containerRef);
+    log.trace('Layout container ref changed, recalculating layout');
     calculateLayout();
   }, [containerRef.current]);
 
@@ -198,33 +202,33 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       return;
     }
 
-    let north_gutter_size = 
+    const north_gutter_size = 
       layout_north_enabled ? (layoutNorthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
       
-    let south_gutter_size = 
+    const south_gutter_size = 
       layout_south_enabled ? (layoutSouthOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let east_gutter_size = 
+    const east_gutter_size = 
       layout_east_enabled ? (layoutEastOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let west_gutter_size = 
+    const west_gutter_size = 
       layout_west_enabled ? (layoutWestOpen.current ? layoutBarOpenSize.current : layoutBarClosedSize.current) : 0;
 
-    let west_bounds = {
+    const west_bounds = {
       top: 0,
       left: 0,
       width: (layout_west_enabled && layoutWestOpen.current) ? layoutWestSize.current - (west_gutter_size/2) : 0,
       height: (layout_west_enabled && layoutWestOpen.current) ? tabHeight : 0,
     };
 
-    let east_bounds = {
+    const east_bounds = {
       top: 0,
       right: 0,
       width: (layout_east_enabled && layoutEastOpen.current) ? layoutEastSize.current - (east_gutter_size/2) : 0,
       height: (layout_east_enabled && layoutEastOpen.current) ? tabHeight : 0,
     };
 
-    let north_bounds = {
+    const north_bounds = {
       top: 0,
       right: (layout_north_enabled && layoutNorthOpen.current) ? east_bounds.width + east_gutter_size : 0,
       left: (layout_north_enabled && layoutNorthOpen.current) ? west_bounds.width + west_gutter_size : 0,
@@ -232,7 +236,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       height: (layout_north_enabled && layoutNorthOpen.current) ? layoutNorthSize.current - (north_gutter_size/2) : 0,
     };
 
-    let south_bounds = {
+    const south_bounds = {
       bottom: 0,
       right: (layout_east_enabled && layoutEastOpen.current) ? east_bounds.width + east_gutter_size : 0,
       left: (layout_west_enabled && layoutWestOpen.current) ? west_bounds.width + west_gutter_size : 0,
@@ -240,7 +244,7 @@ export const LayoutContainer = function(props: LayoutContainerProps) {
       height: (layout_south_enabled && layoutSouthOpen.current) ? layoutSouthSize.current  - (south_gutter_size/2) : 0,
     };
 
-    let center_bounds = {
+    const center_bounds = {
       top: north_bounds.height + north_gutter_size,
       bottom: south_bounds.height + south_gutter_size,
       left: west_bounds.width + west_gutter_size,

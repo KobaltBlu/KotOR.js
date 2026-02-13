@@ -1,3 +1,4 @@
+import type { ITwoDARowData } from "../../resource/TwoDAObject";
 import { TwoDAObject } from "../../resource/TwoDAObject";
 
 /**
@@ -22,15 +23,15 @@ export class SWSavingThrow {
     // this.index = index;
   }
 
-  apply2DA(row: any){
+  apply2DA(row: ITwoDARowData | Record<string, string | number>): void {
     this.index = TwoDAObject.normalizeValue(row.__index, 'number', 0);
     this.level = TwoDAObject.normalizeValue(row.level, 'number', 0);
     this.fortsave = TwoDAObject.normalizeValue(row.fortsave, 'number', 0);
     this.willsave = TwoDAObject.normalizeValue(row.willsave, 'number', 0);
     this.refsave = TwoDAObject.normalizeValue(row.refsave, 'number', 0);
   }
-  
-  static From2DA(row: any){
+
+  static From2DA(row: ITwoDARowData | Record<string, string | number>): SWSavingThrow {
     const st = new SWSavingThrow();
     st.apply2DA(row);
     return st;

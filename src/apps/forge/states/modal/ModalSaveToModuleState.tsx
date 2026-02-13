@@ -1,7 +1,9 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalSaveToModule } from "../../components/modal/ModalSaveToModule";
 import { SaveDestination } from "../../enum/SaveDestination";
+
+import { ModalState } from "./ModalState";
 
 export interface ModalSaveToModuleStateOptions {
   title?: string;

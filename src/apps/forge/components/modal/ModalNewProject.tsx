@@ -1,13 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
-import * as KotOR from "../../KotOR";
-import { ProjectType } from "../../enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSystem";
-import { ForgeState } from "../../states/ForgeState";
-import { ProjectFileSystem } from "../../ProjectFileSystem";
-import { Project } from "../../Project";
 import path from "path";
+
+import { createScopedLogger, LogScope } from "@kotor/utility/Logger";
+import React, { useEffect, useState } from "react";
+import { Button, FormControl, FormSelect, InputGroup, Modal } from "react-bootstrap";
+
+import { ProjectType } from "../../enum/ProjectType";
+import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
+import { ForgeState } from "../../states/ForgeState";
+
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "../../ForgeFileSystem";
+import * as KotOR from "../../KotOR";
+import { Project } from "../../Project";
+import { ProjectFileSystem } from "../../ProjectFileSystem";
+
+
+const log = createScopedLogger(LogScope.Forge);
 
 type GameModule = {
   moduleName: string;
@@ -70,12 +77,12 @@ export const ModalNewProject = (props: BaseModalProps) => {
   };
 
   const onGameModulesLoaded = (modules: GameModule[]) => {
-    console.log('onGameModulesLoaded', modules);
+    log.debug('onGameModulesLoaded', modules.length, 'modules');
     setGameModules([...modules]);
   };
 
   const handleCreateProject = async () => {
-    console.log('handleCreateProject', projectName, selectedGameModule);
+    log.info('handleCreateProject', projectName, selectedGameModule);
     if(!projectDirectory){
       return;
     }
@@ -86,7 +93,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
     project.settings.open_files = [];
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       if(!projectDirectory.path){
-        console.error('Project directory path is required');
+        log.error('Project directory path is required');
         return;
       }
       ProjectFileSystem.rootDirectoryPath = projectDirectory.path;
@@ -96,9 +103,9 @@ export const ModalNewProject = (props: BaseModalProps) => {
       if(projectType === ProjectType.MODULE){
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
-          console.log('selectedGameModule', gameModule.entryArea);
+          log.debug('selectedGameModule', gameModule.entryArea);
           const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
+          if(lyt){
             await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
           }
           const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
@@ -111,23 +118,23 @@ export const ModalNewProject = (props: BaseModalProps) => {
       modal.close();
       return;
     }
-    
+
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
       if(!projectDirectory.handle){
-        console.error('Project directory handle is required');
+        log.error('Project directory handle is required');
         return;
       }
       ProjectFileSystem.rootDirectoryPath = undefined as unknown as string;
       ProjectFileSystem.rootDirectoryHandle = projectDirectory.handle;
-      console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
+      log.debug('ProjectFileSystem.rootDirectoryHandle set', ProjectFileSystem.rootDirectoryHandle?.name);
       ForgeState.project = project;
       project.saveSettings();
       if(projectType === ProjectType.MODULE){
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
-          console.log('selectedGameModule', gameModule.entryArea);
+          log.debug('selectedGameModule', gameModule.entryArea);
           const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
+          if(lyt){
             await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
           }
           const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
@@ -158,14 +165,14 @@ export const ModalNewProject = (props: BaseModalProps) => {
           return;
         }
         if(response.type === ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE){
-          setProjectDirectory({ 
+          setProjectDirectory({
             name: response.handle?.name,
             path: response.handle?.name as string,
             handle: response.handle as FileSystemDirectoryHandle,
           });
         }
         if(response.type === ForgeFileSystemResponseType.FILE_PATH_STRING){
-          setProjectDirectory({ 
+          setProjectDirectory({
             name: response.path?.split('/').pop(),
             path: response.path as string,
             handle: undefined,
@@ -176,14 +183,14 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
   const onModuleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedGameModule(parseInt(e.target.value));
-    console.log('selectedGameModule', e.target.value);
+    log.trace('selectedGameModule', e.target.value);
   };
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleHide} 
-      backdrop="static" 
+    <Modal
+      show={show}
+      onHide={handleHide}
+      backdrop="static"
       keyboard={false}
     >
       <Modal.Header closeButton>
@@ -228,10 +235,10 @@ export const ModalNewProject = (props: BaseModalProps) => {
             </InputGroup>
             <InputGroup>
               <InputGroup.Text>Template Module</InputGroup.Text>
-              <FormSelect className="game-modules" value={selectedGameModule as any} onChange={onModuleTemplateChange}>
+              <FormSelect className="game-modules" value={String(selectedGameModule)} onChange={onModuleTemplateChange}>
                 <option value="-1">None</option>
                 {gameModules.map((module, index) => (
-                  <option key={module.moduleName} value={index as any}>{module.moduleName} - {module.areaName}</option>
+                  <option key={module.moduleName} value={String(index)}>{module.moduleName} - {module.areaName}</option>
                 ))}
               </FormSelect>
             </InputGroup>

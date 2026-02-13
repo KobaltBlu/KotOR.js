@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react"
+
 import { useApp } from "../context/AppContext";
-import { ScriptBrowserWindow } from "./ScriptBrowserWindow";
-import { ScriptInstanceWindow } from "./ScriptInstanceWindow";
+
 import { LayoutContainer } from "./LayoutContainer";
 import { MenuTop } from "./MenuTop";
+import { ScriptBrowserWindow } from "./ScriptBrowserWindow";
+import { ScriptInstanceWindow } from "./ScriptInstanceWindow";
 
 
 export const ScriptDebugger = () => {

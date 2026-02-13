@@ -1,8 +1,13 @@
+import { IKEYEntry } from "../interface/resource/IKEYEntry";
 import { ResourceLoader } from "../loaders/ResourceLoader";
 import { ResourceTypes } from "../resource/ResourceTypes";
 import { TwoDAObject } from "../resource/TwoDAObject";
+import { createScopedLogger, LogScope } from "../utility/Logger";
+
 import { KEYManager } from "./KEYManager";
-import { IKEYEntry } from "../interface/resource/IKEYEntry";
+
+
+const log = createScopedLogger(LogScope.Manager);
 import { IBIFResource } from "../interface/resource/IBIFResource";
 
 /**
@@ -30,7 +35,7 @@ export class TwoDAManager {
         const d = await ResourceLoader.loadResource(ResourceTypes['2da'], key.resRef);
         TwoDAManager.datatables.set(key.resRef, new TwoDAObject(d));
       }catch(e){
-        console.error(e);
+        log.error(e);
       }
     }
 

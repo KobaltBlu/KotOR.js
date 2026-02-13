@@ -57,6 +57,13 @@ export {
 export { LIPShapeLabels } from "./LIPShapeLabels";
 export { RECENT_FILES_MAX, RECENT_PROJECTS_MAX } from "./ForgeConstants";
 
+export {
+  RESOURCE_ICON_BY_EXTENSION,
+  RESOURCE_ICON_PATH_PREFIX,
+  getResourceIconId,
+  getResourceIconPath,
+} from "./ForgeResourceIcons";
+
 export * from "./IndoorBuilderConstants";
 export * from "./IndoorTypes";
 export * from "./IndoorKit";

@@ -1,18 +1,22 @@
 import React, { createRef, useEffect, useRef, useState } from "react";
+
 import { AppProvider, AppProviderValues, useApp } from "../context/AppContext";
+import type { LauncherProfileElement } from "../types";
+
 import { GalleryPromoItem } from "./PromoItems/GalleryPromoItem";
 import { VideoPromoItem } from "./PromoItems/VideoPromoItem";
 import { WebviewPromoItem } from "./PromoItems/WebviewPromoItem";
 import { YTVideoPromoItem } from "./PromoItems/YTVideoPromoItem";
 
+
 export interface ProfilePromoItemProps {
-  element: any;
-  onClick?: (element: any) => void;
-  onDoubleClick?: (element: any) => void;
+  element: LauncherProfileElement;
+  onClick?: (element: LauncherProfileElement) => void;
+  onDoubleClick?: (element: LauncherProfileElement) => void;
 }
 
 export const ProfilePromoItem = function(props: ProfilePromoItemProps){
-  const element: any = props.element;
+  const element = props.element;
   const appContext = useApp();
 
   let jsxElement: JSX.Element = (

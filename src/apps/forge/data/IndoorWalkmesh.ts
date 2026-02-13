@@ -1,6 +1,8 @@
 import * as THREE from "three";
-import { BinaryReader } from "../../../utility/binary/BinaryReader";
+
 import { OdysseyWalkMesh } from "../KotOR";
+
+import { BinaryReader } from "../../../utility/binary/BinaryReader";
 
 export type WalkmeshTransform = {
   position: THREE.Vector3;

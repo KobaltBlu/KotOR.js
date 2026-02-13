@@ -4,8 +4,8 @@
  */
 
 import { ERFObject } from "../../../resource/ERFObject";
-import { RIMObject } from "../../../resource/RIMObject";
 import { ResourceTypes } from "../../../resource/ResourceTypes";
+import { RIMObject } from "../../../resource/RIMObject";
 
 export interface CapsuleResourceEntry {
   resref: string;

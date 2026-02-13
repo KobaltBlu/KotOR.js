@@ -1,4 +1,5 @@
 import * as THREE from "three";
+
 import { Shader } from "./Shader";
 
 const odyssey_envmap_fragment = `

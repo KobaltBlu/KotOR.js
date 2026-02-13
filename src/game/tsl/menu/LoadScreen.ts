@@ -1,6 +1,7 @@
-import type { GUIProgressBar, GUILabel } from "../../../gui";
 import { LoadScreen as K1_LoadScreen } from "../../kotor/KOTOR";
+
 import { EngineMode } from "../../../enums/engine/EngineMode";
+import type { GUIProgressBar, GUILabel } from "../../../gui";
 
 /**
  * LoadScreen class.

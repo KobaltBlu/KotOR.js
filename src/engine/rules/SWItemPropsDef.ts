@@ -29,7 +29,7 @@ export class SWItemPropsDef {
     return this.subtyperesref != '';
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(row: import("../../resource/TwoDAObject").ITwoDARowData | Record<string, string | number> = {}): SWItemPropsDef {
     const propsDef = new SWItemPropsDef();
 
     propsDef.id = parseInt(row.__index);

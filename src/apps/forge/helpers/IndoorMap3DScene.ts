@@ -1,9 +1,12 @@
 import * as THREE from "three";
-import { UI3DRenderer } from "../UI3DRenderer";
+
 import { IndoorMapRoom } from "../data/IndoorMap";
-import { OdysseyModel, OdysseyModel3D, OdysseyWalkMesh } from "../KotOR";
-import { BinaryReader } from "../../../utility/binary/BinaryReader";
 import { cloneWalkmesh } from "../data/IndoorWalkmesh";
+import { OdysseyModel, OdysseyModel3D, OdysseyWalkMesh } from "../KotOR";
+import { UI3DRenderer } from "../UI3DRenderer";
+
+import { BinaryReader } from "../../../utility/binary/BinaryReader";
+
 
 export class IndoorMap3DRoom {
   room: IndoorMapRoom;

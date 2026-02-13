@@ -1,4 +1,5 @@
 import { Position } from 'vscode-languageserver';
+
 import { trace } from './logger';
 
 // Scope types for tracking variables in different contexts

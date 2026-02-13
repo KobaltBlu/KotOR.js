@@ -1,5 +1,8 @@
+import { createScopedLogger, LogScope } from "../../utility/Logger";
+
+import { ResourceTypes } from "../../KotOR";
+
 import { EditorFile } from "./EditorFile";
-import { Project } from "./Project";
 import { EditorFileOptions } from "./interfaces/EditorFileOptions";
 import { AudioPlayerState } from "./states/AudioPlayerState";
 import { ForgeState } from "./states/ForgeState";
@@ -9,7 +12,8 @@ import {
   TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState, TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState,
   TabIndoorBuilderState
 } from "./states/tabs";
-import { ResourceTypes } from "../../KotOR";
+
+const log = createScopedLogger(LogScope.Forge);
 
 /**
  * FileTypeManager class.
@@ -28,6 +32,17 @@ export class FileTypeManager {
     FileTypeManager.onOpenResource(new EditorFile(options));
   }
 
+  /**
+   * Open a resource in the generic GFF editor (e.g. from "Open with Generic GFF").
+   * Use this when the file type normally has a specific editor (e.g. UTS) but the user wants the raw GFF tree.
+   */
+  static onOpenResourceAsGff(res: EditorFile | string): void {
+    const file = typeof res === 'string' ? new EditorFile({ path: res }) : res;
+    ForgeState.addRecentFile(file);
+    log.debug('FileTypeManager.onOpenResourceAsGff', file);
+    ForgeState.tabManager.addTab(new TabGFFEditorState({ editorFile: file }));
+  }
+
   static onOpenResource(res: EditorFile|string){
 
     let ext = 'NA';
@@ -42,7 +57,7 @@ export class FileTypeManager {
     //Update the opened files list
     ForgeState.addRecentFile(res);
 
-    console.log('FileTypeManager.onOpenResource', res, ext);
+    log.debug('FileTypeManager.onOpenResource', res, ext);
 
     switch(ext){
       case 'lyt':
@@ -86,6 +101,8 @@ export class FileTypeManager {
       break;
       case 'tpc':
       case 'tga':
+      case 'bmp':
+      case 'dds':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'ltr':
@@ -160,7 +177,7 @@ export class FileTypeManager {
       break;
       case 'wav':
       case 'mp3':
-        console.log('audio file', res);
+        log.debug('audio file', res);
         AudioPlayerState.OpenAudio(res);
         // ForgeState.inlineAudioPlayer.OpenAudio({editorFile: res});
 

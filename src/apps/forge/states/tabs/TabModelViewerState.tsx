@@ -1,14 +1,17 @@
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
-import * as KotOR from "../../KotOR";
-import * as THREE from 'three';
 import React from "react";
+import * as THREE from 'three';
+
 import { TabModelViewer } from "../../components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
-import { EditorFile } from "../../EditorFile";
-import { BinaryReader } from "../../../../utility/binary/BinaryReader";
-import { SceneGraphNode } from "../../SceneGraphNode";
 import { UI3DOverlayComponent } from "../../components/UI3DOverlayComponent";
+import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
+
+import { BinaryReader } from "../../../../utility/binary/BinaryReader";
+import { EditorFile } from "../../EditorFile";
+import * as KotOR from "../../KotOR";
+import { SceneGraphNode } from "../../SceneGraphNode";
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from "../../UI3DRenderer";
+
+import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "./";
 
 export type TabModelViewerStateEventListenerTypes =
 TabStateEventListenerTypes & 
@@ -55,11 +58,11 @@ export class TabModelViewerState extends TabState {
   seeking: boolean = false;
   playing: boolean = false;
   looping: boolean = false;
-  min_timeline_zoom: any = 50;
-  max_timeline_zoom: any = 1000;
+  min_timeline_zoom: number = 50;
+  max_timeline_zoom: number = 1000;
 
-  dragging_frame: any;
-  selected_frame: any;
+  dragging_frame: number | null = null;
+  selected_frame: number | null = null;
   groundColor: THREE.Color;
   groundGeometry: THREE.WireframeGeometry<THREE.PlaneGeometry>;
   groundMaterial: THREE.LineBasicMaterial;
@@ -70,7 +73,7 @@ export class TabModelViewerState extends TabState {
   selectedLayoutIndex: number = -1;
   layoutSceneGraphNode: SceneGraphNode;
   layout: KotOR.LYTObject;
-  currentAnimationState: any = {
+  currentAnimationState: { elapsed: number } = {
     elapsed: 0
   };
   scrubbing: boolean = false;
@@ -139,7 +142,7 @@ export class TabModelViewerState extends TabState {
               this.paused = true;
 
               model.emitters.map( (emitter) => {
-                emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+                emitter.referenceNode = this.ui3DRenderer.referenceNode as KotOR.OdysseyObject3D;
               })
 
               if(model.camerahook){
@@ -313,11 +316,11 @@ export class TabModelViewerState extends TabState {
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
         for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-          let room = this.layout.rooms[i];
+          const room = this.layout.rooms[i];
           // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-          let mdl = await KotOR.MDLLoader.loader.load(room.name);
+          const mdl = await KotOR.MDLLoader.loader.load(room.name);
           if(mdl){
-            let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+            const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,
               context: this.ui3DRenderer, 
               mergeStatic: false,
@@ -365,7 +368,7 @@ export class TabModelViewerState extends TabState {
       if(this.layout_group.children.length){
         let modelIndex = this.layout_group.children.length - 1;
         while(modelIndex >= 0){
-          let model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
+          const model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
           if(model){
             model.dispose();
             this.layout_group.remove(model);

@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+
 import * as KotOR from "../KotOR";
 import { DebuggerState } from "../states/DebuggerState";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
+
 import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
+import { IPCMessage } from "../../../server/ipc/IPCMessage";
+import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;
@@ -15,13 +17,19 @@ export interface AppProviderValues {
   setSelectedInstanceHelper: Function;
   sendMessageHelper: Function;
 }
-export const AppContext = createContext<AppProviderValues>({} as any);
+const defaultAppContextValue: AppProviderValues = null as unknown as AppProviderValues;
+export const AppContext = createContext<AppProviderValues>(defaultAppContextValue);
 
 export function useApp(){
   return useContext(AppContext);
 }
 
-export const AppProvider = (props: {children: any; appState: DebuggerState}) => {
+export interface AppProviderProps {
+  children: React.ReactNode;
+  appState: DebuggerState;
+}
+
+export const AppProvider = (props: AppProviderProps) => {
   const [scriptMap, setScriptMap] = useState<Map<string, KotOR.NWScript>>(new Map());
   const [instanceMap, setInstanceMap] = useState<Map<string, KotOR.NWScriptInstance>>(new Map());
   const [parentMap, setParentMap] = useState<Map<string, Set<string>>>(new Map());
@@ -34,7 +42,7 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     stateRef.current?.setSelectedInstance(instance);
   }
 
-  const sendMessageHelper = (data: any) => {
+  const sendMessageHelper = (data: ArrayBuffer | ArrayBufferView) => {
     stateRef.current?.sendMessage(data);
   }
 
@@ -44,7 +52,7 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     setParentMap(new Map(state.parentMap));
   }
 
-  const onMessage = (message: any) => {
+  const onMessage = (_message: IPCMessage) => {
     onUpdateState(stateRef.current);
   }
 

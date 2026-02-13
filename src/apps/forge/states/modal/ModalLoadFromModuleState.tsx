@@ -1,13 +1,16 @@
 import React from "react";
-import { ModalState } from "./ModalState";
+
 import { ModalLoadFromModule } from "../../components/modal/ModalLoadFromModule";
 import {
   loadFromCapsuleBuffer,
   CapsuleResourceEntry,
   LoadFromCapsuleResult,
 } from "../../helpers/LoadFromCapsule";
+
 import { ForgeFileSystem, ForgeFileSystemResponse } from "../../ForgeFileSystem";
 import * as KotOR from "../../KotOR";
+
+import { ModalState } from "./ModalState";
 
 export interface ModalLoadFromModuleStateOptions {
   title?: string;

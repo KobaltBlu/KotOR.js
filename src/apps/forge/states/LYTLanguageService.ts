@@ -1,5 +1,9 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+
 import { LYTObject } from "../../../resource/LYTObject";
+import { createScopedLogger, LogScope } from "../../../utility/Logger";
+
+const log = createScopedLogger(LogScope.Forge);
 
 /**
  * LYTLanguageService class.
@@ -118,7 +122,7 @@ export class LYTLanguageService {
           return [];
         } catch (error) {
           // If formatting fails, return empty array (don't break the editor)
-          console.warn('LYT formatting failed:', error);
+          log.warn('LYT formatting failed:', error);
           return [];
         }
       }

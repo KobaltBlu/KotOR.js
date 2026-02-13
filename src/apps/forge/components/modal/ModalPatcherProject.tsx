@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Modal } from "react-bootstrap";
+
 import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
 import { ModalPatcherProjectState, PatcherFile } from "../../states/modal/ModalPatcherProjectState";
+
 import { ForgeFileSystem } from "../../ForgeFileSystem";
 import * as KotOR from "../../KotOR";
 import "./ModalPatcherProject.scss";
 
-declare const dialog: any;
+declare const dialog: { locateDirectoryDialog: () => Promise<string | null> };
 
 export const ModalPatcherProject = (props: BaseModalProps) => {
   const modal = props.modal as ModalPatcherProjectState;
