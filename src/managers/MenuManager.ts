@@ -132,7 +132,7 @@ export class MenuManager {
 
       MenuManager.Resize();
 
-      if(!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI){
+      if((!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI) && GameState.Mode !== EngineMode.MOVIE){
         GameState.RestoreEnginePlayMode();
       }
     }else{

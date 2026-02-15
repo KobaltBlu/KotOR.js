@@ -100,5 +100,6 @@ export enum KeyMapAction {
   ResolutionScaleUp = "action1003",
   ResolutionScaleDown = "action1004",
   ResolutionScaleReset = "action1004",
+  MovieSkip = "action901m",
 
 }

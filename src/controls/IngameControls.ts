@@ -152,6 +152,11 @@ export class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
+      // Block GUI selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying()){
+        return;
+      }
+
       Mouse.Update(event.clientX, event.clientY);
       if(event.target == this.element){
         GameState.MenuManager.activeGUIElement = undefined;
@@ -188,6 +193,8 @@ export class IngameControls {
       Mouse.downItem = null;
       Mouse.clickItem = null;
 
+      // Block GUI selection while a movie is playing
+      if(!GameState.VideoManager.isMoviePlaying()){
       let uiControls = this.MenuGetActiveUIElements();
       for(let i = 0; i < uiControls.length; i++){
         if(!customEvent.propagate)
@@ -218,10 +225,16 @@ export class IngameControls {
           }
         }
       }
+      }
       Mouse.leftDown = true;
     });
 
     window.addEventListener('mousemove', (event: MouseEvent) => {
+      // Block GUI selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying()){
+        return;
+      }
+
       GameState.scene_cursor_holder.visible = true;
 
       Mouse.Update( event.clientX, event.clientY );
@@ -254,6 +267,12 @@ export class IngameControls {
     });
 
     window.addEventListener('mouseup', (event: MouseEvent) => {
+      // Block GUI and in-game selection while a movie is playing
+      if(GameState.VideoManager.isMoviePlaying()){
+        GameState.VideoManager.skipMovie();
+        return;
+      }
+
       Mouse.MouseDown = false;
       Mouse.Dragging = false;
       Mouse.ButtonState = MouseState.NONE;
@@ -773,6 +792,15 @@ export class IngameControls {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuOptions.open();
+    });
+
+      // Handle movie skipping
+    KeyMapper.Actions[KeyMapAction.MovieSkip].setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+
+      if(GameState.VideoManager.isMoviePlaying()){
+        GameState.VideoManager.skipMovie();
+      }
     });
   }
 

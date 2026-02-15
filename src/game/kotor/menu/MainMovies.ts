@@ -1,5 +1,48 @@
+import { GameState } from "../../../GameState";
 import { GameMenu } from "../../../gui";
 import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { TwoDAObject } from "../../../resource/TwoDAObject";
+
+interface MovieItem {
+  name: string;
+  strrefname: number;
+  strefdesc: number;
+  /**
+   * Whether the movie should be shown even if it has not been played
+   */
+  alwaysshow: boolean;
+  /**
+   * Whether the movie has been played in game before. This value is found in the swkotor.ini file [Movies Shown] section.
+   */
+  played: boolean;
+  /**
+   * The order of the movie in the list
+   */
+  order: number;
+}
+
+class GUIMovieItem implements MovieItem {
+
+  name: string;
+  strrefname: number;
+  strefdesc: number;
+  alwaysshow: boolean;
+  played: boolean;
+  order: number;
+
+  constructor(movie: MovieItem){
+    this.name = movie.name;
+    this.strrefname = movie.strrefname;
+    this.strefdesc = movie.strefdesc;
+    this.alwaysshow = movie.alwaysshow;
+    this.played = movie.played;
+    this.order = movie.order;
+  }
+
+  getName(): string {
+    return GameState.TLKManager.GetStringById(this.strrefname).Value || this.name;
+  }
+}
 
 /**
  * MainMovies class.
@@ -15,6 +58,8 @@ export class MainMovies extends GameMenu {
   LBL_TITLE: GUILabel;
   LB_MOVIES: GUIListBox;
   BTN_BACK: GUIButton;
+
+  movieList: MovieItem[] = [];
 
   constructor(){
     super();
@@ -32,8 +77,42 @@ export class MainMovies extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_BACK;
+      this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
+      this.LB_MOVIES.onSelected = (movie: GUIMovieItem, control: any, index: number) => {
+        console.log(movie);
+        GameState.VideoManager.playMovie(movie.name, true);
+      };
+      const moviesTable = GameState.TwoDAManager.datatables.get('movies');
+      for(let i = 0; i < moviesTable.RowCount; i++){
+        const row = moviesTable.getRowByIndex(i);
+        const movieItem: MovieItem = {
+          name: TwoDAObject.normalizeValue(row.__rowlabel, 'string', ''),
+          strrefname: TwoDAObject.normalizeValue(row.strrefname, 'number', -1),
+          strefdesc: TwoDAObject.normalizeValue(row.strefdesc, 'number', -1),
+          alwaysshow: TwoDAObject.normalizeValue(row.alwaysshow, 'boolean', false),
+          played: false,
+          order: TwoDAObject.normalizeValue(row.order, 'number', 999999),
+        };
+        this.movieList.push(movieItem);
+      }
+
+      this.movieList.sort((a, b) => a.order - b.order);
+      for(const movie of this.movieList){
+        this.LB_MOVIES.addItem(new GUIMovieItem(movie));
+      }
+      this.LB_MOVIES.updateList();
       resolve();
     });
+  }
+
+  show(){
+    super.show();
+    this.LB_MOVIES.clearItems();
+    for(const movie of this.movieList){
+      this.LB_MOVIES.addItem(new GUIMovieItem(movie));
+    }
+    this.LB_MOVIES.updateList();
+    this.LB_MOVIES.show();
   }
   
 }

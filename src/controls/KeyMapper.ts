@@ -183,6 +183,8 @@ interface KeyMapperActions {
   action1003: Keymap;
   action1004: Keymap;
   action1005: Keymap;
+
+  action901m: Keymap;
 }
 
 export class KeyMapper {
@@ -279,6 +281,7 @@ export class KeyMapper {
     action1003: undefined,
     action1004: undefined,
     action1005: undefined,
+    action901m: undefined,
   };
 
   static ACTIONS_ALL: Keymap[] = [];
@@ -361,6 +364,12 @@ export class KeyMapper {
         name: 'ResolutionScaleReset',
         remappable: 0,
         icpc: 1,
+      });
+
+      this.CreateCustomAction(KeyMapAction.MovieSkip, {
+        name: 'MovieSkip',
+        remappable: 0,
+        icmovie: 1,
       });
     }
   }
@@ -517,6 +526,9 @@ export class KeyMapper {
     KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].keyboardInput = keyboard.action.NumpadSubtract;
     KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].keyboardInput = keyboard.action.Numpad0;
 
+    //Movie
+    KeyMapper.Actions[KeyMapAction.MovieSkip].keyboardInput = keyboard.action.Space;
+
   }
 
   static BindGamepad(gamepad: GamePad){
@@ -554,6 +566,9 @@ export class KeyMapper {
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
+
+    //Movie
+    this.Actions[KeyMapAction.MovieSkip].gamepadInput = gamepad.button_y;
     
   }
 
